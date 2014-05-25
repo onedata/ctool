@@ -10,7 +10,7 @@
 
 %% This macro adds all ebin directories needed by ct tests to code path
 -define(INIT_CODE_PATH, begin
-							            % prepare dirs
+							% prepare dirs
 	                        {ok, CWD} = file:get_cwd(),
 	                        TestRoot = filename:join(CWD, "../.."),
 	                        ProjectRoot = filename:join(TestRoot,".."),

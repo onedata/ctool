@@ -51,6 +51,7 @@ start_globalregistry_node(NodeName,Host,EnvVars,Verbose) ->
 	{ok,Node} = slave:start(Host, NodeName,CodePathOpt++VerboseOpt++CookieOpt),
 
 	% Prepare environment
+	rpc:call(Node,application,start,[ctool]),
 	rpc:call(Node,test_node_starter,start_deps,[]),
 	rpc:call(Node,test_node_starter,set_env_vars,[EnvVars]),
 	?assertMatch(ok,rpc:call(Node,application,start,[globalregistry])),
@@ -63,7 +64,8 @@ start_globalregistry_node(NodeName,Host,EnvVars,Verbose) ->
 %% ====================================================================
 stop_globalregistry_node(Node) ->
 	rpc:call(Node,test_node_starter,stop_deps,[]),
-	rpc:call(Node,application,stop,[globalregistry]),
+    rpc:call(Node,application,stop,[ctool]),
+    rpc:call(Node,application,stop,[globalregistry]),
 	slave:stop(Node).
 
 %% make_code_path/0
