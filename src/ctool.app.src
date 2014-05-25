@@ -9,7 +9,7 @@
 {application, ctool, [
     {description, "Helper modules for ct tests"},
     {vsn, "1"},
-    {modules,[]},
+    {modules,[test_node_starter]},
     {registered, []},
     {applications, [
         kernel,
