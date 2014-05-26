@@ -104,7 +104,7 @@ start_deps([ssl | Rest]) ->
 start_deps([FirstDep|Rest]) ->
 	[application:start(FirstDep) | start_deps(Rest)].
 
-%% set_env_vars/1
+%% set_env_vars/2
 %% ====================================================================
 %% @doc This function sets environment variables for application.
 -spec set_env_vars(Application :: atom(),EnvVars :: list()) -> ok.
