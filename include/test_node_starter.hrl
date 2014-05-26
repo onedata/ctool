@@ -21,6 +21,7 @@
 	                        DepEbinDirs = lists:map(fun(Dir) -> filename:join([Deps,Dir,"ebin"]) end,DepDirs),
 
 	                        % add dirs to code path
+	                        code:add_path(CWD),
 	                        code:add_path(ProjectRoot),
 	                        code:add_path(CtTestRoot),
 	                        code:add_path(Ebin),
