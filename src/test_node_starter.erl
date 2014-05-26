@@ -13,31 +13,31 @@
 -include("assertions.hrl").
 
 %% API
--export([start_test_node/4, start_test_node/5, stop_test_node/2]).
--export([set_env_vars/1,start_deps/1,stop_deps/1]).
+-export([start_test_node/5, start_test_node/6, stop_test_node/3]).
+-export([set_env_vars/2,start_deps/1,stop_deps/1]).
 
 
-%% start_test_node/4
+%% start_test_node/5
 %% ====================================================================
 %% @doc Starts new test node, with silent mode
--spec start_test_node(NodeName :: atom(), Host :: atom(), Deps :: list(atom()), EnvVars :: list(Env)) -> node() | no_return() when
+-spec start_test_node(NodeName :: atom(), Host :: atom(),MainApplication :: atom() ,Deps :: list(atom()), EnvVars :: list(Env)) -> node() | no_return() when
 	Env :: {Name,Value},
 	Name :: atom(),
 	Value :: term().
 %% ====================================================================
-start_test_node(NodeName,Host,Deps,EnvVars) ->
-	start_test_node(NodeName,Host,Deps,EnvVars,false).
+start_test_node(NodeName,Host,MainApplication,Deps,EnvVars) ->
+	start_test_node(NodeName,Host,MainApplication,Deps,EnvVars,false).
 
-%% start_test_node/5
+%% start_test_node/6
 %% ====================================================================
 %% @doc Starts new test node.
--spec start_test_node(NodeName :: atom(), Host :: atom(), Deps :: list(atom()), EnvVars :: list(Env), Verbose :: boolean()) -> Result when
+-spec start_test_node(NodeName :: atom(), Host :: atom(), MainApplication :: atom(), Deps :: list(atom()), EnvVars :: list(Env), Verbose :: boolean()) -> Result when
 	Env :: {Name,Value},
 	Name :: atom(),
 	Value :: term(),
 	Result :: node() | no_return().
 %% ====================================================================
-start_test_node(NodeName,Host,Deps,EnvVars,Verbose) ->
+start_test_node(NodeName,Host,MainApplication,Deps,EnvVars,Verbose) ->
 	% Prepare opts
 	CodePathOpt = make_code_path(),
 	VerboseOpt = case Verbose of
@@ -47,27 +47,27 @@ start_test_node(NodeName,Host,Deps,EnvVars,Verbose) ->
 	CookieOpt = " -setcookie "++atom_to_list(erlang:get_cookie())++" ",
 
 	% Start node
-	stop_test_node(?NODE(Host,NodeName),Deps),
+	stop_test_node(?NODE(Host,NodeName),MainApplication,Deps),
 	{ok,Node} = slave:start(Host, NodeName,CodePathOpt++VerboseOpt++CookieOpt),
 
 	% Prepare environment
 	rpc:call(Node,application,start,[ctool]),
 	rpc:call(Node,test_node_starter,start_deps,[Deps]),
-	rpc:call(Node,application,load,[globalregistry]),
-	rpc:call(Node,test_node_starter,set_env_vars,[EnvVars]),
-	?assertMatch(ok,rpc:call(Node,application,start,[globalregistry])),
+	rpc:call(Node,application,load,[MainApplication]),
+	rpc:call(Node,test_node_starter,set_env_vars,[MainApplication,EnvVars]),
+	?assertMatch(ok,rpc:call(Node,application,start,[MainApplication])),
 	Node.
 
-%% stop_test_node/2
+%% stop_test_node/3
 %% ====================================================================
 %% @doc Stops test node.
--spec stop_test_node(Node :: node(), Deps :: list(atom())) -> ok | no_return().
+-spec stop_test_node(Node :: node(), MainApplication :: atom(), Deps :: list(atom())) -> ok | no_return().
 %% ====================================================================
-stop_test_node(Node,Deps) ->
-	rpc:call(Node,application,unload,[globalregistry]),
+stop_test_node(Node,MainApplication,Deps) ->
+	rpc:call(Node,application,unload,[MainApplication]),
 	rpc:call(Node,test_node_starter,stop_deps,[Deps]),
     rpc:call(Node,application,stop,[ctool]),
-    rpc:call(Node,application,stop,[globalregistry]),
+    rpc:call(Node,application,stop,[MainApplication]),
 	slave:stop(Node).
 
 %% make_code_path/0
@@ -89,7 +89,6 @@ stop_deps([]) ->
     [];
 stop_deps([FirstDep | Rest]) ->
 	[application:stop(FirstDep) | stop_deps(Rest)].
-%% 	application:unload(globalregistry).
 
 %% start_deps/1
 %% ====================================================================
@@ -104,15 +103,14 @@ start_deps([ssl | Rest]) ->
     [ssl:start() | start_deps(Rest)];
 start_deps([FirstDep|Rest]) ->
 	[application:start(FirstDep) | start_deps(Rest)].
-%% 	application:load(globalregistry).
 
 %% set_env_vars/1
 %% ====================================================================
 %% @doc This function sets environment variables for application.
--spec set_env_vars(EnvVars :: list()) -> ok.
+-spec set_env_vars(Application :: atom(),EnvVars :: list()) -> ok.
 %% ====================================================================
-set_env_vars([]) ->
+set_env_vars(_Application,[]) ->
 	ok;
-set_env_vars([{Variable, Value} | Vars]) ->
-	application:set_env(globalregistry, Variable, Value),
-	set_env_vars(Vars).
+set_env_vars(Application,[{Variable, Value} | Vars]) ->
+	application:set_env(Application, Variable, Value),
+	set_env_vars(Application,Vars).
