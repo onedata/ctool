@@ -13,31 +13,31 @@
 -include("assertions.hrl").
 
 %% API
--export([start_test_node/3, start_test_node/4, stop_test_node/1]).
+-export([start_test_node/4, start_test_node/5, stop_test_node/2]).
 -export([set_env_vars/1,start_deps/1,stop_deps/1]).
 
 
-%% start_globalregistry_node/3
+%% start_globalregistry_node/4
 %% ====================================================================
 %% @doc Starts new node with globalregistry, with silent mode
--spec start_test_node(NodeName :: atom(), Host :: atom(), EnvVars :: list(Env)) -> node() | no_return() when
+-spec start_test_node(NodeName :: atom(), Host :: atom(), Deps :: list(atom()), EnvVars :: list(Env)) -> node() | no_return() when
 	Env :: {Name,Value},
 	Name :: atom(),
 	Value :: term().
 %% ====================================================================
-start_test_node(NodeName,Host,EnvVars) ->
-	start_test_node(NodeName,Host,EnvVars,false).
+start_test_node(NodeName,Host,Deps,EnvVars) ->
+	start_test_node(NodeName,Host,Deps,EnvVars,false).
 
-%% start_globalregistry_node/4
+%% start_globalregistry_node/5
 %% ====================================================================
 %% @doc Starts new node with globalregistry.
--spec start_test_node(NodeName :: atom(), Host :: atom(),EnvVars :: list(Env), Verbose :: boolean()) -> Result when
+-spec start_test_node(NodeName :: atom(), Host :: atom(), Deps :: list(atom()), EnvVars :: list(Env), Verbose :: boolean()) -> Result when
 	Env :: {Name,Value},
 	Name :: atom(),
 	Value :: term(),
 	Result :: node() | no_return().
 %% ====================================================================
-start_test_node(NodeName,Host,EnvVars,Verbose) ->
+start_test_node(NodeName,Host,Deps,EnvVars,Verbose) ->
 	% Prepare opts
 	CodePathOpt = make_code_path(),
 	VerboseOpt = case Verbose of
@@ -47,12 +47,12 @@ start_test_node(NodeName,Host,EnvVars,Verbose) ->
 	CookieOpt = " -setcookie "++atom_to_list(erlang:get_cookie())++" ",
 
 	% Start node
-	stop_test_node(?NODE(Host,NodeName)),
+	stop_test_node(?NODE(Host,NodeName),Deps),
 	{ok,Node} = slave:start(Host, NodeName,CodePathOpt++VerboseOpt++CookieOpt),
 
 	% Prepare environment
 	rpc:call(Node,application,start,[ctool]),
-	rpc:call(Node,test_node_starter,start_deps,[]),
+	rpc:call(Node,test_node_starter,start_deps,[Deps]),
 	rpc:call(Node,application,load,[globalregistry]),
 	rpc:call(Node,test_node_starter,set_env_vars,[EnvVars]),
 	?assertMatch(ok,rpc:call(Node,application,start,[globalregistry])),
@@ -61,11 +61,11 @@ start_test_node(NodeName,Host,EnvVars,Verbose) ->
 %% stop_globalregistry_node/2
 %% ====================================================================
 %% @doc Stops globalregistry node.
--spec stop_test_node(Node :: node()) -> ok | no_return().
+-spec stop_test_node(Node :: node(), Deps :: list(atom())) -> ok | no_return().
 %% ====================================================================
-stop_test_node(Node) ->
+stop_test_node(Node,Deps) ->
 	rpc:call(Node,application,unload,[globalregistry]),
-	rpc:call(Node,test_node_starter,stop_deps,[]),
+	rpc:call(Node,test_node_starter,stop_deps,[Deps]),
     rpc:call(Node,application,stop,[ctool]),
     rpc:call(Node,application,stop,[globalregistry]),
 	slave:stop(Node).
