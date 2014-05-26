@@ -17,9 +17,9 @@
 -export([set_env_vars/1,start_deps/1,stop_deps/1]).
 
 
-%% start_globalregistry_node/4
+%% start_test_node/4
 %% ====================================================================
-%% @doc Starts new node with globalregistry, with silent mode
+%% @doc Starts new test node, with silent mode
 -spec start_test_node(NodeName :: atom(), Host :: atom(), Deps :: list(atom()), EnvVars :: list(Env)) -> node() | no_return() when
 	Env :: {Name,Value},
 	Name :: atom(),
@@ -28,9 +28,9 @@
 start_test_node(NodeName,Host,Deps,EnvVars) ->
 	start_test_node(NodeName,Host,Deps,EnvVars,false).
 
-%% start_globalregistry_node/5
+%% start_test_node/5
 %% ====================================================================
-%% @doc Starts new node with globalregistry.
+%% @doc Starts new test node.
 -spec start_test_node(NodeName :: atom(), Host :: atom(), Deps :: list(atom()), EnvVars :: list(Env), Verbose :: boolean()) -> Result when
 	Env :: {Name,Value},
 	Name :: atom(),
@@ -58,9 +58,9 @@ start_test_node(NodeName,Host,Deps,EnvVars,Verbose) ->
 	?assertMatch(ok,rpc:call(Node,application,start,[globalregistry])),
 	Node.
 
-%% stop_globalregistry_node/2
+%% stop_test_node/2
 %% ====================================================================
-%% @doc Stops globalregistry node.
+%% @doc Stops test node.
 -spec stop_test_node(Node :: node(), Deps :: list(atom())) -> ok | no_return().
 %% ====================================================================
 stop_test_node(Node,Deps) ->
