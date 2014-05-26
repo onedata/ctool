@@ -8,6 +8,7 @@
 %%%-------------------------------------------------------------------
 -author("Tomasz Lichon").
 
+-undef(TEST).
 -define(TEST, true).
 -include_lib("eunit/include/eunit.hrl").
 
