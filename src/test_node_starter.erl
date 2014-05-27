@@ -15,6 +15,7 @@
 %% API
 -export([start_test_node/5, start_test_node/6, stop_test_node/3]).
 -export([set_env_vars/2,start_deps/1,stop_deps/1]).
+-export([start_deps_for_tester_node/0,stop_deps_for_tester_node/0]).
 
 
 %% start_test_node/5
@@ -114,3 +115,41 @@ set_env_vars(_Application,[]) ->
 set_env_vars(Application,[{Variable, Value} | Vars]) ->
 	application:set_env(Application, Variable, Value),
 	set_env_vars(Application,Vars).
+
+%% ====================================================================
+%% tester node deps
+%% ====================================================================
+
+%% start_deps_for_tester_node/0
+%% ====================================================================
+%% @doc Starts dependencies needed by tester node (node that does not
+%% host application but coordinates test).
+-spec start_deps_for_tester_node() -> Result when
+    Result ::  ok | {error, Reason},
+    Reason :: term().
+%% ====================================================================
+start_deps_for_tester_node() ->
+    %% SASL reboot/start in order to disable TTY logging
+    %% Normally `error_logger:tty(false)` should be enough, but some apps could start SASL anyway without our boot options
+    application:stop(sasl),
+    application:unload(sasl),
+    application:load(sasl),
+    application:set_env(sasl, sasl_error_logger, false),
+    application:start(sasl),
+    error_logger:tty(false),
+
+    %% Start all deps
+    ssl:start().
+
+%% stop_deps_for_tester_node/0
+%% ====================================================================
+%% @doc Stops dependencies needed by tester node (node that does not
+%% host application but coordinates test).
+-spec stop_deps_for_tester_node() -> Result when
+    Result ::  ok | {error, Reason},
+    Reason :: term().
+%% ====================================================================
+stop_deps_for_tester_node() ->
+    application:stop(ssl),
+    application:stop(crypto),
+    application:stop(public_key).
