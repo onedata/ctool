@@ -18,6 +18,8 @@
 -export([set_env_vars/2,start_deps/1,stop_deps/1]).
 -export([start_deps_for_tester_node/0,stop_deps_for_tester_node/0]).
 
+-export([get_db_node/0]).
+
 
 %% start_test_nodes/1
 %% ====================================================================
@@ -184,3 +186,15 @@ stop_deps_for_tester_node() ->
     application:stop(ssl),
     application:stop(crypto),
     application:stop(public_key).
+
+%% ====================================================================
+%% Helper Functions
+%% ====================================================================
+
+%% get_db_node/0
+%% ====================================================================
+%% @doc This function returns db node.
+-spec get_db_node() -> atom().
+%% ====================================================================
+get_db_node() ->
+    ?NODE(?CURRENT_HOST,db).
