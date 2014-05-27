@@ -13,8 +13,7 @@
 -include("assertions.hrl").
 
 %% API
--export([start_test_nodes/1, start_test_nodes/2]).
--export([start_test_node/3, stop_test_node/1]).
+-export([start_test_nodes/1, start_test_nodes/2, start_test_node/3, stop_test_nodes/1]).
 -export([start_app_on_node/4, stop_app_on_node/3]).
 -export([set_env_vars/2,start_deps/1,stop_deps/1]).
 -export([start_deps_for_tester_node/0,stop_deps_for_tester_node/0]).
@@ -47,7 +46,6 @@ start_test_nodes(NodesNum, Verbose) ->
 %% ====================================================================
 %% @doc Starts new test node.
 -spec start_test_node(NodeName :: atom(), Host :: atom(), Verbose :: boolean()) -> Result when
-
 	Result :: {ok,node()} | {error,Error :: term()}.
 %% ====================================================================
 start_test_node(NodeName,Host,Verbose) ->
@@ -60,17 +58,19 @@ start_test_node(NodeName,Host,Verbose) ->
 	CookieOpt = " -setcookie "++atom_to_list(erlang:get_cookie())++" ",
 
 	% Restart node
-	stop_test_node(?NODE(Host,NodeName)),
+	stop_test_nodes([?NODE(Host,NodeName)]),
 	slave:start(Host, NodeName,CodePathOpt++VerboseOpt++CookieOpt).
 
-%% stop_test_node/1
+%% stop_test_nodes/1
 %% ====================================================================
-%% @doc Stops test node.
--spec stop_test_node(Node :: node()) -> ok | no_return().
+%% @doc Stops test nodes.
+-spec stop_test_nodes(Node :: list(node())) -> list(Status) when
+    Status :: ok | {error,Error :: term()}.
 %% ====================================================================
-stop_test_node(Node) ->
-	slave:stop(Node).
-
+stop_test_nodes([]) ->
+    [];
+stop_test_nodes([Node|Rest]) ->
+    [slave:stop(Node) | stop_test_nodes(Rest)].
 
 %% start_app_on_node/4
 %% ====================================================================
