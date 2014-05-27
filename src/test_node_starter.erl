@@ -48,7 +48,7 @@ start_test_nodes(NodesNum, Verbose) ->
 %% ====================================================================
 %% @doc Starts new test node.
 -spec start_test_node(NodeName :: atom(), Host :: atom(), Verbose :: boolean()) -> Result when
-	Result :: {ok,node()} | {error,Error :: term()}.
+	Result :: node() | no_return().
 %% ====================================================================
 start_test_node(NodeName,Host,Verbose) ->
 	% Prepare opts
@@ -61,7 +61,9 @@ start_test_node(NodeName,Host,Verbose) ->
 
 	% Restart node
 	stop_test_nodes([?NODE(Host,NodeName)]),
-	slave:start(Host, NodeName,CodePathOpt++VerboseOpt++CookieOpt).
+    {Status,Node}=slave:start(Host, NodeName,CodePathOpt++VerboseOpt++CookieOpt),
+    ?assertEqual(ok,Status),
+    Node.
 
 %% stop_test_nodes/1
 %% ====================================================================
