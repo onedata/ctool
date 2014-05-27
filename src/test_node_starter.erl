@@ -13,32 +13,44 @@
 -include("assertions.hrl").
 
 %% API
--export([start_test_node/5, start_test_node/6, stop_test_node/3]).
+-export([start_test_nodes/1, start_test_nodes/2]).
+-export([start_test_node/3, stop_test_node/1]).
+-export([start_app_on_node/4, stop_app_on_node/3]).
 -export([set_env_vars/2,start_deps/1,stop_deps/1]).
 -export([start_deps_for_tester_node/0,stop_deps_for_tester_node/0]).
 
 
-%% start_test_node/5
+%% start_test_nodes/1
 %% ====================================================================
-%% @doc Starts new test node, with silent mode
--spec start_test_node(NodeName :: atom(), Host :: atom(),MainApplication :: atom() ,Deps :: list(atom()), EnvVars :: list(Env)) -> node() | no_return() when
-	Env :: {Name,Value},
-	Name :: atom(),
-	Value :: term().
+%% @doc Starts nodes needed for test.
+-spec start_test_nodes(NodesNum :: integer()) -> Result when
+    Result ::  list().
 %% ====================================================================
-start_test_node(NodeName,Host,MainApplication,Deps,EnvVars) ->
-	start_test_node(NodeName,Host,MainApplication,Deps,EnvVars,false).
+start_test_nodes(NodesNum) ->
+    start_test_nodes(NodesNum, false).
 
-%% start_test_node/6
+%% start_test_nodes/2
+%% ====================================================================
+%% @doc Starts nodes needed for test.
+-spec start_test_nodes(NodesNum :: integer(), Verbose :: boolean()) -> Result when
+    Result ::  list().
+%% ====================================================================
+start_test_nodes(0, _Verbose) ->
+    [];
+start_test_nodes(NodesNum, Verbose) ->
+    NodeName = list_to_atom("slave"++integer_to_list(NodesNum)),
+    Host = ?CURRENT_HOST,
+
+    [start_test_node(NodeName, Host,Verbose) | start_test_nodes(NodesNum-1,Verbose)].
+
+%% start_test_node/3
 %% ====================================================================
 %% @doc Starts new test node.
--spec start_test_node(NodeName :: atom(), Host :: atom(), MainApplication :: atom(), Deps :: list(atom()), EnvVars :: list(Env), Verbose :: boolean()) -> Result when
-	Env :: {Name,Value},
-	Name :: atom(),
-	Value :: term(),
-	Result :: node() | no_return().
+-spec start_test_node(NodeName :: atom(), Host :: atom(), Verbose :: boolean()) -> Result when
+
+	Result :: {ok,node()} | {error,Error :: term()}.
 %% ====================================================================
-start_test_node(NodeName,Host,MainApplication,Deps,EnvVars,Verbose) ->
+start_test_node(NodeName,Host,Verbose) ->
 	% Prepare opts
 	CodePathOpt = make_code_path(),
 	VerboseOpt = case Verbose of
@@ -47,29 +59,48 @@ start_test_node(NodeName,Host,MainApplication,Deps,EnvVars,Verbose) ->
 	             end,
 	CookieOpt = " -setcookie "++atom_to_list(erlang:get_cookie())++" ",
 
-	% Start node
-	stop_test_node(?NODE(Host,NodeName),MainApplication,Deps),
-	{ok,Node} = slave:start(Host, NodeName,CodePathOpt++VerboseOpt++CookieOpt),
+	% Restart node
+	stop_test_node(?NODE(Host,NodeName)),
+	slave:start(Host, NodeName,CodePathOpt++VerboseOpt++CookieOpt).
 
-	% Prepare environment
-	rpc:call(Node,application,start,[ctool]),
-	rpc:call(Node,test_node_starter,start_deps,[Deps]),
-	rpc:call(Node,application,load,[MainApplication]),
-	rpc:call(Node,test_node_starter,set_env_vars,[MainApplication,EnvVars]),
-	?assertMatch(ok,rpc:call(Node,application,start,[MainApplication])),
-	Node.
-
-%% stop_test_node/3
+%% stop_test_node/1
 %% ====================================================================
 %% @doc Stops test node.
--spec stop_test_node(Node :: node(), MainApplication :: atom(), Deps :: list(atom())) -> ok | no_return().
+-spec stop_test_node(Node :: node()) -> ok | no_return().
 %% ====================================================================
-stop_test_node(Node,MainApplication,Deps) ->
-	rpc:call(Node,application,unload,[MainApplication]),
+stop_test_node(Node) ->
+	slave:stop(Node).
+
+
+%% start_app_on_node/4
+%% ====================================================================
+%% @doc Starts app on test node.
+-spec start_app_on_node(Node :: atom(),Application :: atom(), Deps :: list(atom()), EnvVars :: list(Env)) -> Result when
+    Env :: {Name,Value},
+    Name :: atom(),
+    Value :: term(),
+    Result :: node() | no_return().
+%% ====================================================================
+start_app_on_node(Node,Application,Deps,EnvVars) ->
+	rpc:call(Node,application,start,[ctool]),
+	rpc:call(Node,test_node_starter,start_deps,[Deps]),
+	rpc:call(Node,application,load,[Application]),
+	rpc:call(Node,test_node_starter,set_env_vars,[Application,EnvVars]),
+	?assertMatch(ok,rpc:call(Node,application,start,[Application])),
+	Node.
+
+%% stop_app_on_node/3
+%% ====================================================================
+%% @doc Starts app on test node.
+-spec stop_app_on_node(Node :: atom(), Application :: atom(), Deps :: list(atom())) -> Result when
+    Result :: ok | {error,Error :: term()}.
+%% ====================================================================
+stop_app_on_node(Node,Application,Deps)->
+	rpc:call(Node,application,unload,[Application]),
 	rpc:call(Node,test_node_starter,stop_deps,[Deps]),
     rpc:call(Node,application,stop,[ctool]),
-    rpc:call(Node,application,stop,[MainApplication]),
-	slave:stop(Node).
+    rpc:call(Node,application,stop,[Application]).
+
 
 %% make_code_path/0
 %% ====================================================================
