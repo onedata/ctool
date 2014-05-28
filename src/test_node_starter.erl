@@ -124,18 +124,12 @@ start_test_nodes_with_dist_app(NodesNum, CCMNum) ->
 start_test_nodes_with_dist_app(0, _CCMNum, _Verbose) ->
     {[],[]};
 start_test_nodes_with_dist_app(NodesNum, CCMNum, Verbose) ->
-    ct:print("5"),
     Nodes = create_nodes_description(?CURRENT_HOST, [], NodesNum),
-    ct:print("6"),
-
     DistNodes = create_dist_nodes_list(Nodes, CCMNum),
-    ct:print("7"),
     DistAppDesc = create_dist_app_description(DistNodes),
-    ct:print("8"),
     Params = create_nodes_params_for_dist_nodes(Nodes, DistNodes, DistAppDesc),
-    ct:print("~p ~p ~p ~p",[Nodes,DistNodes,DistAppDesc,Params]),
-    ct:print("~p",[length(Params)]),
-    {lists:map(fun({{NodeName,Host},Par}) -> start_test_node(NodeName,Host,Verbose,Par) end, lists:zip(Nodes,Params)), Params}.
+
+    {vcn_utils:pmap(fun({{NodeName,Host},Par}) -> start_test_node(NodeName,Host,Verbose,Par) end, lists:zip(Nodes,Params)), Params}.
 
 
 
