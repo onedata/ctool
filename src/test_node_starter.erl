@@ -18,7 +18,7 @@
 -export([stop_test_nodes/1]).
 
 % Starting nodes with distributed app
--export([start_test_nodes_with_dist_app/2]).
+-export([start_test_nodes_with_dist_app/2,start_test_nodes_with_dist_app/3]).
 
 % Starting and stoping app
 -export([start_app_on_nodes/4]).
