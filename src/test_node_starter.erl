@@ -14,22 +14,32 @@
 
 %% API
 % Starting and stoping nodes
--export([start_test_nodes/1, start_test_nodes/2]).
+-export([start_test_nodes/1, start_test_nodes/2, start_test_node/3, start_test_node/4]).
 -export([stop_test_nodes/1]).
+
+% Starting nodes with distributed app
+-export([start_test_nodes_with_dist_app/2]).
 
 % Starting and stoping app
 -export([start_app_on_nodes/4]).
 -export([stop_app_on_nodes/3]).
 
+% Preparing environment for app
 -export([set_env_vars/2,start_deps/1,stop_deps/1]).
+
+% Starting and stoping deps for tester node (ct runner node)
 -export([start_deps_for_tester_node/0,stop_deps_for_tester_node/0]).
 
+% Helper function
 -export([get_db_node/0]).
 
+%% ====================================================================
+%% Starting and stoping nodes
+%% ====================================================================
 
 %% start_test_nodes/1
 %% ====================================================================
-%% @doc Starts nodes needed for test.
+%% @doc Starts new nodes for test, with disabled verbose option
 -spec start_test_nodes(NodesNum :: integer()) -> Result when
     Result ::  list().
 %% ====================================================================
@@ -38,7 +48,7 @@ start_test_nodes(NodesNum) ->
 
 %% start_test_nodes/2
 %% ====================================================================
-%% @doc Starts nodes needed for test.
+%% @doc Starts new nodes for test.
 -spec start_test_nodes(NodesNum :: integer(), Verbose :: boolean()) -> Result when
     Result ::  list().
 %% ====================================================================
@@ -52,11 +62,20 @@ start_test_nodes(NodesNum, Verbose) ->
 
 %% start_test_node/3
 %% ====================================================================
-%% @doc Starts new test node.
+%% @doc Starts new test node, with no additional parameters
 -spec start_test_node(NodeName :: atom(), Host :: atom(), Verbose :: boolean()) -> Result when
-	Result :: node() | no_return().
+    Result :: node() | no_return().
 %% ====================================================================
 start_test_node(NodeName,Host,Verbose) ->
+    start_test_node(NodeName,Host,Verbose,"").
+
+%% start_test_node/4
+%% ====================================================================
+%% @doc Starts new test node.
+-spec start_test_node(NodeName :: atom(), Host :: atom(), Verbose :: boolean(), Params :: string()) -> Result when
+	Result :: node() | no_return().
+%% ====================================================================
+start_test_node(NodeName,Host,Verbose,Params) ->
 	% Prepare opts
 	CodePathOpt = make_code_path(),
 	VerboseOpt = case Verbose of
@@ -67,7 +86,7 @@ start_test_node(NodeName,Host,Verbose) ->
 
 	% Restart node
 	stop_test_nodes([?NODE(Host,NodeName)]),
-    {Status,Node}=slave:start(Host, NodeName,CodePathOpt++VerboseOpt++CookieOpt),
+    {Status,Node}=slave:start(Host, NodeName,CodePathOpt++VerboseOpt++CookieOpt++Params),
     ?assertEqual(ok,Status),
     Node.
 
@@ -83,7 +102,41 @@ stop_test_nodes([Node|Rest]) ->
     slave:stop(Node),
     stop_test_nodes(Rest).
 
-%todo add envs in all veil tests : {nif_prefix, './'} {ca_dir, './cacerts/'}]
+%% ====================================================================
+%% Starting and stoping nodes with distributed app
+%% ====================================================================
+
+%% start_test_nodes_with_dist_app/2
+%% ====================================================================
+%% @doc Starts nodes needed for test.
+-spec start_test_nodes_with_dist_app(NodesNum :: integer(), CCMNum :: integer()) -> Result when
+    Result ::  list().
+%% ====================================================================
+start_test_nodes_with_dist_app(NodesNum, CCMNum) ->
+    start_test_nodes_with_dist_app(NodesNum, CCMNum, false).
+
+%% start_test_nodes_with_dist_app/3
+%% ====================================================================
+%% @doc Starts nodes needed for test.
+-spec start_test_nodes_with_dist_app(NodesNum :: integer(), CCMNum :: integer(), Verbose :: boolean()) -> Result when
+    Result ::  list().
+%% ====================================================================
+start_test_nodes_with_dist_app(0, _CCMNum, _Verbose) ->
+    {[],[]};
+start_test_nodes_with_dist_app(NodesNum, CCMNum, Verbose) ->
+    Nodes = create_nodes_description(?CURRENT_HOST, [], NodesNum),
+
+    DistNodes = create_dist_nodes_list(Nodes, CCMNum),
+    DistAppDesc = create_dist_app_description(DistNodes),
+    Params = create_nodes_params_for_dist_nodes(Nodes, DistNodes, DistAppDesc),
+
+    {lists:map(fun({NodeName,Host}) -> start_test_node(NodeName,Host,Verbose,Params) end, Nodes), Params}.
+
+
+%% ====================================================================
+%% Starting and stoping app
+%% ====================================================================
+
 %% start_app_on_nodes/4
 %% ====================================================================
 %% @doc Starts app on test node.
@@ -139,16 +192,9 @@ stop_app_on_node(Application,Deps,Node)->
     ?assertEqual(ok,rpc:call(Node,application,stop,[Application])),
     ok.
 
-
-%% make_code_path/0
 %% ====================================================================
-%% @doc Returns current code path string, formatted as erlang slave node argument.
-%% @end
--spec make_code_path() -> string().
+%% Preparing environment for app
 %% ====================================================================
-make_code_path() ->
-	lists:foldl(fun(Node, Path) -> " -pa " ++ Node ++ Path end,
-		[], code:get_path()).
 
 %% stop_deps/1
 %% ====================================================================
@@ -193,7 +239,7 @@ set_env_vars(Application,[{Variable, Value} | Vars]) ->
 	set_env_vars(Application,Vars).
 
 %% ====================================================================
-%% tester node deps
+%% Starting and stoping deps for tester node (ct runner node)
 %% ====================================================================
 
 %% start_deps_for_tester_node/0
@@ -241,3 +287,81 @@ stop_deps_for_tester_node() ->
 %% ====================================================================
 get_db_node() ->
     ?NODE(?CURRENT_HOST,db).
+
+%% ====================================================================
+%% Internal Functions
+%% ====================================================================
+
+%% make_code_path/0
+%% ====================================================================
+%% @doc Returns current code path string, formatted as erlang slave node argument.
+%% @end
+-spec make_code_path() -> string().
+%% ====================================================================
+make_code_path() ->
+    lists:foldl(fun(Node, Path) -> " -pa " ++ Node ++ Path end,
+        [], code:get_path()).
+
+%% create_nodes_description/3
+%% ====================================================================
+%% @doc Creates description of nodes needed for test.
+-spec create_nodes_description(Host:: atom(), TmpAns :: list(), Counter :: integer()) -> Result when
+    Result ::  list().
+%% ====================================================================
+create_nodes_description(_Host, Ans, 0) ->
+    Ans;
+create_nodes_description(Host, Ans, Counter) ->
+    Desc = {list_to_atom("slave" ++ integer_to_list(Counter)), Host},
+    create_nodes_description(Host, [Desc | Ans], Counter - 1).
+
+%% create_dist_nodes_list/2
+%% ====================================================================
+%% @doc Creates list of nodes for distributed application
+-spec create_dist_nodes_list(Nodes:: list(), DistNodesNum :: integer()) -> Result when
+    Result ::  list().
+%% ====================================================================
+create_dist_nodes_list(_, 0) ->
+    [];
+create_dist_nodes_list([{NodeName, Host} | Nodes], DistNodesNum) ->
+    Node = "'" ++ atom_to_list(NodeName) ++ "@" ++ atom_to_list(Host) ++ "'",
+    [Node | create_dist_nodes_list(Nodes, DistNodesNum - 1)].
+
+%% create_dist_app_description/1
+%% ====================================================================
+%% @doc Creates description of distributed application
+-spec create_dist_app_description(DistNodes:: list()) -> Result when
+    Result ::  string().
+%% ====================================================================
+create_dist_app_description(DistNodes) ->
+    [Main | Rest] = DistNodes,
+    RestString = lists:foldl(fun(N, TmpAns) ->
+        case TmpAns of
+            "" -> N;
+            _ -> TmpAns ++ ", " ++ N
+        end
+    end, "", Rest),
+    "\"[{veil_cluster_node, 1000, [" ++ Main ++ ", {" ++ RestString ++ "}]}]\"".
+
+%% create_nodes_params_for_dist_nodes/3
+%% ====================================================================
+%% @doc Creates list of nodes for distributed application
+-spec create_nodes_params_for_dist_nodes(Nodes:: list(), DistNodes :: list(), DistAppDescription :: string()) -> Result when
+    Result ::  list().
+%% ====================================================================
+create_nodes_params_for_dist_nodes([], _DistNodes, _DistAppDescription) ->
+    [];
+create_nodes_params_for_dist_nodes([{NodeName, Host}  | Nodes], DistNodes, DistAppDescription) ->
+    Node = "'" ++ atom_to_list(NodeName) ++ "@" ++ atom_to_list(Host) ++ "'",
+    case lists:member(Node, DistNodes) of
+        true ->
+            SynchNodes = lists:delete(Node, DistNodes),
+            SynchNodesString = lists:foldl(fun(N, TmpAns) ->
+                case TmpAns of
+                    "" -> N;
+                    _ -> TmpAns ++ ", " ++ N
+                end
+            end, "", SynchNodes),
+            Param = " -kernel distributed " ++ DistAppDescription ++ " -kernel sync_nodes_mandatory \"[" ++ SynchNodesString ++ "]\" -kernel sync_nodes_timeout 30000 ",
+            [Param | create_nodes_params_for_dist_nodes(Nodes, DistNodes, DistAppDescription)];
+        false -> ["" | create_nodes_params_for_dist_nodes(Nodes, DistNodes, DistAppDescription)]
+    end.
