@@ -50,3 +50,11 @@ end).
 -define(NODE(NodeHost,NodeName), begin
 	                                 list_to_atom(atom_to_list(NodeName)++"@"++atom_to_list(NodeHost))
                                  end).
+-define(GET_NODE_NAME(FullName),begin
+                               [NameStr, HostStr] = string:tokens(atom_to_list(FullName), "@"),
+                               list_to_atom(NameStr)
+                           end).
+-define(GET_HOST(FullName),begin
+                               [NameStr, HostStr] = string:tokens(atom_to_list(FullName), "@"),
+                               list_to_atom(HostStr)
+                           end).
