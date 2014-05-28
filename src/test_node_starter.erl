@@ -132,7 +132,8 @@ start_test_nodes_with_dist_app(NodesNum, CCMNum, Verbose) ->
     ct:print("8"),
     Params = create_nodes_params_for_dist_nodes(Nodes, DistNodes, DistAppDesc),
     ct:print("~p ~p ~p ~p",[Nodes,DistNodes,DistAppDesc,Params]),
-    {lists:map(fun({NodeName,Host}) -> start_test_node(NodeName,Host,Verbose,Params) end, Nodes), Params}.
+    ct:print("~p",[length(Params)]),
+    {lists:map(fun({{NodeName,Host},Par}) -> start_test_node(NodeName,Host,Verbose,Par) end, lists:zip(Nodes,Params)), Params}.
 
 
 
