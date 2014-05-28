@@ -47,6 +47,9 @@ end).
 	                      [_, CurrHost] = string:tokens(CurrNode, "@"),
 	                      list_to_atom(CurrHost)
                       end).
+
+-define(DB_NODE,?NODE(?CURRENT_HOST,db)).
+
 -define(NODE(NodeHost,NodeName), begin
 	                                 list_to_atom(atom_to_list(NodeName)++"@"++atom_to_list(NodeHost))
                                  end).
