@@ -8,7 +8,7 @@
 %% @doc: This module stores utility functions for use in other modules.
 %% @end
 %% ===================================================================
--module(vcn_utils).
+-module(vcn_utils). %todo remove this module from veilcluster
 
 %% API
 -export([ensure_running/1, pmap/2, pforeach/2, time/0, record_type/1]).
