@@ -74,8 +74,6 @@ start_test_node(NodeName,Host,Verbose) ->
 	Result :: node() | no_return().
 %% ====================================================================
 start_test_node(NodeName,Host,Verbose,Params) ->
-    ct:print("starting node: ~p",[NodeName]),
-    ct:print("params: ~p",[Params]),
 	% Prepare opts
 	CodePathOpt = make_code_path(),
 	VerboseOpt = case Verbose of
