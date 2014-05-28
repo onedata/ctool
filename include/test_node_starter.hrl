@@ -42,22 +42,13 @@
                             os:cmd("rm -rf /tmp/veilfs2/*"),
                             os:cmd("rm -rf /tmp/veilfs3/*")
 end).
--define(CURRENT_HOST, begin
-	                      CurrNode = atom_to_list(node()),
-	                      [_, CurrHost] = string:tokens(CurrNode, "@"),
-	                      list_to_atom(CurrHost)
-                      end).
 
 -define(DB_NODE,?NODE(?CURRENT_HOST,db)).
 
--define(NODE(NodeHost,NodeName), begin
-	                                 list_to_atom(atom_to_list(NodeName)++"@"++atom_to_list(NodeHost))
-                                 end).
--define(GET_NODE_NAME(FullName),begin
-                               [NameStr, HostStr] = string:tokens(atom_to_list(FullName), "@"),
-                               list_to_atom(NameStr)
-                           end).
--define(GET_HOST(FullName),begin
-                               [NameStr, HostStr] = string:tokens(atom_to_list(FullName), "@"),
-                               list_to_atom(HostStr)
-                           end).
+-define(CURRENT_HOST, list_to_atom(lists:last(string:tokens(atom_to_list(node()), "@")))).
+
+-define(NODE(NodeHost,NodeName), list_to_atom(atom_to_list(NodeName)++"@"++atom_to_list(NodeHost))).
+
+-define(GET_NODE_NAME(FullName),list_to_atom(hd(string:tokens(atom_to_list(FullName), "@")))).
+
+-define(GET_HOST(FullName), list_to_atom(lists:last(string:tokens(atom_to_list(FullName), "@")))).
