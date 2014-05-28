@@ -112,8 +112,8 @@ start_app_on_node(Application,Deps,Node,EnvVars) ->
 	rpc:call(Node,test_node_starter,start_deps,[Deps]),
 	rpc:call(Node,application,load,[Application]),
 	rpc:call(Node,test_node_starter,set_env_vars,[Application,EnvVars]),
-	?assertMatch(ok,rpc:call(Node,application,start,[Application])),
-	Node.
+	?assertEqual(ok,rpc:call(Node,application,start,[Application])),
+	ok.
 
 %% stop_app_on_nodes/3
 %% ====================================================================
@@ -130,13 +130,14 @@ stop_app_on_nodes(Application,Deps,[Node | OtherNodes])->
 %% ====================================================================
 %% @doc Stops app on test node.
 -spec stop_app_on_node(Application :: atom(), Deps :: list(atom()), Node :: atom()) -> Result when
-    Result :: ok | {error,Error :: term()}.
+    Result :: ok | no_return().
 %% ====================================================================
 stop_app_on_node(Application,Deps,Node)->
 	rpc:call(Node,application,unload,[Application]),
 	rpc:call(Node,test_node_starter,stop_deps,[Deps]),
     rpc:call(Node,application,stop,[ctool]),
-    rpc:call(Node,application,stop,[Application]).
+    ?assertEqual(ok,rpc:call(Node,application,stop,[Application])),
+    ok.
 
 
 %% make_code_path/0
