@@ -13,8 +13,14 @@
 -include("assertions.hrl").
 
 %% API
--export([start_test_nodes/1, start_test_nodes/2, start_test_node/3, stop_test_nodes/1]).
--export([start_app_on_node/4, stop_app_on_node/3]).
+% Starting and stoping nodes
+-export([start_test_nodes/1, start_test_nodes/2]).
+-export([stop_test_nodes/1]).
+
+% Starting and stoping app
+-export([start_app_on_nodes/4]).
+-export([stop_app_on_nodes/3]).
+
 -export([set_env_vars/2,start_deps/1,stop_deps/1]).
 -export([start_deps_for_tester_node/0,stop_deps_for_tester_node/0]).
 
@@ -69,23 +75,39 @@ start_test_node(NodeName,Host,Verbose) ->
 %% ====================================================================
 %% @doc Stops test nodes.
 -spec stop_test_nodes(Node :: list(node())) -> list(Status) when
-    Status :: ok | {error,Error :: term()}.
+    Status :: ok.
 %% ====================================================================
 stop_test_nodes([]) ->
-    [];
+    ok;
 stop_test_nodes([Node|Rest]) ->
-    [slave:stop(Node) | stop_test_nodes(Rest)].
+    slave:stop(Node),
+    stop_test_nodes(Rest).
+
+%todo add envs in all veil tests : {nif_prefix, './'} {ca_dir, './cacerts/'}]
+%% start_app_on_nodes/4
+%% ====================================================================
+%% @doc Starts app on test node.
+-spec start_app_on_nodes(Application :: atom(), Deps :: list(list(atom())), Nodes :: list(atom()), EnvVars :: list(list(Env))) -> Result when
+    Env :: {Name,Value},
+    Name :: atom(),
+    Value :: term(),
+    Result :: list(node()) | no_return().
+%% ====================================================================
+start_app_on_nodes(_Application,_Deps,[],[]) ->
+    [];
+start_app_on_nodes(Application,Deps,[Node | OtherNodes],[EnvVars | OtherEnvVars]) ->
+    [start_app_on_node(Application,Deps,Node,EnvVars) | start_app_on_nodes(Application,Deps,OtherNodes,OtherEnvVars)].
 
 %% start_app_on_node/4
 %% ====================================================================
 %% @doc Starts app on test node.
--spec start_app_on_node(Node :: atom(),Application :: atom(), Deps :: list(atom()), EnvVars :: list(Env)) -> Result when
+-spec start_app_on_node(Application :: atom(),Deps :: list(atom()), Node :: atom(), EnvVars :: list(Env)) -> Result when
     Env :: {Name,Value},
     Name :: atom(),
     Value :: term(),
     Result :: node() | no_return().
 %% ====================================================================
-start_app_on_node(Node,Application,Deps,EnvVars) ->
+start_app_on_node(Application,Deps,Node,EnvVars) ->
 	rpc:call(Node,application,start,[ctool]),
 	rpc:call(Node,test_node_starter,start_deps,[Deps]),
 	rpc:call(Node,application,load,[Application]),
@@ -93,13 +115,24 @@ start_app_on_node(Node,Application,Deps,EnvVars) ->
 	?assertMatch(ok,rpc:call(Node,application,start,[Application])),
 	Node.
 
-%% stop_app_on_node/3
+%% stop_app_on_nodes/3
 %% ====================================================================
-%% @doc Starts app on test node.
--spec stop_app_on_node(Node :: atom(), Application :: atom(), Deps :: list(atom())) -> Result when
+%% @doc Stops app on test nodes.
+-spec stop_app_on_nodes(Application :: atom(), Deps :: list(atom()), Nodes :: list(atom())) -> list(Result) when
     Result :: ok | {error,Error :: term()}.
 %% ====================================================================
-stop_app_on_node(Node,Application,Deps)->
+stop_app_on_nodes(_Application,_Deps,[])->
+    [];
+stop_app_on_nodes(Application,Deps,[Node | OtherNodes])->
+    [stop_app_on_node(Application,Deps,Node) | stop_app_on_nodes(Application,Deps,OtherNodes)].
+
+%% stop_app_on_node/3
+%% ====================================================================
+%% @doc Stops app on test node.
+-spec stop_app_on_node(Application :: atom(), Deps :: list(atom()), Node :: atom()) -> Result when
+    Result :: ok | {error,Error :: term()}.
+%% ====================================================================
+stop_app_on_node(Application,Deps,Node)->
 	rpc:call(Node,application,unload,[Application]),
 	rpc:call(Node,test_node_starter,stop_deps,[Deps]),
     rpc:call(Node,application,stop,[ctool]),
@@ -134,6 +167,13 @@ stop_deps([FirstDep | Rest]) ->
 start_deps([]) ->
     [];
 start_deps([lager | Rest]) ->
+    application:load(lager),
+    {ok, [Data]} = file:consult("sys.config"),
+    Config = proplists:get_value(lager, Data),
+    lists:foreach(
+        fun(Key) ->
+            application:set_env(lager, Key, proplists:get_value(Key, Config))
+        end, proplists:get_keys(Config)),
     [lager:start() | start_deps(Rest)];
 start_deps([ssl | Rest]) ->
     [ssl:start() | start_deps(Rest)];
