@@ -7,7 +7,7 @@
 %%% Created : 23. May 2014 15:11
 %%%-------------------------------------------------------------------
 {application, ctool, [
-    {description, "Helper modules for ct tests"},
+    {description, "Common tools lib for onedata project"},
     {vsn, "1"},
     {modules,[test_node_starter]},
     {registered, []},

@@ -46,7 +46,7 @@ start_test_nodes(NodesNum) ->
 
 %% start_test_nodes/2
 %% ====================================================================
-%% @doc Starts new nodes for test.
+%% @doc Starts new nodes for test, with default names
 -spec start_test_nodes(NodesNum :: integer(), Verbose :: boolean()) -> Result when
     Result ::  list().
 %% ====================================================================
@@ -106,7 +106,7 @@ stop_test_nodes([Node|Rest]) ->
 
 %% start_test_nodes_with_dist_app/2
 %% ====================================================================
-%% @doc Starts nodes needed for test.
+%% @doc Starts nodes needed for test as distributed erlang application, with disabled verbose option
 -spec start_test_nodes_with_dist_app(NodesNum :: integer(), CCMNum :: integer()) -> Result when
     Result ::  list().
 %% ====================================================================
@@ -115,7 +115,7 @@ start_test_nodes_with_dist_app(NodesNum, CCMNum) ->
 
 %% start_test_nodes_with_dist_app/3
 %% ====================================================================
-%% @doc Starts nodes needed for test.
+%% @doc Starts nodes needed for test as distributed erlang application
 -spec start_test_nodes_with_dist_app(NodesNum :: integer(), CCMNum :: integer(), Verbose :: boolean()) -> Result when
     Result ::  list().
 %% ====================================================================
@@ -129,8 +129,6 @@ start_test_nodes_with_dist_app(NodesNum, CCMNum, Verbose) ->
 
     {vcn_utils:pmap(fun({{NodeName,Host},Par}) -> start_test_node(NodeName,Host,Verbose,Par) end, lists:zip(Nodes,Params)), Params}.
 
-
-
 %% ====================================================================
 %% Starting and stoping app
 %% ====================================================================
@@ -142,12 +140,13 @@ start_test_nodes_with_dist_app(NodesNum, CCMNum, Verbose) ->
     Env :: {Name,Value},
     Name :: atom(),
     Value :: term(),
-    Result :: list(node()) | no_return().
+    Result :: ok | no_return().
 %% ====================================================================
 start_app_on_nodes(_Application,_Deps,[],[]) ->
-    [];
+    ok;
 start_app_on_nodes(Application,Deps,[Node | OtherNodes],[EnvVars | OtherEnvVars]) ->
-    [start_app_on_node(Application,Deps,Node,EnvVars) | start_app_on_nodes(Application,Deps,OtherNodes,OtherEnvVars)].
+    start_app_on_node(Application,Deps,Node,EnvVars),
+    start_app_on_nodes(Application,Deps,OtherNodes,OtherEnvVars).
 
 %% start_app_on_node/4
 %% ====================================================================
@@ -156,7 +155,7 @@ start_app_on_nodes(Application,Deps,[Node | OtherNodes],[EnvVars | OtherEnvVars]
     Env :: {Name,Value},
     Name :: atom(),
     Value :: term(),
-    Result :: node() | no_return().
+    Result :: ok | no_return().
 %% ====================================================================
 start_app_on_node(Application,Deps,Node,EnvVars) ->
 	rpc:call(Node,application,start,[ctool]),
@@ -169,13 +168,14 @@ start_app_on_node(Application,Deps,Node,EnvVars) ->
 %% stop_app_on_nodes/3
 %% ====================================================================
 %% @doc Stops app on test nodes.
--spec stop_app_on_nodes(Application :: atom(), Deps :: list(atom()), Nodes :: list(atom())) -> list(Result) when
-    Result :: ok | {error,Error :: term()}.
+-spec stop_app_on_nodes(Application :: atom(), Deps :: list(atom()), Nodes :: list(atom())) -> Result when
+    Result :: ok | no_return().
 %% ====================================================================
 stop_app_on_nodes(_Application,_Deps,[])->
-    [];
+    ok;
 stop_app_on_nodes(Application,Deps,[Node | OtherNodes])->
-    [stop_app_on_node(Application,Deps,Node) | stop_app_on_nodes(Application,Deps,OtherNodes)].
+    stop_app_on_node(Application,Deps,Node),
+    stop_app_on_nodes(Application,Deps,OtherNodes).
 
 %% stop_app_on_node/3
 %% ====================================================================
@@ -257,8 +257,6 @@ start_deps_for_tester_node() ->
     application:set_env(sasl, sasl_error_logger, false),
     application:start(sasl),
     error_logger:tty(false),
-
-    %% Start all deps
     ssl:start().
 
 %% stop_deps_for_tester_node/0
