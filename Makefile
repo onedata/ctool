@@ -1,4 +1,4 @@
-.PHONY: deps generate
+.PHONY: deps
 
 all: deps compile
 
