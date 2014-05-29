@@ -9,7 +9,7 @@
 -author("Tomasz Lichon").
 
 %% This macro adds all ebin directories needed by ct tests to code path
--define(INIT_DIST_TEST, begin
+-define(INIT_CODE_PATH, begin
 							% prepare dirs (you must be in working directory for ct run, i. e.
 							% app_name/test_distributed/log/ct_run.tester@172.16.67.81.2014-05-26_15.32.54
 	                        {ok, CWD} = file:get_cwd(),
@@ -37,10 +37,7 @@
                             shell_default:cd(CtTestRoot),
 
                             % clear db
-                            os:cmd("./clear_test_db.sh"),
-                            os:cmd("rm -rf /tmp/veilfs/*"), %todo move from here to veilcluster
-                            os:cmd("rm -rf /tmp/veilfs2/*"),
-                            os:cmd("rm -rf /tmp/veilfs3/*")
+                            os:cmd("./clear_test_db.sh")
 end).
 
 -define(DB_NODE,?NODE(?CURRENT_HOST,db)).
