@@ -8,11 +8,10 @@
 %%%-------------------------------------------------------------------
 -author("Tomasz Lichon").
 
-%% -ifndef(TEST_NODE_STARTER_HRL).
-%% -define(TEST_NODE_STARTER_HRL, 1).
+-ifndef(TEST_NODE_STARTER_HRL).
+-define(TEST_NODE_STARTER_HRL, 1).
 
 %% This macro adds all ebin directories needed by ct tests to code path
--undef(INIT_CODE_PATH).
 -define(INIT_CODE_PATH, begin
 							% prepare dirs (you must be in working directory for ct run, i. e.
 							% app_name/test_distributed/log/ct_run.tester@172.16.67.81.2014-05-26_15.32.54
@@ -44,19 +43,14 @@
                             os:cmd("./clear_test_db.sh")
 end).
 
--undef(DB_NODE).
 -define(DB_NODE,?NODE(?CURRENT_HOST,db)).
 
--undef(CURRENT_HOST).
 -define(CURRENT_HOST, list_to_atom(lists:last(string:tokens(atom_to_list(node()), "@")))).
 
--undef(NODE).
 -define(NODE(NodeHost,NodeName), list_to_atom(atom_to_list(NodeName)++"@"++atom_to_list(NodeHost))).
 
--undef(GET_NODE_NAME).
 -define(GET_NODE_NAME(FullName),list_to_atom(hd(string:tokens(atom_to_list(FullName), "@")))).
 
--undef(GET_HOST).
 -define(GET_HOST(FullName), list_to_atom(lists:last(string:tokens(atom_to_list(FullName), "@")))).
 
-%% -endif.
+-endif.
