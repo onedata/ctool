@@ -9,8 +9,8 @@
 -module(test_node_starter).
 -author("Tomasz Lichon").
 
--include("test_node_starter.hrl").
--include("assertions.hrl").
+-include("test/test_node_starter.hrl").
+-include("test/assertions.hrl").
 
 %% API
 % Starting and stoping nodes
