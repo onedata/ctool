@@ -37,10 +37,7 @@
                             ets:insert(suite_state, {ct_root, CtTestRoot}),
 
                             % change working directory to ct root
-                            shell_default:cd(CtTestRoot),
-
-                            % clear db
-                            os:cmd("./clear_test_db.sh")
+                            shell_default:cd(CtTestRoot)
 end).
 
 -define(DB_NODE,?NODE(?CURRENT_HOST,db)).
