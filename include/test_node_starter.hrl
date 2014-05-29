@@ -8,6 +8,9 @@
 %%%-------------------------------------------------------------------
 -author("Tomasz Lichon").
 
+-ifndef(TEST_NODE_STARTER_HRL).
+-define(TEST_NODE_STARTER_HRL, 1).
+
 %% This macro adds all ebin directories needed by ct tests to code path
 -define(INIT_CODE_PATH, begin
 							% prepare dirs (you must be in working directory for ct run, i. e.
@@ -49,3 +52,5 @@ end).
 -define(GET_NODE_NAME(FullName),list_to_atom(hd(string:tokens(atom_to_list(FullName), "@")))).
 
 -define(GET_HOST(FullName), list_to_atom(lists:last(string:tokens(atom_to_list(FullName), "@")))).
+
+-enif.
