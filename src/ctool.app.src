@@ -1,0 +1,19 @@
+%%%-------------------------------------------------------------------
+%%% @author Tomasz Lichon
+%%% @copyright (C) 2014, ACK CYFRONET AGH
+%%% @doc
+%%% This file describes application ctool
+%%% @end
+%%% Created : 23. May 2014 15:11
+%%%-------------------------------------------------------------------
+{application, ctool, [
+    {description, "Common tools lib for onedata project"},
+    {vsn, "1"},
+    {modules,[test_node_starter,vcn_utils]},
+    {registered, []},
+    {applications, [
+        kernel,
+        stdlib
+    ]},
+    {env, []}
+]}.
