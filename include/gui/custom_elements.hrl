@@ -12,6 +12,9 @@
 -ifndef(CUSTOM_ELEMENTS_HRL).
 -define(CUSTOM_ELEMENTS_HRL, 1).
 
+%% No need to include wf.hrl, as this file is included in common.hrl, where
+%% wf.hrl is already included.
+
 
 % Simplest HTML form
 -record(form, {?ELEMENT_BASE(element_form),
