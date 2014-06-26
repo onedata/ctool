@@ -11,8 +11,6 @@
 
 -module(logger).
 
--include_lib("ctool/include/logging.hrl").
-
 -export([should_log/1, dispatch_log/5, parse_process_info/1]).
 -export([set_loglevel/1, set_console_loglevel/1, set_include_stacktrace/1]).
 -export([get_current_loglevel/0, get_default_loglevel/0, get_console_loglevel/0, get_include_stacktrace/0]).
@@ -27,7 +25,6 @@
 should_log(LevelAsInt) ->
     case application:get_env(ctool, current_loglevel) of
         {ok, Int} when LevelAsInt >= Int -> true;
-        undefined -> throw("current_loglevel env variable is missing");
         _ -> false
     end.
 
