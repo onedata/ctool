@@ -19,7 +19,7 @@
 %% ===================================================================
 % Macros that should be used in code for logging
 % xxx_stacktrace logs will automatically include stack trace, 
-% provided this is enabled in env variable 'include_stacktrace'
+% provided the env variable 'include_stacktrace' is set to true
 
 % Compilation with skip_debug flag will remove all debug messages from code
 
