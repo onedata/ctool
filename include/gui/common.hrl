@@ -5,8 +5,8 @@
 %% cited in 'LICENSE.txt'.
 %% @end
 %% ===================================================================
-%% @doc: This file contains common macros and records for gui modules,
-%% so that it's usually enough to include this hrl on page modules.
+%% @doc: This file contains common GUI macros and records
+%% for all projects using n2o.
 %% @end
 %% ===================================================================
 
