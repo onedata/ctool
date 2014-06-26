@@ -5,16 +5,16 @@
 %% cited in 'LICENSE.txt'.
 %% @end
 %% ===================================================================
-%% @doc: This file contains common macros and records for gui modules, so
-%% it's enough to include just this hrl.
+%% @doc: This file contains common macros and records for gui modules,
+%% so that it's usually enough to include this hrl on page modules.
 %% @end
 %% ===================================================================
 
 -ifndef(GUI_COMMON_HRL).
 -define(GUI_COMMON_HRL, 1).
 
+-include_lib("gui/custom_elements.hrl").
 -include_lib("n2o/include/wf.hrl").
--include("gui/custom_elements.hrl").
 
 %% Includes from cowboy
 -type cookie_option() :: {max_age, non_neg_integer()}
