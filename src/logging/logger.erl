@@ -37,7 +37,8 @@ should_log(LevelAsInt) ->
 %% ====================================================================
 dispatch_log(LoglevelAsInt, Metadata, Format, Args, IncludeStacktrace) ->
     Severity = loglevel_int_to_atom(LoglevelAsInt),
-    % Every project using the logging mechanism must a module called exactly 'logger_plugin' that implements logic_plugin_behaviour.
+    % Every project using the logging mechanism must contain a module
+    % called exactly 'logger_plugin' that implements logic_plugin_behaviour.
     lager:log(Severity, Metadata ++ logger_plugin:gather_metadata(), compute_message(Format, Args, IncludeStacktrace)).
 
 
