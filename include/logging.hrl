@@ -81,10 +81,10 @@
 
 % Prints a list of variables
 -define(dump_all(_ListOfVariables),
-	lists:foreach(
-		fun({_Name, _Value}) ->
-			io:format(user, "[DUMP] ~s: ~p~n~n", [_Name, _Value])
-		end, lists:zip(string:tokens(??_ListOfVariables, "[] ,"), _ListOfVariables))
+    lists:foreach(
+        fun({_Name, _Value}) ->
+            io:format(user, "[DUMP] ~s: ~p~n~n", [_Name, _Value])
+        end, lists:zip(string:tokens(??_ListOfVariables, "[] ,"), _ListOfVariables))
 ).
 
 
@@ -108,9 +108,13 @@
 -define(gather_metadata,
     [{node, node()}, {pid, self()}, {line, ?LINE}] ++
         logger:parse_process_info(process_info(self(), current_function)) ++
-        case fslogic_context:get_user_dn() of
+        % Add user's dn to metadata if in context
+        % This will only work in veil_cluster_node application
+        try fslogic_context:get_user_dn() of
             undefined -> [];
             _ -> [{dn, fslogic_context:get_user_dn()}]
+        catch
+            _:_ -> []
         end
 ).
 

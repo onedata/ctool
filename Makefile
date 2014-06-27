@@ -10,3 +10,6 @@ compile:
 
 clean:
 	@./rebar clean
+
+test: deps compile
+	./rebar eunit skip_deps=true
