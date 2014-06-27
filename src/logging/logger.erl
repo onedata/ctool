@@ -19,7 +19,7 @@
 %% should_log/1
 %% ====================================================================
 %% @doc Determines if logs with provided loglevel should be logged or discarded.
-%% @end 
+%% @end
 -spec should_log(LoglevelAsInt :: integer()) -> boolean().
 %% ====================================================================
 should_log(LevelAsInt) ->
@@ -37,7 +37,8 @@ should_log(LevelAsInt) ->
 %% ====================================================================
 dispatch_log(LoglevelAsInt, Metadata, Format, Args, IncludeStacktrace) ->
     Severity = loglevel_int_to_atom(LoglevelAsInt),
-    lager:log(Severity, Metadata, compute_message(Format, Args, IncludeStacktrace)).
+    % Every project using the logging mechanism must a module called exactly 'logger_plugin' that implements logic_plugin_behaviour.
+    lager:log(Severity, Metadata ++ logger_plugin:gather_metadata(), compute_message(Format, Args, IncludeStacktrace)).
 
 
 %% set_loglevel/1

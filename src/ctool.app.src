@@ -16,9 +16,8 @@
         stdlib,
         lager,
         ibrowse,
-        cowboy,
-        erlydtl
-        % n2o is not listed here, because we do not want it to start as an application
+        cowboy
+        % n2o and erlydtl are not listed here, because we do not want them to start as applications
     ]},
 
     {env, [
