@@ -17,8 +17,7 @@
         lager,
         ibrowse,
         cowboy,
-        erlydtl,
-        n2o
+        erlydtl
     ]},
 
     {env, [
