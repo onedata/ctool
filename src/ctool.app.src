@@ -18,6 +18,7 @@
         ibrowse,
         cowboy,
         erlydtl
+        % n2o is not listed here, because we do not want it to start as an application
     ]},
 
     {env, [
