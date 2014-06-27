@@ -18,7 +18,7 @@
         ibrowse,
         cowboy,
         erlydtl,
-        {n2o, load}
+        n2o
     ]},
 
     {env, [
