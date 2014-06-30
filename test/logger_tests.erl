@@ -12,7 +12,7 @@
 
 -ifdef(TEST).
 -include_lib("eunit/include/eunit.hrl").
--include_lib("ctool/include/logging.hrl").
+-include_lib("logging.hrl").
 
 main_test_() ->
     {setup,
