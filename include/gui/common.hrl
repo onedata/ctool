@@ -14,7 +14,7 @@
 -define(GUI_COMMON_HRL, 1).
 
 -include_lib("n2o/include/wf.hrl").
--include_lib("ctool/include/gui/custom_elements.hrl").
+-include_lib("gui/custom_elements.hrl").
 
 %% Includes from cowboy
 -type cookie_option() :: {max_age, non_neg_integer()}
