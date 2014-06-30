@@ -10,7 +10,7 @@
 %% ===================================================================
 
 -module(gui_str).
--include_lib("logging.hrl").
+-include("logging.hrl").
 
 % Conversion
 -export([to_list/1, to_binary/1, join_to_binary/1]).
