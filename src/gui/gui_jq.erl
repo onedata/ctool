@@ -14,8 +14,8 @@
 %% ===================================================================
 
 -module(gui_jq).
--include_lib("ctool/include/gui/common.hrl").
--include_lib("ctool/include/logging.hrl").
+-include_lib("gui/common.hrl").
+-include_lib("logging.hrl").
 
 % General javascript wiring
 -export([wire/1, wire/2, wire/4]).

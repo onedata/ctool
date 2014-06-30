@@ -14,8 +14,8 @@
 %% ===================================================================
 
 -module(gui_session_handler).
--include_lib("ctool/include/gui/common.hrl").
--include_lib("ctool/include/logging.hrl").
+-include_lib("gui/common.hrl").
+-include_lib("logging.hrl").
 
 %% n2o session_handler API
 -export([init/2, finish/2, get_value/2, set_value/2, clear/0]).

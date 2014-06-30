@@ -13,8 +13,8 @@
 -module(gui_utils).
 -include_lib("ibrowse/include/ibrowse.hrl").
 -include_lib("public_key/include/public_key.hrl").
--include_lib("ctool/include/gui/common.hrl").
--include_lib("ctool/include/logging.hrl").
+-include_lib("gui/common.hrl").
+-include_lib("logging.hrl").
 
 % Initialization of n2o settings and cleanup
 -export([init_n2o_ets_and_envs/3, cleanup_n2o/1]).
