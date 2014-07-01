@@ -20,7 +20,7 @@
 -export([get_requested_hostname/0, get_requested_page/0, get_request_params/0]).
 
 % Parameters querying
--export([form_param/1, url_param/1]).
+-export([postback_param/1, url_param/1, form_param/1]).
 
 
 %% ====================================================================
@@ -143,17 +143,17 @@ user_logged_in() ->
 
 %% form_param/1
 %% ====================================================================
-%% @doc Retrieves a parameter value for a given key - POST parameter
-%% passed during form submission.
+%% @doc Retrieves a parameter value for a given key - POSTBACK parameter
+%% passed during form submission via websocket.
 %% NOTE! The submit button must be wired in certain way
 %% for the param to be accessible by this function,
 %% like this: #button { actions = gui_jq:form_submit_action(...) }
 %% Returns undefined if
 %% the key is not found.
 %% @end
--spec form_param(ParamName :: string() | binary()) -> binary() | undefined.
+-spec postback_param(ParamName :: string() | binary()) -> binary() | undefined.
 %% ====================================================================
-form_param(ParamName) ->
+postback_param(ParamName) ->
     gui_str:to_binary(wf:q(gui_str:to_list(ParamName))).
 
 
@@ -166,3 +166,16 @@ form_param(ParamName) ->
 %% ====================================================================
 url_param(ParamName) ->
     wf:q(gui_str:to_binary(ParamName)).
+
+
+%% form_param/1
+%% ====================================================================
+%% @doc Retrieves a form parameter sent by POST for given key.
+%% Returns undefined if the key is not found.
+%% @end
+-spec form_param(ParamName :: binary()) -> binary() | undefined.
+%% ====================================================================
+form_param(ParamName) ->
+    {ok, Body} = cowboy_req:body_qs(?REQ),
+    proplists:get_value(ParamName, Body, undefined).
+
