@@ -14,7 +14,7 @@
 -include("logging.hrl").
 
 % Functions used to associate user with session
--export([create_session/0, set_user_id/1, get_user_id/0, set_user_record/1, get_user_record/0, user_logged_in/0, clear_session/0]).
+-export([create_session/0, put/2, get/1, set_user_id/1, get_user_id/0, set_user_record/1, get_user_record/0, user_logged_in/0, clear_session/0]).
 
 % Functions connected with page / session context
 -export([get_requested_hostname/0, get_requested_page/0, get_request_params/0]).
@@ -38,6 +38,26 @@
 %% ====================================================================
 create_session() ->
     gui_session_handler:create().
+
+
+%% put/2
+%% ====================================================================
+%% @doc Stores value under given key in user session.
+%% @end
+-spec put(Key :: term(), Value :: term()) -> ok.
+%% ====================================================================
+put(Key, Value) ->
+    wf:session(Key, Value).
+
+
+%% get/1
+%% ====================================================================
+%% @doc Returns value stored in user session.
+%% @end
+-spec get(Key :: term()) -> Value :: term().
+%% ====================================================================
+get(Key) ->
+    wf:session(Key).
 
 
 %% set_user_id/1
