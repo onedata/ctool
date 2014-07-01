@@ -33,7 +33,7 @@
 -export([update/2, replace/2, insert_top/2, insert_bottom/2, insert_before/2, insert_after/2, remove/1]).
 
 % Commonly used jquery functions
--export([show/1, hide/1, add_class/2, remove_class/2, slide_up/2, slide_down/2, fade_in/2]).
+-export([show/1, hide/1, add_class/2, remove_class/2, slide_up/2, slide_down/2, fade_in/2, fade_out/2]).
 -export([focus/1, select_text/1, set_value/2]).
 
 
@@ -114,7 +114,7 @@ postback_action(TriggerID, Postback) ->
 %% It will cause form submission with given postback, and values of field(s)
 %% given in Sources arg will be available by gui_ctx:form_param function.
 %% @end
--spec form_submit_action(TriggerID :: binary(), Postback :: term(), Sources :: binary() | [binary()] ) -> ok.
+-spec form_submit_action(TriggerID :: binary(), Postback :: term(), Sources :: binary() | [binary()]) -> ok.
 %% ====================================================================
 form_submit_action(TriggerID, Postback, SourcesArg) ->
     Sources = lists:map(fun(Source) -> gui_str:to_list(Source) end, lists:flatten([SourcesArg])),
@@ -343,6 +343,16 @@ slide_down(Target, Speed) ->
 %% ====================================================================
 fade_in(Target, Speed) ->
     wire(Target, <<"fadeIn">>, integer_to_binary(Speed), false).
+
+
+%% fade_out/2
+%% ====================================================================
+%% @doc Animates an HTML element, making it disappear over time.
+%% @end
+-spec fade_out(Target :: binary(), Speed :: integer()) -> ok.
+%% ====================================================================
+fade_out(Target, Speed) ->
+    wire(Target, <<"fadeOut">>, integer_to_binary(Speed), false).
 
 
 %% focus/1
