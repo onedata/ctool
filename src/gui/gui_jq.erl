@@ -33,7 +33,7 @@
 -export([update/2, replace/2, insert_top/2, insert_bottom/2, insert_before/2, insert_after/2, remove/1]).
 
 % Commonly used jquery functions
--export([show/1, hide/1, add_class/2, remove_class/2, slide_up/2, slide_down/2, fade_in/2, fade_out/2]).
+-export([show/1, hide/1, add_class/2, remove_class/2, slide_up/2, slide_down/2, fade_in/2, fade_out/2, delay/2]).
 -export([focus/1, select_text/1, set_value/2, click/1]).
 
 
@@ -395,3 +395,12 @@ select_text(Target) ->
 set_value(Target, Value) ->
     wire(Target, <<"val">>, Value, false).
 
+
+%% delay/2
+%% ====================================================================
+%% @doc Delays javascript actions on given target.
+%% @end
+-spec delay(Target :: binary(), Time :: integer()) -> ok.
+%% ====================================================================
+delay(Target, Time) ->
+    wire(Target, <<"delay">>, Time, false).
