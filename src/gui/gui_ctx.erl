@@ -168,7 +168,7 @@ url_param(ParamName) ->
     wf:q(gui_str:to_binary(ParamName)).
 
 
-%% form_param/0
+%% form_params/0
 %% ====================================================================
 %% @doc Retrieves a form parameter sent by POST for given key.
 %% Returns undefined if the key is not found.
