@@ -14,13 +14,13 @@
 %% ===================================================================
 
 -module(gui_session_handler).
--include_lib("ctool/include/gui/common.hrl").
--include_lib("ctool/include/logging.hrl").
+-include("gui/common.hrl").
+-include("logging.hrl").
 
 %% n2o session_handler API
 -export([init/2, finish/2, get_value/2, set_value/2, clear/0]).
 %% Other functions
--export([create/0, get_session_logic_module/0, get_cookie_ttl/0]).
+-export([create/0, get_session_logic_module/0]).
 
 % Session cookie id
 -define(cookie_name, <<"session_id">>).
@@ -48,10 +48,10 @@ init(State, Ctx) ->
     {Cookie, _} = cowboy_req:cookie(?cookie_name, Ctx#context.req),
     {Path, _} = cowboy_req:path(Ctx#context.req),
 
-    {Megaseconds, Seconds, _} = now(),
-    Till = Megaseconds * 1000000 + Seconds + get_cookie_ttl(),
-
     Module = get_session_logic_module(),
+
+    {Megaseconds, Seconds, _} = now(),
+    Till = Megaseconds * 1000000 + Seconds + Module:get_cookie_ttl(),
 
     SessionID = case Module:lookup_session(Cookie) of
                     undefined ->
@@ -94,7 +94,7 @@ finish(_State, Ctx) ->
                      % Session is valid, set session_id cookie
                      Options = [
                          {path, <<"/">>},
-                         {max_age, get_cookie_ttl()},
+                         {max_age, Module:get_cookie_ttl()},
                          {secure, true},
                          {http_only, true}
                      ],
@@ -183,26 +183,11 @@ clear() ->
 -spec get_session_logic_module() -> atom() | no_return().
 %% ====================================================================
 get_session_logic_module() ->
-    case application:get_env(veil_cluster_node, session_logic_module) of
+    case application:get_env(ctool, session_logic_module) of
         {ok, Module} ->
             Module;
         _ ->
             throw("No session logic module specified in env")
-    end.
-
-
-%% get_cookie_ttl/0
-%% ====================================================================
-%% @doc Retrieves default cookies' time to live from env.
-%% @end
--spec get_cookie_ttl() -> integer() | no_return().
-%% ====================================================================
-get_cookie_ttl() ->
-    case application:get_env(veil_cluster_node, control_panel_sessions_cookie_ttl) of
-        {ok, Val} when is_integer(Val)->
-            Val;
-        _ ->
-            throw("No cookie TTL specified in env")
     end.
 
 

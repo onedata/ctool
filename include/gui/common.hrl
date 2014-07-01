@@ -14,7 +14,19 @@
 -define(GUI_COMMON_HRL, 1).
 
 -include_lib("n2o/include/wf.hrl").
--include_lib("ctool/include/gui/custom_elements.hrl").
+
+% ===========================
+% Custom n2o elements
+% ===========================
+
+% Simplest HTML form
+-record(form, {?ELEMENT_BASE(element_form),
+    method,
+    action,
+    html_name,
+    enctype
+}).
+
 
 %% Includes from cowboy
 -type cookie_option() :: {max_age, non_neg_integer()}

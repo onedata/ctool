@@ -11,7 +11,7 @@
 
 -module(element_form).
 
--include_lib("ctool/include/gui/common.hrl").
+-include("gui/common.hrl").
 
 -export([render_element/1]).
 

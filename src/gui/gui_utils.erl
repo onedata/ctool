@@ -13,8 +13,8 @@
 -module(gui_utils).
 -include_lib("ibrowse/include/ibrowse.hrl").
 -include_lib("public_key/include/public_key.hrl").
--include_lib("ctool/include/gui/common.hrl").
--include_lib("ctool/include/logging.hrl").
+-include("gui/common.hrl").
+-include("logging.hrl").
 
 % Initialization of n2o settings and cleanup
 -export([init_n2o_ets_and_envs/3, cleanup_n2o/1]).
@@ -50,7 +50,7 @@ init_n2o_ets_and_envs(GuiPort, RoutingModule, SessionLogicModule) ->
     % Custom session handler for n2o
     ok = application:set_env(n2o, session, gui_session_handler),
     % Custom session logic handler for gui_session_handler
-    ok = application:set_env(veil_cluster_node, session_logic_module, SessionLogicModule),
+    ok = application:set_env(ctool, session_logic_module, SessionLogicModule),
 
     SessionLogicModule:init(),
 
@@ -285,7 +285,7 @@ ssl_opts(ReqHostname) ->
                 {Valid, RequestedHostname}
         end,
 
-    CaCertFileAtom = case application:get_env(veil_cluster_node, root_cacert_file) of
+    CaCertFileAtom = case application:get_env(ctool, root_cacert_file) of
                          {ok, Val} -> Val;
                          _ -> throw("root_cacert_file env missing")
                      end,

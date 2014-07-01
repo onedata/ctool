@@ -11,8 +11,8 @@
 %% ===================================================================
 
 -module(gui_comet).
--include_lib("ctool/include/gui/common.hrl").
--include_lib("ctool/include/logging.hrl").
+-include("gui/common.hrl").
+-include("logging.hrl").
 
 % Comet API
 -export([spawn/1, init_comet/2, comet_supervisor/2, is_comet_process/0, flush/0]).
