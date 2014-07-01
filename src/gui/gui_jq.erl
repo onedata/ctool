@@ -34,7 +34,7 @@
 
 % Commonly used jquery functions
 -export([show/1, hide/1, add_class/2, remove_class/2, slide_up/2, slide_down/2, fade_in/2, fade_out/2]).
--export([focus/1, select_text/1, set_value/2, checkbox/2]).
+-export([focus/1, select_text/1, set_value/2, click/1]).
 
 
 %% ====================================================================
@@ -295,15 +295,14 @@ hide(Target) ->
     wire(Target, <<"hide">>, <<"">>, false).
 
 
-%% checkbox/2
+%% click/2
 %% ====================================================================
-%% @doc Checks or unchecks HTML checkbox element depending on function
-%% argument.
+%% @doc Performs click action on given element.
 %% @end
--spec checkbox(Target :: binary(), Args :: binary()) -> ok.
+-spec click(Target :: binary()) -> ok.
 %% ====================================================================
-checkbox(Target, Args) ->
-    wire(Target, <<"checkbox">>, Args, false).
+click(Target) ->
+    wire(Target, <<"click">>, <<"">>, false).
 
 
 %% add_class/2
