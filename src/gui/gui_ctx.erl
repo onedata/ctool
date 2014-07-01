@@ -176,6 +176,6 @@ url_param(ParamName) ->
 -spec form_param(ParamName :: binary()) -> binary() | undefined.
 %% ====================================================================
 form_param(ParamName) ->
-    {ok, Body} = cowboy_req:body_qs(?REQ),
-    proplists:get_value(ParamName, Body, undefined).
+    {ok, Params, _Req} = cowboy_req:body_qs(?REQ),
+    proplists:get_value(ParamName, Params, undefined).
 
