@@ -20,7 +20,7 @@
 -export([get_requested_hostname/0, get_requested_page/0, get_request_params/0]).
 
 % Parameters querying
--export([postback_param/1, url_param/1, form_param/1]).
+-export([postback_param/1, url_param/1, form_params/0]).
 
 
 %% ====================================================================
@@ -168,14 +168,14 @@ url_param(ParamName) ->
     wf:q(gui_str:to_binary(ParamName)).
 
 
-%% form_param/1
+%% form_param/0
 %% ====================================================================
 %% @doc Retrieves a form parameter sent by POST for given key.
 %% Returns undefined if the key is not found.
 %% @end
--spec form_param(ParamName :: binary()) -> binary() | undefined.
+-spec form_params() -> {ok, Params :: list()}.
 %% ====================================================================
-form_param(ParamName) ->
+form_params() ->
     {ok, Params, _Req} = cowboy_req:body_qs(?REQ),
-    proplists:get_value(ParamName, Params, undefined).
+    {ok, Params}.
 
