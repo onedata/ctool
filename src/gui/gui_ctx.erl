@@ -14,7 +14,7 @@
 -include("logging.hrl").
 
 % Functions used to associate user with session
--export([create_session/0, put/2, get/1, set_user_id/1, get_user_id/0, set_user_record/1, get_user_record/0, user_logged_in/0, clear_session/0]).
+-export([create_session/0, put/2, get/1, set_user_id/1, get_user_id/0, user_logged_in/0, clear_session/0]).
 
 % Functions connected with page / session context
 -export([get_requested_hostname/0, get_requested_page/0, get_request_params/0]).
@@ -79,26 +79,6 @@ set_user_id(ID) ->
 %% ====================================================================
 get_user_id() ->
     wf:user().
-
-
-%% set_user_record/1
-%% ====================================================================
-%% @doc Returns user database doc associated with current session.
-%% @end
--spec set_user_record(UserDoc :: term()) -> term().
-%% ====================================================================
-set_user_record(UserDoc) ->
-    wf:session(user_doc, UserDoc).
-
-
-%% get_user_record/0
-%% ====================================================================
-%% @doc Returns user database doc associated with current session.
-%% @end
--spec get_user_record() -> term().
-%% ====================================================================
-get_user_record() ->
-    wf:session(user_doc).
 
 
 %% clear_session/0
