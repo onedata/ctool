@@ -20,7 +20,7 @@
 %% n2o session_handler API
 -export([init/2, finish/2, get_value/2, set_value/2, clear/0]).
 %% Other functions
--export([create/0, get_session_logic_module/0]).
+-export([create/0, get_session_logic_module/0, clear_expired_sessions/0]).
 
 % Session cookie id
 -define(cookie_name, <<"session_id">>).
@@ -191,6 +191,17 @@ get_session_logic_module() ->
     end.
 
 
+%% clear_expired_sessions/0
+%% ====================================================================
+%% @doc Deletes all sessions that have expired. Every session is saved
+%% with a ValidTill arg, that marks a point in time when it expires (in secs since epoch).
+%% It has to be periodically called as it is NOT performed automatically.
+%% @end
+-spec clear_expired_sessions() -> ok.
+%% ====================================================================
+clear_expired_sessions() ->
+    Module = get_session_logic_module(),
+    Module:clear_expired_sessions().
 
 
 %% ====================================================================
