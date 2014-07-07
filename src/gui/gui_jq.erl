@@ -198,7 +198,7 @@ bind_enter_to_submit_button(InputID, ButtonToClickID) ->
 bind_enter_to_change_focus(InputID, TargetID) ->
   Script = <<"$('#", InputID/binary, "').bind('keydown', function (e){",
   "if (e.which == 13) { e.preventDefault(); document.getElementById('", TargetID/binary, "').focus(); } });">>,
-  gui_jq:wire(Script, false).
+  wire(Script, false).
 
 
 %% bind_key_to_click/2
@@ -210,7 +210,7 @@ bind_enter_to_change_focus(InputID, TargetID) ->
 bind_key_to_click(KeyCode, TargetID) ->
   Script = <<"$(document).bind('keydown', function (e){",
   "if (e.which == ", KeyCode/binary, ") { e.preventDefault(); document.getElementById('", TargetID/binary, "').click(); } });">>,
-  gui_jq:wire(Script, false).
+  wire(Script, false).
 
 
 %% bind_element_click/2
