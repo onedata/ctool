@@ -34,7 +34,7 @@
 
 % Commonly used jquery functions
 -export([show/1, hide/1, add_class/2, remove_class/2, slide_up/2, slide_down/2, fade_in/2, fade_out/2, delay/2]).
--export([focus/1, select_text/1, set_value/2, click/1]).
+-export([focus/1, set_text/2, select_text/1, set_value/2, set_width/2, click/1, prop/3, css/3]).
 
 
 %% ====================================================================
@@ -295,16 +295,6 @@ hide(Target) ->
     wire(Target, <<"hide">>, <<"">>, false).
 
 
-%% click/2
-%% ====================================================================
-%% @doc Performs click action on given element.
-%% @end
--spec click(Target :: binary()) -> ok.
-%% ====================================================================
-click(Target) ->
-    wire(Target, <<"click">>, <<"">>, false).
-
-
 %% add_class/2
 %% ====================================================================
 %% @doc Adds a class to an HTML element.
@@ -365,6 +355,16 @@ fade_out(Target, Speed) ->
     wire(Target, <<"fadeOut">>, integer_to_binary(Speed), false).
 
 
+%% delay/2
+%% ====================================================================
+%% @doc Delays javascript actions on given target.
+%% @end
+-spec delay(Target :: binary(), Time :: integer()) -> ok.
+%% ====================================================================
+delay(Target, Time) ->
+  wire(Target, <<"delay">>, Time, false).
+
+
 %% focus/1
 %% ====================================================================
 %% @doc Focuses an HTML element.
@@ -373,6 +373,17 @@ fade_out(Target, Speed) ->
 %% ====================================================================
 focus(Target) ->
     wire(Target, <<"focus">>, <<"">>, false).
+
+
+%% set_text/2
+%% ====================================================================
+%% @doc Set the content of each element in the set of matched elements
+%% to the specified text.
+%% @end
+-spec set_text(Target :: binary(), Value :: binary()) -> ok.
+%% ====================================================================
+set_text(Target, Value) ->
+  wire(Target, <<"text">>, Value, false).
 
 
 %% select_text/1
@@ -396,11 +407,43 @@ set_value(Target, Value) ->
     wire(Target, <<"val">>, Value, false).
 
 
-%% delay/2
+%% set_width/2
 %% ====================================================================
-%% @doc Delays javascript actions on given target.
+%% @doc Set the CSS width of each element in the set of matched elements.
 %% @end
--spec delay(Target :: binary(), Time :: integer()) -> ok.
+-spec set_width(Target :: binary(), Value :: binary()) -> ok.
 %% ====================================================================
-delay(Target, Time) ->
-    wire(Target, <<"delay">>, Time, false).
+set_width(Target, Value) ->
+  wire(Target, <<"width">>, Value, false).
+
+
+%% click/2
+%% ====================================================================
+%% @doc Performs click action on given element.
+%% @end
+-spec click(Target :: binary()) -> ok.
+%% ====================================================================
+click(Target) ->
+  wire(Target, <<"click">>, <<"">>, false).
+
+
+%% prop/3
+%% ====================================================================
+%% @doc Set one or more properties for the set of matched elements.
+%% @end
+-spec prop(InputID :: binary(), PropertyName :: binary(), Value :: binary()) -> string().
+%% ====================================================================
+prop(InputID, PropertyName, Value) ->
+  Script = <<"$('#", InputID/binary, "').prop('", PropertyName/binary, "','", Value/binary, "');">>,
+  wire(Script, false).
+
+
+%% css/3
+%% ====================================================================
+%% @doc Set one or more CSS properties for the set of matched elements..
+%% @end
+-spec css(InputID :: binary(), PropertyName :: binary(), Value :: binary()) -> string().
+%% ====================================================================
+css(InputID, PropertyName, Value) ->
+  Script = <<"$('#", InputID/binary, "').css('", PropertyName/binary, "','", Value/binary, "');">>,
+  wire(Script, false).
