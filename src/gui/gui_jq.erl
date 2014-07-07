@@ -27,7 +27,7 @@
 -export([redirect/1, redirect_to_login/1, redirect_from_login/0]).
 
 % Useful functions for binding custom events
--export([register_escape_event/1, bind_enter_to_submit_button/2, bind_element_click/2]).
+-export([register_escape_event/1, bind_enter_to_submit_button/2, bind_enter_to_change_focus/2, bind_key_to_click/2, bind_element_click/2]).
 
 % DOM updates
 -export([update/2, replace/2, insert_top/2, insert_bottom/2, insert_before/2, insert_after/2, remove/1]).
@@ -185,6 +185,32 @@ bind_enter_to_submit_button(InputID, ButtonToClickID) ->
     Script = <<"$('#", InputID/binary, "').bind('keydown', function (e){",
     "if (e.which == 13) { e.preventDefault(); document.getElementById('", ButtonToClickID/binary, "').click(); } });">>,
     wire(Script, false).
+
+
+%% bind_enter_to_change_focus/2
+%% ====================================================================
+%% @doc Makes any enter keypresses on InputID (whenever it is focused)
+%% change focus to selected target. This way, it allows
+%% easy switching between text elements with enter key.
+%% @end
+-spec bind_enter_to_change_focus(InputID :: binary(), TargetID :: binary()) -> string().
+%% ====================================================================
+bind_enter_to_change_focus(InputID, TargetID) ->
+  Script = <<"$('#", InputID/binary, "').bind('keydown', function (e){",
+  "if (e.which == 13) { e.preventDefault(); document.getElementById('", TargetID/binary, "').focus(); } });">>,
+  gui_jq:wire(Script, false).
+
+
+%% bind_key_to_click/2
+%% ====================================================================
+%% @doc Makes any keypresses of given key to click on selected target.
+%% @end
+-spec bind_key_to_click(KeyCode :: binary(), TargetID :: binary()) -> string().
+%% ====================================================================
+bind_key_to_click(KeyCode, TargetID) ->
+  Script = <<"$(document).bind('keydown', function (e){",
+  "if (e.which == ", KeyCode/binary, ") { e.preventDefault(); document.getElementById('", TargetID/binary, "').click(); } });">>,
+  gui_jq:wire(Script, false).
 
 
 %% bind_element_click/2
