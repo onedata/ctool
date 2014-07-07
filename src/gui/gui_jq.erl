@@ -196,9 +196,9 @@ bind_enter_to_submit_button(InputID, ButtonToClickID) ->
 -spec bind_enter_to_change_focus(InputID :: binary(), TargetID :: binary()) -> string().
 %% ====================================================================
 bind_enter_to_change_focus(InputID, TargetID) ->
-  Script = <<"$('#", InputID/binary, "').bind('keydown', function (e){",
-  "if (e.which == 13) { e.preventDefault(); document.getElementById('", TargetID/binary, "').focus(); } });">>,
-  wire(Script, false).
+    Script = <<"$('#", InputID/binary, "').bind('keydown', function (e){",
+    "if (e.which == 13) { e.preventDefault(); document.getElementById('", TargetID/binary, "').focus(); } });">>,
+    wire(Script, false).
 
 
 %% bind_key_to_click/2
@@ -208,9 +208,9 @@ bind_enter_to_change_focus(InputID, TargetID) ->
 -spec bind_key_to_click(KeyCode :: binary(), TargetID :: binary()) -> string().
 %% ====================================================================
 bind_key_to_click(KeyCode, TargetID) ->
-  Script = <<"$(document).bind('keydown', function (e){",
-  "if (e.which == ", KeyCode/binary, ") { e.preventDefault(); document.getElementById('", TargetID/binary, "').click(); } });">>,
-  wire(Script, false).
+    Script = <<"$(document).bind('keydown', function (e){",
+    "if (e.which == ", KeyCode/binary, ") { e.preventDefault(); document.getElementById('", TargetID/binary, "').click(); } });">>,
+    wire(Script, false).
 
 
 %% bind_element_click/2
@@ -388,7 +388,7 @@ fade_out(TargetID, Speed) ->
 -spec delay(TargetID :: binary(), Time :: integer()) -> ok.
 %% ====================================================================
 delay(TargetID, Time) ->
-  wire(TargetID, <<"delay">>, Time, false).
+    wire(TargetID, <<"delay">>, Time, false).
 
 
 %% focus/1
@@ -409,7 +409,7 @@ focus(TargetID) ->
 -spec set_text(TargetID :: binary(), Value :: binary()) -> ok.
 %% ====================================================================
 set_text(TargetID, Value) ->
-  wire(TargetID, <<"text">>, Value, false).
+    wire(TargetID, <<"text">>, Value, false).
 
 
 %% select_text/1
@@ -440,7 +440,7 @@ set_value(TargetID, Value) ->
 -spec set_width(TargetID :: binary(), Value :: binary()) -> ok.
 %% ====================================================================
 set_width(TargetID, Value) ->
-  wire(TargetID, <<"width">>, Value, false).
+    wire(TargetID, <<"width">>, Value, false).
 
 
 %% click/2
@@ -450,7 +450,7 @@ set_width(TargetID, Value) ->
 -spec click(TargetID :: binary()) -> ok.
 %% ====================================================================
 click(TargetID) ->
-  wire(TargetID, <<"click">>, <<"">>, false).
+    wire(TargetID, <<"click">>, <<"">>, false).
 
 
 %% prop/3
@@ -460,8 +460,8 @@ click(TargetID) ->
 -spec prop(TargetID :: binary(), PropertyName :: binary(), Value :: binary()) -> string().
 %% ====================================================================
 prop(TargetID, PropertyName, Value) ->
-  Script = <<"$('#", TargetID/binary, "').prop('", PropertyName/binary, "','", Value/binary, "');">>,
-  wire(Script, false).
+    Script = <<"$('#", TargetID/binary, "').prop('", PropertyName/binary, "','", Value/binary, "');">>,
+    wire(Script, false).
 
 
 %% css/3
@@ -471,5 +471,5 @@ prop(TargetID, PropertyName, Value) ->
 -spec css(TargetID :: binary(), PropertyName :: binary(), Value :: binary()) -> string().
 %% ====================================================================
 css(TargetID, PropertyName, Value) ->
-  Script = <<"$('#", TargetID/binary, "').css('", PropertyName/binary, "','", Value/binary, "');">>,
-  wire(Script, false).
+    Script = <<"$('#", TargetID/binary, "').css('", PropertyName/binary, "','", Value/binary, "');">>,
+    wire(Script, false).
