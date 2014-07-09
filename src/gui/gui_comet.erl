@@ -53,8 +53,7 @@ spawn(CometFun) ->
 %% ====================================================================
 init_comet(OwnerPid, Fun, SessionID) ->
     put(ws_process, OwnerPid),
-    wf_context:init_context([]),
-    Context = wf_context:context(),
+    Context = wf_context:init_context([]),
     wf_context:context(Context#context{session = SessionID}),
     Fun().
 
