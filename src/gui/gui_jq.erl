@@ -27,14 +27,14 @@
 -export([redirect/1, redirect_to_login/1, redirect_from_login/0]).
 
 % Useful functions for binding custom events
--export([register_escape_event/1, bind_enter_to_submit_button/2, bind_element_click/2]).
+-export([register_escape_event/1, bind_enter_to_submit_button/2, bind_enter_to_change_focus/2, bind_key_to_click/2, bind_element_click/2]).
 
 % DOM updates
 -export([update/2, replace/2, insert_top/2, insert_bottom/2, insert_before/2, insert_after/2, remove/1]).
 
 % Commonly used jquery functions
--export([show/1, hide/1, add_class/2, remove_class/2, slide_up/2, slide_down/2, fade_in/2]).
--export([focus/1, select_text/1, set_value/2]).
+-export([show/1, hide/1, add_class/2, remove_class/2, slide_up/2, slide_down/2, fade_in/2, fade_out/2, delay/2]).
+-export([focus/1, set_text/2, select_text/1, set_value/2, set_width/2, click/1, prop/3, css/3]).
 
 
 %% ====================================================================
@@ -85,15 +85,15 @@ wire(Action, Eager) ->
 %% @doc Convienience function to render javascript code.
 %% Eager flag can be used.
 %% @end
--spec wire(Target :: binary(), Method :: binary(), Args :: binary(), Eager :: boolean()) -> ok.
+-spec wire(TargetID :: binary(), Method :: binary(), Args :: binary(), Eager :: boolean()) -> ok.
 %% ====================================================================
-wire(Target, Method, Args, Eager) ->
+wire(TargetID, Method, Args, Eager) ->
     RenderedArgs = case Args of
                        <<"">> -> <<"">>;
                        <<"''">> -> <<"''">>;
                        _ -> <<"'", Args/binary, "'">>
                    end,
-    Script = <<"$('#", Target/binary, "').", Method/binary, "(", RenderedArgs/binary, ");">>,
+    Script = <<"$('#", TargetID/binary, "').", Method/binary, "(", RenderedArgs/binary, ");">>,
     wire(Script, Eager).
 
 
@@ -114,7 +114,7 @@ postback_action(TriggerID, Postback) ->
 %% It will cause form submission with given postback, and values of field(s)
 %% given in Sources arg will be available by gui_ctx:form_param function.
 %% @end
--spec form_submit_action(TriggerID :: binary(), Postback :: term(), Sources :: binary() | [binary()] ) -> ok.
+-spec form_submit_action(TriggerID :: binary(), Postback :: term(), Sources :: binary() | [binary()]) -> ok.
 %% ====================================================================
 form_submit_action(TriggerID, Postback, SourcesArg) ->
     Sources = lists:map(fun(Source) -> gui_str:to_list(Source) end, lists:flatten([SourcesArg])),
@@ -156,7 +156,7 @@ redirect_to_login(SaveSourcePage) ->
 redirect_from_login() ->
     case wf:q(<<"x">>) of
         undefined -> wf:redirect(<<"/">>);
-        TargetPage -> wf:redirect(TargetPage)
+        TargetIDPage -> wf:redirect(TargetIDPage)
     end.
 
 
@@ -187,6 +187,32 @@ bind_enter_to_submit_button(InputID, ButtonToClickID) ->
     wire(Script, false).
 
 
+%% bind_enter_to_change_focus/2
+%% ====================================================================
+%% @doc Makes any enter keypresses on InputID (whenever it is focused)
+%% change focus to selected target. This way, it allows
+%% easy switching between text elements with enter key.
+%% @end
+-spec bind_enter_to_change_focus(InputID :: binary(), TargetID :: binary()) -> string().
+%% ====================================================================
+bind_enter_to_change_focus(InputID, TargetID) ->
+    Script = <<"$('#", InputID/binary, "').bind('keydown', function (e){",
+    "if (e.which == 13) { e.preventDefault(); document.getElementById('", TargetID/binary, "').focus(); } });">>,
+    wire(Script, false).
+
+
+%% bind_key_to_click/2
+%% ====================================================================
+%% @doc Makes any keypresses of given key to click on selected target.
+%% @end
+-spec bind_key_to_click(KeyCode :: binary(), TargetID :: binary()) -> string().
+%% ====================================================================
+bind_key_to_click(KeyCode, TargetID) ->
+    Script = <<"$(document).bind('keydown', function (e){",
+    "if (e.which == ", KeyCode/binary, ") { e.preventDefault(); document.getElementById('", TargetID/binary, "').click(); } });">>,
+    wire(Script, false).
+
+
 %% bind_element_click/2
 %% ====================================================================
 %% @doc Binds click actions on a selected InputID to evaluation of given
@@ -203,166 +229,197 @@ bind_element_click(InputID, Javascript) ->
 %% ====================================================================
 %% @doc Updates contents of a DOM element.
 %% @end
--spec update(Target :: binary(), Content :: term()) -> ok.
+-spec update(TargetID :: binary(), Content :: term()) -> ok.
 %% ====================================================================
-update(Target, Elements) ->
+update(TargetID, Elements) ->
     RenderedElements = gui_str:js_escape(wf:render(Elements)),
-    wire(Target, <<"html">>, RenderedElements, true).
+    wire(TargetID, <<"html">>, RenderedElements, true).
 
 
 %% replace/2
 %% ====================================================================
 %% @doc Replaces a DOM element with another.
 %% @end
--spec replace(Target :: binary(), Content :: term()) -> ok.
+-spec replace(TargetID :: binary(), Content :: term()) -> ok.
 %% ====================================================================
-replace(Target, Elements) ->
+replace(TargetID, Elements) ->
     RenderedElements = gui_str:js_escape(wf:render(Elements)),
-    wire(Target, <<"replaceWith">>, RenderedElements, true).
+    wire(TargetID, <<"replaceWith">>, RenderedElements, true).
 
 
 %% insert_top/2
 %% ====================================================================
 %% @doc Prepends an element to a DOM element.
 %% @end
--spec insert_top(Target :: binary(), Content :: term()) -> ok.
+-spec insert_top(TargetID :: binary(), Content :: term()) -> ok.
 %% ====================================================================
-insert_top(Target, Elements) ->
+insert_top(TargetID, Elements) ->
     RenderedElements = gui_str:js_escape(wf:render(Elements)),
-    wire(Target, <<"prepend">>, RenderedElements, true).
+    wire(TargetID, <<"prepend">>, RenderedElements, true).
 
 
 %% insert_bottom/2
 %% ====================================================================
 %% @doc Appends an element to a DOM element.
 %% @end
--spec insert_bottom(Target :: binary(), Content :: term()) -> ok.
+-spec insert_bottom(TargetID :: binary(), Content :: term()) -> ok.
 %% ====================================================================
-insert_bottom(Target, Elements) ->
+insert_bottom(TargetID, Elements) ->
     RenderedElements = gui_str:js_escape(wf:render(Elements)),
-    wire(Target, <<"append">>, RenderedElements, true).
+    wire(TargetID, <<"append">>, RenderedElements, true).
 
 
 %% insert_before/2
 %% ====================================================================
 %% @doc Inserts an element before a DOM element.
 %% @end
--spec insert_before(Target :: binary(), Content :: term()) -> ok.
+-spec insert_before(TargetID :: binary(), Content :: term()) -> ok.
 %% ====================================================================
-insert_before(Target, Elements) ->
+insert_before(TargetID, Elements) ->
     RenderedElements = gui_str:js_escape(wf:render(Elements)),
-    wire(Target, <<"before">>, RenderedElements, true).
+    wire(TargetID, <<"before">>, RenderedElements, true).
 
 
 %% insert_after/2
 %% ====================================================================
 %% @doc Inserts an element after a DOM element.
 %% @end
--spec insert_after(Target :: binary(), Content :: term()) -> ok.
+-spec insert_after(TargetID :: binary(), Content :: term()) -> ok.
 %% ====================================================================
-insert_after(Target, Elements) ->
+insert_after(TargetID, Elements) ->
     RenderedElements = gui_str:js_escape(wf:render(Elements)),
-    wire(Target, <<"after">>, RenderedElements, true).
+    wire(TargetID, <<"after">>, RenderedElements, true).
 
 
 %% remove/1
 %% ====================================================================
 %% @doc Removes an element from DOM.
 %% @end
--spec remove(Target :: binary()) -> ok.
+-spec remove(TargetID :: binary()) -> ok.
 %% ====================================================================
-remove(Target) ->
-    wire(Target, <<"remove">>, <<"">>, true).
+remove(TargetID) ->
+    wire(TargetID, <<"remove">>, <<"">>, true).
 
 
 %% show/1
 %% ====================================================================
 %% @doc Displays an HTML element.
 %% @end
--spec show(Target :: binary()) -> ok.
+-spec show(TargetID :: binary()) -> ok.
 %% ====================================================================
-show(Target) ->
-    wire(Target, <<"show">>, <<"">>, false).
+show(TargetID) ->
+    wire(TargetID, <<"show">>, <<"">>, false).
 
 
 %% hide/1
 %% ====================================================================
 %% @doc Hides an HTML element.
 %% @end
--spec hide(Target :: binary()) -> ok.
+-spec hide(TargetID :: binary()) -> ok.
 %% ====================================================================
-hide(Target) ->
-    wire(Target, <<"hide">>, <<"">>, false).
+hide(TargetID) ->
+    wire(TargetID, <<"hide">>, <<"">>, false).
 
 
 %% add_class/2
 %% ====================================================================
 %% @doc Adds a class to an HTML element.
 %% @end
--spec add_class(Target :: binary(), Class :: binary()) -> ok.
+-spec add_class(TargetID :: binary(), Class :: binary()) -> ok.
 %% ====================================================================
-add_class(Target, Class) ->
-    wire(Target, <<"addClass">>, Class, false).
+add_class(TargetID, Class) ->
+    wire(TargetID, <<"addClass">>, Class, false).
 
 
 %% remove_class/2
 %% ====================================================================
 %% @doc Removes a class from an HTML element.
 %% @end
--spec remove_class(Target :: binary(), Class :: binary()) -> ok.
+-spec remove_class(TargetID :: binary(), Class :: binary()) -> ok.
 %% ====================================================================
-remove_class(Target, Class) ->
-    wire(Target, <<"removeClass">>, Class, false).
+remove_class(TargetID, Class) ->
+    wire(TargetID, <<"removeClass">>, Class, false).
 
 
 %% slide_up/2
 %% ====================================================================
 %% @doc Animates an HTML element, displaying it in sliding motion.
 %% @end
--spec slide_up(Target :: binary(), Speed :: integer()) -> ok.
+-spec slide_up(TargetID :: binary(), Speed :: integer()) -> ok.
 %% ====================================================================
-slide_up(Target, Speed) ->
-    wire(Target, <<"slideUp">>, integer_to_binary(Speed), false).
+slide_up(TargetID, Speed) ->
+    wire(TargetID, <<"slideUp">>, integer_to_binary(Speed), false).
 
 
 %% slide_down/2
 %% ====================================================================
 %% @doc Animates an HTML element, hiding it in sliding motion.
 %% @end
--spec slide_down(Target :: binary(), Speed :: integer()) -> ok.
+-spec slide_down(TargetID :: binary(), Speed :: integer()) -> ok.
 %% ====================================================================
-slide_down(Target, Speed) ->
-    wire(Target, <<"slideDown">>, integer_to_binary(Speed), false).
+slide_down(TargetID, Speed) ->
+    wire(TargetID, <<"slideDown">>, integer_to_binary(Speed), false).
 
 
 %% fade_in/2
 %% ====================================================================
 %% @doc Animates an HTML element, making it appear over time.
 %% @end
--spec fade_in(Target :: binary(), Speed :: integer()) -> ok.
+-spec fade_in(TargetID :: binary(), Speed :: integer()) -> ok.
 %% ====================================================================
-fade_in(Target, Speed) ->
-    wire(Target, <<"fadeIn">>, integer_to_binary(Speed), false).
+fade_in(TargetID, Speed) ->
+    wire(TargetID, <<"fadeIn">>, integer_to_binary(Speed), false).
+
+
+%% fade_out/2
+%% ====================================================================
+%% @doc Animates an HTML element, making it disappear over time.
+%% @end
+-spec fade_out(TargetID :: binary(), Speed :: integer()) -> ok.
+%% ====================================================================
+fade_out(TargetID, Speed) ->
+    wire(TargetID, <<"fadeOut">>, integer_to_binary(Speed), false).
+
+
+%% delay/2
+%% ====================================================================
+%% @doc Delays javascript actions on given target.
+%% @end
+-spec delay(TargetID :: binary(), Time :: integer()) -> ok.
+%% ====================================================================
+delay(TargetID, Time) ->
+    wire(TargetID, <<"delay">>, Time, false).
 
 
 %% focus/1
 %% ====================================================================
 %% @doc Focuses an HTML element.
 %% @end
--spec focus(Target :: binary()) -> ok.
+-spec focus(TargetID :: binary()) -> ok.
 %% ====================================================================
-focus(Target) ->
-    wire(Target, <<"focus">>, <<"">>, false).
+focus(TargetID) ->
+    wire(TargetID, <<"focus">>, <<"">>, false).
+
+
+%% set_text/2
+%% ====================================================================
+%% @doc Set the content of each element in the set of matched elements
+%% to the specified text.
+%% @end
+-spec set_text(TargetID :: binary(), Value :: binary()) -> ok.
+%% ====================================================================
+set_text(TargetID, Value) ->
+    wire(TargetID, <<"text">>, Value, false).
 
 
 %% select_text/1
 %% ====================================================================
 %% @doc Focuses an HTML element (e. g. a textbox) and selects its text.
 %% @end
--spec select_text(Target :: binary()) -> ok.
+-spec select_text(TargetID :: binary()) -> ok.
 %% ====================================================================
-select_text(Target) ->
-    Script = <<"$('#", Target/binary, "').focus().select();">>,
+select_text(TargetID) ->
+    Script = <<"$('#", TargetID/binary, "').focus().select();">>,
     wire(Script).
 
 
@@ -370,8 +427,49 @@ select_text(Target) ->
 %% ====================================================================
 %% @doc Sets value of an HTML element - e. g. textbox.
 %% @end
--spec set_value(Target :: binary(), Value :: binary()) -> ok.
+-spec set_value(TargetID :: binary(), Value :: binary()) -> ok.
 %% ====================================================================
-set_value(Target, Value) ->
-    wire(Target, <<"val">>, Value, false).
+set_value(TargetID, Value) ->
+    wire(TargetID, <<"val">>, Value, false).
 
+
+%% set_width/2
+%% ====================================================================
+%% @doc Set the CSS width of each element in the set of matched elements.
+%% @end
+-spec set_width(TargetID :: binary(), Value :: binary()) -> ok.
+%% ====================================================================
+set_width(TargetID, Value) ->
+    wire(TargetID, <<"width">>, Value, false).
+
+
+%% click/2
+%% ====================================================================
+%% @doc Performs click action on given element.
+%% @end
+-spec click(TargetID :: binary()) -> ok.
+%% ====================================================================
+click(TargetID) ->
+    wire(TargetID, <<"click">>, <<"">>, false).
+
+
+%% prop/3
+%% ====================================================================
+%% @doc Set one or more properties for the set of matched elements.
+%% @end
+-spec prop(TargetID :: binary(), PropertyName :: binary(), Value :: binary()) -> string().
+%% ====================================================================
+prop(TargetID, PropertyName, Value) ->
+    Script = <<"$('#", TargetID/binary, "').prop('", PropertyName/binary, "','", Value/binary, "');">>,
+    wire(Script, false).
+
+
+%% css/3
+%% ====================================================================
+%% @doc Set one or more CSS properties for the set of matched elements.
+%% @end
+-spec css(TargetID :: binary(), PropertyName :: binary(), Value :: binary()) -> string().
+%% ====================================================================
+css(TargetID, PropertyName, Value) ->
+    Script = <<"$('#", TargetID/binary, "').css('", PropertyName/binary, "','", Value/binary, "');">>,
+    wire(Script, false).

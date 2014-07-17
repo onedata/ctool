@@ -217,7 +217,13 @@ start_deps([lager | Rest]) ->
     Config = proplists:get_value(lager, Data),
     lists:foreach(
         fun(Key) ->
-            application:set_env(lager, Key, proplists:get_value(Key, Config))
+            case Key of
+                error_logger_hwm ->
+                    % Disable error_logger high water mark during tests
+                    application:set_env(lager, error_logger_hwm, undefined);
+                _ ->
+                    application:set_env(lager, Key, proplists:get_value(Key, Config))
+            end
         end, proplists:get_keys(Config)),
     [lager:start() | start_deps(Rest)];
 start_deps([ssl | Rest]) ->
