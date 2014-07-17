@@ -141,7 +141,7 @@ user_logged_in() ->
     (gui_ctx:get_user_id() /= undefined).
 
 
-%% form_param/1
+%% postback_param/1
 %% ====================================================================
 %% @doc Retrieves a parameter value for a given key - POSTBACK parameter
 %% passed during form submission via websocket.
