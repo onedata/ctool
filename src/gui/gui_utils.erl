@@ -261,7 +261,7 @@ normalize_email(Email) ->
     case binary:split(Email, [<<"@">>], [global]) of
         [Account, Domain] ->
             case Domain of
-                <<"google.com">> -> <<(binary:replace(Account, <<".">>, <<"">>, [global]))/binary, "@", Domain/binary>>;
+                <<"gmail.com">> -> <<(binary:replace(Account, <<".">>, <<"">>, [global]))/binary, "@", Domain/binary>>;
                 _ -> Email
             end;
         _ ->
