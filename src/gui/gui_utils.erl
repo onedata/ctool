@@ -29,7 +29,7 @@
 -export([https_get/2, https_post/3]).
 
 % Misscellaneous convenience functions
--export([proplist_to_url_params/1, fully_qualified_url/1, normalize_email/1]).
+-export([proplist_to_url_params/1, fully_qualified_url/1, validate_email/1, normalize_email/1]).
 
 %% Name of cookie remembering if cookie policy is accepted (value is T/F)
 -define(cookie_policy_cookie_name, "cookie_policy_accepted").
@@ -37,6 +37,9 @@
 -define(max_redirects, 5).
 %% Maximum depth of CA cert analize
 -define(ca_cert_max_depth, 11).
+
+-define(mail_validation_regexp,
+    <<"^[a-z0-9!#$%&'*+\\/=?^_`{|}~-]+(?:\\.[a-z0-9!#$%&'*+\\/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$">>).
 
 
 %% ====================================================================
@@ -234,9 +237,23 @@ fully_qualified_url(Binary) ->
     end.
 
 
+%% validate_email/1
+%% ====================================================================
+%% @doc Returns true if the given string is a valid email address according to RFC.
+%% @end
+%% ====================================================================
+-spec validate_email(binary()) -> binary().
+%% ====================================================================
+validate_email(Email) ->
+    case re:run(Email, ?mail_validation_regexp) of
+        {match, _} -> true;
+        _ -> false
+    end.
+
+
 %% normalize_email/1
 %% ====================================================================
-%% @doc Performs email normalization by removing all the dots in the local part.
+%% @doc Performs gmail email normalization by removing all the dots in the local part.
 %% @end
 %% ====================================================================
 -spec normalize_email(binary()) -> binary().
@@ -244,7 +261,10 @@ fully_qualified_url(Binary) ->
 normalize_email(Email) ->
     case binary:split(Email, [<<"@">>], [global]) of
         [Account, Domain] ->
-            <<(binary:replace(Account, <<".">>, <<"">>, [global]))/binary, "@", Domain/binary>>;
+            case Domain of
+                <<"google.com">> -> <<(binary:replace(Account, <<".">>, <<"">>, [global]))/binary, "@", Domain/binary>>;
+                _ -> Email
+            end;
         _ ->
             Email
     end.
