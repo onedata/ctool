@@ -13,8 +13,8 @@
 
 %% This macro adds all ebin directories needed by ct tests to code path
 -define(INIT_CODE_PATH, begin
-							% prepare dirs (you must be in working directory for ct run, i. e.
-							% app_name/test_distributed/log/ct_run.tester@172.16.67.81.2014-05-26_15.32.54
+                          % prepare dirs (you must be in working directory for ct run, i. e.
+                          % app_name/test_distributed/log/ct_run.tester@172.16.67.81.2014-05-26_15.32.54
 	                        {ok, CWD} = file:get_cwd(),
 	                        CtTestRoot = filename:join(CWD, "../.."),
 	                        ProjectRoot = filename:join(CtTestRoot,".."),
@@ -30,14 +30,15 @@
 	                        code:add_path(Ebin),
 	                        code:add_paths(DepEbinDirs),
 
-                            % add dirs to suite state ets
-                            ets:new(suite_state, [set, named_table, public]),
-                            ets:delete_all_objects(suite_state),
-                            ets:insert(suite_state, {test_root, filename:join(CWD, "..")}),
-                            ets:insert(suite_state, {ct_root, CtTestRoot}),
+                          % add dirs to suite state ets
+                          ets:new(suite_state, [set, named_table, public]),
+                          ets:delete_all_objects(suite_state),
+                          ets:insert(suite_state, {test_root, filename:join(CWD, "..")}),
+                          ets:insert(suite_state, {ct_root, CtTestRoot}),
+                          ets:insert(suite_state, {project_root, ProjectRoot}),
 
-                            % change working directory to ct root
-                            shell_default:cd(CtTestRoot)
+                          % change working directory to ct root
+                          shell_default:cd(CtTestRoot)
 end).
 
 -define(DB_NODE,?NODE(?CURRENT_HOST,db)).
