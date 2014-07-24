@@ -14,7 +14,6 @@
 -include_lib("ibrowse/include/ibrowse.hrl").
 -include_lib("public_key/include/public_key.hrl").
 -include("gui/common.hrl").
--include("logging.hrl").
 
 % Initialization of n2o settings and cleanup
 -export([init_n2o_ets_and_envs/3, cleanup_n2o/1]).
@@ -28,12 +27,18 @@
 % Functions used to perform secure server-server http requests
 -export([https_get/2, https_post/3]).
 
+% Misscellaneous convenience functions
+-export([proplist_to_url_params/1, fully_qualified_url/1, validate_email/1, normalize_email/1]).
+
 %% Name of cookie remembering if cookie policy is accepted (value is T/F)
 -define(cookie_policy_cookie_name, "cookie_policy_accepted").
 %% Maximum redirects to follow when doing http request
 -define(max_redirects, 5).
 %% Maximum depth of CA cert analize
 -define(ca_cert_max_depth, 11).
+
+-define(mail_validation_regexp,
+    <<"^[a-z0-9!#$%&'*+\\/=?^_`{|}~-]+(?:\\.[a-z0-9!#$%&'*+\\/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$">>).
 
 
 %% ====================================================================
@@ -188,6 +193,81 @@ https_post(URLBin, ReqHeadersBin, Body) ->
         end, ReqHeadersBin),
     %% 0 max redirects, according to RFC post requests should not be redirected
     perform_request(URL, ReqHeaders, post, gui_str:to_list(Body), 0).
+
+
+%% proplist_to_params/1
+%% ====================================================================
+%% @doc Converts a proplist to a single x-www-urlencoded binary. Adding a third
+%% field 'no_encode' to a tuple will prevent URL encoding.
+%% @end
+%% ====================================================================
+-spec proplist_to_url_params([{binary(), binary()} | {binary(), binary(), no_encode}]) -> binary().
+%% ====================================================================
+proplist_to_url_params(List) ->
+    lists:foldl(
+        fun(Tuple, Acc) ->
+            {KeyEncoded, ValueEncoded} = case Tuple of
+                                             {Key, Value, no_encode} ->
+                                                 {Key, Value};
+                                             {Key, Value} ->
+                                                 {gui_str:url_encode(Key), gui_str:url_encode(Value)}
+                                         end,
+            Suffix = case Acc of
+                         <<"">> -> <<"">>;
+                         _ -> <<Acc/binary, "&">>
+                     end,
+            <<Suffix/binary, KeyEncoded/binary, "=", ValueEncoded/binary>>
+        end, <<"">>, List).
+
+
+%% fully_qualified_url/1
+%% ====================================================================
+%% @doc Converts the given URL to a fully quialified url, without leading www.
+%% @end
+%% ====================================================================
+-spec fully_qualified_url(binary()) -> binary().
+%% ====================================================================
+fully_qualified_url(Binary) ->
+    case Binary of
+        <<"https://www.", Rest/binary>> -> <<"https://", Rest/binary>>;
+        <<"https://", _/binary>> -> Binary;
+        <<"www.", Rest/binary>> -> <<"https://", Rest/binary>>;
+        _ -> <<"https://", Binary/binary>>
+    end.
+
+
+%% validate_email/1
+%% ====================================================================
+%% @doc Returns true if the given string is a valid email address according to RFC.
+%% @end
+%% ====================================================================
+-spec validate_email(binary()) -> binary().
+%% ====================================================================
+validate_email(Email) ->
+    case re:run(Email, ?mail_validation_regexp) of
+        {match, _} -> true;
+        _ -> false
+    end.
+
+
+%% normalize_email/1
+%% ====================================================================
+%% @doc Performs gmail email normalization by removing all the dots in the local part.
+%% @end
+%% ====================================================================
+-spec normalize_email(binary()) -> binary().
+%% ====================================================================
+normalize_email(Email) ->
+    case binary:split(Email, [<<"@">>], [global]) of
+        [Account, Domain] ->
+            case Domain of
+                <<"gmail.com">> -> <<(binary:replace(Account, <<".">>, <<"">>, [global]))/binary, "@", Domain/binary>>;
+                _ -> Email
+            end;
+        _ ->
+            Email
+    end.
+
 
 %% ====================================================================
 %% Internal functions

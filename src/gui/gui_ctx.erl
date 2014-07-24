@@ -89,7 +89,6 @@ get_user_id() ->
 %% ====================================================================
 clear_session() ->
     wf:user(undefined),
-    wf:session(user_doc, undefined),
     wf:logout(). % This ends up calling gui_session:clear()
 
 
@@ -170,12 +169,10 @@ url_param(ParamName) ->
 
 %% form_params/0
 %% ====================================================================
-%% @doc Retrieves a form parameter sent by POST for given key.
-%% Returns undefined if the key is not found.
+%% @doc Retrieves all form parameters (request body) sent by POST.
 %% @end
--spec form_params() -> {ok, Params :: list()}.
+-spec form_params() -> Params :: [{Key :: binary(), Value :: binary()}].
 %% ====================================================================
 form_params() ->
     {ok, Params, _Req} = cowboy_req:body_qs(?REQ),
-    {ok, Params}.
-
+    Params.
