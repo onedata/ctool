@@ -89,7 +89,6 @@ get_user_id() ->
 %% ====================================================================
 clear_session() ->
     wf:user(undefined),
-    wf:session(user_doc, undefined),
     wf:logout(). % This ends up calling gui_session:clear()
 
 
