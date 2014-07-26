@@ -126,7 +126,7 @@ cookie_policy_popup_body(PrivacyPolicyURL) ->
             [
                 #panel{id = <<"cookie_policy_popup">>, class = <<"dialog dialog-info wide">>,
                     style = <<"position: fixed; bottom: 0; height: 60px; z-index: 2000;",
-                    "line-height: 60px; text-align: center; margin: 0; padding: 0;">>,
+                    "line-height: 60px; text-align: center; margin: 0; padding: 0; width: 100%;">>,
                     body = [
                         #p{style = <<"margin: 0 10px; display: inline;">>,
                             body = <<"This website uses cookies. By continuing to browse the site, you are agreeing to our use of cookies.">>},
