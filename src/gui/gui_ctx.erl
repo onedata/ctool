@@ -22,6 +22,8 @@
 % Parameters querying
 -export([postback_param/1, url_param/1, form_params/0]).
 
+-export([get_access_token/0, set_access_token/2]).
+
 
 %% ====================================================================
 %% API functions
@@ -60,6 +62,13 @@ get(Key) ->
     wf:session(Key).
 
 
+set_access_token(UserGlobalId, AccessToken) ->
+    ?MODULE:put(user_access_token, {UserGlobalId, AccessToken}).
+
+
+get_access_token() ->
+    ?MODULE:get(user_access_token).
+
 %% set_user_id/1
 %% ====================================================================
 %% @doc Associates current session with a user. User ID and his
@@ -89,6 +98,7 @@ get_user_id() ->
 %% ====================================================================
 clear_session() ->
     wf:user(undefined),
+    wf:session(user_doc, undefined),
     wf:logout(). % This ends up calling gui_session:clear()
 
 
