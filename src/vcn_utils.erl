@@ -136,9 +136,11 @@ record_type(Record) when is_tuple(Record) ->
 ensure_binary(Bin) when is_binary(Bin) ->
     Bin;
 ensure_binary(List) when is_list(List) ->
-    list_to_binary(List);
+    iolist_to_binary(List);
 ensure_binary(Integer) when is_integer(Integer) ->
-    integer_to_binary(Integer).
+    integer_to_binary(Integer);
+ensure_binary(Atom) when is_atom(Atom) ->
+    atom_to_binary(Atom).
 
 
 ensure_list(Binary) when is_binary(Binary) ->
@@ -146,4 +148,6 @@ ensure_list(Binary) when is_binary(Binary) ->
 ensure_list(Integer) when is_integer(Integer) ->
     integer_to_list(Integer);
 ensure_list(List) when is_list(List) ->
-    List.
+    List;
+ensure_list(Atom) when is_atom(Atom) ->
+    atom_to_list(Atom).
