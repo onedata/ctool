@@ -140,7 +140,7 @@ ensure_binary(List) when is_list(List) ->
 ensure_binary(Integer) when is_integer(Integer) ->
     integer_to_binary(Integer);
 ensure_binary(Atom) when is_atom(Atom) ->
-    atom_to_binary(Atom).
+    atom_to_binary(Atom, utf8).
 
 
 ensure_list(Binary) when is_binary(Binary) ->
