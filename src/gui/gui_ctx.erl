@@ -15,14 +15,13 @@
 
 % Functions used to associate user with session
 -export([create_session/0, put/2, get/1, set_user_id/1, get_user_id/0, user_logged_in/0, clear_session/0]).
+-export([get_access_token/0, set_access_token/2]).
 
 % Functions connected with page / session context
 -export([get_requested_hostname/0, get_requested_page/0, get_request_params/0]).
 
 % Parameters querying
 -export([postback_param/1, url_param/1, form_params/0]).
-
--export([get_access_token/0, set_access_token/2]).
 
 
 %% ====================================================================
