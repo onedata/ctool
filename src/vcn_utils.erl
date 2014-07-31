@@ -133,6 +133,13 @@ mtime() ->
 record_type(Record) when is_tuple(Record) ->
     element(1, Record).
 
+
+%% ensure_binary/1
+%% ====================================================================
+%% @doc Translates given term to binary if needed.
+%% @end
+-spec ensure_binary(BinLikeTerm :: atom() | binary() | integer() | string() | list()) -> binary().
+%% ====================================================================
 ensure_binary(Bin) when is_binary(Bin) ->
     Bin;
 ensure_binary(List) when is_list(List) ->
@@ -143,6 +150,12 @@ ensure_binary(Atom) when is_atom(Atom) ->
     atom_to_binary(Atom, utf8).
 
 
+%% ensure_list/1
+%% ====================================================================
+%% @doc Translates given term to list if needed.
+%% @end
+-spec ensure_list(ListLikeTerm :: atom() | binary() | integer() | string() | list()) -> list().
+%% ====================================================================
 ensure_list(Binary) when is_binary(Binary) ->
     binary_to_list(Binary);
 ensure_list(Integer) when is_integer(Integer) ->

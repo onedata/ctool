@@ -62,12 +62,25 @@ get(Key) ->
     wf:session(Key).
 
 
+%% set_access_token/2
+%% ====================================================================
+%% @doc Associates current session with a user's globalId and Access Token.
+%% @end
+-spec set_access_token(UserGlobalId :: binary(), AccessToken :: binary()) -> ok.
+%% ====================================================================
 set_access_token(UserGlobalId, AccessToken) ->
     ?MODULE:put(user_access_token, {UserGlobalId, AccessToken}).
 
 
+%% get_access_token/0
+%% ====================================================================
+%% @doc Returns user's Global ID nad Access Token associated with current session.
+%% @end
+-spec get_access_token() -> {UserGlobalId :: binary(), AccessToken :: binary()} | undefined.
+%% ====================================================================
 get_access_token() ->
     ?MODULE:get(user_access_token).
+
 
 %% set_user_id/1
 %% ====================================================================
