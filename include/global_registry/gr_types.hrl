@@ -13,7 +13,7 @@
 -define(GR_TYPES_HRL, 1).
 
 -export_type([uri/0, method/0, header/0, value/0, headers/0, body/0]).
--export_type([client/0, parameters/0]).
+-export_type([client/0, space_privilege/0, group_privilege/0]).
 
 %% HTTP request types
 -type uri() :: string().
@@ -25,5 +25,18 @@
 
 %% Global Registry types
 -type client() :: provider | {user, AccessToken :: binary()}.
+
+%% User privileges with regards to Space management.
+-type space_privilege() :: space_invite_user | space_remove_user |
+space_invite_group | space_remove_group | space_set_privileges |
+space_remove | space_add_provider | space_remove_provider |
+space_change_data | space_view_data.
+
+
+%% User privileges with regards to group management.
+-type group_privilege() :: group_change_data | group_invite_user |
+group_remove_user | group_join_space | group_create_space |
+group_set_privileges | group_remove | group_leave_space |
+group_view_data | group_create_space_token.
 
 -endif.

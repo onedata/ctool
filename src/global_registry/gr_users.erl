@@ -11,6 +11,7 @@
 
 -module(gr_users).
 
+-include("global_registry/gr_types.hrl").
 -include("global_registry/gr_users.hrl").
 -include("global_registry/gr_spaces.hrl").
 -include("global_registry/gr_groups.hrl").
@@ -21,6 +22,9 @@
 -export([create_space/2, join_space/2, leave_space/2, get_spaces/1, get_space_info/2]).
 -export([create_group/2, join_group/2, leave_group/2, get_groups/1, get_group_info/2]).
 
+%% ====================================================================
+%% API functions
+%% ====================================================================
 
 %% get_info/1
 %% ====================================================================
@@ -45,7 +49,7 @@ get_info(Client) ->
 
 %% modify_info/2
 %% ====================================================================
-%% @doc Modify public information about user. Parameters may contain:
+%% @doc Modifies public information about user. Parameters may contain:
 %% "name" of user.
 -spec modify_info(Client :: client(), Parameters :: [{Key :: binary(), Value :: binary()}]) -> Result when
     Result :: ok | {error, Reason :: term()}.
@@ -81,7 +85,7 @@ merge_account(Client, Parameters) ->
 
 %% get_create_space_token/1
 %% ====================================================================
-%% @doc Returns token that allows provider to create space for user.
+%% @doc Returns token that allows provider to create Space for user.
 -spec get_create_space_token(Client :: client()) -> Result when
     Result :: {ok, Token :: binary()} | {error, Reason :: term()}.
 %% ====================================================================
@@ -117,8 +121,8 @@ get_merge_account_token(Client) ->
 
 %% create_space/2
 %% ====================================================================
-%% @doc Creates new space and makes user the only member and administrator
-%% of created space. Parameters should contain: "name" of new space.
+%% @doc Creates new Space and makes user the only member and administrator
+%% of created Space. Parameters should contain: "name" of new Space.
 -spec create_space(Client :: client(), Parameters :: [{Key :: binary(), Value :: binary()}]) -> Result when
     Result :: {ok, SpaceId :: binary()} | {error, Reason :: term()}.
 %% ====================================================================
@@ -136,8 +140,8 @@ create_space(Client, Parameters) ->
 
 %% join_space/2
 %% ====================================================================
-%% @doc Makes user join space associated with token.
-%% Parameters should contain: "token" associated with space.
+%% @doc Makes user join Space associated with token.
+%% Parameters should contain: "token" associated with Space.
 -spec join_space(Client :: client(), Parameters :: [{Key :: binary(), Value :: binary()}]) -> Result when
     Result :: {ok, SpaceId :: binary()} | {error, Reason :: term()}.
 %% ====================================================================
@@ -155,7 +159,7 @@ join_space(Client, Parameters) ->
 
 %% leave_space/2
 %% ====================================================================
-%% @doc Makes user leave given space.
+%% @doc Makes user leave Space.
 -spec leave_space(Client :: client(), SpaceId :: binary()) -> Result when
     Result :: ok | {error, Reason :: term()}.
 %% ====================================================================
@@ -171,7 +175,7 @@ leave_space(Client, SpaceId) ->
 
 %% get_spaces/1
 %% ====================================================================
-%% @doc Returns list of ids of spaces that user belongs to.
+%% @doc Returns list of ids of Spaces that user belongs to.
 -spec get_spaces(Client :: client()) -> Result when
     Result :: {ok, SpaceIds :: [binary()]} | {error, Reason :: term()}.
 %% ====================================================================
@@ -189,7 +193,7 @@ get_spaces(Client) ->
 
 %% get_space_info/2
 %% ====================================================================
-%% @doc Returns public information about space that user belongs to.
+%% @doc Returns public information about Space that user belongs to.
 -spec get_space_info(Client :: client(), SpaceId :: binary()) -> Result when
     Result :: {ok, SpaceInfo :: #space_info{}} | {error, Reason :: term()}.
 %% ====================================================================
@@ -248,7 +252,7 @@ join_group(Client, Parameters) ->
 
 %% leave_group/2
 %% ====================================================================
-%% @doc Makes user leave given group.
+%% @doc Makes user leave group.
 -spec leave_group(Client :: client(), GroupId :: binary()) -> Result when
     Result :: ok | {error, Reason :: term()}.
 %% ====================================================================

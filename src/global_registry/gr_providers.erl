@@ -11,6 +11,7 @@
 
 -module(gr_providers).
 
+-include("global_registry/gr_types.hrl").
 -include("global_registry/gr_spaces.hrl").
 -include("global_registry/gr_providers.hrl").
 
@@ -18,6 +19,9 @@
 -export([register/2, unregister/1, get_info/1, modify_info/2]).
 -export([create_space/2, support_space/2, cancel_support/2, get_spaces/1, get_space_info/2]).
 
+%% ====================================================================
+%% API functions
+%% ====================================================================
 
 %% register/2
 %% ====================================================================
@@ -81,7 +85,7 @@ get_info(Client) ->
 
 %% modify_info/2
 %% ====================================================================
-%% @doc Modify public information about provider. Parameters may contain:
+%% @doc Modifies public information about provider. Parameters may contain:
 %% "urls" to cluster nodes and "redirectionPoint" to provider's GUI.
 -spec modify_info(Client :: client(), Parameters :: [{Key :: binary(), Value :: binary()}]) -> Result when
     Result :: ok | {error, Reason :: term()}.
@@ -99,9 +103,9 @@ modify_info(Client, Parameters) ->
 
 %% create_space/2
 %% ====================================================================
-%% @doc Creates new space and makes provider support created space.
+%% @doc Creates new Space and makes provider support created Space.
 %% User/group that has given provider a token receives all privileges
-%% for new space. Parameters should contain: "name" of new space and
+%% for new Space. Parameters should contain: "name" of new Space and
 %% "token" associated with user/group.
 -spec create_space(Client :: client(), Parameters :: [{Key :: binary(), Value :: binary()}]) -> Result when
     Result :: {ok, SpaceId :: binary()} | {error, Reason :: term()}.
@@ -120,7 +124,7 @@ create_space(Client, Parameters) ->
 
 %% support_space/2
 %% ====================================================================
-%% @doc Makes provider support user's/group's space that has given him a token.
+%% @doc Makes provider support user's/group's Space that has given him a token.
 %% Parameters should contain: "token" associated with user/group.
 -spec support_space(Client :: client(), Parameters :: [{Key :: binary(), Value :: binary()}]) -> Result when
     Result :: {ok, SpaceId :: binary()} | {error, Reason :: term()}.
@@ -139,7 +143,7 @@ support_space(Client, Parameters) ->
 
 %% cancel_support/2
 %% ====================================================================
-%% @doc Makes provider stop supporting given space.
+%% @doc Makes provider stop supporting Space.
 -spec cancel_support(Client :: client(), SpaceId :: binary()) -> Result when
     Result :: ok | {error, Reason :: term()}.
 %% ====================================================================
@@ -155,7 +159,7 @@ cancel_support(Client, SpaceId) ->
 
 %% get_spaces/1
 %% ====================================================================
-%% @doc Returns list of ids of spaces supported by provider.
+%% @doc Returns list of ids of Spaces supported by provider.
 -spec get_spaces(Client :: client()) -> Result when
     Result :: {ok, SpaceIds :: [binary()]} | {error, Reason :: term()}.
 %% ====================================================================
@@ -173,7 +177,7 @@ get_spaces(Client) ->
 
 %% get_space_info/2
 %% ====================================================================
-%% @doc Returns public information about space supported by provider.
+%% @doc Returns public information about Space supported by provider.
 -spec get_space_info(Client :: client(), SpaceId :: binary()) -> Result when
     Result :: {ok, SpaceInfo :: #space_info{}} | {error, Reason :: term()}.
 %% ====================================================================
