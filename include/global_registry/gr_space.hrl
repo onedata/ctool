@@ -5,14 +5,14 @@
 %% cited in 'LICENSE.txt'.
 %% @end
 %% ===================================================================
-%% @doc Global Registry definition for space record
+%% @doc Global Registry definition of space record
 %% @end
 %% ===================================================================
 
 -ifndef(GR_SPACE_HRL).
 -define(GR_SPACE_HRL, 1).
 
-%% This record defines a provider who support spaces and can be reached via url
+%% This record defines a space details
 -record(space_info, {
     id :: binary(),
     name :: binary()

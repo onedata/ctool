@@ -15,23 +15,23 @@
 -include("global_registry/gr_provider.hrl").
 
 %% API
--export([register/1, unregister/0, get_info/0, modify_info/1]).
--export([create_space/1, support_space/1, cancel_support/1, get_spaces/0, get_space_info/1]).
+-export([register/2, unregister/1, get_info/1, modify_info/2]).
+-export([create_space/2, support_space/2, cancel_support/2, get_spaces/1, get_space_info/2]).
 
 
-%% register/1
+%% register/2
 %% ====================================================================
 %% @doc Registers provider in Global Registry. Parameters should contain:
 %% "csr" that will be signed by Global Registry, "urls" to cluster nodes
 %% and "redirectionPoint" to provider's GUI.
--spec register(Parameters :: [{Key :: binary(), Value :: binary()}]) -> Result when
+-spec register(Client :: client(), Parameters :: [{Key :: binary(), Value :: binary()}]) -> Result when
     Result :: {ok, ProviderId :: binary(), Cert :: binary()} | {error, Reason :: term()}.
 %% ====================================================================
-register(Parameters) ->
+register(Client, Parameters) ->
     try
         URI = "/provider",
         Body = iolist_to_binary(mochijson2:encode(Parameters)),
-        {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:provider_request(URI, post, Body),
+        {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:request(Client, URI, post, Body),
         Proplist = mochijson2:decode(ResponseBody, [{format, proplist}]),
         ProviderId = proplists:get_value(<<"providerId">>, Proplist),
         Cert = proplists:get_value(<<"certificate">>, Proplist),
@@ -41,32 +41,32 @@ register(Parameters) ->
     end.
 
 
-%% unregister/0
+%% unregister/1
 %% ====================================================================
 %% @doc Unregisters provider from Global Registry.
--spec unregister() -> Result when
+-spec unregister(Client :: client()) -> Result when
     Result :: ok | {error, Reason :: term()}.
 %% ====================================================================
-unregister() ->
+unregister(Client) ->
     try
         URI = "/provider",
-        {ok, "204", _ResponseHeaders, _ResponseBody} = gr_endpoint:provider_request(URI, delete),
+        {ok, "204", _ResponseHeaders, _ResponseBody} = gr_endpoint:request(Client, URI, delete),
         ok
     catch
         _:Reason -> {error, Reason}
     end.
 
 
-%% get_info/0
+%% get_info/1
 %% ====================================================================
 %% @doc Returns public information about provider.
--spec get_info() -> Result when
+-spec get_info(Client :: client()) -> Result when
     Result :: {ok, ProviderInfo :: #provider_info{}} | {error, Reason :: term()}.
 %% ====================================================================
-get_info() ->
+get_info(Client) ->
     try
         URI = "/provider",
-        {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:provider_request(URI, get),
+        {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:request(Client, URI, get),
         Proplist = mochijson2:decode(ResponseBody, [{format, proplist}]),
         ProviderInfo = #provider_info{
             id = proplists:get_value(<<"providerId">>, Proplist),
@@ -79,38 +79,38 @@ get_info() ->
     end.
 
 
-%% modify_info/1
+%% modify_info/2
 %% ====================================================================
 %% @doc Modify public information about provider. Parameters may contain:
 %% "urls" to cluster nodes and "redirectionPoint" to provider's GUI.
--spec modify_info(Parameters :: [{Key :: binary(), Value :: binary()}]) -> Result when
+-spec modify_info(Client :: client(), Parameters :: [{Key :: binary(), Value :: binary()}]) -> Result when
     Result :: ok | {error, Reason :: term()}.
 %% ====================================================================
-modify_info(Parameters) ->
+modify_info(Client, Parameters) ->
     try
         URI = "/provider",
         Body = iolist_to_binary(mochijson2:encode(Parameters)),
-        {ok, "200", _ResponseHeaders, _ResponseBody} = gr_endpoint:provider_request(URI, patch, Body),
+        {ok, "200", _ResponseHeaders, _ResponseBody} = gr_endpoint:request(Client, URI, patch, Body),
         ok
     catch
         _:Reason -> {error, Reason}
     end.
 
 
-%% create_space/1
+%% create_space/2
 %% ====================================================================
 %% @doc Creates new space and makes provider support created space.
 %% User/group that has given provider a token receives all privileges
 %% for new space. Parameters should contain: "name" of new space and
 %% "token" associated with user/group.
--spec create_space(Parameters :: [{Key :: binary(), Value :: binary()}]) -> Result when
+-spec create_space(Client :: client(), Parameters :: [{Key :: binary(), Value :: binary()}]) -> Result when
     Result :: {ok, SpaceId :: binary()} | {error, Reason :: term()}.
 %% ====================================================================
-create_space(Parameters) ->
+create_space(Client, Parameters) ->
     try
         URI = "/provider/spaces",
         Body = iolist_to_binary(mochijson2:encode(Parameters)),
-        {ok, "201", ResponseHeaders, _ResponseBody} = gr_endpoint:provider_request(URI, post, Body),
+        {ok, "201", ResponseHeaders, _ResponseBody} = gr_endpoint:request(Client, URI, post, Body),
         <<"/spaces/", SpaceId/binary>> = list_to_binary(proplists:get_value("location", ResponseHeaders)),
         {ok, SpaceId}
     catch
@@ -118,18 +118,18 @@ create_space(Parameters) ->
     end.
 
 
-%% create_space/1
+%% support_space/2
 %% ====================================================================
 %% @doc Makes provider support user's/group's space that has given him a token.
 %% Parameters should contain: "token" associated with user/group.
--spec create_space(Parameters :: [{Key :: binary(), Value :: binary()}]) -> Result when
+-spec support_space(Client :: client(), Parameters :: [{Key :: binary(), Value :: binary()}]) -> Result when
     Result :: {ok, SpaceId :: binary()} | {error, Reason :: term()}.
 %% ====================================================================
-support_space(Parameters) ->
+support_space(Client, Parameters) ->
     try
         URI = "/provider/spaces/support",
         Body = iolist_to_binary(mochijson2:encode(Parameters)),
-        {ok, "201", ResponseHeaders, _ResponseBody} = gr_utils:send_req(URI, post, Body),
+        {ok, "201", ResponseHeaders, _ResponseBody} = gr_endpoint:request(Client, URI, post, Body),
         <<"/provider/spaces/", SpaceId/binary>> = list_to_binary(proplists:get_value("location", ResponseHeaders)),
         {ok, SpaceId}
     catch
@@ -137,32 +137,32 @@ support_space(Parameters) ->
     end.
 
 
-%% cancel_support/1
+%% cancel_support/2
 %% ====================================================================
 %% @doc Makes provider stop supporting given space.
--spec cancel_support(SpaceId :: binary()) -> Result when
+-spec cancel_support(Client :: client(), SpaceId :: binary()) -> Result when
     Result :: ok | {error, Reason :: term()}.
 %% ====================================================================
-cancel_support(SpaceId) ->
+cancel_support(Client, SpaceId) ->
     try
-        URI = <<"/provider/spaces/", SpaceId>>,
-        {ok, "204", _ResponseHeaders, _ResponseBody} = gr_endpoint:provider_request(URI, delete),
+        URI = "/provider/spaces/" ++ binary_to_list(SpaceId),
+        {ok, "204", _ResponseHeaders, _ResponseBody} = gr_endpoint:request(Client, URI, delete),
         ok
     catch
         _:Reason -> {error, Reason}
     end.
 
 
-%% get_spaces/0
+%% get_spaces/1
 %% ====================================================================
-%% @doc Returns list of space ids supported by provider.
--spec get_spaces() -> Result when
+%% @doc Returns list of ids of spaces supported by provider.
+-spec get_spaces(Client :: client()) -> Result when
     Result :: {ok, SpaceIds :: [binary()]} | {error, Reason :: term()}.
 %% ====================================================================
-get_spaces() ->
+get_spaces(Client) ->
     try
         URI = "/provider/spaces",
-        {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:provider_request(URI, get),
+        {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:request(Client, URI, get),
         Proplist = mochijson2:decode(ResponseBody, [{format, proplist}]),
         SpaceIds = proplists:get_value(<<"spaces">>, Proplist),
         {ok, SpaceIds}
@@ -171,16 +171,16 @@ get_spaces() ->
     end.
 
 
-%% get_space_info/1
+%% get_space_info/2
 %% ====================================================================
 %% @doc Returns public information about space supported by provider.
--spec get_space_info(SpaceId :: binary()) -> Result when
+-spec get_space_info(Client :: client(), SpaceId :: binary()) -> Result when
     Result :: {ok, SpaceInfo :: #space_info{}} | {error, Reason :: term()}.
 %% ====================================================================
-get_space_info(SpaceId) ->
+get_space_info(Client, SpaceId) ->
     try
-        URI = <<"/provider/spaces/", SpaceId>>,
-        {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:provider_request(URI, get),
+        URI = "/provider/spaces/" ++ binary_to_list(SpaceId),
+        {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:request(Client, URI, get),
         Proplist = mochijson2:decode(ResponseBody, [{format, proplist}]),
         SpaceInfo = #space_info{
             id = proplists:get_value(<<"spaceId">>, Proplist),
