@@ -258,7 +258,8 @@ join_space(Client, GroupId, Parameters) ->
         URI = "/groups/" ++ binary_to_list(GroupId) ++ "/spaces/join",
         Body = iolist_to_binary(mochijson2:encode(Parameters)),
         {ok, "201", ResponseHeaders, _ResponseBody} = gr_endpoint:request(Client, URI, post, Body),
-        <<"/groups/", GroupId/binary, "/spaces/", SpaceId/binary>> = list_to_binary(proplists:get_value("location", ResponseHeaders)),
+        GroupIdSize = size(GroupId),
+        <<"/groups/", GroupId:GroupIdSize/binary, "/spaces/", SpaceId/binary>> = list_to_binary(proplists:get_value("location", ResponseHeaders)),
         {ok, SpaceId}
     catch
         _:Reason -> {error, Reason}
