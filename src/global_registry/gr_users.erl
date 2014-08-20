@@ -5,15 +5,15 @@
 %% cited in 'LICENSE.txt'
 %% @end
 %% ===================================================================
-%% @doc: This module allows for user management in Global Registry.
+%% @doc: This module allows for users management in Global Registry.
 %% @end
 %% ===================================================================
 
--module(gr_user).
+-module(gr_users).
 
--include("global_registry/gr_user.hrl").
--include("global_registry/gr_space.hrl").
--include("global_registry/gr_group.hrl").
+-include("global_registry/gr_users.hrl").
+-include("global_registry/gr_spaces.hrl").
+-include("global_registry/gr_groups.hrl").
 
 %% API
 -export([get_info/1, modify_info/2, merge_account/2]).

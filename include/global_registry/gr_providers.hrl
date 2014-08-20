@@ -9,8 +9,8 @@
 %% @end
 %% ===================================================================
 
--ifndef(GR_PROVIDER_HRL).
--define(GR_PROVIDER_HRL, 1).
+-ifndef(GR_PROVIDERS_HRL).
+-define(GR_PROVIDERS_HRL, 1).
 
 %% This record defines a provider whoes GUI can be reached by "redirectionPoint"
 %% and cluster nodes are available at "urls"

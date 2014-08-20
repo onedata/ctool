@@ -5,15 +5,15 @@
 %% cited in 'LICENSE.txt'.
 %% @end
 %% ===================================================================
-%% @doc Global Registry definition of space record
+%% @doc Global Registry definition of user record
 %% @end
 %% ===================================================================
 
--ifndef(GR_SPACE_HRL).
--define(GR_SPACE_HRL, 1).
+-ifndef(GR_USERS_HRL).
+-define(GR_USERS_HRL, 1).
 
-%% This record defines a space details
--record(space_info, {
+%% This record defines a user details
+-record(user_info, {
     id :: binary(),
     name :: binary()
 }).

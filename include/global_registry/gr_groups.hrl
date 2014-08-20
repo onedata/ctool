@@ -5,15 +5,15 @@
 %% cited in 'LICENSE.txt'.
 %% @end
 %% ===================================================================
-%% @doc Global Registry definition of user record
+%% @doc Global Registry definition of group record
 %% @end
 %% ===================================================================
 
--ifndef(GR_USER_HRL).
--define(GR_USER_HRL, 1).
+-ifndef(GR_GROUPS_HRL).
+-define(GR_GROUPS_HRL, 1).
 
-%% This record defines a user details
--record(user_info, {
+%% This record defines a group details
+-record(group_info, {
     id :: binary(),
     name :: binary()
 }).

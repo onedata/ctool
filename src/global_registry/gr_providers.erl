@@ -9,10 +9,10 @@
 %% @end
 %% ===================================================================
 
--module(gr_provider).
+-module(gr_providers).
 
--include("global_registry/gr_space.hrl").
--include("global_registry/gr_provider.hrl").
+-include("global_registry/gr_spaces.hrl").
+-include("global_registry/gr_providers.hrl").
 
 %% API
 -export([register/2, unregister/1, get_info/1, modify_info/2]).

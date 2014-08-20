@@ -2,14 +2,20 @@
 %% @author Krzysztof Trzepla
 %% @copyright (C): 2014 ACK CYFRONET AGH
 %% This software is released under the MIT license
-%% cited in 'LICENSE.txt'
+%% cited in 'LICENSE.txt'.
 %% @end
 %% ===================================================================
-%% @doc: This module allows for spaces management in Global Registry.
+%% @doc Global Registry definition of space record
 %% @end
 %% ===================================================================
 
--module(gr_space).
+-ifndef(GR_SPACES_HRL).
+-define(GR_SPACES_HRL, 1).
 
-%% API
--export([]).
+%% This record defines a space details
+-record(space_info, {
+    id :: binary(),
+    name :: binary()
+}).
+
+-endif.
