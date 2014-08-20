@@ -11,7 +11,6 @@
 %% ===================================================================
 
 -module(gui_utils).
-%% -include_lib("ibrowse/include/ibrowse.hrl").
 -include_lib("public_key/include/public_key.hrl").
 -include("gui/common.hrl").
 
