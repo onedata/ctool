@@ -11,7 +11,6 @@
 %% ===================================================================
 
 -module(gui_utils).
--include_lib("ibrowse/include/ibrowse.hrl").
 -include_lib("public_key/include/public_key.hrl").
 -include("gui/common.hrl").
 
@@ -326,7 +325,7 @@ get_redirect_url(OldURL, Headers) ->
         "http://" ++ _ -> Location;
         "https://" ++ _ -> Location;
         [$/ | _] = Location ->
-            #url{protocol = Protocol, host = Host, port = Port} = ibrowse_lib:parse_url(OldURL),
+            {url, _, Host, Port, _, _, _, Protocol, _} = ibrowse_lib:parse_url(OldURL),
             PortFrag = case {Protocol, Port} of
                            {http, 80} -> "";
                            {https, 443} -> "";

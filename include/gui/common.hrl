@@ -19,15 +19,6 @@
 % Custom n2o elements
 % ===========================
 
-% Simplest HTML form
--record(form, {?ELEMENT_BASE(element_form),
-    method,
-    action,
-    html_name,
-    enctype
-}).
-
-
 %% Includes from cowboy
 -type cookie_option() :: {max_age, non_neg_integer()}
 	| {domain, binary()} | {path, binary()}
