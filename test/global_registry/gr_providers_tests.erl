@@ -110,7 +110,7 @@ should_get_info() ->
     ?assertEqual({ok, #provider_info{
         id = <<"providerId">>,
         urls = <<"urls">>,
-        redirection_point = <<"redirectionPoint">>}
+        redirectionPoint = <<"redirectionPoint">>}
     }, Answer),
 
     ?assert(meck:validate(mochijson2)),

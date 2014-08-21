@@ -76,7 +76,7 @@ get_info(Client) ->
         ProviderInfo = #provider_info{
             id = proplists:get_value(<<"providerId">>, Proplist),
             urls = proplists:get_value(<<"urls">>, Proplist),
-            redirection_point = proplists:get_value(<<"redirectionPoint">>, Proplist)
+            redirectionPoint = proplists:get_value(<<"redirectionPoint">>, Proplist)
         },
         {ok, ProviderInfo}
     catch
