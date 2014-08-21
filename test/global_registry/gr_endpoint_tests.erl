@@ -13,6 +13,7 @@
 -module(gr_endpoint_tests).
 
 -ifdef(TEST).
+
 -include_lib("eunit/include/eunit.hrl").
 
 %% ===================================================================
@@ -79,7 +80,9 @@ should_send_provider_request_1() ->
         [],
         [{ssl_options, [{cacerts, [cacert_encoded]}, {key, {key_type, key_encoded}}, {cert, cert_encoded}]}]) -> ok
     end),
+
     gr_endpoint:request(provider, "URI", method),
+
     ?assert(meck:validate(ibrowse)),
     ok = meck:unload(ibrowse).
 
@@ -93,7 +96,9 @@ should_send_provider_request_2() ->
         body,
         [{ssl_options, [{cacerts, [cacert_encoded]}, {key, {key_type, key_encoded}}, {cert, cert_encoded}]}]) -> ok
     end),
+
     gr_endpoint:request(provider, "URI", method, body),
+
     ?assert(meck:validate(ibrowse)),
     ok = meck:unload(ibrowse).
 
@@ -108,7 +113,9 @@ should_send_provider_request_3() ->
         [{ssl_options, [{cacerts, [cacert_encoded]}, {key, {key_type, key_encoded}}, {cert, cert_encoded}]}, options]) ->
         ok
     end),
+
     gr_endpoint:request(provider, "URI", method, body, [options]),
+
     ?assert(meck:validate(ibrowse)),
     ok = meck:unload(ibrowse).
 
@@ -123,7 +130,9 @@ should_send_provider_request_4() ->
         [{ssl_options, [{cacerts, [cacert_encoded]}, {key, {key_type, key_encoded}}, {cert, cert_encoded}]}, options]) ->
         ok
     end),
+
     gr_endpoint:request(provider, "URI", method, [headers], body, [options]),
+
     ?assert(meck:validate(ibrowse)),
     ok = meck:unload(ibrowse).
 
@@ -137,7 +146,9 @@ should_send_user_request_1() ->
         [],
         [{ssl_options, [{cacerts, [cacert_encoded]}, {key, {key_type, key_encoded}}, {cert, cert_encoded}]}]) -> ok
     end),
+
     gr_endpoint:request({user, <<"AccessToken">>}, "URI", method),
+
     ?assert(meck:validate(ibrowse)),
     ok = meck:unload(ibrowse).
 
@@ -151,7 +162,9 @@ should_send_user_request_2() ->
         body,
         [{ssl_options, [{cacerts, [cacert_encoded]}, {key, {key_type, key_encoded}}, {cert, cert_encoded}]}]) -> ok
     end),
+
     gr_endpoint:request({user, <<"AccessToken">>}, "URI", method, body),
+
     ?assert(meck:validate(ibrowse)),
     ok = meck:unload(ibrowse).
 
@@ -166,7 +179,9 @@ should_send_user_request_3() ->
         [{ssl_options, [{cacerts, [cacert_encoded]}, {key, {key_type, key_encoded}}, {cert, cert_encoded}]}, options]) ->
         ok
     end),
+
     gr_endpoint:request({user, <<"AccessToken">>}, "URI", method, body, [options]),
+
     ?assert(meck:validate(ibrowse)),
     ok = meck:unload(ibrowse).
 
@@ -181,7 +196,9 @@ should_send_user_request_4() ->
         [{ssl_options, [{cacerts, [cacert_encoded]}, {key, {key_type, key_encoded}}, {cert, cert_encoded}]}, options]) ->
         ok
     end),
+
     gr_endpoint:request({user, <<"AccessToken">>}, "URI", method, [headers], body, [options]),
+
     ?assert(meck:validate(ibrowse)),
     ok = meck:unload(ibrowse).
 
