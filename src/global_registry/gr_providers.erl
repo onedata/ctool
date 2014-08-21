@@ -36,7 +36,7 @@ register(Client, Parameters) ->
     try
         URI = "/provider",
         Body = iolist_to_binary(mochijson2:encode(Parameters)),
-        {ok, "201", _ResponseHeaders, ResponseBody} = gr_endpoint:insecure_request(Client, URI, post, Body),
+        {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:insecure_request(Client, URI, post, Body),
         Proplist = mochijson2:decode(ResponseBody, [{format, proplist}]),
         ProviderId = proplists:get_value(<<"providerId">>, Proplist),
         Cert = proplists:get_value(<<"certificate">>, Proplist),
@@ -139,7 +139,7 @@ check_port(Client, IpAddress, Port, Type) ->
         Body = iolist_to_binary(mochijson2:encode([{Type, CheckURL}])),
         {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:insecure_request(Client, URI, get, Body),
         Proplist = mochijson2:decode(ResponseBody, [{format, proplist}]),
-        <<"ok">> = proplists:get_value(Type, Proplist),
+        <<"ok">> = proplists:get_value(CheckURL, Proplist),
         ok
     catch
         _:Reason -> {error, Reason}

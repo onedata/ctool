@@ -151,4 +151,4 @@ do_secure_request(URI, Method, Headers, Body, Options) ->
 %% ====================================================================
 do_insecure_request(URI, Method, Headers, Body, Options) ->
     URL = gr_plugin:get_gr_url(),
-    ibrowse:send_req(URL ++ URI, [{"content_type", "application/json"} | Headers], Method, Body, Options).
+    ibrowse:send_req(URL ++ URI, [{"content-type", "application/json"} | Headers], Method, Body, Options).

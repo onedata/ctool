@@ -61,7 +61,7 @@ setup() ->
         (client, "/provider/spaces/support", post, <<"body">>) -> {ok, "201", [{"location", "/provider/spaces/spaceId"}], response_body}
     end),
     meck:expect(gr_endpoint, insecure_request, fun
-        (client, "/provider", post, <<"body">>) -> {ok, "201", response_headers, response_body};
+        (client, "/provider", post, <<"body">>) -> {ok, "200", response_headers, response_body};
         (client, "/provider/test/check_my_ports", get, <<"body">>) -> {ok, "200", response_headers, response_body}
     end),
     meck:expect(gr_endpoint, insecure_request, fun
@@ -149,7 +149,7 @@ should_check_gui_port() ->
         ([{<<"gui">>, <<"https://ipAddress:443/connection_check">>}]) -> <<"body">>
     end),
     meck:expect(mochijson2, decode, fun
-        (response_body, [{format, proplist}]) -> [{<<"gui">>, <<"ok">>}]
+        (response_body, [{format, proplist}]) -> [{<<"https://ipAddress:443/connection_check">>, <<"ok">>}]
     end),
 
     Answer = gr_providers:check_port(client, <<"ipAddress">>, 443, <<"gui">>),
@@ -165,7 +165,7 @@ should_check_rest_port() ->
         ([{<<"rest">>, <<"https://ipAddress:8443/rest/latest/connection_check">>}]) -> <<"body">>
     end),
     meck:expect(mochijson2, decode, fun
-        (response_body, [{format, proplist}]) -> [{<<"rest">>, <<"ok">>}]
+        (response_body, [{format, proplist}]) -> [{<<"https://ipAddress:8443/rest/latest/connection_check">>, <<"ok">>}]
     end),
 
     Answer = gr_providers:check_port(client, <<"ipAddress">>, 8443, <<"rest">>),
