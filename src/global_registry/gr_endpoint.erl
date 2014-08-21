@@ -63,7 +63,7 @@ request(provider, URI, Method, Headers, Body, Options) ->
     do_request(URI, Method, Headers, Body, Options);
 
 request({user, AccessToken}, URI, Method, Headers, Body, Options) ->
-    AuthorizationHeader = [{"authorization", <<"Bearer ", AccessToken/binary>>}],
+    AuthorizationHeader = {"authorization", <<"Bearer ", AccessToken/binary>>},
     do_request(URI, Method, [AuthorizationHeader | Headers], Body, Options).
 
 
