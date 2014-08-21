@@ -58,7 +58,7 @@ gr_spaces_test_() ->
 
 setup() ->
     meck:new(gr_endpoint),
-    meck:expect(gr_endpoint, request, fun
+    meck:expect(gr_endpoint, secure_request, fun
         (client, "/spaces/spaceId", get) -> {ok, "200", response_headers, response_body};
         (client, "/spaces/spaceId", delete) -> {ok, "204", response_headers, response_body};
         (client, "/spaces/spaceId/users", get) -> {ok, "200", response_headers, response_body};
@@ -76,7 +76,7 @@ setup() ->
         (client, "/spaces/spaceId/providers/providerId", get) -> {ok, "200", response_headers, response_body};
         (client, "/spaces/spaceId/providers/providerId", delete) -> {ok, "204", response_headers, response_body}
     end),
-    meck:expect(gr_endpoint, request, fun
+    meck:expect(gr_endpoint, secure_request, fun
         (client, "/spaces", post, <<"body">>) -> {ok, "201", [{"location", "/spaces/spaceId"}], response_body};
         (client, "/spaces/spaceId", patch, <<"body">>) -> {ok, "200", response_headers, response_body};
         (client, "/spaces/spaceId/users/userId/privileges", put, <<"body">>) -> {ok, "200", response_headers, response_body};

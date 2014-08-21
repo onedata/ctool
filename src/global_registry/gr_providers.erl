@@ -36,7 +36,7 @@ register(Client, Parameters) ->
     try
         URI = "/provider",
         Body = iolist_to_binary(mochijson2:encode(Parameters)),
-        {ok, "201", _ResponseHeaders, ResponseBody} = gr_endpoint:request(Client, URI, post, Body),
+        {ok, "201", _ResponseHeaders, ResponseBody} = gr_endpoint:insecure_request(Client, URI, post, Body),
         Proplist = mochijson2:decode(ResponseBody, [{format, proplist}]),
         ProviderId = proplists:get_value(<<"providerId">>, Proplist),
         Cert = proplists:get_value(<<"certificate">>, Proplist),
@@ -55,7 +55,7 @@ register(Client, Parameters) ->
 unregister(Client) ->
     try
         URI = "/provider",
-        {ok, "204", _ResponseHeaders, _ResponseBody} = gr_endpoint:request(Client, URI, delete),
+        {ok, "204", _ResponseHeaders, _ResponseBody} = gr_endpoint:secure_request(Client, URI, delete),
         ok
     catch
         _:Reason -> {error, Reason}
@@ -71,7 +71,7 @@ unregister(Client) ->
 get_info(Client) ->
     try
         URI = "/provider",
-        {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:request(Client, URI, get),
+        {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:secure_request(Client, URI, get),
         Proplist = mochijson2:decode(ResponseBody, [{format, proplist}]),
         ProviderInfo = #provider_info{
             id = proplists:get_value(<<"providerId">>, Proplist),
@@ -95,7 +95,7 @@ modify_info(Client, Parameters) ->
     try
         URI = "/provider",
         Body = iolist_to_binary(mochijson2:encode(Parameters)),
-        {ok, "200", _ResponseHeaders, _ResponseBody} = gr_endpoint:request(Client, URI, patch, Body),
+        {ok, "200", _ResponseHeaders, _ResponseBody} = gr_endpoint:secure_request(Client, URI, patch, Body),
         ok
     catch
         _:Reason -> {error, Reason}
@@ -113,7 +113,7 @@ check_ip_address(Client, ConnectTimeout) ->
     try
         URI = "/provider/test/check_my_ip",
         Options = [{connect_timeout, ConnectTimeout}],
-        {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:request(Client, URI, get, [], Options),
+        {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:insecure_request(Client, URI, get, [], Options),
         IpAddress = mochijson2:decode(ResponseBody),
         {ok, IpAddress}
     catch
@@ -137,7 +137,7 @@ check_port(Client, IpAddress, Port, Type) ->
                    end,
         CheckURL = <<"https://", IpAddress/binary, ":", (integer_to_binary(Port))/binary, Resource/binary>>,
         Body = iolist_to_binary(mochijson2:encode([{Type, CheckURL}])),
-        {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:request(Client, URI, get, Body),
+        {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:insecure_request(Client, URI, get, Body),
         Proplist = mochijson2:decode(ResponseBody, [{format, proplist}]),
         <<"ok">> = proplists:get_value(Type, Proplist),
         ok
@@ -159,7 +159,7 @@ create_space(Client, Parameters) ->
     try
         URI = "/provider/spaces",
         Body = iolist_to_binary(mochijson2:encode(Parameters)),
-        {ok, "201", ResponseHeaders, _ResponseBody} = gr_endpoint:request(Client, URI, post, Body),
+        {ok, "201", ResponseHeaders, _ResponseBody} = gr_endpoint:secure_request(Client, URI, post, Body),
         <<"/spaces/", SpaceId/binary>> = list_to_binary(proplists:get_value("location", ResponseHeaders)),
         {ok, SpaceId}
     catch
@@ -178,7 +178,7 @@ support_space(Client, Parameters) ->
     try
         URI = "/provider/spaces/support",
         Body = iolist_to_binary(mochijson2:encode(Parameters)),
-        {ok, "201", ResponseHeaders, _ResponseBody} = gr_endpoint:request(Client, URI, post, Body),
+        {ok, "201", ResponseHeaders, _ResponseBody} = gr_endpoint:secure_request(Client, URI, post, Body),
         <<"/provider/spaces/", SpaceId/binary>> = list_to_binary(proplists:get_value("location", ResponseHeaders)),
         {ok, SpaceId}
     catch
@@ -195,7 +195,7 @@ support_space(Client, Parameters) ->
 cancel_space_support(Client, SpaceId) ->
     try
         URI = "/provider/spaces/" ++ binary_to_list(SpaceId),
-        {ok, "204", _ResponseHeaders, _ResponseBody} = gr_endpoint:request(Client, URI, delete),
+        {ok, "204", _ResponseHeaders, _ResponseBody} = gr_endpoint:secure_request(Client, URI, delete),
         ok
     catch
         _:Reason -> {error, Reason}
@@ -211,7 +211,7 @@ cancel_space_support(Client, SpaceId) ->
 get_spaces(Client) ->
     try
         URI = "/provider/spaces",
-        {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:request(Client, URI, get),
+        {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:secure_request(Client, URI, get),
         Proplist = mochijson2:decode(ResponseBody, [{format, proplist}]),
         SpaceIds = proplists:get_value(<<"spaces">>, Proplist),
         {ok, SpaceIds}
@@ -229,7 +229,7 @@ get_spaces(Client) ->
 get_space_info(Client, SpaceId) ->
     try
         URI = "/provider/spaces/" ++ binary_to_list(SpaceId),
-        {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:request(Client, URI, get),
+        {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:secure_request(Client, URI, get),
         Proplist = mochijson2:decode(ResponseBody, [{format, proplist}]),
         SpaceInfo = #space_info{
             id = proplists:get_value(<<"spaceId">>, Proplist),

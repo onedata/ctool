@@ -48,21 +48,23 @@ gr_groups_test_() ->
 
 setup() ->
     meck:new(gr_endpoint),
-    meck:expect(gr_endpoint, request, fun
+    meck:expect(gr_endpoint, secure_request, fun
         (client, "/provider", get) -> {ok, "200", response_headers, response_body};
         (client, "/provider", delete) -> {ok, "204", response_headers, response_body};
         (client, "/provider/spaces", get) -> {ok, "200", response_headers, response_body};
         (client, "/provider/spaces/spaceId", get) -> {ok, "200", response_headers, response_body};
         (client, "/provider/spaces/spaceId", delete) -> {ok, "204", response_headers, response_body}
     end),
-    meck:expect(gr_endpoint, request, fun
-        (client, "/provider", post, <<"body">>) -> {ok, "201", response_headers, response_body};
+    meck:expect(gr_endpoint, secure_request, fun
         (client, "/provider", patch, <<"body">>) -> {ok, "200", response_headers, response_body};
         (client, "/provider/spaces", post, <<"body">>) -> {ok, "201", [{"location", "/spaces/spaceId"}], response_body};
-        (client, "/provider/spaces/support", post, <<"body">>) -> {ok, "201", [{"location", "/provider/spaces/spaceId"}], response_body};
+        (client, "/provider/spaces/support", post, <<"body">>) -> {ok, "201", [{"location", "/provider/spaces/spaceId"}], response_body}
+    end),
+    meck:expect(gr_endpoint, insecure_request, fun
+        (client, "/provider", post, <<"body">>) -> {ok, "201", response_headers, response_body};
         (client, "/provider/test/check_my_ports", get, <<"body">>) -> {ok, "200", response_headers, response_body}
     end),
-    meck:expect(gr_endpoint, request, fun
+    meck:expect(gr_endpoint, insecure_request, fun
         (client, "/provider/test/check_my_ip", get, [], [{connect_timeout, connect_timeout}]) -> {ok, "200", response_headers, response_body}
     end).
 

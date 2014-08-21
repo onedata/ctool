@@ -73,15 +73,25 @@ teardown(_) ->
 
 should_send_provider_request_1() ->
     meck:new(ibrowse),
-    meck:expect(ibrowse, send_req, fun(
-        "URL/URI",
-        [{"content_type", "application/json"}],
-        method,
-        [],
-        [{ssl_options, [{cacerts, [cacert_encoded]}, {key, {key_type, key_encoded}}, {cert, cert_encoded}]}]) -> ok
+    meck:expect(ibrowse, send_req, fun
+        (
+            "URL/URI",
+            [{"content_type", "application/json"}],
+            method,
+            [],
+            []
+        ) -> ok;
+        (
+            "URL/URI",
+            [{"content_type", "application/json"}],
+            method,
+            [],
+            [{ssl_options, [{cacerts, [cacert_encoded]}, {key, {key_type, key_encoded}}, {cert, cert_encoded}]}]
+        ) -> ok
     end),
 
-    gr_endpoint:request(provider, "URI", method),
+    gr_endpoint:secure_request(provider, "URI", method),
+    gr_endpoint:insecure_request(provider, "URI", method),
 
     ?assert(meck:validate(ibrowse)),
     ok = meck:unload(ibrowse).
@@ -89,15 +99,25 @@ should_send_provider_request_1() ->
 
 should_send_provider_request_2() ->
     meck:new(ibrowse),
-    meck:expect(ibrowse, send_req, fun(
-        "URL/URI",
-        [{"content_type", "application/json"}],
-        method,
-        body,
-        [{ssl_options, [{cacerts, [cacert_encoded]}, {key, {key_type, key_encoded}}, {cert, cert_encoded}]}]) -> ok
+    meck:expect(ibrowse, send_req, fun
+        (
+            "URL/URI",
+            [{"content_type", "application/json"}],
+            method,
+            body,
+            []
+        ) -> ok;
+        (
+            "URL/URI",
+            [{"content_type", "application/json"}],
+            method,
+            body,
+            [{ssl_options, [{cacerts, [cacert_encoded]}, {key, {key_type, key_encoded}}, {cert, cert_encoded}]}]
+        ) -> ok
     end),
 
-    gr_endpoint:request(provider, "URI", method, body),
+    gr_endpoint:secure_request(provider, "URI", method, body),
+    gr_endpoint:insecure_request(provider, "URI", method, body),
 
     ?assert(meck:validate(ibrowse)),
     ok = meck:unload(ibrowse).
@@ -105,16 +125,25 @@ should_send_provider_request_2() ->
 
 should_send_provider_request_3() ->
     meck:new(ibrowse),
-    meck:expect(ibrowse, send_req, fun(
-        "URL/URI",
-        [{"content_type", "application/json"}],
-        method,
-        body,
-        [{ssl_options, [{cacerts, [cacert_encoded]}, {key, {key_type, key_encoded}}, {cert, cert_encoded}]}, options]) ->
-        ok
+    meck:expect(ibrowse, send_req, fun
+        (
+            "URL/URI",
+            [{"content_type", "application/json"}],
+            method,
+            body,
+            [options]
+        ) -> ok;
+        (
+            "URL/URI",
+            [{"content_type", "application/json"}],
+            method,
+            body,
+            [{ssl_options, [{cacerts, [cacert_encoded]}, {key, {key_type, key_encoded}}, {cert, cert_encoded}]}, options]
+        ) -> ok
     end),
 
-    gr_endpoint:request(provider, "URI", method, body, [options]),
+    gr_endpoint:secure_request(provider, "URI", method, body, [options]),
+    gr_endpoint:insecure_request(provider, "URI", method, body, [options]),
 
     ?assert(meck:validate(ibrowse)),
     ok = meck:unload(ibrowse).
@@ -122,16 +151,25 @@ should_send_provider_request_3() ->
 
 should_send_provider_request_4() ->
     meck:new(ibrowse),
-    meck:expect(ibrowse, send_req, fun(
-        "URL/URI",
-        [{"content_type", "application/json"}, headers],
-        method,
-        body,
-        [{ssl_options, [{cacerts, [cacert_encoded]}, {key, {key_type, key_encoded}}, {cert, cert_encoded}]}, options]) ->
-        ok
+    meck:expect(ibrowse, send_req, fun
+        (
+            "URL/URI",
+            [{"content_type", "application/json"}, headers],
+            method,
+            body,
+            [options]
+        ) -> ok;
+        (
+            "URL/URI",
+            [{"content_type", "application/json"}, headers],
+            method,
+            body,
+            [{ssl_options, [{cacerts, [cacert_encoded]}, {key, {key_type, key_encoded}}, {cert, cert_encoded}]}, options]
+        ) -> ok
     end),
 
-    gr_endpoint:request(provider, "URI", method, [headers], body, [options]),
+    gr_endpoint:secure_request(provider, "URI", method, [headers], body, [options]),
+    gr_endpoint:insecure_request(provider, "URI", method, [headers], body, [options]),
 
     ?assert(meck:validate(ibrowse)),
     ok = meck:unload(ibrowse).
@@ -139,15 +177,25 @@ should_send_provider_request_4() ->
 
 should_send_user_request_1() ->
     meck:new(ibrowse),
-    meck:expect(ibrowse, send_req, fun(
-        "URL/URI",
-        [{"content_type", "application/json"}, {"authorization", <<"Bearer AccessToken">>}],
-        method,
-        [],
-        [{ssl_options, [{cacerts, [cacert_encoded]}, {key, {key_type, key_encoded}}, {cert, cert_encoded}]}]) -> ok
+    meck:expect(ibrowse, send_req, fun
+        (
+            "URL/URI",
+            [{"content_type", "application/json"}, {"authorization", <<"Bearer AccessToken">>}],
+            method,
+            [],
+            []
+        ) -> ok;
+        (
+            "URL/URI",
+            [{"content_type", "application/json"}, {"authorization", <<"Bearer AccessToken">>}],
+            method,
+            [],
+            [{ssl_options, [{cacerts, [cacert_encoded]}, {key, {key_type, key_encoded}}, {cert, cert_encoded}]}]
+        ) -> ok
     end),
 
-    gr_endpoint:request({user, <<"AccessToken">>}, "URI", method),
+    gr_endpoint:secure_request({user, <<"AccessToken">>}, "URI", method),
+    gr_endpoint:insecure_request({user, <<"AccessToken">>}, "URI", method),
 
     ?assert(meck:validate(ibrowse)),
     ok = meck:unload(ibrowse).
@@ -155,15 +203,25 @@ should_send_user_request_1() ->
 
 should_send_user_request_2() ->
     meck:new(ibrowse),
-    meck:expect(ibrowse, send_req, fun(
-        "URL/URI",
-        [{"content_type", "application/json"}, {"authorization", <<"Bearer AccessToken">>}],
-        method,
-        body,
-        [{ssl_options, [{cacerts, [cacert_encoded]}, {key, {key_type, key_encoded}}, {cert, cert_encoded}]}]) -> ok
+    meck:expect(ibrowse, send_req, fun
+        (
+            "URL/URI",
+            [{"content_type", "application/json"}, {"authorization", <<"Bearer AccessToken">>}],
+            method,
+            body,
+            []
+        ) -> ok;
+        (
+            "URL/URI",
+            [{"content_type", "application/json"}, {"authorization", <<"Bearer AccessToken">>}],
+            method,
+            body,
+            [{ssl_options, [{cacerts, [cacert_encoded]}, {key, {key_type, key_encoded}}, {cert, cert_encoded}]}]
+        ) -> ok
     end),
 
-    gr_endpoint:request({user, <<"AccessToken">>}, "URI", method, body),
+    gr_endpoint:secure_request({user, <<"AccessToken">>}, "URI", method, body),
+    gr_endpoint:insecure_request({user, <<"AccessToken">>}, "URI", method, body),
 
     ?assert(meck:validate(ibrowse)),
     ok = meck:unload(ibrowse).
@@ -171,16 +229,25 @@ should_send_user_request_2() ->
 
 should_send_user_request_3() ->
     meck:new(ibrowse),
-    meck:expect(ibrowse, send_req, fun(
-        "URL/URI",
-        [{"content_type", "application/json"}, {"authorization", <<"Bearer AccessToken">>}],
-        method,
-        body,
-        [{ssl_options, [{cacerts, [cacert_encoded]}, {key, {key_type, key_encoded}}, {cert, cert_encoded}]}, options]) ->
-        ok
+    meck:expect(ibrowse, send_req, fun
+        (
+            "URL/URI",
+            [{"content_type", "application/json"}, {"authorization", <<"Bearer AccessToken">>}],
+            method,
+            body,
+            [options]
+        ) -> ok;
+        (
+            "URL/URI",
+            [{"content_type", "application/json"}, {"authorization", <<"Bearer AccessToken">>}],
+            method,
+            body,
+            [{ssl_options, [{cacerts, [cacert_encoded]}, {key, {key_type, key_encoded}}, {cert, cert_encoded}]}, options]
+        ) -> ok
     end),
 
-    gr_endpoint:request({user, <<"AccessToken">>}, "URI", method, body, [options]),
+    gr_endpoint:secure_request({user, <<"AccessToken">>}, "URI", method, body, [options]),
+    gr_endpoint:insecure_request({user, <<"AccessToken">>}, "URI", method, body, [options]),
 
     ?assert(meck:validate(ibrowse)),
     ok = meck:unload(ibrowse).
@@ -188,16 +255,25 @@ should_send_user_request_3() ->
 
 should_send_user_request_4() ->
     meck:new(ibrowse),
-    meck:expect(ibrowse, send_req, fun(
-        "URL/URI",
-        [{"content_type", "application/json"}, {"authorization", <<"Bearer AccessToken">>}, headers],
-        method,
-        body,
-        [{ssl_options, [{cacerts, [cacert_encoded]}, {key, {key_type, key_encoded}}, {cert, cert_encoded}]}, options]) ->
-        ok
+    meck:expect(ibrowse, send_req, fun
+        (
+            "URL/URI",
+            [{"content_type", "application/json"}, {"authorization", <<"Bearer AccessToken">>}, headers],
+            method,
+            body,
+            [options]
+        ) -> ok;
+        (
+            "URL/URI",
+            [{"content_type", "application/json"}, {"authorization", <<"Bearer AccessToken">>}, headers],
+            method,
+            body,
+            [{ssl_options, [{cacerts, [cacert_encoded]}, {key, {key_type, key_encoded}}, {cert, cert_encoded}]}, options]
+        ) -> ok
     end),
 
-    gr_endpoint:request({user, <<"AccessToken">>}, "URI", method, [headers], body, [options]),
+    gr_endpoint:secure_request({user, <<"AccessToken">>}, "URI", method, [headers], body, [options]),
+    gr_endpoint:insecure_request({user, <<"AccessToken">>}, "URI", method, [headers], body, [options]),
 
     ?assert(meck:validate(ibrowse)),
     ok = meck:unload(ibrowse).
