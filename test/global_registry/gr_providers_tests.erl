@@ -31,6 +31,9 @@ gr_groups_test_() ->
             {"unregister", fun should_unregister/0},
             {"get info", fun should_get_info/0},
             {"modify info", fun should_modify_info/0},
+            {"check ip address", fun should_check_ip_address/0},
+            {"check GUI port", fun should_check_gui_port/0},
+            {"check REST port", fun should_check_rest_port/0},
             {"create space", fun should_create_space/0},
             {"support space", fun should_support_space/0},
             {"cancel space support", fun should_cancel_space_support/0},
@@ -56,7 +59,11 @@ setup() ->
         (client, "/provider", post, <<"body">>) -> {ok, "201", response_headers, response_body};
         (client, "/provider", patch, <<"body">>) -> {ok, "200", response_headers, response_body};
         (client, "/provider/spaces", post, <<"body">>) -> {ok, "201", [{"location", "/spaces/spaceId"}], response_body};
-        (client, "/provider/spaces/support", post, <<"body">>) -> {ok, "201", [{"location", "/provider/spaces/spaceId"}], response_body}
+        (client, "/provider/spaces/support", post, <<"body">>) -> {ok, "201", [{"location", "/provider/spaces/spaceId"}], response_body};
+        (client, "/provider/test/check_my_ports", get, <<"body">>) -> {ok, "200", response_headers, response_body}
+    end),
+    meck:expect(gr_endpoint, request, fun
+        (client, "/provider/test/check_my_ip", get, [], [{connect_timeout, connect_timeout}]) -> {ok, "200", response_headers, response_body}
     end).
 
 teardown(_) ->
@@ -115,6 +122,51 @@ should_modify_info() ->
     meck:expect(mochijson2, encode, fun(parameters) -> <<"body">> end),
 
     Answer = gr_providers:modify_info(client, parameters),
+    ?assertEqual(ok, Answer),
+
+    ?assert(meck:validate(mochijson2)),
+    ok = meck:unload(mochijson2).
+
+
+should_check_ip_address() ->
+    meck:new(mochijson2),
+    meck:expect(mochijson2, decode, fun
+        (response_body) -> <<"ipAddress">>
+    end),
+
+    Answer = gr_providers:check_ip_address(client, connect_timeout),
+    ?assertEqual({ok, <<"ipAddress">>}, Answer),
+
+    ?assert(meck:validate(mochijson2)),
+    ok = meck:unload(mochijson2).
+
+
+should_check_gui_port() ->
+    meck:new(mochijson2),
+    meck:expect(mochijson2, encode, fun
+        ([{<<"gui">>, <<"https://ipAddress:443/connection_check">>}]) -> <<"body">>
+    end),
+    meck:expect(mochijson2, decode, fun
+        (response_body, [{format, proplist}]) -> [{<<"gui">>, <<"ok">>}]
+    end),
+
+    Answer = gr_providers:check_port(client, <<"ipAddress">>, 443, <<"gui">>),
+    ?assertEqual(ok, Answer),
+
+    ?assert(meck:validate(mochijson2)),
+    ok = meck:unload(mochijson2).
+
+
+should_check_rest_port() ->
+    meck:new(mochijson2),
+    meck:expect(mochijson2, encode, fun
+        ([{<<"rest">>, <<"https://ipAddress:8443/rest/latest/connection_check">>}]) -> <<"body">>
+    end),
+    meck:expect(mochijson2, decode, fun
+        (response_body, [{format, proplist}]) -> [{<<"rest">>, <<"ok">>}]
+    end),
+
+    Answer = gr_providers:check_port(client, <<"ipAddress">>, 8443, <<"rest">>),
     ?assertEqual(ok, Answer),
 
     ?assert(meck:validate(mochijson2)),

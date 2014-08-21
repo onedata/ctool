@@ -12,7 +12,9 @@
 -ifndef(GR_SPACES_HRL).
 -define(GR_SPACES_HRL, 1).
 
-%% This record defines a Space details
+%% space_info record contains following fields:
+%% * id     - unique Space ID assigned by Global Registry
+%% * name   - Space name
 -record(space_info, {
     id :: binary(),
     name :: binary()

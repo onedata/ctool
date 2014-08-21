@@ -12,7 +12,9 @@
 -ifndef(GR_USERS_HRL).
 -define(GR_USERS_HRL, 1).
 
-%% This record defines a user details
+%% user_info record contains following fields:
+%% * id     - unique user ID assigned by Global Registry
+%% * name   - username
 -record(user_info, {
     id :: binary(),
     name :: binary()

@@ -17,6 +17,7 @@
 
 %% API
 -export([register/2, unregister/1, get_info/1, modify_info/2]).
+-export([check_ip_address/2, check_port/4]).
 -export([create_space/2, support_space/2, cancel_space_support/2, get_spaces/1, get_space_info/2]).
 
 %% ====================================================================
@@ -95,6 +96,50 @@ modify_info(Client, Parameters) ->
         URI = "/provider",
         Body = iolist_to_binary(mochijson2:encode(Parameters)),
         {ok, "200", _ResponseHeaders, _ResponseBody} = gr_endpoint:request(Client, URI, patch, Body),
+        ok
+    catch
+        _:Reason -> {error, Reason}
+    end.
+
+
+%% check_ip_address/2
+%% ====================================================================
+%% @doc Returns ip address that is visible for Global Registry.
+%% @end
+-spec check_ip_address(Client :: client(), ConnectTimeout :: integer()) -> Result when
+    Result :: {ok, IpAddress :: binary()} | {error, Reason :: term()}.
+%% ====================================================================
+check_ip_address(Client, ConnectTimeout) ->
+    try
+        URI = "/provider/test/check_my_ip",
+        Options = [{connect_timeout, ConnectTimeout}],
+        {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:request(Client, URI, get, [], Options),
+        IpAddress = mochijson2:decode(ResponseBody),
+        {ok, IpAddress}
+    catch
+        _:Reason -> {error, Reason}
+    end.
+
+
+%% check_port/4
+%% ====================================================================
+%% @doc Checks port availability for Global Registry.
+%% @end
+-spec check_port(Client :: client(), IpAddress :: binary(), Port :: integer(), Type :: binary()) -> Result when
+    Result :: ok | {error, Reason :: term()}.
+%% ====================================================================
+check_port(Client, IpAddress, Port, Type) ->
+    try
+        URI = "/provider/test/check_my_ports",
+        Resource = case Type of
+                       <<"gui">> -> <<"/connection_check">>;
+                       <<"rest">> -> <<"/rest/latest/connection_check">>
+                   end,
+        CheckURL = <<"https://", IpAddress/binary, ":", (integer_to_binary(Port))/binary, Resource/binary>>,
+        Body = iolist_to_binary(mochijson2:encode([{Type, CheckURL}])),
+        {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:request(Client, URI, get, Body),
+        Proplist = mochijson2:decode(ResponseBody, [{format, proplist}]),
+        <<"ok">> = proplists:get_value(Type, Proplist),
         ok
     catch
         _:Reason -> {error, Reason}

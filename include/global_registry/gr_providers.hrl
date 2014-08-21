@@ -12,8 +12,10 @@
 -ifndef(GR_PROVIDERS_HRL).
 -define(GR_PROVIDERS_HRL, 1).
 
-%% This record defines a provider whoes GUI can be reached by "redirectionPoint"
-%% and cluster nodes are available at "urls"
+%% provider_info record contains following fields:
+%% * id                 - unique provider ID assigned by Global Registry
+%% * urls               - URL addresses of all VeilCluster nodes
+%% * redirectionPoint   - URL address where VeilCluster GUI is available of all VeilCluster nodes
 -record(provider_info, {
     id :: binary(),
     redirection_point :: binary(),
