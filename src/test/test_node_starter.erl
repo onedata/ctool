@@ -184,10 +184,10 @@ stop_app_on_nodes(Application,Deps,[Node | OtherNodes])->
     Result :: ok | no_return().
 %% ====================================================================
 stop_app_on_node(Application,Deps,Node)->
-	rpc:call(Node,application,unload,[Application]),
-	rpc:call(Node,test_node_starter,stop_deps,[Deps]),
-    rpc:call(Node,application,stop,[ctool]),
     ?assertEqual(ok,rpc:call(Node,application,stop,[Application])),
+    rpc:call(Node,test_node_starter,stop_deps,[Deps]),
+	rpc:call(Node,application,unload,[Application]),
+    rpc:call(Node,application,stop,[ctool]),
     ok.
 
 %% ====================================================================
