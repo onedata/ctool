@@ -17,7 +17,7 @@
 
 %% API
 -export([register/2, unregister/1, get_info/1, modify_info/2]).
--export([create_space/2, support_space/2, cancel_support/2, get_spaces/1, get_space_info/2]).
+-export([create_space/2, support_space/2, cancel_space_support/2, get_spaces/1, get_space_info/2]).
 
 %% ====================================================================
 %% API functions
@@ -35,7 +35,7 @@ register(Client, Parameters) ->
     try
         URI = "/provider",
         Body = iolist_to_binary(mochijson2:encode(Parameters)),
-        {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:request(Client, URI, post, Body),
+        {ok, "201", _ResponseHeaders, ResponseBody} = gr_endpoint:request(Client, URI, post, Body),
         Proplist = mochijson2:decode(ResponseBody, [{format, proplist}]),
         ProviderId = proplists:get_value(<<"providerId">>, Proplist),
         Cert = proplists:get_value(<<"certificate">>, Proplist),
@@ -141,13 +141,13 @@ support_space(Client, Parameters) ->
     end.
 
 
-%% cancel_support/2
+%% cancel_space_support/2
 %% ====================================================================
 %% @doc Makes provider stop supporting Space.
--spec cancel_support(Client :: client(), SpaceId :: binary()) -> Result when
+-spec cancel_space_support(Client :: client(), SpaceId :: binary()) -> Result when
     Result :: ok | {error, Reason :: term()}.
 %% ====================================================================
-cancel_support(Client, SpaceId) ->
+cancel_space_support(Client, SpaceId) ->
     try
         URI = "/provider/spaces/" ++ binary_to_list(SpaceId),
         {ok, "204", _ResponseHeaders, _ResponseBody} = gr_endpoint:request(Client, URI, delete),
