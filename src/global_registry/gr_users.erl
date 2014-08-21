@@ -76,7 +76,7 @@ merge_account(Client, Parameters) ->
     try
         URI = "/user/merge",
         Body = iolist_to_binary(mochijson2:encode(Parameters)),
-        {ok, "200", _ResponseHeaders, _ResponseBody} = gr_endpoint:request(Client, URI, post, Body),
+        {ok, "201", _ResponseHeaders, _ResponseBody} = gr_endpoint:request(Client, URI, post, Body),
         ok
     catch
         _:Reason -> {error, Reason}
