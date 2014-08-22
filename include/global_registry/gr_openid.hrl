@@ -9,8 +9,8 @@
 %% @end
 %% ===================================================================
 
--ifndef(GR_TOKENS_HRL).
--define(GR_TOKENS_HRL, 1).
+-ifndef(GR_OPENID_HRL).
+-define(GR_OPENID_HRL, 1).
 
 %% client_token_details record contains following fields:
 %% * id     - unique client token ID assigned by Global Registry

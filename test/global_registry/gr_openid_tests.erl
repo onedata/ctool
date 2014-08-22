@@ -14,7 +14,7 @@
 
 -ifdef(TEST).
 
--include("global_registry/gr_tokens.hrl").
+-include("global_registry/gr_openid.hrl").
 -include_lib("eunit/include/eunit.hrl").
 
 %% ===================================================================

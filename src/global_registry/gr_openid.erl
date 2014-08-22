@@ -12,7 +12,7 @@
 -module(gr_openid).
 
 -include("global_registry/gr_types.hrl").
--include("global_registry/gr_tokens.hrl").
+-include("global_registry/gr_openid.hrl").
 
 %% API
 -export([get_client_access_code/1, get_client_tokens/1, remove_client_token/2, verify_client/2]).
