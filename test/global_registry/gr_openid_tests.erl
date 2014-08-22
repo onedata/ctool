@@ -69,7 +69,7 @@ should_get_client_access_code() ->
 should_get_client_tokens() ->
     meck:new(mochijson2),
     meck:expect(mochijson2, decode, fun
-        (response_body, [{format, proplist}]) -> [{<<"tokenInfo">>,
+        (response_body, [{format, proplist}]) -> [{<<"tokenInfo">>, [
             [
                 {<<"accessId">>, <<"accessId1">>},
                 {<<"clientName">>, <<"clientName1">>}
@@ -78,7 +78,7 @@ should_get_client_tokens() ->
                 {<<"accessId">>, <<"accessId2">>},
                 {<<"clientName">>, <<"clientName2">>}
             ]
-        }]
+        ]}]
     end),
 
     Answer = gr_openid:get_client_tokens(client),
