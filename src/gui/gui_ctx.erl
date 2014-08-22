@@ -196,5 +196,5 @@ url_param(ParamName) ->
 -spec form_params() -> Params :: [{Key :: binary(), Value :: binary()}].
 %% ====================================================================
 form_params() ->
-    {Params, _Req} = cowboy_req:qs_vals(?REQ),
+    {ok, Params, _Req} = cowboy_req:body_qs(?REQ),
     Params.
