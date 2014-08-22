@@ -16,9 +16,9 @@
 -include("global_registry/gr_providers.hrl").
 
 %% API
--export([register/2, unregister/1, get_info/1, modify_info/2]).
+-export([register/2, unregister/1, get_details/1, modify_details/2]).
 -export([check_ip_address/2, check_port/4]).
--export([create_space/2, support_space/2, cancel_space_support/2, get_spaces/1, get_space_info/2]).
+-export([create_space/2, support_space/2, cancel_space_support/2, get_spaces/1, get_space_details/2]).
 
 %% ====================================================================
 %% API functions
@@ -62,18 +62,18 @@ unregister(Client) ->
     end.
 
 
-%% get_info/1
+%% get_details/1
 %% ====================================================================
-%% @doc Returns public information about provider.
--spec get_info(Client :: client()) -> Result when
-    Result :: {ok, ProviderInfo :: #provider_info{}} | {error, Reason :: term()}.
+%% @doc Returns public details about provider.
+-spec get_details(Client :: client()) -> Result when
+    Result :: {ok, ProviderInfo :: #provider_details{}} | {error, Reason :: term()}.
 %% ====================================================================
-get_info(Client) ->
+get_details(Client) ->
     try
         URI = "/provider",
         {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:secure_request(Client, URI, get),
         Proplist = mochijson2:decode(ResponseBody, [{format, proplist}]),
-        ProviderInfo = #provider_info{
+        ProviderInfo = #provider_details{
             id = proplists:get_value(<<"providerId">>, Proplist),
             urls = proplists:get_value(<<"urls">>, Proplist),
             redirectionPoint = proplists:get_value(<<"redirectionPoint">>, Proplist)
@@ -84,14 +84,14 @@ get_info(Client) ->
     end.
 
 
-%% modify_info/2
+%% modify_details/2
 %% ====================================================================
-%% @doc Modifies public information about provider. Parameters may contain:
+%% @doc Modifies public details about provider. Parameters may contain:
 %% "urls" to cluster nodes and "redirectionPoint" to provider's GUI.
--spec modify_info(Client :: client(), Parameters :: [{Key :: binary(), Value :: binary()}]) -> Result when
+-spec modify_details(Client :: client(), Parameters :: [{Key :: binary(), Value :: binary()}]) -> Result when
     Result :: ok | {error, Reason :: term()}.
 %% ====================================================================
-modify_info(Client, Parameters) ->
+modify_details(Client, Parameters) ->
     try
         URI = "/provider",
         Body = iolist_to_binary(mochijson2:encode(Parameters)),
@@ -220,18 +220,18 @@ get_spaces(Client) ->
     end.
 
 
-%% get_space_info/2
+%% get_space_details/2
 %% ====================================================================
-%% @doc Returns public information about Space supported by provider.
--spec get_space_info(Client :: client(), SpaceId :: binary()) -> Result when
-    Result :: {ok, SpaceInfo :: #space_info{}} | {error, Reason :: term()}.
+%% @doc Returns public details about Space supported by provider.
+-spec get_space_details(Client :: client(), SpaceId :: binary()) -> Result when
+    Result :: {ok, SpaceInfo :: #space_details{}} | {error, Reason :: term()}.
 %% ====================================================================
-get_space_info(Client, SpaceId) ->
+get_space_details(Client, SpaceId) ->
     try
         URI = "/provider/spaces/" ++ binary_to_list(SpaceId),
         {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:secure_request(Client, URI, get),
         Proplist = mochijson2:decode(ResponseBody, [{format, proplist}]),
-        SpaceInfo = #space_info{
+        SpaceInfo = #space_details{
             id = proplists:get_value(<<"spaceId">>, Proplist),
             name = proplists:get_value(<<"name">>, Proplist)
         },

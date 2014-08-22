@@ -30,20 +30,20 @@ gr_groups_test_() ->
         [
             {"create", fun should_create/0},
             {"remove", fun should_remove/0},
-            {"get info", fun should_get_info/0},
-            {"modify info", fun should_modify_info/0},
+            {"get info", fun should_get_details/0},
+            {"modify info", fun should_modify_details/0},
             {"get create space token", fun should_get_create_space_token/0},
             {"get invite user token", fun should_get_invite_user_token/0},
             {"remove user", fun should_remove_user/0},
             {"get users", fun should_get_users/0},
-            {"get user info", fun should_get_user_info/0},
+            {"get user info", fun should_get_user_details/0},
             {"should get user privileges", fun should_get_user_privileges/0},
             {"should set user privileges", fun should_set_user_privileges/0},
             {"should create space", fun should_create_space/0},
             {"should join space", fun should_join_space/0},
             {"should leave space", fun should_leave_space/0},
             {"should get spaces", fun should_get_spaces/0},
-            {"should get space info", fun should_get_space_info/0}
+            {"should get space info", fun should_get_space_details/0}
         ]
     }.
 
@@ -74,6 +74,7 @@ setup() ->
         (client, "/groups/groupId/users/userId/privileges", put, <<"body">>) -> {ok, "200", response_headers, response_body}
     end).
 
+
 teardown(_) ->
     ?assert(meck:validate(gr_endpoint)),
     ok = meck:unload(gr_endpoint).
@@ -98,24 +99,24 @@ should_remove() ->
     ?assertEqual(ok, Answer).
 
 
-should_get_info() ->
+should_get_details() ->
     meck:new(mochijson2),
     meck:expect(mochijson2, decode, fun
         (response_body, [{format, proplist}]) -> [{<<"groupId">>, <<"groupId">>}, {<<"name">>, <<"name">>}]
     end),
 
-    Answer = gr_groups:get_info(client, <<"groupId">>),
-    ?assertEqual({ok, #group_info{id = <<"groupId">>, name = <<"name">>}}, Answer),
+    Answer = gr_groups:get_details(client, <<"groupId">>),
+    ?assertEqual({ok, #group_details{id = <<"groupId">>, name = <<"name">>}}, Answer),
 
     ?assert(meck:validate(mochijson2)),
     ok = meck:unload(mochijson2).
 
 
-should_modify_info() ->
+should_modify_details() ->
     meck:new(mochijson2),
     meck:expect(mochijson2, encode, fun(parameters) -> <<"body">> end),
 
-    Answer = gr_groups:modify_info(client, <<"groupId">>, parameters),
+    Answer = gr_groups:modify_details(client, <<"groupId">>, parameters),
     ?assertEqual(ok, Answer),
 
     ?assert(meck:validate(mochijson2)),
@@ -166,14 +167,14 @@ should_get_users() ->
     ok = meck:unload(mochijson2).
 
 
-should_get_user_info() ->
+should_get_user_details() ->
     meck:new(mochijson2),
     meck:expect(mochijson2, decode, fun
         (response_body, [{format, proplist}]) -> [{<<"userId">>, <<"userId">>}, {<<"name">>, <<"name">>}]
     end),
 
-    Answer = gr_groups:get_user_info(client, <<"groupId">>, <<"userId">>),
-    ?assertEqual({ok, #user_info{id = <<"userId">>, name = <<"name">>}}, Answer),
+    Answer = gr_groups:get_user_details(client, <<"groupId">>, <<"userId">>),
+    ?assertEqual({ok, #user_details{id = <<"userId">>, name = <<"name">>}}, Answer),
 
     ?assert(meck:validate(mochijson2)),
     ok = meck:unload(mochijson2).
@@ -243,14 +244,14 @@ should_get_spaces() ->
     ok = meck:unload(mochijson2).
 
 
-should_get_space_info() ->
+should_get_space_details() ->
     meck:new(mochijson2),
     meck:expect(mochijson2, decode, fun
         (response_body, [{format, proplist}]) -> [{<<"spaceId">>, <<"spaceId">>}, {<<"name">>, <<"name">>}]
     end),
 
-    Answer = gr_groups:get_space_info(client, <<"groupId">>, <<"spaceId">>),
-    ?assertEqual({ok, #space_info{id = <<"spaceId">>, name = <<"name">>}}, Answer),
+    Answer = gr_groups:get_space_details(client, <<"groupId">>, <<"spaceId">>),
+    ?assertEqual({ok, #space_details{id = <<"spaceId">>, name = <<"name">>}}, Answer),
 
     ?assert(meck:validate(mochijson2)),
     ok = meck:unload(mochijson2).

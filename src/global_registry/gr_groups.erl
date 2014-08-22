@@ -17,10 +17,10 @@
 -include("global_registry/gr_groups.hrl").
 
 %% API
--export([create/2, remove/2, get_info/2, modify_info/3]).
+-export([create/2, remove/2, get_details/2, modify_details/3]).
 -export([get_create_space_token/2, get_invite_user_token/2]).
--export([remove_user/3, get_users/2, get_user_info/3, get_user_privileges/3, set_user_privileges/4]).
--export([create_space/3, join_space/3, leave_space/3, get_spaces/2, get_space_info/3]).
+-export([remove_user/3, get_users/2, get_user_details/3, get_user_privileges/3, set_user_privileges/4]).
+-export([create_space/3, join_space/3, leave_space/3, get_spaces/2, get_space_details/3]).
 
 %% ====================================================================
 %% API functions
@@ -61,18 +61,18 @@ remove(Client, GroupId) ->
     end.
 
 
-%% get_info/2
+%% get_details/2
 %% ====================================================================
-%% @doc Returns public information about group.
--spec get_info(Client :: client(), GroupId :: binary()) -> Result when
-    Result :: {ok, GroupInfo :: #group_info{}} | {error, Reason :: term()}.
+%% @doc Returns public details about group.
+-spec get_details(Client :: client(), GroupId :: binary()) -> Result when
+    Result :: {ok, GroupInfo :: #group_details{}} | {error, Reason :: term()}.
 %% ====================================================================
-get_info(Client, GroupId) ->
+get_details(Client, GroupId) ->
     try
         URI = "/groups/" ++ binary_to_list(GroupId),
         {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:secure_request(Client, URI, get),
         Proplist = mochijson2:decode(ResponseBody, [{format, proplist}]),
-        GroupInfo = #group_info{
+        GroupInfo = #group_details{
             id = proplists:get_value(<<"groupId">>, Proplist),
             name = proplists:get_value(<<"name">>, Proplist)
         },
@@ -82,14 +82,14 @@ get_info(Client, GroupId) ->
     end.
 
 
-%% modify_info/3
+%% modify_details/3
 %% ====================================================================
-%% @doc Modifies public information about group. Parameters may contain:
+%% @doc Modifies public details about group. Parameters may contain:
 %% "name" of group.
--spec modify_info(Client :: client(), GroupId :: binary(), Parameters :: [{Key :: binary(), Value :: binary()}]) -> Result when
+-spec modify_details(Client :: client(), GroupId :: binary(), Parameters :: [{Key :: binary(), Value :: binary()}]) -> Result when
     Result :: ok | {error, Reason :: term()}.
 %% ====================================================================
-modify_info(Client, GroupId, Parameters) ->
+modify_details(Client, GroupId, Parameters) ->
     try
         URI = "/groups/" ++ binary_to_list(GroupId),
         Body = iolist_to_binary(mochijson2:encode(Parameters)),
@@ -170,18 +170,18 @@ get_users(Client, GroupId) ->
     end.
 
 
-%% get_user_info/3
+%% get_user_details/3
 %% ====================================================================
-%% @doc Returns public information about user that belongs to group.
--spec get_user_info(Client :: client(), GroupId :: binary(), UserId :: binary()) -> Result when
-    Result :: {ok, UserInfo :: #user_info{}} | {error, Reason :: term()}.
+%% @doc Returns public details about user that belongs to group.
+-spec get_user_details(Client :: client(), GroupId :: binary(), UserId :: binary()) -> Result when
+    Result :: {ok, UserInfo :: #user_details{}} | {error, Reason :: term()}.
 %% ====================================================================
-get_user_info(Client, GroupId, UserId) ->
+get_user_details(Client, GroupId, UserId) ->
     try
         URI = "/groups/" ++ binary_to_list(GroupId) ++ "/users/" ++ binary_to_list(UserId),
         {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:secure_request(Client, URI, get),
         Proplist = mochijson2:decode(ResponseBody, [{format, proplist}]),
-        UserInfo = #user_info{
+        UserInfo = #user_details{
             id = proplists:get_value(<<"userId">>, Proplist),
             name = proplists:get_value(<<"name">>, Proplist)
         },
@@ -300,18 +300,18 @@ get_spaces(Client, GroupId) ->
     end.
 
 
-%% get_space_info/3
+%% get_space_details/3
 %% ====================================================================
-%% @doc Returns public information about Space that group belongs to.
--spec get_space_info(Client :: client(), GroupId :: binary(), SpaceId :: binary()) -> Result when
-    Result :: {ok, SpaceInfo :: #space_info{}} | {error, Reason :: term()}.
+%% @doc Returns public details about Space that group belongs to.
+-spec get_space_details(Client :: client(), GroupId :: binary(), SpaceId :: binary()) -> Result when
+    Result :: {ok, SpaceInfo :: #space_details{}} | {error, Reason :: term()}.
 %% ====================================================================
-get_space_info(Client, GroupId, SpaceId) ->
+get_space_details(Client, GroupId, SpaceId) ->
     try
         URI = "/groups/" ++ binary_to_list(GroupId) ++ "/spaces/" ++ binary_to_list(SpaceId),
         {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:secure_request(Client, URI, get),
         Proplist = mochijson2:decode(ResponseBody, [{format, proplist}]),
-        SpaceInfo = #space_info{
+        SpaceInfo = #space_details{
             id = proplists:get_value(<<"spaceId">>, Proplist),
             name = proplists:get_value(<<"name">>, Proplist)
         },

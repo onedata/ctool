@@ -28,8 +28,8 @@ gr_groups_test_() ->
         fun setup/0,
         fun teardown/1,
         [
-            {"get info", fun should_get_info/0},
-            {"modify info", fun should_modify_info/0},
+            {"get info", fun should_get_details/0},
+            {"modify info", fun should_modify_details/0},
             {"merge account", fun should_merge_account/0},
             {"get create space token", fun should_get_create_space_token/0},
             {"get merge account token", fun should_get_merge_account_token/0},
@@ -37,12 +37,12 @@ gr_groups_test_() ->
             {"should join space", fun should_join_space/0},
             {"should leave space", fun should_leave_space/0},
             {"should get spaces", fun should_get_spaces/0},
-            {"should get space info", fun should_get_space_info/0},
+            {"should get space info", fun should_get_space_details/0},
             {"should create group", fun should_create_group/0},
             {"should join group", fun should_join_group/0},
             {"should leave group", fun should_leave_group/0},
             {"should get groups", fun should_get_groups/0},
-            {"should get group info", fun should_get_group_info/0}
+            {"should get group info", fun should_get_group_details/0}
         ]
     }.
 
@@ -72,6 +72,7 @@ setup() ->
         (client, "/user/groups/join", post, <<"body">>) -> {ok, "201", [{"location", "/user/groups/groupId"}], response_body}
     end).
 
+
 teardown(_) ->
     ?assert(meck:validate(gr_endpoint)),
     ok = meck:unload(gr_endpoint).
@@ -80,24 +81,24 @@ teardown(_) ->
 %% Tests functions
 %% ===================================================================
 
-should_get_info() ->
+should_get_details() ->
     meck:new(mochijson2),
     meck:expect(mochijson2, decode, fun
         (response_body, [{format, proplist}]) -> [{<<"userId">>, <<"userId">>}, {<<"name">>, <<"name">>}]
     end),
 
-    Answer = gr_users:get_info(client),
-    ?assertEqual({ok, #user_info{id = <<"userId">>, name = <<"name">>}}, Answer),
+    Answer = gr_users:get_details(client),
+    ?assertEqual({ok, #user_details{id = <<"userId">>, name = <<"name">>}}, Answer),
 
     ?assert(meck:validate(mochijson2)),
     ok = meck:unload(mochijson2).
 
 
-should_modify_info() ->
+should_modify_details() ->
     meck:new(mochijson2),
     meck:expect(mochijson2, encode, fun(parameters) -> <<"body">> end),
 
-    Answer = gr_users:modify_info(client, parameters),
+    Answer = gr_users:modify_details(client, parameters),
     ?assertEqual(ok, Answer),
 
     ?assert(meck:validate(mochijson2)),
@@ -181,14 +182,14 @@ should_get_spaces() ->
     ok = meck:unload(mochijson2).
 
 
-should_get_space_info() ->
+should_get_space_details() ->
     meck:new(mochijson2),
     meck:expect(mochijson2, decode, fun
         (response_body, [{format, proplist}]) -> [{<<"spaceId">>, <<"spaceId">>}, {<<"name">>, <<"name">>}]
     end),
 
-    Answer = gr_users:get_space_info(client, <<"spaceId">>),
-    ?assertEqual({ok, #space_info{id = <<"spaceId">>, name = <<"name">>}}, Answer),
+    Answer = gr_users:get_space_details(client, <<"spaceId">>),
+    ?assertEqual({ok, #space_details{id = <<"spaceId">>, name = <<"name">>}}, Answer),
 
     ?assert(meck:validate(mochijson2)),
     ok = meck:unload(mochijson2).
@@ -234,14 +235,14 @@ should_get_groups() ->
     ok = meck:unload(mochijson2).
 
 
-should_get_group_info() ->
+should_get_group_details() ->
     meck:new(mochijson2),
     meck:expect(mochijson2, decode, fun
         (response_body, [{format, proplist}]) -> [{<<"groupId">>, <<"groupId">>}, {<<"name">>, <<"name">>}]
     end),
 
-    Answer = gr_users:get_group_info(client, <<"groupId">>),
-    ?assertEqual({ok, #group_info{id = <<"groupId">>, name = <<"name">>}}, Answer),
+    Answer = gr_users:get_group_details(client, <<"groupId">>),
+    ?assertEqual({ok, #group_details{id = <<"groupId">>, name = <<"name">>}}, Answer),
 
     ?assert(meck:validate(mochijson2)),
     ok = meck:unload(mochijson2).

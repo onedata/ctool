@@ -12,10 +12,10 @@
 -ifndef(GR_GROUPS_HRL).
 -define(GR_GROUPS_HRL, 1).
 
-%% group_info record contains following fields:
+%% group_details record contains following fields:
 %% * id     - unique group ID assigned by Global Registry
 %% * name   - group name
--record(group_info, {
+-record(group_details, {
     id :: binary(),
     name :: binary()
 }).

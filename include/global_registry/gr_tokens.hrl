@@ -9,13 +9,13 @@
 %% @end
 %% ===================================================================
 
--ifndef(GR_SPACES_HRL).
--define(GR_SPACES_HRL, 1).
+-ifndef(GR_TOKENS_HRL).
+-define(GR_TOKENS_HRL, 1).
 
-%% space_details record contains following fields:
-%% * id     - unique Space ID assigned by Global Registry
-%% * name   - Space name
--record(space_details, {
+%% client_token_details record contains following fields:
+%% * id     - unique client token ID assigned by Global Registry
+%% * name   - client token name
+-record(client_token_details, {
     id :: binary(),
     name :: binary()
 }).

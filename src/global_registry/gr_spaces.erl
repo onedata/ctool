@@ -18,11 +18,11 @@
 -include("global_registry/gr_providers.hrl").
 
 %% API
--export([create/2, remove/2, get_info/2, modify_info/3]).
+-export([create/2, remove/2, get_details/2, modify_details/3]).
 -export([get_invite_user_token/2, get_invite_group_token/2, get_invite_provider_token/2]).
--export([remove_user/3, get_users/2, get_user_info/3, get_user_privileges/3, set_user_privileges/4]).
--export([remove_group/3, get_groups/2, get_group_info/3, get_group_privileges/3, set_group_privileges/4]).
--export([remove_provider/3, get_providers/2, get_provider_info/3]).
+-export([remove_user/3, get_users/2, get_user_details/3, get_user_privileges/3, set_user_privileges/4]).
+-export([remove_group/3, get_groups/2, get_group_details/3, get_group_privileges/3, set_group_privileges/4]).
+-export([remove_provider/3, get_providers/2, get_provider_details/3]).
 
 %% ====================================================================
 %% API functions
@@ -55,7 +55,7 @@ create(Client, Parameters) ->
 %% remove/2
 %% ====================================================================
 %% @doc Removes Space.
--spec remove(Client :: client(), Parameters :: [{Key :: binary(), Value :: binary()}]) -> Result when
+-spec remove(Client :: client(), SpaceId :: binary()) -> Result when
     Result :: ok | {error, Reason :: term()}.
 %% ====================================================================
 remove(Client, SpaceId) ->
@@ -68,18 +68,18 @@ remove(Client, SpaceId) ->
     end.
 
 
-%% get_info/2
+%% get_details/2
 %% ====================================================================
-%% @doc Returns public information about Space.
--spec get_info(Client :: client(), SpaceId :: binary()) -> Result when
-    Result :: {ok, SpaceInfo :: #space_info{}} | {error, Reason :: term()}.
+%% @doc Returns public details about Space.
+-spec get_details(Client :: client(), SpaceId :: binary()) -> Result when
+    Result :: {ok, SpaceInfo :: #space_details{}} | {error, Reason :: term()}.
 %% ====================================================================
-get_info(Client, SpaceId) ->
+get_details(Client, SpaceId) ->
     try
         URI = "/spaces/" ++ binary_to_list(SpaceId),
         {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:secure_request(Client, URI, get),
         Proplist = mochijson2:decode(ResponseBody, [{format, proplist}]),
-        SpaceInfo = #space_info{
+        SpaceInfo = #space_details{
             id = proplists:get_value(<<"spaceId">>, Proplist),
             name = proplists:get_value(<<"name">>, Proplist)
         },
@@ -89,14 +89,14 @@ get_info(Client, SpaceId) ->
     end.
 
 
-%% modify_info/3
+%% modify_details/3
 %% ====================================================================
-%% @doc Modifies public information about Space. Parameters may contain:
+%% @doc Modifies public details about Space. Parameters may contain:
 %% "name" of Space.
--spec modify_info(Client :: client(), SpaceId :: binary(), Parameters :: [{Key :: binary(), Value :: binary()}]) -> Result when
+-spec modify_details(Client :: client(), SpaceId :: binary(), Parameters :: [{Key :: binary(), Value :: binary()}]) -> Result when
     Result :: ok | {error, Reason :: term()}.
 %% ====================================================================
-modify_info(Client, SpaceId, Parameters) ->
+modify_details(Client, SpaceId, Parameters) ->
     try
         URI = "/spaces/" ++ binary_to_list(SpaceId),
         Body = iolist_to_binary(mochijson2:encode(Parameters)),
@@ -195,18 +195,18 @@ get_users(Client, SpaceId) ->
     end.
 
 
-%% get_user_info/3
+%% get_user_details/3
 %% ====================================================================
-%% @doc Returns public information about user that belongs to Space.
--spec get_user_info(Client :: client(), SpaceId :: binary(), UserId :: binary()) -> Result when
-    Result :: {ok, UserInfo :: #user_info{}} | {error, Reason :: term()}.
+%% @doc Returns public details about user that belongs to Space.
+-spec get_user_details(Client :: client(), SpaceId :: binary(), UserId :: binary()) -> Result when
+    Result :: {ok, UserInfo :: #user_details{}} | {error, Reason :: term()}.
 %% ====================================================================
-get_user_info(Client, SpaceId, UserId) ->
+get_user_details(Client, SpaceId, UserId) ->
     try
         URI = "/spaces/" ++ binary_to_list(SpaceId) ++ "/users/" ++ binary_to_list(UserId),
         {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:secure_request(Client, URI, get),
         Proplist = mochijson2:decode(ResponseBody, [{format, proplist}]),
-        UserInfo = #user_info{
+        UserInfo = #user_details{
             id = proplists:get_value(<<"userId">>, Proplist),
             name = proplists:get_value(<<"name">>, Proplist)
         },
@@ -286,18 +286,18 @@ get_groups(Client, SpaceId) ->
     end.
 
 
-%% get_group_info/3
+%% get_group_details/3
 %% ====================================================================
-%% @doc Returns public information about group that belongs to Space.
--spec get_group_info(Client :: client(), SpaceId :: binary(), GroupId :: binary()) -> Result when
-    Result :: {ok, GroupInfo :: #group_info{}} | {error, Reason :: term()}.
+%% @doc Returns public details about group that belongs to Space.
+-spec get_group_details(Client :: client(), SpaceId :: binary(), GroupId :: binary()) -> Result when
+    Result :: {ok, GroupInfo :: #group_details{}} | {error, Reason :: term()}.
 %% ====================================================================
-get_group_info(Client, SpaceId, GroupId) ->
+get_group_details(Client, SpaceId, GroupId) ->
     try
         URI = "/spaces/" ++ binary_to_list(SpaceId) ++ "/groups/" ++ binary_to_list(GroupId),
         {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:secure_request(Client, URI, get),
         Proplist = mochijson2:decode(ResponseBody, [{format, proplist}]),
-        GroupInfo = #group_info{
+        GroupInfo = #group_details{
             id = proplists:get_value(<<"groupId">>, Proplist),
             name = proplists:get_value(<<"name">>, Proplist)
         },
@@ -377,18 +377,18 @@ get_providers(Client, SpaceId) ->
     end.
 
 
-%% get_provider_info/3
+%% get_provider_details/3
 %% ====================================================================
-%% @doc Returns public information about provider that supports Space.
--spec get_provider_info(Client :: client(), SpaceId :: binary(), ProviderId :: binary()) -> Result when
-    Result :: {ok, ProviderInfo :: #provider_info{}} | {error, Reason :: term()}.
+%% @doc Returns public details about provider that supports Space.
+-spec get_provider_details(Client :: client(), SpaceId :: binary(), ProviderId :: binary()) -> Result when
+    Result :: {ok, ProviderInfo :: #provider_details{}} | {error, Reason :: term()}.
 %% ====================================================================
-get_provider_info(Client, SpaceId, ProviderId) ->
+get_provider_details(Client, SpaceId, ProviderId) ->
     try
         URI = "/spaces/" ++ binary_to_list(SpaceId) ++ "/providers/" ++ binary_to_list(ProviderId),
         {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:secure_request(Client, URI, get),
         Proplist = mochijson2:decode(ResponseBody, [{format, proplist}]),
-        ProviderInfo = #provider_info{
+        ProviderInfo = #provider_details{
             id = proplists:get_value(<<"providerId">>, Proplist),
             urls = proplists:get_value(<<"urls">>, Proplist),
             redirectionPoint = proplists:get_value(<<"redirectionPoint">>, Proplist)

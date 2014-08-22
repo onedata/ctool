@@ -59,6 +59,7 @@ setup() ->
         (cacert) -> [{cacert_type, cacert_encoded, not_encrypted}]
     end).
 
+
 teardown(_) ->
     ?assert(meck:validate(gr_plugin)),
     ok = meck:unload(gr_plugin),
