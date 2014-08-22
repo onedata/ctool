@@ -28,7 +28,8 @@ gr_groups_test_() ->
         [
             {"get client access code", fun should_get_client_access_code/0},
             {"get client tokens", fun should_get_client_tokens/0},
-            {"delete client token", fun should_remove_client_token/0}
+            {"delete client token", fun should_remove_client_token/0},
+            {"verify client", fun should_verify_client/0}
         ]
     }.
 
@@ -42,6 +43,9 @@ setup() ->
         (client, "/openid/client/tokens", get) -> {ok, "200", response_headers, response_body};
         (client, "/openid/client/access_code", get) -> {ok, "200", response_headers, response_body};
         (client, "/openid/client/tokens/accessId", delete) -> {ok, "204", response_headers, response_body}
+    end),
+    meck:expect(gr_endpoint, secure_request, fun
+        (client, "openid/client/verify", post, <<"body">>) -> {ok, "200", response_headers, response_body}
     end).
 
 
@@ -100,5 +104,19 @@ should_get_client_tokens() ->
 should_remove_client_token() ->
     Answer = gr_openid:remove_client_token(client, <<"accessId">>),
     ?assertEqual(ok, Answer).
+
+
+should_verify_client() ->
+    meck:new(mochijson2),
+    meck:expect(mochijson2, encode, fun(parameters) -> <<"body">> end),
+    meck:expect(mochijson2, decode, fun
+        (response_body, [{format, proplist}]) -> [{<<"verified">>, <<"verified">>}]
+    end),
+
+    Answer = gr_openid:verify_client(client, parameters),
+    ?assertEqual({ok, <<"verified">>}, Answer),
+
+    ?assert(meck:validate(mochijson2)),
+    ok = meck:unload(mochijson2).
 
 -endif.
