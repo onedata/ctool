@@ -42,9 +42,9 @@
 %% ====================================================================
 create(Client, Parameters) ->
     try
-        URI = "/spaces",
+        URN = "/spaces",
         Body = iolist_to_binary(mochijson2:encode(Parameters)),
-        {ok, "201", ResponseHeaders, _ResponseBody} = gr_endpoint:secure_request(Client, URI, post, Body),
+        {ok, "201", ResponseHeaders, _ResponseBody} = gr_endpoint:secure_request(Client, URN, post, Body),
         <<"/spaces/", SpaceId/binary>> = list_to_binary(proplists:get_value("location", ResponseHeaders)),
         {ok, SpaceId}
     catch
@@ -60,8 +60,8 @@ create(Client, Parameters) ->
 %% ====================================================================
 remove(Client, SpaceId) ->
     try
-        URI = "/spaces/" ++ binary_to_list(SpaceId),
-        {ok, "204", _ResponseHeaders, _ResponseBody} = gr_endpoint:secure_request(Client, URI, delete),
+        URN = "/spaces/" ++ binary_to_list(SpaceId),
+        {ok, "204", _ResponseHeaders, _ResponseBody} = gr_endpoint:secure_request(Client, URN, delete),
         ok
     catch
         _:Reason -> {error, Reason}
@@ -76,8 +76,8 @@ remove(Client, SpaceId) ->
 %% ====================================================================
 get_details(Client, SpaceId) ->
     try
-        URI = "/spaces/" ++ binary_to_list(SpaceId),
-        {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:secure_request(Client, URI, get),
+        URN = "/spaces/" ++ binary_to_list(SpaceId),
+        {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:secure_request(Client, URN, get),
         Proplist = mochijson2:decode(ResponseBody, [{format, proplist}]),
         SpaceInfo = #space_details{
             id = proplists:get_value(<<"spaceId">>, Proplist),
@@ -98,9 +98,9 @@ get_details(Client, SpaceId) ->
 %% ====================================================================
 modify_details(Client, SpaceId, Parameters) ->
     try
-        URI = "/spaces/" ++ binary_to_list(SpaceId),
+        URN = "/spaces/" ++ binary_to_list(SpaceId),
         Body = iolist_to_binary(mochijson2:encode(Parameters)),
-        {ok, "200", _ResponseHeaders, _ResponseBody} = gr_endpoint:secure_request(Client, URI, patch, Body),
+        {ok, "200", _ResponseHeaders, _ResponseBody} = gr_endpoint:secure_request(Client, URN, patch, Body),
         ok
     catch
         _:Reason -> {error, Reason}
@@ -115,8 +115,8 @@ modify_details(Client, SpaceId, Parameters) ->
 %% ====================================================================
 get_invite_user_token(Client, SpaceId) ->
     try
-        URI = "/spaces/" ++ binary_to_list(SpaceId) ++ "/users/token",
-        {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:secure_request(Client, URI, get),
+        URN = "/spaces/" ++ binary_to_list(SpaceId) ++ "/users/token",
+        {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:secure_request(Client, URN, get),
         Proplist = mochijson2:decode(ResponseBody, [{format, proplist}]),
         Token = proplists:get_value(<<"token">>, Proplist),
         {ok, Token}
@@ -133,8 +133,8 @@ get_invite_user_token(Client, SpaceId) ->
 %% ====================================================================
 get_invite_group_token(Client, SpaceId) ->
     try
-        URI = "/spaces/" ++ binary_to_list(SpaceId) ++ "/groups/token",
-        {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:secure_request(Client, URI, get),
+        URN = "/spaces/" ++ binary_to_list(SpaceId) ++ "/groups/token",
+        {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:secure_request(Client, URN, get),
         Proplist = mochijson2:decode(ResponseBody, [{format, proplist}]),
         Token = proplists:get_value(<<"token">>, Proplist),
         {ok, Token}
@@ -151,8 +151,8 @@ get_invite_group_token(Client, SpaceId) ->
 %% ====================================================================
 get_invite_provider_token(Client, SpaceId) ->
     try
-        URI = "/spaces/" ++ binary_to_list(SpaceId) ++ "/providers/token",
-        {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:secure_request(Client, URI, get),
+        URN = "/spaces/" ++ binary_to_list(SpaceId) ++ "/providers/token",
+        {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:secure_request(Client, URN, get),
         Proplist = mochijson2:decode(ResponseBody, [{format, proplist}]),
         Token = proplists:get_value(<<"token">>, Proplist),
         {ok, Token}
@@ -169,8 +169,8 @@ get_invite_provider_token(Client, SpaceId) ->
 %% ====================================================================
 remove_user(Client, SpaceId, UserId) ->
     try
-        URI = "/spaces/" ++ binary_to_list(SpaceId) ++ "/users/" ++ binary_to_list(UserId),
-        {ok, "204", _ResponseHeaders, _ResponseBody} = gr_endpoint:secure_request(Client, URI, delete),
+        URN = "/spaces/" ++ binary_to_list(SpaceId) ++ "/users/" ++ binary_to_list(UserId),
+        {ok, "204", _ResponseHeaders, _ResponseBody} = gr_endpoint:secure_request(Client, URN, delete),
         ok
     catch
         _:Reason -> {error, Reason}
@@ -185,8 +185,8 @@ remove_user(Client, SpaceId, UserId) ->
 %% ====================================================================
 get_users(Client, SpaceId) ->
     try
-        URI = "/spaces/" ++ binary_to_list(SpaceId) ++ "/users",
-        {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:secure_request(Client, URI, get),
+        URN = "/spaces/" ++ binary_to_list(SpaceId) ++ "/users",
+        {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:secure_request(Client, URN, get),
         Proplist = mochijson2:decode(ResponseBody, [{format, proplist}]),
         UserIds = proplists:get_value(<<"users">>, Proplist),
         {ok, UserIds}
@@ -203,8 +203,8 @@ get_users(Client, SpaceId) ->
 %% ====================================================================
 get_user_details(Client, SpaceId, UserId) ->
     try
-        URI = "/spaces/" ++ binary_to_list(SpaceId) ++ "/users/" ++ binary_to_list(UserId),
-        {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:secure_request(Client, URI, get),
+        URN = "/spaces/" ++ binary_to_list(SpaceId) ++ "/users/" ++ binary_to_list(UserId),
+        {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:secure_request(Client, URN, get),
         Proplist = mochijson2:decode(ResponseBody, [{format, proplist}]),
         UserInfo = #user_details{
             id = proplists:get_value(<<"userId">>, Proplist),
@@ -224,8 +224,8 @@ get_user_details(Client, SpaceId, UserId) ->
 %% ====================================================================
 get_user_privileges(Client, SpaceId, UserId) ->
     try
-        URI = "/spaces/" ++ binary_to_list(SpaceId) ++ "/users/" ++ binary_to_list(UserId) ++ "/privileges",
-        {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:secure_request(Client, URI, get),
+        URN = "/spaces/" ++ binary_to_list(SpaceId) ++ "/users/" ++ binary_to_list(UserId) ++ "/privileges",
+        {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:secure_request(Client, URN, get),
         Proplist = mochijson2:decode(ResponseBody, [{format, proplist}]),
         Privileges = proplists:get_value(<<"privileges">>, Proplist),
         {ok, Privileges}
@@ -243,9 +243,9 @@ get_user_privileges(Client, SpaceId, UserId) ->
 %% ====================================================================
 set_user_privileges(Client, SpaceId, UserId, Parameters) ->
     try
-        URI = "/spaces/" ++ binary_to_list(SpaceId) ++ "/users/" ++ binary_to_list(UserId) ++ "/privileges",
+        URN = "/spaces/" ++ binary_to_list(SpaceId) ++ "/users/" ++ binary_to_list(UserId) ++ "/privileges",
         Body = iolist_to_binary(mochijson2:encode(Parameters)),
-        {ok, "200", _ResponseHeaders, _ResponseBody} = gr_endpoint:secure_request(Client, URI, put, Body),
+        {ok, "200", _ResponseHeaders, _ResponseBody} = gr_endpoint:secure_request(Client, URN, put, Body),
         ok
     catch
         _:Reason -> {error, Reason}
@@ -260,8 +260,8 @@ set_user_privileges(Client, SpaceId, UserId, Parameters) ->
 %% ====================================================================
 remove_group(Client, SpaceId, GroupId) ->
     try
-        URI = "/spaces/" ++ binary_to_list(SpaceId) ++ "/groups/" ++ binary_to_list(GroupId),
-        {ok, "204", _ResponseHeaders, _ResponseBody} = gr_endpoint:secure_request(Client, URI, delete),
+        URN = "/spaces/" ++ binary_to_list(SpaceId) ++ "/groups/" ++ binary_to_list(GroupId),
+        {ok, "204", _ResponseHeaders, _ResponseBody} = gr_endpoint:secure_request(Client, URN, delete),
         ok
     catch
         _:Reason -> {error, Reason}
@@ -276,8 +276,8 @@ remove_group(Client, SpaceId, GroupId) ->
 %% ====================================================================
 get_groups(Client, SpaceId) ->
     try
-        URI = "/spaces/" ++ binary_to_list(SpaceId) ++ "/groups",
-        {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:secure_request(Client, URI, get),
+        URN = "/spaces/" ++ binary_to_list(SpaceId) ++ "/groups",
+        {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:secure_request(Client, URN, get),
         Proplist = mochijson2:decode(ResponseBody, [{format, proplist}]),
         GroupIds = proplists:get_value(<<"groups">>, Proplist),
         {ok, GroupIds}
@@ -294,8 +294,8 @@ get_groups(Client, SpaceId) ->
 %% ====================================================================
 get_group_details(Client, SpaceId, GroupId) ->
     try
-        URI = "/spaces/" ++ binary_to_list(SpaceId) ++ "/groups/" ++ binary_to_list(GroupId),
-        {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:secure_request(Client, URI, get),
+        URN = "/spaces/" ++ binary_to_list(SpaceId) ++ "/groups/" ++ binary_to_list(GroupId),
+        {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:secure_request(Client, URN, get),
         Proplist = mochijson2:decode(ResponseBody, [{format, proplist}]),
         GroupInfo = #group_details{
             id = proplists:get_value(<<"groupId">>, Proplist),
@@ -315,8 +315,8 @@ get_group_details(Client, SpaceId, GroupId) ->
 %% ====================================================================
 get_group_privileges(Client, SpaceId, GroupId) ->
     try
-        URI = "/spaces/" ++ binary_to_list(SpaceId) ++ "/groups/" ++ binary_to_list(GroupId) ++ "/privileges",
-        {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:secure_request(Client, URI, get),
+        URN = "/spaces/" ++ binary_to_list(SpaceId) ++ "/groups/" ++ binary_to_list(GroupId) ++ "/privileges",
+        {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:secure_request(Client, URN, get),
         Proplist = mochijson2:decode(ResponseBody, [{format, proplist}]),
         Privileges = proplists:get_value(<<"privileges">>, Proplist),
         {ok, Privileges}
@@ -334,9 +334,9 @@ get_group_privileges(Client, SpaceId, GroupId) ->
 %% ====================================================================
 set_group_privileges(Client, SpaceId, GroupId, Parameters) ->
     try
-        URI = "/spaces/" ++ binary_to_list(SpaceId) ++ "/groups/" ++ binary_to_list(GroupId) ++ "/privileges",
+        URN = "/spaces/" ++ binary_to_list(SpaceId) ++ "/groups/" ++ binary_to_list(GroupId) ++ "/privileges",
         Body = iolist_to_binary(mochijson2:encode(Parameters)),
-        {ok, "200", _ResponseHeaders, _ResponseBody} = gr_endpoint:secure_request(Client, URI, put, Body),
+        {ok, "200", _ResponseHeaders, _ResponseBody} = gr_endpoint:secure_request(Client, URN, put, Body),
         ok
     catch
         _:Reason -> {error, Reason}
@@ -351,8 +351,8 @@ set_group_privileges(Client, SpaceId, GroupId, Parameters) ->
 %% ====================================================================
 remove_provider(Client, SpaceId, ProviderId) ->
     try
-        URI = "/spaces/" ++ binary_to_list(SpaceId) ++ "/providers/" ++ binary_to_list(ProviderId),
-        {ok, "204", _ResponseHeaders, _ResponseBody} = gr_endpoint:secure_request(Client, URI, delete),
+        URN = "/spaces/" ++ binary_to_list(SpaceId) ++ "/providers/" ++ binary_to_list(ProviderId),
+        {ok, "204", _ResponseHeaders, _ResponseBody} = gr_endpoint:secure_request(Client, URN, delete),
         ok
     catch
         _:Reason -> {error, Reason}
@@ -367,8 +367,8 @@ remove_provider(Client, SpaceId, ProviderId) ->
 %% ====================================================================
 get_providers(Client, SpaceId) ->
     try
-        URI = "/spaces/" ++ binary_to_list(SpaceId) ++ "/providers",
-        {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:secure_request(Client, URI, get),
+        URN = "/spaces/" ++ binary_to_list(SpaceId) ++ "/providers",
+        {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:secure_request(Client, URN, get),
         Proplist = mochijson2:decode(ResponseBody, [{format, proplist}]),
         ProviderIds = proplists:get_value(<<"providers">>, Proplist),
         {ok, ProviderIds}
@@ -385,8 +385,8 @@ get_providers(Client, SpaceId) ->
 %% ====================================================================
 get_provider_details(Client, SpaceId, ProviderId) ->
     try
-        URI = "/spaces/" ++ binary_to_list(SpaceId) ++ "/providers/" ++ binary_to_list(ProviderId),
-        {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:secure_request(Client, URI, get),
+        URN = "/spaces/" ++ binary_to_list(SpaceId) ++ "/providers/" ++ binary_to_list(ProviderId),
+        {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:secure_request(Client, URN, get),
         Proplist = mochijson2:decode(ResponseBody, [{format, proplist}]),
         ProviderInfo = #provider_details{
             id = proplists:get_value(<<"providerId">>, Proplist),

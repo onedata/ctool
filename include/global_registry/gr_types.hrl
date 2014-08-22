@@ -12,11 +12,11 @@
 -ifndef(GR_TYPES_HRL).
 -define(GR_TYPES_HRL, 1).
 
--export_type([uri/0, method/0, header/0, value/0, headers/0, body/0]).
+-export_type([urn/0, method/0, header/0, value/0, headers/0, body/0]).
 -export_type([client/0, space_privilege/0, group_privilege/0]).
 
 %% HTTP request types
--type uri() :: string().
+-type urn() :: string().
 -type method() :: post | get | patch | delete.
 -type header() :: atom() | string().
 -type value() :: term().

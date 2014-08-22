@@ -29,8 +29,8 @@
 %% ====================================================================
 get_client_access_code(Client) ->
     try
-        URI = "/openid/client/access_code",
-        {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:secure_request(Client, URI, get),
+        URN = "/openid/client/access_code",
+        {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:secure_request(Client, URN, get),
         Proplist = mochijson2:decode(ResponseBody, [{format, proplist}]),
         AccessCode = proplists:get_value(<<"accessCode">>, Proplist),
         {ok, AccessCode}
@@ -47,8 +47,8 @@ get_client_access_code(Client) ->
 %% ====================================================================
 get_client_tokens(Client) ->
     try
-        URI = "/openid/client/tokens",
-        {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:secure_request(Client, URI, get),
+        URN = "/openid/client/tokens",
+        {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:secure_request(Client, URN, get),
         Proplist = mochijson2:decode(ResponseBody, [{format, proplist}]),
         TokenInfo = proplists:get_value(<<"tokenInfo">>, Proplist),
         Tokens = lists:map(fun(Token) ->
@@ -71,8 +71,8 @@ get_client_tokens(Client) ->
 %% ====================================================================
 remove_client_token(Client, AccessId) ->
     try
-        URI = "/openid/client/tokens/" ++ binary_to_list(AccessId),
-        {ok, "204", _ResponseHeaders, _ResponseBody} = gr_endpoint:secure_request(Client, URI, delete),
+        URN = "/openid/client/tokens/" ++ binary_to_list(AccessId),
+        {ok, "204", _ResponseHeaders, _ResponseBody} = gr_endpoint:secure_request(Client, URN, delete),
         ok
     catch
         _:Reason -> {error, Reason}
@@ -85,13 +85,13 @@ remove_client_token(Client, AccessId) ->
 %% Parameters should contain: "userId" of client to be verified and
 %% associated with client "secret" token.
 -spec verify_client(Client :: client(), Parameters :: [{Key :: binary(), Value :: binary()}]) -> Result when
-    Result :: {ok, VerifyStatus :: binary()} | {error, Reason :: term()}.
+    Result :: {ok, VerifyStatus :: boolean()} | {error, Reason :: term()}.
 %% ====================================================================
 verify_client(Client, Parameters) ->
     try
-        URI = "openid/client/verify",
+        URN = "openid/client/verify",
         Body = iolist_to_binary(mochijson2:encode(Parameters)),
-        {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:secure_request(Client, URI, post, Body),
+        {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:secure_request(Client, URN, post, Body),
         Proplist = mochijson2:decode(ResponseBody, [{format, proplist}]),
         VerifyStatus = proplists:get_value(<<"verified">>, Proplist),
         {ok, VerifyStatus}
