@@ -23,7 +23,7 @@
 -type headers() :: [{header(), value()}].
 -type body() :: [] | string() | binary().
 
-%% Global Registry types
+%% Global Registry client
 -type client() :: provider | {user, AccessToken :: binary()}.
 
 %% User privileges with regards to Space management.

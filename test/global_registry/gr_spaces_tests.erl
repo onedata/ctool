@@ -311,7 +311,7 @@ should_get_provider_details() ->
     ?assertEqual({ok, #provider_details{
         id = <<"providerId">>,
         urls = <<"urls">>,
-        redirectionPoint = <<"redirectionPoint">>}
+        redirection_point = <<"redirectionPoint">>}
     }, Answer),
 
     ?assert(meck:validate(mochijson2)),

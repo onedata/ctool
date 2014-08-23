@@ -16,6 +16,12 @@
 
 %% API
 -export([get_client_access_code/1, get_client_tokens/1, remove_client_token/2, verify_client/2]).
+-export([get_grant_token/2]).
+
+%% Test API
+-ifdef(TEST).
+-export([base64decode/1]).
+-endif.
 
 %% ====================================================================
 %% API functions
@@ -43,7 +49,7 @@ get_client_access_code(Client) ->
 %% ====================================================================
 %% @doc Returns list of client tokens details.
 -spec get_client_tokens(Client :: client()) -> Result when
-    Result :: {ok, Tokens :: [#client_token_details{}]} | {error, Reason :: term()}.
+    Result :: {ok, Tokens :: [#client_token{}]} | {error, Reason :: term()}.
 %% ====================================================================
 get_client_tokens(Client) ->
     try
@@ -52,9 +58,9 @@ get_client_tokens(Client) ->
         Proplist = mochijson2:decode(ResponseBody, [{format, proplist}]),
         TokenInfo = proplists:get_value(<<"tokenInfo">>, Proplist),
         Tokens = lists:map(fun(Token) ->
-            #client_token_details{
-                id = proplists:get_value(<<"accessId">>, Token),
-                name = proplists:get_value(<<"clientName">>, Token)
+            #client_token{
+                access_id = proplists:get_value(<<"accessId">>, Token),
+                client_name = proplists:get_value(<<"clientName">>, Token)
             }
         end, TokenInfo),
         {ok, Tokens}
@@ -98,3 +104,76 @@ verify_client(Client, Parameters) ->
     catch
         _:Reason -> {error, Reason}
     end.
+
+
+%% get_grant_token/2
+%% ====================================================================
+%% @doc Returns grant token.
+%% Parameters should contain: client authorization "code" and "grant_type"
+%% of provided authorization code.
+-spec get_grant_token(Client :: client(), Parameters :: [{Key :: binary(), Value :: binary()}]) -> Result when
+    Result :: {ok, Tokens :: [#client_token{}]} | {error, Reason :: term()}.
+%% ====================================================================
+get_grant_token(Client, Parameters) ->
+    try
+        URN = "/openid/provider/tokens",
+        Body = iolist_to_binary(mochijson2:encode(Parameters)),
+        {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:secure_request(Client, URN, post, Body),
+        Proplist = mochijson2:decode(ResponseBody, [{format, proplist}]),
+        IdToken = proplists:get_value(<<"id_token">>, Proplist),
+        [_Header, Payload, _Signature] = binary:split(IdToken, <<".">>, [global]),
+        IdTokenProplist = mochijson2:decode(base64decode(Payload), [{format, proplist}]),
+        GrantToken = #grant_token{
+            access_token = proplists:get_value(<<"access_token">>, Proplist),
+            token_type = proplists:get_value(<<"token_type">>, Proplist),
+            expires_in = proplists:get_value(<<"expires_in">>, Proplist),
+            refresh_token = proplists:get_value(<<"refresh_token">>, Proplist),
+            scope = proplists:get_value(<<"scope">>, Proplist),
+            id_token = #id_token{
+                iss = proplists:get_value(<<"iss">>, IdTokenProplist),
+                sub = proplists:get_value(<<"sub">>, IdTokenProplist),
+                aud = proplists:get_value(<<"aud">>, IdTokenProplist),
+                name = proplists:get_value(<<"name">>, IdTokenProplist),
+                email = proplists:get_value(<<"email">>, IdTokenProplist),
+                exp = proplists:get_value(<<"exp">>, IdTokenProplist),
+                iat = proplists:get_value(<<"iat">>, IdTokenProplist)
+            }
+        },
+        {ok, GrantToken}
+    catch
+        _:Reason -> {error, Reason}
+    end.
+
+
+%% ====================================================================
+%% Internal functions
+%% ====================================================================
+
+%% base64decode/0
+%% ====================================================================
+%% @doc
+%% Decodes a base64 encoded term.
+%% @end
+-spec base64decode(binary() | string()) -> term().
+%% ====================================================================
+base64decode(Bin) when is_binary(Bin) ->
+    Bin2 = case byte_size(Bin) rem 4 of
+               2 -> <<Bin/binary, "==">>;
+               3 -> <<Bin/binary, "=">>;
+               _ -> Bin
+           end,
+    base64:decode(<<<<(urldecode_digit(D))>> || <<D>> <= Bin2>>);
+base64decode(L) when is_list(L) ->
+    base64decode(iolist_to_binary(L)).
+
+
+%% urldecode_digit/0
+%% ====================================================================
+%% @doc
+%% Urlencodes a single char in base64.
+%% @end
+-spec urldecode_digit(binary()) -> binary().
+%% ====================================================================
+urldecode_digit($_) -> $/;
+urldecode_digit($-) -> $+;
+urldecode_digit(D) -> D.

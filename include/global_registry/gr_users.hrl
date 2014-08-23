@@ -13,8 +13,8 @@
 -define(GR_USERS_HRL, 1).
 
 %% user_details record contains following fields:
-%% * id     - unique user ID assigned by Global Registry
-%% * name   - username
+%% * id   - unique user ID assigned by Global Registry
+%% * name - username
 -record(user_details, {
     id :: binary(),
     name :: binary()

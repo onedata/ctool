@@ -13,8 +13,8 @@
 -define(GR_SPACES_HRL, 1).
 
 %% space_details record contains following fields:
-%% * id     - unique Space ID assigned by Global Registry
-%% * name   - Space name
+%% * id   - unique Space ID assigned by Global Registry
+%% * name - Space name
 -record(space_details, {
     id :: binary(),
     name :: binary()
