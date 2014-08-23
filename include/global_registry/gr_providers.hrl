@@ -5,7 +5,7 @@
 %% cited in 'LICENSE.txt'.
 %% @end
 %% ===================================================================
-%% @doc Global Registry definition of provider record
+%% @doc Global Registry definition of provider record.
 %% @end
 %% ===================================================================
 

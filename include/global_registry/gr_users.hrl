@@ -5,7 +5,7 @@
 %% cited in 'LICENSE.txt'.
 %% @end
 %% ===================================================================
-%% @doc Global Registry definition of user record
+%% @doc Global Registry definition of user record.
 %% @end
 %% ===================================================================
 

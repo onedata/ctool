@@ -5,7 +5,7 @@
 %% cited in 'LICENSE.txt'.
 %% @end
 %% ===================================================================
-%% @doc Global Registry types definitions
+%% @doc Global Registry types definitions.
 %% @end
 %% ===================================================================
 

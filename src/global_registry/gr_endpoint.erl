@@ -5,7 +5,7 @@
 %% cited in 'LICENSE.txt'
 %% @end
 %% ===================================================================
-%% @doc: This module handles secure_requests to Global Registry using REST API.
+%% @doc: This module handles requests to Global Registry using REST API.
 %% @end
 %% ===================================================================
 
