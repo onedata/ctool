@@ -27,7 +27,8 @@
 -export([redirect/1, redirect_to_login/1, redirect_from_login/0]).
 
 % Useful functions for binding custom events
--export([register_escape_event/1, bind_enter_to_submit_button/2, bind_enter_to_change_focus/2, bind_key_to_click/2, bind_element_click/2]).
+-export([register_escape_event/1, bind_enter_to_submit_button/2, bind_enter_to_change_focus/2,
+    bind_key_to_click/2, bind_key_to_click_on_class/2, bind_element_click/2]).
 
 % DOM updates
 -export([update/2, replace/2, insert_top/2, insert_bottom/2, insert_before/2, insert_after/2, remove/1]).
@@ -214,6 +215,18 @@ bind_key_to_click(KeyCode, TargetID) ->
     Script = <<"$(document).bind('keydown', function (e){",
     "if (e.which == ", KeyCode/binary, ") { e.preventDefault(); document.getElementById('", TargetID/binary, "').click(); } });">>,
     wire(Script, false).
+
+
+%% bind_key_to_click_on_class/2
+%% ====================================================================
+%% @doc Makes any keypresses of given key to click on selected class.
+%% @end
+-spec bind_key_to_click_on_class(KeyCode :: binary(), ClassID :: binary()) -> string().
+%% ====================================================================
+bind_key_to_click_on_class(KeyCode, ClassID) ->
+    Script = <<"$(document).bind('keydown', function (e){",
+    "if (e.which == ", KeyCode/binary, ") { e.preventDefault(); $('", ClassID/binary, "').click(); } });">>,
+    gui_jq:wire(Script, false).
 
 
 %% bind_element_click/2
