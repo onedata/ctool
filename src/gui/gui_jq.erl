@@ -37,7 +37,7 @@
 -export([focus/1, set_text/2, select_text/1, set_value/2, set_width/2, click/1, prop/3, css/3]).
 
 % Bootbox functions
--export([confirm_popup/2, dialog_popup/3]).
+-export([confirm_popup/2, info_popup/3, dialog_popup/3]).
 
 
 %% ====================================================================
@@ -480,7 +480,7 @@ css(TargetID, PropertyName, Value) ->
 
 %% confirm_popup/2
 %% ====================================================================
-%% @doc Displays confirm popup using bootbox API.
+%% @doc Displays confirm popup using Bootbox API.
 -spec confirm_popup(Message :: binary(), Script :: binary()) -> binary().
 %% ====================================================================
 confirm_popup(Message, Script) ->
@@ -492,9 +492,27 @@ confirm_popup(Message, Script) ->
     );">>).
 
 
+%% info_popup/3
+%% ====================================================================
+%% @doc Displays custom info popup using Bootbox API.
+-spec info_popup(Title :: binary(), Message :: binary(), Script :: binary()) -> binary().
+%% ====================================================================
+info_popup(Title, Message, Script) ->
+    gui_jq:wire(<<"var box = bootbox.dialog({
+        title: '", Title/binary, "',
+        message: '", Message/binary, "',
+        buttons: {
+            'OK': {
+                className: 'btn-primary confirm',
+                callback: function() {", Script/binary, "}
+            }
+        }
+    });">>).
+
+
 %% dialog_popup/3
 %% ====================================================================
-%% @doc Displays custom dialog popup using bootbox API.
+%% @doc Displays custom dialog popup using Bootbox API.
 -spec dialog_popup(Title :: binary(), Message :: binary(), Script :: binary()) -> binary().
 %% ====================================================================
 dialog_popup(Title, Message, Script) ->
