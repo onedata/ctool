@@ -179,7 +179,7 @@ remove_user(Client, SpaceId, UserId) ->
 
 %% get_users/2
 %% ====================================================================
-%% @doc Returns list of ids of users that belong to Space.
+%% @doc Returns list of IDs of users that belong to Space.
 -spec get_users(Client :: client(), SpaceId :: binary()) -> Result when
     Result :: {ok, UserIds :: [binary()]} | {error, Reason :: term()}.
 %% ====================================================================
@@ -270,7 +270,7 @@ remove_group(Client, SpaceId, GroupId) ->
 
 %% get_groups/2
 %% ====================================================================
-%% @doc Returns list of ids of groups that belong to Space.
+%% @doc Returns list of IDs of groups that belong to Space.
 -spec get_groups(Client :: client(), SpaceId :: binary()) -> Result when
     Result :: {ok, UserIds :: [binary()]} | {error, Reason :: term()}.
 %% ====================================================================
@@ -361,7 +361,7 @@ remove_provider(Client, SpaceId, ProviderId) ->
 
 %% get_providers/2
 %% ====================================================================
-%% @doc Returns list of ids of providers that supports Space.
+%% @doc Returns list of IDs of providers that supports Space.
 -spec get_providers(Client :: client(), SpaceId :: binary()) -> Result when
     Result :: {ok, UserIds :: [binary()]} | {error, Reason :: term()}.
 %% ====================================================================

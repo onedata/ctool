@@ -226,7 +226,7 @@ cancel_space_support(Client, SpaceId) ->
 
 %% get_spaces/1
 %% ====================================================================
-%% @doc Returns list of ids of Spaces supported by provider.
+%% @doc Returns list of IDs of Spaces supported by provider.
 -spec get_spaces(Client :: client()) -> Result when
     Result :: {ok, SpaceIds :: [binary()]} | {error, Reason :: term()}.
 %% ====================================================================

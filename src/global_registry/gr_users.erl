@@ -175,7 +175,7 @@ leave_space(Client, SpaceId) ->
 
 %% get_spaces/1
 %% ====================================================================
-%% @doc Returns list of ids of Spaces that user belongs to.
+%% @doc Returns list of IDs of Spaces that user belongs to.
 -spec get_spaces(Client :: client()) -> Result when
     Result :: {ok, SpaceIds :: [binary()]} | {error, Reason :: term()}.
 %% ====================================================================
@@ -268,7 +268,7 @@ leave_group(Client, GroupId) ->
 
 %% get_groups/1
 %% ====================================================================
-%% @doc Returns list of ids of groups that user belongs to.
+%% @doc Returns list of IDs of groups that user belongs to.
 -spec get_groups(Client :: client()) -> Result when
     Result :: {ok, GroupIds :: [binary()]} | {error, Reason :: term()}.
 %% ====================================================================

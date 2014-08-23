@@ -154,7 +154,7 @@ remove_user(Client, GroupId, UserId) ->
 
 %% get_users/2
 %% ====================================================================
-%% @doc Returns list of ids of users that belong to group.
+%% @doc Returns list of IDs of users that belong to group.
 -spec get_users(Client :: client(), GroupId :: binary()) -> Result when
     Result :: {ok, UserIds :: [binary()]} | {error, Reason :: term()}.
 %% ====================================================================
@@ -284,7 +284,7 @@ leave_space(Client, GroupId, SpaceId) ->
 
 %% get_spaces/2
 %% ====================================================================
-%% @doc Returns list of ids of Spaces that group belongs to.
+%% @doc Returns list of IDs of Spaces that group belongs to.
 -spec get_spaces(Client :: client(), GroupId :: binary()) -> Result when
     Result :: {ok, SpaceIds :: [binary()]} | {error, Reason :: term()}.
 %% ====================================================================

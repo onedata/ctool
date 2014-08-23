@@ -36,6 +36,9 @@
 -export([show/1, hide/1, add_class/2, remove_class/2, slide_up/2, slide_down/2, fade_in/2, fade_out/2, delay/2]).
 -export([focus/1, set_text/2, select_text/1, set_value/2, set_width/2, click/1, prop/3, css/3]).
 
+% Bootbox functions
+-export([confirm_popup/2, dialog_popup/3]).
+
 
 %% ====================================================================
 %% API functions
@@ -473,3 +476,38 @@ prop(TargetID, PropertyName, Value) ->
 css(TargetID, PropertyName, Value) ->
     Script = <<"$('#", TargetID/binary, "').css('", PropertyName/binary, "','", Value/binary, "');">>,
     wire(Script, false).
+
+
+%% confirm_popup/2
+%% ====================================================================
+%% @doc Displays confirm popup using bootbox API.
+-spec confirm_popup(Message :: binary(), Script :: binary()) -> binary().
+%% ====================================================================
+confirm_popup(Message, Script) ->
+    gui_jq:wire(<<"bootbox.confirm(
+        '", Message/binary, "',
+        function(result) {
+            if(result) {", Script/binary, "}
+        }
+    );">>).
+
+
+%% dialog_popup/3
+%% ====================================================================
+%% @doc Displays custom dialog popup using bootbox API.
+-spec dialog_popup(Title :: binary(), Message :: binary(), Script :: binary()) -> binary().
+%% ====================================================================
+dialog_popup(Title, Message, Script) ->
+    gui_jq:wire(<<"var box = bootbox.dialog({
+        title: '", Title/binary, "',
+        message: '", Message/binary, "',
+        buttons: {
+            'Cancel': {
+                className: 'cancel'
+            },
+            'OK': {
+                className: 'btn-primary confirm',
+                callback: function() {", Script/binary, "}
+            }
+        }
+    });">>).
