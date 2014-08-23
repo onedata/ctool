@@ -30,20 +30,20 @@ gr_groups_test_() ->
         [
             {"create", fun should_create/0},
             {"remove", fun should_remove/0},
-            {"get info", fun should_get_details/0},
-            {"modify info", fun should_modify_details/0},
+            {"get details", fun should_get_details/0},
+            {"modify details", fun should_modify_details/0},
             {"get create space token", fun should_get_create_space_token/0},
             {"get invite user token", fun should_get_invite_user_token/0},
             {"remove user", fun should_remove_user/0},
             {"get users", fun should_get_users/0},
-            {"get user info", fun should_get_user_details/0},
+            {"get user details", fun should_get_user_details/0},
             {"should get user privileges", fun should_get_user_privileges/0},
             {"should set user privileges", fun should_set_user_privileges/0},
             {"should create space", fun should_create_space/0},
             {"should join space", fun should_join_space/0},
             {"should leave space", fun should_leave_space/0},
             {"should get spaces", fun should_get_spaces/0},
-            {"should get space info", fun should_get_space_details/0}
+            {"should get space details", fun should_get_space_details/0}
         ]
     }.
 
@@ -68,7 +68,7 @@ setup() ->
     end),
     meck:expect(gr_endpoint, secure_request, fun
         (client, "/groups", post, <<"body">>) -> {ok, "201", [{"location", "/groups/groupId"}], response_body};
-        (client, "/groups/groupId", patch, <<"body">>) -> {ok, "200", response_headers, response_body};
+        (client, "/groups/groupId", patch, <<"body">>) -> {ok, "204", response_headers, response_body};
         (client, "/groups/groupId/spaces", post, <<"body">>) -> {ok, "201", [{"location", "/spaces/spaceId"}], response_body};
         (client, "/groups/groupId/spaces/join", post, <<"body">>) -> {ok, "201", [{"location", "/groups/groupId/spaces/spaceId"}], response_body};
         (client, "/groups/groupId/users/userId/privileges", put, <<"body">>) -> {ok, "200", response_headers, response_body}

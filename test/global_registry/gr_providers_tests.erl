@@ -29,8 +29,8 @@ gr_groups_test_() ->
         [
             {"register", fun should_register/0},
             {"unregister", fun should_unregister/0},
-            {"get info", fun should_get_details/0},
-            {"modify info", fun should_modify_details/0},
+            {"get details", fun should_get_details/0},
+            {"modify details", fun should_modify_details/0},
             {"check ip address", fun should_check_ip_address/0},
             {"check GUI port", fun should_check_gui_port/0},
             {"check REST port", fun should_check_rest_port/0},
@@ -38,7 +38,7 @@ gr_groups_test_() ->
             {"support space", fun should_support_space/0},
             {"cancel space support", fun should_cancel_space_support/0},
             {"get spaces", fun should_get_spaces/0},
-            {"get space info", fun should_get_space_details/0}
+            {"get space details", fun should_get_space_details/0}
         ]
     }.
 
@@ -56,7 +56,7 @@ setup() ->
         (client, "/provider/spaces/spaceId", delete) -> {ok, "204", response_headers, response_body}
     end),
     meck:expect(gr_endpoint, secure_request, fun
-        (client, "/provider", patch, <<"body">>) -> {ok, "200", response_headers, response_body};
+        (client, "/provider", patch, <<"body">>) -> {ok, "204", response_headers, response_body};
         (client, "/provider/spaces", post, <<"body">>) -> {ok, "201", [{"location", "/spaces/spaceId"}], response_body};
         (client, "/provider/spaces/support", post, <<"body">>) -> {ok, "201", [{"location", "/provider/spaces/spaceId"}], response_body}
     end),

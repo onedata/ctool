@@ -93,7 +93,7 @@ modify_details(Client, GroupId, Parameters) ->
     try
         URN = "/groups/" ++ binary_to_list(GroupId),
         Body = iolist_to_binary(mochijson2:encode(Parameters)),
-        {ok, "200", _ResponseHeaders, _ResponseBody} = gr_endpoint:secure_request(Client, URN, patch, Body),
+        {ok, "204", _ResponseHeaders, _ResponseBody} = gr_endpoint:secure_request(Client, URN, patch, Body),
         ok
     catch
         _:Reason -> {error, Reason}

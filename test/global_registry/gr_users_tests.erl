@@ -28,8 +28,8 @@ gr_groups_test_() ->
         fun setup/0,
         fun teardown/1,
         [
-            {"get info", fun should_get_details/0},
-            {"modify info", fun should_modify_details/0},
+            {"get details", fun should_get_details/0},
+            {"modify details", fun should_modify_details/0},
             {"merge account", fun should_merge_account/0},
             {"get create space token", fun should_get_create_space_token/0},
             {"get merge account token", fun should_get_merge_account_token/0},
@@ -37,12 +37,12 @@ gr_groups_test_() ->
             {"should join space", fun should_join_space/0},
             {"should leave space", fun should_leave_space/0},
             {"should get spaces", fun should_get_spaces/0},
-            {"should get space info", fun should_get_space_details/0},
+            {"should get space details", fun should_get_space_details/0},
             {"should create group", fun should_create_group/0},
             {"should join group", fun should_join_group/0},
             {"should leave group", fun should_leave_group/0},
             {"should get groups", fun should_get_groups/0},
-            {"should get group info", fun should_get_group_details/0}
+            {"should get group details", fun should_get_group_details/0}
         ]
     }.
 
@@ -64,7 +64,7 @@ setup() ->
         (client, "/user/groups/groupId", delete) -> {ok, "204", response_headers, response_body}
     end),
     meck:expect(gr_endpoint, secure_request, fun
-        (client, "/user", patch, <<"body">>) -> {ok, "200", response_headers, response_body};
+        (client, "/user", patch, <<"body">>) -> {ok, "204", response_headers, response_body};
         (client, "/user/merge", post, <<"body">>) -> {ok, "201", response_headers, response_body};
         (client, "/user/spaces", post, <<"body">>) -> {ok, "201", [{"location", "/spaces/spaceId"}], response_body};
         (client, "/user/spaces/join", post, <<"body">>) -> {ok, "201", [{"location", "/user/spaces/spaceId"}], response_body};

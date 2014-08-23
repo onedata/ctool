@@ -31,24 +31,24 @@ gr_spaces_test_() ->
         [
             {"create", fun should_create/0},
             {"remove", fun should_remove/0},
-            {"get info", fun should_get_details/0},
-            {"modify info", fun should_modify_details/0},
+            {"get details", fun should_get_details/0},
+            {"modify details", fun should_modify_details/0},
             {"get invite user token", fun should_get_invite_user_token/0},
             {"get invite group token", fun should_get_invite_group_token/0},
             {"get invite provider token", fun should_get_invite_provider_token/0},
             {"remove user", fun should_remove_user/0},
             {"get users", fun should_get_users/0},
-            {"get user info", fun should_get_user_details/0},
+            {"get user details", fun should_get_user_details/0},
             {"get user privileges", fun should_get_user_privileges/0},
             {"set user privileges", fun should_set_user_privileges/0},
             {"remove group", fun should_remove_group/0},
             {"get groups", fun should_get_groups/0},
-            {"get group info", fun should_get_group_details/0},
+            {"get group details", fun should_get_group_details/0},
             {"get group privileges", fun should_get_group_privileges/0},
             {"set group privileges", fun should_set_group_privileges/0},
             {"remove provider", fun should_remove_provider/0},
             {"get providers", fun should_get_providers/0},
-            {"get provider info", fun should_get_provider_details/0}
+            {"get provider details", fun should_get_provider_details/0}
         ]
     }.
 
@@ -78,7 +78,7 @@ setup() ->
     end),
     meck:expect(gr_endpoint, secure_request, fun
         (client, "/spaces", post, <<"body">>) -> {ok, "201", [{"location", "/spaces/spaceId"}], response_body};
-        (client, "/spaces/spaceId", patch, <<"body">>) -> {ok, "200", response_headers, response_body};
+        (client, "/spaces/spaceId", patch, <<"body">>) -> {ok, "204", response_headers, response_body};
         (client, "/spaces/spaceId/users/userId/privileges", put, <<"body">>) -> {ok, "200", response_headers, response_body};
         (client, "/spaces/spaceId/groups/groupId/privileges", put, <<"body">>) -> {ok, "200", response_headers, response_body}
     end).
