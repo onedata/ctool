@@ -16,7 +16,7 @@
 -include("global_registry/gr_providers.hrl").
 
 %% API
--export([register/2, unregister/1, get_details/1, modify_details/2]).
+-export([register/2, unregister/1, get_details/1, get_details/2, modify_details/2]).
 -export([check_ip_address/2, check_port/4]).
 -export([create_space/2, support_space/2, cancel_space_support/2, get_spaces/1, get_space_details/2]).
 
@@ -71,6 +71,28 @@ unregister(Client) ->
 get_details(Client) ->
     try
         URN = "/provider",
+        {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:secure_request(Client, URN, get),
+        Proplist = mochijson2:decode(ResponseBody, [{format, proplist}]),
+        ProviderInfo = #provider_details{
+            id = proplists:get_value(<<"providerId">>, Proplist),
+            urls = proplists:get_value(<<"urls">>, Proplist),
+            redirection_point = proplists:get_value(<<"redirectionPoint">>, Proplist)
+        },
+        {ok, ProviderInfo}
+    catch
+        _:Reason -> {error, Reason}
+    end.
+
+
+%% get_details/2
+%% ====================================================================
+%% @doc Returns public details about given provider.
+-spec get_details(Client :: client(), ProviderId :: binary()) -> Result when
+    Result :: {ok, ProviderInfo :: #provider_details{}} | {error, Reason :: term()}.
+%% ====================================================================
+get_details(Client, ProviderId) ->
+    try
+        URN = "/provider/" ++ binary_to_list(ProviderId),
         {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:secure_request(Client, URN, get),
         Proplist = mochijson2:decode(ResponseBody, [{format, proplist}]),
         ProviderInfo = #provider_details{

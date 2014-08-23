@@ -30,6 +30,7 @@ gr_groups_test_() ->
             {"register", fun should_register/0},
             {"unregister", fun should_unregister/0},
             {"get details", fun should_get_details/0},
+            {"get details for given provider", fun should_get_details_for_given_provider/0},
             {"modify details", fun should_modify_details/0},
             {"check ip address", fun should_check_ip_address/0},
             {"check GUI port", fun should_check_gui_port/0},
@@ -51,6 +52,7 @@ setup() ->
     meck:expect(gr_endpoint, secure_request, fun
         (client, "/provider", get) -> {ok, "200", response_headers, response_body};
         (client, "/provider", delete) -> {ok, "204", response_headers, response_body};
+        (client, "/provider/providerId", get) -> {ok, "200", response_headers, response_body};
         (client, "/provider/spaces", get) -> {ok, "200", response_headers, response_body};
         (client, "/provider/spaces/spaceId", get) -> {ok, "200", response_headers, response_body};
         (client, "/provider/spaces/spaceId", delete) -> {ok, "204", response_headers, response_body}
@@ -110,6 +112,27 @@ should_get_details() ->
     end),
 
     Answer = gr_providers:get_details(client),
+    ?assertEqual({ok, #provider_details{
+        id = <<"providerId">>,
+        urls = <<"urls">>,
+        redirection_point = <<"redirectionPoint">>}
+    }, Answer),
+
+    ?assert(meck:validate(mochijson2)),
+    ok = meck:unload(mochijson2).
+
+
+should_get_details_for_given_provider() ->
+    meck:new(mochijson2),
+    meck:expect(mochijson2, decode, fun
+        (response_body, [{format, proplist}]) -> [
+            {<<"providerId">>, <<"providerId">>},
+            {<<"urls">>, <<"urls">>},
+            {<<"redirectionPoint">>, <<"redirectionPoint">>}
+        ]
+    end),
+
+    Answer = gr_providers:get_details(client, <<"providerId">>),
     ?assertEqual({ok, #provider_details{
         id = <<"providerId">>,
         urls = <<"urls">>,
