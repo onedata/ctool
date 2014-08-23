@@ -64,7 +64,10 @@ secure_request(Client, URN, Method, Body, Options) ->
 secure_request(provider, URN, Method, Headers, Body, Options) ->
     do_secure_request(URN, Method, Headers, Body, Options);
 
-secure_request({user, AccessToken}, URN, Method, Headers, Body, Options) ->
+secure_request({Type, undefined}, URN, Method, Headers, Body, Options) when Type =:= user; Type =:= try_user ->
+    do_secure_request(URN, Method, Headers, Body, Options);
+
+secure_request({Type, AccessToken}, URN, Method, Headers, Body, Options) when Type =:= user; Type =:= try_user ->
     AuthorizationHeader = {"authorization", "Bearer " ++ binary_to_list(AccessToken)},
     do_secure_request(URN, Method, [AuthorizationHeader | Headers], Body, Options).
 
@@ -112,7 +115,10 @@ insecure_request(Client, URN, Method, Body, Options) ->
 insecure_request(provider, URN, Method, Headers, Body, Options) ->
     do_insecure_request(URN, Method, Headers, Body, Options);
 
-insecure_request({user, AccessToken}, URN, Method, Headers, Body, Options) ->
+insecure_request({Type, undefined}, URN, Method, Headers, Body, Options) when Type =:= user; Type =:= try_user ->
+    do_insecure_request(URN, Method, Headers, Body, Options);
+
+insecure_request({Type, AccessToken}, URN, Method, Headers, Body, Options) when Type =:= user; Type =:= try_user ->
     AuthorizationHeader = {"authorization", "Bearer " ++ binary_to_list(AccessToken)},
     do_insecure_request(URN, Method, [AuthorizationHeader | Headers], Body, Options).
 

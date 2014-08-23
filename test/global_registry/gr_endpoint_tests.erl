@@ -91,8 +91,10 @@ should_send_provider_request_1() ->
         ) -> ok
     end),
 
-    gr_endpoint:secure_request(provider, "URN", method),
-    gr_endpoint:insecure_request(provider, "URN", method),
+    ?assertEqual(ok, gr_endpoint:secure_request(provider, "URN", method)),
+    ?assertEqual(ok, gr_endpoint:insecure_request(provider, "URN", method)),
+    ?assertEqual(ok, gr_endpoint:secure_request({try_user, undefined}, "URN", method)),
+    ?assertEqual(ok, gr_endpoint:insecure_request({try_user, undefined}, "URN", method)),
 
     ?assert(meck:validate(ibrowse)),
     ok = meck:unload(ibrowse).
@@ -117,8 +119,10 @@ should_send_provider_request_2() ->
         ) -> ok
     end),
 
-    gr_endpoint:secure_request(provider, "URN", method, body),
-    gr_endpoint:insecure_request(provider, "URN", method, body),
+    ?assertEqual(ok, gr_endpoint:secure_request(provider, "URN", method, body)),
+    ?assertEqual(ok, gr_endpoint:insecure_request(provider, "URN", method, body)),
+    ?assertEqual(ok, gr_endpoint:secure_request({try_user, undefined}, "URN", method, body)),
+    ?assertEqual(ok, gr_endpoint:insecure_request({try_user, undefined}, "URN", method, body)),
 
     ?assert(meck:validate(ibrowse)),
     ok = meck:unload(ibrowse).
@@ -143,8 +147,10 @@ should_send_provider_request_3() ->
         ) -> ok
     end),
 
-    gr_endpoint:secure_request(provider, "URN", method, body, [options]),
-    gr_endpoint:insecure_request(provider, "URN", method, body, [options]),
+    ?assertEqual(ok, gr_endpoint:secure_request(provider, "URN", method, body, [options])),
+    ?assertEqual(ok, gr_endpoint:insecure_request(provider, "URN", method, body, [options])),
+    ?assertEqual(ok, gr_endpoint:secure_request({try_user, undefined}, "URN", method, body, [options])),
+    ?assertEqual(ok, gr_endpoint:insecure_request({try_user, undefined}, "URN", method, body, [options])),
 
     ?assert(meck:validate(ibrowse)),
     ok = meck:unload(ibrowse).
@@ -169,8 +175,10 @@ should_send_provider_request_4() ->
         ) -> ok
     end),
 
-    gr_endpoint:secure_request(provider, "URN", method, [headers], body, [options]),
-    gr_endpoint:insecure_request(provider, "URN", method, [headers], body, [options]),
+    ?assertEqual(ok, gr_endpoint:secure_request(provider, "URN", method, [headers], body, [options])),
+    ?assertEqual(ok, gr_endpoint:insecure_request(provider, "URN", method, [headers], body, [options])),
+    ?assertEqual(ok, gr_endpoint:secure_request({try_user, undefined}, "URN", method, [headers], body, [options])),
+    ?assertEqual(ok, gr_endpoint:insecure_request({try_user, undefined}, "URN", method, [headers], body, [options])),
 
     ?assert(meck:validate(ibrowse)),
     ok = meck:unload(ibrowse).
@@ -195,8 +203,10 @@ should_send_user_request_1() ->
         ) -> ok
     end),
 
-    gr_endpoint:secure_request({user, <<"AccessToken">>}, "URN", method),
-    gr_endpoint:insecure_request({user, <<"AccessToken">>}, "URN", method),
+    ?assertEqual(ok, gr_endpoint:secure_request({user, <<"AccessToken">>}, "URN", method)),
+    ?assertEqual(ok, gr_endpoint:insecure_request({user, <<"AccessToken">>}, "URN", method)),
+    ?assertEqual(ok, gr_endpoint:secure_request({try_user, <<"AccessToken">>}, "URN", method)),
+    ?assertEqual(ok, gr_endpoint:insecure_request({try_user, <<"AccessToken">>}, "URN", method)),
 
     ?assert(meck:validate(ibrowse)),
     ok = meck:unload(ibrowse).
@@ -221,8 +231,10 @@ should_send_user_request_2() ->
         ) -> ok
     end),
 
-    gr_endpoint:secure_request({user, <<"AccessToken">>}, "URN", method, body),
-    gr_endpoint:insecure_request({user, <<"AccessToken">>}, "URN", method, body),
+    ?assertEqual(ok, gr_endpoint:secure_request({user, <<"AccessToken">>}, "URN", method, body)),
+    ?assertEqual(ok, gr_endpoint:insecure_request({user, <<"AccessToken">>}, "URN", method, body)),
+    ?assertEqual(ok, gr_endpoint:secure_request({try_user, <<"AccessToken">>}, "URN", method, body)),
+    ?assertEqual(ok, gr_endpoint:insecure_request({try_user, <<"AccessToken">>}, "URN", method, body)),
 
     ?assert(meck:validate(ibrowse)),
     ok = meck:unload(ibrowse).
@@ -247,8 +259,10 @@ should_send_user_request_3() ->
         ) -> ok
     end),
 
-    gr_endpoint:secure_request({user, <<"AccessToken">>}, "URN", method, body, [options]),
-    gr_endpoint:insecure_request({user, <<"AccessToken">>}, "URN", method, body, [options]),
+    ?assertEqual(ok, gr_endpoint:secure_request({user, <<"AccessToken">>}, "URN", method, body, [options])),
+    ?assertEqual(ok, gr_endpoint:insecure_request({user, <<"AccessToken">>}, "URN", method, body, [options])),
+    ?assertEqual(ok, gr_endpoint:secure_request({try_user, <<"AccessToken">>}, "URN", method, body, [options])),
+    ?assertEqual(ok, gr_endpoint:insecure_request({try_user, <<"AccessToken">>}, "URN", method, body, [options])),
 
     ?assert(meck:validate(ibrowse)),
     ok = meck:unload(ibrowse).
@@ -273,8 +287,10 @@ should_send_user_request_4() ->
         ) -> ok
     end),
 
-    gr_endpoint:secure_request({user, <<"AccessToken">>}, "URN", method, [headers], body, [options]),
-    gr_endpoint:insecure_request({user, <<"AccessToken">>}, "URN", method, [headers], body, [options]),
+    ?assertEqual(ok, gr_endpoint:secure_request({user, <<"AccessToken">>}, "URN", method, [headers], body, [options])),
+    ?assertEqual(ok, gr_endpoint:insecure_request({user, <<"AccessToken">>}, "URN", method, [headers], body, [options])),
+    ?assertEqual(ok, gr_endpoint:secure_request({try_user, <<"AccessToken">>}, "URN", method, [headers], body, [options])),
+    ?assertEqual(ok, gr_endpoint:insecure_request({try_user, <<"AccessToken">>}, "URN", method, [headers], body, [options])),
 
     ?assert(meck:validate(ibrowse)),
     ok = meck:unload(ibrowse).
