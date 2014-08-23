@@ -181,14 +181,14 @@ should_send_user_request_1() ->
     meck:expect(ibrowse, send_req, fun
         (
             "URL/URN",
-            [{"content-type", "application/json"}, {"authorization", <<"Bearer AccessToken">>}],
+            [{"content-type", "application/json"}, {"authorization", "Bearer AccessToken"}],
             method,
             [],
             []
         ) -> ok;
         (
             "URL/URN",
-            [{"content-type", "application/json"}, {"authorization", <<"Bearer AccessToken">>}],
+            [{"content-type", "application/json"}, {"authorization", "Bearer AccessToken"}],
             method,
             [],
             [{ssl_options, [{cacerts, [cacert_encoded]}, {key, {key_type, key_encoded}}, {cert, cert_encoded}]}]
@@ -207,14 +207,14 @@ should_send_user_request_2() ->
     meck:expect(ibrowse, send_req, fun
         (
             "URL/URN",
-            [{"content-type", "application/json"}, {"authorization", <<"Bearer AccessToken">>}],
+            [{"content-type", "application/json"}, {"authorization", "Bearer AccessToken"}],
             method,
             body,
             []
         ) -> ok;
         (
             "URL/URN",
-            [{"content-type", "application/json"}, {"authorization", <<"Bearer AccessToken">>}],
+            [{"content-type", "application/json"}, {"authorization", "Bearer AccessToken"}],
             method,
             body,
             [{ssl_options, [{cacerts, [cacert_encoded]}, {key, {key_type, key_encoded}}, {cert, cert_encoded}]}]
@@ -233,14 +233,14 @@ should_send_user_request_3() ->
     meck:expect(ibrowse, send_req, fun
         (
             "URL/URN",
-            [{"content-type", "application/json"}, {"authorization", <<"Bearer AccessToken">>}],
+            [{"content-type", "application/json"}, {"authorization", "Bearer AccessToken"}],
             method,
             body,
             [options]
         ) -> ok;
         (
             "URL/URN",
-            [{"content-type", "application/json"}, {"authorization", <<"Bearer AccessToken">>}],
+            [{"content-type", "application/json"}, {"authorization", "Bearer AccessToken"}],
             method,
             body,
             [{ssl_options, [{cacerts, [cacert_encoded]}, {key, {key_type, key_encoded}}, {cert, cert_encoded}]}, options]
@@ -259,14 +259,14 @@ should_send_user_request_4() ->
     meck:expect(ibrowse, send_req, fun
         (
             "URL/URN",
-            [{"content-type", "application/json"}, {"authorization", <<"Bearer AccessToken">>}, headers],
+            [{"content-type", "application/json"}, {"authorization", "Bearer AccessToken"}, headers],
             method,
             body,
             [options]
         ) -> ok;
         (
             "URL/URN",
-            [{"content-type", "application/json"}, {"authorization", <<"Bearer AccessToken">>}, headers],
+            [{"content-type", "application/json"}, {"authorization", "Bearer AccessToken"}, headers],
             method,
             body,
             [{ssl_options, [{cacerts, [cacert_encoded]}, {key, {key_type, key_encoded}}, {cert, cert_encoded}]}, options]

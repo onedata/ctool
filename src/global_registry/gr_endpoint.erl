@@ -65,7 +65,7 @@ secure_request(provider, URN, Method, Headers, Body, Options) ->
     do_secure_request(URN, Method, Headers, Body, Options);
 
 secure_request({user, AccessToken}, URN, Method, Headers, Body, Options) ->
-    AuthorizationHeader = {"authorization", <<"Bearer ", AccessToken/binary>>},
+    AuthorizationHeader = {"authorization", "Bearer " ++ binary_to_list(AccessToken)},
     do_secure_request(URN, Method, [AuthorizationHeader | Headers], Body, Options).
 
 
@@ -113,7 +113,7 @@ insecure_request(provider, URN, Method, Headers, Body, Options) ->
     do_insecure_request(URN, Method, Headers, Body, Options);
 
 insecure_request({user, AccessToken}, URN, Method, Headers, Body, Options) ->
-    AuthorizationHeader = {"authorization", <<"Bearer ", AccessToken/binary>>},
+    AuthorizationHeader = {"authorization", "Bearer " ++ binary_to_list(AccessToken)},
     do_insecure_request(URN, Method, [AuthorizationHeader | Headers], Body, Options).
 
 
