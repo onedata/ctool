@@ -134,7 +134,9 @@ get_grant_token(Client, Parameters) ->
                 sub = proplists:get_value(<<"sub">>, IdTokenProplist),
                 aud = proplists:get_value(<<"aud">>, IdTokenProplist),
                 name = proplists:get_value(<<"name">>, IdTokenProplist),
-                email = proplists:get_value(<<"email">>, IdTokenProplist),
+                email = lists:map(fun(EmailProplist) ->
+                    proplists:get_value(<<"email">>, EmailProplist)
+                end, proplists:get_value(<<"email">>, IdTokenProplist)),
                 exp = proplists:get_value(<<"exp">>, IdTokenProplist),
                 iat = proplists:get_value(<<"iat">>, IdTokenProplist)
             }
@@ -143,7 +145,6 @@ get_grant_token(Client, Parameters) ->
     catch
         _:Reason -> {error, Reason}
     end.
-
 
 %% ====================================================================
 %% Internal functions

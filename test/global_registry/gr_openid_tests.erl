@@ -139,7 +139,7 @@ should_get_grant_token() ->
             {<<"sub">>, <<"sub">>},
             {<<"aud">>, <<"aud">>},
             {<<"name">>, <<"name">>},
-            {<<"email">>, <<"email">>},
+            {<<"email">>, [[{<<"email">>, <<"email1">>}], [{<<"email">>, <<"email2">>}]]},
             {<<"exp">>, <<"exp">>},
             {<<"iat">>, <<"iat">>}
         ]
@@ -159,7 +159,7 @@ should_get_grant_token() ->
             sub = <<"sub">>,
             aud = <<"aud">>,
             name = <<"name">>,
-            email = <<"email">>,
+            email = [<<"email1">>, <<"email2">>],
             exp = <<"exp">>,
             iat = <<"iat">>
         }

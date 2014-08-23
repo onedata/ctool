@@ -28,16 +28,16 @@
     aud :: binary(),
     name :: binary(),
     email :: [binary()],
-    exp :: term(),
-    iat :: term()
+    exp :: binary(),
+    iat :: binary()
 }).
 
 -record(grant_token, {
     access_token :: binary(),
     token_type :: binary(),
-    expires_in :: term(),
-    refresh_token :: term(),
-    scope :: term(),
+    expires_in :: integer(),
+    refresh_token :: binary(),
+    scope :: binary(),
     id_token :: #id_token{}
 }).
 
