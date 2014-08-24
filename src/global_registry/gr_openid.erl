@@ -95,7 +95,7 @@ remove_client_token(Client, AccessId) ->
 %% ====================================================================
 verify_client(Client, Parameters) ->
     try
-        URN = "openid/client/verify",
+        URN = "/openid/client/verify",
         Body = iolist_to_binary(mochijson2:encode(Parameters)),
         {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:secure_request(Client, URN, post, Body),
         Proplist = mochijson2:decode(ResponseBody, [{format, proplist}]),
