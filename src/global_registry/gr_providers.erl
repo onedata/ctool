@@ -11,6 +11,7 @@
 
 -module(gr_providers).
 
+-include("global_registry/gr_runner.hrl").
 -include("global_registry/gr_types.hrl").
 -include("global_registry/gr_spaces.hrl").
 -include("global_registry/gr_providers.hrl").
@@ -33,7 +34,7 @@
     Result :: {ok, ProviderId :: binary(), Cert :: binary()} | {error, Reason :: term()}.
 %% ====================================================================
 register(Client, Parameters) ->
-    try
+    ?run(fun() ->
         URN = "/provider",
         Body = iolist_to_binary(mochijson2:encode(Parameters)),
         {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:insecure_request(Client, URN, post, Body),
@@ -41,9 +42,7 @@ register(Client, Parameters) ->
         ProviderId = proplists:get_value(<<"providerId">>, Proplist),
         Cert = proplists:get_value(<<"certificate">>, Proplist),
         {ok, ProviderId, Cert}
-    catch
-        _:Reason -> {error, Reason}
-    end.
+    end).
 
 
 %% unregister/1
@@ -53,13 +52,11 @@ register(Client, Parameters) ->
     Result :: ok | {error, Reason :: term()}.
 %% ====================================================================
 unregister(Client) ->
-    try
+    ?run(fun() ->
         URN = "/provider",
         {ok, "204", _ResponseHeaders, _ResponseBody} = gr_endpoint:secure_request(Client, URN, delete),
         ok
-    catch
-        _:Reason -> {error, Reason}
-    end.
+    end).
 
 
 %% get_details/1
@@ -69,7 +66,7 @@ unregister(Client) ->
     Result :: {ok, ProviderInfo :: #provider_details{}} | {error, Reason :: term()}.
 %% ====================================================================
 get_details(Client) ->
-    try
+    ?run(fun() ->
         URN = "/provider",
         {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:secure_request(Client, URN, get),
         Proplist = mochijson2:decode(ResponseBody, [{format, proplist}]),
@@ -79,9 +76,7 @@ get_details(Client) ->
             redirection_point = proplists:get_value(<<"redirectionPoint">>, Proplist)
         },
         {ok, ProviderInfo}
-    catch
-        _:Reason -> {error, Reason}
-    end.
+    end).
 
 
 %% get_details/2
@@ -91,7 +86,7 @@ get_details(Client) ->
     Result :: {ok, ProviderInfo :: #provider_details{}} | {error, Reason :: term()}.
 %% ====================================================================
 get_details(Client, ProviderId) ->
-    try
+    ?run(fun() ->
         URN = "/provider/" ++ binary_to_list(ProviderId),
         {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:secure_request(Client, URN, get),
         Proplist = mochijson2:decode(ResponseBody, [{format, proplist}]),
@@ -101,9 +96,7 @@ get_details(Client, ProviderId) ->
             redirection_point = proplists:get_value(<<"redirectionPoint">>, Proplist)
         },
         {ok, ProviderInfo}
-    catch
-        _:Reason -> {error, Reason}
-    end.
+    end).
 
 
 %% modify_details/2
@@ -114,14 +107,12 @@ get_details(Client, ProviderId) ->
     Result :: ok | {error, Reason :: term()}.
 %% ====================================================================
 modify_details(Client, Parameters) ->
-    try
+    ?run(fun() ->
         URN = "/provider",
         Body = iolist_to_binary(mochijson2:encode(Parameters)),
         {ok, "204", _ResponseHeaders, _ResponseBody} = gr_endpoint:secure_request(Client, URN, patch, Body),
         ok
-    catch
-        _:Reason -> {error, Reason}
-    end.
+    end).
 
 
 %% check_ip_address/2
@@ -132,15 +123,13 @@ modify_details(Client, Parameters) ->
     Result :: {ok, IpAddress :: binary()} | {error, Reason :: term()}.
 %% ====================================================================
 check_ip_address(Client, ConnectTimeout) ->
-    try
+    ?run(fun() ->
         URN = "/provider/test/check_my_ip",
         Options = [{connect_timeout, ConnectTimeout}],
         {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:insecure_request(Client, URN, get, [], Options),
         IpAddress = mochijson2:decode(ResponseBody),
         {ok, IpAddress}
-    catch
-        _:Reason -> {error, Reason}
-    end.
+    end).
 
 
 %% check_port/4
@@ -151,7 +140,7 @@ check_ip_address(Client, ConnectTimeout) ->
     Result :: ok | {error, Reason :: term()}.
 %% ====================================================================
 check_port(Client, IpAddress, Port, Type) ->
-    try
+    ?run(fun() ->
         URN = "/provider/test/check_my_ports",
         Resource = case Type of
                        <<"gui">> -> <<"/connection_check">>;
@@ -163,9 +152,7 @@ check_port(Client, IpAddress, Port, Type) ->
         Proplist = mochijson2:decode(ResponseBody, [{format, proplist}]),
         <<"ok">> = proplists:get_value(CheckURL, Proplist),
         ok
-    catch
-        _:Reason -> {error, Reason}
-    end.
+    end).
 
 
 %% create_space/2
@@ -178,15 +165,13 @@ check_port(Client, IpAddress, Port, Type) ->
     Result :: {ok, SpaceId :: binary()} | {error, Reason :: term()}.
 %% ====================================================================
 create_space(Client, Parameters) ->
-    try
+    ?run(fun() ->
         URN = "/provider/spaces",
         Body = iolist_to_binary(mochijson2:encode(Parameters)),
         {ok, "201", ResponseHeaders, _ResponseBody} = gr_endpoint:secure_request(Client, URN, post, Body),
         <<"/spaces/", SpaceId/binary>> = list_to_binary(proplists:get_value("location", ResponseHeaders)),
         {ok, SpaceId}
-    catch
-        _:Reason -> {error, Reason}
-    end.
+    end).
 
 
 %% support_space/2
@@ -197,15 +182,13 @@ create_space(Client, Parameters) ->
     Result :: {ok, SpaceId :: binary()} | {error, Reason :: term()}.
 %% ====================================================================
 support_space(Client, Parameters) ->
-    try
+    ?run(fun() ->
         URN = "/provider/spaces/support",
         Body = iolist_to_binary(mochijson2:encode(Parameters)),
         {ok, "201", ResponseHeaders, _ResponseBody} = gr_endpoint:secure_request(Client, URN, post, Body),
         <<"/provider/spaces/", SpaceId/binary>> = list_to_binary(proplists:get_value("location", ResponseHeaders)),
         {ok, SpaceId}
-    catch
-        _:Reason -> {error, Reason}
-    end.
+    end).
 
 
 %% cancel_space_support/2
@@ -215,13 +198,11 @@ support_space(Client, Parameters) ->
     Result :: ok | {error, Reason :: term()}.
 %% ====================================================================
 cancel_space_support(Client, SpaceId) ->
-    try
+    ?run(fun() ->
         URN = "/provider/spaces/" ++ binary_to_list(SpaceId),
         {ok, "204", _ResponseHeaders, _ResponseBody} = gr_endpoint:secure_request(Client, URN, delete),
         ok
-    catch
-        _:Reason -> {error, Reason}
-    end.
+    end).
 
 
 %% get_spaces/1
@@ -231,15 +212,13 @@ cancel_space_support(Client, SpaceId) ->
     Result :: {ok, SpaceIds :: [binary()]} | {error, Reason :: term()}.
 %% ====================================================================
 get_spaces(Client) ->
-    try
+    ?run(fun() ->
         URN = "/provider/spaces",
         {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:secure_request(Client, URN, get),
         Proplist = mochijson2:decode(ResponseBody, [{format, proplist}]),
         SpaceIds = proplists:get_value(<<"spaces">>, Proplist),
         {ok, SpaceIds}
-    catch
-        _:Reason -> {error, Reason}
-    end.
+    end).
 
 
 %% get_space_details/2
@@ -249,7 +228,7 @@ get_spaces(Client) ->
     Result :: {ok, SpaceInfo :: #space_details{}} | {error, Reason :: term()}.
 %% ====================================================================
 get_space_details(Client, SpaceId) ->
-    try
+    ?run(fun() ->
         URN = "/provider/spaces/" ++ binary_to_list(SpaceId),
         {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:secure_request(Client, URN, get),
         Proplist = mochijson2:decode(ResponseBody, [{format, proplist}]),
@@ -258,6 +237,4 @@ get_space_details(Client, SpaceId) ->
             name = proplists:get_value(<<"name">>, Proplist)
         },
         {ok, SpaceInfo}
-    catch
-        _:Reason -> {error, Reason}
-    end.
+    end).

@@ -17,7 +17,7 @@
 
 %% HTTP request types
 -type urn() :: string().
--type method() :: post | get | patch | delete.
+-type method() :: put | post | get | patch | delete.
 -type header() :: atom() | string().
 -type value() :: term().
 -type headers() :: [{header(), value()}].
@@ -31,7 +31,6 @@
 space_invite_group | space_remove_group | space_set_privileges |
 space_remove | space_add_provider | space_remove_provider |
 space_change_data | space_view_data.
-
 
 %% User privileges with regards to group management.
 -type group_privilege() :: group_change_data | group_invite_user |

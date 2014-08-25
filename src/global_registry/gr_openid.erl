@@ -11,6 +11,7 @@
 
 -module(gr_openid).
 
+-include("global_registry/gr_runner.hrl").
 -include("global_registry/gr_types.hrl").
 -include("global_registry/gr_openid.hrl").
 
@@ -34,15 +35,13 @@
     Result :: {ok, AccessCode :: binary()} | {error, Reason :: term()}.
 %% ====================================================================
 get_client_access_code(Client) ->
-    try
+    ?run(fun() ->
         URN = "/openid/client/access_code",
         {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:secure_request(Client, URN, get),
         Proplist = mochijson2:decode(ResponseBody, [{format, proplist}]),
         AccessCode = proplists:get_value(<<"accessCode">>, Proplist),
         {ok, AccessCode}
-    catch
-        _:Reason -> {error, Reason}
-    end.
+    end).
 
 
 %% get_client_tokens/1
@@ -52,7 +51,7 @@ get_client_access_code(Client) ->
     Result :: {ok, Tokens :: [#client_token{}]} | {error, Reason :: term()}.
 %% ====================================================================
 get_client_tokens(Client) ->
-    try
+    ?run(fun() ->
         URN = "/openid/client/tokens",
         {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:secure_request(Client, URN, get),
         Proplist = mochijson2:decode(ResponseBody, [{format, proplist}]),
@@ -64,9 +63,7 @@ get_client_tokens(Client) ->
             }
         end, TokenInfo),
         {ok, Tokens}
-    catch
-        _:Reason -> {error, Reason}
-    end.
+    end).
 
 
 %% remove_client_token/2
@@ -76,13 +73,11 @@ get_client_tokens(Client) ->
     Result :: ok | {error, Reason :: term()}.
 %% ====================================================================
 remove_client_token(Client, AccessId) ->
-    try
+    ?run(fun() ->
         URN = "/openid/client/tokens/" ++ binary_to_list(AccessId),
         {ok, "204", _ResponseHeaders, _ResponseBody} = gr_endpoint:secure_request(Client, URN, delete),
         ok
-    catch
-        _:Reason -> {error, Reason}
-    end.
+    end).
 
 
 %% verify_client/2
@@ -94,16 +89,14 @@ remove_client_token(Client, AccessId) ->
     Result :: {ok, VerifyStatus :: boolean()} | {error, Reason :: term()}.
 %% ====================================================================
 verify_client(Client, Parameters) ->
-    try
+    ?run(fun() ->
         URN = "/openid/client/verify",
         Body = iolist_to_binary(mochijson2:encode(Parameters)),
         {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:secure_request(Client, URN, post, Body),
         Proplist = mochijson2:decode(ResponseBody, [{format, proplist}]),
         VerifyStatus = proplists:get_value(<<"verified">>, Proplist),
         {ok, VerifyStatus}
-    catch
-        _:Reason -> {error, Reason}
-    end.
+    end).
 
 
 %% get_grant_token/2
@@ -115,7 +108,7 @@ verify_client(Client, Parameters) ->
     Result :: {ok, Tokens :: [#client_token{}]} | {error, Reason :: term()}.
 %% ====================================================================
 get_grant_token(Client, Parameters) ->
-    try
+    ?run(fun() ->
         URN = "/openid/provider/tokens",
         Body = iolist_to_binary(mochijson2:encode(Parameters)),
         {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:secure_request(Client, URN, post, Body),
@@ -142,9 +135,7 @@ get_grant_token(Client, Parameters) ->
             }
         },
         {ok, GrantToken}
-    catch
-        _:Reason -> {error, Reason}
-    end.
+    end).
 
 %% ====================================================================
 %% Internal functions
