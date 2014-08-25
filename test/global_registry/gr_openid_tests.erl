@@ -46,7 +46,7 @@ setup() ->
         (client, "/openid/client/tokens/accessId", delete) -> {ok, "204", response_headers, response_body}
     end),
     meck:expect(gr_endpoint, secure_request, fun
-        (client, "openid/client/verify", post, <<"body">>) -> {ok, "200", response_headers, response_body};
+        (client, "/openid/client/verify", post, <<"body">>) -> {ok, "200", response_headers, response_body};
         (client, "/openid/provider/tokens", post, <<"body">>) -> {ok, "200", response_headers, response_body}
     end).
 
