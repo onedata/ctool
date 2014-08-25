@@ -220,7 +220,7 @@ set_user_privileges(Client, GroupId, UserId, Parameters) ->
     try
         URN = "/groups/" ++ binary_to_list(GroupId) ++ "/users/" ++ binary_to_list(UserId) ++ "/privileges",
         Body = iolist_to_binary(mochijson2:encode(Parameters)),
-        {ok, "200", _ResponseHeaders, _ResponseBody} = gr_endpoint:secure_request(Client, URN, put, Body),
+        {ok, "204", _ResponseHeaders, _ResponseBody} = gr_endpoint:secure_request(Client, URN, put, Body),
         ok
     catch
         _:Reason -> {error, Reason}

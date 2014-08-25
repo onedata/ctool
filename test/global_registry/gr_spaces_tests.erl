@@ -79,8 +79,8 @@ setup() ->
     meck:expect(gr_endpoint, secure_request, fun
         (client, "/spaces", post, <<"body">>) -> {ok, "201", [{"location", "/spaces/spaceId"}], response_body};
         (client, "/spaces/spaceId", patch, <<"body">>) -> {ok, "204", response_headers, response_body};
-        (client, "/spaces/spaceId/users/userId/privileges", put, <<"body">>) -> {ok, "200", response_headers, response_body};
-        (client, "/spaces/spaceId/groups/groupId/privileges", put, <<"body">>) -> {ok, "200", response_headers, response_body}
+        (client, "/spaces/spaceId/users/userId/privileges", put, <<"body">>) -> {ok, "204", response_headers, response_body};
+        (client, "/spaces/spaceId/groups/groupId/privileges", put, <<"body">>) -> {ok, "204", response_headers, response_body}
     end).
 
 

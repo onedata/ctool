@@ -70,7 +70,7 @@ setup() ->
         (client, "/user", patch, <<"body">>) -> {ok, "204", response_headers, response_body};
         (client, "/user/merge", post, <<"body">>) -> {ok, "201", response_headers, response_body};
         (client, "/user/spaces", post, <<"body">>) -> {ok, "201", [{"location", "/spaces/spaceId"}], response_body};
-        (client, "/user/spaces/default", put, <<"body">>) -> {ok, "200", response_headers, response_body};
+        (client, "/user/spaces/default", put, <<"body">>) -> {ok, "204", response_headers, response_body};
         (client, "/user/spaces/join", post, <<"body">>) -> {ok, "201", [{"location", "/user/spaces/spaceId"}], response_body};
         (client, "/user/groups", post, <<"body">>) -> {ok, "201", [{"location", "/groups/groupId"}], response_body};
         (client, "/user/groups/join", post, <<"body">>) -> {ok, "201", [{"location", "/user/groups/groupId"}], response_body}

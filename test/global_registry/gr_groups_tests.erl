@@ -71,7 +71,7 @@ setup() ->
         (client, "/groups/groupId", patch, <<"body">>) -> {ok, "204", response_headers, response_body};
         (client, "/groups/groupId/spaces", post, <<"body">>) -> {ok, "201", [{"location", "/spaces/spaceId"}], response_body};
         (client, "/groups/groupId/spaces/join", post, <<"body">>) -> {ok, "201", [{"location", "/groups/groupId/spaces/spaceId"}], response_body};
-        (client, "/groups/groupId/users/userId/privileges", put, <<"body">>) -> {ok, "200", response_headers, response_body}
+        (client, "/groups/groupId/users/userId/privileges", put, <<"body">>) -> {ok, "204", response_headers, response_body}
     end).
 
 

@@ -244,7 +244,7 @@ set_default_space(Client, Parameters) ->
     try
         URN = "/user/spaces/default",
         Body = iolist_to_binary(mochijson2:encode(Parameters)),
-        {ok, "200", _ResponseHeaders, _ResponseBody} = gr_endpoint:secure_request(Client, URN, put, Body),
+        {ok, "204", _ResponseHeaders, _ResponseBody} = gr_endpoint:secure_request(Client, URN, put, Body),
         ok
     catch
         _:Reason -> {error, Reason}

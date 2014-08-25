@@ -245,7 +245,7 @@ set_user_privileges(Client, SpaceId, UserId, Parameters) ->
     try
         URN = "/spaces/" ++ binary_to_list(SpaceId) ++ "/users/" ++ binary_to_list(UserId) ++ "/privileges",
         Body = iolist_to_binary(mochijson2:encode(Parameters)),
-        {ok, "200", _ResponseHeaders, _ResponseBody} = gr_endpoint:secure_request(Client, URN, put, Body),
+        {ok, "204", _ResponseHeaders, _ResponseBody} = gr_endpoint:secure_request(Client, URN, put, Body),
         ok
     catch
         _:Reason -> {error, Reason}
@@ -336,7 +336,7 @@ set_group_privileges(Client, SpaceId, GroupId, Parameters) ->
     try
         URN = "/spaces/" ++ binary_to_list(SpaceId) ++ "/groups/" ++ binary_to_list(GroupId) ++ "/privileges",
         Body = iolist_to_binary(mochijson2:encode(Parameters)),
-        {ok, "200", _ResponseHeaders, _ResponseBody} = gr_endpoint:secure_request(Client, URN, put, Body),
+        {ok, "204", _ResponseHeaders, _ResponseBody} = gr_endpoint:secure_request(Client, URN, put, Body),
         ok
     catch
         _:Reason -> {error, Reason}
