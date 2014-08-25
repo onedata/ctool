@@ -23,7 +23,7 @@
 %% Tests description
 %% ===================================================================
 
-gr_groups_test_() ->
+gr_users_test_() ->
     {foreach,
         fun setup/0,
         fun teardown/1,
@@ -38,6 +38,8 @@ gr_groups_test_() ->
             {"should leave space", fun should_leave_space/0},
             {"should get spaces", fun should_get_spaces/0},
             {"should get space details", fun should_get_space_details/0},
+            {"should get default space", fun should_get_default_space/0},
+            {"should set default space", fun should_set_default_space/0},
             {"should create group", fun should_create_group/0},
             {"should join group", fun should_join_group/0},
             {"should leave group", fun should_leave_group/0},
@@ -57,6 +59,7 @@ setup() ->
         (client, "/user/merge/token", get) -> {ok, "200", response_headers, response_body};
         (client, "/user/spaces", get) -> {ok, "200", response_headers, response_body};
         (client, "/user/spaces/token", get) -> {ok, "200", response_headers, response_body};
+        (client, "/user/spaces/default", get) -> {ok, "200", response_headers, response_body};
         (client, "/user/spaces/spaceId", get) -> {ok, "200", response_headers, response_body};
         (client, "/user/spaces/spaceId", delete) -> {ok, "204", response_headers, response_body};
         (client, "/user/groups", get) -> {ok, "200", response_headers, response_body};
@@ -67,6 +70,7 @@ setup() ->
         (client, "/user", patch, <<"body">>) -> {ok, "204", response_headers, response_body};
         (client, "/user/merge", post, <<"body">>) -> {ok, "201", response_headers, response_body};
         (client, "/user/spaces", post, <<"body">>) -> {ok, "201", [{"location", "/spaces/spaceId"}], response_body};
+        (client, "/user/spaces/default", put, <<"body">>) -> {ok, "200", response_headers, response_body};
         (client, "/user/spaces/join", post, <<"body">>) -> {ok, "201", [{"location", "/user/spaces/spaceId"}], response_body};
         (client, "/user/groups", post, <<"body">>) -> {ok, "201", [{"location", "/groups/groupId"}], response_body};
         (client, "/user/groups/join", post, <<"body">>) -> {ok, "201", [{"location", "/user/groups/groupId"}], response_body}
@@ -172,11 +176,17 @@ should_leave_space() ->
 should_get_spaces() ->
     meck:new(mochijson2),
     meck:expect(mochijson2, decode, fun
-        (response_body, [{format, proplist}]) -> [{<<"spaces">>, <<"spaces">>}]
+        (response_body, [{format, proplist}]) -> [
+            {<<"spaces">>, <<"spaces">>},
+            {<<"default">>, <<"default">>}
+        ]
     end),
 
     Answer = gr_users:get_spaces(client),
-    ?assertEqual({ok, <<"spaces">>}, Answer),
+    ?assertEqual({ok, #user_spaces{
+        ids = <<"spaces">>,
+        default = <<"default">>}
+    }, Answer),
 
     ?assert(meck:validate(mochijson2)),
     ok = meck:unload(mochijson2).
@@ -190,6 +200,30 @@ should_get_space_details() ->
 
     Answer = gr_users:get_space_details(client, <<"spaceId">>),
     ?assertEqual({ok, #space_details{id = <<"spaceId">>, name = <<"name">>}}, Answer),
+
+    ?assert(meck:validate(mochijson2)),
+    ok = meck:unload(mochijson2).
+
+
+should_get_default_space() ->
+    meck:new(mochijson2),
+    meck:expect(mochijson2, encode, fun(parameters) -> <<"body">> end),
+
+    Answer = gr_users:set_default_space(client, parameters),
+    ?assertEqual(ok, Answer),
+
+    ?assert(meck:validate(mochijson2)),
+    ok = meck:unload(mochijson2).
+
+
+should_set_default_space() ->
+    meck:new(mochijson2),
+    meck:expect(mochijson2, decode, fun
+        (response_body, [{format, proplist}]) -> [{<<"spaceId">>, <<"spaceId">>}]
+    end),
+
+    Answer = gr_users:get_default_space(client),
+    ?assertEqual({ok, <<"spaceId">>}, Answer),
 
     ?assert(meck:validate(mochijson2)),
     ok = meck:unload(mochijson2).

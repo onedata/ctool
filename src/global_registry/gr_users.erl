@@ -19,7 +19,7 @@
 %% API
 -export([get_details/1, modify_details/2, merge_account/2]).
 -export([get_create_space_token/1, get_merge_account_token/1]).
--export([create_space/2, join_space/2, leave_space/2, get_spaces/1, get_space_details/2]).
+-export([create_space/2, join_space/2, leave_space/2, get_spaces/1, get_space_details/2, get_default_space/1, set_default_space/2]).
 -export([create_group/2, join_group/2, leave_group/2, get_groups/1, get_group_details/2]).
 
 %% ====================================================================
@@ -184,8 +184,11 @@ get_spaces(Client) ->
         URN = "/user/spaces",
         {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:secure_request(Client, URN, get),
         Proplist = mochijson2:decode(ResponseBody, [{format, proplist}]),
-        SpaceIds = proplists:get_value(<<"spaces">>, Proplist),
-        {ok, SpaceIds}
+        UserSpaces = #user_spaces{
+            ids = proplists:get_value(<<"spaces">>, Proplist),
+            default = proplists:get_value(<<"default">>, Proplist)
+        },
+        {ok, UserSpaces}
     catch
         _:Reason -> {error, Reason}
     end.
@@ -207,6 +210,42 @@ get_space_details(Client, SpaceId) ->
             name = proplists:get_value(<<"name">>, Proplist)
         },
         {ok, SpaceInfo}
+    catch
+        _:Reason -> {error, Reason}
+    end.
+
+
+%% get_default_space/1
+%% ====================================================================
+%% @doc Returns ID of default user's Space.
+-spec get_default_space(Client :: client()) -> Result when
+    Result :: {ok, DefaultSpaceId :: undefined | binary()} | {error, Reason :: term()}.
+%% ====================================================================
+get_default_space(Client) ->
+    try
+        URN = "/user/spaces/default",
+        {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:secure_request(Client, URN, get),
+        Proplist = mochijson2:decode(ResponseBody, [{format, proplist}]),
+        DefaultSpaceId = proplists:get_value(<<"spaceId">>, Proplist),
+        {ok, DefaultSpaceId}
+    catch
+        _:Reason -> {error, Reason}
+    end.
+
+
+%% set_default_space/1
+%% ====================================================================
+%% @doc Sets default user's Space. Parameters should contain: "spaceId"
+%% of Space to make user's default.
+-spec set_default_space(Client :: client(), SpaceId :: binary()) -> Result when
+    Result :: ok | {error, Reason :: term()}.
+%% ====================================================================
+set_default_space(Client, Parameters) ->
+    try
+        URN = "/user/spaces/default",
+        Body = iolist_to_binary(mochijson2:encode(Parameters)),
+        {ok, "200", _ResponseHeaders, _ResponseBody} = gr_endpoint:secure_request(Client, URN, put, Body),
+        ok
     catch
         _:Reason -> {error, Reason}
     end.

@@ -20,4 +20,12 @@
     name :: binary()
 }).
 
+%% user_spaces record contains following fields:
+%% * ids     - list of IDs of user's Spaces
+%% * default - id of default user's Space
+-record(user_spaces, {
+    ids :: [binary()],
+    default :: binary()
+}).
+
 -endif.

@@ -22,7 +22,7 @@
 %% Tests description
 %% ===================================================================
 
-gr_groups_test_() ->
+gr_providers_test_() ->
     {foreach,
         fun setup/0,
         fun teardown/1,

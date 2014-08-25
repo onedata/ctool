@@ -21,7 +21,7 @@
 %% Tests description
 %% ===================================================================
 
-gr_groups_test_() ->
+gr_openid_test_() ->
     {foreach,
         fun setup/0,
         fun teardown/1,
