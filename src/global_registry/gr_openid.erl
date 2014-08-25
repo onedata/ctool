@@ -37,7 +37,7 @@
 get_client_access_code(Client) ->
     ?run(fun() ->
         URN = "/openid/client/access_code",
-        {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:secure_request(Client, URN, get),
+        {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:auth_request(Client, URN, get),
         Proplist = mochijson2:decode(ResponseBody, [{format, proplist}]),
         AccessCode = proplists:get_value(<<"accessCode">>, Proplist),
         {ok, AccessCode}
@@ -53,7 +53,7 @@ get_client_access_code(Client) ->
 get_client_tokens(Client) ->
     ?run(fun() ->
         URN = "/openid/client/tokens",
-        {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:secure_request(Client, URN, get),
+        {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:auth_request(Client, URN, get),
         Proplist = mochijson2:decode(ResponseBody, [{format, proplist}]),
         TokenInfo = proplists:get_value(<<"tokenInfo">>, Proplist),
         Tokens = lists:map(fun(Token) ->
@@ -75,7 +75,7 @@ get_client_tokens(Client) ->
 remove_client_token(Client, AccessId) ->
     ?run(fun() ->
         URN = "/openid/client/tokens/" ++ binary_to_list(AccessId),
-        {ok, "204", _ResponseHeaders, _ResponseBody} = gr_endpoint:secure_request(Client, URN, delete),
+        {ok, "204", _ResponseHeaders, _ResponseBody} = gr_endpoint:auth_request(Client, URN, delete),
         ok
     end).
 
@@ -92,7 +92,7 @@ verify_client(Client, Parameters) ->
     ?run(fun() ->
         URN = "/openid/client/verify",
         Body = iolist_to_binary(mochijson2:encode(Parameters)),
-        {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:secure_request(Client, URN, post, Body),
+        {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:auth_request(Client, URN, post, Body),
         Proplist = mochijson2:decode(ResponseBody, [{format, proplist}]),
         VerifyStatus = proplists:get_value(<<"verified">>, Proplist),
         {ok, VerifyStatus}
@@ -111,7 +111,7 @@ get_grant_token(Client, Parameters) ->
     ?run(fun() ->
         URN = "/openid/provider/tokens",
         Body = iolist_to_binary(mochijson2:encode(Parameters)),
-        {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:secure_request(Client, URN, post, Body),
+        {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:auth_request(Client, URN, post, Body),
         Proplist = mochijson2:decode(ResponseBody, [{format, proplist}]),
         IdToken = proplists:get_value(<<"id_token">>, Proplist),
         [_Header, Payload, _Signature] = binary:split(IdToken, <<".">>, [global]),

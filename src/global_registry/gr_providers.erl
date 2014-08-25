@@ -19,7 +19,7 @@
 %% API
 -export([register/2, unregister/1, get_details/1, get_details/2, modify_details/2]).
 -export([check_ip_address/2, check_port/4]).
--export([create_space/2, support_space/2, cancel_space_support/2, get_spaces/1, get_space_details/2]).
+-export([create_space/2, support_space/2, revoke_space_support/2, get_spaces/1, get_space_details/2]).
 
 %% ====================================================================
 %% API functions
@@ -37,7 +37,7 @@ register(Client, Parameters) ->
     ?run(fun() ->
         URN = "/provider",
         Body = iolist_to_binary(mochijson2:encode(Parameters)),
-        {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:insecure_request(Client, URN, post, Body),
+        {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:noauth_request(Client, URN, post, Body),
         Proplist = mochijson2:decode(ResponseBody, [{format, proplist}]),
         ProviderId = proplists:get_value(<<"providerId">>, Proplist),
         Cert = proplists:get_value(<<"certificate">>, Proplist),
@@ -54,7 +54,7 @@ register(Client, Parameters) ->
 unregister(Client) ->
     ?run(fun() ->
         URN = "/provider",
-        {ok, "204", _ResponseHeaders, _ResponseBody} = gr_endpoint:secure_request(Client, URN, delete),
+        {ok, "204", _ResponseHeaders, _ResponseBody} = gr_endpoint:auth_request(Client, URN, delete),
         ok
     end).
 
@@ -68,7 +68,7 @@ unregister(Client) ->
 get_details(Client) ->
     ?run(fun() ->
         URN = "/provider",
-        {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:secure_request(Client, URN, get),
+        {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:auth_request(Client, URN, get),
         Proplist = mochijson2:decode(ResponseBody, [{format, proplist}]),
         ProviderInfo = #provider_details{
             id = proplists:get_value(<<"providerId">>, Proplist),
@@ -88,7 +88,7 @@ get_details(Client) ->
 get_details(Client, ProviderId) ->
     ?run(fun() ->
         URN = "/provider/" ++ binary_to_list(ProviderId),
-        {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:secure_request(Client, URN, get),
+        {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:auth_request(Client, URN, get),
         Proplist = mochijson2:decode(ResponseBody, [{format, proplist}]),
         ProviderInfo = #provider_details{
             id = proplists:get_value(<<"providerId">>, Proplist),
@@ -110,7 +110,7 @@ modify_details(Client, Parameters) ->
     ?run(fun() ->
         URN = "/provider",
         Body = iolist_to_binary(mochijson2:encode(Parameters)),
-        {ok, "204", _ResponseHeaders, _ResponseBody} = gr_endpoint:secure_request(Client, URN, patch, Body),
+        {ok, "204", _ResponseHeaders, _ResponseBody} = gr_endpoint:auth_request(Client, URN, patch, Body),
         ok
     end).
 
@@ -126,7 +126,7 @@ check_ip_address(Client, ConnectTimeout) ->
     ?run(fun() ->
         URN = "/provider/test/check_my_ip",
         Options = [{connect_timeout, ConnectTimeout}],
-        {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:insecure_request(Client, URN, get, [], Options),
+        {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:noauth_request(Client, URN, get, [], Options),
         IpAddress = mochijson2:decode(ResponseBody),
         {ok, IpAddress}
     end).
@@ -148,7 +148,7 @@ check_port(Client, IpAddress, Port, Type) ->
                    end,
         CheckURL = <<"https://", IpAddress/binary, ":", (integer_to_binary(Port))/binary, Resource/binary>>,
         Body = iolist_to_binary(mochijson2:encode([{Type, CheckURL}])),
-        {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:insecure_request(Client, URN, get, Body),
+        {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:noauth_request(Client, URN, get, Body),
         Proplist = mochijson2:decode(ResponseBody, [{format, proplist}]),
         <<"ok">> = proplists:get_value(CheckURL, Proplist),
         ok
@@ -168,7 +168,7 @@ create_space(Client, Parameters) ->
     ?run(fun() ->
         URN = "/provider/spaces",
         Body = iolist_to_binary(mochijson2:encode(Parameters)),
-        {ok, "201", ResponseHeaders, _ResponseBody} = gr_endpoint:secure_request(Client, URN, post, Body),
+        {ok, "201", ResponseHeaders, _ResponseBody} = gr_endpoint:auth_request(Client, URN, post, Body),
         <<"/spaces/", SpaceId/binary>> = list_to_binary(proplists:get_value("location", ResponseHeaders)),
         {ok, SpaceId}
     end).
@@ -185,22 +185,22 @@ support_space(Client, Parameters) ->
     ?run(fun() ->
         URN = "/provider/spaces/support",
         Body = iolist_to_binary(mochijson2:encode(Parameters)),
-        {ok, "201", ResponseHeaders, _ResponseBody} = gr_endpoint:secure_request(Client, URN, post, Body),
+        {ok, "201", ResponseHeaders, _ResponseBody} = gr_endpoint:auth_request(Client, URN, post, Body),
         <<"/provider/spaces/", SpaceId/binary>> = list_to_binary(proplists:get_value("location", ResponseHeaders)),
         {ok, SpaceId}
     end).
 
 
-%% cancel_space_support/2
+%% revoke_space_support/2
 %% ====================================================================
 %% @doc Makes provider stop supporting Space.
--spec cancel_space_support(Client :: client(), SpaceId :: binary()) -> Result when
+-spec revoke_space_support(Client :: client(), SpaceId :: binary()) -> Result when
     Result :: ok | {error, Reason :: term()}.
 %% ====================================================================
-cancel_space_support(Client, SpaceId) ->
+revoke_space_support(Client, SpaceId) ->
     ?run(fun() ->
         URN = "/provider/spaces/" ++ binary_to_list(SpaceId),
-        {ok, "204", _ResponseHeaders, _ResponseBody} = gr_endpoint:secure_request(Client, URN, delete),
+        {ok, "204", _ResponseHeaders, _ResponseBody} = gr_endpoint:auth_request(Client, URN, delete),
         ok
     end).
 
@@ -214,7 +214,7 @@ cancel_space_support(Client, SpaceId) ->
 get_spaces(Client) ->
     ?run(fun() ->
         URN = "/provider/spaces",
-        {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:secure_request(Client, URN, get),
+        {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:auth_request(Client, URN, get),
         Proplist = mochijson2:decode(ResponseBody, [{format, proplist}]),
         SpaceIds = proplists:get_value(<<"spaces">>, Proplist),
         {ok, SpaceIds}
@@ -230,7 +230,7 @@ get_spaces(Client) ->
 get_space_details(Client, SpaceId) ->
     ?run(fun() ->
         URN = "/provider/spaces/" ++ binary_to_list(SpaceId),
-        {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:secure_request(Client, URN, get),
+        {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:auth_request(Client, URN, get),
         Proplist = mochijson2:decode(ResponseBody, [{format, proplist}]),
         SpaceInfo = #space_details{
             id = proplists:get_value(<<"spaceId">>, Proplist),

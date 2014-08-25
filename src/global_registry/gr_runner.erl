@@ -5,7 +5,8 @@
 %% cited in 'LICENSE.txt'
 %% @end
 %% ===================================================================
-%% @doc: This module handles requests to Global Registry using REST API.
+%% @doc: This module executes generic requests and handles possible
+%% errors.
 %% @end
 %% ===================================================================
 

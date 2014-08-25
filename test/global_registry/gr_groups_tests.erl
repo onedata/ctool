@@ -53,7 +53,7 @@ gr_groups_test_() ->
 
 setup() ->
     meck:new(gr_endpoint),
-    meck:expect(gr_endpoint, secure_request, fun
+    meck:expect(gr_endpoint, auth_request, fun
         (client, "/groups/groupId", get) -> {ok, "200", response_headers, response_body};
         (client, "/groups/groupId", delete) -> {ok, "204", response_headers, response_body};
         (client, "/groups/groupId/spaces", get) -> {ok, "200", response_headers, response_body};
@@ -66,7 +66,7 @@ setup() ->
         (client, "/groups/groupId/users/userId", delete) -> {ok, "204", response_headers, response_body};
         (client, "/groups/groupId/users/userId/privileges", get) -> {ok, "200", response_headers, response_body}
     end),
-    meck:expect(gr_endpoint, secure_request, fun
+    meck:expect(gr_endpoint, auth_request, fun
         (client, "/groups", post, <<"body">>) -> {ok, "201", [{"location", "/groups/groupId"}], response_body};
         (client, "/groups/groupId", patch, <<"body">>) -> {ok, "204", response_headers, response_body};
         (client, "/groups/groupId/spaces", post, <<"body">>) -> {ok, "201", [{"location", "/spaces/spaceId"}], response_body};

@@ -16,7 +16,7 @@
 -export_type([client/0, space_privilege/0, group_privilege/0]).
 
 %% HTTP request types
--type urn() :: string().
+-type urn() :: string(). %% Uniform Resource Name - for more details see: http://pl.wikipedia.org/wiki/Uniform_Resource_Name
 -type method() :: put | post | get | patch | delete.
 -type header() :: atom() | string().
 -type value() :: term().

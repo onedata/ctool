@@ -37,7 +37,7 @@ gr_providers_test_() ->
             {"check REST port", fun should_check_rest_port/0},
             {"create space", fun should_create_space/0},
             {"support space", fun should_support_space/0},
-            {"cancel space support", fun should_cancel_space_support/0},
+            {"revoke space support", fun should_revoke_space_support/0},
             {"get spaces", fun should_get_spaces/0},
             {"get space details", fun should_get_space_details/0}
         ]
@@ -49,7 +49,7 @@ gr_providers_test_() ->
 
 setup() ->
     meck:new(gr_endpoint),
-    meck:expect(gr_endpoint, secure_request, fun
+    meck:expect(gr_endpoint, auth_request, fun
         (client, "/provider", get) -> {ok, "200", response_headers, response_body};
         (client, "/provider", delete) -> {ok, "204", response_headers, response_body};
         (client, "/provider/providerId", get) -> {ok, "200", response_headers, response_body};
@@ -57,16 +57,16 @@ setup() ->
         (client, "/provider/spaces/spaceId", get) -> {ok, "200", response_headers, response_body};
         (client, "/provider/spaces/spaceId", delete) -> {ok, "204", response_headers, response_body}
     end),
-    meck:expect(gr_endpoint, secure_request, fun
+    meck:expect(gr_endpoint, auth_request, fun
         (client, "/provider", patch, <<"body">>) -> {ok, "204", response_headers, response_body};
         (client, "/provider/spaces", post, <<"body">>) -> {ok, "201", [{"location", "/spaces/spaceId"}], response_body};
         (client, "/provider/spaces/support", post, <<"body">>) -> {ok, "201", [{"location", "/provider/spaces/spaceId"}], response_body}
     end),
-    meck:expect(gr_endpoint, insecure_request, fun
+    meck:expect(gr_endpoint, noauth_request, fun
         (client, "/provider", post, <<"body">>) -> {ok, "200", response_headers, response_body};
         (client, "/provider/test/check_my_ports", get, <<"body">>) -> {ok, "200", response_headers, response_body}
     end),
-    meck:expect(gr_endpoint, insecure_request, fun
+    meck:expect(gr_endpoint, noauth_request, fun
         (client, "/provider/test/check_my_ip", get, [], [{connect_timeout, connect_timeout}]) -> {ok, "200", response_headers, response_body}
     end).
 
@@ -221,8 +221,8 @@ should_support_space() ->
     ok = meck:unload(mochijson2).
 
 
-should_cancel_space_support() ->
-    Answer = gr_providers:cancel_space_support(client, <<"spaceId">>),
+should_revoke_space_support() ->
+    Answer = gr_providers:revoke_space_support(client, <<"spaceId">>),
     ?assertEqual(ok, Answer).
 
 

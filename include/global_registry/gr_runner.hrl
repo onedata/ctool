@@ -5,8 +5,8 @@
 %% cited in 'LICENSE.txt'.
 %% @end
 %% ===================================================================
-%% @doc This file contains convenience macro to execute requests
-%% with generic error handling.
+%% @doc This file contains convenience macro to execute generic requests
+%% with error handling.
 %% @end
 %% ===================================================================
 
