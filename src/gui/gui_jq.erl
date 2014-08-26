@@ -495,6 +495,7 @@ css(TargetID, PropertyName, Value) ->
 %% ====================================================================
 %% @doc Displays confirm popup using Bootbox API with custom message.
 %% In case of message confirmation it executes supplied script.
+%% NOTE! It is required to add bootbox.js script to web page.
 -spec confirm_popup(Message :: binary(), Script :: binary()) -> binary().
 %% ====================================================================
 confirm_popup(Message, Script) ->
@@ -508,9 +509,10 @@ confirm_popup(Message, Script) ->
 
 %% info_popup/3
 %% ====================================================================
-%% @doc Displays info popup using Bootbox API with custom title
+%% @doc Displays info popup using Bootbox API with custom title,
 %% message and "OK" button. In case of message confirmation it executes
 %% supplied script.
+%% NOTE! It is required to add bootbox.js script to web page.
 -spec info_popup(Title :: binary(), Message :: binary(), Script :: binary()) -> binary().
 %% ====================================================================
 info_popup(Title, Message, Script) ->
@@ -528,9 +530,10 @@ info_popup(Title, Message, Script) ->
 
 %% dialog_popup/3
 %% ====================================================================
-%% @doc Displays info popup using Bootbox API with custom title
+%% @doc Displays info popup using Bootbox API with custom title,
 %% message and "OK", "Cancel" buttons. In case of message confirmation
 %% it executes supplied script.
+%% NOTE! It is required to add bootbox.js script to web page.
 -spec dialog_popup(Title :: binary(), Message :: binary(), Script :: binary()) -> binary().
 %% ====================================================================
 dialog_popup(Title, Message, Script) ->
