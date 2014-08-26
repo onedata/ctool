@@ -225,7 +225,7 @@ bind_key_to_click(KeyCode, TargetID) ->
 %% ====================================================================
 bind_key_to_click_on_class(KeyCode, ClassID) ->
     Script = <<"$(document).bind('keydown', function (e){",
-    "if (e.which == ", KeyCode/binary, ") { e.preventDefault(); $('", ClassID/binary, "').click(); } });">>,
+    "if (e.which == ", KeyCode/binary, ") { e.preventDefault(); $('.", ClassID/binary, "').click(); } });">>,
     gui_jq:wire(Script, false).
 
 
@@ -493,7 +493,8 @@ css(TargetID, PropertyName, Value) ->
 
 %% confirm_popup/2
 %% ====================================================================
-%% @doc Displays confirm popup using Bootbox API.
+%% @doc Displays confirm popup using Bootbox API with custom message.
+%% In case of message confirmation it executes supplied script.
 -spec confirm_popup(Message :: binary(), Script :: binary()) -> binary().
 %% ====================================================================
 confirm_popup(Message, Script) ->
@@ -507,7 +508,9 @@ confirm_popup(Message, Script) ->
 
 %% info_popup/3
 %% ====================================================================
-%% @doc Displays custom info popup using Bootbox API.
+%% @doc Displays info popup using Bootbox API with custom title
+%% message and "OK" button. In case of message confirmation it executes
+%% supplied script.
 -spec info_popup(Title :: binary(), Message :: binary(), Script :: binary()) -> binary().
 %% ====================================================================
 info_popup(Title, Message, Script) ->
@@ -525,7 +528,9 @@ info_popup(Title, Message, Script) ->
 
 %% dialog_popup/3
 %% ====================================================================
-%% @doc Displays custom dialog popup using Bootbox API.
+%% @doc Displays info popup using Bootbox API with custom title
+%% message and "OK", "Cancel" buttons. In case of message confirmation
+%% it executes supplied script.
 -spec dialog_popup(Title :: binary(), Message :: binary(), Script :: binary()) -> binary().
 %% ====================================================================
 dialog_popup(Title, Message, Script) ->
