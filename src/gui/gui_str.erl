@@ -5,7 +5,7 @@
 %% cited in 'LICENSE.txt'.
 %% @end
 %% ===================================================================
-%% @doc: This file contains various functions operating on strings (both lists and binaries).
+%% @doc This file contains various functions operating on strings (both lists and binaries).
 %% @end
 %% ===================================================================
 

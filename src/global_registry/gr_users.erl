@@ -5,7 +5,7 @@
 %% cited in 'LICENSE.txt'
 %% @end
 %% ===================================================================
-%% @doc: This module allows for users management in Global Registry.
+%% @doc This module allows for users management in Global Registry.
 %% @end
 %% ===================================================================
 

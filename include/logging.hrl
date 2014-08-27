@@ -5,7 +5,7 @@
 %% cited in 'LICENSE.txt'.
 %% @end
 %% ===================================================================
-%% @doc: This file contains convenient logging macros.
+%% @doc This file contains convenient logging macros.
 %% lager application must be started for them to work.
 %% @end
 %% ===================================================================

@@ -5,7 +5,7 @@
 %% cited in 'LICENSE.txt'
 %% @end
 %% ===================================================================
-%% @doc: This is a communication layer module. It sends requests to
+%% @doc This is a communication layer module. It sends requests to
 %% Global Registry using REST API and returns responses.
 %% @end
 %% ===================================================================

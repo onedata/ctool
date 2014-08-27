@@ -5,7 +5,7 @@
 %% cited in 'LICENSE.txt'.
 %% @end
 %% ===================================================================
-%% @doc: This file contains functions correlated with page and session context.
+%% @doc This file contains functions correlated with page and session context.
 %% @end
 %% ===================================================================
 

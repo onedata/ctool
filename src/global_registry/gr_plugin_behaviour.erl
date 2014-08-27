@@ -5,7 +5,7 @@
 %% cited in 'LICENSE.txt'.
 %% @end
 %% ===================================================================
-%% @doc: This behaviour specifies an API for Global Registry plugin -
+%% @doc This behaviour specifies an API for Global Registry plugin -
 %% a module that provides necessary data to connect to Global Registry.
 %% Every project using Global Registry REST API client must implement
 %% this behaviour and the implementing module must be called gr_plugin.
@@ -34,6 +34,7 @@
 %% ====================================================================
 %% @doc Should return a path to file containing provider's public
 %% certificate signed by Global Registry.
+%% @end
 -callback get_cert_path() -> binary().
 
 
@@ -41,4 +42,5 @@
 %% ====================================================================
 %% @doc Should return a path to file containing Global Registry
 %% CA certificate.
+%% @end
 -callback get_cacert_path() -> binary().

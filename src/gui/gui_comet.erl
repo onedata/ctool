@@ -5,7 +5,7 @@
 %% cited in 'LICENSE.txt'.
 %% @end
 %% ===================================================================
-%% @doc: This file contains functions used to set up and manage
+%% @doc This file contains functions used to set up and manage
 %% asynchronous comet processes.
 %% @end
 %% ===================================================================

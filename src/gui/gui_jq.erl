@@ -5,7 +5,7 @@
 %% cited in 'LICENSE.txt'.
 %% @end
 %% ===================================================================
-%% @doc: This file contains page manipulation and asynchronous updates
+%% @doc This file contains page manipulation and asynchronous updates
 %% functions, mostly based on jquery.
 %% IMPORTANT: n2o's wf module must not be used directly!
 %% These functions are a wrapper to that module, which gives control over

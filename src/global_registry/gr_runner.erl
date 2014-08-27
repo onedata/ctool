@@ -5,7 +5,7 @@
 %% cited in 'LICENSE.txt'
 %% @end
 %% ===================================================================
-%% @doc: This module executes generic requests and handles possible
+%% @doc This module executes generic requests and handles possible
 %% errors.
 %% @end
 %% ===================================================================

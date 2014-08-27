@@ -5,7 +5,7 @@
 %% cited in 'LICENSE.txt'.
 %% @end
 %% ===================================================================
-%% @doc: This behaviour specifies an API for logger plugin - a module
+%% @doc This behaviour specifies an API for logger plugin - a module
 %% that can customize logging procedures. Every project using logging
 %% must implement this behaviour and the implmeneting module
 %% must be called logger_plugin.
