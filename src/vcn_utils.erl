@@ -5,7 +5,7 @@
 %% cited in 'LICENSE.txt'.
 %% @end
 %% ===================================================================
-%% @doc: This module stores utility functions for use in other modules.
+%% @doc This module stores utility functions for use in other modules.
 %% @end
 %% ===================================================================
 -module(vcn_utils). %todo remove this module from veilcluster

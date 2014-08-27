@@ -5,7 +5,7 @@
 %% cited in 'LICENSE.txt'.
 %% @end
 %% ===================================================================
-%% @doc: Custom session handler, confirming to n2o session handler behaviour.
+%% @doc Custom session handler, confirming to n2o session handler behaviour.
 %% Implements safe cookie handling, by setting HttpOnly and Secure flags,
 %% as well as ensuring high session id entropy and no session fixation.
 %% A session logic module (implementing session_logic_behaviour) must

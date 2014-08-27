@@ -5,7 +5,7 @@
 %% cited in 'LICENSE.txt'.
 %% @end
 %% ===================================================================
-%% @doc: This behaviour specifies an API for session logic - a module,
+%% @doc This behaviour specifies an API for session logic - a module,
 %% that is capable of persisting GUI sessions (either in ETS, DB or anything else).
 %% Such module will be called from gui_session_handler.
 %% @end

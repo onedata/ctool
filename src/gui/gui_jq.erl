@@ -5,7 +5,7 @@
 %% cited in 'LICENSE.txt'.
 %% @end
 %% ===================================================================
-%% @doc: This file contains page manipulation and asynchronous updates
+%% @doc This file contains page manipulation and asynchronous updates
 %% functions, mostly based on jquery.
 %% IMPORTANT: n2o's wf module must not be used directly!
 %% These functions are a wrapper to that module, which gives control over
@@ -27,7 +27,8 @@
 -export([redirect/1, redirect_to_login/1, redirect_from_login/0]).
 
 % Useful functions for binding custom events
--export([register_escape_event/1, bind_enter_to_submit_button/2, bind_enter_to_change_focus/2, bind_key_to_click/2, bind_element_click/2]).
+-export([register_escape_event/1, bind_enter_to_submit_button/2, bind_enter_to_change_focus/2,
+    bind_key_to_click/2, bind_key_to_click_on_class/2, bind_element_click/2]).
 
 % DOM updates
 -export([update/2, replace/2, insert_top/2, insert_bottom/2, insert_before/2, insert_after/2, remove/1]).
@@ -35,6 +36,9 @@
 % Commonly used jquery functions
 -export([show/1, hide/1, add_class/2, remove_class/2, slide_up/2, slide_down/2, fade_in/2, fade_out/2, delay/2]).
 -export([focus/1, set_text/2, select_text/1, set_value/2, set_width/2, click/1, prop/3, css/3]).
+
+% Bootbox functions
+-export([confirm_popup/2, info_popup/3, dialog_popup/3]).
 
 
 %% ====================================================================
@@ -211,6 +215,18 @@ bind_key_to_click(KeyCode, TargetID) ->
     Script = <<"$(document).bind('keydown', function (e){",
     "if (e.which == ", KeyCode/binary, ") { e.preventDefault(); document.getElementById('", TargetID/binary, "').click(); } });">>,
     wire(Script, false).
+
+
+%% bind_key_to_click_on_class/2
+%% ====================================================================
+%% @doc Makes any keypresses of given key to click on selected class.
+%% @end
+-spec bind_key_to_click_on_class(KeyCode :: binary(), ClassID :: binary()) -> string().
+%% ====================================================================
+bind_key_to_click_on_class(KeyCode, ClassID) ->
+    Script = <<"$(document).bind('keydown', function (e){",
+    "if (e.which == ", KeyCode/binary, ") { e.preventDefault(); $('.", ClassID/binary, "').click(); } });">>,
+    gui_jq:wire(Script, false).
 
 
 %% bind_element_click/2
@@ -473,3 +489,64 @@ prop(TargetID, PropertyName, Value) ->
 css(TargetID, PropertyName, Value) ->
     Script = <<"$('#", TargetID/binary, "').css('", PropertyName/binary, "','", Value/binary, "');">>,
     wire(Script, false).
+
+
+%% confirm_popup/2
+%% ====================================================================
+%% @doc Displays confirm popup using Bootbox API with custom message.
+%% In case of message confirmation it executes supplied script.
+%% NOTE! It is required to add bootbox.js script to web page.
+-spec confirm_popup(Message :: binary(), Script :: binary()) -> binary().
+%% ====================================================================
+confirm_popup(Message, Script) ->
+    gui_jq:wire(<<"bootbox.confirm(
+        '", Message/binary, "',
+        function(result) {
+            if(result) {", Script/binary, "}
+        }
+    );">>).
+
+
+%% info_popup/3
+%% ====================================================================
+%% @doc Displays info popup using Bootbox API with custom title,
+%% message and "OK" button. In case of message confirmation it executes
+%% supplied script.
+%% NOTE! It is required to add bootbox.js script to web page.
+-spec info_popup(Title :: binary(), Message :: binary(), Script :: binary()) -> binary().
+%% ====================================================================
+info_popup(Title, Message, Script) ->
+    gui_jq:wire(<<"var box = bootbox.dialog({
+        title: '", Title/binary, "',
+        message: '", Message/binary, "',
+        buttons: {
+            'OK': {
+                className: 'btn-primary confirm',
+                callback: function() {", Script/binary, "}
+            }
+        }
+    });">>).
+
+
+%% dialog_popup/3
+%% ====================================================================
+%% @doc Displays info popup using Bootbox API with custom title,
+%% message and "OK", "Cancel" buttons. In case of message confirmation
+%% it executes supplied script.
+%% NOTE! It is required to add bootbox.js script to web page.
+-spec dialog_popup(Title :: binary(), Message :: binary(), Script :: binary()) -> binary().
+%% ====================================================================
+dialog_popup(Title, Message, Script) ->
+    gui_jq:wire(<<"var box = bootbox.dialog({
+        title: '", Title/binary, "',
+        message: '", Message/binary, "',
+        buttons: {
+            'Cancel': {
+                className: 'cancel'
+            },
+            'OK': {
+                className: 'btn-primary confirm',
+                callback: function() {", Script/binary, "}
+            }
+        }
+    });">>).

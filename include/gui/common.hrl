@@ -5,7 +5,7 @@
 %% cited in 'LICENSE.txt'.
 %% @end
 %% ===================================================================
-%% @doc: This file contains common GUI macros and records
+%% @doc This file contains common GUI macros and records
 %% for all projects using n2o.
 %% @end
 %% ===================================================================
