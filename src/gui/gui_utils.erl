@@ -15,7 +15,7 @@
 -include("gui/common.hrl").
 
 % Initialization of n2o settings and cleanup
--export([init_n2o_ets_and_envs/3, cleanup_n2o/1]).
+-export([init_n2o_ets_and_envs/4, cleanup_n2o/1]).
 
 % Convenience functions to manipulate response headers
 -export([cowboy_ensure_header/3, onrequest_adjust_headers/1]).
@@ -24,7 +24,7 @@
 -export([cookie_policy_popup_body/1, is_cookie_policy_accepted/1]).
 
 % Functions used to perform secure server-server http requests
--export([https_get/2, https_post/3]).
+-export([https_get/2, https_post/3, toggle_server_cert_verification/1]).
 
 % Misscellaneous convenience functions
 -export([proplist_to_url_params/1, fully_qualified_url/1, validate_email/1, normalize_email/1]).
@@ -44,20 +44,22 @@
 %% API functions
 %% ====================================================================
 
-%% init_n2o_ets_and_envs/3
+%% init_n2o_ets_and_envs/4
 %% @doc Initializes all environment settings required by n2o and creates
 %% required ets tables. Should be called before starting a cowboy listener for
 %% n2o GUI.
 %% @end
--spec init_n2o_ets_and_envs(GuiPort :: integer(), RoutingModule :: atom(), SessionLogicModule :: atom()) -> ok.
+-spec init_n2o_ets_and_envs(GuiPort :: integer(), RoutingModule :: atom(), SessionLogicModule :: atom(), BridgeModule :: atom()) -> ok.
 %% ====================================================================
-init_n2o_ets_and_envs(GuiPort, RoutingModule, SessionLogicModule) ->
+init_n2o_ets_and_envs(GuiPort, RoutingModule, SessionLogicModule, BridgeModule) ->
     % Transition port - the same as gui port
     ok = application:set_env(n2o, transition_port, GuiPort),
     % Custom route handler
     ok = application:set_env(n2o, route, RoutingModule),
     % Custom session handler for n2o
     ok = application:set_env(n2o, session, gui_session_handler),
+    % Custom cowboy bridge for n2o
+    ok = application:set_env(n2o, bridge, BridgeModule),
     % Custom session logic handler for gui_session_handler
     ok = application:set_env(ctool, session_logic_module, SessionLogicModule),
 
@@ -194,6 +196,16 @@ https_post(URLBin, ReqHeadersBin, Body) ->
     perform_request(URL, ReqHeaders, post, gui_str:to_list(Body), 0).
 
 
+%% toggle_server_cert_verification/1
+%% ====================================================================
+%% @doc This function allows toggling server cert verification in runtime.
+%% @end
+-spec toggle_server_cert_verification(boolean()) -> boolean().
+%% ====================================================================
+toggle_server_cert_verification(Flag) ->
+    application:set_env(ctool, verify_server_cert, Flag).
+
+
 %% proplist_to_params/1
 %% ====================================================================
 %% @doc Converts a proplist to a single x-www-urlencoded binary. Adding a third
@@ -240,7 +252,7 @@ fully_qualified_url(Binary) ->
 %% @doc Returns true if the given string is a valid email address according to RFC.
 %% @end
 %% ====================================================================
--spec validate_email(binary()) -> binary().
+-spec validate_email(binary()) -> boolean().
 %% ====================================================================
 validate_email(Email) ->
     case re:run(Email, ?mail_validation_regexp) of
@@ -281,8 +293,15 @@ normalize_email(Email) ->
 %% ====================================================================
 perform_request(URL, ReqHeaders, Method, Body, Redirects) ->
     try
+        Options = case application:get_env(ctool, verify_server_cert) of
+                      {ok, true} ->
+                          [{response_format, binary}, {ssl_options, ssl_opts(Domain)}];
+                      _ ->
+                          ?debug("Performing a HTTPS connection without server cert verification [~p]", [URL]),
+                          [{response_format, binary}]
+                  end,
         {ok, {_, _, Domain, _, _, _}} = http_uri:parse(URL),
-        case ibrowse:send_req(URL, ReqHeaders, Method, Body, [{response_format, binary}, {ssl_options, ssl_opts(Domain)}]) of
+        case ibrowse:send_req(URL, ReqHeaders, Method, Body, Options) of
             {ok, Rcode, RespHeaders, ResponseBody}
                 when (Rcode =:= "301" orelse Rcode =:= "302" orelse Rcode =:= "303" orelse Rcode =:= "307") andalso Redirects > 0 ->
                 % Code in {301, 302, 303, 307} - we are being redirected
