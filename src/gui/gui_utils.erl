@@ -13,6 +13,7 @@
 -module(gui_utils).
 -include_lib("public_key/include/public_key.hrl").
 -include("gui/common.hrl").
+-include("logging.hrl").
 
 % Initialization of n2o settings and cleanup
 -export([init_n2o_ets_and_envs/4, cleanup_n2o/1]).
