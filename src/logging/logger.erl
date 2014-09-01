@@ -5,7 +5,7 @@
 %% cited in 'LICENSE.txt'
 %% @end
 %% ===================================================================
-%% @doc: This module handles log dispatching and management of loglevel.
+%% @doc This module handles log dispatching and management of loglevel.
 %% @end
 %% ===================================================================
 

@@ -5,7 +5,7 @@
 %% cited in 'LICENSE.txt'.
 %% @end
 %% ===================================================================
-%% @doc: This file contains miscellaneous functions used commonly
+%% @doc This file contains miscellaneous functions used commonly
 %% in GUI modules.
 %% @end
 %% ===================================================================

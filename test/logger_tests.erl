@@ -5,7 +5,7 @@
 %% cited in 'LICENSE.txt'.
 %% @end
 %% ===================================================================
-%% @doc: This module tests the functionality of logger module, using eunit tests.
+%% @doc This module tests the functionality of logger module, using eunit tests.
 %% @end
 %% ===================================================================
 -module(logger_tests).
