@@ -294,6 +294,7 @@ normalize_email(Email) ->
 %% ====================================================================
 perform_request(URL, ReqHeaders, Method, Body, Redirects) ->
     try
+        {ok, {_, _, Domain, _, _, _}} = http_uri:parse(URL),
         Options = case application:get_env(ctool, verify_server_cert) of
                       {ok, true} ->
                           [{response_format, binary}, {ssl_options, ssl_opts(Domain)}];
@@ -301,7 +302,6 @@ perform_request(URL, ReqHeaders, Method, Body, Redirects) ->
                           ?debug("Performing a HTTPS connection without server cert verification [~p]", [URL]),
                           [{response_format, binary}]
                   end,
-        {ok, {_, _, Domain, _, _, _}} = http_uri:parse(URL),
         case ibrowse:send_req(URL, ReqHeaders, Method, Body, Options) of
             {ok, Rcode, RespHeaders, ResponseBody}
                 when (Rcode =:= "301" orelse Rcode =:= "302" orelse Rcode =:= "303" orelse Rcode =:= "307") andalso Redirects > 0 ->
