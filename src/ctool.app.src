@@ -16,7 +16,8 @@
         stdlib,
         lager,
         ibrowse,
-        cowboy
+        cowboy,
+        gproc
         % n2o and erlydtl are not listed here, because we do not want them to start as applications
     ]},
 
