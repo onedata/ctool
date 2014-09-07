@@ -9,18 +9,27 @@
 {application, ctool, [
     {description, "Common tools lib for onedata project"},
     {vsn, "1"},
-    {modules,[test_node_starter,vcn_utils]},
+    {modules, [test_node_starter, vcn_utils]},
     {registered, []},
     {applications, [
         kernel,
         stdlib,
         lager,
         ibrowse,
-        cowboy
+        cowboy,
+        gproc
         % n2o and erlydtl are not listed here, because we do not want them to start as applications
     ]},
 
     {env, [
+        % Secure (HTTPS) connections:
+        % Path to .pem or .crt file containing CA certs installed on the system
+        {root_cacert_file, '/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem'},
+        % The env below decides if the server certificates will be checked against ca bundle during every secure connection
+        {verify_server_cert, true},
+
+        % ==================================
+
         % LOGGING:
         % Current loglevel in the application. Logs with lower importance will be completely discarded
         % Available loglevels are 0-7, respectively: debug, info, notice, warning, error, critical, alert, emergency
@@ -29,10 +38,6 @@
         % Available loglevels are 0-7, respectively: debug, info, notice, warning, error, critical, alert, emergency
         {default_loglevel, 1},
         % Determines whether the stacktrace should be included in logs (those that could contain it)
-        {include_stacktrace, true},
-        % ==================================
-        % GUI:
-        % Path to .pem or .crt file containing CA certs installed on the system.
-        {root_cacert_file, '/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem'}
+        {include_stacktrace, true}
     ]}
 ]}.

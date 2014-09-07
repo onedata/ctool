@@ -45,7 +45,7 @@
 -spec init(State :: term(), Ctx :: #context{}) -> {ok, NewState :: term(), NewCtx :: #context{}}.
 %% ====================================================================
 init(State, Ctx) ->
-    {Cookie, _} = cowboy_req:cookie(?cookie_name, Ctx#context.req),
+    Cookie = gui_ctx:cookie(?cookie_name, Ctx#context.req),
     {Path, _} = cowboy_req:path(Ctx#context.req),
 
     Module = get_session_logic_module(),
@@ -53,7 +53,7 @@ init(State, Ctx) ->
     {Megaseconds, Seconds, _} = now(),
     Till = Megaseconds * 1000000 + Seconds + Module:get_cookie_ttl(),
 
-    SessionID = case Module:lookup_session(Cookie) of
+    SessionID = case lookup_session(Cookie) of
                     undefined ->
                         put(?session_valid, false),
                         case Path of
@@ -102,7 +102,7 @@ finish(_State, Ctx) ->
                  false ->
                      % Session is not valid, discard current session and set "no_session" cookie value
                      % as well as set max_age to 0, which should delete the cookie on client's side.
-                     Module:delete_session(SessionID),
+                     delete_session(SessionID),
                      Options = [
                          {path, <<"/">>},
                          {max_age, 0},
@@ -123,11 +123,16 @@ finish(_State, Ctx) ->
 -spec set_value(Key :: term(), Value :: term()) -> Result :: term().
 %% ====================================================================
 set_value(Key, Value) ->
-    Module = get_session_logic_module(),
-    SessionID = ?CTX#context.session,
-    Props = Module:lookup_session(SessionID),
-    Module:save_session(SessionID, [{Key, Value} | proplists:delete(Key, Props)], undefined),
-    Value.
+    try
+        Module = get_session_logic_module(),
+        SessionID = ?CTX#context.session,
+        Props = lookup_session(SessionID),
+        Module:save_session(SessionID, [{Key, Value} | proplists:delete(Key, Props)], undefined),
+        Value
+    catch T:M ->
+        ?error_stacktrace("Cannot save data in session memory - ~p:~p", [T, M]),
+        throw({T, M})
+    end.
 
 
 %% get_value/2
@@ -140,8 +145,7 @@ set_value(Key, Value) ->
 %% ====================================================================
 get_value(Key, DefaultValue) ->
     try
-        Module = get_session_logic_module(),
-        Props = Module:lookup_session(?CTX#context.session),
+        Props = lookup_session(?CTX#context.session),
         proplists:get_value(Key, Props, DefaultValue)
     catch
         _:_ ->
@@ -170,9 +174,8 @@ create() ->
 -spec clear() -> ok.
 %% ====================================================================
 clear() ->
-    Module = get_session_logic_module(),
     put(?session_valid, false),
-    Module:delete_session(?CTX#context.session),
+    delete_session(?CTX#context.session),
     ok.
 
 
@@ -216,3 +219,41 @@ clear_expired_sessions() ->
 %% ====================================================================
 random_id() ->
     base64:encode(<<(erlang:md5(term_to_binary(now())))/binary, (erlang:md5(term_to_binary(make_ref())))/binary>>).
+
+
+%% lookup_session/1
+%% ====================================================================
+%% @doc Calls back to session logic module to lookup a session. Will not make
+%% senseless calls, such as those when session cookie yields no session.
+%% @end
+-spec lookup_session(SessionID :: binary()) -> binary().
+%% ====================================================================
+lookup_session(SessionID) ->
+    case SessionID of
+        undefined ->
+            undefined;
+        ?no_session_cookie ->
+            undefined;
+        _ ->
+            Module = get_session_logic_module(),
+            Module:lookup_session(SessionID)
+    end.
+
+
+%% delete_session/1
+%% ====================================================================
+%% @doc Calls back to session logic module to delete a session. Will not make
+%% senseless calls, such as those when session cookie yields no session.
+%% @end
+-spec delete_session(SessionID :: binary()) -> binary().
+%% ====================================================================
+delete_session(SessionID) ->
+    case SessionID of
+        undefined ->
+            ok;
+        ?no_session_cookie ->
+            ok;
+        _ ->
+            Module = get_session_logic_module(),
+            Module:delete_session(SessionID)
+    end.
