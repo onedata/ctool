@@ -26,11 +26,11 @@ gr_openid_test_() ->
         fun setup/0,
         fun teardown/1,
         [
-            {"get client access code", fun should_get_client_access_code/0},
+            {"get client authorization code", fun should_get_client_authorization_code/0},
             {"get client tokens", fun should_get_client_tokens/0},
             {"delete client token", fun should_remove_client_token/0},
             {"verify client", fun should_verify_client/0},
-            {"get grant token", fun should_get_grant_token/0}
+            {"get token response", fun should_get_token_response/0}
         ]
     }.
 
@@ -42,12 +42,15 @@ setup() ->
     meck:new(gr_endpoint),
     meck:expect(gr_endpoint, auth_request, fun
         (client, "/openid/client/tokens", get) -> {ok, "200", response_headers, response_body};
-        (client, "/openid/client/access_code", get) -> {ok, "200", response_headers, response_body};
+        (client, "/openid/client/authorization_code", get) -> {ok, "200", response_headers, response_body};
         (client, "/openid/client/tokens/accessId", delete) -> {ok, "204", response_headers, response_body}
     end),
     meck:expect(gr_endpoint, auth_request, fun
         (client, "/openid/client/verify", post, <<"body">>) -> {ok, "200", response_headers, response_body};
-        (client, "/openid/provider/tokens", post, <<"body">>) -> {ok, "200", response_headers, response_body}
+        (provider, "/openid/provider/tokens", post, <<"body">>) -> {ok, "200", response_headers, response_body}
+    end),
+    meck:expect(gr_endpoint, noauth_request, fun
+        (client, "/openid/client/tokens", post, <<"body">>) -> {ok, "200", response_headers, response_body}
     end).
 
 
@@ -59,14 +62,14 @@ teardown(_) ->
 %% Tests functions
 %% ===================================================================
 
-should_get_client_access_code() ->
+should_get_client_authorization_code() ->
     meck:new(mochijson2),
     meck:expect(mochijson2, decode, fun
-        (response_body, [{format, proplist}]) -> [{<<"accessCode">>, <<"accessCode">>}]
+        (response_body, [{format, proplist}]) -> [{<<"authorizationCode">>, <<"authorizationCode">>}]
     end),
 
-    Answer = gr_openid:get_client_access_code(client),
-    ?assertEqual({ok, <<"accessCode">>}, Answer),
+    Answer = gr_openid:get_client_authorization_code(client),
+    ?assertEqual({ok, <<"authorizationCode">>}, Answer),
 
     ?assert(meck:validate(mochijson2)),
     ok = meck:unload(mochijson2).
@@ -122,7 +125,7 @@ should_verify_client() ->
     ok = meck:unload(mochijson2).
 
 
-should_get_grant_token() ->
+should_get_token_response() ->
     meck:new(mochijson2),
     meck:expect(mochijson2, encode, fun(parameters) -> <<"body">> end),
     meck:expect(mochijson2, decode, fun
@@ -147,23 +150,25 @@ should_get_grant_token() ->
     meck:new(binary, [unstick, passthrough]),
     meck:expect(binary, split, fun(<<"id_token">>, <<".">>, [global]) -> [header, <<"">>, signature] end),
 
-    Answer = gr_openid:get_grant_token(client, parameters),
-    ?assertEqual({ok, #grant_token{
-        access_token = <<"access_token">>,
-        token_type = <<"token_type">>,
-        expires_in = <<"expires_in">>,
-        refresh_token = <<"refresh_token">>,
-        scope = <<"scope">>,
-        id_token = #id_token{
-            iss = <<"iss">>,
-            sub = <<"sub">>,
-            aud = <<"aud">>,
-            name = <<"name">>,
-            email = [<<"email1">>, <<"email2">>],
-            exp = <<"exp">>,
-            iat = <<"iat">>
-        }
-    }}, Answer),
+    lists:foreach(fun(ClientType) ->
+        Answer = gr_openid:get_token_response(ClientType, parameters),
+        ?assertEqual({ok, #token_response{
+            access_token = <<"access_token">>,
+            token_type = <<"token_type">>,
+            expires_in = <<"expires_in">>,
+            refresh_token = <<"refresh_token">>,
+            scope = <<"scope">>,
+            id_token = #id_token{
+                iss = <<"iss">>,
+                sub = <<"sub">>,
+                aud = <<"aud">>,
+                name = <<"name">>,
+                email = [<<"email1">>, <<"email2">>],
+                exp = <<"exp">>,
+                iat = <<"iat">>
+            }
+        }}, Answer)
+    end, [client, provider]),
 
     ?assert(meck:validate(mochijson2)),
     ok = meck:unload(mochijson2),

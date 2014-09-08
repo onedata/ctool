@@ -24,7 +24,7 @@
 -type body() :: [] | string() | binary().
 
 %% Global Registry client
--type client() :: provider | {user, AccessToken :: binary()} | {try_user, AccessToken :: binary()}.
+-type client() :: client | provider | {user, AccessToken :: binary()} | {try_user, AccessToken :: binary()}.
 
 %% User privileges with regards to Space management.
 -type space_privilege() :: space_invite_user | space_remove_user |

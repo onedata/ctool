@@ -59,6 +59,9 @@ auth_request(Client, URN, Method, Body, Options) ->
 -spec auth_request(Client :: client(), URN :: urn(), Method :: method(), Headers :: headers(), Body :: body(), Options :: list()) -> Result when
     Result :: {ok, Status :: string(), ResponseHeaders :: binary(), ResponseBody :: binary()} | {error, Reason :: term()}.
 %% ====================================================================
+auth_request(client, URN, Method, Headers, Body, Options) ->
+    do_auth_request(URN, Method, Headers, Body, Options);
+
 auth_request(provider, URN, Method, Headers, Body, Options) ->
     do_auth_request(URN, Method, Headers, Body, Options);
 
@@ -107,6 +110,9 @@ noauth_request(Client, URN, Method, Body, Options) ->
 -spec noauth_request(Client :: client(), URN :: urn(), Method :: method(), Headers :: headers(), Body :: body(), Options :: list()) -> Result when
     Result :: {ok, Status :: string(), ResponseHeaders :: binary(), ResponseBody :: binary()} | {error, Reason :: term()}.
 %% ====================================================================
+noauth_request(client, URN, Method, Headers, Body, Options) ->
+    do_noauth_request(URN, Method, Headers, Body, Options);
+
 noauth_request(provider, URN, Method, Headers, Body, Options) ->
     do_noauth_request(URN, Method, Headers, Body, Options);
 
