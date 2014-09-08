@@ -54,7 +54,7 @@
 %% ====================================================================
 init_n2o_ets_and_envs(GuiPort, RoutingModule, SessionLogicModule, BridgeModule) ->
     % Transition port - the same as gui port
-    ok = application:set_env(n2o, transition_port, GuiPort),
+    ok = application:set_env(n2o, port, GuiPort),
     % Custom route handler
     ok = application:set_env(n2o, route, RoutingModule),
     % Custom session handler for n2o
