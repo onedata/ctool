@@ -105,7 +105,7 @@ verify_client(Client, Parameters) ->
 %% Parameters should contain for: authorization "code" and "grant_type"
 %% of provided authorization code.
 -spec get_token_response(Client :: client(), Parameters :: [{Key :: binary(), Value :: binary()}]) -> Result when
-    Result :: {ok, Tokens :: [#client_token{}]} | {error, Reason :: term()}.
+    Result :: {ok, Tokens :: #token_response{}} | {error, Reason :: term()}.
 %% ====================================================================
 get_token_response(Client, Parameters) ->
     ?run(fun() ->
