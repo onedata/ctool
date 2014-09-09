@@ -26,8 +26,6 @@
 -define(cookie_name, <<"session_id">>).
 % Value of cookie when there is no session
 -define(no_session_cookie, <<"no_session">>).
-% ETS name for cookies
--define(ets_name, cookies).
 
 % Key for process dictionary, holding information if there is a valid session
 -define(session_valid, session_valid).
