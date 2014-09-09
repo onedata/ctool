@@ -89,13 +89,14 @@ wire(Action, Eager) ->
 %% @doc Convienience function to render javascript code.
 %% Eager flag can be used.
 %% @end
--spec wire(TargetID :: binary(), Method :: binary(), Args :: binary(), Eager :: boolean()) -> ok.
+-spec wire(TargetID :: binary(), Method :: binary(), Args :: binary() | integer(), Eager :: boolean()) -> ok.
 %% ====================================================================
 wire(TargetID, Method, Args, Eager) ->
     RenderedArgs = case Args of
                        <<"">> -> <<"">>;
                        <<"''">> -> <<"''">>;
-                       _ -> <<"'", Args/binary, "'">>
+                       _ when is_integer(Args) -> integer_to_binary(Args);
+                       _ when is_binary(Args) -> <<"'", Args/binary, "'">>
                    end,
     Script = <<"$('#", TargetID/binary, "').", Method/binary, "(", RenderedArgs/binary, ");">>,
     wire(Script, Eager).
@@ -364,7 +365,7 @@ remove_class(TargetID, Class) ->
 -spec slide_up(TargetID :: binary(), Speed :: integer()) -> ok.
 %% ====================================================================
 slide_up(TargetID, Speed) ->
-    wire(TargetID, <<"slideUp">>, integer_to_binary(Speed), false).
+    wire(TargetID, <<"slideUp">>, Speed, false).
 
 
 %% slide_down/2
@@ -374,7 +375,7 @@ slide_up(TargetID, Speed) ->
 -spec slide_down(TargetID :: binary(), Speed :: integer()) -> ok.
 %% ====================================================================
 slide_down(TargetID, Speed) ->
-    wire(TargetID, <<"slideDown">>, integer_to_binary(Speed), false).
+    wire(TargetID, <<"slideDown">>, Speed, false).
 
 
 %% fade_in/2
@@ -384,7 +385,7 @@ slide_down(TargetID, Speed) ->
 -spec fade_in(TargetID :: binary(), Speed :: integer()) -> ok.
 %% ====================================================================
 fade_in(TargetID, Speed) ->
-    wire(TargetID, <<"fadeIn">>, integer_to_binary(Speed), false).
+    wire(TargetID, <<"fadeIn">>, Speed, false).
 
 
 %% fade_out/2
@@ -394,7 +395,7 @@ fade_in(TargetID, Speed) ->
 -spec fade_out(TargetID :: binary(), Speed :: integer()) -> ok.
 %% ====================================================================
 fade_out(TargetID, Speed) ->
-    wire(TargetID, <<"fadeOut">>, integer_to_binary(Speed), false).
+    wire(TargetID, <<"fadeOut">>, Speed, false).
 
 
 %% delay/2

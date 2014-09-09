@@ -41,7 +41,7 @@
     iat :: binary()
 }).
 
-%% @doc grant_token record contains following fields:
+%% @doc token_response record contains following fields:
 %% * access_token  - the access token issued by the authorization server
 %% * token_type    - the type of the token issued
 %% * expires_in    - the lifetime in seconds of the access token
@@ -50,7 +50,7 @@
 %% * id_token      - ID Token value associated with the authenticated session
 %% For more details see: <a href="http://tools.ietf.org/html/rfc6749#section-4.1.4">Access Token Response</a>
 %% @end
--record(grant_token, {
+-record(token_response, {
     access_token :: binary(),
     token_type :: binary(),
     expires_in :: integer(),

@@ -16,8 +16,8 @@
 -include("global_registry/gr_openid.hrl").
 
 %% API
--export([get_client_access_code/1, get_client_tokens/1, remove_client_token/2, verify_client/2]).
--export([get_grant_token/2]).
+-export([get_client_authorization_code/1, get_client_tokens/1, remove_client_token/2, verify_client/2]).
+-export([get_token_response/2]).
 
 %% Test API
 -ifdef(TEST).
@@ -28,19 +28,19 @@
 %% API functions
 %% ====================================================================
 
-%% get_client_access_code/1
+%% get_client_authorization_code/1
 %% ====================================================================
-%% @doc Returns client access code.
--spec get_client_access_code(Client :: client()) -> Result when
-    Result :: {ok, AccessCode :: binary()} | {error, Reason :: term()}.
+%% @doc Returns client authorization code.
+-spec get_client_authorization_code(Client :: client()) -> Result when
+    Result :: {ok, AuthorizationCode :: binary()} | {error, Reason :: term()}.
 %% ====================================================================
-get_client_access_code(Client) ->
+get_client_authorization_code(Client) ->
     ?run(fun() ->
-        URN = "/openid/client/access_code",
+        URN = "/openid/client/authorization_code",
         {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:auth_request(Client, URN, get),
         Proplist = mochijson2:decode(ResponseBody, [{format, proplist}]),
-        AccessCode = proplists:get_value(<<"accessCode">>, Proplist),
-        {ok, AccessCode}
+        AuthorizationCode = proplists:get_value(<<"authorizationCode">>, Proplist),
+        {ok, AuthorizationCode}
     end).
 
 
@@ -99,24 +99,31 @@ verify_client(Client, Parameters) ->
     end).
 
 
-%% get_grant_token/2
+%% get_token_response/2
 %% ====================================================================
-%% @doc Returns grant token.
-%% Parameters should contain: client authorization "code" and "grant_type"
+%% @doc Returns token response.
+%% Parameters should contain for: authorization "code" and "grant_type"
 %% of provided authorization code.
--spec get_grant_token(Client :: client(), Parameters :: [{Key :: binary(), Value :: binary()}]) -> Result when
-    Result :: {ok, Tokens :: [#client_token{}]} | {error, Reason :: term()}.
+-spec get_token_response(Client :: client(), Parameters :: [{Key :: binary(), Value :: binary()}]) -> Result when
+    Result :: {ok, Tokens :: #token_response{}} | {error, Reason :: term()}.
 %% ====================================================================
-get_grant_token(Client, Parameters) ->
+get_token_response(Client, Parameters) ->
     ?run(fun() ->
-        URN = "/openid/provider/tokens",
         Body = iolist_to_binary(mochijson2:encode(Parameters)),
-        {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:auth_request(Client, URN, post, Body),
+        {ok, "200", _ResponseHeaders, ResponseBody} =
+            case Client of
+                client ->
+                    URN = "/openid/client/tokens",
+                    gr_endpoint:noauth_request(Client, URN, post, Body);
+                _ ->
+                    URN = "/openid/provider/tokens",
+                    gr_endpoint:auth_request(Client, URN, post, Body)
+            end,
         Proplist = mochijson2:decode(ResponseBody, [{format, proplist}]),
         IdToken = proplists:get_value(<<"id_token">>, Proplist),
         [_Header, Payload, _Signature] = binary:split(IdToken, <<".">>, [global]),
         IdTokenProplist = mochijson2:decode(base64decode(Payload), [{format, proplist}]),
-        GrantToken = #grant_token{
+        TokenResponse = #token_response{
             access_token = proplists:get_value(<<"access_token">>, Proplist),
             token_type = proplists:get_value(<<"token_type">>, Proplist),
             expires_in = proplists:get_value(<<"expires_in">>, Proplist),
@@ -134,7 +141,7 @@ get_grant_token(Client, Parameters) ->
                 iat = proplists:get_value(<<"iat">>, IdTokenProplist)
             }
         },
-        {ok, GrantToken}
+        {ok, TokenResponse}
     end).
 
 %% ====================================================================

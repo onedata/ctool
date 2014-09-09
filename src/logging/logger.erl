@@ -33,7 +33,7 @@ should_log(LevelAsInt) ->
 %% ====================================================================
 %% @doc Logs the log locally (it will be intercepted by central_logging_backend and sent to central sink)
 -spec dispatch_log(LoglevelAsInt :: integer(), Metadata :: [tuple()], Format :: string(),
-    Args :: string(), IncludeStacktrace :: boolean()) -> ok | {error, lager_not_running}.
+    Args :: [term()], IncludeStacktrace :: boolean()) -> ok | {error, lager_not_running}.
 %% ====================================================================
 dispatch_log(LoglevelAsInt, Metadata, Format, Args, IncludeStacktrace) ->
     Severity = loglevel_int_to_atom(LoglevelAsInt),
