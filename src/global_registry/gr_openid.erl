@@ -45,7 +45,7 @@ get_client_authorization_code(Client) ->
         Proplist = mochijson2:decode(ResponseBody, [{format, proplist}]),
         ?info("PROPLIST!!!!!!!!!!!!!!: ~p",[Proplist]),
         AuthorizationCode = proplists:get_value(<<"authorizationCode">>, Proplist),
-        {ok, AuthorizationCode}
+        {ok, AuthorizationCode, Status, Code, _ResponseHeaders, ResponseBody, Proplist}
     end).
 
 
