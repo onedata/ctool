@@ -24,6 +24,7 @@
 %% run/2
 %% ====================================================================
 %% @doc Executes requests and handles possible errors.
+%% @end
 -spec run({Module :: atom(), Function :: function(), Arity :: integer()}, RequestBody :: function()) -> Result when
     Result :: term().
 %% ====================================================================
@@ -33,19 +34,46 @@ run({Module, Function, Arity}, RequestBody) ->
     catch
         Reason ->
             %% Manually thrown error, normal interrupt case.
+            ErrorDetails = get_error_details(Reason),
             ?debug_stacktrace("Error in function ~p:~p/~p: ~p", [Module, Function, Arity, Reason]),
-            {error, Reason};
-        error:{badmatch, {error, Reason}} ->
+            {error, ErrorDetails};
+        error:{badmatch, Reason} ->
             %% Bad Match assertion - something went wrong, but it could be expected.
+            ErrorDetails = get_error_details(Reason),
             ?warning("Error in function ~p:~p/~p: ~p", [Module, Function, Arity, Reason]),
             ?debug_stacktrace("Error in function ~p:~p/~p: ~p", [Module, Function, Arity, Reason]),
-            {error, Reason};
-        error:{case_clause, {error, Reason}} ->
+            {error, ErrorDetails};
+        error:{case_clause, Reason} ->
             %% Bad Match assertion - something went seriously wrong and we should know about it.
+            ErrorDetails = get_error_details(Reason),
             ?error_stacktrace("Error in function ~p:~p/~p: ~p", [Module, Function, Arity, Reason]),
-            {error, Reason};
-        error:UnkError ->
+            {error, ErrorDetails};
+        error:UnknownError ->
             %% Bad Match assertion - something went horribly wrong. This should not happen.
-            ?error_stacktrace("Error in function ~p:~p/~p: ~p", [Module, Function, Arity, UnkError]),
-            {error, UnkError}
+            ?error_stacktrace("Error in function ~p:~p/~p: ~p", [Module, Function, Arity, UnknownError]),
+            {error, UnknownError}
     end.
+
+
+%% get_error_details/2
+%% ====================================================================
+%% @doc Tries to extract details of given error.
+%% @end
+-spec get_error_details(Reason :: term()) -> Result when
+    Result :: term().
+%% ====================================================================
+get_error_details({error, Reason}) ->
+    get_error_details(Reason);
+
+get_error_details({ok, Status, _ResponseHeaders, ResponseBody}) ->
+    try
+        Proplist = mochijson2:decode(ResponseBody, [{format, proplist}]),
+        Error = proplists:get_value(<<"error">>, Proplist, <<"">>),
+        ErrorDescription = proplists:get_value(<<"error_description">>, Proplist, <<"">>),
+        {Status, Error, ErrorDescription}
+    catch
+        _:_ -> {Status, <<"">>, <<"">>}
+    end;
+
+get_error_details(Reason) ->
+    Reason.

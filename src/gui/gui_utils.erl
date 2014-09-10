@@ -212,6 +212,7 @@ toggle_server_cert_verification(Flag) ->
 %% field 'no_encode' to a tuple will prevent URL encoding.
 %% @end
 %% ====================================================================
+%% @end
 -spec proplist_to_url_params([{binary(), binary()} | {binary(), binary(), no_encode}]) -> binary().
 %% ====================================================================
 proplist_to_url_params(List) ->
@@ -236,6 +237,7 @@ proplist_to_url_params(List) ->
 %% @doc Converts the given URL to a fully quialified url, without leading www.
 %% @end
 %% ====================================================================
+%% @end
 -spec fully_qualified_url(binary()) -> binary().
 %% ====================================================================
 fully_qualified_url(Binary) ->
@@ -252,6 +254,7 @@ fully_qualified_url(Binary) ->
 %% @doc Returns true if the given string is a valid email address according to RFC.
 %% @end
 %% ====================================================================
+%% @end
 -spec validate_email(binary()) -> boolean().
 %% ====================================================================
 validate_email(Email) ->
@@ -266,6 +269,7 @@ validate_email(Email) ->
 %% @doc Performs gmail email normalization by removing all the dots in the local part.
 %% @end
 %% ====================================================================
+%% @end
 -spec normalize_email(binary()) -> binary().
 %% ====================================================================
 normalize_email(Email) ->

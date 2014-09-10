@@ -25,6 +25,7 @@
 %% auth_request/3
 %% ====================================================================
 %% @equiv auth_request(Client, URN, Method, []).
+%% @end
 -spec auth_request(Client :: client(), URN :: urn(), Method :: method()) -> Result when
     Result :: {ok, Status :: string(), ResponseHeaders :: binary(), ResponseBody :: binary()} | {error, Reason :: term()}.
 %% ====================================================================
@@ -35,6 +36,7 @@ auth_request(Client, URN, Method) ->
 %% auth_request/4
 %% ====================================================================
 %% @equiv auth_request(Client, URN, Method, Body, []).
+%% @end
 -spec auth_request(Client :: client(), URN :: urn(), Method :: method(), Body :: body()) -> Result when
     Result :: {ok, Status :: string(), ResponseHeaders :: binary(), ResponseBody :: binary()} | {error, Reason :: term()}.
 %% ====================================================================
@@ -45,6 +47,7 @@ auth_request(Client, URN, Method, Body) ->
 %% auth_request/5
 %% ====================================================================
 %% @equiv auth_request(Client, URN, Method, [], Body, Options).
+%% @end
 -spec auth_request(Client :: client(), URN :: urn(), Method :: method(), Body :: body(), Options :: list()) -> Result when
     Result :: {ok, Status :: string(), ResponseHeaders :: binary(), ResponseBody :: binary()} | {error, Reason :: term()}.
 %% ====================================================================
@@ -56,6 +59,7 @@ auth_request(Client, URN, Method, Body, Options) ->
 %% ====================================================================
 %% @doc Sends authenticated request to Global Registry.
 %% Context depends on client type.
+%% @end
 -spec auth_request(Client :: client(), URN :: urn(), Method :: method(), Headers :: headers(), Body :: body(), Options :: list()) -> Result when
     Result :: {ok, Status :: string(), ResponseHeaders :: binary(), ResponseBody :: binary()} | {error, Reason :: term()}.
 %% ====================================================================
@@ -76,6 +80,7 @@ auth_request({Type, AccessToken}, URN, Method, Headers, Body, Options) when Type
 %% noauth_request/3
 %% ====================================================================
 %% @equiv noauth_request(Client, URN, Method, [])
+%% @end
 -spec noauth_request(Client :: client(), URN :: urn(), Method :: method()) -> Result when
     Result :: {ok, Status :: string(), ResponseHeaders :: binary(), ResponseBody :: binary()} | {error, Reason :: term()}.
 %% ====================================================================
@@ -86,6 +91,7 @@ noauth_request(Client, URN, Method) ->
 %% noauth_request/4
 %% ====================================================================
 %% @equiv noauth_request(Client, URN, Method, Body, [])
+%% @end
 -spec noauth_request(Client :: client(), URN :: urn(), Method :: method(), Body :: body()) -> Result when
     Result :: {ok, Status :: string(), ResponseHeaders :: binary(), ResponseBody :: binary()} | {error, Reason :: term()}.
 %% ====================================================================
@@ -96,6 +102,7 @@ noauth_request(Client, URN, Method, Body) ->
 %% noauth_request/5
 %% ====================================================================
 %% @equiv noauth_request(Client, URN, Method, [], Body, Options)
+%% @end
 -spec noauth_request(Client :: client(), URN :: urn(), Method :: method(), Body :: body(), Options :: list()) -> Result when
     Result :: {ok, Status :: string(), ResponseHeaders :: binary(), ResponseBody :: binary()} | {error, Reason :: term()}.
 %% ====================================================================
@@ -107,6 +114,7 @@ noauth_request(Client, URN, Method, Body, Options) ->
 %% ====================================================================
 %% @doc Sends unauthenticated request to Global Registry.
 %% Context depends on client type.
+%% @end
 -spec noauth_request(Client :: client(), URN :: urn(), Method :: method(), Headers :: headers(), Body :: body(), Options :: list()) -> Result when
     Result :: {ok, Status :: string(), ResponseHeaders :: binary(), ResponseBody :: binary()} | {error, Reason :: term()}.
 %% ====================================================================
@@ -132,6 +140,7 @@ noauth_request({Type, AccessToken}, URN, Method, Headers, Body, Options) when Ty
 %% ====================================================================
 %% @doc Sends request to Global Registry using REST API.
 %% Request is authenticated with provider certificate.
+%% @end
 -spec do_auth_request(URN :: urn(), Method :: method(), Headers :: headers(), Body :: body(), Options :: list()) -> Result when
     Result :: {ok, Status :: string(), ResponseHeaders :: binary(), ResponseBody :: binary()} | {error, Reason :: term()}.
 %% ====================================================================
@@ -153,6 +162,7 @@ do_auth_request(URN, Method, Headers, Body, Options) ->
 %% ====================================================================
 %% @doc Sends request to Global Registry using REST API.
 %% Request is not authenticated with provider certificate.
+%% @end
 -spec do_noauth_request(URN :: urn(), Method :: method(), Headers :: headers(), Body :: body(), Options :: list()) -> Result when
     Result :: {ok, Status :: string(), ResponseHeaders :: binary(), ResponseBody :: binary()} | {error, Reason :: term()}.
 %% ====================================================================

@@ -38,6 +38,7 @@
 %% start_test_nodes/1
 %% ====================================================================
 %% @doc Starts new nodes for test, with disabled verbose option
+%% @end
 -spec start_test_nodes(NodesNum :: integer()) -> Result when
     Result ::  list().
 %% ====================================================================
@@ -47,6 +48,7 @@ start_test_nodes(NodesNum) ->
 %% start_test_nodes/2
 %% ====================================================================
 %% @doc Starts new nodes for test, with default names
+%% @end
 -spec start_test_nodes(NodesNum :: integer(), Verbose :: boolean()) -> Result when
     Result ::  list().
 %% ====================================================================
@@ -61,6 +63,7 @@ start_test_nodes(NodesNum, Verbose) ->
 %% start_test_node/3
 %% ====================================================================
 %% @doc Starts new test node, with no additional parameters
+%% @end
 -spec start_test_node(NodeName :: atom(), Host :: atom(), Verbose :: boolean()) -> Result when
     Result :: node() | no_return().
 %% ====================================================================
@@ -70,6 +73,7 @@ start_test_node(NodeName,Host,Verbose) ->
 %% start_test_node/4
 %% ====================================================================
 %% @doc Starts new test node.
+%% @end
 -spec start_test_node(NodeName :: atom(), Host :: atom(), Verbose :: boolean(), Params :: string()) -> Result when
 	Result :: node() | no_return().
 %% ====================================================================
@@ -91,6 +95,7 @@ start_test_node(NodeName,Host,Verbose,Params) ->
 %% stop_test_nodes/1
 %% ====================================================================
 %% @doc Stops test nodes.
+%% @end
 -spec stop_test_nodes(Node :: list(node())) -> list(Status) when
     Status :: ok.
 %% ====================================================================
@@ -107,6 +112,7 @@ stop_test_nodes([Node|Rest]) ->
 %% start_test_nodes_with_dist_app/2
 %% ====================================================================
 %% @doc Starts nodes needed for test as distributed erlang application, with disabled verbose option
+%% @end
 -spec start_test_nodes_with_dist_app(NodesNum :: integer(), CCMNum :: integer()) -> Result when
     Result ::  list().
 %% ====================================================================
@@ -116,6 +122,7 @@ start_test_nodes_with_dist_app(NodesNum, CCMNum) ->
 %% start_test_nodes_with_dist_app/3
 %% ====================================================================
 %% @doc Starts nodes needed for test as distributed erlang application
+%% @end
 -spec start_test_nodes_with_dist_app(NodesNum :: integer(), CCMNum :: integer(), Verbose :: boolean()) -> Result when
     Result ::  list().
 %% ====================================================================
@@ -136,6 +143,7 @@ start_test_nodes_with_dist_app(NodesNum, CCMNum, Verbose) ->
 %% start_app_on_nodes/4
 %% ====================================================================
 %% @doc Starts app on test node.
+%% @end
 -spec start_app_on_nodes(Application :: atom(), Deps :: list(list(atom())), Nodes :: list(atom()), EnvVars :: list(list(Env))) -> Result when
     Env :: {Name,Value},
     Name :: atom(),
@@ -151,6 +159,7 @@ start_app_on_nodes(Application,Deps,[Node | OtherNodes],[EnvVars | OtherEnvVars]
 %% start_app_on_node/4
 %% ====================================================================
 %% @doc Starts app on test node.
+%% @end
 -spec start_app_on_node(Application :: atom(),Deps :: list(atom()), Node :: atom(), EnvVars :: list(Env)) -> Result when
     Env :: {Name,Value},
     Name :: atom(),
@@ -168,6 +177,7 @@ start_app_on_node(Application,Deps,Node,EnvVars) ->
 %% stop_app_on_nodes/3
 %% ====================================================================
 %% @doc Stops app on test nodes.
+%% @end
 -spec stop_app_on_nodes(Application :: atom(), Deps :: list(atom()), Nodes :: list(atom())) -> Result when
     Result :: ok | no_return().
 %% ====================================================================
@@ -180,6 +190,7 @@ stop_app_on_nodes(Application,Deps,[Node | OtherNodes])->
 %% stop_app_on_node/3
 %% ====================================================================
 %% @doc Stops app on test node.
+%% @end
 -spec stop_app_on_node(Application :: atom(), Deps :: list(atom()), Node :: atom()) -> Result when
     Result :: ok | no_return().
 %% ====================================================================
@@ -197,6 +208,7 @@ stop_app_on_node(Application,Deps,Node)->
 %% stop_deps/1
 %% ====================================================================
 %% @doc This function clears after the test.
+%% @end
 -spec stop_deps(Deps :: list(atom)) -> list(Result::term()).
 %% ====================================================================
 stop_deps([]) ->
@@ -207,6 +219,7 @@ stop_deps([FirstDep | Rest]) ->
 %% start_deps/1
 %% ====================================================================
 %% @doc This function sets environment for application.
+%% @end
 -spec start_deps(Deps :: list(atom)) -> list(Result::term()).
 %% ====================================================================
 start_deps([]) ->
@@ -234,6 +247,7 @@ start_deps([FirstDep|Rest]) ->
 %% set_env_vars/2
 %% ====================================================================
 %% @doc This function sets environment variables for application.
+%% @end
 -spec set_env_vars(Application :: atom(),EnvVars :: list()) -> ok.
 %% ====================================================================
 set_env_vars(_Application,[]) ->
@@ -250,6 +264,7 @@ set_env_vars(Application,[{Variable, Value} | Vars]) ->
 %% ====================================================================
 %% @doc Starts dependencies needed by tester node (node that does not
 %% host application but coordinates test).
+%% @end
 -spec start_deps_for_tester_node() -> Result when
     Result ::  ok | {error, Reason},
     Reason :: term().
@@ -269,6 +284,7 @@ start_deps_for_tester_node() ->
 %% ====================================================================
 %% @doc Stops dependencies needed by tester node (node that does not
 %% host application but coordinates test).
+%% @end
 -spec stop_deps_for_tester_node() -> Result when
     Result ::  ok | {error, Reason},
     Reason :: term().
@@ -295,6 +311,7 @@ make_code_path() ->
 %% create_nodes_description/3
 %% ====================================================================
 %% @doc Creates description of nodes needed for test.
+%% @end
 -spec create_nodes_description(Host:: atom(), TmpAns :: list(), Counter :: integer()) -> Result when
     Result ::  list().
 %% ====================================================================
@@ -307,6 +324,7 @@ create_nodes_description(Host, Ans, Counter) ->
 %% create_dist_nodes_list/2
 %% ====================================================================
 %% @doc Creates list of nodes for distributed application
+%% @end
 -spec create_dist_nodes_list(Nodes:: list(), DistNodesNum :: integer()) -> Result when
     Result ::  list().
 %% ====================================================================
@@ -319,6 +337,7 @@ create_dist_nodes_list([{NodeName, Host} | Nodes], DistNodesNum) ->
 %% create_dist_app_description/1
 %% ====================================================================
 %% @doc Creates description of distributed application
+%% @end
 -spec create_dist_app_description(DistNodes:: list()) -> Result when
     Result ::  string().
 %% ====================================================================
@@ -335,6 +354,7 @@ create_dist_app_description(DistNodes) ->
 %% create_nodes_params_for_dist_nodes/3
 %% ====================================================================
 %% @doc Creates list of nodes for distributed application
+%% @end
 -spec create_nodes_params_for_dist_nodes(Nodes:: list(), DistNodes :: list(), DistAppDescription :: string()) -> Result when
     Result ::  list().
 %% ====================================================================

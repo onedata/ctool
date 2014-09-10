@@ -18,6 +18,7 @@
 %% behaviour_info/1
 %% ====================================================================
 %% @doc Defines the behaviour (lists the callbacks and their arity)
+%% @end
 -spec behaviour_info(Arg) -> Result when
     Arg :: callbacks | Other,
     Result :: [Fun_def]

@@ -31,6 +31,7 @@
 %% ====================================================================
 %% @doc Creates new group and makes user the only member and administrator
 %% of created group. Parameters should contain: "name" of new group.
+%% @end
 -spec create(Client :: client(), Parameters :: [{Key :: binary(), Value :: binary()}]) -> Result when
     Result :: {ok, SpaceId :: binary()} | {error, Reason :: term()}.
 %% ====================================================================
@@ -47,6 +48,7 @@ create(Client, Parameters) ->
 %% remove/2
 %% ====================================================================
 %% @doc Removes group.
+%% @end
 -spec remove(Client :: client(), GroupId :: binary()) -> Result when
     Result :: ok | {error, Reason :: term()}.
 %% ====================================================================
@@ -61,6 +63,7 @@ remove(Client, GroupId) ->
 %% get_details/2
 %% ====================================================================
 %% @doc Returns public details about group.
+%% @end
 -spec get_details(Client :: client(), GroupId :: binary()) -> Result when
     Result :: {ok, GroupInfo :: #group_details{}} | {error, Reason :: term()}.
 %% ====================================================================
@@ -81,6 +84,7 @@ get_details(Client, GroupId) ->
 %% ====================================================================
 %% @doc Modifies public details about group. Parameters may contain:
 %% "name" of group.
+%% @end
 -spec modify_details(Client :: client(), GroupId :: binary(), Parameters :: [{Key :: binary(), Value :: binary()}]) -> Result when
     Result :: ok | {error, Reason :: term()}.
 %% ====================================================================
@@ -96,6 +100,7 @@ modify_details(Client, GroupId, Parameters) ->
 %% get_create_space_token/2
 %% ====================================================================
 %% @doc Returns token that allows provider to create Space for group.
+%% @end
 -spec get_create_space_token(Client :: client(), GroupId :: binary()) -> Result when
     Result :: {ok, Token :: binary()} | {error, Reason :: term()}.
 %% ====================================================================
@@ -112,6 +117,7 @@ get_create_space_token(Client, GroupId) ->
 %% get_invite_user_token/2
 %% ====================================================================
 %% @doc Returns token that allows user to join group.
+%% @end
 -spec get_invite_user_token(Client :: client(), GroupId :: binary()) -> Result when
     Result :: {ok, Token :: binary()} | {error, Reason :: term()}.
 %% ====================================================================
@@ -128,6 +134,7 @@ get_invite_user_token(Client, GroupId) ->
 %% remove_user/3
 %% ====================================================================
 %% @doc Removes user from group.
+%% @end
 -spec remove_user(Client :: client(), GroupId :: binary(), UserId :: binary()) -> Result when
     Result :: ok | {error, Reason :: term()}.
 %% ====================================================================
@@ -142,6 +149,7 @@ remove_user(Client, GroupId, UserId) ->
 %% get_users/2
 %% ====================================================================
 %% @doc Returns list of IDs of users that belong to group.
+%% @end
 -spec get_users(Client :: client(), GroupId :: binary()) -> Result when
     Result :: {ok, UserIds :: [binary()]} | {error, Reason :: term()}.
 %% ====================================================================
@@ -158,6 +166,7 @@ get_users(Client, GroupId) ->
 %% get_user_details/3
 %% ====================================================================
 %% @doc Returns public details about user that belongs to group.
+%% @end
 -spec get_user_details(Client :: client(), GroupId :: binary(), UserId :: binary()) -> Result when
     Result :: {ok, UserInfo :: #user_details{}} | {error, Reason :: term()}.
 %% ====================================================================
@@ -177,6 +186,7 @@ get_user_details(Client, GroupId, UserId) ->
 %% get_user_privileges/3
 %% ====================================================================
 %% @doc Returns list of privileges of user that belongs to group.
+%% @end
 -spec get_user_privileges(Client :: client(), GroupId :: binary(), UserId :: binary()) -> Result when
     Result :: {ok, Privileges :: [group_privilege()]} | {error, Reason :: term()}.
 %% ====================================================================
@@ -194,6 +204,7 @@ get_user_privileges(Client, GroupId, UserId) ->
 %% ====================================================================
 %% @doc Sets list of privileges for user that belongs to group.
 %% Parameters should contain: list of "privileges" of type group_privilege().
+%% @end
 -spec set_user_privileges(Client :: client(), GroupId :: binary(), UserId :: binary(), Parameters :: [{Key :: binary(), Value :: binary()}]) -> Result when
     Result :: ok | {error, Reason :: term()}.
 %% ====================================================================
@@ -210,6 +221,7 @@ set_user_privileges(Client, GroupId, UserId, Parameters) ->
 %% ====================================================================
 %% @doc Creates new Space and makes group the only member and administrator
 %% of created Space. Parameters should contain: "name" of new Space.
+%% @end
 -spec create_space(Client :: client(), GroupId :: binary(), Parameters :: [{Key :: binary(), Value :: binary()}]) -> Result when
     Result :: {ok, SpaceId :: binary()} | {error, Reason :: term()}.
 %% ====================================================================
@@ -227,6 +239,7 @@ create_space(Client, GroupId, Parameters) ->
 %% ====================================================================
 %% @doc Makes group join Space associated with token.
 %% Parameters should contain: "token" associated with Space.
+%% @end
 -spec join_space(Client :: client(), GroupId :: binary(), Parameters :: [{Key :: binary(), Value :: binary()}]) -> Result when
     Result :: {ok, SpaceId :: binary()} | {error, Reason :: term()}.
 %% ====================================================================
@@ -244,6 +257,7 @@ join_space(Client, GroupId, Parameters) ->
 %% leave_space/3
 %% ====================================================================
 %% @doc Makes group leave Space.
+%% @end
 -spec leave_space(Client :: client(), GroupId :: binary(), SpaceId :: binary()) -> Result when
     Result :: ok | {error, Reason :: term()}.
 %% ====================================================================
@@ -258,6 +272,7 @@ leave_space(Client, GroupId, SpaceId) ->
 %% get_spaces/2
 %% ====================================================================
 %% @doc Returns list of IDs of Spaces that group belongs to.
+%% @end
 -spec get_spaces(Client :: client(), GroupId :: binary()) -> Result when
     Result :: {ok, SpaceIds :: [binary()]} | {error, Reason :: term()}.
 %% ====================================================================
@@ -274,6 +289,7 @@ get_spaces(Client, GroupId) ->
 %% get_space_details/3
 %% ====================================================================
 %% @doc Returns public details about Space that group belongs to.
+%% @end
 -spec get_space_details(Client :: client(), GroupId :: binary(), SpaceId :: binary()) -> Result when
     Result :: {ok, SpaceInfo :: #space_details{}} | {error, Reason :: term()}.
 %% ====================================================================

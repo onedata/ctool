@@ -18,6 +18,7 @@
 %% init/3
 %% ====================================================================
 %% @doc Cowboy handler callback, no state is required
+%% @end
 -spec init(any(), term(), any()) -> {ok, term(), []}.
 %% ====================================================================
 init(_Type, Req, _Opts) ->
@@ -50,6 +51,7 @@ handle(Req, State) ->
 %% terminate/3
 %% ====================================================================
 %% @doc Cowboy handler callback, no cleanup needed
+%% @end
 -spec terminate(term(), term(), term()) -> ok.
 %% ====================================================================
 terminate(_Reason, _Req, _State) ->

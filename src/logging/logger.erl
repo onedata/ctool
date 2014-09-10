@@ -32,6 +32,7 @@ should_log(LevelAsInt) ->
 %% dispatch_log/5
 %% ====================================================================
 %% @doc Logs the log locally (it will be intercepted by central_logging_backend and sent to central sink)
+%% @end
 -spec dispatch_log(LoglevelAsInt :: integer(), Metadata :: [tuple()], Format :: string(),
     Args :: [term()], IncludeStacktrace :: boolean()) -> ok | {error, lager_not_running}.
 %% ====================================================================
@@ -47,6 +48,7 @@ dispatch_log(LoglevelAsInt, Metadata, Format, Args, IncludeStacktrace) ->
 %% @doc Changes current global loglevel to desired. Argument can be loglevel as int or atom
 %% 'default' atom can be used to set it back to default
 %% @end 
+%% @end
 -spec set_loglevel(Loglevel :: integer() | atom()) -> ok | {error, badarg}.
 %% ====================================================================
 set_loglevel(Loglevel) when is_atom(Loglevel) ->
@@ -72,6 +74,7 @@ set_loglevel(_) ->
 %% @doc Changes current console loglevel to desired. Argument can be loglevel as int or atom
 %% 'default' atom can be used to set it back to default - default is what is defined in sys.config
 %% @end 
+%% @end
 -spec set_console_loglevel(Loglevel :: integer() | atom()) -> ok | {error, badarg}.
 %% ====================================================================
 set_console_loglevel(Loglevel) when is_integer(Loglevel) andalso (Loglevel >= 0) andalso (Loglevel =< 7) ->
@@ -101,6 +104,7 @@ set_console_loglevel(_) ->
 %% ====================================================================
 %% @doc Changes include_stacktrace env to true or false
 %% @end 
+%% @end
 -spec set_include_stacktrace(boolean()) -> ok | {error, badarg}.
 %% ====================================================================
 set_include_stacktrace(Flag) when is_boolean(Flag) ->
@@ -114,6 +118,7 @@ set_include_stacktrace(_) ->
 %% ====================================================================
 %% @doc Returns current loglevel as set in application's env
 %% @end 
+%% @end
 -spec get_current_loglevel() -> integer().
 %% ====================================================================
 get_current_loglevel() ->
@@ -125,6 +130,7 @@ get_current_loglevel() ->
 %% ====================================================================
 %% @doc Returns default loglevel as set in application's env
 %% @end 
+%% @end
 -spec get_default_loglevel() -> integer().
 %% ====================================================================
 get_default_loglevel() ->
@@ -136,6 +142,7 @@ get_default_loglevel() ->
 %% ====================================================================
 %% @doc Returns current console loglevel
 %% @end 
+%% @end
 -spec get_console_loglevel() -> integer().
 %% ====================================================================
 get_console_loglevel() ->
@@ -149,6 +156,7 @@ get_console_loglevel() ->
 %% ====================================================================
 %% @doc Returns get_include_stacktrace env value
 %% @end 
+%% @end
 -spec get_include_stacktrace() -> boolean().
 %% ====================================================================
 get_include_stacktrace() ->
@@ -159,6 +167,7 @@ get_include_stacktrace() ->
 %% loglevel_int_to_atom/1
 %% ====================================================================
 %% @doc Returns loglevel name associated with loglevel number
+%% @end
 -spec loglevel_int_to_atom(LoglevelAsInt :: integer()) -> atom().
 %% ====================================================================
 loglevel_int_to_atom(0) -> debug;
@@ -174,6 +183,7 @@ loglevel_int_to_atom(7) -> emergency.
 %% loglevel_atom_to_int/1
 %% ====================================================================
 %% @doc Returns loglevel number associated with loglevel name
+%% @end
 -spec loglevel_atom_to_int(LoglevelAsAtom :: atom()) -> integer().
 %% ====================================================================
 loglevel_atom_to_int(debug) -> 0;
@@ -189,6 +199,7 @@ loglevel_atom_to_int(emergency) -> 7.
 %% parse_process_info/1
 %% ====================================================================
 %% @doc Changes standard 'process_info' tuple into metadata proplist
+%% @end
 -spec parse_process_info(ProcessInfo :: tuple()) -> [tuple()].
 %% ====================================================================
 parse_process_info({_, {Module, Function, Arity}}) ->
