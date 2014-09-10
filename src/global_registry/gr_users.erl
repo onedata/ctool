@@ -161,7 +161,7 @@ join_space(Client, Parameters) ->
 leave_space(Client, SpaceId) ->
     ?run(fun() ->
         URN = "/user/spaces/" ++ binary_to_list(SpaceId),
-        {ok, "204", _ResponseHeaders, _ResponseBody} = gr_endpoint:auth_request(Client, URN, delete),
+        {ok, "202", _ResponseHeaders, _ResponseBody} = gr_endpoint:auth_request(Client, URN, delete),
         ok
     end).
 
@@ -286,7 +286,7 @@ join_group(Client, Parameters) ->
 leave_group(Client, GroupId) ->
     ?run(fun() ->
         URN = "/user/groups/" ++ binary_to_list(GroupId),
-        {ok, "204", _ResponseHeaders, _ResponseBody} = gr_endpoint:auth_request(Client, URN, delete),
+        {ok, "202", _ResponseHeaders, _ResponseBody} = gr_endpoint:auth_request(Client, URN, delete),
         ok
     end).
 

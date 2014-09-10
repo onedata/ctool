@@ -78,7 +78,7 @@ get_client_tokens(Client) ->
 remove_client_token(Client, AccessId) ->
     ?run(fun() ->
         URN = "/openid/client/tokens/" ++ binary_to_list(AccessId),
-        {ok, "204", _ResponseHeaders, _ResponseBody} = gr_endpoint:auth_request(Client, URN, delete),
+        {ok, "202", _ResponseHeaders, _ResponseBody} = gr_endpoint:auth_request(Client, URN, delete),
         ok
     end).
 

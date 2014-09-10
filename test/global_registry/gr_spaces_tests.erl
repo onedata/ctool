@@ -60,21 +60,21 @@ setup() ->
     meck:new(gr_endpoint),
     meck:expect(gr_endpoint, auth_request, fun
         (client, "/spaces/spaceId", get) -> {ok, "200", response_headers, response_body};
-        (client, "/spaces/spaceId", delete) -> {ok, "204", response_headers, response_body};
+        (client, "/spaces/spaceId", delete) -> {ok, "202", response_headers, response_body};
         (client, "/spaces/spaceId/users", get) -> {ok, "200", response_headers, response_body};
         (client, "/spaces/spaceId/users/token", get) -> {ok, "200", response_headers, response_body};
         (client, "/spaces/spaceId/users/userId", get) -> {ok, "200", response_headers, response_body};
-        (client, "/spaces/spaceId/users/userId", delete) -> {ok, "204", response_headers, response_body};
+        (client, "/spaces/spaceId/users/userId", delete) -> {ok, "202", response_headers, response_body};
         (client, "/spaces/spaceId/users/userId/privileges", get) -> {ok, "200", response_headers, response_body};
         (client, "/spaces/spaceId/groups", get) -> {ok, "200", response_headers, response_body};
         (client, "/spaces/spaceId/groups/token", get) -> {ok, "200", response_headers, response_body};
         (client, "/spaces/spaceId/groups/groupId", get) -> {ok, "200", response_headers, response_body};
-        (client, "/spaces/spaceId/groups/groupId", delete) -> {ok, "204", response_headers, response_body};
+        (client, "/spaces/spaceId/groups/groupId", delete) -> {ok, "202", response_headers, response_body};
         (client, "/spaces/spaceId/groups/groupId/privileges", get) -> {ok, "200", response_headers, response_body};
         (client, "/spaces/spaceId/providers", get) -> {ok, "200", response_headers, response_body};
         (client, "/spaces/spaceId/providers/token", get) -> {ok, "200", response_headers, response_body};
         (client, "/spaces/spaceId/providers/providerId", get) -> {ok, "200", response_headers, response_body};
-        (client, "/spaces/spaceId/providers/providerId", delete) -> {ok, "204", response_headers, response_body}
+        (client, "/spaces/spaceId/providers/providerId", delete) -> {ok, "202", response_headers, response_body}
     end),
     meck:expect(gr_endpoint, auth_request, fun
         (client, "/spaces", post, <<"body">>) -> {ok, "201", [{"location", "/spaces/spaceId"}], response_body};
