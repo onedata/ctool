@@ -11,7 +11,7 @@
 -module(vcn_utils). %todo remove this module from veilcluster
 
 %% API
--export([ensure_running/1, pmap/2, pforeach/2, time/0, mtime/0, record_type/1, ensure_binary/1, ensure_list/1]).
+-export([ensure_running/1, pmap/2, pforeach/2, time/0, mtime/0, record_type/1, ensure_binary/1, ensure_list/1, access_token_hash/2]).
 
 %% ====================================================================
 %% API functions
@@ -55,6 +55,15 @@ pforeach(Fun, L) ->
     lists:foreach(fun(X) -> spawn(fun() -> pforeach_f(Self, Ref, Fun, X) end) end, L),
     pforeach_gather(length(L), Ref).
 
+
+%% access_token_hash/2
+%% ====================================================================
+%% @doc Returns hash of given AccessToken. Can be used to confirm user's GlobalId using GlobalRegistry.
+%% @end
+-spec access_token_hash(AccessToken :: binary()) -> Hash :: binary().
+%% ====================================================================
+access_token_hash(AccessToken) ->
+    base64:encode(crypto:hash(sha512, AccessToken)).
 
 %% ====================================================================
 %% Internal functions
