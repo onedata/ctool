@@ -35,21 +35,21 @@ run({Module, Function, Arity}, RequestBody) ->
         Reason ->
             %% Manually thrown error, normal interrupt case.
             ErrorDetails = get_error_details(Reason),
-            ?debug_stacktrace("Error in function ~p:~p/~p: ~p", [Module, Function, Arity, Reason]),
+            ?debug_stacktrace("Error in function ~p:~p/~p: ~p", [Module, Function, Arity, ErrorDetails]),
             {error, ErrorDetails};
         error:{badmatch, Reason} ->
             %% Bad Match assertion - something went wrong, but it could be expected.
             ErrorDetails = get_error_details(Reason),
             ?warning("Error in function ~p:~p/~p: ~p", [Module, Function, Arity, Reason]),
-            ?debug_stacktrace("Error in function ~p:~p/~p: ~p", [Module, Function, Arity, Reason]),
+            ?debug_stacktrace("Error in function ~p:~p/~p: ~p", [Module, Function, Arity, ErrorDetails]),
             {error, ErrorDetails};
         error:{case_clause, Reason} ->
-            %% Bad Match assertion - something went seriously wrong and we should know about it.
+            %% Case clause assertion - something went seriously wrong and we should know about it.
             ErrorDetails = get_error_details(Reason),
-            ?error_stacktrace("Error in function ~p:~p/~p: ~p", [Module, Function, Arity, Reason]),
+            ?error_stacktrace("Error in function ~p:~p/~p: ~p", [Module, Function, Arity, ErrorDetails]),
             {error, ErrorDetails};
         error:UnknownError ->
-            %% Bad Match assertion - something went horribly wrong. This should not happen.
+            %% Unknown error - something went horribly wrong. This should not happen.
             ?error_stacktrace("Error in function ~p:~p/~p: ~p", [Module, Function, Arity, UnknownError]),
             {error, UnknownError}
     end.
