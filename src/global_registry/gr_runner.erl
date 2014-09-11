@@ -40,7 +40,7 @@ run({Module, Function, Arity}, RequestBody) ->
         error:{badmatch, Reason} ->
             %% Bad Match assertion - something went wrong, but it could be expected.
             ErrorDetails = get_error_details(Reason),
-            ?warning("Error in function ~p:~p/~p: ~p", [Module, Function, Arity, Reason]),
+            ?warning("Error in function ~p:~p/~p: ~p", [Module, Function, Arity, ErrorDetails]),
             ?debug_stacktrace("Error in function ~p:~p/~p: ~p", [Module, Function, Arity, ErrorDetails]),
             {error, ErrorDetails};
         error:{case_clause, Reason} ->
