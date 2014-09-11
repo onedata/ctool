@@ -14,7 +14,6 @@
 -include("global_registry/gr_runner.hrl").
 -include("global_registry/gr_types.hrl").
 -include("global_registry/gr_openid.hrl").
--include("logging.hrl").
 
 %% API
 -export([get_client_authorization_code/1, get_client_tokens/1, remove_client_token/2, verify_client/2]).
@@ -38,14 +37,10 @@
 get_client_authorization_code(Client) ->
     ?run(fun() ->
         URN = "/openid/client/authorization_code",
-        {Status, Code, _ResponseHeaders, ResponseBody} = gr_endpoint:auth_request(Client, URN, get),
-        ?info("STATUS!!!: ~p", [Status]),
-        ?info("CODE!!!!: ~p", [Code]),
-        ?info("BODY!!!!!!!!!!!!!!: ~p",[ResponseBody]),
+        {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:auth_request(Client, URN, get),
         Proplist = mochijson2:decode(ResponseBody, [{format, proplist}]),
-        ?info("PROPLIST!!!!!!!!!!!!!!: ~p",[Proplist]),
         AuthorizationCode = proplists:get_value(<<"authorizationCode">>, Proplist),
-        {ok, AuthorizationCode, Status, Code, _ResponseHeaders, ResponseBody, Proplist}
+        {ok, AuthorizationCode}
     end).
 
 
