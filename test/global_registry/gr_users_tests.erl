@@ -61,10 +61,10 @@ setup() ->
         (client, "/user/spaces/token", get) -> {ok, "200", response_headers, response_body};
         (client, "/user/spaces/default", get) -> {ok, "200", response_headers, response_body};
         (client, "/user/spaces/spaceId", get) -> {ok, "200", response_headers, response_body};
-        (client, "/user/spaces/spaceId", delete) -> {ok, "204", response_headers, response_body};
+        (client, "/user/spaces/spaceId", delete) -> {ok, "202", response_headers, response_body};
         (client, "/user/groups", get) -> {ok, "200", response_headers, response_body};
         (client, "/user/groups/groupId", get) -> {ok, "200", response_headers, response_body};
-        (client, "/user/groups/groupId", delete) -> {ok, "204", response_headers, response_body}
+        (client, "/user/groups/groupId", delete) -> {ok, "202", response_headers, response_body}
     end),
     meck:expect(gr_endpoint, auth_request, fun
         (client, "/user", patch, <<"body">>) -> {ok, "204", response_headers, response_body};

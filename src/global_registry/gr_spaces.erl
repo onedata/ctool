@@ -38,6 +38,7 @@
 %%   User/group that has given provider a token receives all privileges
 %%   for new Space. Parameters should contain: "name" of new Space and
 %%   "token" associated with user/group.
+%% @end
 -spec create(Client :: client(), Parameters :: [{Key :: binary(), Value :: binary()}]) -> Result when
     Result :: {ok, SpaceId :: binary()} | {error, Reason :: term()}.
 %% ====================================================================
@@ -54,13 +55,14 @@ create(Client, Parameters) ->
 %% remove/2
 %% ====================================================================
 %% @doc Removes Space.
+%% @end
 -spec remove(Client :: client(), SpaceId :: binary()) -> Result when
     Result :: ok | {error, Reason :: term()}.
 %% ====================================================================
 remove(Client, SpaceId) ->
     ?run(fun() ->
         URN = "/spaces/" ++ binary_to_list(SpaceId),
-        {ok, "204", _ResponseHeaders, _ResponseBody} = gr_endpoint:auth_request(Client, URN, delete),
+        {ok, "202", _ResponseHeaders, _ResponseBody} = gr_endpoint:auth_request(Client, URN, delete),
         ok
     end).
 
@@ -68,6 +70,7 @@ remove(Client, SpaceId) ->
 %% get_details/2
 %% ====================================================================
 %% @doc Returns public details about Space.
+%% @end
 -spec get_details(Client :: client(), SpaceId :: binary()) -> Result when
     Result :: {ok, SpaceInfo :: #space_details{}} | {error, Reason :: term()}.
 %% ====================================================================
@@ -88,6 +91,7 @@ get_details(Client, SpaceId) ->
 %% ====================================================================
 %% @doc Modifies public details about Space. Parameters may contain:
 %% "name" of Space.
+%% @end
 -spec modify_details(Client :: client(), SpaceId :: binary(), Parameters :: [{Key :: binary(), Value :: binary()}]) -> Result when
     Result :: ok | {error, Reason :: term()}.
 %% ====================================================================
@@ -103,6 +107,7 @@ modify_details(Client, SpaceId, Parameters) ->
 %% get_invite_user_token/2
 %% ====================================================================
 %% @doc Returns token that allows user to join Space.
+%% @end
 -spec get_invite_user_token(Client :: client(), SpaceId :: binary()) -> Result when
     Result :: {ok, Token :: binary()} | {error, Reason :: term()}.
 %% ====================================================================
@@ -119,6 +124,7 @@ get_invite_user_token(Client, SpaceId) ->
 %% get_invite_group_token/2
 %% ====================================================================
 %% @doc Returns token that allows group to join Space.
+%% @end
 -spec get_invite_group_token(Client :: client(), SpaceId :: binary()) -> Result when
     Result :: {ok, Token :: binary()} | {error, Reason :: term()}.
 %% ====================================================================
@@ -135,6 +141,7 @@ get_invite_group_token(Client, SpaceId) ->
 %% get_invite_provider_token/2
 %% ====================================================================
 %% @doc Returns token that allows provider to support Space.
+%% @end
 -spec get_invite_provider_token(Client :: client(), SpaceId :: binary()) -> Result when
     Result :: {ok, Token :: binary()} | {error, Reason :: term()}.
 %% ====================================================================
@@ -151,13 +158,14 @@ get_invite_provider_token(Client, SpaceId) ->
 %% remove_user/3
 %% ====================================================================
 %% @doc Removes user from Space.
+%% @end
 -spec remove_user(Client :: client(), SpaceId :: binary(), UserId :: binary()) -> Result when
     Result :: ok | {error, Reason :: term()}.
 %% ====================================================================
 remove_user(Client, SpaceId, UserId) ->
     ?run(fun() ->
         URN = "/spaces/" ++ binary_to_list(SpaceId) ++ "/users/" ++ binary_to_list(UserId),
-        {ok, "204", _ResponseHeaders, _ResponseBody} = gr_endpoint:auth_request(Client, URN, delete),
+        {ok, "202", _ResponseHeaders, _ResponseBody} = gr_endpoint:auth_request(Client, URN, delete),
         ok
     end).
 
@@ -165,6 +173,7 @@ remove_user(Client, SpaceId, UserId) ->
 %% get_users/2
 %% ====================================================================
 %% @doc Returns list of IDs of users that belong to Space.
+%% @end
 -spec get_users(Client :: client(), SpaceId :: binary()) -> Result when
     Result :: {ok, UserIds :: [binary()]} | {error, Reason :: term()}.
 %% ====================================================================
@@ -181,6 +190,7 @@ get_users(Client, SpaceId) ->
 %% get_user_details/3
 %% ====================================================================
 %% @doc Returns public details about user that belongs to Space.
+%% @end
 -spec get_user_details(Client :: client(), SpaceId :: binary(), UserId :: binary()) -> Result when
     Result :: {ok, UserInfo :: #user_details{}} | {error, Reason :: term()}.
 %% ====================================================================
@@ -200,6 +210,7 @@ get_user_details(Client, SpaceId, UserId) ->
 %% get_user_privileges/3
 %% ====================================================================
 %% @doc Returns list of privileges of user that belongs to Space.
+%% @end
 -spec get_user_privileges(Client :: client(), GroupId :: binary(), UserId :: binary()) -> Result when
     Result :: {ok, Privileges :: [space_privilege()]} | {error, Reason :: term()}.
 %% ====================================================================
@@ -217,6 +228,7 @@ get_user_privileges(Client, SpaceId, UserId) ->
 %% ====================================================================
 %% @doc Sets list of privileges for user that belongs to Space.
 %% Parameters should contain: list of "privileges" of type space_privilege().
+%% @end
 -spec set_user_privileges(Client :: client(), SpaceId :: binary(), UserId :: binary(), Parameters :: [{Key :: binary(), Value :: binary()}]) -> Result when
     Result :: ok | {error, Reason :: term()}.
 %% ====================================================================
@@ -232,13 +244,14 @@ set_user_privileges(Client, SpaceId, UserId, Parameters) ->
 %% remove_group/3
 %% ====================================================================
 %% @doc Removes group from Space.
+%% @end
 -spec remove_group(Client :: client(), SpaceId :: binary(), GroupId :: binary()) -> Result when
     Result :: ok | {error, Reason :: term()}.
 %% ====================================================================
 remove_group(Client, SpaceId, GroupId) ->
     ?run(fun() ->
         URN = "/spaces/" ++ binary_to_list(SpaceId) ++ "/groups/" ++ binary_to_list(GroupId),
-        {ok, "204", _ResponseHeaders, _ResponseBody} = gr_endpoint:auth_request(Client, URN, delete),
+        {ok, "202", _ResponseHeaders, _ResponseBody} = gr_endpoint:auth_request(Client, URN, delete),
         ok
     end).
 
@@ -246,6 +259,7 @@ remove_group(Client, SpaceId, GroupId) ->
 %% get_groups/2
 %% ====================================================================
 %% @doc Returns list of IDs of groups that belong to Space.
+%% @end
 -spec get_groups(Client :: client(), SpaceId :: binary()) -> Result when
     Result :: {ok, UserIds :: [binary()]} | {error, Reason :: term()}.
 %% ====================================================================
@@ -262,6 +276,7 @@ get_groups(Client, SpaceId) ->
 %% get_group_details/3
 %% ====================================================================
 %% @doc Returns public details about group that belongs to Space.
+%% @end
 -spec get_group_details(Client :: client(), SpaceId :: binary(), GroupId :: binary()) -> Result when
     Result :: {ok, GroupInfo :: #group_details{}} | {error, Reason :: term()}.
 %% ====================================================================
@@ -281,6 +296,7 @@ get_group_details(Client, SpaceId, GroupId) ->
 %% get_group_privileges/3
 %% ====================================================================
 %% @doc Returns list of privileges of group that belongs to Space.
+%% @end
 -spec get_group_privileges(Client :: client(), GroupId :: binary(), GroupId :: binary()) -> Result when
     Result :: {ok, Privileges :: [space_privilege()]} | {error, Reason :: term()}.
 %% ====================================================================
@@ -298,6 +314,7 @@ get_group_privileges(Client, SpaceId, GroupId) ->
 %% ====================================================================
 %% @doc Sets list of privileges for group that belongs to Space.
 %% Parameters should contain: list of "privileges" of type space_privilege().
+%% @end
 -spec set_group_privileges(Client :: client(), SpaceId :: binary(), GroupId :: binary(), Parameters :: [{Key :: binary(), Value :: binary()}]) -> Result when
     Result :: ok | {error, Reason :: term()}.
 %% ====================================================================
@@ -313,13 +330,14 @@ set_group_privileges(Client, SpaceId, GroupId, Parameters) ->
 %% remove_provider/3
 %% ====================================================================
 %% @doc Makes provider stop supporting Space.
+%% @end
 -spec remove_provider(Client :: client(), SpaceId :: binary(), ProviderId :: binary()) -> Result when
     Result :: ok | {error, Reason :: term()}.
 %% ====================================================================
 remove_provider(Client, SpaceId, ProviderId) ->
     ?run(fun() ->
         URN = "/spaces/" ++ binary_to_list(SpaceId) ++ "/providers/" ++ binary_to_list(ProviderId),
-        {ok, "204", _ResponseHeaders, _ResponseBody} = gr_endpoint:auth_request(Client, URN, delete),
+        {ok, "202", _ResponseHeaders, _ResponseBody} = gr_endpoint:auth_request(Client, URN, delete),
         ok
     end).
 
@@ -327,6 +345,7 @@ remove_provider(Client, SpaceId, ProviderId) ->
 %% get_providers/2
 %% ====================================================================
 %% @doc Returns list of IDs of providers that supports Space.
+%% @end
 -spec get_providers(Client :: client(), SpaceId :: binary()) -> Result when
     Result :: {ok, UserIds :: [binary()]} | {error, Reason :: term()}.
 %% ====================================================================
@@ -343,6 +362,7 @@ get_providers(Client, SpaceId) ->
 %% get_provider_details/3
 %% ====================================================================
 %% @doc Returns public details about provider that supports Space.
+%% @end
 -spec get_provider_details(Client :: client(), SpaceId :: binary(), ProviderId :: binary()) -> Result when
     Result :: {ok, ProviderInfo :: #provider_details{}} | {error, Reason :: term()}.
 %% ====================================================================

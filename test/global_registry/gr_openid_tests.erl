@@ -43,7 +43,7 @@ setup() ->
     meck:expect(gr_endpoint, auth_request, fun
         (client, "/openid/client/tokens", get) -> {ok, "200", response_headers, response_body};
         (client, "/openid/client/authorization_code", get) -> {ok, "200", response_headers, response_body};
-        (client, "/openid/client/tokens/accessId", delete) -> {ok, "204", response_headers, response_body}
+        (client, "/openid/client/tokens/accessId", delete) -> {ok, "202", response_headers, response_body}
     end),
     meck:expect(gr_endpoint, auth_request, fun
         (client, "/openid/client/verify", post, <<"body">>) -> {ok, "200", response_headers, response_body};

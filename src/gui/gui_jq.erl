@@ -38,7 +38,7 @@
 -export([focus/1, set_text/2, select_text/1, set_value/2, set_width/2, click/1, prop/3, css/3]).
 
 % Bootbox functions
--export([confirm_popup/2, info_popup/3, dialog_popup/3]).
+-export([confirm_popup/2, info_popup/3, info_popup/4, dialog_popup/3, dialog_popup/4]).
 
 
 %% ====================================================================
@@ -497,6 +497,7 @@ css(TargetID, PropertyName, Value) ->
 %% @doc Displays confirm popup using Bootbox API with custom message.
 %% In case of message confirmation it executes supplied script.
 %% NOTE! It is required to add bootbox.js script to web page.
+%% @end
 -spec confirm_popup(Message :: binary(), Script :: binary()) -> binary().
 %% ====================================================================
 confirm_popup(Message, Script) ->
@@ -510,19 +511,30 @@ confirm_popup(Message, Script) ->
 
 %% info_popup/3
 %% ====================================================================
+%% @equiv info_popup(Title, Message, Script, <<"btn-primary">>)
+%% @end
+-spec info_popup(Title :: binary(), Message :: binary(), Script :: binary()) -> binary().
+%% ====================================================================
+info_popup(Title, Message, Script) ->
+    info_popup(Title, Message, Script, <<"btn-primary">>).
+
+
+%% info_popup/4
+%% ====================================================================
 %% @doc Displays info popup using Bootbox API with custom title,
 %% message and "OK" button. In case of message confirmation it executes
 %% supplied script.
 %% NOTE! It is required to add bootbox.js script to web page.
--spec info_popup(Title :: binary(), Message :: binary(), Script :: binary()) -> binary().
+%% @end
+-spec info_popup(Title :: binary(), Message :: binary(), Script :: binary(), ConfirmButtonClass :: binary()) -> binary().
 %% ====================================================================
-info_popup(Title, Message, Script) ->
+info_popup(Title, Message, Script, ConfirmButtonClass) ->
     gui_jq:wire(<<"var box = bootbox.dialog({
         title: '", Title/binary, "',
         message: '", Message/binary, "',
         buttons: {
             'OK': {
-                className: 'btn-primary confirm',
+                className: '", ConfirmButtonClass/binary, " confirm',
                 callback: function() {", Script/binary, "}
             }
         }
@@ -531,13 +543,24 @@ info_popup(Title, Message, Script) ->
 
 %% dialog_popup/3
 %% ====================================================================
-%% @doc Displays info popup using Bootbox API with custom title,
-%% message and "OK", "Cancel" buttons. In case of message confirmation
-%% it executes supplied script.
-%% NOTE! It is required to add bootbox.js script to web page.
+%% @equiv dialog_popup(Title, Message, Script, <<"btn-primary">>)
+%% @end
 -spec dialog_popup(Title :: binary(), Message :: binary(), Script :: binary()) -> binary().
 %% ====================================================================
 dialog_popup(Title, Message, Script) ->
+    dialog_popup(Title, Message, Script, <<"btn-primary">>).
+
+
+%% dialog_popup/4
+%% ====================================================================
+%% @doc Displays info popup using Bootbox API with custom title,
+%% message and "OK", "Cancel" buttons. In case of message confirmation
+%% it executes supplied script. Allows to set confirm button class.
+%% NOTE! It is required to add bootbox.js script to web page.
+%% @end
+-spec dialog_popup(Title :: binary(), Message :: binary(), Script :: binary(), ConfirmButtonClass :: binary()) -> binary().
+%% ====================================================================
+dialog_popup(Title, Message, Script, ConfirmButtonClass) ->
     gui_jq:wire(<<"var box = bootbox.dialog({
         title: '", Title/binary, "',
         message: '", Message/binary, "',
@@ -546,7 +569,7 @@ dialog_popup(Title, Message, Script) ->
                 className: 'cancel'
             },
             'OK': {
-                className: 'btn-primary confirm',
+                className: '", ConfirmButtonClass/binary, " confirm',
                 callback: function() {", Script/binary, "}
             }
         }

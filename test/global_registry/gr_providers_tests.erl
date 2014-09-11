@@ -51,11 +51,11 @@ setup() ->
     meck:new(gr_endpoint),
     meck:expect(gr_endpoint, auth_request, fun
         (client, "/provider", get) -> {ok, "200", response_headers, response_body};
-        (client, "/provider", delete) -> {ok, "204", response_headers, response_body};
+        (client, "/provider", delete) -> {ok, "202", response_headers, response_body};
         (client, "/provider/providerId", get) -> {ok, "200", response_headers, response_body};
         (client, "/provider/spaces", get) -> {ok, "200", response_headers, response_body};
         (client, "/provider/spaces/spaceId", get) -> {ok, "200", response_headers, response_body};
-        (client, "/provider/spaces/spaceId", delete) -> {ok, "204", response_headers, response_body}
+        (client, "/provider/spaces/spaceId", delete) -> {ok, "202", response_headers, response_body}
     end),
     meck:expect(gr_endpoint, auth_request, fun
         (client, "/provider", patch, <<"body">>) -> {ok, "204", response_headers, response_body};

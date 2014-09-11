@@ -31,6 +31,7 @@
 %% get_client_authorization_code/1
 %% ====================================================================
 %% @doc Returns client authorization code.
+%% @end
 -spec get_client_authorization_code(Client :: client()) -> Result when
     Result :: {ok, AuthorizationCode :: binary()} | {error, Reason :: term()}.
 %% ====================================================================
@@ -47,6 +48,7 @@ get_client_authorization_code(Client) ->
 %% get_client_tokens/1
 %% ====================================================================
 %% @doc Returns list of client tokens details.
+%% @end
 -spec get_client_tokens(Client :: client()) -> Result when
     Result :: {ok, Tokens :: [#client_token{}]} | {error, Reason :: term()}.
 %% ====================================================================
@@ -69,13 +71,14 @@ get_client_tokens(Client) ->
 %% remove_client_token/2
 %% ====================================================================
 %% @doc Deletes client token.
+%% @end
 -spec remove_client_token(Client :: client(), AccessId :: binary()) -> Result when
     Result :: ok | {error, Reason :: term()}.
 %% ====================================================================
 remove_client_token(Client, AccessId) ->
     ?run(fun() ->
         URN = "/openid/client/tokens/" ++ binary_to_list(AccessId),
-        {ok, "204", _ResponseHeaders, _ResponseBody} = gr_endpoint:auth_request(Client, URN, delete),
+        {ok, "202", _ResponseHeaders, _ResponseBody} = gr_endpoint:auth_request(Client, URN, delete),
         ok
     end).
 
@@ -85,6 +88,7 @@ remove_client_token(Client, AccessId) ->
 %% @doc Verifies client identity in Global Registry.
 %% Parameters should contain: "userId" of client to be verified and
 %% associated with client "secret" token.
+%% @end
 -spec verify_client(Client :: client(), Parameters :: [{Key :: binary(), Value :: binary()}]) -> Result when
     Result :: {ok, VerifyStatus :: boolean()} | {error, Reason :: term()}.
 %% ====================================================================
@@ -104,6 +108,7 @@ verify_client(Client, Parameters) ->
 %% @doc Returns token response.
 %% Parameters should contain for: authorization "code" and "grant_type"
 %% of provided authorization code.
+%% @end
 -spec get_token_response(Client :: client(), Parameters :: [{Key :: binary(), Value :: binary()}]) -> Result when
     Result :: {ok, Tokens :: #token_response{}} | {error, Reason :: term()}.
 %% ====================================================================

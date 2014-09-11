@@ -30,6 +30,7 @@
 %% @doc Registers provider in Global Registry. Parameters should contain:
 %% "csr" that will be signed by Global Registry, "urls" to cluster nodes
 %% and "redirectionPoint" to provider's GUI.
+%% @end
 -spec register(Client :: client(), Parameters :: [{Key :: binary(), Value :: binary()}]) -> Result when
     Result :: {ok, ProviderId :: binary(), Cert :: binary()} | {error, Reason :: term()}.
 %% ====================================================================
@@ -48,13 +49,14 @@ register(Client, Parameters) ->
 %% unregister/1
 %% ====================================================================
 %% @doc Unregisters provider from Global Registry.
+%% @end
 -spec unregister(Client :: client()) -> Result when
     Result :: ok | {error, Reason :: term()}.
 %% ====================================================================
 unregister(Client) ->
     ?run(fun() ->
         URN = "/provider",
-        {ok, "204", _ResponseHeaders, _ResponseBody} = gr_endpoint:auth_request(Client, URN, delete),
+        {ok, "202", _ResponseHeaders, _ResponseBody} = gr_endpoint:auth_request(Client, URN, delete),
         ok
     end).
 
@@ -62,6 +64,7 @@ unregister(Client) ->
 %% get_details/1
 %% ====================================================================
 %% @doc Returns public details about provider.
+%% @end
 -spec get_details(Client :: client()) -> Result when
     Result :: {ok, ProviderInfo :: #provider_details{}} | {error, Reason :: term()}.
 %% ====================================================================
@@ -82,6 +85,7 @@ get_details(Client) ->
 %% get_details/2
 %% ====================================================================
 %% @doc Returns public details about given provider.
+%% @end
 -spec get_details(Client :: client(), ProviderId :: binary()) -> Result when
     Result :: {ok, ProviderInfo :: #provider_details{}} | {error, Reason :: term()}.
 %% ====================================================================
@@ -103,6 +107,7 @@ get_details(Client, ProviderId) ->
 %% ====================================================================
 %% @doc Modifies public details about provider. Parameters may contain:
 %% "urls" to cluster nodes and "redirectionPoint" to provider's GUI.
+%% @end
 -spec modify_details(Client :: client(), Parameters :: [{Key :: binary(), Value :: binary()}]) -> Result when
     Result :: ok | {error, Reason :: term()}.
 %% ====================================================================
@@ -161,6 +166,7 @@ check_port(Client, IpAddress, Port, Type) ->
 %% User/group that has given provider a token receives all privileges
 %% for new Space. Parameters should contain: "name" of new Space and
 %% "token" associated with user/group.
+%% @end
 -spec create_space(Client :: client(), Parameters :: [{Key :: binary(), Value :: binary()}]) -> Result when
     Result :: {ok, SpaceId :: binary()} | {error, Reason :: term()}.
 %% ====================================================================
@@ -178,6 +184,7 @@ create_space(Client, Parameters) ->
 %% ====================================================================
 %% @doc Makes provider support user's/group's Space that has given him a token.
 %% Parameters should contain: "token" associated with user/group.
+%% @end
 -spec support_space(Client :: client(), Parameters :: [{Key :: binary(), Value :: binary()}]) -> Result when
     Result :: {ok, SpaceId :: binary()} | {error, Reason :: term()}.
 %% ====================================================================
@@ -194,13 +201,14 @@ support_space(Client, Parameters) ->
 %% revoke_space_support/2
 %% ====================================================================
 %% @doc Makes provider stop supporting Space.
+%% @end
 -spec revoke_space_support(Client :: client(), SpaceId :: binary()) -> Result when
     Result :: ok | {error, Reason :: term()}.
 %% ====================================================================
 revoke_space_support(Client, SpaceId) ->
     ?run(fun() ->
         URN = "/provider/spaces/" ++ binary_to_list(SpaceId),
-        {ok, "204", _ResponseHeaders, _ResponseBody} = gr_endpoint:auth_request(Client, URN, delete),
+        {ok, "202", _ResponseHeaders, _ResponseBody} = gr_endpoint:auth_request(Client, URN, delete),
         ok
     end).
 
@@ -208,6 +216,7 @@ revoke_space_support(Client, SpaceId) ->
 %% get_spaces/1
 %% ====================================================================
 %% @doc Returns list of IDs of Spaces supported by provider.
+%% @end
 -spec get_spaces(Client :: client()) -> Result when
     Result :: {ok, SpaceIds :: [binary()]} | {error, Reason :: term()}.
 %% ====================================================================
@@ -224,6 +233,7 @@ get_spaces(Client) ->
 %% get_space_details/2
 %% ====================================================================
 %% @doc Returns public details about Space supported by provider.
+%% @end
 -spec get_space_details(Client :: client(), SpaceId :: binary()) -> Result when
     Result :: {ok, SpaceInfo :: #space_details{}} | {error, Reason :: term()}.
 %% ====================================================================
