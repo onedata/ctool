@@ -142,7 +142,7 @@ should_get_token_response() ->
             {<<"sub">>, <<"sub">>},
             {<<"aud">>, <<"aud">>},
             {<<"name">>, <<"name">>},
-            {<<"email">>, [[{<<"email">>, <<"email1">>}], [{<<"email">>, <<"email2">>}]]},
+            {<<"emails">>, [<<"email1">>, <<"email2">>]},
             {<<"exp">>, <<"exp">>},
             {<<"iat">>, <<"iat">>}
         ]
@@ -163,7 +163,7 @@ should_get_token_response() ->
                 sub = <<"sub">>,
                 aud = <<"aud">>,
                 name = <<"name">>,
-                email = [<<"email1">>, <<"email2">>],
+                emails = [<<"email1">>, <<"email2">>],
                 exp = <<"exp">>,
                 iat = <<"iat">>
             }

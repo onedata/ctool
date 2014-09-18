@@ -36,7 +36,7 @@
     sub :: binary(),
     aud :: binary(),
     name :: binary(),
-    email :: [binary()],
+    emails :: [binary()],
     exp :: binary(),
     iat :: binary()
 }).

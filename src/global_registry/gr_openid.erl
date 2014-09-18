@@ -139,9 +139,7 @@ get_token_response(Client, Parameters) ->
                 sub = proplists:get_value(<<"sub">>, IdTokenProplist),
                 aud = proplists:get_value(<<"aud">>, IdTokenProplist),
                 name = proplists:get_value(<<"name">>, IdTokenProplist),
-                email = lists:map(fun(EmailProplist) ->
-                    proplists:get_value(<<"email">>, EmailProplist)
-                end, proplists:get_value(<<"email">>, IdTokenProplist)),
+                emails = proplists:get_value(<<"emails">>, IdTokenProplist),
                 exp = proplists:get_value(<<"exp">>, IdTokenProplist),
                 iat = proplists:get_value(<<"iat">>, IdTokenProplist)
             }
