@@ -40,11 +40,11 @@
 %% @doc n2o session_handler callback, called before processing every request. Retrieves
 %% user's session from a cookie or creates a new session upon login.
 %% @end
--spec init(State :: term(), Ctx :: #context{}) -> {ok, NewState :: term(), NewCtx :: #context{}}.
+-spec init(State :: term(), Ctx :: #cx{}) -> {ok, NewState :: term(), NewCtx :: #cx{}}.
 %% ====================================================================
 init(State, Ctx) ->
-    Cookie = gui_ctx:cookie(?cookie_name, Ctx#context.req),
-    {Path, _} = cowboy_req:path(Ctx#context.req),
+    Cookie = gui_ctx:cookie(?cookie_name, Ctx#cx.req),
+    {Path, _} = cowboy_req:path(Ctx#cx.req),
 
     Module = get_session_logic_module(),
 
@@ -73,7 +73,7 @@ init(State, Ctx) ->
                         Module:save_session(Cookie, Props, Till),
                         Cookie
                 end,
-    {ok, State, Ctx#context{session = SessionID}}.
+    {ok, State, Ctx#cx{session = SessionID}}.
 
 
 %% finish/2
@@ -82,11 +82,11 @@ init(State, Ctx) ->
 %% there is a valid session in current context. Discards the session if not,
 %% or sets a session cookie if the session is to persist.
 %% @end
--spec finish(State :: term(), Ctx :: #context{}) -> {ok, NewState :: term(), NewCtx :: #context{}}.
+-spec finish(State :: term(), Ctx :: #cx{}) -> {ok, NewState :: term(), NewCtx :: #cx{}}.
 %% ====================================================================
 finish(_State, Ctx) ->
     Module = get_session_logic_module(),
-    SessionID = Ctx#context.session,
+    SessionID = Ctx#cx.session,
     NewReq = case get(?session_valid) of
                  true ->
                      % Session is valid, set session_id cookie
@@ -96,7 +96,7 @@ finish(_State, Ctx) ->
                          {secure, true},
                          {http_only, true}
                      ],
-                     cowboy_req:set_resp_cookie(?cookie_name, SessionID, Options, Ctx#context.req);
+                     cowboy_req:set_resp_cookie(?cookie_name, SessionID, Options, Ctx#cx.req);
                  false ->
                      % Session is not valid, discard current session and set "no_session" cookie value
                      % as well as set max_age to 0, which should delete the cookie on client's side.
@@ -107,9 +107,9 @@ finish(_State, Ctx) ->
                          {secure, true},
                          {http_only, true}
                      ],
-                     cowboy_req:set_resp_cookie(?cookie_name, ?no_session_cookie, Options, Ctx#context.req)
+                     cowboy_req:set_resp_cookie(?cookie_name, ?no_session_cookie, Options, Ctx#cx.req)
              end,
-    {ok, [], Ctx#context{req = NewReq}}.
+    {ok, [], Ctx#cx{req = NewReq}}.
 
 
 %% set_value/2
@@ -123,7 +123,7 @@ finish(_State, Ctx) ->
 set_value(Key, Value) ->
     try
         Module = get_session_logic_module(),
-        SessionID = ?CTX#context.session,
+        SessionID = ?CTX#cx.session,
         Props = lookup_session(SessionID),
         Module:save_session(SessionID, [{Key, Value} | proplists:delete(Key, Props)], undefined),
         Value
@@ -143,7 +143,7 @@ set_value(Key, Value) ->
 %% ====================================================================
 get_value(Key, DefaultValue) ->
     try
-        Props = lookup_session(?CTX#context.session),
+        Props = lookup_session(?CTX#cx.session),
         proplists:get_value(Key, Props, DefaultValue)
     catch
         _:_ ->
@@ -173,7 +173,7 @@ create() ->
 %% ====================================================================
 clear() ->
     put(?session_valid, false),
-    delete_session(?CTX#context.session),
+    delete_session(?CTX#cx.session),
     ok.
 
 

@@ -129,7 +129,7 @@ get_requested_page() ->
 %% ====================================================================
 get_request_params() ->
     try
-        ?CTX#context.params
+        ?CTX#cx.params
     catch _:_ ->
         []
     end.
