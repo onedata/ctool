@@ -69,7 +69,7 @@ function encode(o) { return BERT + en_inner(o); };
 function en_inner(Obj) { if(Obj === undefined) return NIL; var func = 'en_' + typeof(Obj); return eval(func)(Obj); };
 function en_string(Obj) { return STR + itol(Obj.length, 2) + Obj; };
 function en_boolean(Obj) { if (Obj) return en_inner(atom("true")); else return en_inner(atom("false")); };
-function en_number(Obj) { var s, isi = (Obj % 1 === 0); if (!isi) { return en_float(Obj); }
+function en_number(Obj) { var isi = (Obj % 1 === 0); if (!isi) { return en_float(Obj); }
     if (isi && Obj >= 0 && Obj < 256) { return SINT + itol(Obj, 1); }
     return INT + itol(Obj, 4); };
 function en_float(Obj) { var s = Obj.toExponential(); while (s.length < 31) { s += ZERO; } return FLOAT + s; };
@@ -164,3 +164,20 @@ function de_tuple(S, Count) {
     for (i = 0; i < Size; i++) { El = de_inner(S); Arr.push(El.value); S = El.rest; }
     return { value: tuple(Arr), rest: S }; };
 function de_nil(S) { return { value: [], rest: S }; };
+
+var $bert = {};
+
+$bert.on = function onbert(evt, callback) // BERT formatter
+{
+    console.log("Bert On");
+    var reader = new FileReader();
+    reader.addEventListener("loadend", function() {
+        try {
+            var erlang = dec(reader.result);
+            if (typeof callback  == 'function') callback(erlang);
+        } catch (e) { return { status: "error", desc: e }; }
+    });
+    reader.readAsArrayBuffer(evt.data);
+
+    return { status: "ok" };
+};

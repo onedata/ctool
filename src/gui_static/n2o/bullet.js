@@ -1,3 +1,6 @@
+
+// N2O Bullet
+
 function bullet(url) {
 
     var CONNECTING = 0;
@@ -10,7 +13,6 @@ function bullet(url) {
         websocket: function() {
             var transport = null;
             if (window.WebSocket) { transport = window.WebSocket; }
-            if (window.MozWebSocket) { transport = window.MozWebSocket; }
             if (transport) { return {'heart': true, 'transport': transport}; }
             return null;
         },
@@ -38,7 +40,7 @@ function bullet(url) {
                     request.setRequestHeader('Content-Type',
                         'application/x-www-form-urlencoded; charset=utf-8');
                     request.setRequestHeader('X-Socket-Transport','xhrPolling');
-                    request.onload = function() { fake.receive(request.response); }
+                    request.onload = function() { fake.receive(request.response); };
                     request.send(data);
                     return true;
                 },
@@ -61,8 +63,8 @@ function bullet(url) {
                 request.setRequestHeader('Content-Type',
                     'application/x-www-form-urlencoded; charset=utf-8');
                 request.setRequestHeader('X-Socket-Transport','xhrPolling');
-                request.onload = function() { fake.receive(request.response); }
-                request.onerror = function() { fake.onerror(); }
+                request.onload = function() { fake.receive(request.response); };
+                request.onerror = function() { fake.onerror(); };
                 request.send({});
             }
 
@@ -114,7 +116,7 @@ function bullet(url) {
             transport.onopen = function() {
                 delay = delayDefault;
 
-                if (transport.heart) {
+                if (transport.heart) { 
                     heartbeat = setInterval(function(){stream.onheartbeat();}, 4000);
                 }
 
@@ -140,7 +142,7 @@ function bullet(url) {
             };
             transport.onerror = transport.onclose;
             transport.onmessage = function(e){
-                stream.onmessage(e);
+            stream.onmessage(e);
             };
         }
 
