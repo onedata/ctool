@@ -35,7 +35,7 @@
 %% ====================================================================
 spawn(CometFun) ->
     % Get session ID so comet process can write/read from session memory
-    #cx{session = Session} = ?CTX,
+    #context{session = Session} = ?CTX,
     % Prevent comet and supervisor from killing the calling process on crash
     process_flag(trap_exit, true),
     % Spawn comet process, _link so it will die if the calling process craches
@@ -54,7 +54,7 @@ spawn(CometFun) ->
 init_comet(OwnerPid, Fun, SessionID) ->
     put(ws_process, OwnerPid),
     Context = wf_context:init_context([]),
-    wf_context:context(Context#cx{session = SessionID}),
+    wf_context:context(Context#context{session = SessionID}),
     Fun().
 
 
