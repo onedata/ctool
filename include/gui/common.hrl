@@ -22,6 +22,7 @@
     label_id,
     label_class,
     label_style,
+    label_title,
     autofocus,
     checked=false,
     disabled,

@@ -87,6 +87,7 @@ render_element(Record) ->
         {<<"id">>, Record#flatui_checkbox.label_id},
         {<<"class">>, Record#flatui_checkbox.label_class},
         {<<"style">>, Record#flatui_checkbox.label_style},
+        {<<"title">>, Record#flatui_checkbox.label_title},
         {<<"for">>, Id}]).
 
 
