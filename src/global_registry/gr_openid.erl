@@ -102,8 +102,8 @@ verify_client(Client, Parameters) ->
 %% get_token_response/2
 %% ====================================================================
 %% @doc Returns token response.
-%% Parameters should contain for: authorization "code" and "grant_type"
-%% of provided authorization code.
+%% Parameters should contain for: "grant_type" and authorization "code" or
+%% "refresh_token".
 %% @end
 -spec get_token_response(Client :: client(), Parameters :: [{Key :: binary(), Value :: binary()}]) -> Result when
     Result :: {ok, Tokens :: #token_response{}} | {error, Reason :: term()}.
