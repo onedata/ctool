@@ -12,11 +12,11 @@
 -ifndef(GR_OPENID_HRL).
 -define(GR_OPENID_HRL, 1).
 
-%% @doc client_token record contains following fields:
+%% @doc token_details record contains following fields:
 %% * access_id   - unique access ID authorized by client
 %% * client_name - client name associated with token
 %% @end
--record(client_token, {
+-record(token_details, {
     access_id :: binary(),
     client_name :: binary()
 }).
