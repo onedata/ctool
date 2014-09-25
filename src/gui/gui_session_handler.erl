@@ -124,9 +124,14 @@ set_value(Key, Value) ->
     try
         Module = get_session_logic_module(),
         SessionID = ?CTX#context.session,
-        Props = lookup_session(SessionID),
-        Module:save_session(SessionID, [{Key, Value} | proplists:delete(Key, Props)], undefined),
-        Value
+        case lookup_session(SessionID) of
+            Props when is_list(Props) ->
+                Module:save_session(SessionID, [{Key, Value} | proplists:delete(Key, Props)], undefined),
+                Value;
+            _ ->
+                ?error("Cannot save data in session memory: '~p' is not a valid session."),
+                throw(invalid_session)
+        end
     catch T:M ->
         ?error_stacktrace("Cannot save data in session memory - ~p:~p", [T, M]),
         throw({T, M})
