@@ -24,12 +24,18 @@
     label_style,
     label_title,
     autofocus,
-    checked=false,
+    checked = false,
     disabled,
     form,
     name,
     required,
     value,
+    postback
+}).
+
+-record(flatui_label, {?ELEMENT_BASE(flatui_label),
+    for,
+    form,
     postback
 }).
 
