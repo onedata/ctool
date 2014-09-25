@@ -17,6 +17,28 @@
 
 %% Any custom element records should go here.
 
+% FlatUI compliant checkbox
+-record(flatui_checkbox, {?ELEMENT_BASE(flatui_checkbox),
+    label_id,
+    label_class,
+    label_style,
+    label_title,
+    autofocus,
+    checked = false,
+    disabled,
+    form,
+    name,
+    required,
+    value,
+    postback
+}).
+
+-record(flatui_label, {?ELEMENT_BASE(flatui_label),
+    for,
+    form,
+    postback
+}).
+
 %% Includes from cowboy
 -type req() :: cowboy_req:req().
 -export_type([req/0]).
