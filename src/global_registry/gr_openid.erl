@@ -16,76 +16,86 @@
 -include("global_registry/gr_openid.hrl").
 
 %% API
--export([get_tokens/1, revoke_token/2, modify_token_details/3]).
+-export([get_client_tokens/1, revoke_client_token/2, modify_client_token_details/3]).
+-export([get_provider_tokens/1, revoke_provider_token/2, modify_provider_token_details/3]).
 -export([get_client_authorization_code/1, verify_client/2, get_token_response/2]).
-
 
 %% ====================================================================
 %% API functions
 %% ====================================================================
 
-%% get_tokens/1
+%% get_client_tokens/1
 %% ====================================================================
-%% @doc Returns list of token details for client or provider.
+%% @doc Returns list of clients' token details.
 %% @end
--spec get_tokens(Client :: client()) -> Result when
+-spec get_client_tokens(Client :: client()) -> Result when
     Result :: {ok, Tokens :: [#token_details{}]} | {error, Reason :: term()}.
 %% ====================================================================
-get_tokens(Client) ->
-    ?run(fun() ->
-        URN = case Client of
-                  provider -> "/openid/provider/tokens";
-                  _ -> "/openid/client/tokens"
-              end,
-        {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:auth_request(Client, URN, get),
-        Proplist = mochijson2:decode(ResponseBody, [{format, proplist}]),
-        TokenInfo = proplists:get_value(<<"tokenInfo">>, Proplist),
-        Tokens = lists:map(fun(Token) ->
-            #token_details{
-                access_id = proplists:get_value(<<"accessId">>, Token),
-                client_name = proplists:get_value(<<"clientName">>, Token)
-            }
-        end, TokenInfo),
-        {ok, Tokens}
-    end).
+get_client_tokens(Client) ->
+    URN = "/openid/client/tokens",
+    get_tokens(Client, URN).
 
 
-%% revoke_token/2
+%% revoke_client_token/2
 %% ====================================================================
-%% @doc Revokes token validity for client or provider.
+%% @doc Revokes client's token validity.
 %% @end
--spec revoke_token(Client :: client(), AccessId :: binary()) -> Result when
+-spec revoke_client_token(Client :: client(), AccessId :: binary()) -> Result when
     Result :: ok | {error, Reason :: term()}.
 %% ====================================================================
-revoke_token(Client, AccessId) ->
-    ?run(fun() ->
-        URN = case Client of
-                  provider -> "/openid/provider/tokens/" ++ binary_to_list(AccessId);
-                  _ -> "/openid/client/tokens/" ++ binary_to_list(AccessId)
-              end,
-        {ok, "202", _ResponseHeaders, _ResponseBody} = gr_endpoint:auth_request(Client, URN, delete),
-        ok
-    end).
+revoke_client_token(Client, AccessId) ->
+    URN = "/openid/client/tokens/" ++ binary_to_list(AccessId),
+    revoke_token(Client, URN).
 
 
-%% modify_token_details/3
+%% modify_client_token_details/3
 %% ====================================================================
-%% @doc Modifies public details about token. Parameters may contain:
-%% "clientName" of token.
+%% @doc Modifies public details about client's token.
+%% Parameters may contain: token's "clientName".
 %% @end
--spec modify_token_details(Client :: client(), GroupId :: binary(), Parameters :: [{Key :: binary(), Value :: binary()}]) -> Result when
+-spec modify_client_token_details(Client :: client(), AccessId :: binary(), Parameters :: [{Key :: binary(), Value :: binary()}]) -> Result when
     Result :: ok | {error, Reason :: term()}.
 %% ====================================================================
-modify_token_details(Client, AccessId, Parameters) ->
-    ?run(fun() ->
-        URN = case Client of
-                  provider -> "/openid/provider/tokens/" ++ binary_to_list(AccessId);
-                  _ -> "/openid/client/tokens/" ++ binary_to_list(AccessId)
-              end,
-        Body = iolist_to_binary(mochijson2:encode(Parameters)),
-        {ok, "204", _ResponseHeaders, _ResponseBody} = gr_endpoint:auth_request(Client, URN, patch, Body),
-        ok
-    end).
+modify_client_token_details(Client, AccessId, Parameters) ->
+    URN = "/openid/client/tokens/" ++ binary_to_list(AccessId),
+    modify_token_details(Client, URN, Parameters).
+
+
+%% get_provider_tokens/1
+%% ====================================================================
+%% @doc Returns list of providers' token details.
+%% @end
+-spec get_provider_tokens(Client :: client()) -> Result when
+    Result :: {ok, Tokens :: [#token_details{}]} | {error, Reason :: term()}.
+%% ====================================================================
+get_provider_tokens(Client) ->
+    URN = "/openid/provider/tokens",
+    get_tokens(Client, URN).
+
+
+%% revoke_provider_token/2
+%% ====================================================================
+%% @doc Revokes provider's token validity.
+%% @end
+-spec revoke_provider_token(Client :: client(), AccessId :: binary()) -> Result when
+    Result :: ok | {error, Reason :: term()}.
+%% ====================================================================
+revoke_provider_token(Client, AccessId) ->
+    URN = "/openid/provider/tokens/" ++ binary_to_list(AccessId),
+    revoke_token(Client, URN).
+
+
+%% modify_provider_token_details/3
+%% ====================================================================
+%% @doc Modifies public details about provider's token. 
+%% Parameters may contain: token's "clientName".
+%% @end
+-spec modify_provider_token_details(Client :: client(), AccessId :: binary(), Parameters :: [{Key :: binary(), Value :: binary()}]) -> Result when
+    Result :: ok | {error, Reason :: term()}.
+%% ====================================================================
+modify_provider_token_details(Client, AccessId, Parameters) ->
+    URN = "/openid/provider/tokens/" ++ binary_to_list(AccessId),
+    modify_token_details(Client, URN, Parameters).
 
 
 %% get_client_authorization_code/1
@@ -168,4 +178,60 @@ get_token_response(Client, Parameters) ->
             }
         },
         {ok, TokenResponse}
+    end).
+
+
+%% ====================================================================
+%% Internal functions
+%% ====================================================================
+
+%% get_tokens/2
+%% ====================================================================
+%% @doc Returns list of token details for client or provider.
+%% @end
+-spec get_tokens(Client :: client(), URN :: string()) -> Result when
+    Result :: {ok, Tokens :: [#token_details{}]} | {error, Reason :: term()}.
+%% ====================================================================
+get_tokens(Client, URN) ->
+    ?run(fun() ->
+        {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:auth_request(Client, URN, get),
+        Proplist = mochijson2:decode(ResponseBody, [{format, proplist}]),
+        TokenInfo = proplists:get_value(<<"tokenInfo">>, Proplist),
+        Tokens = lists:map(fun(Token) ->
+            #token_details{
+                access_id = proplists:get_value(<<"accessId">>, Token),
+                client_name = proplists:get_value(<<"clientName">>, Token)
+            }
+        end, TokenInfo),
+        {ok, Tokens}
+    end).
+
+
+%% revoke_token/2
+%% ====================================================================
+%% @doc Revokes token validity for client or provider.
+%% @end
+-spec revoke_token(Client :: client(), URN :: string()) -> Result when
+    Result :: ok | {error, Reason :: term()}.
+%% ====================================================================
+revoke_token(Client, URN) ->
+    ?run(fun() ->
+        {ok, "202", _ResponseHeaders, _ResponseBody} = gr_endpoint:auth_request(Client, URN, delete),
+        ok
+    end).
+
+
+%% modify_token_details/3
+%% ====================================================================
+%% @doc Modifies public details about token. Parameters may contain:
+%% token's "clientName".
+%% @end
+-spec modify_token_details(Client :: client(), URN :: string(), Parameters :: [{Key :: binary(), Value :: binary()}]) -> Result when
+    Result :: ok | {error, Reason :: term()}.
+%% ====================================================================
+modify_token_details(Client, URN, Parameters) ->
+    ?run(fun() ->
+        Body = iolist_to_binary(mochijson2:encode(Parameters)),
+        {ok, "204", _ResponseHeaders, _ResponseBody} = gr_endpoint:auth_request(Client, URN, patch, Body),
+        ok
     end).

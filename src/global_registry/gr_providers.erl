@@ -29,7 +29,7 @@
 %% ====================================================================
 %% @doc Registers provider in Global Registry. Parameters should contain:
 %% "csr" that will be signed by Global Registry, "urls" to cluster nodes
-%% and "redirectionPoint" to provider's GUI.
+%% "redirectionPoint" to provider's GUI and "clientName".
 %% @end
 -spec register(Client :: client(), Parameters :: [{Key :: binary(), Value :: binary()}]) -> Result when
     Result :: {ok, ProviderId :: binary(), Cert :: binary()} | {error, Reason :: term()}.

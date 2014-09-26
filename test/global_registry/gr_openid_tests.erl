@@ -45,15 +45,14 @@ setup() ->
         (client, "/openid/client/tokens", get) -> {ok, "200", response_headers, response_body};
         (client, "/openid/client/tokens/accessId", delete) -> {ok, "202", response_headers, response_body};
         (client, "/openid/client/authorization_code", get) -> {ok, "200", response_headers, response_body};
-        (provider, "/openid/provider/tokens", get) -> {ok, "200", response_headers, response_body};
-        (provider, "/openid/provider/tokens/accessId", delete) -> {ok, "202", response_headers, response_body}
+        (client, "/openid/provider/tokens", get) -> {ok, "200", response_headers, response_body};
+        (client, "/openid/provider/tokens/accessId", delete) -> {ok, "202", response_headers, response_body}
     end),
     meck:expect(gr_endpoint, auth_request, fun
         (client, "/openid/client/verify", post, <<"body">>) -> {ok, "200", response_headers, response_body};
         (client, "/openid/client/tokens/accessId", patch, <<"body">>) -> {ok, "204", response_headers, response_body};
-        (provider, "/openid/provider/tokens", post, <<"body">>) -> {ok, "200", response_headers, response_body};
-        (provider, "/openid/provider/tokens/accessId", patch, <<"body">>) ->
-            {ok, "204", response_headers, response_body}
+        (client, "/openid/provider/tokens/accessId", patch, <<"body">>) -> {ok, "204", response_headers, response_body};
+        (provider, "/openid/provider/tokens", post, <<"body">>) -> {ok, "200", response_headers, response_body}
     end),
     meck:expect(gr_endpoint, noauth_request, fun
         (client, "/openid/client/tokens", post, <<"body">>) -> {ok, "200", response_headers, response_body}
@@ -83,8 +82,8 @@ should_get_tokens() ->
         ]}]
     end),
 
-    lists:foreach(fun(Client) ->
-        Answer = gr_openid:get_tokens(Client),
+    lists:foreach(fun(Function) ->
+        Answer = gr_openid:Function(client),
         ?assertEqual({ok, [
             #token_details{
                 access_id = <<"accessId1">>,
@@ -95,27 +94,27 @@ should_get_tokens() ->
                 client_name = <<"clientName2">>
             }
         ]}, Answer)
-    end, [client, provider]),
+    end, [get_client_tokens, get_provider_tokens]),
 
     ?assert(meck:validate(mochijson2)),
     ok = meck:unload(mochijson2).
 
 
 should_revoke_token() ->
-    lists:foreach(fun(Client) ->
-        Answer = gr_openid:revoke_token(Client, <<"accessId">>),
+    lists:foreach(fun(Function) ->
+        Answer = gr_openid:Function(client, <<"accessId">>),
         ?assertEqual(ok, Answer)
-    end, [client, provider]).
+    end, [revoke_client_token, revoke_provider_token]).
 
 
 should_modify_token_details() ->
     meck:new(mochijson2),
     meck:expect(mochijson2, encode, fun(parameters) -> <<"body">> end),
 
-    lists:foreach(fun(Client) ->
-        Answer = gr_openid:modify_token_details(Client, <<"accessId">>, parameters),
+    lists:foreach(fun(Function) ->
+        Answer = gr_openid:Function(client, <<"accessId">>, parameters),
         ?assertEqual(ok, Answer)
-    end, [client, provider]),
+    end, [modify_client_token_details, modify_provider_token_details]),
 
     ?assert(meck:validate(mochijson2)),
     ok = meck:unload(mochijson2).
