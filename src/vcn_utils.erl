@@ -17,6 +17,25 @@
 %% API functions
 %% ====================================================================
 
+%% binary_join/2
+%% %% ====================================================================
+%% %% @doc Joins bineries with Separator
+%% %% @end
+-spec binary_join(Binaries :: [binary()], Separator :: binary()) -> binary().
+binary_join([], _Sep) ->
+    <<>>;
+binary_join([Part], _Sep) ->
+    Part;
+binary_join(List, Sep) ->
+    lists:foldr(
+        fun(A, B) ->
+            case B of 
+                <<>> -> A;
+                B    -> <<A/binary, Sep/binary, B/binary>>
+            end
+        end, <<>>, List).
+
+
 %% ensure_running/1
 %% ====================================================================
 %% @doc Ensures that Application is started. See {@link application}
