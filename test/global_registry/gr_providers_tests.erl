@@ -60,14 +60,16 @@ setup() ->
     meck:expect(gr_endpoint, auth_request, fun
         (client, "/provider", patch, <<"body">>) -> {ok, "204", response_headers, response_body};
         (client, "/provider/spaces", post, <<"body">>) -> {ok, "201", [{"location", "/spaces/spaceId"}], response_body};
-        (client, "/provider/spaces/support", post, <<"body">>) -> {ok, "201", [{"location", "/provider/spaces/spaceId"}], response_body}
+        (client, "/provider/spaces/support", post, <<"body">>) ->
+            {ok, "201", [{"location", "/provider/spaces/spaceId"}], response_body}
     end),
     meck:expect(gr_endpoint, noauth_request, fun
         (client, "/provider", post, <<"body">>) -> {ok, "200", response_headers, response_body};
         (client, "/provider/test/check_my_ports", get, <<"body">>) -> {ok, "200", response_headers, response_body}
     end),
     meck:expect(gr_endpoint, noauth_request, fun
-        (client, "/provider/test/check_my_ip", get, [], [{connect_timeout, connect_timeout}]) -> {ok, "200", response_headers, response_body}
+        (client, "/provider/test/check_my_ip", get, [], [{connect_timeout, connect_timeout}]) ->
+            {ok, "200", response_headers, response_body}
     end).
 
 
@@ -106,6 +108,7 @@ should_get_details() ->
     meck:expect(mochijson2, decode, fun
         (response_body, [{format, proplist}]) -> [
             {<<"providerId">>, <<"providerId">>},
+            {<<"clientName">>, <<"name">>},
             {<<"urls">>, <<"urls">>},
             {<<"redirectionPoint">>, <<"redirectionPoint">>}
         ]
@@ -115,6 +118,7 @@ should_get_details() ->
     ?assertEqual({ok, #provider_details{
         id = <<"providerId">>,
         urls = <<"urls">>,
+        name = <<"name">>,
         redirection_point = <<"redirectionPoint">>}
     }, Answer),
 
@@ -127,6 +131,7 @@ should_get_details_for_given_provider() ->
     meck:expect(mochijson2, decode, fun
         (response_body, [{format, proplist}]) -> [
             {<<"providerId">>, <<"providerId">>},
+            {<<"clientName">>, <<"name">>},
             {<<"urls">>, <<"urls">>},
             {<<"redirectionPoint">>, <<"redirectionPoint">>}
         ]
@@ -135,6 +140,7 @@ should_get_details_for_given_provider() ->
     Answer = gr_providers:get_details(client, <<"providerId">>),
     ?assertEqual({ok, #provider_details{
         id = <<"providerId">>,
+        name = <<"name">>,
         urls = <<"urls">>,
         redirection_point = <<"redirectionPoint">>}
     }, Answer),

@@ -75,6 +75,7 @@ get_details(Client) ->
         Proplist = mochijson2:decode(ResponseBody, [{format, proplist}]),
         ProviderInfo = #provider_details{
             id = proplists:get_value(<<"providerId">>, Proplist),
+            name = proplists:get_value(<<"clientName">>, Proplist),
             urls = proplists:get_value(<<"urls">>, Proplist),
             redirection_point = proplists:get_value(<<"redirectionPoint">>, Proplist)
         },
@@ -96,6 +97,7 @@ get_details(Client, ProviderId) ->
         Proplist = mochijson2:decode(ResponseBody, [{format, proplist}]),
         ProviderInfo = #provider_details{
             id = proplists:get_value(<<"providerId">>, Proplist),
+            name = proplists:get_value(<<"clientName">>, Proplist),
             urls = proplists:get_value(<<"urls">>, Proplist),
             redirection_point = proplists:get_value(<<"redirectionPoint">>, Proplist)
         },
