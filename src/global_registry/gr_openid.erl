@@ -19,10 +19,6 @@
 -export([get_client_authorization_code/1, get_client_tokens/1, remove_client_token/2, verify_client/2]).
 -export([get_token_response/2]).
 
-%% Test API
--ifdef(TEST).
--export([base64decode/1]).
--endif.
 
 %% ====================================================================
 %% API functions
@@ -106,8 +102,9 @@ verify_client(Client, Parameters) ->
 %% get_token_response/2
 %% ====================================================================
 %% @doc Returns token response.
-%% Parameters should contain for: authorization "code" and "grant_type"
-%% of provided authorization code.
+%% Parameters should contain: "grant_type" (either "code" or "refresh_token")
+%% and "code" (if grant_type=code) or "refresh_token"
+%% (if grant_type=refresh_token).
 %% @end
 -spec get_token_response(Client :: client(), Parameters :: [{Key :: binary(), Value :: binary()}]) -> Result when
     Result :: {ok, Tokens :: #token_response{}} | {error, Reason :: term()}.
@@ -127,7 +124,7 @@ get_token_response(Client, Parameters) ->
         Proplist = mochijson2:decode(ResponseBody, [{format, proplist}]),
         IdToken = proplists:get_value(<<"id_token">>, Proplist),
         [_Header, Payload, _Signature] = binary:split(IdToken, <<".">>, [global]),
-        IdTokenProplist = mochijson2:decode(base64decode(Payload), [{format, proplist}]),
+        IdTokenProplist = mochijson2:decode(mochiweb_base64url:decode(Payload), [{format, proplist}]),
         TokenResponse = #token_response{
             access_token = proplists:get_value(<<"access_token">>, Proplist),
             token_type = proplists:get_value(<<"token_type">>, Proplist),
@@ -139,45 +136,10 @@ get_token_response(Client, Parameters) ->
                 sub = proplists:get_value(<<"sub">>, IdTokenProplist),
                 aud = proplists:get_value(<<"aud">>, IdTokenProplist),
                 name = proplists:get_value(<<"name">>, IdTokenProplist),
-                email = lists:map(fun(EmailProplist) ->
-                    proplists:get_value(<<"email">>, EmailProplist)
-                end, proplists:get_value(<<"email">>, IdTokenProplist)),
+                emails = proplists:get_value(<<"emails">>, IdTokenProplist),
                 exp = proplists:get_value(<<"exp">>, IdTokenProplist),
                 iat = proplists:get_value(<<"iat">>, IdTokenProplist)
             }
         },
         {ok, TokenResponse}
     end).
-
-%% ====================================================================
-%% Internal functions
-%% ====================================================================
-
-%% base64decode/0
-%% ====================================================================
-%% @doc
-%% Decodes a base64 encoded term.
-%% @end
--spec base64decode(binary() | string()) -> term().
-%% ====================================================================
-base64decode(Bin) when is_binary(Bin) ->
-    Bin2 = case byte_size(Bin) rem 4 of
-               2 -> <<Bin/binary, "==">>;
-               3 -> <<Bin/binary, "=">>;
-               _ -> Bin
-           end,
-    base64:decode(<<<<(urldecode_digit(D))>> || <<D>> <= Bin2>>);
-base64decode(L) when is_list(L) ->
-    base64decode(iolist_to_binary(L)).
-
-
-%% urldecode_digit/0
-%% ====================================================================
-%% @doc
-%% Urlencodes a single char in base64.
-%% @end
--spec urldecode_digit(binary()) -> binary().
-%% ====================================================================
-urldecode_digit($_) -> $/;
-urldecode_digit($-) -> $+;
-urldecode_digit(D) -> D.
