@@ -18,6 +18,7 @@
 %% * redirectionPoint - URL address where VeilCluster GUI is available of all VeilCluster nodes
 -record(provider_details, {
     id :: binary(),
+    name :: binary(),
     redirection_point :: binary(),
     urls :: [URL :: binary()]
 }).

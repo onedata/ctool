@@ -79,8 +79,10 @@ setup() ->
     meck:expect(gr_endpoint, auth_request, fun
         (client, "/spaces", post, <<"body">>) -> {ok, "201", [{"location", "/spaces/spaceId"}], response_body};
         (client, "/spaces/spaceId", patch, <<"body">>) -> {ok, "204", response_headers, response_body};
-        (client, "/spaces/spaceId/users/userId/privileges", put, <<"body">>) -> {ok, "204", response_headers, response_body};
-        (client, "/spaces/spaceId/groups/groupId/privileges", put, <<"body">>) -> {ok, "204", response_headers, response_body}
+        (client, "/spaces/spaceId/users/userId/privileges", put, <<"body">>) ->
+            {ok, "204", response_headers, response_body};
+        (client, "/spaces/spaceId/groups/groupId/privileges", put, <<"body">>) ->
+            {ok, "204", response_headers, response_body}
     end).
 
 
@@ -302,6 +304,7 @@ should_get_provider_details() ->
     meck:expect(mochijson2, decode, fun
         (response_body, [{format, proplist}]) -> [
             {<<"providerId">>, <<"providerId">>},
+            {<<"clientName">>, <<"name">>},
             {<<"urls">>, <<"urls">>},
             {<<"redirectionPoint">>, <<"redirectionPoint">>}
         ]
@@ -310,6 +313,7 @@ should_get_provider_details() ->
     Answer = gr_spaces:get_provider_details(client, <<"spaceId">>, <<"providerId">>),
     ?assertEqual({ok, #provider_details{
         id = <<"providerId">>,
+        name = <<"name">>,
         urls = <<"urls">>,
         redirection_point = <<"redirectionPoint">>}
     }, Answer),

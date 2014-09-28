@@ -29,7 +29,7 @@
 %% ====================================================================
 %% @doc Registers provider in Global Registry. Parameters should contain:
 %% "csr" that will be signed by Global Registry, "urls" to cluster nodes
-%% and "redirectionPoint" to provider's GUI.
+%% "redirectionPoint" to provider's GUI and "clientName".
 %% @end
 -spec register(Client :: client(), Parameters :: [{Key :: binary(), Value :: binary()}]) -> Result when
     Result :: {ok, ProviderId :: binary(), Cert :: binary()} | {error, Reason :: term()}.
@@ -75,6 +75,7 @@ get_details(Client) ->
         Proplist = mochijson2:decode(ResponseBody, [{format, proplist}]),
         ProviderInfo = #provider_details{
             id = proplists:get_value(<<"providerId">>, Proplist),
+            name = proplists:get_value(<<"clientName">>, Proplist),
             urls = proplists:get_value(<<"urls">>, Proplist),
             redirection_point = proplists:get_value(<<"redirectionPoint">>, Proplist)
         },
@@ -96,6 +97,7 @@ get_details(Client, ProviderId) ->
         Proplist = mochijson2:decode(ResponseBody, [{format, proplist}]),
         ProviderInfo = #provider_details{
             id = proplists:get_value(<<"providerId">>, Proplist),
+            name = proplists:get_value(<<"clientName">>, Proplist),
             urls = proplists:get_value(<<"urls">>, Proplist),
             redirection_point = proplists:get_value(<<"redirectionPoint">>, Proplist)
         },
