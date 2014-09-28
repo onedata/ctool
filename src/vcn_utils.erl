@@ -27,14 +27,11 @@ binary_join([], _Sep) ->
     <<>>;
 binary_join([Part], _Sep) ->
     Part;
-binary_join(List, Sep) ->
-    lists:foldr(
+binary_join([Head | Tail], Sep) ->
+    lists:foldl(
         fun(A, B) ->
-            case B of 
-                <<>> -> A;
-                B    -> <<A/binary, Sep/binary, B/binary>>
-            end
-        end, <<>>, List).
+            <<B/binary, Sep/binary, A/binary>>
+        end, Head, Tail).
 
 
 %% ensure_running/1

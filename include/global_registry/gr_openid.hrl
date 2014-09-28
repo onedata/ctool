@@ -21,12 +21,19 @@
     client_name :: binary()
 }).
 
+%% Internal helper record for #id_token
+-record(id_token_login, {
+    provider_id :: atom(),
+    login :: binary()
+}).
+
 %% @doc id_token record contains following fields:
 %% * iss   - Issuer Identifier for the Issuer of the response
 %% * sub   - Subject Identifier
 %% * aud   - Audience(s) that this ID Token is intended for
 %% * name  - End-User's full name in displayable form including all name parts
-%% * email - list of End-User's emails
+%% * logins - list of user's logins from openid providers
+%% * emails - list of End-User's emails
 %% * exp   - Expiration time on or after which the ID Token MUST NOT be accepted for processing
 %% * iat   - Time at which the JWT was issued
 %% For more details see: <a href="http://openid.net/specs/openid-connect-core-1_0.html#IDToken">OpenID IDToken</a>
@@ -36,10 +43,13 @@
     sub :: binary(),
     aud :: binary(),
     name :: binary(),
+    logins :: [#id_token_login{}],
     emails :: [binary()],
     exp :: binary(),
     iat :: binary()
 }).
+
+
 
 %% @doc token_response record contains following fields:
 %% * access_token  - the access token issued by the authorization server
