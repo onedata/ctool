@@ -11,11 +11,31 @@
 -module(vcn_utils). %todo remove this module from veilcluster
 
 %% API
--export([ensure_running/1, pmap/2, pforeach/2, time/0, mtime/0, record_type/1, ensure_binary/1, ensure_list/1, access_token_hash/1]).
+-export([binary_join/2, ensure_running/1, pmap/2, pforeach/2, time/0, mtime/0, record_type/1,
+         ensure_binary/1, ensure_list/1, access_token_hash/1]).
 
 %% ====================================================================
 %% API functions
 %% ====================================================================
+
+%% binary_join/2
+%% %% ====================================================================
+%% %% @doc Joins bineries with Separator
+%% %% @end
+-spec binary_join(Binaries :: [binary()], Separator :: binary()) -> binary().
+binary_join([], _Sep) ->
+    <<>>;
+binary_join([Part], _Sep) ->
+    Part;
+binary_join(List, Sep) ->
+    lists:foldr(
+        fun(A, B) ->
+            case B of 
+                <<>> -> A;
+                B    -> <<A/binary, Sep/binary, B/binary>>
+            end
+        end, <<>>, List).
+
 
 %% ensure_running/1
 %% ====================================================================
