@@ -134,7 +134,7 @@ start_test_nodes_with_dist_app(NodesNum, CCMNum, Verbose) ->
     DistAppDesc = create_dist_app_description(DistNodes),
     Params = create_nodes_params_for_dist_nodes(Nodes, DistNodes, DistAppDesc),
 
-    {vcn_utils:pmap(fun({{NodeName,Host},Par}) -> start_test_node(NodeName,Host,Verbose,Par) end, lists:zip(Nodes,Params)), Params}.
+    {opn_utils:pmap(fun({{NodeName,Host},Par}) -> start_test_node(NodeName,Host,Verbose,Par) end, lists:zip(Nodes,Params)), Params}.
 
 %% ====================================================================
 %% Starting and stoping app
@@ -349,7 +349,7 @@ create_dist_app_description(DistNodes) ->
             _ -> TmpAns ++ ", " ++ N
         end
     end, "", Rest),
-    "\"[{veil_cluster_node, 1000, [" ++ Main ++ ", {" ++ RestString ++ "}]}]\"".
+    "\"[{oneprovider_node, 1000, [" ++ Main ++ ", {" ++ RestString ++ "}]}]\"".
 
 %% create_nodes_params_for_dist_nodes/3
 %% ====================================================================
