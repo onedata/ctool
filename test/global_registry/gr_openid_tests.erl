@@ -164,6 +164,10 @@ should_get_token_response() ->
             {<<"sub">>, <<"sub">>},
             {<<"aud">>, <<"aud">>},
             {<<"name">>, <<"name">>},
+            {<<"logins">>, [
+                [{<<"provider_id">>, <<"provider1">>}, {<<"login">>, <<"login1">>}],
+                [{<<"provider_id">>, <<"provider2">>}, {<<"login">>, <<"login2">>}]
+            ]},
             {<<"emails">>, [<<"email1">>, <<"email2">>]},
             {<<"exp">>, <<"exp">>},
             {<<"iat">>, <<"iat">>}
@@ -185,6 +189,10 @@ should_get_token_response() ->
                 sub = <<"sub">>,
                 aud = <<"aud">>,
                 name = <<"name">>,
+                logins = [
+                    #id_token_login{provider_id = provider1, login = <<"login1">>},
+                    #id_token_login{provider_id = provider2, login = <<"login2">>}
+                ],
                 emails = [<<"email1">>, <<"email2">>],
                 exp = <<"exp">>,
                 iat = <<"iat">>
