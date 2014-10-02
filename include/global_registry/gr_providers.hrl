@@ -14,8 +14,8 @@
 
 %% provider_details record contains following fields:
 %% * id               - unique provider ID assigned by Global Registry
-%% * urls             - URL addresses of all VeilCluster nodes
-%% * redirectionPoint - URL address where VeilCluster GUI is available of all VeilCluster nodes
+%% * urls             - URL addresses of all oneprovider nodes
+%% * redirectionPoint - URL address where oneprovider GUI is available
 -record(provider_details, {
     id :: binary(),
     name :: binary(),

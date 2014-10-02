@@ -7,7 +7,7 @@
 %%% Created : 23. May 2014 15:11
 %%%-------------------------------------------------------------------
 {application, ctool, [
-    {description, "Common tools lib for onedata project"},
+    {description, "Common tools lib for Onedata project"},
     {vsn, "1"},
     {modules, [test_node_starter, vcn_utils]},
     {registered, []},
