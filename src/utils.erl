@@ -8,7 +8,7 @@
 %% @doc This module stores utility functions for use in other modules.
 %% @end
 %% ===================================================================
--module(opn_utils).
+-module(utils).
 
 %% API
 -export([binary_join/2, ensure_running/1, pmap/2, pforeach/2, time/0, mtime/0, record_type/1,
