@@ -65,11 +65,8 @@ setup() ->
     end),
     meck:expect(gr_endpoint, noauth_request, fun
         (client, "/provider", post, <<"body">>) -> {ok, "200", response_headers, response_body};
-        (client, "/provider/test/check_my_ports", get, <<"body">>) -> {ok, "200", response_headers, response_body}
-    end),
-    meck:expect(gr_endpoint, noauth_request, fun
-        (client, "/provider/test/check_my_ip", get, [], [{connect_timeout, connect_timeout}]) ->
-            {ok, "200", response_headers, response_body}
+        (client, "/provider/test/check_my_ports", get, <<"body">>) -> {ok, "200", response_headers, response_body};
+        (client, "/provider/test/check_my_ip", get, []) -> {ok, "200", response_headers, response_body}
     end).
 
 
@@ -166,7 +163,7 @@ should_check_ip_address() ->
         (response_body) -> <<"ipAddress">>
     end),
 
-    Answer = gr_providers:check_ip_address(client, connect_timeout),
+    Answer = gr_providers:check_ip_address(client),
     ?assertEqual({ok, <<"ipAddress">>}, Answer),
 
     ?assert(meck:validate(mochijson2)),
