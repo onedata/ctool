@@ -12,7 +12,7 @@
 
 %% API
 -export([binary_join/2, ensure_running/1, pmap/2, pforeach/2, time/0, mtime/0, record_type/1,
-         ensure_binary/1, ensure_list/1, access_token_hash/1]).
+         ensure_binary/1, ensure_list/1, ensure_unicode_list/1, ensure_unicode_binary/1, access_token_hash/1]).
 
 %% ====================================================================
 %% API functions
@@ -190,3 +190,26 @@ ensure_list(List) when is_list(List) ->
     List;
 ensure_list(Atom) when is_atom(Atom) ->
     atom_to_list(Atom).
+
+%% ensure_unicode_binary/1
+%% ====================================================================
+%% @doc Converts a unicode list to utf8 binary.
+%% @end
+-spec ensure_unicode_binary(String :: string() | binary()) -> binary().
+%% ====================================================================
+ensure_unicode_binary(Binary) when is_binary(Binary) ->
+    Binary;
+ensure_unicode_binary(String) ->
+    unicode:characters_to_binary(String).
+
+
+%% ensure_unicode_list/1
+%% ====================================================================
+%% @doc Converts a utf8 binary to unicode list.
+%% @end
+-spec ensure_unicode_list(Binary :: binary() | string()) -> string().
+%% ====================================================================
+ensure_unicode_list(String) when is_list(String) ->
+    String;
+ensure_unicode_list(Binary) ->
+    unicode:characters_to_list(Binary).
