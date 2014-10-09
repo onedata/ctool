@@ -20,7 +20,7 @@ function querySource(Id) {
             val = val ? utf8.toByteArray(val.value) : utf8.toByteArray("");
             break;
         case 'radio':
-            val = el.checked;
+            val = el.checked ? el.value : atom('undefined');
             break;
         case 'checkbox':
             val = el.checked ? el.value : atom('undefined');
