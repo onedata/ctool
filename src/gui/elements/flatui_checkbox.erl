@@ -45,17 +45,21 @@ reflect() ->
 render_element(Record) ->
     Id = case Record#flatui_checkbox.id of
              undefined -> wf:temp_id();
-             I when is_binary(I)-> binary_to_list(I);
+             I when is_binary(I) -> binary_to_list(I);
              I -> I
          end,
     case Record#flatui_checkbox.postback of
         undefined -> ignore;
         Postback ->
             Data = "[" ++ string:join([begin
-                                           {Key, Id} = if is_atom(Src) -> S = atom_to_list(Src),
-                                               {"atom('" ++ S ++ "')", S};
-                                                           true -> {"utf8.toByteArray('" ++ Src ++ "')", Src} end,
-                                           "tuple(" ++ Key ++ ", querySource('" ++ Id ++ "'))" end || Src <- Record#flatui_checkbox.source]
+                                           {Key, SourceId} = if
+                                                           is_atom(Src) ->
+                                                               S = atom_to_list(Src),
+                                                               {"atom('" ++ S ++ "')", S};
+                                                           true ->
+                                                               {"utf8.toByteArray('" ++ Src ++ "')", Src}
+                                                       end,
+                                           "tuple(" ++ Key ++ ", querySource('" ++ SourceId ++ "'))" end || Src <- Record#flatui_checkbox.source]
             ++ ["tuple(tuple(utf8.toByteArray('" ++ Id ++ "'), bin('detail')), event.detail)"], ",") ++ "]",
             PostbackBin = wf_event:new(Postback, Id, Record#flatui_checkbox.delegate, event, Data),
             wf:wire([wf:f("$('#~s').change(function (event){", [Id]), PostbackBin, "});"])
