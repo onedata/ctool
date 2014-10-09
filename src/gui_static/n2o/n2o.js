@@ -1,32 +1,42 @@
+// IMPORTANT!!!!
+// function querySource originally did not implement the radio button case.
+// Make sure that the case is implemented if making any changes in this file!
+
 var msg = 0;
 var ws;
 var utf8 = {};
 
 //WebSocket = undefined; // test XHR fallback
 
-function querySource(Id){
+function querySource(Id) {
     if (Id.getValue) return bin(Id.getValue())
 
     var val, el;
     el = document.getElementById(Id);
-    if(!el) return atom('undefined');
-    switch(el.type){
+    if (!el) return atom('undefined');
+    switch (el.type) {
         case 'fieldset':
             val = document.querySelector('#' + Id + ' :checked');
-            val = val ? utf8.toByteArray(val.value): utf8.toByteArray("");
+            val = val ? utf8.toByteArray(val.value) : utf8.toByteArray("");
             break;
         case 'radio':
+            val = el.checked;
+            break;
         case 'checkbox':
             val = el.checked ? el.value : atom('undefined');
             break;
         default:
             var edit = el.getAttribute('contenteditable');
-            if (edit && edit === 'true'){ val = bin(el.innerHTML);} else { val = utf8.toByteArray(el.value);}
+            if (edit && edit === 'true') {
+                val = bin(el.innerHTML);
+            } else {
+                val = utf8.toByteArray(el.value);
+            }
     }
     return val;
 }
 
-function addStatus(text){
+function addStatus(text) {
     var date = new Date();
     if (document.getElementById('n2ostatus')) {
         document.getElementById('n2ostatus').innerHTML =
@@ -34,22 +44,25 @@ function addStatus(text){
     }
 }
 
-utf8.toByteArray = function(str) {
+utf8.toByteArray = function (str) {
     var byteArray = [];
     if (str !== undefined && str !== null)
-    for (var i = 0; i < str.length; i++)
-        if (str.charCodeAt(i) <= 0x7F)
-            byteArray.push(str.charCodeAt(i));
-        else {
-            var h = encodeURIComponent(str.charAt(i)).substr(1).split('%');
-            for (var j = 0; j < h.length; j++)
-                byteArray.push(parseInt(h[j], 16));
-        }
+        for (var i = 0; i < str.length; i++)
+            if (str.charCodeAt(i) <= 0x7F)
+                byteArray.push(str.charCodeAt(i));
+            else {
+                var h = encodeURIComponent(str.charAt(i)).substr(1).split('%');
+                for (var j = 0; j < h.length; j++)
+                    byteArray.push(parseInt(h[j], 16));
+            }
     return byteArray;
 };
 
-function byteArray8toString (byteArray, separator) {
-    if (typeof byteArray == 'undefined' || byteArray.byteLength == 0) { return "" };
+function byteArray8toString(byteArray, separator) {
+    if (typeof byteArray == 'undefined' || byteArray.byteLength == 0) {
+        return ""
+    }
+    ;
     separator = typeof separator !== 'undefined' ? separator : ',';
     var dataView = new DataView(byteArray);
     var s = dataView.getUint8(0).toString();
@@ -58,14 +71,16 @@ function byteArray8toString (byteArray, separator) {
     return s;
 }
 
-function WebSocketsInit(){
-    if ("MozWebSocket" in window) { WebSocket = MozWebSocket; }
+function WebSocketsInit() {
+    if ("MozWebSocket" in window) {
+        WebSocket = MozWebSocket;
+    }
     if ("WebSocket" in window) {
         var protocol = window.location.protocol == 'https:' ? "wss://" : "ws://";
         ws = new bullet(protocol +
-          (null == transition.host ? window.location.hostname : transition.host)
-               + ":"+ (null == transition.port ? window.location.port : transition.port)
-             + "/ws" + window.location.pathname + window.location.search);
+            (null == transition.host ? window.location.hostname : transition.host)
+            + ":" + (null == transition.port ? window.location.port : transition.port)
+            + "/ws" + window.location.pathname + window.location.search);
         initialized = false;
         ws.onmessage = function (evt) {
 
@@ -80,30 +95,38 @@ function WebSocketsInit(){
 
                 if (msg.eval) { // Eval
                     // addStatus("Evaluate: " + msg.eval);
-                    try{eval(msg.eval);}catch(e){console.log(e); console.log(msg.eval);};
+                    try {
+                        eval(msg.eval);
+                    } catch (e) {
+                        console.log(e);
+                        console.log(msg.eval);
+                    }
+                    ;
                 }
 
             } catch (ex) { // try to parse known binary formats
-                
+
                 var HEAD_SIZE = 36;
 
                 // console.log("JSON parsing failed: " + ex);
                 // console.log("MessageEvent: ");
                 // console.log(evt.data);
-                
-                var header_reader = new FileReader();
-                header_reader.addEventListener("loadend", function() {
 
-                    if(header_reader.result.byteLength > 0) {
+                var header_reader = new FileReader();
+                header_reader.addEventListener("loadend", function () {
+
+                    if (header_reader.result.byteLength > 0) {
                         var header_view = new DataView(header_reader.result);
                         var head_char = header_view.getUint8(0);
-                    
+
                         try { // BERT encoding
 
-                            if (head_char !== 131) { throw ("Not a valid BERT header."); }
+                            if (head_char !== 131) {
+                                throw ("Not a valid BERT header.");
+                            }
                             else {
                                 var bert_reader = new FileReader();
-                                bert_reader.addEventListener("loadend", function() {
+                                bert_reader.addEventListener("loadend", function () {
                                     var erlang = dec(bert_reader.result);
                                     if (typeof handle_web_socket == 'function')
                                         handle_web_socket(erlang);
@@ -127,7 +150,7 @@ function WebSocketsInit(){
                                 var user2 = header_view.getFloat64(24);
                                 var data_offset = HEAD_SIZE + header_view.getUint32(32);
                                 var meta_reader = new FileReader();
-                                meta_reader.addEventListener("loadend", function() {
+                                meta_reader.addEventListener("loadend", function () {
                                     if (typeof handle_web_socket_blob_with_header == 'function')
                                         handle_web_socket_blob_with_header(id, type, app, version, from, to, user1, user2,
                                             meta_reader.result, evt.data.slice(data_offset));
@@ -142,16 +165,16 @@ function WebSocketsInit(){
                                 meta_reader.readAsArrayBuffer(evt.data.slice(HEAD_SIZE, data_offset));
                             }
                             else { // Unknown Binaries
-                            
+
                                 if (typeof handle_web_socket_blob == 'function')
                                     handle_web_socket_blob(evt.data);
                                 else {
                                     var reader = new FileReader();
-                                    reader.addEventListener("loadend", function() {
+                                    reader.addEventListener("loadend", function () {
                                         if (reader.result.byteLength > 0) {
                                             var dataView = new DataView(reader.result);
                                             var s = dataView.getUint8(0).toString();
-                                            for (var i=1;i<reader.result.byteLength;i++)
+                                            for (var i = 1; i < reader.result.byteLength; i++)
                                                 s = s + "," + dataView.getUint8(i).toString();
                                             console.log("Unknown Raw Binary Received: [" + s + "]");
                                         }
@@ -167,8 +190,15 @@ function WebSocketsInit(){
             }
 
         };
-        ws.onopen = function() { if (!initialized) { ws.send(['N2O', transition.pid]); initialized = true; } };
-        ws.onclose = function() { addStatus("websocket was closed"); };
+        ws.onopen = function () {
+            if (!initialized) {
+                ws.send(['N2O', transition.pid]);
+                initialized = true;
+            }
+        };
+        ws.onclose = function () {
+            addStatus("websocket was closed");
+        };
     } else {
         addStatus("sorry, your browser does not support websockets.");
     }
