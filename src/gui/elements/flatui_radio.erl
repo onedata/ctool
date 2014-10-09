@@ -102,14 +102,14 @@ render_element(Record) ->
         {<<"for">>, Id}]).
 
 
-%% init_checkbox/1
+%% init_radio_button/1
 %% ====================================================================
-%% @doc Initializes a checkbox with given id.
-%% For the checkbox to work properly, it must be initialized first.
-%% This is done automatically on every checkbox after page loads,
-%% but checkboxes added dynamically must be initialized with the function.
+%% @doc Initializes a radio button with given id.
+%% For the radio button to work properly, it must be initialized first.
+%% This is done automatically on every radio button after page loads,
+%% but radios added dynamically must be initialized with the function.
 %% @end
--spec init_checkbox(ID :: binary()) -> ok.
+-spec init_radio_button(ID :: binary()) -> ok.
 %% ====================================================================
 init_radio_button(ID) ->
     gui_jq:wire(<<"$('#", ID/binary, "').radio();">>).
