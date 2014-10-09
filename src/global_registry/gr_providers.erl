@@ -18,7 +18,7 @@
 
 %% API
 -export([register/2, unregister/1, get_details/1, get_details/2, modify_details/2]).
--export([check_ip_address/2, check_port/4]).
+-export([check_ip_address/1, check_port/4]).
 -export([create_space/2, support_space/2, revoke_space_support/2, get_spaces/1, get_space_details/2]).
 
 %% ====================================================================
@@ -126,14 +126,13 @@ modify_details(Client, Parameters) ->
 %% ====================================================================
 %% @doc Returns ip address that is visible for Global Registry.
 %% @end
--spec check_ip_address(Client :: client(), ConnectTimeout :: integer()) -> Result when
+-spec check_ip_address(Client :: client()) -> Result when
     Result :: {ok, IpAddress :: binary()} | {error, Reason :: term()}.
 %% ====================================================================
-check_ip_address(Client, ConnectTimeout) ->
+check_ip_address(Client) ->
     ?run(fun() ->
         URN = "/provider/test/check_my_ip",
-        Options = [{connect_timeout, ConnectTimeout}],
-        {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:noauth_request(Client, URN, get, [], Options),
+        {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:noauth_request(Client, URN, get, []),
         IpAddress = mochijson2:decode(ResponseBody),
         {ok, IpAddress}
     end).

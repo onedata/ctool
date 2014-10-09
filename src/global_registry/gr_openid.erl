@@ -161,9 +161,13 @@ get_token_response(Client, Parameters) ->
         IdToken = proplists:get_value(<<"id_token">>, Proplist),
         [_Header, Payload, _Signature] = binary:split(IdToken, <<".">>, [global]),
         IdTokenProplist = mochijson2:decode(mochiweb_base64url:decode(Payload), [{format, proplist}]),
-        RawLogins = proplists:get_value(<<"logins">>, IdTokenProplist),
-        Logins = [#id_token_login{provider_id = binary_to_atom(proplists:get_value(<<"provider_id">>, PropList), utf8),
-                                  login = proplists:get_value(<<"login">>, PropList)} || PropList <- RawLogins],
+        LoginsProplist = proplists:get_value(<<"logins">>, IdTokenProplist),
+        Logins = lists:map(fun(LoginProplist) ->
+            #id_token_login{
+                provider_id = binary_to_atom(proplists:get_value(<<"provider_id">>, LoginProplist, <<>>), utf8),
+                login = proplists:get_value(<<"login">>, LoginProplist, <<>>)
+            }
+        end, LoginsProplist),
         TokenResponse = #token_response{
             access_token = proplists:get_value(<<"access_token">>, Proplist),
             token_type = proplists:get_value(<<"token_type">>, Proplist),
