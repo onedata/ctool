@@ -174,8 +174,8 @@ redirect_from_login() ->
 -spec register_escape_event(Tag :: string()) -> ok.
 %% ====================================================================
 register_escape_event(Tag) ->
-    wire(#api{name = "escape_pressed", tag = Tag}, false),
-    wire(<<"$(document).bind('keydown', function (e){if (e.which == 27) escape_pressed();});">>, false).
+    wire(#api{name = Tag, tag = Tag}, false),
+    wire(<<"$(document).bind('keydown', function (e){if (e.which == 27) ", (list_to_binary(Tag))/binary, "();});">>, false).
 
 
 %% bind_enter_to_submit_button/2
