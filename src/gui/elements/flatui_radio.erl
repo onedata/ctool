@@ -19,7 +19,7 @@
 -include("gui/common.hrl").
 
 %% API
--export([reflect/0, render_element/1, init_checkbox/1]).
+-export([reflect/0, render_element/1, init_radio_button/1]).
 
 
 %% ====================================================================
