@@ -111,5 +111,5 @@ render_element(Record) ->
 %% @end
 -spec init_checkbox(ID :: binary()) -> ok.
 %% ====================================================================
-init_checkbox(ID) ->
-    gui_jq:wire(<<"$('#", ID/binary, "').checkbox();">>).
+init_radio_button(ID) ->
+    gui_jq:wire(<<"$('#", ID/binary, "').radio();">>).
