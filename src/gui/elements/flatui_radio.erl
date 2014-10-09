@@ -5,11 +5,11 @@
 %% cited in 'LICENSE.txt'.
 %% @end
 %% ===================================================================
-%% @doc This file contains definition of custom checkbox element.
-%% IMPORTANT: for the checkbox to work properly, JS function ".checkbox()"
+%% @doc This file contains definition of custom radio button element.
+%% IMPORTANT: for the radio button to work properly, JS function ".radio()"
 %% must be called on it. This is done automatically on every checkbox after page loads,
-%% but checkboxes added dynamically must be initialized with the function.
-%% This can be done easily using the init_checkbox function.
+%% but radio button added dynamically must be initialized with the function.
+%% This can be done easily using the init_radio button function.
 %%
 %% This file is taken from n2o and slightly modified.
 %% @end
@@ -85,7 +85,7 @@ render_element(Record) ->
         % spec
         {<<"autofocus">>, Record#flatui_radio.autofocus},
         {<<"checked">>, if Record#flatui_radio.checked == true -> <<"checked">>; true -> undefined end},
-        {<<"data-toggle">>, <<"checkbox">>},
+        {<<"data-toggle">>, <<"radio">>},
         {<<"disabled">>, if Record#flatui_radio.disabled == true -> "disabled"; true -> undefined end},
         {<<"form">>, Record#flatui_radio.form},
         {<<"name">>, Record#flatui_radio.name},
