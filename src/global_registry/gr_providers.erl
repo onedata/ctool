@@ -154,7 +154,7 @@ check_port(Client, IpAddress, Port, Type) ->
                    end,
         CheckURL = <<"https://", IpAddress/binary, ":", (integer_to_binary(Port))/binary, Resource/binary>>,
         Body = iolist_to_binary(mochijson2:encode([{Type, CheckURL}])),
-        {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:noauth_request(Client, URN, get, Body),
+        {ok, "200", _ResponseHeaders, ResponseBody} = gr_endpoint:noauth_request(Client, URN, post, Body),
         Proplist = mochijson2:decode(ResponseBody, [{format, proplist}]),
         <<"ok">> = proplists:get_value(CheckURL, Proplist),
         ok
