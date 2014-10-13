@@ -65,7 +65,7 @@ setup() ->
     end),
     meck:expect(gr_endpoint, noauth_request, fun
         (client, "/provider", post, <<"body">>) -> {ok, "200", response_headers, response_body};
-        (client, "/provider/test/check_my_ports", get, <<"body">>) -> {ok, "200", response_headers, response_body};
+        (client, "/provider/test/check_my_ports", post, <<"body">>) -> {ok, "200", response_headers, response_body};
         (client, "/provider/test/check_my_ip", get, []) -> {ok, "200", response_headers, response_body}
     end).
 
