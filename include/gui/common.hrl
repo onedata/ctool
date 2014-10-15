@@ -17,6 +17,23 @@
 
 %% Any custom element records should go here.
 
+% FlatUI compliant radio button
+-record(flatui_radio, {?ELEMENT_BASE(flatui_radio),
+    label_id,
+    label_class,
+    label_style,
+    label_title,
+    autofocus,
+    checked = false,
+    disabled,
+    form,
+    name,
+    required,
+    value,
+    postback,
+    html_name
+}).
+
 % FlatUI compliant checkbox
 -record(flatui_checkbox, {?ELEMENT_BASE(flatui_checkbox),
     label_id,

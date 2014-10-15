@@ -81,6 +81,8 @@
                     if (select.hasClass('dropup')) {
                         menuHeight = selectOffset_top_scroll - menuExtras;
                     }
+                    // Custom addition - dropdown menus were not fitting inside the screen
+                    menuHeight = Math.min(200, menuHeight);
                     menu.css({'max-height' : menuHeight + 'px', 'overflow-y' : 'auto', 'min-height' : liHeight*3 + 'px'});
             }
                 getSize();
@@ -91,6 +93,8 @@
                 var optIndex = menu.find("li > *").filter(':not(.divider)').slice(0,this.options.size).last().parent().index();
                 var divLength = menu.find("li").slice(0,optIndex + 1).find('.divider').length;
                 menuHeight = liHeight*this.options.size + divLength*divHeight + menuPadding;
+                // Custom addition - dropdown menus were not fitting inside the screen
+                menuHeight = Math.min(200, menuHeight);
                 menu.css({'max-height' : menuHeight + 'px', 'overflow-y' : 'scroll'});
             }
 
