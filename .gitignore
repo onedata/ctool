@@ -1,0 +1,11 @@
+.idea
+*.iml
+*.sublime*
+*.beam
+.eunit
+.dialyzer.plt
+
+deps
+ebin
+
+test/eunit_results
