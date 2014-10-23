@@ -40,6 +40,7 @@ gr_spaces_test_() ->
             {"get users", fun should_get_users/0},
             {"get user details", fun should_get_user_details/0},
             {"get user privileges", fun should_get_user_privileges/0},
+            {"get effective user privileges", fun should_get_effective_user_privileges/0},
             {"set user privileges", fun should_set_user_privileges/0},
             {"remove group", fun should_remove_group/0},
             {"get groups", fun should_get_groups/0},
@@ -66,6 +67,7 @@ setup() ->
         (client, "/spaces/spaceId/users/userId", get) -> {ok, "200", response_headers, response_body};
         (client, "/spaces/spaceId/users/userId", delete) -> {ok, "202", response_headers, response_body};
         (client, "/spaces/spaceId/users/userId/privileges", get) -> {ok, "200", response_headers, response_body};
+        (client, "/spaces/spaceId/users/userId/privileges?effective", get) -> {ok, "200", response_headers, response_body};
         (client, "/spaces/spaceId/groups", get) -> {ok, "200", response_headers, response_body};
         (client, "/spaces/spaceId/groups/token", get) -> {ok, "200", response_headers, response_body};
         (client, "/spaces/spaceId/groups/groupId", get) -> {ok, "200", response_headers, response_body};
@@ -215,6 +217,20 @@ should_get_user_privileges() ->
 
     ?assert(meck:validate(mochijson2)),
     ok = meck:unload(mochijson2).
+
+
+should_get_effective_user_privileges() ->
+    meck:new(mochijson2),
+    meck:expect(mochijson2, decode, fun
+        (response_body, [{format, proplist}]) -> [{<<"privileges">>, <<"privileges">>}]
+    end),
+
+    Answer = gr_spaces:get_effective_user_privileges(client, <<"spaceId">>, <<"userId">>),
+    ?assertEqual({ok, <<"privileges">>}, Answer),
+
+    ?assert(meck:validate(mochijson2)),
+    ok = meck:unload(mochijson2).
+
 
 should_set_user_privileges() ->
     meck:new(mochijson2),
