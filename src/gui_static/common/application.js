@@ -36,7 +36,7 @@ initialize_top_menu = function () {
         }
     });
     $(window).scroll(function () {
-        scroll_top_menu();
+        debounce(scroll_top_menu(), 100);
     });
 };
 
