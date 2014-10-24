@@ -7,6 +7,22 @@
 // This file contains JS functions commonly used on multiple pages.
 // ===================================================================
 
+// Applies a function after a timeout, but the timer is
+// reset every time the function is called within it's countdown.
+function debounce(func, wait) {
+    var timeout;
+    return function() {
+        var context = this,
+            args = arguments,
+            later = function() {
+                timeout = null;
+                func.apply(context, args);
+            };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
 // -----------------------------
 // top menu scroll handling
 
