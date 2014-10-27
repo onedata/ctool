@@ -11,10 +11,10 @@
 // reset every time the function is called within it's countdown.
 function debounce(func, wait) {
     var timeout;
-    return function() {
+    return function () {
         var context = this,
             args = arguments,
-            later = function() {
+            later = function () {
                 timeout = null;
                 func.apply(context, args);
             };
@@ -35,9 +35,7 @@ initialize_top_menu = function () {
             scroll_top_menu();
         }
     });
-    $(window).scroll(function () {
-        debounce(scroll_top_menu(), 100);
-    });
+    $(window).scroll(debounce(scroll_top_menu, 5));
 };
 
 scroll_top_menu = function () {
