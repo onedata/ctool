@@ -65,7 +65,8 @@
   display: inherit !important;
 }
 
-@media (min-width: 768px) and (max-width: 979px) {
+/* Comment out parts responsible for collapsing fixed top menus */
+/*@media (min-width: 768px) and (max-width: 979px) {
   .hidden-desktop {
     display: inherit !important;
   }
@@ -93,7 +94,7 @@
   .hidden-phone {
     display: none !important;
   }
-}
+}*/
 
 .visible-print {
   display: none !important;
@@ -458,7 +459,8 @@
   }
 }
 
-@media (min-width: 768px) and (max-width: 979px) {
+/* Comment out parts responsible for collapsing fixed top menus */
+/*@media (min-width: 768px) and (max-width: 979px) {
   .row {
     margin-left: -20px;
     *zoom: 1;
@@ -798,8 +800,10 @@
     width: 28px;
   }
 }
+*/
 
-@media (max-width: 767px) {
+/* Comment out parts responsible for collapsing fixed top menus */
+/*@media (max-width: 767px) {
   body {
     padding-right: 20px;
     padding-left: 20px;
@@ -895,9 +899,10 @@
   .modal.fade.in {
     top: 20px;
   }
-}
+}*/
 
-@media (max-width: 480px) {
+/* Comment out parts responsible for collapsing fixed top menus */
+/*@media (max-width: 480px) {
   .nav-collapse {
     -webkit-transform: translate3d(0, 0, 0);
   }
@@ -947,9 +952,10 @@
   .carousel-caption {
     position: static;
   }
-}
+}*/
 
-@media (max-width: 979px) {
+/* Comment out parts responsible for collapsing fixed top menus */
+/*@media (max-width: 979px) {
   body {
     padding-top: 0;
   }
@@ -1107,3 +1113,4 @@
     overflow: visible !important;
   }
 }
+*/

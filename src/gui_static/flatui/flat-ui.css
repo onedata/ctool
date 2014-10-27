@@ -1,49 +1,10 @@
 @font-face {
-    font-family: 'Lato';
-    font-style: normal;
-    font-weight: 300;
-    src: local('Lato Light'), local('Lato-Light'), url("/fonts/lato_light.woff") format('woff');
-}
-
-@font-face {
-    font-family: 'Lato';
-    font-style: normal;
-    font-weight: 400;
-    src: local('Lato Regular'), local('Lato-Regular'), url("/fonts/lato_regular.woff") format('woff');
-}
-
-@font-face {
-    font-family: 'Lato';
-    font-style: normal;
-    font-weight: 700;
-    src: local('Lato Bold'), local('Lato-Bold'), url("/fonts/lato_bold.woff") format('woff');
-}
-
-@font-face {
-    font-family: 'Lato';
-    font-style: normal;
-    font-weight: 900;
-    src: local('Lato Black'), local('Lato-Black'), url("/fonts/lato_black.woff") format('woff');
-}
-
-@font-face {
-    font-family: 'Lato';
-    font-style: italic;
-    font-weight: 400;
-    src: local('Lato Italic'), local('Lato-Italic'), url("/fonts/lato_italic.woff") format('woff');
-}
-
-@font-face {
-    font-family: 'Lato';
-    font-style: italic;
-    font-weight: 700;
-    src: local('Lato Bold Italic'), local('Lato-BoldItalic'), url("/fonts/lato_bold_italic.woff") format('woff');
-}
-
-@font-face {
   font-family: "Flat-UI-Icons";
   src: url("/fonts/Flat-UI-Icons.eot");
-  src: url("/fonts/Flat-UI-Icons.eot?#iefix") format("embedded-opentype"), url("/fonts/Flat-UI-Icons.woff") format("woff"), url("/fonts/Flat-UI-Icons.ttf") format("truetype"), url("/fonts/Flat-UI-Icons.svg#Flat-UI-Icons") format("svg");
+  src: url("/fonts/Flat-UI-Icons.eot?#iefix") format("embedded-opentype"),
+  url("/fonts/Flat-UI-Icons.woff") format("woff"),
+  url("/fonts/Flat-UI-Icons.ttf") format("truetype"),
+  url("/fonts/Flat-UI-Icons.svg#Flat-UI-Icons") format("svg");
   font-weight: normal;
   font-style: normal;
 }
@@ -680,53 +641,57 @@ you can use the generic selector below, but it's slower:
     width: 200px;
   }
 }
-@media (max-width: 767px) {
-  .demo-dialog input.flat {
-    width: 100%;
-  }
-}
-@media (max-width: 767px) {
-  .hide-on-tablets {
-    display: none;
-  }
-  .demo-row {
-    margin-bottom: 0;
-    margin-left: 0;
-    padding-left: 0;
-    padding-right: 0;
-    width: auto;
-  }
-  .demo-col,
-  .demo-content,
-  .demo-content-wide,
-  .demo-title {
-    float: none;
-    margin: 0 0 18px !important;
-    padding: 0 !important;
-    width: auto;
-  }
-  .demo-headline {
-    font-size: 65.002px !important;
-    text-align: left;
-  }
-  .demo-inline {
-    display: block;
-  }
-  .demo-navigation .btn-toolbar {
-    margin: 0;
-  }
-  .demo-navigation .pager,
-  .demo-navigation .mll.pvm {
-    display: block;
-    margin: 0 0 20px;
-    padding: 0;
-  }
-  .typography-row .header-note,
-  .typography-row .text-note {
-    position: static !important;
-    margin: 0 0 10px;
-  }
-}
+
+/* Comment out parts responsible for collapsing fixed top menus */
+/*@media (max-width: 767px) {*/
+  /*.demo-dialog input.flat {*/
+    /*width: 100%;*/
+  /*}*/
+/*}*/
+
+/*@media (max-width: 767px) {*/
+  /*.hide-on-tablets {*/
+    /*display: none;*/
+  /*}*/
+  /*.demo-row {*/
+    /*margin-bottom: 0;*/
+    /*margin-left: 0;*/
+    /*padding-left: 0;*/
+    /*padding-right: 0;*/
+    /*width: auto;*/
+  /*}*/
+  /*.demo-col,*/
+  /*.demo-content,*/
+  /*.demo-content-wide,*/
+  /*.demo-title {*/
+    /*float: none;*/
+    /*margin: 0 0 18px !important;*/
+    /*padding: 0 !important;*/
+    /*width: auto;*/
+  /*}*/
+  /*.demo-headline {*/
+    /*font-size: 65.002px !important;*/
+    /*text-align: left;*/
+  /*}*/
+  /*.demo-inline {*/
+    /*display: block;*/
+  /*}*/
+  /*.demo-navigation .btn-toolbar {*/
+    /*margin: 0;*/
+  /*}*/
+  /*.demo-navigation .pager,*/
+  /*.demo-navigation .mll.pvm {*/
+    /*display: block;*/
+    /*margin: 0 0 20px;*/
+    /*padding: 0;*/
+  /*}*/
+  /*.typography-row .header-note,*/
+  /*.typography-row .text-note {*/
+    /*position: static !important;*/
+    /*margin: 0 0 10px;*/
+  /*}*/
+/*}*/
+
 body {
   color: #34495e;
   font-family: "Lato", sans-serif;
@@ -1800,7 +1765,9 @@ a.muted:focus {
   bottom: 80%;
   top: auto;
 }
-@media (max-width: 979px) {
+
+/* Comment out parts responsible for collapsing fixed top menus */
+/*@media (max-width: 979px) {
   .navbar.navbar-inverse .brand {
     border: none;
   }
@@ -1957,7 +1924,7 @@ a.muted:focus {
     float: right;
     margin: 0 0 0 10px;
   }
-}
+}*/
 .select {
   display: inline-block;
   margin-bottom: 10px;
@@ -2167,51 +2134,54 @@ input[type="color"].placeholder,
 .uneditable-input.placeholder {
   color: #b2bcc5;
 }
-@media (max-width: 767px) {
-  textarea,
-  input[type="text"],
-  input[type="password"],
-  input[type="datetime"],
-  input[type="datetime-local"],
-  input[type="date"],
-  input[type="month"],
-  input[type="time"],
-  input[type="week"],
-  input[type="number"],
-  input[type="email"],
-  input[type="url"],
-  input[type="search"],
-  input[type="tel"],
-  input[type="color"],
-  .uneditable-input {
-    height: 41px;
-    margin: 9px 0;
-    margin-left: 0;
-    margin-right: 0;
-    width: 100%;
-    -webkit-box-sizing: border-box;
-    -moz-box-sizing: border-box;
-    box-sizing: border-box;
-  }
-  textarea textarea,
-  input[type="text"] textarea,
-  input[type="password"] textarea,
-  input[type="datetime"] textarea,
-  input[type="datetime-local"] textarea,
-  input[type="date"] textarea,
-  input[type="month"] textarea,
-  input[type="time"] textarea,
-  input[type="week"] textarea,
-  input[type="number"] textarea,
-  input[type="email"] textarea,
-  input[type="url"] textarea,
-  input[type="search"] textarea,
-  input[type="tel"] textarea,
-  input[type="color"] textarea,
-  .uneditable-input textarea {
-    height: 120px;
-  }
-}
+
+/* Comment out parts responsible for collapsing fixed top menus */
+/*@media (max-width: 767px) {*/
+  /*textarea,*/
+  /*input[type="text"],*/
+  /*input[type="password"],*/
+  /*input[type="datetime"],*/
+  /*input[type="datetime-local"],*/
+  /*input[type="date"],*/
+  /*input[type="month"],*/
+  /*input[type="time"],*/
+  /*input[type="week"],*/
+  /*input[type="number"],*/
+  /*input[type="email"],*/
+  /*input[type="url"],*/
+  /*input[type="search"],*/
+  /*input[type="tel"],*/
+  /*input[type="color"],*/
+  /*.uneditable-input {*/
+    /*height: 41px;*/
+    /*margin: 9px 0;*/
+    /*margin-left: 0;*/
+    /*margin-right: 0;*/
+    /*width: 100%;*/
+    /*-webkit-box-sizing: border-box;*/
+    /*-moz-box-sizing: border-box;*/
+    /*box-sizing: border-box;*/
+  /*}*/
+  /*textarea textarea,*/
+  /*input[type="text"] textarea,*/
+  /*input[type="password"] textarea,*/
+  /*input[type="datetime"] textarea,*/
+  /*input[type="datetime-local"] textarea,*/
+  /*input[type="date"] textarea,*/
+  /*input[type="month"] textarea,*/
+  /*input[type="time"] textarea,*/
+  /*input[type="week"] textarea,*/
+  /*input[type="number"] textarea,*/
+  /*input[type="email"] textarea,*/
+  /*input[type="url"] textarea,*/
+  /*input[type="search"] textarea,*/
+  /*input[type="tel"] textarea,*/
+  /*input[type="color"] textarea,*/
+  /*.uneditable-input textarea {*/
+    /*height: 120px;*/
+  /*}*/
+/*}*/
+
 .control-group.focus textarea,
 .control-group.focus input[type="text"],
 .control-group.focus input[type="password"],
@@ -2564,42 +2534,45 @@ input[type="color"].huge,
 .row-fluid .uneditable-input.huge {
   height: 53px;
 }
-@media (max-width: 767px) {
-  .control-group.huge textarea,
-  .control-group.huge input[type="text"],
-  .control-group.huge input[type="password"],
-  .control-group.huge input[type="datetime"],
-  .control-group.huge input[type="datetime-local"],
-  .control-group.huge input[type="date"],
-  .control-group.huge input[type="month"],
-  .control-group.huge input[type="time"],
-  .control-group.huge input[type="week"],
-  .control-group.huge input[type="number"],
-  .control-group.huge input[type="email"],
-  .control-group.huge input[type="url"],
-  .control-group.huge input[type="search"],
-  .control-group.huge input[type="tel"],
-  .control-group.huge input[type="color"],
-  .control-group.huge .uneditable-input,
-  textarea.huge,
-  input[type="text"].huge,
-  input[type="password"].huge,
-  input[type="datetime"].huge,
-  input[type="datetime-local"].huge,
-  input[type="date"].huge,
-  input[type="month"].huge,
-  input[type="time"].huge,
-  input[type="week"].huge,
-  input[type="number"].huge,
-  input[type="email"].huge,
-  input[type="url"].huge,
-  input[type="search"].huge,
-  input[type="tel"].huge,
-  input[type="color"].huge,
-  .uneditable-input.huge {
-    height: 53px;
-  }
-}
+
+/* Comment out parts responsible for collapsing fixed top menus */
+/*@media (max-width: 767px) {*/
+  /*.control-group.huge textarea,*/
+  /*.control-group.huge input[type="text"],*/
+  /*.control-group.huge input[type="password"],*/
+  /*.control-group.huge input[type="datetime"],*/
+  /*.control-group.huge input[type="datetime-local"],*/
+  /*.control-group.huge input[type="date"],*/
+  /*.control-group.huge input[type="month"],*/
+  /*.control-group.huge input[type="time"],*/
+  /*.control-group.huge input[type="week"],*/
+  /*.control-group.huge input[type="number"],*/
+  /*.control-group.huge input[type="email"],*/
+  /*.control-group.huge input[type="url"],*/
+  /*.control-group.huge input[type="search"],*/
+  /*.control-group.huge input[type="tel"],*/
+  /*.control-group.huge input[type="color"],*/
+  /*.control-group.huge .uneditable-input,*/
+  /*textarea.huge,*/
+  /*input[type="text"].huge,*/
+  /*input[type="password"].huge,*/
+  /*input[type="datetime"].huge,*/
+  /*input[type="datetime-local"].huge,*/
+  /*input[type="date"].huge,*/
+  /*input[type="month"].huge,*/
+  /*input[type="time"].huge,*/
+  /*input[type="week"].huge,*/
+  /*input[type="number"].huge,*/
+  /*input[type="email"].huge,*/
+  /*input[type="url"].huge,*/
+  /*input[type="search"].huge,*/
+  /*input[type="tel"].huge,*/
+  /*input[type="color"].huge,*/
+  /*.uneditable-input.huge {*/
+    /*height: 53px;*/
+  /*}*/
+/*}*/
+
 .control-group.large textarea,
 .control-group.large input[type="text"],
 .control-group.large input[type="password"],
@@ -2673,42 +2646,45 @@ input[type="color"].large,
 .row-fluid .uneditable-input.large {
   height: 45px;
 }
-@media (max-width: 767px) {
-  .control-group.large textarea,
-  .control-group.large input[type="text"],
-  .control-group.large input[type="password"],
-  .control-group.large input[type="datetime"],
-  .control-group.large input[type="datetime-local"],
-  .control-group.large input[type="date"],
-  .control-group.large input[type="month"],
-  .control-group.large input[type="time"],
-  .control-group.large input[type="week"],
-  .control-group.large input[type="number"],
-  .control-group.large input[type="email"],
-  .control-group.large input[type="url"],
-  .control-group.large input[type="search"],
-  .control-group.large input[type="tel"],
-  .control-group.large input[type="color"],
-  .control-group.large .uneditable-input,
-  textarea.large,
-  input[type="text"].large,
-  input[type="password"].large,
-  input[type="datetime"].large,
-  input[type="datetime-local"].large,
-  input[type="date"].large,
-  input[type="month"].large,
-  input[type="time"].large,
-  input[type="week"].large,
-  input[type="number"].large,
-  input[type="email"].large,
-  input[type="url"].large,
-  input[type="search"].large,
-  input[type="tel"].large,
-  input[type="color"].large,
-  .uneditable-input.large {
-    height: 45px;
-  }
-}
+
+/* Comment out parts responsible for collapsing fixed top menus */
+/*@media (max-width: 767px) {*/
+  /*.control-group.large textarea,*/
+  /*.control-group.large input[type="text"],*/
+  /*.control-group.large input[type="password"],*/
+  /*.control-group.large input[type="datetime"],*/
+  /*.control-group.large input[type="datetime-local"],*/
+  /*.control-group.large input[type="date"],*/
+  /*.control-group.large input[type="month"],*/
+  /*.control-group.large input[type="time"],*/
+  /*.control-group.large input[type="week"],*/
+  /*.control-group.large input[type="number"],*/
+  /*.control-group.large input[type="email"],*/
+  /*.control-group.large input[type="url"],*/
+  /*.control-group.large input[type="search"],*/
+  /*.control-group.large input[type="tel"],*/
+  /*.control-group.large input[type="color"],*/
+  /*.control-group.large .uneditable-input,*/
+  /*textarea.large,*/
+  /*input[type="text"].large,*/
+  /*input[type="password"].large,*/
+  /*input[type="datetime"].large,*/
+  /*input[type="datetime-local"].large,*/
+  /*input[type="date"].large,*/
+  /*input[type="month"].large,*/
+  /*input[type="time"].large,*/
+  /*input[type="week"].large,*/
+  /*input[type="number"].large,*/
+  /*input[type="email"].large,*/
+  /*input[type="url"].large,*/
+  /*input[type="search"].large,*/
+  /*input[type="tel"].large,*/
+  /*input[type="color"].large,*/
+  /*.uneditable-input.large {*/
+    /*height: 45px;*/
+  /*}*/
+/*}*/
+
 .control-group.small textarea,
 .control-group.small input[type="text"],
 .control-group.small input[type="password"],
@@ -2782,42 +2758,45 @@ input[type="color"].small,
 .row-fluid .uneditable-input.small {
   height: 34px;
 }
-@media (max-width: 767px) {
-  .control-group.small textarea,
-  .control-group.small input[type="text"],
-  .control-group.small input[type="password"],
-  .control-group.small input[type="datetime"],
-  .control-group.small input[type="datetime-local"],
-  .control-group.small input[type="date"],
-  .control-group.small input[type="month"],
-  .control-group.small input[type="time"],
-  .control-group.small input[type="week"],
-  .control-group.small input[type="number"],
-  .control-group.small input[type="email"],
-  .control-group.small input[type="url"],
-  .control-group.small input[type="search"],
-  .control-group.small input[type="tel"],
-  .control-group.small input[type="color"],
-  .control-group.small .uneditable-input,
-  textarea.small,
-  input[type="text"].small,
-  input[type="password"].small,
-  input[type="datetime"].small,
-  input[type="datetime-local"].small,
-  input[type="date"].small,
-  input[type="month"].small,
-  input[type="time"].small,
-  input[type="week"].small,
-  input[type="number"].small,
-  input[type="email"].small,
-  input[type="url"].small,
-  input[type="search"].small,
-  input[type="tel"].small,
-  input[type="color"].small,
-  .uneditable-input.small {
-    height: 34px;
-  }
-}
+
+/* Comment out parts responsible for collapsing fixed top menus */
+/*@media (max-width: 767px) {*/
+  /*.control-group.small textarea,*/
+  /*.control-group.small input[type="text"],*/
+  /*.control-group.small input[type="password"],*/
+  /*.control-group.small input[type="datetime"],*/
+  /*.control-group.small input[type="datetime-local"],*/
+  /*.control-group.small input[type="date"],*/
+  /*.control-group.small input[type="month"],*/
+  /*.control-group.small input[type="time"],*/
+  /*.control-group.small input[type="week"],*/
+  /*.control-group.small input[type="number"],*/
+  /*.control-group.small input[type="email"],*/
+  /*.control-group.small input[type="url"],*/
+  /*.control-group.small input[type="search"],*/
+  /*.control-group.small input[type="tel"],*/
+  /*.control-group.small input[type="color"],*/
+  /*.control-group.small .uneditable-input,*/
+  /*textarea.small,*/
+  /*input[type="text"].small,*/
+  /*input[type="password"].small,*/
+  /*input[type="datetime"].small,*/
+  /*input[type="datetime-local"].small,*/
+  /*input[type="date"].small,*/
+  /*input[type="month"].small,*/
+  /*input[type="time"].small,*/
+  /*input[type="week"].small,*/
+  /*input[type="number"].small,*/
+  /*input[type="email"].small,*/
+  /*input[type="url"].small,*/
+  /*input[type="search"].small,*/
+  /*input[type="tel"].small,*/
+  /*input[type="color"].small,*/
+  /*.uneditable-input.small {*/
+    /*height: 34px;*/
+  /*}*/
+/*}*/
+
 .control-group textarea,
 .control-group input[type="text"],
 .control-group input[type="password"],
@@ -2942,20 +2921,23 @@ textarea[class*="span"] {
   /* 15px */
 
 }
-@media (max-width: 767px) {
-  .input-append input,
-  .input-prepend input,
-  .input-append select,
-  .input-prepend select,
-  .input-append .uneditable-input,
-  .input-prepend .uneditable-input,
-  .input-append .dropdown-menu,
-  .input-prepend .dropdown-menu,
-  .input-append .popover,
-  .input-prepend .popover {
-    margin-top: 0;
-  }
-}
+
+/* Comment out parts responsible for collapsing fixed top menus */
+/*@media (max-width: 767px) {*/
+  /*.input-append input,*/
+  /*.input-prepend input,*/
+  /*.input-append select,*/
+  /*.input-prepend select,*/
+  /*.input-append .uneditable-input,*/
+  /*.input-prepend .uneditable-input,*/
+  /*.input-append .dropdown-menu,*/
+  /*.input-prepend .dropdown-menu,*/
+  /*.input-append .popover,*/
+  /*.input-prepend .popover {*/
+    /*margin-top: 0;*/
+  /*}*/
+/*}*/
+
 .input-append input,
 .input-prepend input,
 .input-append select,
@@ -3316,11 +3298,14 @@ input.search-query {
   border-color: #1abc9c;
   color: #1abc9c;
 }
-@media (max-width: 767px) {
-  .control-group {
-    margin-bottom: 18px;
-  }
-}
+
+/* Comment out parts responsible for collapsing fixed top menus */
+/*@media (max-width: 767px) {*/
+  /*.control-group {*/
+    /*margin-bottom: 18px;*/
+  /*}*/
+/*}*/
+
 .checkbox,
 .radio {
   margin-bottom: 12px;
@@ -3715,11 +3700,14 @@ input.search-query {
   -moz-box-sizing: border-box;
   box-sizing: border-box;
 }
-@media (max-width: 767px) {
-  .ui-spinner {
-    display: block;
-  }
-}
+
+/* Comment out parts responsible for collapsing fixed top menus */
+/*@media (max-width: 767px) {*/
+  /*.ui-spinner {*/
+    /*display: block;*/
+  /*}*/
+/*}*/
+
 .ui-spinner .ui-button-text {
   display: block;
   line-height: normal;
@@ -3732,11 +3720,14 @@ input.search-query {
   text-align: center;
   text-indent: 0;
 }
-@media (max-width: 767px) {
-  .ui-spinner input {
-    margin-top: 0;
-  }
-}
+
+/* Comment out parts responsible for collapsing fixed top menus */
+/*@media (max-width: 767px) {*/
+  /*.ui-spinner input {*/
+    /*margin-top: 0;*/
+  /*}*/
+/*}*/
+
 .ui-spinner.focus input {
   color: #1abc9c;
   border-color: #1abc9c;
@@ -5056,14 +5047,17 @@ input.search-query {
 .rwd-table .radio {
   display: none;
 }
-@media (max-width: 767px) {
-  .table {
-    display: none;
-  }
-  .rwd-table {
-    display: block;
-  }
-}
+
+/* Comment out parts responsible for collapsing fixed top menus */
+/*@media (max-width: 767px) {*/
+  /*.table {*/
+    /*display: none;*/
+  /*}*/
+  /*.rwd-table {*/
+    /*display: block;*/
+  /*}*/
+/*}*/
+
 .label,
 .badge {
   background-color: #ebedef;
@@ -5275,25 +5269,28 @@ input.search-query {
   float: left;
   margin: 0 18px 0 0;
 }
-@media (max-width: 767px) {
-  .bottom-menu {
-    margin-left: -20px;
-    margin-right: -20px;
-    padding-left: 20px;
-    padding-right: 20px;
-  }
-  .bottom-menu .brand,
-  .bottom-menu .bottom-links {
-    margin-bottom: 30px;
-  }
-  .bottom-menu .bottom-links li {
-    float: none;
-    margin-bottom: 2px;
-  }
-  .bottom-menu [class*="span"]:last-child .bottom-links {
-    margin-bottom: 0;
-  }
-}
+
+/* Comment out parts responsible for collapsing fixed top menus */
+/*@media (max-width: 767px) {*/
+  /*.bottom-menu {*/
+    /*margin-left: -20px;*/
+    /*margin-right: -20px;*/
+    /*padding-left: 20px;*/
+    /*padding-right: 20px;*/
+  /*}*/
+  /*.bottom-menu .brand,*/
+  /*.bottom-menu .bottom-links {*/
+    /*margin-bottom: 30px;*/
+  /*}*/
+  /*.bottom-menu .bottom-links li {*/
+    /*float: none;*/
+    /*margin-bottom: 2px;*/
+  /*}*/
+  /*.bottom-menu [class*="span"]:last-child .bottom-links {*/
+    /*margin-bottom: 0;*/
+  /*}*/
+/*}*/
+
 .nav .dropdown-toggle .caret {
   border-bottom-color: #7f8c9a;
   border-left-width: 4px;
@@ -6064,35 +6061,38 @@ input.search-query {
   border-top-color: #2a3a4b;
   color: #ffffff;
 }
-@media (max-width: 767px) {
-  .dialog {
-    margin-left: -20px;
-    margin-right: -20px;
-    padding-left: 20px;
-    padding-right: 20px;
-  }
-  .dialog form .btn,
-  .dialog .btn {
-    display: block;
-    margin: 9px 0;
-    min-width: auto;
-    width: 100%;
-    -webkit-box-sizing: border-box;
-    -moz-box-sizing: border-box;
-    box-sizing: border-box;
-  }
-  .dialog form .btn:last-child,
-  .dialog .btn:last-child {
-    margin-bottom: 0;
-  }
-  .dialog form .btn + .btn,
-  .dialog .btn + .btn {
-    margin-top: 18px;
-  }
-  .dialog form input {
-    margin: 9px 0;
-  }
-}
+
+/* Comment out parts responsible for collapsing fixed top menus */
+/*@media (max-width: 767px) {*/
+  /*.dialog {*/
+    /*margin-left: -20px;*/
+    /*margin-right: -20px;*/
+    /*padding-left: 20px;*/
+    /*padding-right: 20px;*/
+  /*}*/
+  /*.dialog form .btn,*/
+  /*.dialog .btn {*/
+    /*display: block;*/
+    /*margin: 9px 0;*/
+    /*min-width: auto;*/
+    /*width: 100%;*/
+    /*-webkit-box-sizing: border-box;*/
+    /*-moz-box-sizing: border-box;*/
+    /*box-sizing: border-box;*/
+  /*}*/
+  /*.dialog form .btn:last-child,*/
+  /*.dialog .btn:last-child {*/
+    /*margin-bottom: 0;*/
+  /*}*/
+  /*.dialog form .btn + .btn,*/
+  /*.dialog .btn + .btn {*/
+    /*margin-top: 18px;*/
+  /*}*/
+  /*.dialog form input {*/
+    /*margin: 9px 0;*/
+  /*}*/
+/*}*/
+
 /* ============================================================
  * bootstrapSwitch v1.3 by Larentis Mattia @spiritualGuru
  * http://www.larentis.eu/switch/
