@@ -256,7 +256,7 @@ start_deps([FirstDep | Rest]) ->
 %% ====================================================================
 set_default_env_vars(Application) ->
     {ok, [Data]} = file:consult("sys.config"),
-    Config = proplists:get_value(Application, Data),
+    Config = proplists:get_value(Application, Data, []),
     lists:foreach(fun({Key, Value}) ->
         application:set_env(Application, Key, Value)
     end, Config).
