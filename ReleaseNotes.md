@@ -1,3 +1,13 @@
+ctool 2.1
+===============
+
+*ctool 2.1 * is a part of *onedata 2.1*. This is mainly a bug-fix release. See further details below.
+
+Fixed Bugs
+----------
+
+* WebGUI behaviour updated when GUI window is small
+
 ctool 2.0
 ==============
 
