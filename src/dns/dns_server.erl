@@ -171,10 +171,10 @@ handle_query(Packet, Transport) ->
 %% ====================================================================
 validate_query(DNSRec) ->
     case DNSRec of
-        #dns_rec{qdlist = [#dns_query{}], anlist = [], nslist = [], arlist = []} ->
+        #dns_rec{qdlist = [#dns_query{class = ?C_IN}], anlist = [], nslist = [], arlist = []} ->
             % The record includes a question section and no OPT RR section - ok
             ok;
-        #dns_rec{qdlist = [#dns_query{}], anlist = [], nslist = [], arlist = [#dns_rr_opt{version = Version}]} ->
+        #dns_rec{qdlist = [#dns_query{class = ?C_IN}], anlist = [], nslist = [], arlist = [#dns_rr_opt{version = Version}]} ->
             % The record includes a question section and an OPT RR section - check EDNS version
             case Version of
                 0 -> ok;
@@ -193,7 +193,7 @@ validate_query(DNSRec) ->
 %% @end
 %% ====================================================================
 -spec call_handler_module(HandlerModule :: atom(), Domain :: binary(), Type :: atom()) ->
-    {ok, [binary()]} | serv_fail | nx_domain  | not_impl | refused.
+    {ok, [binary()]} | serv_fail | nx_domain | not_impl | refused.
 %% ====================================================================
 call_handler_module(HandlerModule, Domain, Type) ->
     case type_to_fun(Type) of
