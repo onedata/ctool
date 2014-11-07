@@ -12,7 +12,8 @@
 
 %% API
 -export([binary_join/2, ensure_running/1, pmap/2, pforeach/2, time/0, mtime/0, record_type/1,
-         ensure_binary/1, ensure_list/1, ensure_unicode_list/1, ensure_unicode_binary/1, access_token_hash/1, trim_spaces/1]).
+         ensure_binary/1, ensure_list/1, ensure_unicode_list/1, ensure_unicode_binary/1, access_token_hash/1, trim_spaces/1,
+         ceil/1]).
 
 %% ====================================================================
 %% API functions
@@ -222,3 +223,11 @@ ensure_unicode_list(Binary) ->
 %% ====================================================================
 trim_spaces(Binary) when is_binary(Binary) ->
     list_to_binary(string:strip(binary_to_list(Binary), both, $ )).
+
+%% ceil/1
+%% ====================================================================
+%% @doc math ceil function (works on positive values)
+-spec ceil(N :: number()) -> integer().
+%% ====================================================================
+ceil(N) when trunc(N) == N -> N;
+ceil(N) -> trunc(N + 1).
