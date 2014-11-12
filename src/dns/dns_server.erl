@@ -171,10 +171,12 @@ handle_query(Packet, Transport) ->
 %% ====================================================================
 validate_query(DNSRec) ->
     case DNSRec of
-        #dns_rec{qdlist = [#dns_query{class = ?C_IN}], anlist = [], nslist = [], arlist = []} ->
+        #dns_rec{qdlist = [#dns_query{class = Class}], anlist = [], nslist = [], arlist = []}
+            when Class =:= ?C_IN orelse Class =:= in ->
             % The record includes a question section and no OPT RR section - ok
             ok;
-        #dns_rec{qdlist = [#dns_query{class = ?C_IN}], anlist = [], nslist = [], arlist = [#dns_rr_opt{version = Version}]} ->
+        #dns_rec{qdlist = [#dns_query{class = Class}], anlist = [], nslist = [], arlist = [#dns_rr_opt{version = Version}]}
+            when Class =:= ?C_IN orelse Class =:= in ->
             % The record includes a question section and an OPT RR section - check EDNS version
             case Version of
                 0 -> ok;
