@@ -35,31 +35,6 @@
 % Server configuration (in runtime)
 -export([set_handler_module/1, get_handler_module/0, set_max_edns_udp_size/1, get_max_edns_udp_size/0]).
 
--export([test/1, test/2]).
-
-test(Domain) ->
-    test(Domain, {8, 8, 8, 8}).
-
-test(Domain, NS) ->
-    Query = inet_dns:encode(
-        #dns_rec{
-            header = #dns_header{
-                id = crypto:rand_uniform(1, 16#FFFF),
-                opcode = 'query',
-                rd = true
-            },
-            qdlist = [#dns_query{
-                domain = Domain,
-                type = soa,
-                class = in
-            }],
-            arlist = [{dns_rr_opt, ".", opt, 1280, 0, 0, 0, <<>>}]
-        }),
-    {ok, Socket} = gen_udp:open(0, [binary, {active, false}]),
-    gen_udp:send(Socket, NS, 53, Query),
-    {ok, {NS, 53, Reply}} = gen_udp:recv(Socket, 65535),
-    inet_dns:decode(Reply).
-
 
 %% start/7
 %% ====================================================================
