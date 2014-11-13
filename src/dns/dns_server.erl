@@ -27,13 +27,13 @@
 %% ====================================================================
 %% API
 %% ====================================================================
--export([start/8, stop/1, handle_query/2, start_listening/5]).
+-export([start/7, stop/1, handle_query/2, start_listening/5]).
 
 % Functions useful in qury handler modules
--export([answer_record/3, authority_record/3, additional_record/3, authoritative_answer_flag/1]).
+-export([answer_record/4, authority_record/4, additional_record/4, authoritative_answer_flag/1]).
 
 % Server configuration (in runtime)
--export([set_handler_module/1, get_handler_module/0, set_dns_response_ttl/1, get_dns_response_ttl/0, set_max_edns_udp_size/1, get_max_edns_udp_size/0]).
+-export([set_handler_module/1, get_handler_module/0, set_max_edns_udp_size/1, get_max_edns_udp_size/0]).
 
 -export([test/1, test/2]).
 
@@ -61,7 +61,7 @@ test(Domain, NS) ->
     inet_dns:decode(Reply).
 
 
-%% start/8
+%% start/7
 %% ====================================================================
 %% @doc Starts a DNS server. The server will listen on chosen port (UDP and TCP).
 %% QueryHandlerModule must conform to dns_query_handler_behaviour.
@@ -69,12 +69,11 @@ test(Domain, NS) ->
 %% OnFailureFun is evalueated by the process if the server fails to start.
 %% @end
 %% ====================================================================
--spec start(SupervisorName :: atom(), DNSPort :: integer(), QueryHandlerModule :: atom(), DNSResponseTTL :: integer(), EdnsMaxUdpSize :: integer(),
+-spec start(SupervisorName :: atom(), DNSPort :: integer(), QueryHandlerModule :: atom(), EdnsMaxUdpSize :: integer(),
     TCPNumAcceptors :: integer(), TCPTimeout :: integer(), OnFailureFun :: function()) -> ok | {error, Reason :: term()}.
 %% ====================================================================
-start(SupervisorName, DNSPort, QueryHandlerModule, DNSResponseTTL, EdnsMaxUdpSize, TCPNumAcceptors, TCPTimeout, OnFailureFun) ->
+start(SupervisorName, DNSPort, QueryHandlerModule, EdnsMaxUdpSize, TCPNumAcceptors, TCPTimeout, OnFailureFun) ->
     set_handler_module(QueryHandlerModule),
-    set_dns_response_ttl(DNSResponseTTL),
     set_max_edns_udp_size(EdnsMaxUdpSize),
     % Listeners start is done in another process.
     % This is because this function is often called during the init of the supervisor process
@@ -109,7 +108,7 @@ stop(SupervisorName) ->
 %% ====================================================================
 handle_query(Packet, Transport) ->
     case inet_dns:decode(Packet) of
-        {ok, #dns_rec{header = Header, qdlist = QDList, anlist = _AnList, nslist = _NSList, arlist = ARList} = DNSRecWithAdditionalSection} ->
+        {ok, #dns_rec{qdlist = QDList, anlist = _AnList, nslist = _NSList, arlist = ARList} = DNSRecWithAdditionalSection} ->
             % Detach OPT RR from the DNS query record an proceed with processing it - the OPT RR will be added during answer generation
             DNSRec = DNSRecWithAdditionalSection#dns_rec{arlist = []},
             OPTRR = case ARList of
@@ -135,12 +134,12 @@ handle_query(Packet, Transport) ->
                                     case CurrentRecord of
                                         {aa, Flag} ->
                                             CurrRec#dns_rec{header = inet_dns:make_header(CurrHeader, aa, Flag)};
-                                        {Section, CurrDomain, CurrType, CurrData} ->
+                                        {Section, CurrDomain, CurrTTL, CurrType, CurrData} ->
                                             RR = inet_dns:make_rr([
                                                 {data, CurrData},
                                                 {domain, CurrDomain},
                                                 {type, CurrType},
-                                                {ttl, get_dns_response_ttl()},
+                                                {ttl, CurrTTL},
                                                 {class, Class}]),
                                             case Section of
                                                 answer -> CurrRec#dns_rec{anlist = CurrAnList ++ [RR]};
@@ -355,10 +354,10 @@ authoritative_answer_flag(Flag) ->
 %% The term should be put in list returned from handle_xxx function.
 %% @end
 %% ====================================================================
--spec answer_record(Domain :: string(), Type :: dns_query_type(), Data :: term()) -> ok.
+-spec answer_record(Domain :: string(), TTL :: integer(), Type :: dns_query_type(), Data :: term()) -> ok.
 %% ====================================================================
-answer_record(Domain, Type, Data) ->
-    {answer, Domain, Type, Data}.
+answer_record(Domain, TTL, Type, Data) ->
+    {answer, Domain, TTL, Type, Data}.
 
 
 %% authority_record/3
@@ -368,10 +367,10 @@ answer_record(Domain, Type, Data) ->
 %% The term should be put in list returned from handle_xxx function.
 %% @end
 %% ====================================================================
--spec authority_record(Domain :: string(), Type :: dns_query_type(), Data :: term()) -> ok.
+-spec authority_record(Domain :: string(), TTL :: integer(), Type :: dns_query_type(), Data :: term()) -> ok.
 %% ====================================================================
-authority_record(Domain, Type, Data) ->
-    {authority, Domain, Type, Data}.
+authority_record(Domain, TTL, Type, Data) ->
+    {authority, Domain, TTL, Type, Data}.
 
 
 %% additional_record/3
@@ -381,10 +380,10 @@ authority_record(Domain, Type, Data) ->
 %% The term should be put in list returned from handle_xxx function.
 %% @end
 %% ====================================================================
--spec additional_record(Domain :: string(), Type :: dns_query_type(), Data :: term()) -> ok.
+-spec additional_record(Domain :: string(), TTL :: integer(), Type :: dns_query_type(), Data :: term()) -> ok.
 %% ====================================================================
-additional_record(Domain, Type, Data) ->
-    {additional, Domain, Type, Data}.
+additional_record(Domain, TTL, Type, Data) ->
+    {additional, Domain, TTL, Type, Data}.
 
 
 %% set_handler_module/1
@@ -408,29 +407,6 @@ set_handler_module(Module) ->
 get_handler_module() ->
     {ok, Module} = application:get_env(ctool, query_handler_module),
     Module.
-
-
-%% set_dns_response_ttl/1
-%% ====================================================================
-%% @doc Saves DNS response TTL in application env.
-%% @end
-%% ====================================================================
--spec set_dns_response_ttl(TTLInt :: integer()) -> ok.
-%% ====================================================================
-set_dns_response_ttl(TTLInt) ->
-    ok = application:set_env(ctool, dns_response_ttl, TTLInt).
-
-
-%% get_dns_response_ttl/0
-%% ====================================================================
-%% @doc Retrieves DNS response TTL from application env.
-%% @end
-%% ====================================================================
--spec get_dns_response_ttl() -> integer().
-%% ====================================================================
-get_dns_response_ttl() ->
-    {ok, TTLInt} = application:get_env(ctool, dns_response_ttl),
-    TTLInt.
 
 
 %% set_max_udp_size/1

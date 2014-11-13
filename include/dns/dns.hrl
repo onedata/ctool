@@ -20,6 +20,13 @@
 % Atoms for reply codes for cenvenience
 -type reply_type() :: ok | serv_fail | nx_domain | not_impl | refused.
 
+% Records used internally to pass query results from handler to server, which then puts them in response.
+-type answer_record() :: {answer, Type :: dns_query_type(), Data :: term()}.
+-type authority_record() :: {authority, Type :: dns_query_type(), Data :: term()}.
+-type additional_record() :: {additional, Type :: dns_query_type(), Data :: term()}.
+-type authoritative_answer_flag() :: {aa, Flag :: boolean()}.
+-type dns_query_handler_reponse() :: [answer_record() | authority_record () | additional_record() | authoritative_answer_flag()].
+
 %% Data types that should be returned for specific types of queries:
 %% -----------------------------------------
 %% Type A, identified by macro ?S_A (RFC1035 3.4.1)
@@ -97,10 +104,3 @@
 %% NOTE: Should return list of strings for every record, for example:
 %% [["string_1_1", "string_1_2"], ["string_2_1", "string_2_2"]] - two records, each with two strings.
 %% -----------------------------------------
-
-% Records used internally to pass query results from handler to server, which then puts them in response.
--type answer_record() :: {answer, Type :: dns_query_type(), Data :: term()}.
--type authority_record() :: {authority, Type :: dns_query_type(), Data :: term()}.
--type additional_record() :: {additional, Type :: dns_query_type(), Data :: term()}.
--type authoritative_answer_flag() :: {aa, Flag :: boolean()}.
--type dns_query_handler_reponse() :: [answer_record() | authority_record () | additional_record() | authoritative_answer_flag()].
