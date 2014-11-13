@@ -300,7 +300,8 @@ start_listening(SupervisorName, DNSPort, TCPNumAcceptors, TCPTimeout, OnFailureF
                 supervisor:delete_child(SupervisorName, Pid),
                 ?error("Error while starting DNS TCP, ~p", [RanchError]),
                 throw(RanchError)
-        end
+        end,
+        ?info("DNS server started successfully.")
     catch
         _:Reason ->
             ?error("DNS Error during starting listeners, ~p", [Reason]),
