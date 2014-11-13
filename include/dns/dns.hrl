@@ -17,6 +17,9 @@
 % Allowed query types
 -type dns_query_type() :: ?S_A | ?S_NS | ?S_CNAME | ?S_SOA | ?S_WKS | ?S_PTR | ?S_HINFO | ?S_MINFO | ?S_MX | ?S_TXT.
 
+% Atoms for reply codes for cenvenience
+-type reply_type() :: ok | serv_fail | nx_domain | not_impl | refused.
+
 %% Data types that should be returned for specific types of queries:
 %% -----------------------------------------
 %% Type A, identified by macro ?S_A (RFC1035 3.4.1)

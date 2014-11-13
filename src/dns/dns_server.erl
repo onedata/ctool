@@ -118,22 +118,17 @@ handle_query(Packet, Transport) ->
                     end,
             case validate_query(DNSRec) of
                 form_error ->
-                    generate_answer(DNSRec#dns_rec{header = inet_dns:make_header(Header, rcode, ?FORMERR)}, OPTRR, Transport);
+                    generate_answer(set_reply_code(DNSRec, form_error), OPTRR, Transport);
                 bad_version ->
-                    generate_answer(DNSRec#dns_rec{header = inet_dns:make_header(Header, rcode, ?BADVERS)}, OPTRR, Transport);
+                    generate_answer(set_reply_code(DNSRec, bad_version), OPTRR, Transport);
                 ok ->
                     HandlerModule = get_handler_module(),
                     [#dns_query{domain = Domain, type = Type, class = Class}] = QDList,
                     case call_handler_module(HandlerModule, string:to_lower(Domain), Type) of
-                        serv_fail ->
-                            generate_answer(DNSRec#dns_rec{header = inet_dns:make_header(Header, rcode, ?SERVFAIL)}, OPTRR, Transport);
-                        nx_domain ->
-                            generate_answer(DNSRec#dns_rec{header = inet_dns:make_header(Header, rcode, ?NXDOMAIN)}, OPTRR, Transport);
-                        not_impl ->
-                            generate_answer(DNSRec#dns_rec{header = inet_dns:make_header(Header, rcode, ?NOTIMP)}, OPTRR, Transport);
-                        refused ->
-                            generate_answer(DNSRec#dns_rec{header = inet_dns:make_header(Header, rcode, ?REFUSED)}, OPTRR, Transport);
-                        {ok, ResponseList} ->
+                        Reply when is_atom(Reply) -> % Reply :: reply_type()
+                            generate_answer(set_reply_code(DNSRec, Reply), OPTRR, Transport);
+                        {Reply, ResponseList} ->
+                            DNSRecUpdatedHeader = set_reply_code(DNSRec, Reply),
                             %% If there was an OPT RR, it will be concated at the end of the process
                             NewRec = lists:foldl(
                                 fun(CurrentRecord, #dns_rec{header = CurrHeader, anlist = CurrAnList, nslist = CurrNSList, arlist = CurrArList} = CurrRec) ->
@@ -153,7 +148,7 @@ handle_query(Packet, Transport) ->
                                                 additional -> CurrRec#dns_rec{arlist = CurrArList ++ [RR]}
                                             end
                                     end
-                                end, DNSRec#dns_rec{}, ResponseList),
+                                end, DNSRecUpdatedHeader#dns_rec{}, ResponseList),
                             generate_answer(NewRec#dns_rec{arlist = NewRec#dns_rec.arlist}, OPTRR, Transport)
                     end
             end;
@@ -195,7 +190,7 @@ validate_query(DNSRec) ->
 %% @end
 %% ====================================================================
 -spec call_handler_module(HandlerModule :: atom(), Domain :: binary(), Type :: atom()) ->
-    {ok, [binary()]} | serv_fail | nx_domain | not_impl | refused.
+    {reply_type(), [binary()]} | reply_type().
 %% ====================================================================
 call_handler_module(HandlerModule, Domain, Type) ->
     case type_to_fun(Type) of
@@ -253,6 +248,26 @@ generate_answer(DNSRec, OPTRR, Transport) ->
         udp -> {ok, encode_udp(NewDnsRec, ClientMaxUDP)};
         tcp -> {ok, inet_dns:encode(NewDnsRec)}
     end.
+
+
+%% set_reply_code/2
+%% ====================================================================
+%% @doc Encodes a DNS record and returns a tuple accepted by dns_xxx_handler modules.
+%% Modifies flags in header according to server's capabilities.
+%% If there was an OPT RR record in request, it modifies it properly and concates to the ADDITIONAL section.
+%% @end
+%% ====================================================================
+-spec set_reply_code(DNSRec :: #dns_rec{}, ReplyType :: reply_type()) -> #dns_rec{}.
+%% ====================================================================
+set_reply_code(#dns_rec{header = Header} = DNSRec, ReplyType) ->
+    ReplyCode = case ReplyType of
+                    serv_fail -> ?SERVFAIL;
+                    nx_domain -> ?NXDOMAIN;
+                    not_impl -> ?NOTIMP;
+                    refused -> ?REFUSED;
+                    ok -> ?NOERROR
+                end,
+    DNSRec#dns_rec{header = inet_dns:make_header(Header, rcode, ReplyCode)}.
 
 
 %% encode_udp/2
