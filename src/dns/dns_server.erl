@@ -67,8 +67,8 @@ start(SupervisorName, DNSPort, QueryHandlerModule, EdnsMaxUdpSize, TCPNumAccepto
 -spec stop(SupervisorName :: atom()) -> ok.
 %% ====================================================================
 stop(SupervisorName) ->
-    % Cleaning up must be done in another process. This is because this function is often called during the init of the supervisor process
-    % that supervises the listeners - which causes a deadlock.
+    % Cleaning up must be done in another process. This is because this function is often called during the termination
+    % of the supervisor process that supervises the listeners - which causes a deadlock.
     spawn(fun() -> clear_children_and_listeners(SupervisorName, true) end),
     ok.
 
