@@ -47,9 +47,10 @@ encode(EncodingModule, Record) when is_atom(EncodingModule) ->
 encode(_, _) ->
     {error, unsupported_encoder}.
 
+
 %% decode/3
 %% ====================================================================
-%% @doc Encodes record using encoding module.
+%% @doc Decodes data using decoding module and function.
 %% @end
 -spec decode(DecodingModule, DecodingFunction, Data) -> {ok, Record} | {error, Reason} when
     DecodingModule :: string() | atom(),
