@@ -1,0 +1,6 @@
+message Message {
+    required uint32 filed1 = 1;
+    required uint64 filed2 = 2;
+    required string filed3 = 3;
+    required bytes filed4 = 4;
+}

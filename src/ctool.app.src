@@ -9,7 +9,7 @@
 {application, ctool, [
     {description, "Common tools lib for onedata project"},
     {vsn, git},
-    {modules, [test_node_starter, utils]},
+    {modules, [pb, test_node_starter, utils]},
     {registered, []},
     {applications, [
         kernel,
