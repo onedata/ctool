@@ -119,9 +119,7 @@ generate_answer_t() ->
     },
 
     ?assertEqual({ok, inet_dns:encode(DNSRecNoOPTRR)}, dns_server:generate_answer(DNSRec, undefined, tcp)),
-    ?assertEqual({ok, inet_dns:encode(DNSRecOPTRRPresent)}, dns_server:generate_answer(DNSRec, OPTRR, tcp)),
-
-    ok.
+    ?assertEqual({ok, inet_dns:encode(DNSRecOPTRRPresent)}, dns_server:generate_answer(DNSRec, OPTRR, tcp)).
 
 
 set_reply_code_t() ->
@@ -135,8 +133,7 @@ set_reply_code_t() ->
     ?assertEqual(DNSRecNXDomain, dns_server:set_reply_code(DNSRec, nx_domain)),
     ?assertEqual(DNSRecNotImp, dns_server:set_reply_code(DNSRec, not_impl)),
     ?assertEqual(DNSRecRefused, dns_server:set_reply_code(DNSRec, refused)),
-    ?assertEqual(DNSRecNoError, dns_server:set_reply_code(DNSRec, ok)),
-    ok.
+    ?assertEqual(DNSRecNoError, dns_server:set_reply_code(DNSRec, ok)).
 
 
 encode_udp_t() ->
