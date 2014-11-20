@@ -14,6 +14,11 @@
 -include("dns/dns.hrl").
 -include("logging.hrl").
 
+
+-ifdef(TEST).
+-compile(export_all).
+-endif.
+
 %% Local name of the process waiting for dns udp messages
 -define(DNS_UDP_LISTENER, dns_udp).
 
