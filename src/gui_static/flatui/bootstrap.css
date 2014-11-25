@@ -2032,7 +2032,7 @@ table {
   border-top: 0;
 }
 
-.table > tbody + tbody {
+.table tbody + tbody {
   border-top: 2px solid #dddddd;
 }
 
