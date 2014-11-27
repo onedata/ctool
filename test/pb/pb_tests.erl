@@ -41,6 +41,7 @@ pb_test_() ->
 %% ===================================================================
 
 setup() ->
+    lists:foreach(fun(_) -> ok end, [test_pb, encode_message, decode_message]),
     ok = protobuffs_compile:scan_file("../test/pb/test.proto").
 
 teardown(_) ->
@@ -79,7 +80,7 @@ should_not_encode_record_using_invalid_encoding_module() ->
     EncodeAns1 = pb:encode("test2", Record),
     EncodeAns2 = pb:encode(<<"test">>, Record),
 
-    ?assertEqual({error, unsupported_encoder_or_record}, EncodeAns1),
+    ?assertEqual({error, unsupported_encoder}, EncodeAns1),
     ?assertEqual({error, unsupported_encoder}, EncodeAns2).
 
 should_not_encode_invalid_record() ->
@@ -91,7 +92,7 @@ should_not_encode_invalid_record() ->
     EncodeAns3 = pb:encode("test", Record3),
 
     ?assertEqual({error, invalid_record}, EncodeAns1),
-    ?assertEqual({error, unsupported_encoder_or_record}, EncodeAns2),
+    ?assertEqual({error, invalid_record}, EncodeAns2),
     ?assertEqual({error, invalid_record}, EncodeAns3).
 
 should_not_decode_data_using_invalid_decoding_module() ->
@@ -108,7 +109,7 @@ should_not_decode_data_using_invalid_decoding_type() ->
     DecodeAns2 = pb:decode(<<"test">>, "message2", Data),
 
     ?assertEqual({error, unsupported_decoder}, DecodeAns1),
-    ?assertEqual({error, unsupported_decoder_or_invalid_data}, DecodeAns2).
+    ?assertEqual({error, unsupported_decoder}, DecodeAns2).
 
 should_not_decode_invalid_data() ->
     Data1 = [data],

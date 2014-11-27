@@ -29,15 +29,19 @@
     Reason :: term().
 %% ====================================================================
 encode(EncodingModule, Record) when is_list(EncodingModule) ->
-    case lists:suffix("_pb", EncodingModule) of
-        true -> encode(list_to_atom(EncodingModule), Record);
-        _ -> encode(list_to_atom(EncodingModule ++ "_pb"), Record)
+    try
+        case lists:suffix("_pb", EncodingModule) of
+            true -> encode(list_to_existing_atom(EncodingModule), Record);
+            _ -> encode(list_to_existing_atom(EncodingModule ++ "_pb"), Record)
+        end
+    catch
+        _:_ -> {error, unsupported_encoder}
     end;
 
 encode(EncodingModule, Record) when is_atom(EncodingModule) ->
     try
         RecordName = element(1, Record),
-        EncodingFunction = list_to_atom("encode_" ++ atom_to_list(RecordName)),
+        EncodingFunction = list_to_existing_atom("encode_" ++ atom_to_list(RecordName)),
         {ok, EncodingModule:EncodingFunction(Record)}
     catch
         _:undef -> {error, unsupported_encoder_or_record};
@@ -60,15 +64,23 @@ encode(_, _) ->
     Reason :: term().
 %% ====================================================================
 decode(DecodingModule, DecodingFunction, Data) when is_list(DecodingModule) ->
-    case lists:suffix("_pb", DecodingModule) of
-        true -> decode(list_to_atom(DecodingModule), DecodingFunction, Data);
-        _ -> decode(list_to_atom(DecodingModule ++ "_pb"), DecodingFunction, Data)
+    try
+        case lists:suffix("_pb", DecodingModule) of
+            true -> decode(list_to_existing_atom(DecodingModule), DecodingFunction, Data);
+            _ -> decode(list_to_existing_atom(DecodingModule ++ "_pb"), DecodingFunction, Data)
+        end
+    catch
+        _:_ -> {error, unsupported_decoder}
     end;
 
 decode(DecodingModule, DecodingFunction, Data) when is_list(DecodingFunction) ->
-    case lists:prefix("decode_", DecodingFunction) of
-        true -> decode(DecodingModule, list_to_atom(DecodingFunction), Data);
-        _ -> decode(DecodingModule, list_to_atom("decode_" ++ DecodingFunction), Data)
+    try
+        case lists:prefix("decode_", DecodingFunction) of
+            true -> decode(DecodingModule, list_to_existing_atom(DecodingFunction), Data);
+            _ -> decode(DecodingModule, list_to_existing_atom("decode_" ++ DecodingFunction), Data)
+        end
+    catch
+        _:_ -> {error, unsupported_decoder}
     end;
 
 decode(DecodingModule, DecodingFunction, Data) when is_list(Data) ->
