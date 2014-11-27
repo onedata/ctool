@@ -247,7 +247,8 @@ get_space_details(Client, SpaceId) ->
         Proplist = mochijson2:decode(ResponseBody, [{format, proplist}]),
         SpaceInfo = #space_details{
             id = proplists:get_value(<<"spaceId">>, Proplist),
-            name = proplists:get_value(<<"name">>, Proplist)
+            name = proplists:get_value(<<"name">>, Proplist),
+            size = proplists:get_value(<<"size">>, Proplist)
         },
         {ok, SpaceInfo}
     end).

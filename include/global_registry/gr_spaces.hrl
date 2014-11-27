@@ -17,7 +17,8 @@
 %% * name - Space name
 -record(space_details, {
     id :: binary(),
-    name :: binary()
+    name :: binary(),
+    size :: [{ProviderId :: binary(), Size :: pos_integer()}]
 }).
 
 -endif.
