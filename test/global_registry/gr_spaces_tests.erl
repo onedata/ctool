@@ -115,11 +115,12 @@ should_remove() ->
 should_get_details() ->
     meck:new(mochijson2),
     meck:expect(mochijson2, decode, fun
-        (response_body, [{format, proplist}]) -> [{<<"spaceId">>, <<"spaceId">>}, {<<"name">>, <<"name">>}]
+        (response_body, [{format, proplist}]) ->
+            [{<<"spaceId">>, <<"spaceId">>}, {<<"name">>, <<"name">>}, {<<"size">>, [{<<"providerId">>, 123}]}]
     end),
 
     Answer = gr_spaces:get_details(client, <<"spaceId">>),
-    ?assertEqual({ok, #space_details{id = <<"spaceId">>, name = <<"name">>}}, Answer),
+    ?assertEqual({ok, #space_details{id = <<"spaceId">>, name = <<"name">>, size = [{<<"providerId">>, 123}]}}, Answer),
 
     ?assert(meck:validate(mochijson2)),
     ok = meck:unload(mochijson2).
