@@ -69,9 +69,12 @@ setup() ->
     meck:expect(gr_endpoint, auth_request, fun
         (client, "/groups", post, <<"body">>) -> {ok, "201", [{"location", "/groups/groupId"}], response_body};
         (client, "/groups/groupId", patch, <<"body">>) -> {ok, "204", response_headers, response_body};
-        (client, "/groups/groupId/spaces", post, <<"body">>) -> {ok, "201", [{"location", "/spaces/spaceId"}], response_body};
-        (client, "/groups/groupId/spaces/join", post, <<"body">>) -> {ok, "201", [{"location", "/groups/groupId/spaces/spaceId"}], response_body};
-        (client, "/groups/groupId/users/userId/privileges", put, <<"body">>) -> {ok, "204", response_headers, response_body}
+        (client, "/groups/groupId/spaces", post, <<"body">>) ->
+            {ok, "201", [{"location", "/spaces/spaceId"}], response_body};
+        (client, "/groups/groupId/spaces/join", post, <<"body">>) ->
+            {ok, "201", [{"location", "/groups/groupId/spaces/spaceId"}], response_body};
+        (client, "/groups/groupId/users/userId/privileges", put, <<"body">>) ->
+            {ok, "204", response_headers, response_body}
     end).
 
 
@@ -247,11 +250,12 @@ should_get_spaces() ->
 should_get_space_details() ->
     meck:new(mochijson2),
     meck:expect(mochijson2, decode, fun
-        (response_body, [{format, proplist}]) -> [{<<"spaceId">>, <<"spaceId">>}, {<<"name">>, <<"name">>}]
+        (response_body, [{format, proplist}]) ->
+            [{<<"spaceId">>, <<"spaceId">>}, {<<"name">>, <<"name">>}, {<<"size">>, [{<<"providerId">>, 123}]}]
     end),
 
     Answer = gr_groups:get_space_details(client, <<"groupId">>, <<"spaceId">>),
-    ?assertEqual({ok, #space_details{id = <<"spaceId">>, name = <<"name">>}}, Answer),
+    ?assertEqual({ok, #space_details{id = <<"spaceId">>, name = <<"name">>, size = [{<<"providerId">>, 123}]}}, Answer),
 
     ?assert(meck:validate(mochijson2)),
     ok = meck:unload(mochijson2).
