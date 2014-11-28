@@ -165,8 +165,9 @@ check_port(Client, IpAddress, Port, Type) ->
 %% ====================================================================
 %% @doc Creates new Space and makes provider support created Space.
 %% User/group that has given provider a token receives all privileges
-%% for new Space. Parameters should contain: "name" of new Space and
-%% "token" associated with user/group.
+%% for new Space. Parameters should contain: "name" of new Space,
+%% "token" associated with user/group and "size" in bytes the provider
+%% intends to give for the Space.
 %% @end
 -spec create_space(Client :: client(), Parameters :: [{Key :: binary(), Value :: binary()}]) -> Result when
     Result :: {ok, SpaceId :: binary()} | {error, Reason :: term()}.
@@ -184,7 +185,8 @@ create_space(Client, Parameters) ->
 %% support_space/2
 %% ====================================================================
 %% @doc Makes provider support user's/group's Space that has given him a token.
-%% Parameters should contain: "token" associated with user/group.
+%% Parameters should contain: "token" associated with user/group and
+%% "size" in bytes the provider intends to give for the Space.
 %% @end
 -spec support_space(Client :: client(), Parameters :: [{Key :: binary(), Value :: binary()}]) -> Result when
     Result :: {ok, SpaceId :: binary()} | {error, Reason :: term()}.
@@ -245,7 +247,8 @@ get_space_details(Client, SpaceId) ->
         Proplist = mochijson2:decode(ResponseBody, [{format, proplist}]),
         SpaceInfo = #space_details{
             id = proplists:get_value(<<"spaceId">>, Proplist),
-            name = proplists:get_value(<<"name">>, Proplist)
+            name = proplists:get_value(<<"name">>, Proplist),
+            size = proplists:get_value(<<"size">>, Proplist)
         },
         {ok, SpaceInfo}
     end).
