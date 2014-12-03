@@ -9,7 +9,7 @@
 %%      test connections.
 %% @end
 %% ===================================================================
--module(wss_test_handler).
+-module(wss_handler).
 -author("Krzysztof Trzepla").
 
 %% WebSocket client handler callbacks
@@ -17,6 +17,9 @@
     websocket_handle/3,
     websocket_info/3,
     websocket_terminate/3]).
+
+%% API
+-export([send/2, recv/1, recv/2, disconnect/1, flush_errors/0]).
 
 %% session state
 -record(state, {pid}).
@@ -100,3 +103,65 @@ websocket_terminate({close, Code, _Payload}, _Req, #state{pid = Pid}) ->
 
 websocket_terminate(_Reason, _Req, _State) ->
     ok.
+
+
+%% ====================================================================
+%% API functions
+%% ====================================================================
+
+%% recv/1
+%% ====================================================================
+%% @equiv recv(Socket, 500).
+-spec recv(SocketRef :: pid()) ->
+    {ok, Data :: binary()} | {error, timout} | {error, Reason :: any()}.
+%% ====================================================================
+recv(Socket) ->
+    recv(Socket, 500).
+
+
+%% recv/2
+%% ====================================================================
+%% @doc Receives WebSocket frame from given socket. Timeouts after Timeout.
+-spec recv(SocketRef :: pid(), Timeout :: non_neg_integer()) ->
+    {ok, Data :: binary()} | {error, timout} | {error, Reason :: any()}.
+%% ====================================================================
+recv(Socket, Timeout) ->
+    receive
+        {Socket, {binary, Data}} -> {ok, Data};
+        {Socket, Other} -> {error, Other}
+    after Timeout ->
+        {error, timeout}
+    end.
+
+
+%% send/2
+%% ====================================================================
+%% @doc Sends asynchronously Data over WebSocket.
+-spec send(SocketRef :: pid(), Data :: binary()) -> ok.
+%% ====================================================================
+send(Socket, Data) ->
+    Socket ! {send, Data},
+    ok.
+
+
+%% disconnect/1
+%% ====================================================================
+%% @doc Closes WebSocket connection.
+-spec disconnect(Socket :: pid()) -> ok.
+%% ====================================================================
+disconnect(Socket) ->
+    Socket ! {close, <<>>},
+    ok.
+
+
+%% flush_errors/0
+%% ====================================================================
+%% @doc Flushes errors.
+-spec flush_errors() -> ok.
+%% ====================================================================
+flush_errors() ->
+    receive
+        {error, _} -> flush_errors()
+    after 0 ->
+        ok
+    end.
