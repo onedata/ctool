@@ -146,7 +146,7 @@ time() ->
 -spec mtime() -> Result :: integer().
 mtime() ->
     {M, S, U} = now(),
-    erlang:trunc(M * 1000000 + S * 1000000 + U / 1000).
+    erlang:trunc(M * 1000000000 + S * 1000 + U / 1000).
 
 
 %% record_type/1
