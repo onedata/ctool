@@ -217,6 +217,7 @@ average(List) ->
 pmap_f(Parent, Ref, Fun, X) -> Parent ! {self(), Ref, (catch Fun(X))}.
 
 %%--------------------------------------------------------------------
+%% @private
 %% @doc
 %% Gathers the results of pmap.
 %% @end
@@ -228,6 +229,7 @@ pmap_gather([PID | T], Ref, Acc) ->
     end.
 
 %%--------------------------------------------------------------------
+%% @private
 %% @doc
 %% Runs a function on X and signals parent that it's done.
 %% @end
@@ -235,6 +237,7 @@ pmap_gather([PID | T], Ref, Acc) ->
 pforeach_f(Parent, Ref, Fun, X) -> catch Fun(X), Parent ! Ref.
 
 %%--------------------------------------------------------------------
+%% @private
 %% @doc
 %% Joins pforeach processes.
 %% @end
