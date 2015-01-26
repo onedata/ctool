@@ -213,6 +213,7 @@ average(List) ->
 %% @doc
 %% Runs a function on X and returns its result to parent.
 %% @end
+%%--------------------------------------------------------------------
 -spec pmap_f(Parent :: pid(), Ref :: reference(), Fun :: fun((E :: A) -> any()), X :: A) -> {pid(), reference(), term()}.
 pmap_f(Parent, Ref, Fun, X) -> Parent ! {self(), Ref, (catch Fun(X))}.
 
@@ -221,6 +222,7 @@ pmap_f(Parent, Ref, Fun, X) -> Parent ! {self(), Ref, (catch Fun(X))}.
 %% @doc
 %% Gathers the results of pmap.
 %% @end
+%%--------------------------------------------------------------------
 -spec pmap_gather(PIDs :: [pid()], Ref :: reference(), Acc :: list()) -> list().
 pmap_gather([], _Ref, Acc) -> lists:reverse(Acc);
 pmap_gather([PID | T], Ref, Acc) ->
@@ -233,6 +235,7 @@ pmap_gather([PID | T], Ref, Acc) ->
 %% @doc
 %% Runs a function on X and signals parent that it's done.
 %% @end
+%%--------------------------------------------------------------------
 -spec pforeach_f(Parent :: pid(), Ref :: reference(), Fun :: fun((E :: A) -> any()), X :: A) -> reference().
 pforeach_f(Parent, Ref, Fun, X) -> catch Fun(X), Parent ! Ref.
 
