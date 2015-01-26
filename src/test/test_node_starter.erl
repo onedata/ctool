@@ -43,8 +43,8 @@ prepare_test_environment(Config, DescriptionFile) ->
     Nodes = [Ccm, Worker] = start_test_nodes(2, true),
     DBNode = ?DB_NODE,
 
-    {App_name, Deps} = DescriptionFile,
-    start_app_on_nodes(App_name, Deps, Nodes, [
+    {App_name, App_deps} = DescriptionFile,
+    start_app_on_nodes(App_name, App_deps, Nodes, [
         [{node_type, ccm}, {ccm_nodes, [Ccm]}, {db_nodes, [DBNode]}, {workers_to_trigger_init, 1}],
         [{node_type, worker}, {dns_port, 1300}, {ccm_nodes, [Ccm]}, {db_nodes, [DBNode]}]
     ]),
