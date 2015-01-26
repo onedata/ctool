@@ -30,10 +30,27 @@
 % Starting and stoping deps for tester node (ct runner node)
 -export([start_deps_for_tester_node/0, stop_deps_for_tester_node/0]).
 
+-export([prepare_test_environment/2]).
 
 %% ====================================================================
 %% Starting and stoping nodes
 %% ====================================================================
+
+prepare_test_environment(Config, DescriptionFile) ->
+    ?INIT_CODE_PATH,
+    start_deps_for_tester_node(),
+
+    Nodes = [Ccm, Worker] = start_test_nodes(2, true),
+    DBNode = ?DB_NODE,
+
+    {App_name, Deps} = DescriptionFile,
+    start_app_on_nodes(App_name, Deps, Nodes, [
+        [{node_type, ccm}, {ccm_nodes, [Ccm]}, {db_nodes, [DBNode]}, {workers_to_trigger_init, 1}],
+        [{node_type, worker}, {dns_port, 1300}, {ccm_nodes, [Ccm]}, {db_nodes, [DBNode]}]
+    ]),
+
+    lists:append([{nodes, [Nodes]}, {op_worker_nodes, [Worker]}, {op_ccm_nodes, [Ccm]}, {op_db_nodes, [DBNode]}], Config).
+
 
 %% start_test_nodes/1
 %% ====================================================================
