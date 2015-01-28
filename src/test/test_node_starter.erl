@@ -9,6 +9,7 @@
 -module(test_node_starter).
 -author("Tomasz Lichon").
 
+-include_lib("common_test/include/ct.hrl").
 -include("test/test_node_starter.hrl").
 -include("test/assertions.hrl").
 
@@ -40,7 +41,7 @@ prepare_test_environment(Config, DescriptionFile) ->
     ?INIT_CODE_PATH,
     start_deps_for_tester_node(),
 
-    StartLog = os:cmd("../../../../docker/provider_up.py -b /home/michal/oneprovider -c /home/michal/bamboos/docker/createService.js ../env_desc.json"),
+    StartLog = os:cmd("../../docker/provider_up.py -b /home/michal/oneprovider -c /home/michal/bamboos/docker/createService.js nodes_management_test/env_desc.json"),
     EnvDesc = json_parser:parse_json_binary_to_atom_proplist(StartLog),
 
     Dns = ?config(op_dns, EnvDesc),
@@ -48,27 +49,27 @@ prepare_test_environment(Config, DescriptionFile) ->
     Ccms = ?config(op_ccm_nodes, EnvDesc),
 
     erlang:set_cookie(node(), oneprovider_node),
-    ct:print("~p", [os:cmd("echo \"nameserver " ++ atom_to_list(Dns) ++ "\" > /etc/resolv.conf")]),
-    ct:print("~p", [os:cmd("cat /etc/resolv.conf")]),
+    os:cmd("echo \"nameserver " ++ atom_to_list(Dns) ++ "\" > /etc/resolv.conf"),
+    os:cmd("cat /etc/resolv.conf"),
 
     ping_nodes(lists:append(Ccms, Workers)),
     lists:append(Config, proplists:delete(Dns, EnvDesc)).
 
 ping_nodes(Nodes) ->
-    ping_nodes(Nodes, 30).
+    ping_nodes(Nodes, 50).
 ping_nodes(_Nodes, 0) ->
     throw(nodes_connection_error);
 ping_nodes(Nodes, Tries) ->
     OkNodes = lists:foldl(fun(N, Sum) ->
         case net_adm:ping(N) of
-            ping -> Sum + 1;
-            pong -> Sum
+            pong -> Sum + 1;
+            pang -> Sum
         end
     end, 0, Nodes),
     case length(Nodes) of
         OkNodes -> ok;
         _ ->
-            timer:sleep(500),
+            timer:sleep(2000),
             ping_nodes(Nodes, Tries - 1)
     end.
 
