@@ -38,10 +38,9 @@
 %% ====================================================================
 
 prepare_test_environment(Config, DescriptionFile) ->
-    ?INIT_CODE_PATH,
     start_deps_for_tester_node(),
 
-    StartLog = os:cmd("../../docker/provider_up.py -b /home/michal/oneprovider -c /home/michal/bamboos/docker/createService.js nodes_management_test/env_desc.json"),
+    StartLog = os:cmd("../../docker/provider_up.py -b /home/michal/oneprovider -c /home/michal/bamboos/docker/createService.js " ++ DescriptionFile),
     EnvDesc = json_parser:parse_json_binary_to_atom_proplist(StartLog),
 
     Dns = ?config(op_dns, EnvDesc),
