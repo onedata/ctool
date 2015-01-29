@@ -43,7 +43,7 @@ prepare_test_environment(Config, DescriptionFile) ->
     StartLog = os:cmd("../deps/bamboos/docker/provider_up.py -b `pwd`/.. -c `pwd`/../deps/bamboos/docker/createService.js " ++ DescriptionFile),
     EnvDesc = json_parser:parse_json_binary_to_atom_proplist(StartLog),
 
-    Dns = ?config(op_dns, EnvDesc),
+    Dns = ?config(dns, EnvDesc),
     Workers = ?config(op_worker_nodes, EnvDesc),
     Ccms = ?config(op_ccm_nodes, EnvDesc),
 
@@ -52,7 +52,7 @@ prepare_test_environment(Config, DescriptionFile) ->
     os:cmd("cat /etc/resolv.conf"),
 
     ping_nodes(lists:append(Ccms, Workers)),
-    lists:append(Config, proplists:delete(Dns, EnvDesc)).
+    lists:append(Config, proplists:delete(dns, EnvDesc)).
 
 ping_nodes(Nodes) ->
     ping_nodes(Nodes, 100).
