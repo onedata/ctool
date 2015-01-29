@@ -55,26 +55,17 @@ prepare_test_environment(Config, DescriptionFile) ->
     lists:append(Config, proplists:delete(dns, EnvDesc)).
 
 ping_nodes(Nodes) ->
-    ping_nodes(Nodes, 100).
+    ping_nodes(Nodes, 30).
 ping_nodes(_Nodes, 0) ->
     throw(nodes_connection_error);
 ping_nodes(Nodes, Tries) ->
-    OkNodes = lists:foldl(fun(N, Sum) ->
-        case net_adm:ping(N) of
-            pong ->
-                case rpc:call(N, init, get_status, []) of
-                    {started, _} -> Sum + 1;
-                    X -> Sum
-                end;
-            pang ->
-                Sum
-        end
-    end, 0, Nodes),
-    case length(Nodes) of
-        OkNodes ->
+    AllConnected = lists:all(fun(Node) -> pong == net_adm:ping(Node) end, Nodes),
+    NotifierStatus = (catch sys:get_status({global, cluster_state_notifier})), %todo customize gen_server we're waiting for
+    case {AllConnected, NotifierStatus} of
+        {true, {status,_,_,[_,running,_,_,[_,{data,[{"Status",running},_,_]},_]]}} ->
             ok;
         _ ->
-            timer:sleep(2000),
+            timer:sleep(1000),
             ping_nodes(Nodes, Tries - 1)
     end.
 
