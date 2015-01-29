@@ -31,7 +31,7 @@
 % Starting and stoping deps for tester node (ct runner node)
 -export([start_deps_for_tester_node/0, stop_deps_for_tester_node/0]).
 
--export([prepare_test_environment/2]).
+-export([prepare_test_environment/2, clean_environment/1]).
 
 %% ====================================================================
 %% Starting and stoping nodes
@@ -77,6 +77,18 @@ ping_nodes(Nodes, Tries) ->
             timer:sleep(2000),
             ping_nodes(Nodes, Tries - 1)
     end.
+
+clean_environment(Config) ->
+    Dockers = ?config(docker_ids, Config),
+    DockersStr = lists:foldl(fun(D, Acc) ->
+        DStr = atom_to_list(D),
+        case Acc of
+            "" -> DStr;
+            _ -> Acc ++ " " ++ DStr
+        end
+    end, "", Dockers),
+    os:cmd("../deps/bamboos/docker/cleanup.py " ++ DockersStr),
+    stop_deps_for_tester_node().
 
 %% start_test_nodes/1
 %% ====================================================================
