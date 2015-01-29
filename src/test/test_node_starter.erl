@@ -55,18 +55,24 @@ prepare_test_environment(Config, DescriptionFile) ->
     lists:append(Config, proplists:delete(Dns, EnvDesc)).
 
 ping_nodes(Nodes) ->
-    ping_nodes(Nodes, 50).
+    ping_nodes(Nodes, 100).
 ping_nodes(_Nodes, 0) ->
     throw(nodes_connection_error);
 ping_nodes(Nodes, Tries) ->
     OkNodes = lists:foldl(fun(N, Sum) ->
         case net_adm:ping(N) of
-            pong -> Sum + 1;
-            pang -> Sum
+            pong ->
+                case rpc:call(N, init, get_status, []) of
+                    {started, _} -> Sum + 1;
+                    X -> Sum
+                end;
+            pang ->
+                Sum
         end
     end, 0, Nodes),
     case length(Nodes) of
-        OkNodes -> ok;
+        OkNodes ->
+            ok;
         _ ->
             timer:sleep(2000),
             ping_nodes(Nodes, Tries - 1)
