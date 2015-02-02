@@ -40,7 +40,7 @@
 prepare_test_environment(Config, DescriptionFile) ->
     start_deps_for_tester_node(),
 
-    StartLog = os:cmd("../deps/bamboos/docker/provider_up.py -b `pwd`/.. -c `pwd`/../deps/bamboos/docker/createService.js " ++ DescriptionFile),
+    StartLog = os:cmd("../bamboos/docker/provider_up.py -b $(pwd)/.. " ++ DescriptionFile),
     EnvDesc = json_parser:parse_json_binary_to_atom_proplist(StartLog),
 
     Dns = ?config(dns, EnvDesc),
