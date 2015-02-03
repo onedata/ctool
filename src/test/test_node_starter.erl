@@ -78,7 +78,7 @@ clean_environment(Config) ->
             _ -> Acc ++ " " ++ DStr
         end
     end, "", Dockers),
-    os:cmd("../deps/bamboos/docker/cleanup.py " ++ DockersStr),
+    os:cmd("../bamboos/docker/cleanup.py " ++ DockersStr),
     stop_deps_for_tester_node().
 
 %% start_test_nodes/1
