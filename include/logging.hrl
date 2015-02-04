@@ -80,6 +80,11 @@
 %% ===================================================================
 % Convienience macros for development purposes
 
+% Prints bad request warning (frequently used in gen_servers)
+-define(log_bad_request(Request),
+    ?warning("~p:~p - bad request ~p", [?MODULE, ?LINE, Request])
+).
+
 % Prints a single variable
 -define(dump(_Arg), io:format(user, "[DUMP] ~s: ~p~n~n", [??_Arg, _Arg])).
 
