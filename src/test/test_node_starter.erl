@@ -45,8 +45,7 @@ prepare_test_environment(Config, DescriptionFile) ->
     Ccms = ?config(op_ccm_nodes, EnvDesc),
 
     erlang:set_cookie(node(), oneprovider_node),
-    os:cmd("echo \"nameserver " ++ atom_to_list(Dns) ++ "\" > /etc/resolv.conf"),
-    os:cmd("cat /etc/resolv.conf"),
+    os:cmd("echo nameserver " ++ atom_to_list(Dns) ++ " > /etc/resolv.conf"),
 
     ping_nodes(lists:append(Ccms, Workers)),
 
