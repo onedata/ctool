@@ -37,6 +37,13 @@
 %% Starting and stoping nodes
 %% ====================================================================
 
+%%--------------------------------------------------------------------
+%% @doc
+%% Starts deps and dockers with needed applications and mocks.
+%% @end
+%%--------------------------------------------------------------------
+-spec prepare_test_environment(Config :: list(), DescriptionFile :: string()) -> Result when
+    Result :: list().
 prepare_test_environment(Config, DescriptionFile) ->
     start_deps_for_tester_node(),
 
@@ -54,6 +61,12 @@ prepare_test_environment(Config, DescriptionFile) ->
     ping_nodes(lists:append(Ccms, Workers)),
     lists:append(Config, proplists:delete(dns, EnvDesc)).
 
+%%--------------------------------------------------------------------
+%% @doc
+%% Checks connection with nodes..
+%% @end
+%%--------------------------------------------------------------------
+-spec ping_nodes(Nodes :: list()) -> ok | no_return().
 ping_nodes(Nodes) ->
     ping_nodes(Nodes, 30).
 ping_nodes(_Nodes, 0) ->
@@ -69,6 +82,12 @@ ping_nodes(Nodes, Tries) ->
             ping_nodes(Nodes, Tries - 1)
     end.
 
+%%--------------------------------------------------------------------
+%% @doc
+%% Starts dockers and deps.
+%% @end
+%%--------------------------------------------------------------------
+-spec clean_environment(Config :: list()) -> ok.
 clean_environment(Config) ->
     Dockers = ?config(docker_ids, Config),
     DockersStr = lists:foldl(fun(D, Acc) ->
@@ -79,7 +98,8 @@ clean_environment(Config) ->
         end
     end, "", Dockers),
     os:cmd("../bamboos/docker/cleanup.py " ++ DockersStr),
-    stop_deps_for_tester_node().
+    stop_deps_for_tester_node(),
+    ok.
 
 %% start_test_nodes/1
 %% ====================================================================
