@@ -24,7 +24,7 @@
 %% @end
 -spec encode(EncodingModule, Record) -> {ok, Data} | {error, Reason} when
     EncodingModule :: string() | atom(),
-    Record :: record(),
+    Record :: tuple(),
     Data :: iolist(),
     Reason :: term().
 %% ====================================================================
@@ -60,7 +60,7 @@ encode(_, _) ->
     DecodingModule :: string() | atom(),
     DecodingFunction :: string() | atom(),
     Data :: iolist(),
-    Record :: record(),
+    Record :: tuple(),
     Reason :: term().
 %% ====================================================================
 decode(DecodingModule, DecodingFunction, Data) when is_list(DecodingModule) ->
