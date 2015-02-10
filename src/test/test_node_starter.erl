@@ -25,38 +25,45 @@
 %% @end
 %%--------------------------------------------------------------------
 -spec prepare_test_environment(Config :: list(), DescriptionFile :: string()) ->
-  Result :: list().
+    Result :: list() | {fail, tuple()}.
 prepare_test_environment(Config, DescriptionFile) ->
-    DataDir = proplists:get_value(data_dir, Config),
-    CtTestRoot = filename:join(DataDir, ".."),
-    ProjectRoot = filename:join(CtTestRoot, ".."),
+    try
+        DataDir = proplists:get_value(data_dir, Config),
+        CtTestRoot = filename:join(DataDir, ".."),
+        ProjectRoot = filename:join(CtTestRoot, ".."),
 
-    ConfigWithPaths =
-      [{ct_test_root, CtTestRoot}, {project_root, ProjectRoot} | Config],
+        ConfigWithPaths =
+            [{ct_test_root, CtTestRoot}, {project_root, ProjectRoot} | Config],
 
-    ProviderUpScript =
-      filename:join([ProjectRoot, "bamboos", "docker", "provider_up.py"]),
+        ProviderUpScript =
+            filename:join([ProjectRoot, "bamboos", "docker", "provider_up.py"]),
 
-    StartLog = cmd([ProviderUpScript, "-b", ProjectRoot, DescriptionFile]),
-    EnvDesc = json_parser:parse_json_binary_to_atom_proplist(StartLog),
+        StartLog = cmd([ProviderUpScript, "-b", ProjectRoot, DescriptionFile]),
+        EnvDesc = json_parser:parse_json_binary_to_atom_proplist(StartLog),
 
-    Dns = ?config(dns, EnvDesc),
-    Workers = ?config(op_worker_nodes, EnvDesc),
-    Ccms = ?config(op_ccm_nodes, EnvDesc),
+        Dns = ?config(dns, EnvDesc),
+        Workers = ?config(op_worker_nodes, EnvDesc),
+        Ccms = ?config(op_ccm_nodes, EnvDesc),
 
-    erlang:set_cookie(node(), oneprovider_node),
-    os:cmd("echo nameserver " ++ atom_to_list(Dns) ++ " > /etc/resolv.conf"),
+        erlang:set_cookie(node(), oneprovider_node),
+        os:cmd("echo nameserver " ++ atom_to_list(Dns) ++ " > /etc/resolv.conf"),
 
-    ping_nodes(lists:append(Ccms, Workers)),
+        ping_nodes(lists:append(Ccms, Workers)),
 
-    cluster_state_notifier:cast({subscribe_for_init, self(), length(Workers)}),
-    receive
-        init_finished -> ok
-    after
-        timer:seconds(50) -> throw(timeout)
-    end,
+        cluster_state_notifier:cast({subscribe_for_init, self(), length(Workers)}),
+        receive
+            init_finished -> ok
+        after
+            timer:seconds(50) ->
+                throw(timeout)
+        end,
 
-    lists:append(ConfigWithPaths, proplists:delete(dns, EnvDesc)).
+        lists:append(ConfigWithPaths, proplists:delete(dns, EnvDesc))
+    catch
+        E1:E2 ->
+            clean_environment(Config),
+            {fail, {init_failed, E1, E2}}
+    end.
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -65,7 +72,7 @@ prepare_test_environment(Config, DescriptionFile) ->
 %%--------------------------------------------------------------------
 -spec ping_nodes(Nodes :: list()) -> ok | no_return().
 ping_nodes(Nodes) ->
-    ping_nodes(Nodes, 30).
+    ping_nodes(Nodes, 300).
 ping_nodes(_Nodes, 0) ->
     throw(nodes_connection_error);
 ping_nodes(Nodes, Tries) ->
@@ -97,8 +104,8 @@ clean_environment(Config) ->
 
     ProjectRoot = ?config(project_root, Config),
     CleanupScript =
-      filename:join([ProjectRoot, "bamboos", "docker", "cleanup.py"]),
-  
+        filename:join([ProjectRoot, "bamboos", "docker", "cleanup.py"]),
+
     cmd([CleanupScript, DockersStr]),
     ok.
 
@@ -108,4 +115,4 @@ clean_environment(Config) ->
 %% @end
 %%--------------------------------------------------------------------
 cmd(Command) ->
-  os:cmd(string:join(Command, " ")).
+    os:cmd(string:join(Command, " ")).
