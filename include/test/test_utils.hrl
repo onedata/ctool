@@ -18,8 +18,8 @@
 %% Returns absolute path to given file in the test data directory
 -define(TEST_FILE(Config, X), filename:join(?config(data_dir, Config), X)).
 
-%% Catches suite init exceptions
--define(TRY_INIT(Config, EnvDescription),
+%% Initializes test environment
+-define(TEST_INIT(Config, EnvDescription),
     try
         test_node_starter:prepare_test_environment(Config, EnvDescription, ?MODULE)
     catch
