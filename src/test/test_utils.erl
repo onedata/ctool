@@ -67,14 +67,12 @@ mock_new(Nodes, ModuleSpecs, CustomOptions) ->
 %% Mocks module's function on given nodes using 'Expectation' function.
 %% @end
 %%--------------------------------------------------------------------
--spec mock_expect(Nodes :: node() | [node()], Modules :: module() | [module()],
+-spec mock_expect(Nodes :: node() | [node()], Modules :: module(),
     FunctionName :: atom(), Expectation :: function()) -> ok | no_return().
-mock_expect(Nodes, Modules, FunctionName, Expectation) ->
+mock_expect(Nodes, Module, FunctionName, Expectation) ->
     lists:foreach(fun(Node) ->
-        lists:foreach(fun(Module) ->
-            ?assertEqual(ok, rpc:call(Node, meck, expect, [Module, FunctionName, Expectation]))
-        end, Modules)
-    end, Nodes).
+        ?assertEqual(ok, rpc:call(Node, meck, expect, [Module, FunctionName, Expectation]))
+    end, as_list(Nodes)).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -87,8 +85,8 @@ mock_validate(Nodes, Modules) ->
     lists:foreach(fun(Node) ->
         lists:foreach(fun(Module) ->
             ?assert(rpc:call(Node, meck, validate, [Module]))
-        end, Modules)
-    end, Nodes).
+        end, as_list(Modules))
+    end, as_list(Nodes)).
 
 %%%===================================================================
 %%% Internal functions
