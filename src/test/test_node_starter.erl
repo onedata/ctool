@@ -62,7 +62,7 @@ prepare_test_environment(Config, DescriptionFile, Module) ->
 
 %%--------------------------------------------------------------------
 %% @doc
-%% Starts dockers and deps.
+%% Cleans environment by running 'cleanup.py' script.
 %% @end
 %%--------------------------------------------------------------------
 -spec clean_environment(Config :: list()) -> ok.
