@@ -67,7 +67,7 @@
 %% Should return number of deleted session tokens.
 %% @end
 %%--------------------------------------------------------------------
--callback clear_expired_sessions() -> integer().
+-callback clear_expired_sessions() -> non_neg_integer().
 
 %%--------------------------------------------------------------------
 %% @doc
