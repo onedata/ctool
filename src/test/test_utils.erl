@@ -67,7 +67,7 @@ mock_new(Nodes, ModuleSpecs, CustomOptions) ->
 %% Mocks module's function on given nodes using 'Expectation' function.
 %% @end
 %%--------------------------------------------------------------------
--spec mock_expect(Nodes :: node() | [node()], Modules :: module(),
+-spec mock_expect(Nodes :: node() | [node()], Module :: module(),
     FunctionName :: atom(), Expectation :: function()) -> ok | no_return().
 mock_expect(Nodes, Module, FunctionName, Expectation) ->
     lists:foreach(fun(Node) ->
