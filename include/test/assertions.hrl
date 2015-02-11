@@ -2,7 +2,7 @@
 %%% @author Tomasz Lichon
 %%% @copyright (C) 2014, ACK CYFRONET AGH
 %%% @doc
-%%% Assertion macros used in ct tests
+%%% Assertion macros used in ct tests.
 %%% @end
 %%% Created : 04. May 2014 9:09 PM
 %%%-------------------------------------------------------------------
