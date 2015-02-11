@@ -109,7 +109,7 @@ mock_unload(Nodes, Modules) ->
 %% @equiv receive_any(0)
 %% @end
 %%--------------------------------------------------------------------
--spec receive_any() -> ok | {error, timeout}.
+-spec receive_any() -> {ok, ReceivedMsg :: term()} | {error, timeout}.
 receive_any() ->
     receive_any(timer:seconds(0)).
 
@@ -119,10 +119,11 @@ receive_any() ->
 %% @equiv receive_any(0)
 %% @end
 %%--------------------------------------------------------------------
--spec receive_any(Timeout :: timeout()) -> ok | {error, timeout}.
+-spec receive_any(Timeout :: timeout()) ->
+    {ok, ReceivedMsg :: term()} | {error, timeout}.
 receive_any(Timeout) ->
     receive
-        _ -> ok
+        Msg -> {ok, Msg}
     after
         Timeout -> {error, timeout}
     end.
@@ -134,7 +135,7 @@ receive_any(Timeout) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec receive_msg(Msg :: term()) ->
-    ok | {error, {timeout, UnreceivedMsg :: term()}}.
+    {ok, ReceivedMsg :: term()} | {error, {timeout, UnreceivedMsg :: term()}}.
 receive_msg(Msg) ->
     receive_msg(Msg, timer:seconds(0)).
 
@@ -144,10 +145,10 @@ receive_msg(Msg) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec receive_msg(Msg :: term(), Timeout :: timeout()) ->
-    ok | {error, {timeout, UnreceivedMsg :: term()}}.
+    {ok, ReceivedMsg :: term()} | {error, {timeout, UnreceivedMsg :: term()}}.
 receive_msg(Msg, Timeout) ->
     receive
-        Msg -> ok
+        Msg -> {ok, Msg}
     after
         Timeout -> {error, {timeout, Msg}}
     end.
