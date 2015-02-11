@@ -15,7 +15,8 @@
 -include("test/test_utils.hrl").
 
 %% API
--export([mock_new/2, mock_new/3, mock_expect/4, mock_validate/2]).
+-export([mock_new/2, mock_new/3, mock_expect/4, mock_validate/2, mock_unload/2]).
+-export([receive_any/0, receive_any/1, receive_msg/1, receive_msg/2]).
 
 -type mock_opts() :: passthrough | non_strict | unstick | no_link.
 -type mock_module_opts() :: [mock_opts()].
@@ -87,6 +88,69 @@ mock_validate(Nodes, Modules) ->
             ?assert(rpc:call(Node, meck, validate, [Module]))
         end, as_list(Modules))
     end, as_list(Nodes)).
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Validates modules' mocks on given nodes.
+%% @end
+%%--------------------------------------------------------------------
+-spec mock_unload(Nodes :: node() | [node()], Modules :: module() | [module()]) ->
+    ok | no_return().
+mock_unload(Nodes, Modules) ->
+    lists:foreach(fun(Node) ->
+        lists:foreach(fun(Module) ->
+            ?assertEqual(ok, rpc:call(Node, meck, unload, [Module]))
+        end, as_list(Modules))
+    end, as_list(Nodes)).
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Receives any message or returns immediately with an error.
+%% @equiv receive_any(0)
+%% @end
+%%--------------------------------------------------------------------
+-spec receive_any() -> ok | {error, timeout}.
+receive_any() ->
+    receive_any(timer:seconds(0)).
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Receives any message or returns an error after timeout.
+%% @equiv receive_any(0)
+%% @end
+%%--------------------------------------------------------------------
+-spec receive_any(Timeout :: timeout()) -> ok | {error, timeout}.
+receive_any(Timeout) ->
+    receive
+        _ -> ok
+    after
+        Timeout -> {error, timeout}
+    end.
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Receives given message or returns immediately with an error.
+%% @equiv receive_msg(Msg, 0)
+%% @end
+%%--------------------------------------------------------------------
+-spec receive_msg(Msg :: term()) ->
+    ok | {error, {timeout, UnreceivedMsg :: term()}}.
+receive_msg(Msg) ->
+    receive_msg(Msg, timer:seconds(0)).
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Receives given message or returns an error after timeout.
+%% @end
+%%--------------------------------------------------------------------
+-spec receive_msg(Msg :: term(), Timeout :: timeout()) ->
+    ok | {error, {timeout, UnreceivedMsg :: term()}}.
+receive_msg(Msg, Timeout) ->
+    receive
+        Msg -> ok
+    after
+        Timeout -> {error, {timeout, Msg}}
+    end.
 
 %%%===================================================================
 %%% Internal functions
