@@ -61,6 +61,7 @@ prepare_test_environment(Config, DescriptionFile) ->
         lists:append(ConfigWithPaths, proplists:delete(dns, EnvDesc))
     catch
         E1:E2 ->
+            ct:print("Prepare of environment failed ~p:~p~n~p", [E1, E2, erlang:get_stacktrace()]),
             clean_environment(Config),
             {fail, {init_failed, E1, E2}}
     end.

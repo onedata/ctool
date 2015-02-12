@@ -15,8 +15,19 @@
 -annotation('function').
 -include_lib("annotations/include/types.hrl").
 
--compile(export_all).
+-export([around_advice/4]).
 
+%%%===================================================================
+%%% API
+%%%===================================================================
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Function executed instead of annotated function. May start
+%% annotated function inside.
+%% @end
+%%--------------------------------------------------------------------
+-spec around_advice(#annotation{}, M :: atom(), F :: atom(), Inputs :: list()) -> Result :: term().
 around_advice(#annotation{data = {perf_cases, Cases}}, M, F, Inputs) ->
   case os:getenv("perf_test") of
     "true" ->
@@ -51,13 +62,30 @@ around_advice(#annotation{data = ConfExt}, M, F, Inputs) when is_list(ConfExt)->
 around_advice(#annotation{}, M, F, Inputs) ->
   around_advice(#annotation{data=[]}, M, F, Inputs).
 
+%%%===================================================================
+%%% Internal functions
+%%%===================================================================
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Executes multiple test configurations.
+%% @end
+%%--------------------------------------------------------------------
+-spec exec_perf_config(M :: atom(), F :: atom(), Inputs :: list(), Ext :: list(), Repeats :: integer()) -> ok.
 exec_perf_config(M, F, Inputs, Ext, Repeats) ->
   [I1] = Inputs,
   Ans = exec_multiple_tests(M, F, [I1 ++ Ext], Repeats),
   {ok, File} = file:open("perf_"++atom_to_list(M)++"_"++atom_to_list(F), [append]),
   io:fwrite(File, "Time: ~p, ok_counter ~p, errors: ~p, repeats ~p, conf_ext: ~p~n", Ans ++ [Repeats, Ext]),
-  file:close(File).
+  file:close(File),
+  ok.
 
+%%--------------------------------------------------------------------
+%% @doc
+%% Executes test configuration many times. Returns [Time, OkNum, Errors].
+%% @end
+%%--------------------------------------------------------------------
+-spec exec_multiple_tests(M :: atom(), F :: atom(), Inputs :: list(), Count :: integer()) -> list().
 exec_multiple_tests(M, F, Inputs, Count) ->
   exec_multiple_tests(M, F, Inputs, Count, 0, 0, []).
 
@@ -72,6 +100,12 @@ exec_multiple_tests(M, F, Inputs, Count, Time, OkNum, Errors) ->
       exec_multiple_tests(M, F, Inputs, Count - 1, Time + T, OkNum + 1, Errors)
   end.
 
+%%--------------------------------------------------------------------
+%% @doc
+%% Executes test configuration and returns time of execution.
+%% @end
+%%--------------------------------------------------------------------
+-spec exec_test(M :: atom(), F :: atom(), Inputs :: list()) -> integer() | {error, term()}.
 exec_test(M, F, Inputs) ->
   try
     BeforeProcessing = os:timestamp(),
@@ -83,6 +117,12 @@ exec_test(M, F, Inputs) ->
       {error, {E1,E2}}
   end.
 
+%%--------------------------------------------------------------------
+%% @doc
+%% Checks if linked processes have not failed.
+%% @end
+%%--------------------------------------------------------------------
+-spec check_links(AfterProcessing :: integer(), BeforeProcessing :: integer()) -> integer() | {error, term()}.
 check_links(AfterProcessing, BeforeProcessing) ->
   receive
     {'EXIT', _, normal} ->
