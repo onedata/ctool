@@ -17,6 +17,7 @@
 %% API
 -export([mock_new/2, mock_new/3, mock_expect/4, mock_validate/2, mock_unload/2]).
 -export([receive_any/0, receive_any/1, receive_msg/1, receive_msg/2]).
+-export([get_env/3, set_env/4]).
 
 -type mock_opts() :: passthrough | non_strict | unstick | no_link.
 -type mock_module_opts() :: [mock_opts()].
@@ -51,7 +52,8 @@ mock_new(Nodes, ModuleSpec) ->
 %% if not provided.
 %% @end
 %%--------------------------------------------------------------------
--spec mock_new(Nodes :: node() | [node()], ModuleSpecs :: [mock_module_spec()],
+-spec mock_new(Nodes :: node() | [node()],
+    ModuleSpecs :: mock_module_spec() | [mock_module_spec()],
     CustomOptions :: mock_module_opts()) -> ok | no_return().
 mock_new(Nodes, ModuleSpecs, CustomOptions) ->
     lists:foreach(fun(Node) ->
@@ -153,6 +155,24 @@ receive_msg(Msg, Timeout) ->
     after
         Timeout -> {error, {timeout, Msg}}
     end.
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Returns the value of the environment variable 'Name' for 'Application'.
+%% @end
+%%--------------------------------------------------------------------
+-spec get_env(Node :: node(), Application :: atom(), Name :: atom()) -> Value :: term().
+get_env(Node, Application, Name) ->
+    rpc:call(Node, application, get_env, [Application, Name]).
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Sets the value of the environment variable 'Name' for 'Application'.
+%% @end
+%%--------------------------------------------------------------------
+-spec set_env(Node :: node(), Application :: atom(), Name :: atom(), Value :: term()) -> ok.
+set_env(Node, Application, Name, Value) ->
+    rpc:call(Node, application, set_env, [Application, Name, Value]).
 
 %%%===================================================================
 %%% Internal functions
