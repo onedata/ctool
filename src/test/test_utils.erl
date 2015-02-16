@@ -91,7 +91,7 @@ mock_validate(Nodes, Modules) ->
 
 %%--------------------------------------------------------------------
 %% @doc
-%% Validates modules' mocks on given nodes.
+%% Unloads modules' mocks on given nodes.
 %% @end
 %%--------------------------------------------------------------------
 -spec mock_unload(Nodes :: node() | [node()], Modules :: module() | [module()]) ->
@@ -99,7 +99,8 @@ mock_validate(Nodes, Modules) ->
 mock_unload(Nodes, Modules) ->
     lists:foreach(fun(Node) ->
         lists:foreach(fun(Module) ->
-            ?assertEqual(ok, rpc:call(Node, meck, unload, [Module]))
+            ?assertEqual(ok, rpc:call(Node, meck, unload, [Module])),
+            ?assertEqual({module, Module}, rpc:call(Node, code, load_file, [Module]))
         end, as_list(Modules))
     end, as_list(Nodes)).
 
