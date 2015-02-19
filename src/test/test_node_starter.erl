@@ -29,35 +29,36 @@
 prepare_test_environment(Config, DescriptionFile, Module) ->
     try
         DataDir = proplists:get_value(data_dir, Config),
+        PrivDir = ?config(priv_dir, Config),
         CtTestRoot = filename:join(DataDir, ".."),
         ProjectRoot = filename:join(CtTestRoot, ".."),
-    
+
         ConfigWithPaths =
             [{ct_test_root, CtTestRoot}, {project_root, ProjectRoot} | Config],
-    
+
         ProviderUpScript =
             filename:join([ProjectRoot, "bamboos", "docker", "provider_up.py"]),
-    
-        StartLog = cmd([ProviderUpScript, "-b", ProjectRoot, DescriptionFile]),
+
+        LogsDir = filename:join(PrivDir, atom_to_list(Module) ++ "_logs"),
+        os:cmd("mkdir -p " ++ LogsDir),
+
+        StartLog = cmd([ProviderUpScript,
+            "-b", ProjectRoot,
+            "-l", LogsDir,
+            DescriptionFile]),
+
         EnvDesc = json_parser:parse_json_binary_to_atom_proplist(StartLog),
-    
+
         Dns = ?config(dns, EnvDesc),
         Workers = ?config(op_worker_nodes, EnvDesc),
-            Ccms = ?config(op_ccm_nodes, EnvDesc),
-    
+        CCMs = ?config(op_ccm_nodes, EnvDesc),
+
         erlang:set_cookie(node(), oneprovider_node),
         os:cmd("echo nameserver " ++ atom_to_list(Dns) ++ " > /etc/resolv.conf"),
-    
-        ping_nodes(lists:append(Ccms, Workers)),
-    
-        cluster_state_notifier:cast({subscribe_for_init, self(), length(Workers)}),
-        receive
-            init_finished -> ok
-        after
-            timer:seconds(50) ->
-                throw(timeout)
-        end,
-        ok = load_modules(Ccms ++ Workers, [Module]),
+
+        ping_nodes(lists:append(CCMs, Workers)),
+
+        ok = load_modules(CCMs ++ Workers, [Module]),
 
         lists:append(ConfigWithPaths, proplists:delete(dns, EnvDesc))
     catch
