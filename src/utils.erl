@@ -13,8 +13,8 @@
 
 %% API
 -export([binary_join/2, ensure_running/1, pmap/2, pforeach/2, time/0, mtime/0, record_type/1,
-         ensure_binary/1, ensure_list/1, ensure_unicode_list/1, ensure_unicode_binary/1, access_token_hash/1, trim_spaces/1,
-         ceil/1, aggregate_over_first_element/1, average/1]).
+    ensure_binary/1, ensure_list/1, ensure_unicode_list/1, ensure_unicode_binary/1, access_token_hash/1, trim_spaces/1,
+    ceil/1, aggregate_over_first_element/1, average/1, random_shuffle/1]).
 
 %%%===================================================================
 %%% API
@@ -57,7 +57,9 @@ ensure_running(Application) ->
 pmap(Fun, L) ->
     Self = self(),
     Ref = erlang:make_ref(),
-    PIDs = lists:map(fun(X) -> spawn(fun() -> pmap_f(Self, Ref, Fun, X) end) end, L),
+    PIDs = lists:map(fun(X) ->
+        spawn(fun() -> pmap_f(Self, Ref, Fun, X) end)
+    end, L),
     pmap_gather(PIDs, Ref, []).
 
 %%--------------------------------------------------------------------
@@ -69,7 +71,9 @@ pmap(Fun, L) ->
 pforeach(Fun, L) ->
     Self = self(),
     Ref = erlang:make_ref(),
-    lists:foreach(fun(X) -> spawn(fun() -> pforeach_f(Self, Ref, Fun, X) end) end, L),
+    lists:foreach(fun(X) ->
+        spawn(fun() -> pforeach_f(Self, Ref, Fun, X) end)
+    end, L),
     pforeach_gather(length(L), Ref).
 
 %%--------------------------------------------------------------------
@@ -166,7 +170,7 @@ ensure_unicode_list(Binary) ->
 
 %%--------------------------------------------------------------------
 %% @doc
-%% trims spaces from front and end of given binary
+%% Trims spaces from front and end of given binary.
 %% @end
 %%--------------------------------------------------------------------
 -spec trim_spaces(binary()) -> binary().
@@ -175,7 +179,7 @@ trim_spaces(Binary) when is_binary(Binary) ->
 
 %%--------------------------------------------------------------------
 %% @doc
-%% math ceil function (works on positive values)
+%% Math ceil function (works on positive values).
 %% @end
 %%--------------------------------------------------------------------
 -spec ceil(N :: number()) -> integer().
@@ -184,25 +188,37 @@ ceil(N) -> trunc(N + 1).
 
 %%--------------------------------------------------------------------
 %% @doc
-%% aggregate list over first element of tuple
+%% Aggregates list over first element of tuple.
 %% @end
 %%--------------------------------------------------------------------
--spec aggregate_over_first_element(List :: [{K,V}]) -> [{K,[V]}].
+-spec aggregate_over_first_element(List :: [{K, V}]) -> [{K, [V]}].
 aggregate_over_first_element(List) ->
     lists:reverse(
         lists:foldl(fun({Key, Value}, []) -> [{Key, [Value]}];
-            ({Key, Value}, [{Key, AccValues} | Tail]) -> [{Key, [Value | AccValues]} | Tail];
+            ({Key, Value}, [{Key, AccValues} | Tail]) ->
+                [{Key, [Value | AccValues]} | Tail];
             ({Key, Value}, Acc) -> [{Key, [Value]} | Acc]
         end, [], lists:keysort(1, List))).
 
 %%--------------------------------------------------------------------
 %% @doc
-%% Calculates average of listed numbers
+%% Calculates average of listed numbers.
 %% @end
 %%--------------------------------------------------------------------
 -spec average(List :: list()) -> float().
 average(List) ->
     lists:foldl(fun(N, Acc) -> N + Acc end, 0, List) / length(List).
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Shuffles list randomly.
+%% @end
+%%--------------------------------------------------------------------
+-spec random_shuffle(List :: list()) -> NewList :: list().
+random_shuffle(List) ->
+    From = 0,
+    To = length(List) + 1,
+    [X || {_, X} <- lists:sort([{crypto:rand_uniform(From, To), N} || N <- List])].
 
 %%%===================================================================
 %%% Internal functions
