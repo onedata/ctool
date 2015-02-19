@@ -1,12 +1,12 @@
 %%%--------------------------------------------------------------------
 %%% @author Michal Wrzeszcz
-%%% @copyright (C) 2013 ACK CYFRONET AGH
+%%% @copyright (C) 2015 ACK CYFRONET AGH
 %%% This software is released under the MIT license
 %%% cited in 'LICENSE.txt'.
 %%% @end
 %%%--------------------------------------------------------------------
 %%% @doc This file contains definitions of annotations used during
-%%% performnce tests.
+%%% performance tests.
 %%% @end
 %%%--------------------------------------------------------------------
 -module(perf_test).
@@ -55,7 +55,7 @@ around_advice(#annotation{data = ConfExt}, M, F, Inputs) when is_list(ConfExt)->
       end;
     _ ->
       Ext = proplists:get_value(ct_config, ConfExt, []),
-      [I1] = Inputs,
+      [I1] = Inputs,  % get first arg (test config)
       annotation:call_advised(M, F, [I1 ++ Ext])
   end;
 
@@ -73,7 +73,7 @@ around_advice(#annotation{}, M, F, Inputs) ->
 %%--------------------------------------------------------------------
 -spec exec_perf_config(M :: atom(), F :: atom(), Inputs :: list(), Ext :: list(), Repeats :: integer()) -> ok.
 exec_perf_config(M, F, Inputs, Ext, Repeats) ->
-  [I1] = Inputs,
+  [I1] = Inputs,  % get first arg (test config)
   Ans = exec_multiple_tests(M, F, [I1 ++ Ext], Repeats),
   {ok, File} = file:open("perf_"++atom_to_list(M)++"_"++atom_to_list(F), [append]),
   io:fwrite(File, "Time: ~p, ok_counter ~p, errors: ~p, repeats ~p, conf_ext: ~p~n", Ans ++ [Repeats, Ext]),
@@ -111,7 +111,12 @@ exec_test(M, F, Inputs) ->
     BeforeProcessing = os:timestamp(),
     annotation:call_advised(M, F, Inputs),
     AfterProcessing = os:timestamp(),
-    check_links(AfterProcessing, BeforeProcessing)
+    case check_links() of
+      ok ->
+        timer:now_diff(AfterProcessing, BeforeProcessing);
+      E ->
+        E
+    end
   catch
     E1:E2 ->
       {error, {E1,E2}}
@@ -122,13 +127,13 @@ exec_test(M, F, Inputs) ->
 %% Checks if linked processes have not failed.
 %% @end
 %%--------------------------------------------------------------------
--spec check_links(AfterProcessing :: integer(), BeforeProcessing :: integer()) -> integer() | {error, term()}.
-check_links(AfterProcessing, BeforeProcessing) ->
+-spec check_links() -> ok | {error, term()}.
+check_links() ->
   receive
     {'EXIT', _, normal} ->
-      check_links(AfterProcessing, BeforeProcessing);
+      check_links();
     {'EXIT',_,_} ->
       {error, linked_proc_error}
   after 0 ->
-    timer:now_diff(AfterProcessing, BeforeProcessing)
+    ok
   end.
