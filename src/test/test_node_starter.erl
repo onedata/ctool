@@ -27,7 +27,8 @@
 -spec prepare_test_environment(Config :: list(), DescriptionFile :: string(),
     Module :: module()) -> Result :: list().
 prepare_test_environment(Config, DescriptionFile, Module) ->
-    DataDir = proplists:get_value(data_dir, Config),
+    DataDir = ?config(data_dir, Config),
+    PrivDir = ?config(priv_dir, Config),
     CtTestRoot = filename:join(DataDir, ".."),
     ProjectRoot = filename:join(CtTestRoot, ".."),
 
@@ -37,7 +38,14 @@ prepare_test_environment(Config, DescriptionFile, Module) ->
     ProviderUpScript =
         filename:join([ProjectRoot, "bamboos", "docker", "provider_up.py"]),
 
-    StartLog = cmd([ProviderUpScript, "-b", ProjectRoot, DescriptionFile]),
+    LogsDir = filename:join(PrivDir, atom_to_list(Module) ++ "_logs"),
+    os:cmd("mkdir -p " ++ LogsDir),
+
+    StartLog = cmd([ProviderUpScript,
+        "-b", ProjectRoot,
+        "-l", LogsDir,
+        DescriptionFile]),
+
     EnvDesc = json_parser:parse_json_binary_to_atom_proplist(StartLog),
 
     Dns = ?config(dns, EnvDesc),
