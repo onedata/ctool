@@ -27,10 +27,10 @@
 -spec prepare_test_environment(Config :: list(), DescriptionFile :: string(),
     Module :: module()) -> Result :: list() | {fail, tuple()}.
 prepare_test_environment(Config, DescriptionFile, Module) ->
-    try
-        DataDir = proplists:get_value(data_dir, Config),
-        CtTestRoot = filename:join(DataDir, ".."),
-        ProjectRoot = filename:join(CtTestRoot, ".."),
+    DataDir = ?config(data_dir, Config),
+    PrivDir = ?config(priv_dir, Config),
+    CtTestRoot = filename:join(DataDir, ".."),
+    ProjectRoot = filename:join(CtTestRoot, ".."),
 
         ConfigWithPaths =
             [{ct_test_root, CtTestRoot}, {project_root, ProjectRoot} | Config],
@@ -38,8 +38,15 @@ prepare_test_environment(Config, DescriptionFile, Module) ->
         ProviderUpScript =
             filename:join([ProjectRoot, "bamboos", "docker", "provider_up.py"]),
 
-        StartLog = cmd([ProviderUpScript, "-b", ProjectRoot, DescriptionFile]),
-        EnvDesc = json_parser:parse_json_binary_to_atom_proplist(StartLog),
+    LogsDir = filename:join(PrivDir, atom_to_list(Module) ++ "_logs"),
+    os:cmd("mkdir -p " ++ LogsDir),
+
+    StartLog = cmd([ProviderUpScript,
+        "-b", ProjectRoot,
+        "-l", LogsDir,
+        DescriptionFile]),
+
+    EnvDesc = json_parser:parse_json_binary_to_atom_proplist(StartLog),
 
         Dns = ?config(dns, EnvDesc),
         Workers = ?config(op_worker_nodes, EnvDesc),
