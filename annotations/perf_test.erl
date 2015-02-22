@@ -75,45 +75,68 @@ around_advice(#annotation{}, M, F, Inputs) ->
 exec_perf_config(M, F, Inputs, Ext, Repeats) ->
   [I1] = Inputs,  % get first arg (test config)
   Ans = exec_multiple_tests(M, F, [I1 ++ Ext], Repeats),
-  {ok, File} = file:open("perf_"++atom_to_list(M)++"_"++atom_to_list(F), [append]),
-  io:fwrite(File, "Time: ~p, ok_counter ~p, errors: ~p, repeats ~p, conf_ext: ~p~n", Ans ++ [Repeats, Ext]),
+  {ok, File} = file:open("perf_results", [append]),
+  io:fwrite(File, "Module: ~p, Fun: ~p, Values: ~p, ok_counter ~p, errors: ~p, repeats ~p, conf_ext: ~p~n", [M, F] ++ Ans ++ [Repeats, Ext]),
   file:close(File),
   ok.
 
 %%--------------------------------------------------------------------
 %% @doc
-%% Executes test configuration many times. Returns [Time, OkNum, Errors].
+%% Executes test configuration many times. Returns [Values, OkNum, Errors].
 %% @end
 %%--------------------------------------------------------------------
 -spec exec_multiple_tests(M :: atom(), F :: atom(), Inputs :: list(), Count :: integer()) -> list().
 exec_multiple_tests(M, F, Inputs, Count) ->
-  exec_multiple_tests(M, F, Inputs, Count, 0, 0, []).
+  exec_multiple_tests(M, F, Inputs, Count, [], 0, []).
 
-exec_multiple_tests(_M, _F, _Inputs, 0, Time, OkNum, Errors) ->
-  [Time, OkNum, Errors];
+exec_multiple_tests(_M, _F, _Inputs, 0, Values, OkNum, Errors) ->
+  [Values, OkNum, Errors];
 
-exec_multiple_tests(M, F, Inputs, Count, Time, OkNum, Errors) ->
+exec_multiple_tests(M, F, Inputs, Count, Values, OkNum, Errors) ->
   case exec_test(M, F, Inputs) of
     {error, E} ->
-      exec_multiple_tests(M, F, Inputs, Count - 1, Time, OkNum, [E | Errors]);
-    T ->
-      exec_multiple_tests(M, F, Inputs, Count - 1, Time + T, OkNum + 1, Errors)
+      exec_multiple_tests(M, F, Inputs, Count - 1, Values, OkNum, [E | Errors]);
+    V ->
+      case Values of
+        [] ->
+          exec_multiple_tests(M, F, Inputs, Count - 1, V, OkNum + 1, Errors);
+        _ ->
+          NewV = lists:zipwith(fun({K, V1}, {K, V2}) ->
+            {K, V1 + V2}
+          end, V, Values),
+          exec_multiple_tests(M, F, Inputs, Count - 1, NewV, OkNum + 1, Errors)
+      end
   end.
 
 %%--------------------------------------------------------------------
 %% @doc
-%% Executes test configuration and returns time of execution.
+%% Executes test configuration and returns lists of pairs {key, value} to be logged.
 %% @end
 %%--------------------------------------------------------------------
--spec exec_test(M :: atom(), F :: atom(), Inputs :: list()) -> integer() | {error, term()}.
+-spec exec_test(M :: atom(), F :: atom(), Inputs :: list()) -> list() | {error, term()}.
 exec_test(M, F, Inputs) ->
   try
     BeforeProcessing = os:timestamp(),
-    annotation:call_advised(M, F, Inputs),
+    Ans = annotation:call_advised(M, F, Inputs),
     AfterProcessing = os:timestamp(),
     case check_links() of
       ok ->
-        timer:now_diff(AfterProcessing, BeforeProcessing);
+        TestTime = timer:now_diff(AfterProcessing, BeforeProcessing),
+        case Ans of
+          {K, V} when is_number(V) ->
+            [{test_time, TestTime}, {K, V}];
+          AnsList when is_list(AnsList) ->
+            lists:foldl(fun(AnsPart, Acc) ->
+              case AnsPart of
+                {K2, V2} when is_number(V2) ->
+                  [{K2, V2} | Acc];
+                _ ->
+                  Acc
+              end
+            end, [{test_time, TestTime}], AnsList);
+          _ ->
+            [{test_time, TestTime}]
+        end;
       E ->
         E
     end
