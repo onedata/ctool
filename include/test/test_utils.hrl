@@ -20,11 +20,7 @@
 
 %% Initializes test environment
 -define(TEST_INIT(Config, EnvDescription),
-    try
-        test_node_starter:prepare_test_environment(Config, EnvDescription, ?MODULE)
-    catch
-        A:B -> ct:print("~p:~p~n~p", [A, B, erlang:get_stacktrace()])
-    end
+    test_node_starter:prepare_test_environment(Config, EnvDescription, ?MODULE)
 ).
 
 %% Utility macros
