@@ -83,19 +83,24 @@ prepare_test_environment(Config, DescriptionFile, Module) ->
 -spec clean_environment(Config :: list()) -> ok.
 clean_environment(Config) ->
     Dockers = ?config(docker_ids, Config),
-    DockersStr = lists:foldl(fun(D, Acc) ->
-        DStr = atom_to_list(D),
-        case Acc of
-            "" -> DStr;
-            _ -> Acc ++ " " ++ DStr
-        end
-    end, "", Dockers),
+    case Dockers of
+        undefined ->
+            ok;
+        _ ->
+            DockersStr = lists:foldl(fun(D, Acc) ->
+                DStr = atom_to_list(D),
+                case Acc of
+                    "" -> DStr;
+                    _ -> Acc ++ " " ++ DStr
+                end
+            end, "", Dockers),
 
-    ProjectRoot = ?config(project_root, Config),
-    CleanupScript =
-        filename:join([ProjectRoot, "bamboos", "docker", "cleanup.py"]),
+            ProjectRoot = ?config(project_root, Config),
+            CleanupScript =
+                filename:join([ProjectRoot, "bamboos", "docker", "cleanup.py"]),
 
-    cmd([CleanupScript, DockersStr]),
+            cmd([CleanupScript, DockersStr])
+    end,
     ok.
 
 %% ====================================================================
