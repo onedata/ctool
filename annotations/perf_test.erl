@@ -72,11 +72,57 @@ around_advice(#annotation{}, M, F, Inputs) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec exec_perf_config(M :: atom(), F :: atom(), Inputs :: list(), Ext :: list(), Repeats :: integer()) -> ok.
+exec_perf_config(M, F, Inputs, {Name, ExtList}, Repeats) ->
+  exec_perf_config(M, F, Inputs, ExtList, Name, Repeats);
 exec_perf_config(M, F, Inputs, Ext, Repeats) ->
+  exec_perf_config(M, F, Inputs, Ext, [], Repeats).
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Executes multiple test configurations.
+%% @end
+%%--------------------------------------------------------------------
+-spec exec_perf_config(M :: atom(), F :: atom(), Inputs :: list(), Ext :: list(), ConfigName :: atom(), Repeats :: integer()) -> ok.
+exec_perf_config(M, F, Inputs, Ext, ConfigName, Repeats) ->
   [I1] = Inputs,  % get first arg (test config)
-  Ans = exec_multiple_tests(M, F, [I1 ++ Ext], Repeats),
-  {ok, File} = file:open("perf_results", [append]),
-  io:fwrite(File, "Module: ~p, Fun: ~p, Values: ~p, ok_counter ~p, errors: ~p, repeats ~p, conf_ext: ~p~n", [M, F] ++ Ans ++ [Repeats, Ext]),
+  [Values, OkNum, Errors] = exec_multiple_tests(M, F, [I1 ++ Ext], Repeats),
+  Json = case file:read_file("perf_results") of
+    {ok, FileBinary} ->
+      json_parser:parse_json_binary_to_atom_proplist(FileBinary);
+    _ ->
+      []
+  end,
+  {ok, File} = file:open("perf_results", [write]),
+
+
+  MJson = proplists:get_value(M, Json, []),
+  Json2 = proplists:delete(M, Json),
+
+  FJson = proplists:get_value(F, MJson, []),
+  MJson2 = proplists:delete(M, MJson),
+
+  ConfKey = case ConfigName of
+    [] -> list_to_atom("config" ++ integer_to_list(length(FJson)+1));
+    N -> N
+  end,
+
+  Json3 = [
+    {M, [
+      {F, [
+        {ConfKey,
+          [
+            {config_extension, Ext},
+            {repeats, Repeats},
+            {ok_counter, OkNum},
+            {results, {struct, Values}},
+            {errors, Errors}
+          ]
+        }
+      | FJson]}
+    | MJson2]}
+  | Json2],
+
+  file:write(File, [iolist_to_binary(mochijson2:encode(prepare_to_write(Json3)))]),
   file:close(File),
   ok.
 
@@ -160,3 +206,18 @@ check_links() ->
   after 0 ->
     ok
   end.
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Prepares input to results file.
+%% @end
+%%--------------------------------------------------------------------
+-spec prepare_to_write(Input :: term()) -> tuple().
+prepare_to_write(Input) when is_list(Input) ->
+  {struct, lists:map(fun(I) -> prepare_to_write(I) end, Input)};
+
+prepare_to_write({K, V}) when is_list(V) ->
+  {K, prepare_to_write(V)};
+
+prepare_to_write({K, V}) ->
+  {K, V}.
