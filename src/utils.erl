@@ -237,7 +237,7 @@ random_element(List) ->
 %% get host from node()
 %% @end
 %%--------------------------------------------------------------------
--spec get_host(node()) -> string().
+-spec get_host(node()) -> atom().
 get_host(Node) ->
     lists:last(string:tokens(atom_to_list(Node), "@")).
 
@@ -246,7 +246,7 @@ get_host(Node) ->
 %% get host from node()
 %% @end
 %%--------------------------------------------------------------------
--spec get_host(node()) -> string().
+-spec get_host_as_atom(node()) -> string().
 get_host_as_atom(Node) ->
     list_to_atom(get_host(Node)).
 
