@@ -14,7 +14,7 @@
 %% API
 -export([binary_join/2, ensure_running/1, pmap/2, pforeach/2, time/0, mtime/0, record_type/1,
     ensure_binary/1, ensure_list/1, ensure_unicode_list/1, ensure_unicode_binary/1, access_token_hash/1, trim_spaces/1,
-    ceil/1, aggregate_over_first_element/1, average/1, random_shuffle/1]).
+    ceil/1, aggregate_over_first_element/1, average/1, random_shuffle/1, random_element/1]).
 
 %%%===================================================================
 %%% API
@@ -219,6 +219,16 @@ random_shuffle(List) ->
     From = 0,
     To = length(List) + 1,
     [X || {_, X} <- lists:sort([{crypto:rand_uniform(From, To), N} || N <- List])].
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Get random element of list
+%% @end
+%%--------------------------------------------------------------------
+-spec random_element([term()]) -> term().
+random_element(List) ->
+    RandomIndex = random:uniform(length(List)),
+    lists:nth(RandomIndex, List).
 
 %%%===================================================================
 %%% Internal functions
