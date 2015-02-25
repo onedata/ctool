@@ -114,7 +114,7 @@ exec_test(M, F, Inputs) ->
     check_links(AfterProcessing, BeforeProcessing)
   catch
     E1:E2 ->
-      {error, {E1,E2}}
+      {error, {E1, E2, erlang:get_stacktrace()}}
   end.
 
 %%--------------------------------------------------------------------
