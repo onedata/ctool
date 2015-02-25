@@ -71,7 +71,7 @@ around_advice(#annotation{}, M, F, Inputs) ->
 %% Executes multiple test configurations.
 %% @end
 %%--------------------------------------------------------------------
--spec exec_perf_config(M :: atom(), F :: atom(), Inputs :: list(), Ext :: list(), Repeats :: integer()) -> ok.
+-spec exec_perf_config(M :: atom(), F :: atom(), Inputs :: list(), Ext :: list() | tuple(), Repeats :: integer()) -> ok.
 exec_perf_config(M, F, Inputs, {Name, ExtList}, Repeats) ->
   exec_perf_config(M, F, Inputs, ExtList, Name, Repeats);
 exec_perf_config(M, F, Inputs, Ext, Repeats) ->
@@ -82,7 +82,7 @@ exec_perf_config(M, F, Inputs, Ext, Repeats) ->
 %% Executes multiple test configurations.
 %% @end
 %%--------------------------------------------------------------------
--spec exec_perf_config(M :: atom(), F :: atom(), Inputs :: list(), Ext :: list(), ConfigName :: atom(), Repeats :: integer()) -> ok.
+-spec exec_perf_config(M :: atom(), F :: atom(), Inputs :: list(), Ext :: list(), ConfigName :: term(), Repeats :: integer()) -> ok.
 exec_perf_config(M, F, Inputs, Ext, ConfigName, Repeats) ->
   [I1] = Inputs,  % get first arg (test config)
   [Values, OkNum, Errors] = exec_multiple_tests(M, F, [I1 ++ Ext], Repeats),
@@ -102,8 +102,8 @@ exec_perf_config(M, F, Inputs, Ext, ConfigName, Repeats) ->
   MJson2 = proplists:delete(M, MJson),
 
   ConfKey = case ConfigName of
-    [] -> list_to_atom("config" ++ integer_to_list(length(FJson)+1));
-    N -> N
+    N when is_atom(N) -> N;
+    _ -> list_to_atom("config" ++ integer_to_list(length(FJson)+1))
   end,
 
   Json3 = [
