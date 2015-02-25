@@ -99,7 +99,7 @@ exec_perf_config(M, F, Inputs, Ext, ConfigName, Repeats) ->
   Json2 = proplists:delete(M, Json),
 
   FJson = proplists:get_value(F, MJson, []),
-  MJson2 = proplists:delete(M, MJson),
+  MJson2 = proplists:delete(F, MJson),
 
   ConfKey = case ConfigName of
     N when is_atom(N) -> N;
