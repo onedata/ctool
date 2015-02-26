@@ -59,7 +59,7 @@ prepare_test_environment(Config, DescriptionFile, Module) ->
         erlang:set_cookie(node(), oneprovider_node),
         os:cmd("echo nameserver " ++ atom_to_list(Dns) ++ " > /etc/resolv.conf"),
 
-        ping_nodes(CCMs ++ Workers + Appmocks),
+        ping_nodes(CCMs ++ Workers ++ Appmocks),
 
         ok = load_modules(CCMs ++ Workers ++ Appmocks, [Module]),
 
