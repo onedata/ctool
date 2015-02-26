@@ -37,7 +37,7 @@ prepare_test_environment(Config, DescriptionFile, Module) ->
             [{ct_test_root, CtTestRoot}, {project_root, ProjectRoot} | Config],
 
         ProviderUpScript =
-            filename:join([ProjectRoot, "bamboos", "docker", "provider_up.py"]),
+            filename:join([ProjectRoot, "bamboos", "docker", "env_up.py"]),
 
         LogsDir = filename:join(PrivDir, atom_to_list(Module) ++ "_logs"),
         os:cmd("mkdir -p " ++ LogsDir),
