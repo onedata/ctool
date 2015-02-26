@@ -32,18 +32,20 @@ prepare_test_environment(Config, DescriptionFile, Module) ->
         PrivDir = ?config(priv_dir, Config),
         CtTestRoot = filename:join(DataDir, ".."),
         ProjectRoot = filename:join(CtTestRoot, ".."),
+        AppmockRoot = filename:join([ProjectRoot, "deps", "appmock"]),
 
         ConfigWithPaths =
             [{ct_test_root, CtTestRoot}, {project_root, ProjectRoot} | Config],
 
-        ProviderUpScript =
-            filename:join([ProjectRoot, "bamboos", "docker", "provider_up.py"]),
+        EnvUpScript =
+            filename:join([ProjectRoot, "bamboos", "docker", "env_up.py"]),
 
         LogsDir = filename:join(PrivDir, atom_to_list(Module) ++ "_logs"),
         os:cmd("mkdir -p " ++ LogsDir),
 
-        StartLog = utils:cmd([ProviderUpScript,
-            "-b", ProjectRoot,
+        StartLog = utils:cmd([EnvUpScript,
+            "--bin-provider", ProjectRoot,
+            "--bin-appmock", AppmockRoot,
             "-l", LogsDir,
             DescriptionFile]),
 
@@ -52,13 +54,14 @@ prepare_test_environment(Config, DescriptionFile, Module) ->
         Dns = ?config(dns, EnvDesc),
         Workers = ?config(op_worker_nodes, EnvDesc),
         CCMs = ?config(op_ccm_nodes, EnvDesc),
+        Appmocks = ?config(appmock_nodes, EnvDesc),
 
         erlang:set_cookie(node(), oneprovider_node),
         os:cmd("echo nameserver " ++ atom_to_list(Dns) ++ " > /etc/resolv.conf"),
 
-        ping_nodes(lists:append(CCMs, Workers)),
+        ping_nodes(CCMs ++ Workers + Appmocks),
 
-        ok = load_modules(CCMs ++ Workers, [Module]),
+        ok = load_modules(CCMs ++ Workers ++ Appmocks, [Module]),
 
         lists:append(ConfigWithPaths, proplists:delete(dns, EnvDesc))
     catch
@@ -111,10 +114,8 @@ ping_nodes(Nodes, Tries) ->
         fun(Node) ->
             pong == net_adm:ping(Node) 
         end, Nodes),
-    NotifierStatus = (catch sys:get_status({global, cluster_state_notifier})), %todo customize gen_server we're waiting for
-    case {AllConnected, NotifierStatus} of
-        {true, {status, _, _, [_, running, _, _, [_, {data, [{"Status", running}, _, _]}, _]]}} ->
-            ok;
+    case AllConnected of
+        true -> ok;
         _ ->
             timer:sleep(1000),
             ping_nodes(Nodes, Tries - 1)
