@@ -42,7 +42,7 @@ prepare_test_environment(Config, DescriptionFile, Module) ->
         LogsDir = filename:join(PrivDir, atom_to_list(Module) ++ "_logs"),
         os:cmd("mkdir -p " ++ LogsDir),
 
-        StartLog = cmd([ProviderUpScript,
+        StartLog = utils:cmd([ProviderUpScript,
             "-b", ProjectRoot,
             "-l", LogsDir,
             DescriptionFile]),
@@ -88,7 +88,7 @@ clean_environment(Config) ->
     CleanupScript =
         filename:join([ProjectRoot, "bamboos", "docker", "cleanup.py"]),
 
-    cmd([CleanupScript, DockersStr]),
+    utils:cmd([CleanupScript, DockersStr]),
     ok.
 
 %% ====================================================================
@@ -119,15 +119,6 @@ ping_nodes(Nodes, Tries) ->
             timer:sleep(1000),
             ping_nodes(Nodes, Tries - 1)
     end.
-
-%%--------------------------------------------------------------------
-%% @private
-%% @doc
-%% Runs a command given by a string list.
-%% @end
-%%--------------------------------------------------------------------
-cmd(Command) ->
-    os:cmd(string:join(Command, " ")).
 
 %%--------------------------------------------------------------------
 %% @private

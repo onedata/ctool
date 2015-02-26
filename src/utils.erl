@@ -16,7 +16,7 @@
     record_type/1, ensure_binary/1, ensure_list/1, ensure_unicode_list/1,
     ensure_unicode_binary/1, access_token_hash/1, trim_spaces/1, ceil/1,
     aggregate_over_first_element/1, average/1, random_shuffle/1,
-    random_element/1, get_host/1, get_host_as_atom/1]).
+    random_element/1, get_host/1, get_host_as_atom/1, cmd/1]).
 
 %%%===================================================================
 %%% API
@@ -249,6 +249,14 @@ get_host(Node) ->
 -spec get_host_as_atom(node()) -> string().
 get_host_as_atom(Node) ->
     list_to_atom(get_host(Node)).
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Runs a command given by a string list.
+%% @end
+%%--------------------------------------------------------------------
+cmd(Command) ->
+    os:cmd(string:join(Command, " ")).
 
 %%%===================================================================
 %%% Internal functions
