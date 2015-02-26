@@ -13,7 +13,7 @@
 -include_lib("common_test/include/ct.hrl").
 
 %% API
--export([prepare_test_environment/3, clean_environment/1]).
+-export([prepare_test_environment/4, clean_environment/1]).
 
 %% ====================================================================
 %% Starting and stoping nodes
@@ -25,8 +25,8 @@
 %% @end
 %%--------------------------------------------------------------------
 -spec prepare_test_environment(Config :: list(), DescriptionFile :: string(),
-    Module :: module()) -> Result :: list() | {fail, tuple()}.
-prepare_test_environment(Config, DescriptionFile, Module) ->
+    Script :: string(), Module :: module()) -> Result :: list() | {fail, tuple()}.
+prepare_test_environment(Config, DescriptionFile, Script, Module) ->
     try
         DataDir = ?config(data_dir, Config),
         PrivDir = ?config(priv_dir, Config),
@@ -37,7 +37,7 @@ prepare_test_environment(Config, DescriptionFile, Module) ->
             [{ct_test_root, CtTestRoot}, {project_root, ProjectRoot} | Config],
 
         ProviderUpScript =
-            filename:join([ProjectRoot, "bamboos", "docker", "env_up.py"]),
+            filename:join([ProjectRoot, "bamboos", "docker", Script]),
 
         LogsDir = filename:join(PrivDir, atom_to_list(Module) ++ "_logs"),
         os:cmd("mkdir -p " ++ LogsDir),
@@ -49,30 +49,34 @@ prepare_test_environment(Config, DescriptionFile, Module) ->
 
         EnvDesc = json_parser:parse_json_binary_to_atom_proplist(StartLog),
 
-        Dns = ?config(dns, EnvDesc),
-        Workers = ?config(op_worker_nodes, EnvDesc),
-        CCMs = ?config(op_ccm_nodes, EnvDesc),
+        try
+            Dns = ?config(dns, EnvDesc),
+            AllNodes = case Script of
+                "globalregistry_up.py" ->
+                    ?config(gr_nodes, EnvDesc);
+                _ ->
+                    Workers = ?config(op_worker_nodes, EnvDesc),
+                    CCMs = ?config(op_ccm_nodes, EnvDesc),
+                    Workers ++ CCMs
+            end,
 
-        erlang:set_cookie(node(), oneprovider_node),
-        os:cmd("echo nameserver " ++ atom_to_list(Dns) ++ " > /etc/resolv.conf"),
+            erlang:set_cookie(node(), oneprovider_node),
+            os:cmd("echo nameserver " ++ atom_to_list(Dns) ++ " > /etc/resolv.conf"),
 
-        ping_nodes(lists:append(CCMs, Workers)),
+            ping_nodes(AllNodes),
+            ok = load_modules(AllNodes, [Module]),
 
-        cluster_state_notifier:cast({subscribe_for_init, self(), length(Workers)}),
-        receive
-            init_finished -> ok
-        after
-            timer:seconds(50) -> throw(timeout)
-        end,
-
-        ok = load_modules(CCMs ++ Workers, [Module]),
-
-        lists:append(ConfigWithPaths, proplists:delete(dns, EnvDesc))
+            lists:append(ConfigWithPaths, proplists:delete(dns, EnvDesc))
+        catch
+            E11:E12 ->
+                ct:print("Prepare of environment failed ~p:~p~n~p", [E11, E12, erlang:get_stacktrace()]),
+                clean_environment(EnvDesc),
+                {fail, {init_failed, E11, E12}}
+        end
     catch
-        E1:E2 ->
-            ct:print("Prepare of environment failed ~p:~p~n~p", [E1, E2, erlang:get_stacktrace()]),
-            clean_environment(Config),
-            {fail, {init_failed, E1, E2}}
+        E21:E22 ->
+            ct:print("Prepare of environment failed ~p:~p~n~p", [E21, E22, erlang:get_stacktrace()]),
+            {fail, {init_failed, E21, E22}}
     end.
 
 %%--------------------------------------------------------------------
@@ -121,9 +125,8 @@ ping_nodes(_Nodes, 0) ->
 ping_nodes(Nodes, Tries) ->
     AllConnected = lists:all(fun(Node) ->
         pong == net_adm:ping(Node) end, Nodes),
-    NotifierStatus = (catch sys:get_status({global, cluster_state_notifier})), %todo customize gen_server we're waiting for
-    case {AllConnected, NotifierStatus} of
-        {true, {status, _, _, [_, running, _, _, [_, {data, [{"Status", running}, _, _]}, _]]}} ->
+    case AllConnected of
+        true ->
             ok;
         _ ->
             timer:sleep(1000),
