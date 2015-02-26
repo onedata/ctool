@@ -66,6 +66,7 @@ prepare_test_environment(Config, DescriptionFile, Script, Module) ->
             ping_nodes(AllNodes),
             ok = load_modules(AllNodes, [Module]),
 
+            global:sync(),
             lists:append(ConfigWithPaths, proplists:delete(dns, EnvDesc))
         catch
             E11:E12 ->
