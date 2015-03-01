@@ -25,10 +25,10 @@
 %% @end
 %%--------------------------------------------------------------------
 -spec prepare_test_environment(Config :: list(), DescriptionFile :: string(),
-    Module :: module()) -> Result :: list().
+    Module :: module()) -> Result :: list() | {fail, tuple()}.
 prepare_test_environment(Config, DescriptionFile, Module) ->
     try
-        DataDir = proplists:get_value(data_dir, Config),
+        DataDir = ?config(data_dir, Config),
         PrivDir = ?config(priv_dir, Config),
         CtTestRoot = filename:join(DataDir, ".."),
         ProjectRoot = filename:join(CtTestRoot, ".."),
@@ -79,19 +79,11 @@ prepare_test_environment(Config, DescriptionFile, Module) ->
 -spec clean_environment(Config :: list()) -> ok.
 clean_environment(Config) ->
     Dockers = ?config(docker_ids, Config),
-    DockersStr = lists:foldl(fun(D, Acc) ->
-        DStr = atom_to_list(D),
-        case Acc of
-            "" -> DStr;
-            _ -> Acc ++ " " ++ DStr
-        end
-    end, "", Dockers),
-
     ProjectRoot = ?config(project_root, Config),
+    DockersStr = lists:map(fun atom_to_list/1, Dockers),
     CleanupScript =
         filename:join([ProjectRoot, "bamboos", "docker", "cleanup.py"]),
-
-    utils:cmd([CleanupScript, DockersStr]),
+    utils:cmd([CleanupScript | DockersStr]),
     ok.
 
 %% ====================================================================
@@ -117,7 +109,7 @@ ping_nodes(Nodes, Tries) ->
     case AllConnected of
         true -> ok;
         _ ->
-            timer:sleep(1000),
+            timer:sleep(timer:seconds(1)),
             ping_nodes(Nodes, Tries - 1)
     end.
 
