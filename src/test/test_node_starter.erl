@@ -77,7 +77,7 @@ prepare_test_environment(Config, DescriptionFile, Module) ->
 %%--------------------------------------------------------------------
 -spec clean_environment(Config :: list()) -> ok.
 clean_environment(Config) ->
-    Dockers = ?config(docker_ids, Config),
+    Dockers = proplists:get_value(docker_ids, Config, []),
     ProjectRoot = ?config(project_root, Config),
     DockersStr = lists:map(fun atom_to_list/1, Dockers),
     CleanupScript =
