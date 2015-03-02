@@ -60,7 +60,7 @@ prepare_test_environment(Config, DescriptionFile, Module) ->
         os:cmd("echo nameserver " ++ atom_to_list(Dns) ++ " > /etc/resolv.conf"),
 
         ping_nodes(CCMs ++ Workers ++ Appmocks),
-
+        global:sync(),
         ok = load_modules(CCMs ++ Workers ++ Appmocks, [Module]),
 
         lists:append(ConfigWithPaths, proplists:delete(dns, EnvDesc))

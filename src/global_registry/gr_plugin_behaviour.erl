@@ -27,7 +27,7 @@
 %% get_key_path/0
 %% ====================================================================
 %% @doc Should return a path to file containing provider's private key.
--callback get_key_path() -> binary().
+-callback get_key_path() -> file:name_all().
 
 
 %% get_cert_path/0
@@ -35,7 +35,7 @@
 %% @doc Should return a path to file containing provider's public
 %% certificate signed by Global Registry.
 %% @end
--callback get_cert_path() -> binary().
+-callback get_cert_path() -> file:name_all().
 
 
 %% get_cacert_path/0
@@ -43,4 +43,4 @@
 %% @doc Should return a path to file containing Global Registry
 %% CA certificate.
 %% @end
--callback get_cacert_path() -> binary().
+-callback get_cacert_path() -> file:name_all().
