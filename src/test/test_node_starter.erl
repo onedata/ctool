@@ -54,14 +54,13 @@ prepare_test_environment(Config, DescriptionFile, Module) ->
         Dns = ?config(dns, EnvDesc),
         Workers = ?config(op_worker_nodes, EnvDesc),
         CCMs = ?config(op_ccm_nodes, EnvDesc),
-        Appmocks = ?config(appmock_nodes, EnvDesc),
 
         erlang:set_cookie(node(), oneprovider_node),
         os:cmd("echo nameserver " ++ atom_to_list(Dns) ++ " > /etc/resolv.conf"),
 
-        ping_nodes(CCMs ++ Workers ++ Appmocks),
+        ping_nodes(CCMs ++ Workers),
         global:sync(),
-        ok = load_modules(CCMs ++ Workers ++ Appmocks, [Module]),
+        ok = load_modules(CCMs ++ Workers, [Module]),
 
         lists:append(ConfigWithPaths, proplists:delete(dns, EnvDesc))
     catch
