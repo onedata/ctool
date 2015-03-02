@@ -229,7 +229,7 @@ random_shuffle(List) ->
 %%--------------------------------------------------------------------
 -spec random_element([term()]) -> term().
 random_element(List) ->
-    RandomIndex = random:uniform(length(List)),
+    RandomIndex = crypto:rand_uniform(1, length(List)+1),
     lists:nth(RandomIndex, List).
 
 %%--------------------------------------------------------------------
