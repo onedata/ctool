@@ -76,13 +76,22 @@
 -define(emergency_stacktrace(_Message), ?do_log(7, _Message, true)).
 -define(emergency_stacktrace(_Format, _Args), ?do_log(7, _Format, _Args, true)).
 
-
 %% ===================================================================
 % Convienience macros for development purposes
 
 % Prints bad request warning (frequently used in gen_servers)
 -define(log_bad_request(Request),
     ?warning("~p:~p - bad request ~p", [?MODULE, ?LINE, Request])
+).
+
+% Prints abnormal termination warning
+-define(log_terminate(Reason, State),
+    case Reason of
+        normal -> ok;
+        shutdown -> ok;
+        {shutdown, _} -> ok;
+        _ -> ?warning("~p terminated in state ~p due to: ~p", [?MODULE, State, Reason])
+    end
 ).
 
 % Prints a single variable
@@ -95,7 +104,6 @@
             io:format(user, "[DUMP] ~s: ~p~n~n", [_Name, _Value])
         end, lists:zip(string:tokens(??_ListOfVariables, "[] ,"), _ListOfVariables))
 ).
-
 
 %% ===================================================================
 %% Macros used internally
@@ -116,7 +124,7 @@
 % so that the process info makes sense
 -define(gather_metadata,
     [{pid, self()}, {line, ?LINE}] ++
-        logger:parse_process_info(process_info(self(), current_function))
+    logger:parse_process_info(process_info(self(), current_function))
 ).
 
 -endif.
