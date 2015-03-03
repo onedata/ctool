@@ -22,9 +22,7 @@
 					{line, ?LINE},
 					{expression, (??BoolExpr)},
 					{expected, true},
-					{value, case __V of false -> __V;
-						        _ -> {not_a_boolean,__V}
-					        end}],
+					{value, __V}],
 				ct:print("assertion_failed: ~p~n", [__Args]),
 				erlang:error({assertion_failed, __Args})
 		end

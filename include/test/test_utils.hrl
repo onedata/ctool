@@ -27,6 +27,5 @@
 -define(CURRENT_HOST, list_to_atom(lists:last(string:tokens(atom_to_list(node()), "@")))).
 -define(NODE(NodeHost, NodeName), list_to_atom(atom_to_list(NodeName) ++ "@" ++ atom_to_list(NodeHost))).
 -define(GET_NODE_NAME(FullName), list_to_atom(hd(string:tokens(atom_to_list(FullName), "@")))).
--define(GET_HOST(FullName), list_to_atom(lists:last(string:tokens(atom_to_list(FullName), "@")))).
 
 -endif.

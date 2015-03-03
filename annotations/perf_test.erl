@@ -188,7 +188,7 @@ exec_test(M, F, Inputs) ->
     end
   catch
     E1:E2 ->
-      {error, {E1,E2}}
+      {error, {E1, E2, erlang:get_stacktrace()}}
   end.
 
 %%--------------------------------------------------------------------

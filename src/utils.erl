@@ -12,9 +12,11 @@
 -module(utils).
 
 %% API
--export([binary_join/2, ensure_running/1, pmap/2, pforeach/2, time/0, mtime/0, record_type/1,
-    ensure_binary/1, ensure_list/1, ensure_unicode_list/1, ensure_unicode_binary/1, access_token_hash/1, trim_spaces/1,
-    ceil/1, aggregate_over_first_element/1, average/1, random_shuffle/1]).
+-export([binary_join/2, ensure_running/1, pmap/2, pforeach/2, time/0, mtime/0,
+    record_type/1, ensure_binary/1, ensure_list/1, ensure_unicode_list/1,
+    ensure_unicode_binary/1, access_token_hash/1, trim_spaces/1, ceil/1,
+    aggregate_over_first_element/1, average/1, random_shuffle/1,
+    random_element/1, get_host/1, get_host_as_atom/1, cmd/1]).
 
 %%%===================================================================
 %%% API
@@ -219,6 +221,42 @@ random_shuffle(List) ->
     From = 0,
     To = length(List) + 1,
     [X || {_, X} <- lists:sort([{crypto:rand_uniform(From, To), N} || N <- List])].
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Get random element of list
+%% @end
+%%--------------------------------------------------------------------
+-spec random_element([term()]) -> term().
+random_element(List) ->
+    RandomIndex = crypto:rand_uniform(1, length(List)+1),
+    lists:nth(RandomIndex, List).
+
+%%--------------------------------------------------------------------
+%% @doc
+%% get host from node()
+%% @end
+%%--------------------------------------------------------------------
+-spec get_host(node()) -> string().
+get_host(Node) ->
+    lists:last(string:tokens(atom_to_list(Node), "@")).
+
+%%--------------------------------------------------------------------
+%% @doc
+%% get host from node(), as atom
+%% @end
+%%--------------------------------------------------------------------
+-spec get_host_as_atom(node()) -> atom().
+get_host_as_atom(Node) ->
+    list_to_atom(get_host(Node)).
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Runs a command given by a string list.
+%% @end
+%%--------------------------------------------------------------------
+cmd(Command) ->
+    os:cmd(string:join(Command, " ")).
 
 %%%===================================================================
 %%% Internal functions
