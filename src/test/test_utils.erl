@@ -41,8 +41,8 @@
 %% @equiv mock_new(Nodes, ModuleSpecs, [passthrough, non_strict, unstick, no_link])
 %% @end
 %%--------------------------------------------------------------------
--spec mock_new(Nodes :: node() | [node()], ModuleSpecs :: [mock_module_spec()]) ->
-    ok | no_return().
+-spec mock_new(Nodes :: node() | [node()],
+    ModuleSpecs :: mock_module_spec() | [mock_module_spec()]) -> ok | no_return().
 mock_new(Nodes, ModuleSpec) ->
     mock_new(Nodes, ModuleSpec, ?NEW_MOCK_DEFAULT_OPTIONS).
 
