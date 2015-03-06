@@ -125,12 +125,7 @@ exec_perf_config(M, F, Inputs, Ext, ConfigName, Repeats) ->
             | MJson2]}
         | Json2],
 
-    try
-        file:write(File, [iolist_to_binary(mochijson2:encode(prepare_to_write(Json3)))])
-    catch
-        _:Err  ->
-            ct:print("~p ~n~p",[Err, erlang:get_stacktrace()])
-    end,
+    file:write(File, [iolist_to_binary(mochijson2:encode(prepare_to_write(Json3)))]),
     file:close(File),
     ok.
 
