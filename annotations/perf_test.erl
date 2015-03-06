@@ -27,7 +27,8 @@
 %% annotated function inside.
 %% @end
 %%--------------------------------------------------------------------
--spec around_advice(#annotation{}, M :: atom(), F :: atom(), Inputs :: list()) -> Result :: term().
+-spec around_advice(#annotation{}, M :: atom(), F :: atom(), Inputs :: list()) ->
+    Result :: term().
 around_advice(#annotation{data = {perf_cases, Cases}}, M, F, Inputs) ->
     case os:getenv("perf_test") of
         "true" ->
