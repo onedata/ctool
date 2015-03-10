@@ -38,9 +38,9 @@ around_advice(#annotation{data = {perf_cases, Cases}}, M, F, Inputs) ->
     end;
 
 around_advice(#annotation{data = {_, _} = SingleExt}, M, F, Inputs) ->
-    around_advice(#annotation{data = [SingleExt]}, M, F, Inputs);
+    around_advice(#annotation{data=[SingleExt]}, M, F, Inputs);
 
-around_advice(#annotation{data = ConfExt}, M, F, Inputs) when is_list(ConfExt) ->
+around_advice(#annotation{data = ConfExt}, M, F, Inputs) when is_list(ConfExt)->
     case os:getenv("perf_test") of
         "true" ->
             process_flag(trap_exit, true),
@@ -51,8 +51,7 @@ around_advice(#annotation{data = ConfExt}, M, F, Inputs) when is_list(ConfExt) -
                     exec_perf_config(M, F, Inputs, Ext, Repeats);
                 Exts ->
                     lists:foreach(
-                        fun(Ext) ->
-                            exec_perf_config(M, F, Inputs, Ext, Repeats) end,
+                        fun(Ext) -> exec_perf_config(M, F, Inputs, Ext, Repeats) end,
                         Exts)
             end;
         _ ->
@@ -62,7 +61,7 @@ around_advice(#annotation{data = ConfExt}, M, F, Inputs) when is_list(ConfExt) -
     end;
 
 around_advice(#annotation{}, M, F, Inputs) ->
-    around_advice(#annotation{data = []}, M, F, Inputs).
+    around_advice(#annotation{data=[]}, M, F, Inputs).
 
 %%%===================================================================
 %%% Internal functions
@@ -107,8 +106,7 @@ exec_perf_config(M, F, Inputs, Ext, ConfigName, Repeats) ->
 
     ConfKey = case ConfigName of
                   N when is_atom(N) -> N;
-                  _ ->
-                      list_to_atom("config" ++ integer_to_list(length(FJson) + 1))
+                  _ -> list_to_atom("config" ++ integer_to_list(length(FJson)+1))
               end,
 
     Json3 = [
@@ -127,12 +125,7 @@ exec_perf_config(M, F, Inputs, Ext, ConfigName, Repeats) ->
             | MJson2]}
         | Json2],
 
-    try
-        file:write(File, [iolist_to_binary(mochijson2:encode(prepare_to_write(Json3)))])
-    catch
-        _:Err ->
-            ct:print("~p ~n~p", [Err, erlang:get_stacktrace()])
-    end,
+    file:write(File, [iolist_to_binary(mochijson2:encode(prepare_to_write(Json3)))]),
     file:close(File),
     ok.
 
@@ -170,7 +163,8 @@ exec_multiple_tests(M, F, Inputs, Count, Values, OkNum, Errors) ->
 %% Executes test configuration and returns lists of pairs {key, value} to be logged.
 %% @end
 %%--------------------------------------------------------------------
--spec exec_test(M :: atom(), F :: atom(), Inputs :: list()) -> list() | {error, term()}.
+-spec exec_test(M :: atom(), F :: atom(), Inputs :: list()) ->
+    list() | {error, term()}.
 exec_test(M, F, Inputs) ->
     try
         BeforeProcessing = os:timestamp(),
@@ -212,7 +206,7 @@ check_links() ->
     receive
         {'EXIT', _, normal} ->
             check_links();
-        {'EXIT', _, _} ->
+        {'EXIT',_,_} ->
             {error, linked_proc_error}
     after 0 ->
         ok
