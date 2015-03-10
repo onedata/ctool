@@ -47,7 +47,7 @@ prepare_test_environment(Config, DescriptionFile, Module) ->
             "--bin-provider", ProjectRoot,
             "--bin-appmock", AppmockRoot,
             "-l", LogsDir,
-            DescriptionFile]),
+            DescriptionFile, "2> /dev/null"]),
 
         EnvDesc = json_parser:parse_json_binary_to_atom_proplist(StartLog),
 
