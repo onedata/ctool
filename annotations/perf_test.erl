@@ -27,40 +27,41 @@
 %% annotated function inside.
 %% @end
 %%--------------------------------------------------------------------
--spec around_advice(#annotation{}, M :: atom(), F :: atom(), Inputs :: list()) -> Result :: term().
+-spec around_advice(#annotation{}, M :: atom(), F :: atom(), Inputs :: list()) ->
+    Result :: term().
 around_advice(#annotation{data = {perf_cases, Cases}}, M, F, Inputs) ->
-  case os:getenv("perf_test") of
-    "true" ->
-      Cases;
-    _ ->
-      annotation:call_advised(M, F, Inputs)
-  end;
+    case os:getenv("perf_test") of
+        "true" ->
+            Cases;
+        _ ->
+            annotation:call_advised(M, F, Inputs)
+    end;
 
 around_advice(#annotation{data = {_, _} = SingleExt}, M, F, Inputs) ->
-  around_advice(#annotation{data=[SingleExt]}, M, F, Inputs);
+    around_advice(#annotation{data=[SingleExt]}, M, F, Inputs);
 
 around_advice(#annotation{data = ConfExt}, M, F, Inputs) when is_list(ConfExt)->
-  case os:getenv("perf_test") of
-    "true" ->
-      process_flag(trap_exit, true),
-      Repeats = proplists:get_value(repeats, ConfExt, 1),
-      case proplists:get_value(perf_configs, ConfExt, []) of
-        [] ->
-          Ext = proplists:get_value(perf_config, ConfExt, []),
-          exec_perf_config(M, F, Inputs, Ext, Repeats);
-        Exts ->
-          lists:foreach(
-            fun(Ext) -> exec_perf_config(M, F, Inputs, Ext, Repeats) end,
-          Exts)
-      end;
-    _ ->
-      Ext = proplists:get_value(ct_config, ConfExt, []),
-      [I1] = Inputs,  % get first arg (test config)
-      annotation:call_advised(M, F, [I1 ++ Ext])
-  end;
+    case os:getenv("perf_test") of
+        "true" ->
+            process_flag(trap_exit, true),
+            Repeats = proplists:get_value(repeats, ConfExt, 1),
+            case proplists:get_value(perf_configs, ConfExt, []) of
+                [] ->
+                    Ext = proplists:get_value(perf_config, ConfExt, []),
+                    exec_perf_config(M, F, Inputs, Ext, Repeats);
+                Exts ->
+                    lists:foreach(
+                        fun(Ext) -> exec_perf_config(M, F, Inputs, Ext, Repeats) end,
+                        Exts)
+            end;
+        _ ->
+            Ext = proplists:get_value(ct_config, ConfExt, []),
+            [I1] = Inputs,  % get first arg (test config)
+            annotation:call_advised(M, F, [I1 ++ Ext])
+    end;
 
 around_advice(#annotation{}, M, F, Inputs) ->
-  around_advice(#annotation{data=[]}, M, F, Inputs).
+    around_advice(#annotation{data=[]}, M, F, Inputs).
 
 %%%===================================================================
 %%% Internal functions
@@ -71,18 +72,20 @@ around_advice(#annotation{}, M, F, Inputs) ->
 %% Executes multiple test configurations.
 %% @end
 %%--------------------------------------------------------------------
--spec exec_perf_config(M :: atom(), F :: atom(), Inputs :: list(), Ext :: list() | tuple(), Repeats :: integer()) -> ok.
+-spec exec_perf_config(M :: atom(), F :: atom(), Inputs :: list(),
+    Ext :: list() | tuple(), Repeats :: integer()) -> ok.
 exec_perf_config(M, F, Inputs, {Name, ExtList}, Repeats) ->
-  exec_perf_config(M, F, Inputs, ExtList, Name, Repeats);
+    exec_perf_config(M, F, Inputs, ExtList, Name, Repeats);
 exec_perf_config(M, F, Inputs, Ext, Repeats) ->
-  exec_perf_config(M, F, Inputs, Ext, [], Repeats).
+    exec_perf_config(M, F, Inputs, Ext, [], Repeats).
 
 %%--------------------------------------------------------------------
 %% @doc
 %% Executes multiple test configurations.
 %% @end
 %%--------------------------------------------------------------------
--spec exec_perf_config(M :: atom(), F :: atom(), Inputs :: list(), Ext :: list(), ConfigName :: term(), Repeats :: integer()) -> ok.
+-spec exec_perf_config(M :: atom(), F :: atom(), Inputs :: list(), Ext :: list(),
+    ConfigName :: term(), Repeats :: integer()) -> ok.
 exec_perf_config(M, F, Inputs, Ext, ConfigName, Repeats) ->
   [I1] = Inputs,  % get first arg (test config)
   [ValuesSums, ValuesLists, OkNum, Errors] = exec_multiple_tests(M, F, [I1 ++ Ext], Repeats),
@@ -95,16 +98,16 @@ exec_perf_config(M, F, Inputs, Ext, ConfigName, Repeats) ->
   {ok, File} = file:open("perf_results", [write]),
 
 
-  MJson = proplists:get_value(M, Json, []),
-  Json2 = proplists:delete(M, Json),
+    MJson = proplists:get_value(M, Json, []),
+    Json2 = proplists:delete(M, Json),
 
-  FJson = proplists:get_value(F, MJson, []),
-  MJson2 = proplists:delete(F, MJson),
+    FJson = proplists:get_value(F, MJson, []),
+    MJson2 = proplists:delete(F, MJson),
 
-  ConfKey = case ConfigName of
-    N when is_atom(N) -> N;
-    _ -> list_to_atom("config" ++ integer_to_list(length(FJson)+1))
-  end,
+    ConfKey = case ConfigName of
+                  N when is_atom(N) -> N;
+                  _ -> list_to_atom("config" ++ integer_to_list(length(FJson)+1))
+              end,
 
   Json3 = [
     {M, [
@@ -123,16 +126,17 @@ exec_perf_config(M, F, Inputs, Ext, ConfigName, Repeats) ->
     | MJson2]}
   | Json2],
 
-  file:write(File, [iolist_to_binary(mochijson2:encode(prepare_to_write(Json3)))]),
-  file:close(File),
-  ok.
+    file:write(File, [iolist_to_binary(mochijson2:encode(prepare_to_write(Json3)))]),
+    file:close(File),
+    ok.
 
 %%--------------------------------------------------------------------
 %% @doc
 %% Executes test configuration many times. Returns [ValuesSums, ValuesLists, OkNum, Errors].
 %% @end
 %%--------------------------------------------------------------------
--spec exec_multiple_tests(M :: atom(), F :: atom(), Inputs :: list(), Count :: integer()) -> list().
+-spec exec_multiple_tests(M :: atom(), F :: atom(), Inputs :: list(),
+    Count :: integer()) -> list().
 exec_multiple_tests(M, F, Inputs, Count) ->
   exec_multiple_tests(M, F, Inputs, Count, [], [], 0, []).
 
@@ -169,7 +173,8 @@ exec_multiple_tests(M, F, Inputs, Count, ValuesSums, ValuesLists, OkNum, Errors)
 %% Executes test configuration and returns lists of pairs {key, value} to be logged.
 %% @end
 %%--------------------------------------------------------------------
--spec exec_test(M :: atom(), F :: atom(), Inputs :: list()) -> list() | {error, term()}.
+-spec exec_test(M :: atom(), F :: atom(), Inputs :: list()) ->
+    list() | {error, term()}.
 exec_test(M, F, Inputs) ->
   try
     BeforeProcessing = os:timestamp(),
@@ -208,14 +213,14 @@ exec_test(M, F, Inputs) ->
 %%--------------------------------------------------------------------
 -spec check_links() -> ok | {error, term()}.
 check_links() ->
-  receive
-    {'EXIT', _, normal} ->
-      check_links();
-    {'EXIT',_,_} ->
-      {error, linked_proc_error}
-  after 0 ->
-    ok
-  end.
+    receive
+        {'EXIT', _, normal} ->
+            check_links();
+        {'EXIT',_,_} ->
+            {error, linked_proc_error}
+    after 0 ->
+        ok
+    end.
 
 %%--------------------------------------------------------------------
 %% @doc
