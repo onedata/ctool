@@ -87,15 +87,15 @@ exec_perf_config(M, F, Inputs, Ext, Repeats) ->
 -spec exec_perf_config(M :: atom(), F :: atom(), Inputs :: list(), Ext :: list(),
     ConfigName :: term(), Repeats :: integer()) -> ok.
 exec_perf_config(M, F, Inputs, Ext, ConfigName, Repeats) ->
-  [I1] = Inputs,  % get first arg (test config)
-  [ValuesSums, ValuesLists, OkNum, Errors] = exec_multiple_tests(M, F, [I1 ++ Ext], Repeats),
-  Json = case file:read_file("perf_results") of
-    {ok, FileBinary} ->
-      json_parser:parse_json_binary_to_atom_proplist(FileBinary);
-    _ ->
-      []
-  end,
-  {ok, File} = file:open("perf_results", [write]),
+    [I1] = Inputs,  % get first arg (test config)
+    [ValuesSums, ValuesLists, OkNum, Errors] = exec_multiple_tests(M, F, [I1 ++ Ext], Repeats),
+    Json = case file:read_file("perf_results") of
+      {ok, FileBinary} ->
+        json_parser:parse_json_binary_to_atom_proplist(FileBinary);
+      _ ->
+        []
+    end,
+    {ok, File} = file:open("perf_results", [write]),
 
 
     MJson = proplists:get_value(M, Json, []),
@@ -109,22 +109,22 @@ exec_perf_config(M, F, Inputs, Ext, ConfigName, Repeats) ->
                   _ -> list_to_atom("config" ++ integer_to_list(length(FJson)+1))
               end,
 
-  Json3 = [
-    {M, [
-      {F, [
-        {ConfKey,
-          [
-            {config_extension, Ext},
-            {repeats, Repeats},
-            {ok_counter, OkNum},
-            {results_sums, ValuesSums},
-            {results_lists, ValuesLists},
-            {errors, Errors}
-          ]
-        }
-      | FJson]}
-    | MJson2]}
-  | Json2],
+    Json3 = [
+      {M, [
+        {F, [
+          {ConfKey,
+            [
+              {config_extension, Ext},
+              {repeats, Repeats},
+              {ok_counter, OkNum},
+              {results_sums, ValuesSums},
+              {results_lists, ValuesLists},
+              {errors, Errors}
+            ]
+          }
+        | FJson]}
+      | MJson2]}
+    | Json2],
 
     file:write(File, [iolist_to_binary(mochijson2:encode(prepare_to_write(Json3)))]),
     file:close(File),
@@ -138,35 +138,35 @@ exec_perf_config(M, F, Inputs, Ext, ConfigName, Repeats) ->
 -spec exec_multiple_tests(M :: atom(), F :: atom(), Inputs :: list(),
     Count :: integer()) -> list().
 exec_multiple_tests(M, F, Inputs, Count) ->
-  exec_multiple_tests(M, F, Inputs, Count, [], [], 0, []).
+    exec_multiple_tests(M, F, Inputs, Count, [], [], 0, []).
 
 exec_multiple_tests(_M, _F, _Inputs, 0, ValuesSums, ValuesLists, OkNum, Errors) ->
-  ReversedValuesLists = lists:map(fun({K, Val}) ->
-    {K, lists:reverse(Val)}
-  end, ValuesLists),
-  [ValuesSums, ReversedValuesLists, OkNum, lists:reverse(Errors)];
+    ReversedValuesLists = lists:map(fun({K, Val}) ->
+      {K, lists:reverse(Val)}
+    end, ValuesLists),
+    [ValuesSums, ReversedValuesLists, OkNum, lists:reverse(Errors)];
 
 exec_multiple_tests(M, F, Inputs, Count, ValuesSums, ValuesLists, OkNum, Errors) ->
-  case exec_test(M, F, Inputs) of
-    {error, E} ->
-      exec_multiple_tests(M, F, Inputs, Count - 1, ValuesSums, ValuesLists, OkNum, [E | Errors]);
-    V ->
-      case ValuesSums of
-        [] ->
-          InitValuesLists = lists:map(fun({K, Val}) ->
-            {K, [Val]}
-          end, V),
-          exec_multiple_tests(M, F, Inputs, Count - 1, V, InitValuesLists, OkNum + 1, Errors);
-        _ ->
-          NewVSums = lists:zipwith(fun({K, V1}, {K, V2}) ->
-            {K, V1 + V2}
-          end, V, ValuesSums),
-          NewVLists = lists:zipwith(fun({K, V1}, {K, V2}) ->
-            {K, [V1 | V2]}
-          end, V, ValuesLists),
-          exec_multiple_tests(M, F, Inputs, Count - 1, NewVSums, NewVLists, OkNum + 1, Errors)
-      end
-  end.
+    case exec_test(M, F, Inputs) of
+      {error, E} ->
+        exec_multiple_tests(M, F, Inputs, Count - 1, ValuesSums, ValuesLists, OkNum, [E | Errors]);
+      V ->
+        case ValuesSums of
+          [] ->
+            InitValuesLists = lists:map(fun({K, Val}) ->
+              {K, [Val]}
+            end, V),
+            exec_multiple_tests(M, F, Inputs, Count - 1, V, InitValuesLists, OkNum + 1, Errors);
+          _ ->
+            NewVSums = lists:zipwith(fun({K, V1}, {K, V2}) ->
+              {K, V1 + V2}
+            end, V, ValuesSums),
+            NewVLists = lists:zipwith(fun({K, V1}, {K, V2}) ->
+              {K, [V1 | V2]}
+            end, V, ValuesLists),
+            exec_multiple_tests(M, F, Inputs, Count - 1, NewVSums, NewVLists, OkNum + 1, Errors)
+        end
+    end.
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -176,35 +176,35 @@ exec_multiple_tests(M, F, Inputs, Count, ValuesSums, ValuesLists, OkNum, Errors)
 -spec exec_test(M :: atom(), F :: atom(), Inputs :: list()) ->
     list() | {error, term()}.
 exec_test(M, F, Inputs) ->
-  try
-    BeforeProcessing = os:timestamp(),
-    Ans = annotation:call_advised(M, F, Inputs),
-    AfterProcessing = os:timestamp(),
-    case check_links() of
-      ok ->
-        TestTime = timer:now_diff(AfterProcessing, BeforeProcessing),
-        case Ans of
-          {K, V} when is_number(V) ->
-            [{test_time, TestTime}, {K, V}];
-          AnsList when is_list(AnsList) ->
-            lists:foldl(fun(AnsPart, Acc) ->
-              case AnsPart of
-                {K2, V2} when is_number(V2) ->
-                  [{K2, V2} | Acc];
-                _ ->
-                  Acc
-              end
-            end, [{test_time, TestTime}], AnsList);
-          _ ->
-            [{test_time, TestTime}]
-        end;
-      E ->
-        E
-    end
-  catch
-    E1:E2 ->
-      {error, gui_str:format("~p:~p~n~p", [E1, E2, erlang:get_stacktrace()])}
-  end.
+    try
+      BeforeProcessing = os:timestamp(),
+      Ans = annotation:call_advised(M, F, Inputs),
+      AfterProcessing = os:timestamp(),
+      case check_links() of
+        ok ->
+          TestTime = timer:now_diff(AfterProcessing, BeforeProcessing),
+          case Ans of
+            {K, V} when is_number(V) ->
+              [{test_time, TestTime}, {K, V}];
+            AnsList when is_list(AnsList) ->
+              lists:foldl(fun(AnsPart, Acc) ->
+                case AnsPart of
+                  {K2, V2} when is_number(V2) ->
+                    [{K2, V2} | Acc];
+                  _ ->
+                    Acc
+                end
+              end, [{test_time, TestTime}], AnsList);
+            _ ->
+              [{test_time, TestTime}]
+          end;
+        E ->
+          E
+      end
+    catch
+      E1:E2 ->
+        {error, gui_str:format("~p:~p~n~p", [E1, E2, erlang:get_stacktrace()])}
+    end.
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -229,16 +229,16 @@ check_links() ->
 %%--------------------------------------------------------------------
 -spec prepare_to_write(Input :: term()) -> term().
 prepare_to_write({struct, List}) ->
-  prepare_to_write(List);
+    prepare_to_write(List);
 
 prepare_to_write([{_,_} | _] = Input) ->
-  {struct, lists:map(fun(I) -> prepare_to_write(I) end, Input)};
+    {struct, lists:map(fun(I) -> prepare_to_write(I) end, Input)};
 
 prepare_to_write({K, V}) when is_list(V) ->
-  {K, prepare_to_write(V)};
+    {K, prepare_to_write(V)};
 
 prepare_to_write({K, V}) ->
-  {K, V};
+    {K, V};
 
 prepare_to_write(Any) ->
-  Any.
+    Any.

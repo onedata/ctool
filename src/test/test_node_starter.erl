@@ -26,7 +26,7 @@
 %%--------------------------------------------------------------------
 -spec prepare_test_environment(Config :: list(), DescriptionFile :: string(),
     Script :: string(), Module :: module()) -> Result :: list() | {fail, tuple()}.
-prepare_test_environment(Config, DescriptionFile, Script, Module) ->
+prepare_test_environment(Config, DescriptionFile, _Script, Module) ->
     try
         DataDir = ?config(data_dir, Config),
         PrivDir = ?config(priv_dir, Config),
@@ -53,22 +53,18 @@ prepare_test_environment(Config, DescriptionFile, Script, Module) ->
 
         try
             Dns = ?config(dns, EnvDesc),
-            AllNodes = case Script of
-                "globalregistry_up.py" ->
-                    ?config(gr_nodes, EnvDesc);
-                _ ->
-                    Workers = ?config(op_worker_nodes, EnvDesc),
-                    CCMs = ?config(op_ccm_nodes, EnvDesc),
-                    Workers ++ CCMs
-            end,
+            GrNodes = ?config(gr_nodes, EnvDesc),
+            Workers = ?config(op_worker_nodes, EnvDesc),
+            CCMs = ?config(op_ccm_nodes, EnvDesc),
+            AllNodes = GrNodes ++ Workers ++ CCMs,
 
             erlang:set_cookie(node(), oneprovider_node),
             os:cmd("echo nameserver " ++ atom_to_list(Dns) ++ " > /etc/resolv.conf"),
 
             ping_nodes(AllNodes),
+            global:sync(),
             ok = load_modules(AllNodes, [Module]),
 
-            global:sync(),
             lists:append(ConfigWithPaths, proplists:delete(dns, EnvDesc))
         catch
             E11:E12 ->
