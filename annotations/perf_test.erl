@@ -222,7 +222,7 @@ check_links() ->
 %% Prepares input to results file.
 %% @end
 %%--------------------------------------------------------------------
--spec prepare_to_write(Input :: term()) -> tuple().
+-spec prepare_to_write(Input :: term()) -> term().
 prepare_to_write({struct, List}) ->
   prepare_to_write(List);
 
