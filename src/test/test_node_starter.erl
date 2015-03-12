@@ -45,6 +45,7 @@ prepare_test_environment(Config, DescriptionFile, _Script, Module) ->
 
         StartLog = utils:cmd([EnvUpScript,
             "--bin-provider", ProjectRoot,
+            "--bin-gr", ProjectRoot,
             "--bin-appmock", AppmockRoot,
             "-l", LogsDir,
             DescriptionFile]),
