@@ -13,7 +13,7 @@
 -include_lib("common_test/include/ct.hrl").
 
 %% API
--export([prepare_test_environment/4, clean_environment/1]).
+-export([prepare_test_environment/3, clean_environment/1]).
 
 %% ====================================================================
 %% Starting and stoping nodes
@@ -25,8 +25,8 @@
 %% @end
 %%--------------------------------------------------------------------
 -spec prepare_test_environment(Config :: list(), DescriptionFile :: string(),
-    Script :: string(), Module :: module()) -> Result :: list() | {fail, tuple()}.
-prepare_test_environment(Config, DescriptionFile, _Script, Module) ->
+    Module :: module()) -> Result :: list() | {fail, tuple()}.
+prepare_test_environment(Config, DescriptionFile, Module) ->
     try
         DataDir = ?config(data_dir, Config),
         PrivDir = ?config(priv_dir, Config),
@@ -44,8 +44,10 @@ prepare_test_environment(Config, DescriptionFile, _Script, Module) ->
         os:cmd("mkdir -p " ++ LogsDir),
 
         StartLog = utils:cmd([EnvUpScript,
+            %% Function is used durgin OP or GR tests so starts OP or GR - not both
             "--bin-provider", ProjectRoot,
             "--bin-gr", ProjectRoot,
+            %% additionally AppMock can be started
             "--bin-appmock", AppmockRoot,
             "-l", LogsDir,
             DescriptionFile]),

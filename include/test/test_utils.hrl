@@ -15,12 +15,15 @@
 -include_lib("common_test/include/ct.hrl").
 -include_lib("eunit/include/eunit.hrl").
 
+%% temporary directory for test files
+-define(TEMP_DIR, "/tmp").
+
 %% Returns absolute path to given file in the test data directory
 -define(TEST_FILE(Config, X), filename:join(?config(data_dir, Config), X)).
 
 %% Initializes test environment
--define(TEST_INIT(Config, EnvDescription, Script),
-    test_node_starter:prepare_test_environment(Config, EnvDescription, Script, ?MODULE)
+-define(TEST_INIT(Config, EnvDescription),
+    test_node_starter:prepare_test_environment(Config, EnvDescription, ?MODULE)
 ).
 
 %% Utility macros
