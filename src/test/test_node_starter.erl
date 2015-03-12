@@ -33,6 +33,7 @@ prepare_test_environment(Config, DescriptionFile, Module) ->
         CtTestRoot = filename:join(DataDir, ".."),
         ProjectRoot = filename:join(CtTestRoot, ".."),
         AppmockRoot = filename:join(ProjectRoot, "appmock"),
+        CcmRoot = filename:join(ProjectRoot, "oneprovider_ccm"),
 
         ConfigWithPaths =
             [{ct_test_root, CtTestRoot}, {project_root, ProjectRoot} | Config],
@@ -46,6 +47,7 @@ prepare_test_environment(Config, DescriptionFile, Module) ->
         StartLog = utils:cmd([EnvUpScript,
             "--bin-provider", ProjectRoot,
             "--bin-appmock", AppmockRoot,
+            "--bin-ccm", CcmRoot,
             "-l", LogsDir,
             DescriptionFile]),
 
