@@ -114,7 +114,7 @@ exec_perf_config(M, F, Inputs, Ext, ConfigName, Repeats) ->
             {F, [
                 {ConfKey,
                     [
-                        {timestamp, os:timestamp()},
+                        {timestamp, get_timestamp()},
                         {config_extension, Ext},
                         {repeats, Repeats},
                         {ok_counter, OkNum},
@@ -247,3 +247,13 @@ prepare_to_write({K, V}) ->
 
 prepare_to_write(Any) ->
     Any.
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Get current time in milliseconds.
+%% @end
+%%--------------------------------------------------------------------
+-spec get_timestamp() -> integer().
+get_timestamp() ->
+    {Mega, Sec, Micro} = os:timestamp(),
+    (Mega*1000000 + Sec)*1000 + round(Micro/1000).
