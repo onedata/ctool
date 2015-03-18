@@ -30,7 +30,7 @@
     Result :: {ok, Status :: string(), ResponseHeaders :: binary(), ResponseBody :: binary()} | {error, Reason :: term()}.
 %% ====================================================================
 auth_request(Client, URN, Method) ->
-    auth_request(Client, URN, Method, []).
+    gr_endpoint:auth_request(Client, URN, Method, []).
 
 
 %% auth_request/4
@@ -41,7 +41,7 @@ auth_request(Client, URN, Method) ->
     Result :: {ok, Status :: string(), ResponseHeaders :: binary(), ResponseBody :: binary()} | {error, Reason :: term()}.
 %% ====================================================================
 auth_request(Client, URN, Method, Body) ->
-    auth_request(Client, URN, Method, Body, []).
+    gr_endpoint:auth_request(Client, URN, Method, Body, []).
 
 
 %% auth_request/5
@@ -52,7 +52,7 @@ auth_request(Client, URN, Method, Body) ->
     Result :: {ok, Status :: string(), ResponseHeaders :: binary(), ResponseBody :: binary()} | {error, Reason :: term()}.
 %% ====================================================================
 auth_request(Client, URN, Method, Body, Options) ->
-    auth_request(Client, URN, Method, [], Body, Options).
+    gr_endpoint:auth_request(Client, URN, Method, [], Body, Options).
 
 
 %% auth_request/6
@@ -85,7 +85,7 @@ auth_request({Type, AccessToken}, URN, Method, Headers, Body, Options) when Type
     Result :: {ok, Status :: string(), ResponseHeaders :: binary(), ResponseBody :: binary()} | {error, Reason :: term()}.
 %% ====================================================================
 noauth_request(Client, URN, Method) ->
-    noauth_request(Client, URN, Method, []).
+    gr_endpoint:noauth_request(Client, URN, Method, []).
 
 
 %% noauth_request/4
@@ -96,7 +96,7 @@ noauth_request(Client, URN, Method) ->
     Result :: {ok, Status :: string(), ResponseHeaders :: binary(), ResponseBody :: binary()} | {error, Reason :: term()}.
 %% ====================================================================
 noauth_request(Client, URN, Method, Body) ->
-    noauth_request(Client, URN, Method, Body, []).
+    gr_endpoint:noauth_request(Client, URN, Method, Body, []).
 
 
 %% noauth_request/5
@@ -107,7 +107,7 @@ noauth_request(Client, URN, Method, Body) ->
     Result :: {ok, Status :: string(), ResponseHeaders :: binary(), ResponseBody :: binary()} | {error, Reason :: term()}.
 %% ====================================================================
 noauth_request(Client, URN, Method, Body, Options) ->
-    noauth_request(Client, URN, Method, [], Body, Options).
+    gr_endpoint:noauth_request(Client, URN, Method, [], Body, Options).
 
 
 %% noauth_request/6

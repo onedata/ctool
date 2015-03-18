@@ -51,7 +51,8 @@ around_advice(#annotation{data = ConfExt}, M, F, Inputs) when is_list(ConfExt) -
                     exec_perf_config(M, F, Inputs, Ext, Repeats);
                 Exts ->
                     lists:foreach(
-                        fun(Ext) -> exec_perf_config(M, F, Inputs, Ext, Repeats) end,
+                        fun(Ext) ->
+                            exec_perf_config(M, F, Inputs, Ext, Repeats) end,
                         Exts)
             end;
         _ ->
