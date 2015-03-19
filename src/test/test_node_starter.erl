@@ -33,7 +33,7 @@ prepare_test_environment(Config, DescriptionFile, Module) ->
         CtTestRoot = filename:join(DataDir, ".."),
         ProjectRoot = filename:join(CtTestRoot, ".."),
         AppmockRoot = filename:join(ProjectRoot, "appmock"),
-        CcmRoot = filename:join(ProjectRoot, "oneprovider_ccm"),
+        CcmRoot = filename:join(ProjectRoot, "op_ccm"),
 
         ConfigWithPaths =
             [{ct_test_root, CtTestRoot}, {project_root, ProjectRoot} | Config],
