@@ -45,31 +45,42 @@ prepare_test_environment(Config, DescriptionFile, Module) ->
         os:cmd("mkdir -p " ++ LogsDir),
 
         StartLog = utils:cmd([EnvUpScript,
+            %% Function is used durgin OP or GR tests so starts OP or GR - not both
             "--bin-provider", ProjectRoot,
+            "--bin-gr", ProjectRoot,
+            %% additionally AppMock can be started
             "--bin-appmock", AppmockRoot,
             "--bin-ccm", CcmRoot,
             "-l", LogsDir,
-            DescriptionFile]),
+            DescriptionFile, "2> /dev/null"]),
 
         EnvDesc = json_parser:parse_json_binary_to_atom_proplist(StartLog),
 
-        Dns = ?config(dns, EnvDesc),
-        Workers = ?config(op_worker_nodes, EnvDesc),
-        CCMs = ?config(op_ccm_nodes, EnvDesc),
+        try
+            Dns = ?config(dns, EnvDesc),
+            GrNodes = ?config(gr_nodes, EnvDesc),
+            Workers = ?config(op_worker_nodes, EnvDesc),
+            CCMs = ?config(op_ccm_nodes, EnvDesc),
+            AllNodes = GrNodes ++ Workers ++ CCMs,
 
-        erlang:set_cookie(node(), oneprovider_node),
-        os:cmd("echo nameserver " ++ atom_to_list(Dns) ++ " > /etc/resolv.conf"),
+            erlang:set_cookie(node(), oneprovider_node),
+            os:cmd("echo nameserver " ++ atom_to_list(Dns) ++ " > /etc/resolv.conf"),
 
-        ping_nodes(CCMs ++ Workers),
-        global:sync(),
-        ok = load_modules(CCMs ++ Workers, [Module]),
+            ping_nodes(AllNodes),
+            global:sync(),
+            ok = load_modules(AllNodes, [Module]),
 
-        lists:append(ConfigWithPaths, proplists:delete(dns, EnvDesc))
+            lists:append(ConfigWithPaths, proplists:delete(dns, EnvDesc))
+        catch
+            E11:E12 ->
+                ct:print("Prepare of environment failed ~p:~p~n~p", [E11, E12, erlang:get_stacktrace()]),
+                clean_environment(EnvDesc),
+                {fail, {init_failed, E11, E12}}
+        end
     catch
-        E1:E2 ->
-            ct:print("Prepare of environment failed ~p:~p~n~p", [E1, E2, erlang:get_stacktrace()]),
-            clean_environment(Config),
-            {fail, {init_failed, E1, E2}}
+        E21:E22 ->
+            ct:print("Prepare of environment failed ~p:~p~n~p", [E21, E22, erlang:get_stacktrace()]),
+            {fail, {init_failed, E21, E22}}
     end.
 
 %%--------------------------------------------------------------------
