@@ -98,7 +98,6 @@ exec_perf_config(M, F, Inputs, Ext, ConfigName, Repeats) ->
            end,
     {ok, File} = file:open("perf_results.json", [write]),
 
-
     MJson = proplists:get_value(M, Json, []),
     Json2 = proplists:delete(M, Json),
 
@@ -107,10 +106,11 @@ exec_perf_config(M, F, Inputs, Ext, ConfigName, Repeats) ->
 
     ConfKey = case ConfigName of
                   N when is_atom(N) -> N;
-                  _ -> list_to_atom("config" ++ integer_to_list(length(FJson) + 1))
+                  _ ->
+                      list_to_atom("config" ++ integer_to_list(length(FJson) + 1))
               end,
 
-    Json3 = [
+    Json3 = {test_suites, [
         {M, [
             {F, [
                 {ConfKey,
@@ -126,7 +126,8 @@ exec_perf_config(M, F, Inputs, Ext, ConfigName, Repeats) ->
                 }
                 | FJson]}
             | MJson2]}
-        | Json2],
+        | Json2]
+    },
 
     file:write(File, [iolist_to_binary(mochijson2:encode(prepare_to_write(Json3)))]),
     file:close(File),
@@ -257,4 +258,4 @@ prepare_to_write(Any) ->
 -spec get_timestamp() -> integer().
 get_timestamp() ->
     {Mega, Sec, Micro} = os:timestamp(),
-    (Mega*1000000 + Sec)*1000 + round(Micro/1000).
+    (Mega * 1000000 + Sec) * 1000 + round(Micro / 1000).
