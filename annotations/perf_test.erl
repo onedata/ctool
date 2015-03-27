@@ -90,13 +90,13 @@ exec_perf_config(M, F, Inputs, Ext, Repeats) ->
 exec_perf_config(M, F, Inputs, Ext, ConfigName, Repeats) ->
     [I1] = Inputs,  % get first arg (test config)
     {ValuesSums, ValuesLists, OkNum, Errors} = exec_multiple_tests(M, F, [I1 ++ Ext], Repeats),
-    Json = case file:read_file("perf_results") of
+    Json = case file:read_file("perf_results.json") of
                {ok, FileBinary} ->
                    json_parser:parse_json_binary_to_atom_proplist(FileBinary);
                _ ->
                    []
            end,
-    {ok, File} = file:open("perf_results", [write]),
+    {ok, File} = file:open("perf_results.json", [write]),
 
 
     MJson = proplists:get_value(M, Json, []),
@@ -155,12 +155,12 @@ exec_multiple_tests(_M, _F, _Inputs, 0, ValuesSums, ValuesLists, OkNum, Errors) 
 exec_multiple_tests(M, F, Inputs, Count, ValuesSums, ValuesLists, OkNum, Errors) ->
     case exec_test(M, F, Inputs) of
         {error, E} ->
-            exec_multiple_tests(M, F, Inputs, Count - 1, ValuesSums, ValuesLists, OkNum, [E | Errors]);
+            exec_multiple_tests(M, F, Inputs, Count - 1, ValuesSums, ValuesLists, OkNum, [{Count, E} | Errors]);
         V ->
             case ValuesSums of
                 [] ->
                     InitValuesLists = lists:map(fun({K, Val}) ->
-                        {K, [Val]}
+                        {K, [{Count, Val}]}
                     end, V),
                     exec_multiple_tests(M, F, Inputs, Count - 1, V, InitValuesLists, OkNum + 1, Errors);
                 _ ->
@@ -168,7 +168,7 @@ exec_multiple_tests(M, F, Inputs, Count, ValuesSums, ValuesLists, OkNum, Errors)
                         {K, V1 + V2}
                     end, V, ValuesSums),
                     NewVLists = lists:zipwith(fun({K, V1}, {K, V2}) ->
-                        {K, [V1 | V2]}
+                        {K, [{Count, V1} | V2]}
                     end, V, ValuesLists),
                     exec_multiple_tests(M, F, Inputs, Count - 1, NewVSums, NewVLists, OkNum + 1, Errors)
             end
