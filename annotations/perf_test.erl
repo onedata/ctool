@@ -194,7 +194,7 @@ exec_test(M, F, Inputs) ->
         AfterProcessing = os:timestamp(),
         case check_links() of
             ok ->
-                TestTime = round(timer:now_diff(AfterProcessing, BeforeProcessing) / 1000),
+                TestTime = utils:milliseconds_diff(AfterProcessing, BeforeProcessing),
                 case Ans of
                     {K, V, U} when is_number(V) ->
                         [{test_time, TestTime, ms}, {K, V, U}];
