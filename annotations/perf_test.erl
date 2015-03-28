@@ -119,8 +119,16 @@ exec_perf_config(M, F, Inputs, Ext, ConfigName, Repeats) ->
                         {config_extension, Ext},
                         {repeats, Repeats},
                         {ok_counter, OkNum},
-                        {results_sums, ValuesSums},
-                        {results_lists, ValuesLists},
+                        {results_sums, [
+                            {K, [
+                                {unit, U},
+                                {sum, S}
+                            ]} || {K, S, U} <- ValuesSums]},
+                        {results_lists, [
+                            {K, [
+                                {unit, U},
+                                {list, L}
+                            ]} || {K, L, U} <- ValuesLists]},
                         {errors, Errors}
                     ]
                 }
@@ -148,10 +156,7 @@ exec_multiple_tests(M, F, Inputs, Count) ->
     exec_multiple_tests(M, F, Inputs, Count, [], [], 0, []).
 
 exec_multiple_tests(_M, _F, _Inputs, 0, ValuesSums, ValuesLists, OkNum, Errors) ->
-    ReversedValuesLists = lists:map(fun({K, Val}) ->
-        {K, lists:reverse(Val)}
-    end, ValuesLists),
-    {ValuesSums, ReversedValuesLists, OkNum, lists:reverse(Errors)};
+    {ValuesSums, ValuesLists, OkNum, Errors};
 
 exec_multiple_tests(M, F, Inputs, Count, ValuesSums, ValuesLists, OkNum, Errors) ->
     case exec_test(M, F, Inputs) of
@@ -160,16 +165,16 @@ exec_multiple_tests(M, F, Inputs, Count, ValuesSums, ValuesLists, OkNum, Errors)
         V ->
             case ValuesSums of
                 [] ->
-                    InitValuesLists = lists:map(fun({K, Val}) ->
-                        {K, [{Count, Val}]}
+                    InitValuesLists = lists:map(fun({K, Val, U}) ->
+                        {K, [{Count, Val}], U}
                     end, V),
                     exec_multiple_tests(M, F, Inputs, Count - 1, V, InitValuesLists, OkNum + 1, Errors);
                 _ ->
-                    NewVSums = lists:zipwith(fun({K, V1}, {K, V2}) ->
-                        {K, V1 + V2}
+                    NewVSums = lists:zipwith(fun({K, V1, U}, {K, V2, U}) ->
+                        {K, V1 + V2, U}
                     end, V, ValuesSums),
-                    NewVLists = lists:zipwith(fun({K, V1}, {K, V2}) ->
-                        {K, [{Count, V1} | V2]}
+                    NewVLists = lists:zipwith(fun({K, V1, U}, {K, V2, U}) ->
+                        {K, [{Count, V1} | V2], U}
                     end, V, ValuesLists),
                     exec_multiple_tests(M, F, Inputs, Count - 1, NewVSums, NewVLists, OkNum + 1, Errors)
             end
@@ -189,21 +194,21 @@ exec_test(M, F, Inputs) ->
         AfterProcessing = os:timestamp(),
         case check_links() of
             ok ->
-                TestTime = timer:now_diff(AfterProcessing, BeforeProcessing),
+                TestTime = round(timer:now_diff(AfterProcessing, BeforeProcessing) / 1000),
                 case Ans of
-                    {K, V} when is_number(V) ->
-                        [{test_time, TestTime}, {K, V}];
+                    {K, V, U} when is_number(V) ->
+                        [{test_time, TestTime, ms}, {K, V, U}];
                     AnsList when is_list(AnsList) ->
                         lists:foldl(fun(AnsPart, Acc) ->
                             case AnsPart of
-                                {K2, V2} when is_number(V2) ->
-                                    [{K2, V2} | Acc];
+                                {K2, V2, U2} when is_number(V2) ->
+                                    [{K2, V2, U2} | Acc];
                                 _ ->
                                     Acc
                             end
-                        end, [{test_time, TestTime}], AnsList);
+                        end, [{test_time, TestTime, ms}], AnsList);
                     _ ->
-                        [{test_time, TestTime}]
+                        [{test_time, TestTime, ms}]
                 end;
             E ->
                 E
