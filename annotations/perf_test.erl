@@ -90,12 +90,12 @@ exec_perf_config(M, F, Inputs, Ext, Repeats) ->
 exec_perf_config(M, F, Inputs, Ext, ConfigName, Repeats) ->
     [I1] = Inputs,  % get first arg (test config)
     {ValuesSums, ValuesLists, OkNum, Errors} = exec_multiple_tests(M, F, [I1 ++ Ext], Repeats),
-    Json = case file:read_file("perf_results.json") of
-               {ok, FileBinary} ->
-                   json_parser:parse_json_binary_to_atom_proplist(FileBinary);
-               _ ->
-                   []
-           end,
+    [{test_suites, Json}] = case file:read_file("perf_results.json") of
+                                {ok, FileBinary} ->
+                                    json_parser:parse_json_binary_to_atom_proplist(FileBinary);
+                                _ ->
+                                    [{test_suites, []}]
+                            end,
     {ok, File} = file:open("perf_results.json", [write]),
 
     MJson = proplists:get_value(M, Json, []),
@@ -110,32 +110,34 @@ exec_perf_config(M, F, Inputs, Ext, ConfigName, Repeats) ->
                       list_to_atom("config" ++ integer_to_list(length(FJson) + 1))
               end,
 
-    Json3 = {test_suites, [
-        {M, [
-            {F, [
-                {ConfKey,
-                    [
-                        {timestamp, get_timestamp()},
-                        {config_extension, Ext},
-                        {repeats, Repeats},
-                        {ok_counter, OkNum},
-                        {results_sums, [
-                            {K, [
-                                {unit, U},
-                                {sum, S}
-                            ]} || {K, S, U} <- ValuesSums]},
-                        {results_lists, [
-                            {K, [
-                                {unit, U},
-                                {list, L}
-                            ]} || {K, L, U} <- ValuesLists]},
-                        {errors, Errors}
-                    ]
-                }
-                | FJson]}
-            | MJson2]}
-        | Json2]
-    },
+    Json3 = [
+        {test_suites, [
+            {M, [
+                {F, [
+                    {ConfKey,
+                        [
+                            {timestamp, get_timestamp()},
+                            {config_extension, Ext},
+                            {repeats, Repeats},
+                            {ok_counter, OkNum},
+                            {results_sums, [
+                                {K, [
+                                    {unit, U},
+                                    {sum, S}
+                                ]} || {K, S, U} <- ValuesSums]},
+                            {results_lists, [
+                                {K, [
+                                    {unit, U},
+                                    {list, L}
+                                ]} || {K, L, U} <- ValuesLists]},
+                            {errors, Errors}
+                        ]
+                    }
+                    | FJson]}
+                | MJson2]}
+            | Json2]
+        }
+    ],
 
     file:write(File, [iolist_to_binary(mochijson2:encode(prepare_to_write(Json3)))]),
     file:close(File),
