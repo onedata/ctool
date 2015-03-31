@@ -16,7 +16,8 @@
     record_type/1, ensure_binary/1, ensure_list/1, ensure_unicode_list/1,
     ensure_unicode_binary/1, access_token_hash/1, trim_spaces/1, ceil/1,
     aggregate_over_first_element/1, average/1, random_shuffle/1,
-    random_element/1, get_host/1, get_host_as_atom/1, cmd/1]).
+    random_element/1, get_host/1, get_host_as_atom/1, cmd/1, seconds_diff/2,
+    milliseconds_diff/2]).
 
 %%%===================================================================
 %%% API
@@ -229,7 +230,7 @@ random_shuffle(List) ->
 %%--------------------------------------------------------------------
 -spec random_element([term()]) -> term().
 random_element(List) ->
-    RandomIndex = crypto:rand_uniform(1, length(List)+1),
+    RandomIndex = crypto:rand_uniform(1, length(List) + 1),
     lists:nth(RandomIndex, List).
 
 %%--------------------------------------------------------------------
@@ -257,6 +258,26 @@ get_host_as_atom(Node) ->
 %%--------------------------------------------------------------------
 cmd(Command) ->
     os:cmd(string:join(Command, " ")).
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Returns the time difference Timestamp2 - Timestamp1 in milliseconds.
+%% @end
+%%--------------------------------------------------------------------
+-spec milliseconds_diff(Timestamp2 :: erlang:timestamp(),
+    Timestamp1 :: erlang:timestamp()) -> MillisecondsDiff :: integer().
+milliseconds_diff(Timestamp2, Timestamp1) ->
+    round(timer:now_diff(Timestamp2, Timestamp1) / 1000).
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Returns the time difference Timestamp2 - Timestamp1 in seconds.
+%% @end
+%%--------------------------------------------------------------------
+-spec seconds_diff(Timestamp2 :: erlang:timestamp(),
+    Timestamp1 :: erlang:timestamp()) -> SecondsDiff :: integer().
+seconds_diff(Timestamp2, Timestamp1) ->
+    round(timer:now_diff(Timestamp2, Timestamp1) / 1000000).
 
 %%%===================================================================
 %%% Internal functions
