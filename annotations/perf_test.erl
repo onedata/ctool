@@ -154,31 +154,34 @@ exec_perf_config(M, F, Inputs, Ext, ConfigName, Repeats) ->
     ValuesLists :: list(),
     OkNum :: integer(),
     Errors :: list().
-exec_multiple_tests(M, F, Inputs, Count) ->
-    exec_multiple_tests(M, F, Inputs, Count, [], [], 0, []).
+exec_multiple_tests(M, F, Inputs, Repeats) ->
+    exec_multiple_tests(M, F, Inputs, 1, Repeats + 1, [], [], 0, []).
 
-exec_multiple_tests(_M, _F, _Inputs, 0, ValuesSums, ValuesLists, OkNum, Errors) ->
-    {ValuesSums, ValuesLists, OkNum, Errors};
+exec_multiple_tests(_M, _F, _Inputs, Repeats, Repeats, ValuesSums, ValuesLists, OkNum, Errors) ->
+    ReversedValuesLists = lists:map(fun({K, Val, U}) ->
+        {K, lists:reverse(Val), U}
+    end, ValuesLists),
+    {ValuesSums, ReversedValuesLists, OkNum, lists:reverse(Errors)};
 
-exec_multiple_tests(M, F, Inputs, Count, ValuesSums, ValuesLists, OkNum, Errors) ->
+exec_multiple_tests(M, F, Inputs, Repeat, Repeats, ValuesSums, ValuesLists, OkNum, Errors) ->
     case exec_test(M, F, Inputs) of
         {error, E} ->
-            exec_multiple_tests(M, F, Inputs, Count - 1, ValuesSums, ValuesLists, OkNum, [{Count, E} | Errors]);
+            exec_multiple_tests(M, F, Inputs, Repeat + 1, Repeats, ValuesSums, ValuesLists, OkNum, [{Repeat, E} | Errors]);
         V ->
             case ValuesSums of
                 [] ->
                     InitValuesLists = lists:map(fun({K, Val, U}) ->
-                        {K, [{Count, Val}], U}
+                        {K, [{Repeat, Val}], U}
                     end, V),
-                    exec_multiple_tests(M, F, Inputs, Count - 1, V, InitValuesLists, OkNum + 1, Errors);
+                    exec_multiple_tests(M, F, Inputs, Repeat + 1, Repeats, V, InitValuesLists, OkNum + 1, Errors);
                 _ ->
                     NewVSums = lists:zipwith(fun({K, V1, U}, {K, V2, U}) ->
                         {K, V1 + V2, U}
                     end, V, ValuesSums),
                     NewVLists = lists:zipwith(fun({K, V1, U}, {K, V2, U}) ->
-                        {K, [{Count, V1} | V2], U}
+                        {K, [{Repeat, V1} | V2], U}
                     end, V, ValuesLists),
-                    exec_multiple_tests(M, F, Inputs, Count - 1, NewVSums, NewVLists, OkNum + 1, Errors)
+                    exec_multiple_tests(M, F, Inputs, Repeat + 1, Repeats, NewVSums, NewVLists, OkNum + 1, Errors)
             end
     end.
 
