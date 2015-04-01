@@ -90,14 +90,13 @@ exec_perf_config(M, F, Inputs, Ext, Repeats) ->
 exec_perf_config(M, F, Inputs, Ext, ConfigName, Repeats) ->
     [I1] = Inputs,  % get first arg (test config)
     {ValuesSums, ValuesLists, OkNum, Errors} = exec_multiple_tests(M, F, [I1 ++ Ext], Repeats),
-    Json = case file:read_file("perf_results") of
-               {ok, FileBinary} ->
-                   json_parser:parse_json_binary_to_atom_proplist(FileBinary);
-               _ ->
-                   []
-           end,
-    {ok, File} = file:open("perf_results", [write]),
-
+    [{test_suites, Json}] = case file:read_file("perf_results.json") of
+                                {ok, FileBinary} ->
+                                    json_parser:parse_json_binary_to_atom_proplist(FileBinary);
+                                _ ->
+                                    [{test_suites, []}]
+                            end,
+    {ok, File} = file:open("perf_results.json", [write]),
 
     MJson = proplists:get_value(M, Json, []),
     Json2 = proplists:delete(M, Json),
@@ -107,26 +106,38 @@ exec_perf_config(M, F, Inputs, Ext, ConfigName, Repeats) ->
 
     ConfKey = case ConfigName of
                   N when is_atom(N) -> N;
-                  _ -> list_to_atom("config" ++ integer_to_list(length(FJson) + 1))
+                  _ ->
+                      list_to_atom("config" ++ integer_to_list(length(FJson) + 1))
               end,
 
     Json3 = [
-        {M, [
-            {F, [
-                {ConfKey,
-                    [
-                        {timestamp, get_timestamp()},
-                        {config_extension, Ext},
-                        {repeats, Repeats},
-                        {ok_counter, OkNum},
-                        {results_sums, ValuesSums},
-                        {results_lists, ValuesLists},
-                        {errors, Errors}
-                    ]
-                }
-                | FJson]}
-            | MJson2]}
-        | Json2],
+        {test_suites, [
+            {M, [
+                {F, [
+                    {ConfKey,
+                        [
+                            {timestamp, get_timestamp()},
+                            {config_extension, Ext},
+                            {repeats, Repeats},
+                            {ok_counter, OkNum},
+                            {results_sums, [
+                                {K, [
+                                    {unit, U},
+                                    {sum, S}
+                                ]} || {K, S, U} <- ValuesSums]},
+                            {results_lists, [
+                                {K, [
+                                    {unit, U},
+                                    {list, L}
+                                ]} || {K, L, U} <- ValuesLists]},
+                            {errors, Errors}
+                        ]
+                    }
+                    | FJson]}
+                | MJson2]}
+            | Json2]
+        }
+    ],
 
     file:write(File, [iolist_to_binary(mochijson2:encode(prepare_to_write(Json3)))]),
     file:close(File),
@@ -143,34 +154,34 @@ exec_perf_config(M, F, Inputs, Ext, ConfigName, Repeats) ->
     ValuesLists :: list(),
     OkNum :: integer(),
     Errors :: list().
-exec_multiple_tests(M, F, Inputs, Count) ->
-    exec_multiple_tests(M, F, Inputs, Count, [], [], 0, []).
+exec_multiple_tests(M, F, Inputs, Repeats) ->
+    exec_multiple_tests(M, F, Inputs, 1, Repeats + 1, [], [], 0, []).
 
-exec_multiple_tests(_M, _F, _Inputs, 0, ValuesSums, ValuesLists, OkNum, Errors) ->
-    ReversedValuesLists = lists:map(fun({K, Val}) ->
-        {K, lists:reverse(Val)}
+exec_multiple_tests(_M, _F, _Inputs, Repeats, Repeats, ValuesSums, ValuesLists, OkNum, Errors) ->
+    ReversedValuesLists = lists:map(fun({K, Val, U}) ->
+        {K, lists:reverse(Val), U}
     end, ValuesLists),
     {ValuesSums, ReversedValuesLists, OkNum, lists:reverse(Errors)};
 
-exec_multiple_tests(M, F, Inputs, Count, ValuesSums, ValuesLists, OkNum, Errors) ->
+exec_multiple_tests(M, F, Inputs, Repeat, Repeats, ValuesSums, ValuesLists, OkNum, Errors) ->
     case exec_test(M, F, Inputs) of
         {error, E} ->
-            exec_multiple_tests(M, F, Inputs, Count - 1, ValuesSums, ValuesLists, OkNum, [E | Errors]);
+            exec_multiple_tests(M, F, Inputs, Repeat + 1, Repeats, ValuesSums, ValuesLists, OkNum, [{Repeat, E} | Errors]);
         V ->
             case ValuesSums of
                 [] ->
-                    InitValuesLists = lists:map(fun({K, Val}) ->
-                        {K, [Val]}
+                    InitValuesLists = lists:map(fun({K, Val, U}) ->
+                        {K, [{Repeat, Val}], U}
                     end, V),
-                    exec_multiple_tests(M, F, Inputs, Count - 1, V, InitValuesLists, OkNum + 1, Errors);
+                    exec_multiple_tests(M, F, Inputs, Repeat + 1, Repeats, V, InitValuesLists, OkNum + 1, Errors);
                 _ ->
-                    NewVSums = lists:zipwith(fun({K, V1}, {K, V2}) ->
-                        {K, V1 + V2}
+                    NewVSums = lists:zipwith(fun({K, V1, U}, {K, V2, U}) ->
+                        {K, V1 + V2, U}
                     end, V, ValuesSums),
-                    NewVLists = lists:zipwith(fun({K, V1}, {K, V2}) ->
-                        {K, [V1 | V2]}
+                    NewVLists = lists:zipwith(fun({K, V1, U}, {K, V2, U}) ->
+                        {K, [{Repeat, V1} | V2], U}
                     end, V, ValuesLists),
-                    exec_multiple_tests(M, F, Inputs, Count - 1, NewVSums, NewVLists, OkNum + 1, Errors)
+                    exec_multiple_tests(M, F, Inputs, Repeat + 1, Repeats, NewVSums, NewVLists, OkNum + 1, Errors)
             end
     end.
 
@@ -188,21 +199,21 @@ exec_test(M, F, Inputs) ->
         AfterProcessing = os:timestamp(),
         case check_links() of
             ok ->
-                TestTime = timer:now_diff(AfterProcessing, BeforeProcessing),
+                TestTime = utils:milliseconds_diff(AfterProcessing, BeforeProcessing),
                 case Ans of
-                    {K, V} when is_number(V) ->
-                        [{test_time, TestTime}, {K, V}];
+                    {K, V, U} when is_number(V) ->
+                        [{test_time, TestTime, ms}, {K, V, U}];
                     AnsList when is_list(AnsList) ->
                         lists:foldl(fun(AnsPart, Acc) ->
                             case AnsPart of
-                                {K2, V2} when is_number(V2) ->
-                                    [{K2, V2} | Acc];
+                                {K2, V2, U2} when is_number(V2) ->
+                                    [{K2, V2, U2} | Acc];
                                 _ ->
                                     Acc
                             end
-                        end, [{test_time, TestTime}], AnsList);
+                        end, [{test_time, TestTime, ms}], AnsList);
                     _ ->
-                        [{test_time, TestTime}]
+                        [{test_time, TestTime, ms}]
                 end;
             E ->
                 E
@@ -257,4 +268,4 @@ prepare_to_write(Any) ->
 -spec get_timestamp() -> integer().
 get_timestamp() ->
     {Mega, Sec, Micro} = os:timestamp(),
-    (Mega*1000000 + Sec)*1000 + round(Micro/1000).
+    (Mega * 1000000 + Sec) * 1000 + round(Micro / 1000).
