@@ -10,7 +10,7 @@
 %%% This module provides functions for gathering and calculating
 %%% statistical data. They are invoked by node_manager.
 %%% Some statistics require previous measurements to be calculated.
-%%% In order to encapsulate this aspect in this module, there is a
+%%% In order to encapsulate this aspect inside this module, there is a
 %%% dedicated record that shall be passed to all function calls.
 %%% @end
 %%%-------------------------------------------------------------------
@@ -32,7 +32,6 @@
     net_stats = 0.0 :: float(),
     cpu_last = [] :: [{Name :: binary(), WorkJiffies :: integer(), TotalJiffies :: integer()}],
     net_last = [] :: [{Name :: binary(), Value :: integer()}],
-    net_maxspeed = 10 * 1024 * 1024 :: integer(),
     last_update = {0, 0, 0} :: {integer(), integer(), integer()} % Timestamp of the last measurement
 }).
 
@@ -116,17 +115,19 @@ net_usage(#node_monitoring_state{net_stats = NetStats}) ->
     {NetUsage, MaxThroughput} = lists:foldl(
         fun({Name, Value}, {AccNU, AccMS}) ->
             case Name of
-            % Sum bytes sent and received
+                % Sum bytes sent and received
                 <<"net_rx_b_eth", _/binary>> ->
                     {AccNU + Value, AccMS};
                 <<"net_tx_b_eth", _/binary>> ->
                     {AccNU + Value, AccMS};
+                % Sum throughputs
                 <<"net_maxthp_eth", _/binary>> ->
                     {AccNU, AccMS + Value};
                 _ ->
                     {AccNU, AccMS}
             end
         end, {0, 0}, NetStats),
+    % Calc usage in per cent
     NetUsage / MaxThroughput * 100.
 
 
@@ -313,7 +314,7 @@ calculate_network_stats([{rx_p, Name, StatA} | CurrentNetworkStats], [{rx_p, Nam
 calculate_network_stats([{tx_p, Name, StatA} | CurrentNetworkStats], [{tx_p, Name, StatB} | NetworkStats], Stats, TimeElapsed) ->
     calculate_network_stats(CurrentNetworkStats, NetworkStats, [{<<"net_tx_pps_", Name/binary>>, (StatA - StatB) / TimeElapsed} | Stats], TimeElapsed);
 % maxspeed is maximum interface throughput, considering duplex mode
-calculate_network_stats([{maxspeed, Name, MaxSpeed} | CurrentNetworkStats], [{maxspeed, Name, _} | NetworkStats], Stats, TimeElapsed) ->
+calculate_network_stats([{maxthp, Name, MaxSpeed} | CurrentNetworkStats], [{maxthp, Name, _} | NetworkStats], Stats, TimeElapsed) ->
     calculate_network_stats(CurrentNetworkStats, NetworkStats, [{<<"net_maxthp_", Name/binary>>, MaxSpeed} | Stats], TimeElapsed);
 calculate_network_stats([{NameA, _} | CurrentNetworkStats], [{NameB, _} | NetworkStats], Stats, TimeElapsed) when NameA > NameB ->
     calculate_network_stats(CurrentNetworkStats, NetworkStats, Stats, TimeElapsed);
@@ -357,13 +358,14 @@ get_interface_max_throughput(Interface, TimeElapsed) ->
                       {ok, <<"full\n">>} -> 2;
                       _ -> 1
                   end,
-    IntSpeedMB = case file:read_file(?NET_SPEED_FILE(Interface)) of
+    IntSpeedMbps = case file:read_file(?NET_SPEED_FILE(Interface)) of
                      {ok, SpeedBin} ->
                          binary_to_integer(binary:part(SpeedBin, 0, byte_size(SpeedBin) - 1));
                      _ ->
                          10
                  end,
-    IntSpeedMB * 1024 * 1024 * DuplexRatio * TimeElapsed.
+    % IntSpeedMbps is in Mbps so (IntSpeedMbps * 131072) is in Bytes/s
+    IntSpeedMbps * 131072 * DuplexRatio * TimeElapsed.
 
 
 %%--------------------------------------------------------------------
