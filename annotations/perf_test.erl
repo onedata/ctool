@@ -13,6 +13,7 @@
 -author("Michal Wrzeszcz").
 
 -annotation('function').
+-include_lib("ctool/include/test/assertions.hrl"). % this file is built by parent project so include_lib must be used
 -include_lib("annotations/include/types.hrl").
 
 -export([around_advice/4]).
@@ -48,12 +49,18 @@ around_advice(#annotation{data = ConfExt}, M, F, Inputs) when is_list(ConfExt) -
             case proplists:get_value(perf_configs, ConfExt, []) of
                 [] ->
                     Ext = proplists:get_value(perf_config, ConfExt, []),
-                    exec_perf_config(M, F, Inputs, Ext, Repeats);
+                    Ans = exec_perf_config(M, F, Inputs, Ext, Repeats),
+                    ?assertEqual(ok, Ans);
                 Exts ->
-                    lists:foreach(
-                        fun(Ext) ->
-                            exec_perf_config(M, F, Inputs, Ext, Repeats) end,
-                        Exts)
+                    AnsSum = lists:foldl(
+                        fun(Ext, Acc) ->
+                            Ans = exec_perf_config(M, F, Inputs, Ext, Repeats),
+                            case Acc of
+                                ok -> Ans;
+                                _ -> Acc
+                            end
+                        end, ok, Exts),
+                    ?assertEqual(ok, AnsSum)
             end;
         _ ->
             Ext = proplists:get_value(ct_config, ConfExt, []),
@@ -86,7 +93,7 @@ exec_perf_config(M, F, Inputs, Ext, Repeats) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec exec_perf_config(M :: atom(), F :: atom(), Inputs :: list(), Ext :: list(),
-    ConfigName :: term(), Repeats :: integer()) -> ok.
+    ConfigName :: term(), Repeats :: integer()) -> ok | error.
 exec_perf_config(M, F, Inputs, Ext, ConfigName, Repeats) ->
     [I1] = Inputs,  % get first arg (test config)
     {ValuesSums, ValuesLists, OkNum, Errors} = exec_multiple_tests(M, F, [I1 ++ Ext], Repeats),
@@ -141,7 +148,10 @@ exec_perf_config(M, F, Inputs, Ext, ConfigName, Repeats) ->
 
     file:write(File, [iolist_to_binary(mochijson2:encode(prepare_to_write(Json3)))]),
     file:close(File),
-    ok.
+    case Errors of
+        [] -> ok;
+        _ -> error
+    end.
 
 %%--------------------------------------------------------------------
 %% @doc
