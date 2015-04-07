@@ -49,7 +49,7 @@ prepare_test_environment(Config, DescriptionFile, Module) ->
             "--bin-gr", ProjectRoot,
             %% additionally AppMock can be started
             "--bin-appmock", AppmockRoot,
-            "-l", LogsDir,
+            "--logdir", LogsDir,
             DescriptionFile, "2> /dev/null"]),
 
         EnvDesc = json_parser:parse_json_binary_to_atom_proplist(StartLog),
@@ -61,23 +61,29 @@ prepare_test_environment(Config, DescriptionFile, Module) ->
             CCMs = ?config(op_ccm_nodes, EnvDesc),
             AllNodes = GrNodes ++ Workers ++ CCMs,
 
-            erlang:set_cookie(node(), oneprovider_node),
+            erlang:set_cookie(node(), test_cookie),
             os:cmd("echo nameserver " ++ atom_to_list(Dns) ++ " > /etc/resolv.conf"),
 
             ping_nodes(AllNodes),
             global:sync(),
             ok = load_modules(AllNodes, [Module]),
 
-            lists:append(ConfigWithPaths, proplists:delete(dns, EnvDesc))
+            lists:append([
+                ConfigWithPaths,
+                proplists:delete(dns, EnvDesc),
+                rebar_git_plugin:get_git_metadata()
+            ])
         catch
             E11:E12 ->
-                ct:print("Prepare of environment failed ~p:~p~n~p", [E11, E12, erlang:get_stacktrace()]),
+                ct:print("Prepare of environment failed ~p:~p~n~p",
+                    [E11, E12, erlang:get_stacktrace()]),
                 clean_environment(EnvDesc),
                 {fail, {init_failed, E11, E12}}
         end
     catch
         E21:E22 ->
-            ct:print("Prepare of environment failed ~p:~p~n~p", [E21, E22, erlang:get_stacktrace()]),
+            ct:print("Prepare of environment failed ~p:~p~n~p",
+                [E21, E22, erlang:get_stacktrace()]),
             {fail, {init_failed, E21, E22}}
     end.
 
@@ -114,7 +120,7 @@ ping_nodes(_Nodes, 0) ->
 ping_nodes(Nodes, Tries) ->
     AllConnected = lists:all(
         fun(Node) ->
-            pong == net_adm:ping(Node) 
+            pong == net_adm:ping(Node)
         end, Nodes),
     case AllConnected of
         true -> ok;
@@ -137,5 +143,5 @@ load_modules(Nodes, [Module | Modules]) ->
     {Module, Binary, Filename} = code:get_object_code(Module),
     {_, _} = rpc:multicall(Nodes, code, delete, [Module]),
     {_, _} = rpc:multicall(Nodes, code, purge, [Module]),
-    {_Replies, _} = rpc:multicall(Nodes, code, load_binary, [Module, Filename, Binary]),
+    {_, _} = rpc:multicall(Nodes, code, load_binary, [Module, Filename, Binary]),
     load_modules(Nodes, Modules).
