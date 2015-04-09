@@ -20,7 +20,7 @@
 -record(parameter, {
     name :: atom(),
     description = "" :: string(),
-    value :: term(),
+    value :: integer(),
     unit = "" :: string()
 }).
 
