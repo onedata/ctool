@@ -119,20 +119,23 @@ exec_perf_config(SuiteName, CaseName, CaseDescr, CaseArgs, Config,
     {RepsSummary, RepsDetails, FailedReps} =
         exec_test_repeats(SuiteName, CaseName, NewCaseArgs, ConfigReps),
 
-    Project = list_to_binary(proplists:get_value(git_project, CaseArgs)),
+    Repository = list_to_binary(proplists:get_value(git_repository, CaseArgs)),
     Branch = list_to_binary(proplists:get_value(git_branch, CaseArgs)),
     Commit = list_to_binary(proplists:get_value(git_commit, CaseArgs)),
 
-    PerfResults = case file:read_file(?PERFORMANCE_RESULT_FILE) of
-                      {ok, Json} ->
-                          jiffy:decode(Json, [return_maps]);
-                      _ ->
-                          #{
-                              <<"project">> => Project,
-                              <<"branch">> => Branch,
-                              <<"commit">> => Commit
-                          }
-                  end,
+    #{<<"performance">> := PerfResults} =
+        case file:read_file(?PERFORMANCE_RESULT_FILE) of
+            {ok, Json} ->
+                jiffy:decode(Json, [return_maps]);
+            _ ->
+                #{
+                    <<"performance">> => #{
+                        <<"repository">> => Repository,
+                        <<"branch">> => Branch,
+                        <<"commit">> => Commit
+                    }
+                }
+        end,
 
     BinSuiteName = atom_to_binary(SuiteName, utf8),
     BinCaseName = atom_to_binary(CaseName, utf8),
@@ -157,10 +160,10 @@ exec_perf_config(SuiteName, CaseName, CaseDescr, CaseArgs, Config,
     ConfigsMap = maps:get(<<"configs">>, CaseMap, #{}),
     ConfigMap = #{
         <<"name">> => BinConfigName,
-        <<"description">> => list_to_binary(ConfigDescr),
-        <<"timestamp">> => get_timestamp(),
-        <<"repeats">> => ConfigReps,
+        <<"completed">> => get_timestamp(),
         <<"parameters">> => format_parameters(ConfigParams),
+        <<"description">> => list_to_binary(ConfigDescr),
+        <<"repeats_number">> => ConfigReps,
         <<"successful_repeats_number">> => SuccessfulReps,
         <<"successful_repeats_summary">> => format_parameters(RepsSummary),
         <<"successful_repeats_average">> => format_parameters(RepsAverage),
@@ -176,7 +179,7 @@ exec_perf_config(SuiteName, CaseName, CaseDescr, CaseArgs, Config,
         }, SuitesMap)
     },
 
-    NewJson = jiffy:encode(NewPerfResults, [pretty]),
+    NewJson = jiffy:encode(#{<<"performance">> => NewPerfResults}, [pretty]),
     file:write_file(?PERFORMANCE_RESULT_FILE, NewJson),
 
     case maps:size(FailedReps) of
