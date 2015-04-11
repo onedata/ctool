@@ -27,6 +27,7 @@
 
 % Record holding all monitoring info and required measurement history.
 -record(node_monitoring_state, {
+    ip_addr = {127, 0, 0, 1} :: {byte(), byte(), byte(), byte()},
     cpu_stats = 0.0 :: float(),
     mem_stats = 0.0 :: float(),
     net_stats = 0.0 :: float(),
@@ -34,6 +35,9 @@
     net_last = [] :: [{Name :: binary(), Value :: integer()}],
     last_update = {0, 0, 0} :: {integer(), integer(), integer()} % Timestamp of the last measurement
 }).
+
+-type node_monitoring_state() :: #node_monitoring_state{}.
+-export_type([node_monitoring_state/0]).
 
 % Files to read system stats from
 -define(CPU_STATS_FILE, "/proc/stat").
@@ -43,8 +47,9 @@
 -define(NET_DUPLEX_FILE(_Interface), "/sys/class/net/" ++ _Interface ++ "/duplex").
 
 %% API
+-export([start/1, update/1]).
+-export([get_node_state/1]).
 -export([cpu_usage/1, mem_usage/1, net_usage/1]).
--export([start/0, update/1]).
 
 %%%===================================================================
 %%% API
@@ -56,9 +61,13 @@
 %% that will be used throughout the monitoring process.
 %% @end
 %%--------------------------------------------------------------------
--spec start() -> #node_monitoring_state{}.
-start() ->
-    _InitialRecord = update(#node_monitoring_state{last_update = now(), cpu_last = [], net_last = []}).
+-spec start(IPAddr :: {byte(), byte(), byte(), byte()}) -> #node_monitoring_state{}.
+start(IPAddr) ->
+    _InitialRecord = update(#node_monitoring_state{
+        ip_addr = IPAddr,
+        last_update = now(),
+        cpu_last = [],
+        net_last = []}).
 
 
 %%--------------------------------------------------------------------
@@ -83,6 +92,20 @@ update(MonitoringState) ->
         mem_stats = MemStats,
         net_stats = NetStats,
         net_last = NewNetLast}.
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Returns a #node_state{} record that contains all required information
+%% about current node state and load.
+%% @end
+%%--------------------------------------------------------------------
+-spec get_node_state(MonitoringState :: #node_monitoring_state{}) -> #node_state{}.
+get_node_state(#node_monitoring_state{ip_addr = IPAddr} = MonitoringState) ->
+    CPUUsage = cpu_usage(MonitoringState),
+    MemUsage = mem_usage(MonitoringState),
+    NetUsage = net_usage(MonitoringState),
+    #node_state{ip_addr = IPAddr, cpu_usage = CPUUsage, mem_usage = MemUsage, net_usage = NetUsage}.
 
 
 %%--------------------------------------------------------------------
@@ -115,12 +138,12 @@ net_usage(#node_monitoring_state{net_stats = NetStats}) ->
     {NetUsage, MaxThroughput} = lists:foldl(
         fun({Name, Value}, {AccNU, AccMS}) ->
             case Name of
-                % Sum bytes sent and received
+            % Sum bytes sent and received
                 <<"net_rx_b_eth", _/binary>> ->
                     {AccNU + Value, AccMS};
                 <<"net_tx_b_eth", _/binary>> ->
                     {AccNU + Value, AccMS};
-                % Sum throughputs
+            % Sum throughputs
                 <<"net_maxthp_eth", _/binary>> ->
                     {AccNU, AccMS + Value};
                 _ ->
@@ -359,11 +382,11 @@ get_interface_max_throughput(Interface, TimeElapsed) ->
                       _ -> 1
                   end,
     IntSpeedMbps = case file:read_file(?NET_SPEED_FILE(Interface)) of
-                     {ok, SpeedBin} ->
-                         binary_to_integer(binary:part(SpeedBin, 0, byte_size(SpeedBin) - 1));
-                     _ ->
-                         10
-                 end,
+                       {ok, SpeedBin} ->
+                           binary_to_integer(binary:part(SpeedBin, 0, byte_size(SpeedBin) - 1));
+                       _ ->
+                           10
+                   end,
     % IntSpeedMbps is in Mbps so (IntSpeedMbps * 131072) is in Bytes/s
     IntSpeedMbps * 131072 * DuplexRatio * TimeElapsed.
 
