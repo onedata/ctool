@@ -162,7 +162,10 @@ net_usage(#node_monitoring_state{net_stats = NetStats}) ->
             end
         end, {0, 0}, NetStats),
     % Calc usage in per cent
-    NetUsage / MaxThroughput * 100.
+    case MaxThroughput of
+        0 -> 0;
+        _ -> NetUsage / MaxThroughput * 100
+    end.
 
 
 %%%===================================================================
@@ -331,6 +334,9 @@ get_network_stats(NetworkStats, TimeElapsed) ->
 -spec calculate_network_stats(NetworkStats, NetworkStats, Result, TimeElapsed :: float()) -> Result when
     NetworkStats :: [{rx_b | tx_b | rx_p | tx_p, Name :: binary(), Value :: integer()}],
     Result :: [{Name :: binary(), Value :: integer() | float()}].
+% Last net stats were not given (probably first calculation), return empty result.
+calculate_network_stats(_, [], [], _) ->
+    [];
 calculate_network_stats([], _, Stats, _) ->
     lists:reverse(Stats);
 calculate_network_stats([Stat | CurrentNetworkStats], [], Stats, TimeElapsed) ->
