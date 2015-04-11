@@ -47,7 +47,7 @@
 -define(NET_DUPLEX_FILE(_Interface), "/sys/class/net/" ++ _Interface ++ "/duplex").
 
 %% API
--export([start/1, update/1]).
+-export([start/1, update/1, refresh_ip_address/2]).
 -export([get_node_state/1]).
 -export([cpu_usage/1, mem_usage/1, net_usage/1]).
 
@@ -68,6 +68,17 @@ start(IPAddr) ->
         last_update = now(),
         cpu_last = [],
         net_last = []}).
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Refreshes IP address stored in node_monitoring_state record.
+%% @end
+%%--------------------------------------------------------------------
+-spec refresh_ip_address(IPAddr :: {byte(), byte(), byte(), byte()}, #node_monitoring_state{}) ->
+    #node_monitoring_state{}.
+refresh_ip_address(IPAddr, MonState) ->
+    MonState#node_monitoring_state{ip_addr = IPAddr}.
 
 
 %%--------------------------------------------------------------------
