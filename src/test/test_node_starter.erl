@@ -33,7 +33,7 @@ prepare_test_environment(Config, DescriptionFile, Module) ->
         CtTestRoot = filename:join(DataDir, ".."),
         ProjectRoot = filename:join(CtTestRoot, ".."),
         AppmockRoot = filename:join(ProjectRoot, "appmock"),
-        CcmRoot = filename:join(ProjectRoot, "op_ccm"),
+%%         CcmRoot = filename:join(ProjectRoot, "op_ccm"), %todo enable after merge of VFS-1053
 
         ConfigWithPaths =
             [{ct_test_root, CtTestRoot}, {project_root, ProjectRoot} | Config],
@@ -50,7 +50,7 @@ prepare_test_environment(Config, DescriptionFile, Module) ->
             "--bin-gr", ProjectRoot,
             %% additionally AppMock can be started
             "--bin-appmock", AppmockRoot,
-            "--bin-ccm", CcmRoot,
+%%             "--bin-ccm", CcmRoot, %todo enable after merge of VFS-1053
             "-l", LogsDir,
             DescriptionFile, "2> /dev/null"]),
 
