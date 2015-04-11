@@ -96,7 +96,7 @@ update(MonitoringState) ->
     {CPUStats, NewCPULast} = get_cpu_stats(CPULast),
     {NetStats, NewNetLast} = get_network_stats(NetLast, timer:now_diff(Now, LastUpdate) / 1000000),
     MemStats = get_memory_stats(),
-    #node_monitoring_state{
+    MonitoringState#node_monitoring_state{
         last_update = Now,
         cpu_stats = CPUStats,
         cpu_last = NewCPULast,
