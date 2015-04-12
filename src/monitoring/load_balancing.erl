@@ -207,7 +207,7 @@ choose_node_for_dispatcher(Advice) ->
 -spec initial_advice_for_dns(NodeIP :: {A :: byte(), B :: byte(), C :: byte(), D :: byte()}) ->
     #dns_lb_advice{}.
 initial_advice_for_dns(NodeIP) ->
-    #dns_lb_advice{nodes_and_frequency = [{NodeIP, 1.0, 0}], node_choices = [NodeIP, NodeIP]}.
+    #dns_lb_advice{nodes_and_frequency = [{NodeIP, 1.0}], node_choices = [NodeIP, NodeIP]}.
 
 
 %%--------------------------------------------------------------------
