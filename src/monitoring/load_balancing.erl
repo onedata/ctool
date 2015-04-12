@@ -19,15 +19,11 @@
 % to DNS modules, and later they evaluate choose_nodes_for_dns/1 function on this
 % record. The record structure shall not be visible outside this module.
 -record(dns_lb_advice, {
-    % How many requests have been processed using this advice.
-    request_count = 0,
-    % List of 3-element tuples {Node, Frequency, RequestCount}.
-    % Node is a IP address.
+    % List of 2-element tuples {Node, Frequency}.
+    % Node is an IP address.
     % Frequency (relative to other nodes) is how often
     %   should given node appear at the top of DNS response.
-    % RequestCount is how many times DID given node appear at the top of DNS
-    %   response during using this advice.
-    nodes_and_frequency = [] :: [{Node :: term(), Frequency :: float(), RequestCount :: integer()}],
+    nodes_and_frequency = [] :: [{Node :: term(), Frequency :: float()}],
     % List of nodes to choose from. It introduces redundancy to above,
     % but consider that it will be used multiple times and each of these
     % times it would have to be calculated.
@@ -91,8 +87,8 @@ advices_for_dnses(NodeStates) ->
     % responses. The bigger the load, the less often should the node appear.
     NodesAndFrequency = [{NodeIP, MinLoadForDNS / Load} || {Load, {_, NodeIP}} <- NotOverloaded],
     FrequencySum = lists:foldl(fun({_, Freq}, Acc) -> Acc + Freq end, 0.0, NodesAndFrequency),
-    NormalizedNodesAndFrequency = [{NodeIP, Freq / FrequencySum, 0} || {NodeIP, Freq} <- NodesAndFrequency],
-    NodeChoices = [NodeIP || {NodeIP, _, _} <- NormalizedNodesAndFrequency],
+    NormalizedNodesAndFrequency = [{NodeIP, Freq / FrequencySum} || {NodeIP, Freq} <- NodesAndFrequency],
+    NodeChoices = [NodeIP || {NodeIP, _} <- NormalizedNodesAndFrequency],
     NodeChoicesDuplicated = NodeChoices ++ NodeChoices,
     Result = lists:map(
         fun({_, {Node, _}}) ->
@@ -157,19 +153,11 @@ advices_for_dispatchers(NodeStates) ->
 -spec choose_nodes_for_dns(DSNAdvice :: #dns_lb_advice{}) ->
     {[{A :: byte(), B :: byte(), C :: byte(), D :: byte()}], #dns_lb_advice{}}.
 choose_nodes_for_dns(DNSAdvice) ->
-    #dns_lb_advice{request_count = ReqCount, nodes_and_frequency = NodesAndFreq,
+    #dns_lb_advice{nodes_and_frequency = NodesAndFreq,
         node_choices = NodeChoices} = DNSAdvice,
-    Index = choose_index(NodesAndFreq, ReqCount),
+    Index = choose_index(NodesAndFreq),
     Nodes = lists:sublist(NodeChoices, Index, length(NodesAndFreq)),
-    [FirstNode | _] = Nodes,
-    NewNodesAndFreq = lists:map(
-        fun({Node, Freq, ReqCount}) ->
-            case Node of
-                FirstNode -> {Node, Freq, ReqCount + 1};
-                _ -> {Node, Freq, ReqCount}
-            end
-        end, NodesAndFreq),
-    {Nodes, DNSAdvice#dns_lb_advice{nodes_and_frequency = NewNodesAndFreq, request_count = ReqCount + 1}}.
+    Nodes.
 
 
 %%--------------------------------------------------------------------
@@ -186,25 +174,9 @@ choose_node_for_dispatcher(Advice) ->
         false ->
             node();
         true ->
-            % Random a number [0..1] and see what node should be chosen
-            % based on this random. Each node has a frequency value,
-            % and they all sum up to 1.
-            random:seed(now()),
-            RandomFloat = random:uniform(),
-            {_, ChosenNode} = lists:foldl(
-                fun({Node, Freq}, {AccValue, AccChoice}) ->
-                    case AccChoice of
-                        undefined ->
-                            NewValue = AccValue - Freq,
-                            case NewValue < 0 of
-                                true -> {NewValue, Node};
-                                false -> {NewValue, undefined}
-                            end;
-                        _ ->
-                            {AccValue, AccChoice}
-                    end
-                end, {RandomFloat, undefined}, NodesAndFreq),
-            ChosenNode
+            Index = choose_index(NodesAndFreq),
+            {Node, _} = lists:nth(Index, NodesAndFreq),
+            Node
     end.
 
 
@@ -250,22 +222,34 @@ all_nodes_for_dispatcher(#dispatcher_lb_advice{all_nodes = AllNodes}) ->
 %% @private
 %% @doc
 %% Helper function that returns the index of node which should be chosen based on
-%% current request counts.
+%% frequency (weights) of nodes.
 %% @end
 %%--------------------------------------------------------------------
--spec choose_index(NodesAndFrequencies, RequestCount :: integer()) -> integer() when
-    NodesAndFrequencies :: [{Node :: term(), Frequency :: float(), RequestCount :: integer()}].
-choose_index(NodesAndFrequencies, RequestCount) ->
-    {_, Index, _} = lists:foldl(
-        fun({_, Frequency, CurrReqCount}, {AccIndex, AccChoice, AccValue}) ->
-            Value = Frequency * RequestCount - CurrReqCount,
-            {NewChoice, NewValue} = case Value > AccValue of
-                                        false -> {AccChoice, AccValue};
-                                        true -> {AccIndex, Value}
-                                    end,
-            {AccIndex + 1, NewChoice, NewValue}
-        end, {1, 0, -9999999}, NodesAndFrequencies),
-    Index.
+-spec choose_index(NodesAndFrequencies :: [{Node :: term(), Frequency :: float()}]) -> integer() when .
+choose_index(NodesAndFrequencies) ->
+    random:seed(now()),
+    choose_index(NodesAndFrequencies, 0, random:uniform()).
+
+choose_index([], CurrIndex, _) ->
+    CurrIndex;
+
+choose_index(_, CurrIndex, RandomFloat) when RandomFloat < 0.0 ->
+    CurrIndex;
+
+choose_index([{_, Freq} | T], CurrIndex, RandomFloat) ->
+    choose_index(T, CurrIndex + 1, RandomFloat - Freq).
+
+
+%%     {_, Index, _} = lists:foldl(
+%%         fun({_, Frequency, CurrReqCount}, {AccIndex, AccChoice, AccValue}) ->
+%%             Value = Frequency * RequestCount - CurrReqCount,
+%%             {NewChoice, NewValue} = case Value > AccValue of
+%%                                         false -> {AccChoice, AccValue};
+%%                                         true -> {AccIndex, Value}
+%%                                     end,
+%%             {AccIndex + 1, NewChoice, NewValue}
+%%         end, {1, 0, -9999999}, NodesAndFrequencies),
+%%     Index.
 
 %%--------------------------------------------------------------------
 %% @private
