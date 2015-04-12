@@ -68,7 +68,7 @@
 %%--------------------------------------------------------------------
 %% @doc
 %% Returns guidelines that should be used by DNS servers in the cluster,
-%% based on node states of all nodes.
+%% based on node states of all nodes. The list must not be empty.
 %% @end
 %%--------------------------------------------------------------------
 -spec advices_for_dnses(NodeStates :: [#node_state{}]) -> [{node(), #dns_lb_advice{}}].
@@ -101,7 +101,7 @@ advices_for_dnses(NodeStates) ->
 %%--------------------------------------------------------------------
 %% @doc
 %% Returns guidelines that should be used by dispatchers in the cluster,
-%% based on node states of all nodes.
+%% based on node states of all nodes. The list must not be empty.
 %% @end
 %%--------------------------------------------------------------------
 -spec advices_for_dispatchers(NodeStates :: [#node_state{}]) -> [{node(), #dispatcher_lb_advice{}}].
