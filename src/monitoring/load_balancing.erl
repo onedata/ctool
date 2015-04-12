@@ -56,7 +56,7 @@
 -export_type([dns_lb_advice/0, dispatcher_lb_advice/0]).
 
 %% API
--export([advices_for_dnses/1, choose_nodes_for_dns/1, initial_advice_for_dns/1]).
+-export([advices_for_dnses/1, choose_nodes_for_dns/1, choose_ns_nodes_for_dns/1, initial_advice_for_dns/1]).
 -export([advices_for_dispatchers/1, choose_node_for_dispatcher/1]).
 -export([initial_advice_for_dispatcher/0, all_nodes_for_dispatcher/1]).
 
@@ -146,8 +146,8 @@ advices_for_dispatchers(NodeStates) ->
 
 %%--------------------------------------------------------------------
 %% @doc
-%% Returns guidelines that should be used by dispatchers in the cluster,
-%% based on node states of all nodes.
+%% Returns list of nodes that should be returned as A records in DNS reply.
+%% The records are shuffled according to given load balancing advice.
 %% @end
 %%--------------------------------------------------------------------
 -spec choose_nodes_for_dns(DSNAdvice :: #dns_lb_advice{}) ->
@@ -157,6 +157,24 @@ choose_nodes_for_dns(DNSAdvice) ->
         node_choices = NodeChoices} = DNSAdvice,
     Index = choose_index(NodesAndFreq),
     Nodes = lists:sublist(NodeChoices, Index, length(NodesAndFreq)),
+    Nodes.
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Returns list of nodes that should be returned as NS records in DNS reply.
+%% As DNS servers work on every node, its always a full list of nodes, but shuffled.
+%% @end
+%%--------------------------------------------------------------------
+-spec choose_ns_nodes_for_dns(DSNAdvice :: #dns_lb_advice{}) ->
+    {[{A :: byte(), B :: byte(), C :: byte(), D :: byte()}], #dns_lb_advice{}}.
+choose_ns_nodes_for_dns(DNSAdvice) ->
+    #dns_lb_advice{nodes_and_frequency = NodesAndFreq,
+        node_choices = NodeChoices} = DNSAdvice,
+    NumberOfNodes = length(NodesAndFreq),
+    random:seed(now()),
+    Index = random:uniform(NumberOfNodes),
+    Nodes = lists:sublist(NodeChoices, Index, NumberOfNodes),
     Nodes.
 
 
