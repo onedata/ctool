@@ -225,7 +225,7 @@ all_nodes_for_dispatcher(#dispatcher_lb_advice{all_nodes = AllNodes}) ->
 %% frequency (weights) of nodes.
 %% @end
 %%--------------------------------------------------------------------
--spec choose_index(NodesAndFrequencies :: [{Node :: term(), Frequency :: float()}]) -> integer() when .
+-spec choose_index(NodesAndFrequencies :: [{Node :: term(), Frequency :: float()}]) -> integer().
 choose_index(NodesAndFrequencies) ->
     random:seed(now()),
     choose_index(NodesAndFrequencies, 0, random:uniform()).
@@ -239,17 +239,6 @@ choose_index(_, CurrIndex, RandomFloat) when RandomFloat < 0.0 ->
 choose_index([{_, Freq} | T], CurrIndex, RandomFloat) ->
     choose_index(T, CurrIndex + 1, RandomFloat - Freq).
 
-
-%%     {_, Index, _} = lists:foldl(
-%%         fun({_, Frequency, CurrReqCount}, {AccIndex, AccChoice, AccValue}) ->
-%%             Value = Frequency * RequestCount - CurrReqCount,
-%%             {NewChoice, NewValue} = case Value > AccValue of
-%%                                         false -> {AccChoice, AccValue};
-%%                                         true -> {AccIndex, Value}
-%%                                     end,
-%%             {AccIndex + 1, NewChoice, NewValue}
-%%         end, {1, 0, -9999999}, NodesAndFrequencies),
-%%     Index.
 
 %%--------------------------------------------------------------------
 %% @private
