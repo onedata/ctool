@@ -33,7 +33,7 @@ prepare_test_environment(Config, DescriptionFile, Module) ->
         CtTestRoot = filename:join(DataDir, ".."),
         ProjectRoot = filename:join(CtTestRoot, ".."),
         AppmockRoot = filename:join(ProjectRoot, "appmock"),
-%%         CcmRoot = filename:join(ProjectRoot, "op_ccm"), %todo enable after merge of VFS-1053
+        CcmRoot = filename:join(ProjectRoot, "op_ccm"),
 
         ConfigWithPaths =
             [{ct_test_root, CtTestRoot}, {project_root, ProjectRoot} | Config],
@@ -46,11 +46,11 @@ prepare_test_environment(Config, DescriptionFile, Module) ->
 
         StartLog = utils:cmd([EnvUpScript,
             %% Function is used durgin OP or GR tests so starts OP or GR - not both
-            "--bin-provider", ProjectRoot,
+            "--bin-worker", ProjectRoot,
             "--bin-gr", ProjectRoot,
             %% additionally AppMock can be started
             "--bin-appmock", AppmockRoot,
-%%             "--bin-ccm", CcmRoot, %todo enable after merge of VFS-1053
+            "--bin-ccm", CcmRoot,
             "-l", LogsDir,
             DescriptionFile, "2> /dev/null"]),
 
