@@ -83,6 +83,13 @@ advices_for_dnses(NodeStates) ->
         fun({Load, _}) ->
             not overloaded_for_dns(Load, MinLoadForDNS)
         end, LoadsAndNodes),
+
+    % TODO testy
+    lists:foreach(
+        fun({_, Node}) ->
+            io:format("[DNS] excluding ~p~n", [Node])
+        end, LoadsAndNodes -- NotOverloaded),
+
     % Calculate how often should given nodes appear in the first row in DNS
     % responses. The bigger the load, the less often should the node appear.
     NodesAndFrequency = [{NodeIP, MinLoadForDNS / Load} || {Load, {_, NodeIP}} <- NotOverloaded],
@@ -188,14 +195,21 @@ choose_ns_nodes_for_dns(DNSAdvice) ->
 choose_node_for_dispatcher(Advice) ->
     #dispatcher_lb_advice{should_delegate = ShouldDelegate,
         nodes_and_frequency = NodesAndFreq} = Advice,
-    case ShouldDelegate of
-        false ->
-            node();
-        true ->
-            Index = choose_index(NodesAndFreq),
-            {Node, _} = lists:nth(Index, NodesAndFreq),
-            Node
-    end.
+    Result = case ShouldDelegate of
+                 false ->
+                     node();
+                 true ->
+                     Index = choose_index(NodesAndFreq),
+                     {Node, _} = lists:nth(Index, NodesAndFreq),
+                     Node
+             end,
+
+    % TODO testy
+    case node() of
+        Result -> ok;
+        _ -> io:format("[Disp] delegating ~p -> ~p~n", [node(), Result])
+    end,
+    Result.
 
 
 %%--------------------------------------------------------------------
