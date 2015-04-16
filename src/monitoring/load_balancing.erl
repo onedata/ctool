@@ -191,7 +191,7 @@ choose_ns_nodes_for_dns(DNSAdvice) ->
 %% based on node states of all nodes.
 %% @end
 %%--------------------------------------------------------------------
--spec choose_node_for_dispatcher(DSNAdvice :: #dispatcher_lb_advice{}) -> node().
+-spec choose_node_for_dispatcher(DSNAdvice :: #dispatcher_lb_advice{}, WorkerName::atom()) -> node().
 choose_node_for_dispatcher(Advice, WorkerName) ->
     #dispatcher_lb_advice{should_delegate = ShouldDelegate,
         nodes_and_frequency = NodesAndFreq} = Advice,
