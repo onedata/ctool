@@ -12,7 +12,8 @@
 -ifndef(PERFORMANCE_HRL).
 -define(PERFORMANCE_HRL, 1).
 
-%% output test parameter
+%% output test parameter and also internal representation of input test
+%% parameter used by performance test module
 %% * name        - name of parameter
 %% * description - human-readable description of parameter
 %% * value       - value of parameter (IMPORTANT! this value must be numeric)

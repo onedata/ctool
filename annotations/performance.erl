@@ -78,7 +78,7 @@ exec_ct_config(SuiteName, CaseName, CaseArgs, Params) ->
 %%--------------------------------------------------------------------
 %% @private
 %% @doc
-%% Executes common test using performance configurations.
+%% Executes common test case using performance configurations.
 %% @end
 %%--------------------------------------------------------------------
 -spec exec_perf_configs(SuiteName :: atom(), CaseName :: atom(),
@@ -97,7 +97,7 @@ exec_perf_configs(SuiteName, CaseName, CaseDescr, CaseArgs, Configs,
 %%--------------------------------------------------------------------
 %% @private
 %% @doc
-%% Executes common test using performance configuration.
+%% Executes common test case using performance configuration.
 %% @end
 %%--------------------------------------------------------------------
 -spec exec_perf_config(SuiteName :: atom(), CaseName :: atom(),
@@ -190,7 +190,7 @@ exec_perf_config(SuiteName, CaseName, CaseDescr, CaseArgs, Config,
 %%--------------------------------------------------------------------
 %% @private
 %% @doc
-%% Executes test configuration many times.
+%% Executes test case multiple times.
 %% @end
 %%--------------------------------------------------------------------
 -spec exec_test_repeats(SuiteName :: atom(), CaseName :: atom(),
@@ -238,7 +238,7 @@ exec_test_repeats(SuiteName, CaseName, CaseConfig, Rep, Reps,
 %%--------------------------------------------------------------------
 %% @private
 %% @doc
-%% Executes test configuration and returns lists of pairs {key, value} to be logged.
+%% Executes test case once.
 %% @end
 %%--------------------------------------------------------------------
 -spec exec_test_repeat(SuiteName :: atom(), CaseName :: atom(), CaseConfig :: proplist()) ->
