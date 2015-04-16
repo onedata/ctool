@@ -86,7 +86,7 @@ advices_for_dnses(NodeStates) ->
 
     % TODO testy
     lists:foreach(
-        fun({_, Node}) ->
+        fun({_, {Node, _}}) ->
             io:format("[DNS] excluding ~p~n", [Node])
         end, LoadsAndNodes -- NotOverloaded),
 
@@ -207,7 +207,7 @@ choose_node_for_dispatcher(Advice) ->
     % TODO testy
     case node() of
         Result -> ok;
-        _ -> io:format("[Disp] delegating ~p -> ~p~n", [node(), Result])
+        _ -> io:format("delegating ~p -> ~p~n", [node(), Result])
     end,
     Result.
 
