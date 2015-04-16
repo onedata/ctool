@@ -107,18 +107,23 @@ exec_perf_configs(SuiteName, CaseName, CaseDescr, CaseArgs, Configs,
 exec_perf_config(SuiteName, CaseName, CaseDescr, CaseArgs, Config,
     DefaultReps, DefaultParams) ->
 
+    % Fetch and prepare test case configuration.
     TestRoot = proplists:get_value(ct_test_root, CaseArgs),
     ConfigName = proplists:get_value(name, Config),
     ConfigReps = proplists:get_value(repeats, Config, DefaultReps),
     ConfigDescr = proplists:get_value(description, Config, ""),
+    % Merge specific configuration test case parameters with default test case
+    % parameters, so that specific values overrider default ones.
     ConfigParams = merge_parameters(
         parse_parameters(proplists:get_value(parameters, Config, [])),
         DefaultParams
     ),
+    % Inject configuration parameters into common test cases configuration.
     NewCaseArgs = inject_parameters(CaseArgs, ConfigParams),
     {RepsSummary, RepsDetails, FailedReps} =
         exec_test_repeats(SuiteName, CaseName, NewCaseArgs, ConfigReps),
 
+    % Fetch git repository metadata.
     Repository = list_to_binary(proplists:get_value(git_repository, CaseArgs)),
     Branch = list_to_binary(proplists:get_value(git_branch, CaseArgs)),
     Commit = list_to_binary(proplists:get_value(git_commit, CaseArgs)),
@@ -137,6 +142,7 @@ exec_perf_config(SuiteName, CaseName, CaseDescr, CaseArgs, Config,
                 }
         end,
 
+    % Create JSON description of performance configuration execution.
     BinSuiteName = atom_to_binary(SuiteName, utf8),
     BinCaseName = atom_to_binary(CaseName, utf8),
     BinConfigName = atom_to_binary(ConfigName, utf8),
@@ -182,6 +188,8 @@ exec_perf_config(SuiteName, CaseName, CaseDescr, CaseArgs, Config,
     NewJson = jiffy:encode(#{<<"performance">> => NewPerfResults}, [pretty]),
     file:write_file(?PERFORMANCE_RESULT_FILE, NewJson),
 
+    % Check whether performance configuration execution has been successfully
+    % completed.
     case maps:size(FailedReps) of
         0 -> ok;
         _ -> error
@@ -208,6 +216,7 @@ exec_test_repeats(SuiteName, CaseName, CaseConfig, Rep, Reps,
         {ok, Params} ->
             case RepsSummary of
                 [] ->
+                    % Initialize list of parameters for test case repeats.
                     NewRepsDetails = lists:map(fun
                         (#parameter{value = Value} = Param) ->
                             Param#parameter{value = maps:put(BinRep, Value, #{})}
@@ -215,6 +224,8 @@ exec_test_repeats(SuiteName, CaseName, CaseConfig, Rep, Reps,
                     exec_test_repeats(SuiteName, CaseName, CaseConfig, Rep + 1,
                         Reps, Params, NewRepsDetails, FailedReps);
                 _ ->
+                    % Merge list of test case parameters from current test case
+                    % repeat with list of parameters from previous test case repeats.
                     NewRepsSummary = lists:zipwith(fun
                         (#parameter{value = Value1}, #parameter{value = Value2} = Param) ->
                             Param#parameter{value = Value1 + Value2}
@@ -249,6 +260,8 @@ exec_test_repeat(SuiteName, CaseName, CaseConfig) ->
         Result = annotation:call_advised(SuiteName, CaseName, [CaseConfig]),
         Timestamp2 = os:timestamp(),
         TestTime = utils:milliseconds_diff(Timestamp2, Timestamp1),
+        % Return list of parameters consisting of default 'test_time' parameter
+        % and parameters returned from test case.
         {ok, [#parameter{
             name = test_time,
             description = "Test execution time.",
@@ -327,7 +340,8 @@ merge_parameters(ConfigParams, DefaultParams) ->
 %%--------------------------------------------------------------------
 %% @private
 %% @doc
-%% Merges list of config parameters and list of default parameters.
+%% Merges list of config parameters and list of default parameters, so that
+%% default parameter value is overwritten by specific one.
 %% @end
 %%--------------------------------------------------------------------
 -spec merge_parameters(ConfigParams :: [#parameter{}], DefaultParams :: [#parameter{}],
