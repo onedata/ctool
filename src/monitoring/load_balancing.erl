@@ -192,7 +192,7 @@ choose_ns_nodes_for_dns(DNSAdvice) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec choose_node_for_dispatcher(DSNAdvice :: #dispatcher_lb_advice{}) -> node().
-choose_node_for_dispatcher(Advice) ->
+choose_node_for_dispatcher(Advice, WorkerName) ->
     #dispatcher_lb_advice{should_delegate = ShouldDelegate,
         nodes_and_frequency = NodesAndFreq} = Advice,
     Result = case ShouldDelegate of
@@ -207,7 +207,7 @@ choose_node_for_dispatcher(Advice) ->
     % TODO testy
     case node() of
         Result -> ok;
-        _ -> io:format("delegating ~p -> ~p~n", [node(), Result])
+        _ -> io:format("del ~p -> ~p~n", [WorkerName, Result])
     end,
     Result.
 
