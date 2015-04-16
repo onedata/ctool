@@ -52,7 +52,7 @@ prepare_test_environment(Config, DescriptionFile, Module) ->
             "--bin-appmock", AppmockRoot,
 %%             "--bin-ccm", CcmRoot, %todo enable after merge of VFS-1053
             "--logdir", LogsDir,
-            DescriptionFile, "2> /dev/null"]),
+            DescriptionFile, "2> prepare_test_environment_error.log"]),
 
         EnvDesc = json_parser:parse_json_binary_to_atom_proplist(StartLog),
 
