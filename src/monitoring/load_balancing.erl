@@ -74,9 +74,7 @@
 -spec advices_for_dnses(NodeStates :: [#node_state{}]) -> [{node(), #dns_lb_advice{}}].
 advices_for_dnses(NodeStates) ->
     NodesAndIPs = [{NodeState#node_state.node, NodeState#node_state.ip_addr} || NodeState <- NodeStates],
-    NetLoads = [NodeState#node_state.net_usage || NodeState <- NodeStates],
-    AvgNetLoad = average(NetLoads),
-    LoadsForDNS = [load_for_dns(NodeState, AvgNetLoad) || NodeState <- NodeStates],
+    LoadsForDNS = [load_for_dns(NodeState) || NodeState <- NodeStates],
     MinLoadForDNS = lists:min(LoadsForDNS),
     LoadsAndNodes = lists:zip(LoadsForDNS, NodesAndIPs),
     NotOverloaded = lists:filter(
@@ -291,9 +289,9 @@ load_for_dispatcher(#node_state{cpu_usage = CPU, mem_usage = Mem}) ->
 %% This value is used for comparison in DNS load balancing.
 %% @end
 %%--------------------------------------------------------------------
--spec load_for_dns(NodeState :: #node_state{}, AverageNetLoad :: float()) -> float().
-load_for_dns(#node_state{net_usage = NetUsage} = NodeState, AverageNetLoad) ->
-    (load_for_dispatcher(NodeState) + (100 * NetUsage / AverageNetLoad) * 5) / 6.
+-spec load_for_dns(NodeState :: #node_state{}) -> float().
+load_for_dns(#node_state{net_usage = NetUsage} = NodeState) ->
+    (4.0 + load_for_dispatcher(NodeState)) / 5 * NetUsage.
 
 
 %%--------------------------------------------------------------------
@@ -304,7 +302,7 @@ load_for_dns(#node_state{net_usage = NetUsage} = NodeState, AverageNetLoad) ->
 %%--------------------------------------------------------------------
 -spec overloaded_for_dispatcher(NodeState :: #node_state{}, MinLoadForDisp :: float()) -> boolean().
 overloaded_for_dispatcher(LoadForDispatcher, MinLoadForDisp) ->
-    LoadForDispatcher > 1.5 * MinLoadForDisp andalso LoadForDispatcher > 70.0.
+    LoadForDispatcher > 1.5 * MinLoadForDisp andalso LoadForDispatcher > 30.0.
 
 
 %%--------------------------------------------------------------------
