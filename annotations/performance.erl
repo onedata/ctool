@@ -73,7 +73,7 @@ around_advice(#annotation{data = Data}, SuiteName, CaseName, [CaseArgs]) ->
     CaseArgs :: proplist(), Params :: [#parameter{}]) -> term().
 exec_ct_config(SuiteName, CaseName, CaseArgs, Params) ->
     NewCaseArgs = inject_parameters(CaseArgs, Params),
-    annotation:call_advised(SuiteName, CaseName, NewCaseArgs).
+    annotation:call_advised(SuiteName, CaseName, [NewCaseArgs]).
 
 %%--------------------------------------------------------------------
 %% @private
