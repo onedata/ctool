@@ -57,7 +57,7 @@
 
 %% API
 -export([advices_for_dnses/1, choose_nodes_for_dns/1, choose_ns_nodes_for_dns/1, initial_advice_for_dns/1]).
--export([advices_for_dispatchers/1, choose_node_for_dispatcher/1]).
+-export([advices_for_dispatchers/1, choose_node_for_dispatcher/2]).
 -export([initial_advice_for_dispatcher/0, all_nodes_for_dispatcher/1]).
 
 
