@@ -291,7 +291,7 @@ load_for_dispatcher(#node_state{cpu_usage = CPU, mem_usage = Mem}) ->
 %%--------------------------------------------------------------------
 -spec load_for_dns(NodeState :: #node_state{}) -> float().
 load_for_dns(#node_state{net_usage = NetUsage} = NodeState) ->
-    (4.0 + load_for_dispatcher(NodeState)) / 5 * NetUsage.
+    (4.0 + load_for_dispatcher(NodeState) / 100) / 5 * NetUsage.
 
 
 %%--------------------------------------------------------------------
