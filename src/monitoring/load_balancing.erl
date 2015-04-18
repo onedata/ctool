@@ -112,8 +112,14 @@ advices_for_dnses(NodeStates) ->
 %%--------------------------------------------------------------------
 -spec advices_for_dispatchers(NodeStates :: [#node_state{}], LBState :: #load_balancing_state{}) ->
     [{node(), #dispatcher_lb_advice{}}].
-advices_for_dispatchers(NodeStates, #load_balancing_state{expected_extra_load = ExtraLoads} = LBState) ->
-    Nodes = [NodeState#node_state.node || NodeState <- NodeStates],
+advices_for_dispatchers(NodeStates, LBState) ->
+    ExtraLoads = case LBState of
+                     undefined ->
+                         [];
+                     #load_balancing_state{expected_extra_load = EEL} ->
+                         EEL
+                 end,
+        Nodes = [NodeState#node_state.node || NodeState <- NodeStates],
     LoadsForDisp = lists:foreach(
         fun(NodeState) ->
             L = load_for_dispatcher(NodeState),
@@ -191,7 +197,7 @@ advices_for_dispatchers(NodeStates, #load_balancing_state{expected_extra_load = 
             ExtraLoadsSum / (NodeLoad + ExtraLoadsSum)
         end, ExtraLoadsSum),
     ?dump(NewExtraLoads),
-    {Result, LBState#load_balancing_state{expected_extra_load = NewExtraLoads}}.
+    {Result, #load_balancing_state{expected_extra_load = NewExtraLoads}}.
 
 
 %%--------------------------------------------------------------------
