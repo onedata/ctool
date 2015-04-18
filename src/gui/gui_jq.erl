@@ -66,7 +66,7 @@ wire(Action) ->
 %% will be evaluated before normal actions.
 %% @end
 %%--------------------------------------------------------------------
--spec wire(Script :: string() | binary() | #api{}, Eager :: boolean()) -> ok.
+-spec wire(Script :: string() | binary() | #api{} | #alert{} | #confirm{}, Eager :: boolean()) -> ok.
 wire(Script, Eager) when is_binary(Script) ->
     wire(gui_str:to_list(Script), Eager);
 

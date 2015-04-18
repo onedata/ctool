@@ -43,7 +43,7 @@
 -type authoritative_answer_flag() :: {aa, Flag :: boolean()}.
 -type dns_query_handler_reponse() :: [answer_record() | authority_record () | additional_record() | authoritative_answer_flag()].
 
--export_type([reply_type/0, dns_query_handler_reponse/0]).
+-export_type([reply_type/0, dns_query_handler_reponse/0, authority_record/0]).
 
 %% Data types that should be returned for specific types of queries:
 %% -----------------------------------------
