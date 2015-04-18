@@ -50,6 +50,17 @@
     all_nodes = [] :: [node()]
 }).
 
+
+% This records holds a state that should be passed between each calculation
+% of load balancing advices. It contains data from previous calculations
+% that is needed in next ones.
+-record(load_balancing_state, {
+    % Contains information how much extra load is expected on given node
+    % in current load balancing interval. Extra load is estimated load
+    % caused by delegation.
+    expected_extra_load = [] :: [{Node :: node(), ExtraLoad :: float()}]
+}).
+
 -type dns_lb_advice() :: #dns_lb_advice{}.
 -type dispatcher_lb_advice() :: #dispatcher_lb_advice{}.
 
@@ -57,7 +68,7 @@
 
 %% API
 -export([advices_for_dnses/1, choose_nodes_for_dns/1, choose_ns_nodes_for_dns/1, initial_advice_for_dns/1]).
--export([advices_for_dispatchers/1, choose_node_for_dispatcher/2]).
+-export([advices_for_dispatchers/2, choose_node_for_dispatcher/2]).
 -export([initial_advice_for_dispatcher/0, all_nodes_for_dispatcher/1]).
 
 
@@ -77,20 +88,9 @@ advices_for_dnses(NodeStates) ->
     LoadsForDNS = [load_for_dns(NodeState) || NodeState <- NodeStates],
     MinLoadForDNS = lists:min(LoadsForDNS),
     LoadsAndNodes = lists:zip(LoadsForDNS, NodesAndIPs),
-    NotOverloaded = lists:filter(
-        fun({Load, _}) ->
-            not overloaded_for_dns(Load, MinLoadForDNS)
-        end, LoadsAndNodes),
-
-    % TODO testy
-    lists:foreach(
-        fun({_, {Node, _}}) ->
-            io:format("[DNS] excluding ~p~n", [Node])
-        end, LoadsAndNodes -- NotOverloaded),
-
     % Calculate how often should given nodes appear in the first row in DNS
     % responses. The bigger the load, the less often should the node appear.
-    NodesAndFrequency = [{NodeIP, MinLoadForDNS / Load} || {Load, {_, NodeIP}} <- NotOverloaded],
+    NodesAndFrequency = [{NodeIP, MinLoadForDNS / Load} || {Load, {_, NodeIP}} <- LoadsAndNodes],
     FrequencySum = lists:foldl(fun({_, Freq}, Acc) -> Acc + Freq end, 0.0, NodesAndFrequency),
     NormalizedNodesAndFrequency = [{NodeIP, Freq / FrequencySum} || {NodeIP, Freq} <- NodesAndFrequency],
     NodeChoices = [NodeIP || {NodeIP, _} <- NormalizedNodesAndFrequency],
@@ -109,10 +109,16 @@ advices_for_dnses(NodeStates) ->
 %% based on node states of all nodes. The list must not be empty.
 %% @end
 %%--------------------------------------------------------------------
--spec advices_for_dispatchers(NodeStates :: [#node_state{}]) -> [{node(), #dispatcher_lb_advice{}}].
-advices_for_dispatchers(NodeStates) ->
+-spec advices_for_dispatchers(NodeStates :: [#node_state{}], LBState :: #load_balancing_state{}) ->
+    [{node(), #dispatcher_lb_advice{}}].
+advices_for_dispatchers(NodeStates, #load_balancing_state{expected_extra_load = ExtraLoads} = LBState) ->
     Nodes = [NodeState#node_state.node || NodeState <- NodeStates],
-    LoadsForDisp = [load_for_dispatcher(NodeState) || NodeState <- NodeStates],
+    LoadsForDisp = lists:foreach(
+        fun(NodeState) ->
+            L = load_for_dispatcher(NodeState),
+            ExtraLoad = proplists:get_value(NodeState#node_state.node, ExtraLoads, 0.0),
+            L * (1.0 - ExtraLoad)
+        end, NodeStates),
     AvgLoadForDisp = average(LoadsForDisp),
     MinLoadForDisp = lists:min(LoadsForDisp),
     LoadsAndNodes = lists:zip(LoadsForDisp, Nodes),
@@ -146,7 +152,45 @@ advices_for_dispatchers(NodeStates) ->
             {Node, #dispatcher_lb_advice{should_delegate = ShouldDelegate,
                 nodes_and_frequency = NodesAndFrequency, all_nodes = Nodes}}
         end, LoadsAndNodes),
-    Result.
+    % Calculate expected extra loads on each node. For example:
+    % node A is overloaded and will delegate 70% reqs to node B
+    % node B in not overloaded
+    % expected extra load on each node is:
+    % node A = 0.0
+    %                0.7 * node_A_load
+    % node B = -------------------------------
+    %          node_B_load + 0.7 * node_A_load
+    %
+    ExtraLoadsSum = lists:foldl(
+        fun({NodeFrom, DispLBAdvice}, ExtraLoadsAcc) ->
+            #dispatcher_lb_advice{
+                should_delegate = ShouldDelegate,
+                nodes_and_frequency = NodesAndFreq} = DispLBAdvice,
+            case ShouldDelegate of
+                false ->
+                    ExtraLoadsAcc;
+                true ->
+                    lists:foldl(
+                        fun({NodeTo, Freq}, Acc) ->
+                            case NodeFrom of
+                                NodeTo ->
+                                    Acc;
+                                _ ->
+                                    Current = proplists:get_value(NodeTo, Acc, 0.0),
+                                    NodeToLoad = proplists:get_value(NodeTo, LoadsAndNodes, 0.0),
+                                    [{NodeTo, Current + NodeToLoad * Freq} | proplists:delete(NodeTo, Acc)]
+                            end
+                        end, ExtraLoadsAcc, NodesAndFreq)
+            end
+        end, [], Result),
+    ?dump(ExtraLoadsSum),
+    NewExtraLoads = lists:map(
+        fun({Node, ExtraLoadSum}) ->
+            NodeLoad = proplists:get_value(Node, LoadsAndNodes, 0.0),
+            ExtraLoadsSum / (NodeLoad + ExtraLoadsSum)
+        end, ExtraLoadsSum),
+    ?dump(NewExtraLoads),
+    {Result, LBState#load_balancing_state{expected_extra_load = NewExtraLoads}}.
 
 
 %%--------------------------------------------------------------------
@@ -189,7 +233,7 @@ choose_ns_nodes_for_dns(DNSAdvice) ->
 %% based on node states of all nodes.
 %% @end
 %%--------------------------------------------------------------------
--spec choose_node_for_dispatcher(DSNAdvice :: #dispatcher_lb_advice{}, WorkerName::atom()) -> node().
+-spec choose_node_for_dispatcher(DSNAdvice :: #dispatcher_lb_advice{}, WorkerName :: atom()) -> node().
 choose_node_for_dispatcher(Advice, WorkerName) ->
     #dispatcher_lb_advice{should_delegate = ShouldDelegate,
         nodes_and_frequency = NodesAndFreq} = Advice,
