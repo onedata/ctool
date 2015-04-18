@@ -63,8 +63,9 @@
 
 -type dns_lb_advice() :: #dns_lb_advice{}.
 -type dispatcher_lb_advice() :: #dispatcher_lb_advice{}.
+-type load_balancing_state() :: #load_balancing_state{}.
 
--export_type([dns_lb_advice/0, dispatcher_lb_advice/0]).
+-export_type([dns_lb_advice/0, dispatcher_lb_advice/0, load_balancing_state/0]).
 
 %% API
 -export([advices_for_dnses/1, choose_nodes_for_dns/1, choose_ns_nodes_for_dns/1, initial_advice_for_dns/1]).
