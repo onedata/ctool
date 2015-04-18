@@ -8,69 +8,72 @@
 %%%-------------------------------------------------------------------
 -author("Tomasz Lichon").
 
+-ifndef(ASSERTIONS_HRL).
+-define(ASSERTIONS_HRL, 1).
+
 -undef(TEST).
 -define(TEST, true).
 -include_lib("eunit/include/eunit.hrl").
 
 -undef(assert).
 -define(assert(BoolExpr),
-	((fun () ->
-		case (BoolExpr) of
-			true -> ok;
-			__V ->
-				__Args = [{module, ?MODULE},
-					{line, ?LINE},
-					{expression, (??BoolExpr)},
-					{expected, true},
-					{value, __V}],
-				ct:print("assertion_failed: ~p~n", [__Args]),
-				erlang:error({assertion_failed, __Args})
-		end
-	end)())).
+    ((fun() ->
+        case (BoolExpr) of
+            true -> ok;
+            __V ->
+                __Args = [{module, ?MODULE},
+                    {line, ?LINE},
+                    {expression, (??BoolExpr)},
+                    {expected, true},
+                    {value, __V}],
+                ct:print("assertion_failed: ~p~n", [__Args]),
+                erlang:error({assertion_failed, __Args})
+        end
+    end)())).
 
 -undef(assertMatch).
 -define(assertMatch(Guard, Expr),
-	((fun () ->
-		case (Expr) of
-			Guard -> ok;
-			__V ->
-				__Args = [{module, ?MODULE},
-					{line, ?LINE},
-					{expression, (??Expr)},
-					{expected, (??Guard)},
-					{value, __V}],
-				ct:print("assertMatch_failed: ~p~n", [__Args]),
-				erlang:error({assertMatch_failed, __Args})
-		end
-	end)())).
+    ((fun() ->
+        case (Expr) of
+            Guard -> ok;
+            __V ->
+                __Args = [{module, ?MODULE},
+                    {line, ?LINE},
+                    {expression, (??Expr)},
+                    {expected, (??Guard)},
+                    {value, __V}],
+                ct:print("assertMatch_failed: ~p~n", [__Args]),
+                erlang:error({assertMatch_failed, __Args})
+        end
+    end)())).
 
 -undef(assertEqual).
 -define(assertEqual(Expect, Expr),
-	((fun (__X) ->
-		case (Expr) of
-			__X -> ok;
-			__V ->
-				__Args = [{module, ?MODULE},
-					{line, ?LINE},
-					{expression, (??Expr)},
-					{expected, __X},
-					{value, __V}],
-				ct:print("assertEqual_failed: ~p~n", [__Args]),
-				erlang:error({assertEqual_failed, __Args})
-		end
-	end)(Expect))).
+    ((fun(__X) ->
+        case (Expr) of
+            __X -> ok;
+            __V ->
+                __Args = [{module, ?MODULE},
+                    {line, ?LINE},
+                    {expression, (??Expr)},
+                    {expected, __X},
+                    {value, __V}],
+                ct:print("assertEqual_failed: ~p~n", [__Args]),
+                erlang:error({assertEqual_failed, __Args})
+        end
+    end)(Expect))).
 
 -undef(assertException).
 -define(assertException(Class, Term, Expr),
-    ((fun () ->
+    ((fun() ->
         try (Expr) of
             __V ->
                 __Args = [{module, ?MODULE},
                     {line, ?LINE},
                     {expression, (??Expr)},
                     {expected,
-                            "{ "++(??Class)++" , "++(??Term)
-                            ++" , [...] }"},
+                            "{ " ++ (??Class) ++ " , " ++ (??Term)
+                            ++ " , [...] }"},
                     {unexpected_success, __V}],
                 ct:print("assertException_failed: ~p~n", [__Args]),
                 erlang:error({assertException_failed, __Args})
@@ -81,8 +84,8 @@
                     {line, ?LINE},
                     {expression, (??Expr)},
                     {expected,
-                            "{ "++(??Class)++" , "++(??Term)
-                            ++" , [...] }"},
+                            "{ " ++ (??Class) ++ " , " ++ (??Term)
+                            ++ " , [...] }"},
                     {unexpected_exception,
                         {__C, __T, erlang:get_stacktrace()}}],
                 ct:print("assertException_failed: ~p~n", [__Args]),
@@ -92,15 +95,15 @@
 
 -undef(cmdStatus).
 -define(cmdStatus(N, Cmd),
-    ((fun () ->
+    ((fun() ->
         case ?_cmd_(Cmd) of
             {(N), __Out} -> __Out;
             {__N, _} ->
                 __Args = [{module, ?MODULE},
                     {line, ?LINE},
                     {command, (Cmd)},
-                    {expected_status,(N)},
-                    {status,__N}],
+                    {expected_status, (N)},
+                    {status, __N}],
                 ct:print("command_failed: ~p~n", [__Args]),
                 erlang:error({command_failed, __Args})
         end
@@ -108,15 +111,15 @@
 
 -undef(assertCmdStatus).
 -define(assertCmdStatus(N, Cmd),
-    ((fun () ->
+    ((fun() ->
         case ?_cmd_(Cmd) of
             {(N), _} -> ok;
             {__N, _} ->
                 __Args = [{module, ?MODULE},
                     {line, ?LINE},
                     {command, (Cmd)},
-                    {expected_status,(N)},
-                    {status,__N}],
+                    {expected_status, (N)},
+                    {status, __N}],
                 ct:print("assertCmd_failed: ~p~n", [__Args]),
                 erlang:error({assertCmd_failed, __Args})
         end
@@ -124,16 +127,18 @@
 
 -undef(assertCmdOutput).
 -define(assertCmdOutput(T, Cmd),
-    ((fun () ->
+    ((fun() ->
         case ?_cmd_(Cmd) of
             {_, (T)} -> ok;
             {_, __T} ->
                 __Args = [{module, ?MODULE},
                     {line, ?LINE},
-                    {command,(Cmd)},
-                    {expected_output,(T)},
-                    {output,__T}],
+                    {command, (Cmd)},
+                    {expected_output, (T)},
+                    {output, __T}],
                 ct:print("assertCmdOutput_failed: ~p~n", [__Args]),
                 erlang:error({assertCmdOutput_failed, __Args})
         end
     end)())).
+
+-endif.

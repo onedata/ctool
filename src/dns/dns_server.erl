@@ -1,14 +1,14 @@
-%% ===================================================================
-%% @author Lukasz Opiola
-%% @copyright (C): 2014 ACK CYFRONET AGH
-%% This software is released under the MIT license
-%% cited in 'LICENSE.txt'.
-%% @end
-%% ===================================================================
-%% @doc: This module handles DNS protocol requests (TCP and UDP) and allows using
-%% custom query handlers.
-%% @end
-%% ===================================================================
+%%%-------------------------------------------------------------------
+%%% @author Lukasz Opiola
+%%% @copyright (C): 2014 ACK CYFRONET AGH
+%%% This software is released under the MIT license
+%%% cited in 'LICENSE.txt'.
+%%% @end
+%%%-------------------------------------------------------------------
+%%% @doc: This module handles DNS protocol requests (TCP and UDP) and allows using
+%%% custom query handlers.
+%%% @end
+%%%-------------------------------------------------------------------
 -module(dns_server).
 
 -include("logging.hrl").
@@ -123,9 +123,7 @@
 %% [["string_1_1", "string_1_2"], ["string_2_1", "string_2_2"]] - two records, each with two strings.
 %% -----------------------------------------
 
-%% ====================================================================
 %% API
-%% ====================================================================
 -export([start/7, stop/1, handle_query/2, start_listening/5]).
 
 % Functions useful in qury handler modules
@@ -136,17 +134,19 @@
 -export([set_handler_module/1, get_handler_module/0, set_max_edns_udp_size/1,
     get_max_edns_udp_size/0]).
 
-%% start/7
-%% ====================================================================
+%%%===================================================================
+%%% API
+%%%===================================================================
+
+%%--------------------------------------------------------------------
 %% @doc Starts a DNS server. The server will listen on chosen port (UDP and TCP).
 %% QueryHandlerModule must conform to dns_query_handler_behaviour.
 %% The server is started in a new process.
 %% OnFailureFun is evalueated by the process if the server fails to start.
 %% @end
-%% ====================================================================
+%%--------------------------------------------------------------------
 -spec start(SupervisorName :: atom(), DNSPort :: integer(), QueryHandlerModule :: atom(), EdnsMaxUdpSize :: integer(),
     TCPNumAcceptors :: integer(), TCPTimeout :: integer(), OnFailureFun :: function()) -> ok | {error, Reason :: term()}.
-%% ====================================================================
 start(SupervisorName, DNSPort, QueryHandlerModule, EdnsMaxUdpSize, TCPNumAcceptors, TCPTimeout, OnFailureFun) ->
     set_handler_module(QueryHandlerModule),
     set_max_edns_udp_size(EdnsMaxUdpSize),
@@ -158,27 +158,23 @@ start(SupervisorName, DNSPort, QueryHandlerModule, EdnsMaxUdpSize, TCPNumAccepto
         {error, Reason} -> {error, Reason}
     end.
 
-%% stop/1
-%% ====================================================================
+%%--------------------------------------------------------------------
 %% @doc Stops the DNS server and cleans up.
 %% @end
-%% ====================================================================
+%%--------------------------------------------------------------------
 -spec stop(SupervisorName :: atom()) -> ok.
-%% ====================================================================
 stop(SupervisorName) ->
     % Cleaning up must be done in another process. This is because this function is often called during the termination
     % of the supervisor process that supervises the listeners - which causes a deadlock.
     spawn(fun() -> clear_children_and_listeners(SupervisorName) end),
     ok.
 
-%% handle_query/2
-%% ====================================================================
+%%--------------------------------------------------------------------
 %% @doc Handles a DNS request. This function is called from dns_upd_handler or dns_tcp_handler after
 %% they have received a request. After evaluation, the response is sent back to the client.
 %% @end
-%% ====================================================================
+%%--------------------------------------------------------------------
 -spec handle_query(Packet :: binary(), Transport :: udp | tcp) -> {ok, Packet :: binary()} | {error, term()}.
-%% ====================================================================
 handle_query(Packet, Transport) ->
     case inet_dns:decode(Packet) of
         {ok, #dns_rec{qdlist = QDList, anlist = _AnList, nslist = _NSList, arlist = ARList} = DNSRecWithAdditionalSection} ->
@@ -229,13 +225,11 @@ handle_query(Packet, Transport) ->
             {error, uprocessable}
     end.
 
-%% validate_query/1
-%% ====================================================================
+%%--------------------------------------------------------------------
 %% @doc Checks if a query is valid.
 %% @end
-%% ====================================================================
+%%--------------------------------------------------------------------
 -spec validate_query(#dns_rec{}) -> ok | form_error.
-%% ====================================================================
 validate_query(DNSRec) ->
     case DNSRec of
         #dns_rec{qdlist = [#dns_query{class = Class}], anlist = [], nslist = [], arlist = []}
@@ -254,15 +248,13 @@ validate_query(DNSRec) ->
             form_error
     end.
 
-%% call_handler_module/3
-%% ====================================================================
+%%--------------------------------------------------------------------
 %% @doc Calls the handler module to handle the query or returns not_impl if
 %% this kind of query is not accepted by the server.
 %% @end
-%% ====================================================================
+%%--------------------------------------------------------------------
 -spec call_handler_module(HandlerModule :: module(), Domain :: string(), Type :: atom()) ->
     term().
-%% ====================================================================
 call_handler_module(HandlerModule, Domain, Type) ->
     case type_to_fun(Type) of
         not_impl ->
@@ -271,14 +263,12 @@ call_handler_module(HandlerModule, Domain, Type) ->
             erlang:apply(HandlerModule, Fun, [Domain])
     end.
 
-%% type_to_fun/1
-%% ====================================================================
+%%--------------------------------------------------------------------
 %% @doc Returns a function that should be called to handle a query of given type.
 %% Those functions are defined in dns_query_handler_behaviour.
 %% @end
-%% ====================================================================
+%%--------------------------------------------------------------------
 -spec type_to_fun(QueryType :: atom()) -> atom().
-%% ====================================================================
 type_to_fun(?S_A) -> handle_a;
 type_to_fun(?S_NS) -> handle_ns;
 type_to_fun(?S_CNAME) -> handle_cname;
@@ -291,15 +281,13 @@ type_to_fun(?S_MX) -> handle_mx;
 type_to_fun(?S_TXT) -> handle_txt;
 type_to_fun(_) -> not_impl.
 
-%% generate_answer/3
-%% ====================================================================
+%%--------------------------------------------------------------------
 %% @doc Encodes a DNS record and returns a tuple accepted by dns_xxx_handler modules.
 %% Modifies flags in header according to server's capabilities.
 %% If there was an OPT RR record in request, it modifies it properly and concates to the ADDITIONAL section.
 %% @end
-%% ====================================================================
+%%--------------------------------------------------------------------
 -spec generate_answer(DNSRec :: #dns_rec{}, OPTRR :: #dns_rr_opt{}, Transport :: atom()) -> {ok, binary()}.
-%% ====================================================================
 generate_answer(DNSRec, OPTRR, Transport) ->
     % Update the header - no recursion available, qr=true -> it's a response
     Header2 = inet_dns:make_header(DNSRec#dns_rec.header, ra, false),
@@ -318,15 +306,13 @@ generate_answer(DNSRec, OPTRR, Transport) ->
         tcp -> {ok, inet_dns:encode(NewDnsRec)}
     end.
 
-%% set_reply_code/2
-%% ====================================================================
+%%--------------------------------------------------------------------
 %% @doc Encodes a DNS record and returns a tuple accepted by dns_xxx_handler modules.
 %% Modifies flags in header according to server's capabilities.
 %% If there was an OPT RR record in request, it modifies it properly and concates to the ADDITIONAL section.
 %% @end
-%% ====================================================================
+%%--------------------------------------------------------------------
 -spec set_reply_code(DNSRec :: #dns_rec{}, ReplyType :: term()) -> #dns_rec{}.
-%% ====================================================================
 set_reply_code(#dns_rec{header = Header} = DNSRec, ReplyType) ->
     ReplyCode = case ReplyType of
                     nx_domain -> ?NXDOMAIN;
@@ -339,13 +325,11 @@ set_reply_code(#dns_rec{header = Header} = DNSRec, ReplyType) ->
                 end,
     DNSRec#dns_rec{header = inet_dns:make_header(Header, rcode, ReplyCode)}.
 
-%% encode_udp/2
-%% ====================================================================
+%%--------------------------------------------------------------------
 %% @doc Encodes a DNS record and truncates it if required.
 %% @end
-%% ====================================================================
+%%--------------------------------------------------------------------
 -spec encode_udp(DNSRec :: #dns_rec{}, ClientMaxUDP :: integer() | undefined) -> binary().
-%% ====================================================================
 encode_udp(#dns_rec{} = DNSRec, ClientMaxUDP) ->
     TruncationSize = case ClientMaxUDP of
                          undefined ->
@@ -368,15 +352,13 @@ encode_udp(#dns_rec{} = DNSRec, ClientMaxUDP) ->
             Packet
     end.
 
-%% start_listening/5
-%% ====================================================================
+%%--------------------------------------------------------------------
 %% @doc Starts dns listeners and terminates dns_worker process in case of error.
 %% OnFailureFun is evalueated if the server fails to start.
 %% @end
-%% ====================================================================
+%%--------------------------------------------------------------------
 -spec start_listening(SupervisorName :: atom(), DNSPort :: integer(),
     TCPNumAcceptors :: integer(), TCPTimeout :: integer(), OnFailureFun :: function()) -> ok.
-%% ====================================================================
 start_listening(SupervisorName, DNSPort, TCPNumAcceptors, TCPTimeout, OnFailureFun) ->
     try
         proc_lib:init_ack(ok),
@@ -404,114 +386,95 @@ start_listening(SupervisorName, DNSPort, TCPNumAcceptors, TCPTimeout, OnFailureF
     end,
     ok.
 
-%% authoritative_answer_flag/1
-%% ====================================================================
+%%--------------------------------------------------------------------
 %% @doc Convenience function used from a dns query handler. Creates a term that will cause
 %% the AA (authoritative answer) flag to be set to desired value in response.
 %% The term should be put in list returned from handle_xxx function.
 %% @end
-%% ====================================================================
+%%--------------------------------------------------------------------
 -spec authoritative_answer_flag(Flag) -> {aa, Flag} when
     Flag :: boolean().
-%% ====================================================================
 authoritative_answer_flag(Flag) ->
     {aa, Flag}.
 
-%% answer_record/3
-%% ====================================================================
+%%--------------------------------------------------------------------
 %% @doc Convenience function used from a dns query handler. Creates a term that will end up
 %% as a record in ANSWER section of DNS reponse.
 %% The term should be put in list returned from handle_xxx function.
 %% @end
-%% ====================================================================
+%%--------------------------------------------------------------------
 -spec answer_record(Domain, TTL, Type, Data) ->
     {answer, Domain, TTL, Type, Data} when
     Domain :: string(), TTL :: integer(), Type :: dns_query_type(), Data :: term().
-%% ====================================================================
 answer_record(Domain, TTL, Type, Data) ->
     {answer, Domain, TTL, Type, Data}.
 
-%% authority_record/3
-%% ====================================================================
+%%--------------------------------------------------------------------
 %% @doc Convenience function used from a dns query handler. Creates a term that will end up
 %% as a record in AUTHORITY section of DNS reponse.
 %% The term should be put in list returned from handle_xxx function.
 %% @end
-%% ====================================================================
+%%--------------------------------------------------------------------
 -spec authority_record(Domain, TTL, Type, Data) ->
     {authority, Domain, TTL, Type, Data} when
     Domain :: string(), TTL :: integer(), Type :: dns_query_type(), Data :: term().
-%% ====================================================================
 authority_record(Domain, TTL, Type, Data) ->
     {authority, Domain, TTL, Type, Data}.
 
-%% additional_record/3
-%% ====================================================================
+%%--------------------------------------------------------------------
 %% @doc Convenience function used from a dns query handler. Creates a term that will end up
 %% as a record in ADDITIONAL section of DNS reponse.
 %% The term should be put in list returned from handle_xxx function.
 %% @end
-%% ====================================================================
+%%--------------------------------------------------------------------
 -spec additional_record(Domain, TTL, Type, Data) ->
     {additional, Domain, TTL, Type, Data} when
     Domain :: string(), TTL :: integer(), Type :: dns_query_type(), Data :: term().
-%% ====================================================================
 additional_record(Domain, TTL, Type, Data) ->
     {additional, Domain, TTL, Type, Data}.
 
-%% set_handler_module/1
-%% ====================================================================
+%%--------------------------------------------------------------------
 %% @doc Saves query handler module in application env.
 %% @end
-%% ====================================================================
+%%--------------------------------------------------------------------
 -spec set_handler_module(Module :: atom()) -> ok.
-%% ====================================================================
 set_handler_module(Module) ->
     ok = application:set_env(ctool, query_handler_module, Module).
 
-%% get_handler_module/0
-%% ====================================================================
+%%--------------------------------------------------------------------
 %% @doc Retrieves query handler module from application env.
 %% @end
-%% ====================================================================
+%%--------------------------------------------------------------------
 -spec get_handler_module() -> module().
-%% ====================================================================
 get_handler_module() ->
     {ok, Module} = application:get_env(ctool, query_handler_module),
     Module.
 
-%% set_max_udp_size/1
-%% ====================================================================
+%%--------------------------------------------------------------------
 %% @doc Saves DNS response TTL in application env.
 %% @end
-%% ====================================================================
+%%--------------------------------------------------------------------
 -spec set_max_edns_udp_size(Size :: integer()) -> ok.
-%% ====================================================================
 set_max_edns_udp_size(Size) ->
     ok = application:set_env(ctool, edns_max_udp_size, Size).
 
-%% get_max_udp_size/0
-%% ====================================================================
+%%--------------------------------------------------------------------
 %% @doc Retrieves DNS response TTL from application env.
 %% @end
-%% ====================================================================
+%%--------------------------------------------------------------------
 -spec get_max_edns_udp_size() -> integer().
-%% ====================================================================
 get_max_edns_udp_size() ->
     {ok, Size} = application:get_env(ctool, edns_max_udp_size),
     Size.
 
-%% ===================================================================
+%%--------------------------------------------------------------------
 %% Internal functions
-%% ===================================================================
 
 %% clear_children_and_listeners/1
-%% ====================================================================
 %% @doc Terminates listeners and created children, if they exist.
 %% @end
-%% ====================================================================
+%%--------------------------------------------------------------------
 -spec clear_children_and_listeners(SupervisorName :: atom()) -> ok.
-%% ====================================================================
 clear_children_and_listeners(SupervisorName) ->
     try
         SupChildren = supervisor:which_children(SupervisorName),

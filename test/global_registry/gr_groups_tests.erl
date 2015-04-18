@@ -54,21 +54,34 @@ gr_groups_test_() ->
 setup() ->
     meck:new(gr_endpoint),
     meck:expect(gr_endpoint, auth_request, fun
-        (client, "/groups/groupId", get) -> {ok, "200", response_headers, response_body};
-        (client, "/groups/groupId", delete) -> {ok, "202", response_headers, response_body};
-        (client, "/groups/groupId/spaces", get) -> {ok, "200", response_headers, response_body};
-        (client, "/groups/groupId/spaces/spaceId", get) -> {ok, "200", response_headers, response_body};
-        (client, "/groups/groupId/spaces/token", get) -> {ok, "200", response_headers, response_body};
-        (client, "/groups/groupId/spaces/spaceId", delete) -> {ok, "202", response_headers, response_body};
-        (client, "/groups/groupId/users", get) -> {ok, "200", response_headers, response_body};
-        (client, "/groups/groupId/users/token", get) -> {ok, "200", response_headers, response_body};
-        (client, "/groups/groupId/users/userId", get) -> {ok, "200", response_headers, response_body};
-        (client, "/groups/groupId/users/userId", delete) -> {ok, "202", response_headers, response_body};
-        (client, "/groups/groupId/users/userId/privileges", get) -> {ok, "200", response_headers, response_body}
+        (client, "/groups/groupId", get) ->
+            {ok, "200", response_headers, response_body};
+        (client, "/groups/groupId", delete) ->
+            {ok, "202", response_headers, response_body};
+        (client, "/groups/groupId/spaces", get) ->
+            {ok, "200", response_headers, response_body};
+        (client, "/groups/groupId/spaces/spaceId", get) ->
+            {ok, "200", response_headers, response_body};
+        (client, "/groups/groupId/spaces/token", get) ->
+            {ok, "200", response_headers, response_body};
+        (client, "/groups/groupId/spaces/spaceId", delete) ->
+            {ok, "202", response_headers, response_body};
+        (client, "/groups/groupId/users", get) ->
+            {ok, "200", response_headers, response_body};
+        (client, "/groups/groupId/users/token", get) ->
+            {ok, "200", response_headers, response_body};
+        (client, "/groups/groupId/users/userId", get) ->
+            {ok, "200", response_headers, response_body};
+        (client, "/groups/groupId/users/userId", delete) ->
+            {ok, "202", response_headers, response_body};
+        (client, "/groups/groupId/users/userId/privileges", get) ->
+            {ok, "200", response_headers, response_body}
     end),
     meck:expect(gr_endpoint, auth_request, fun
-        (client, "/groups", post, <<"body">>) -> {ok, "201", [{"location", "/groups/groupId"}], response_body};
-        (client, "/groups/groupId", patch, <<"body">>) -> {ok, "204", response_headers, response_body};
+        (client, "/groups", post, <<"body">>) ->
+            {ok, "201", [{"location", "/groups/groupId"}], response_body};
+        (client, "/groups/groupId", patch, <<"body">>) ->
+            {ok, "204", response_headers, response_body};
         (client, "/groups/groupId/spaces", post, <<"body">>) ->
             {ok, "201", [{"location", "/spaces/spaceId"}], response_body};
         (client, "/groups/groupId/spaces/join", post, <<"body">>) ->
@@ -105,7 +118,8 @@ should_remove() ->
 should_get_details() ->
     meck:new(mochijson2),
     meck:expect(mochijson2, decode, fun
-        (response_body, [{format, proplist}]) -> [{<<"groupId">>, <<"groupId">>}, {<<"name">>, <<"name">>}]
+        (response_body, [{format, proplist}]) ->
+            [{<<"groupId">>, <<"groupId">>}, {<<"name">>, <<"name">>}]
     end),
 
     Answer = gr_groups:get_details(client, <<"groupId">>),
@@ -173,7 +187,8 @@ should_get_users() ->
 should_get_user_details() ->
     meck:new(mochijson2),
     meck:expect(mochijson2, decode, fun
-        (response_body, [{format, proplist}]) -> [{<<"userId">>, <<"userId">>}, {<<"name">>, <<"name">>}]
+        (response_body, [{format, proplist}]) ->
+            [{<<"userId">>, <<"userId">>}, {<<"name">>, <<"name">>}]
     end),
 
     Answer = gr_groups:get_user_details(client, <<"groupId">>, <<"userId">>),
@@ -186,7 +201,8 @@ should_get_user_details() ->
 should_get_user_privileges() ->
     meck:new(mochijson2),
     meck:expect(mochijson2, decode, fun
-        (response_body, [{format, proplist}]) -> [{<<"privileges">>, <<"privileges">>}]
+        (response_body, [{format, proplist}]) ->
+            [{<<"privileges">>, <<"privileges">>}]
     end),
 
     Answer = gr_groups:get_user_privileges(client, <<"groupId">>, <<"userId">>),

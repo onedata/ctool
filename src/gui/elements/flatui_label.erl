@@ -1,15 +1,15 @@
-%% ===================================================================
-%% @author Krzysztof Trzepla
-%% @copyright (C): 2014 ACK CYFRONET AGH
-%% This software is released under the MIT license
-%% cited in 'LICENSE.txt'.
-%% @end
-%% ===================================================================
-%% @doc This file contains definition of custom label element.
-%% This file is taken from n2o and slightly modified. "Title" field
-%% has been added.
-%% @end
-%% ===================================================================
+%%%-------------------------------------------------------------------
+%%% @author Krzysztof Trzepla
+%%% @copyright (C): 2014 ACK CYFRONET AGH
+%%% This software is released under the MIT license
+%%% cited in 'LICENSE.txt'.
+%%% @end
+%%%-------------------------------------------------------------------
+%%% @doc This file contains definition of custom label element.
+%%% This file is taken from n2o and slightly modified. "Title" field
+%%% has been added.
+%%% @end
+%%%-------------------------------------------------------------------
 -module(flatui_label).
 
 -include("gui/common.hrl").
@@ -17,27 +17,23 @@
 %% API
 -export([reflect/0, render_element/1]).
 
+%%%===================================================================
+%%% API
+%%%===================================================================
 
-%% ====================================================================
-%% API functions
-%% ====================================================================
-
-%% reflect/0
-%% ====================================================================
+%%--------------------------------------------------------------------
 %% @doc Used to list all record fields.
 %% @end
+%%--------------------------------------------------------------------
 -spec reflect() -> [atom()].
-%% ====================================================================
 reflect() ->
     record_info(fields, flatui_label).
 
-
-%% render_element/1
-%% ====================================================================
+%%--------------------------------------------------------------------
 %% @doc Produces HTML in binary.
 %% @end
+%%--------------------------------------------------------------------
 -spec render_element(Record :: #flatui_label{}) -> list().
-%% ====================================================================
 render_element(Record) ->
     wf_tags:emit_tag(<<"label">>, wf:render(Record#flatui_label.body), [
         {<<"id">>, Record#flatui_label.id},

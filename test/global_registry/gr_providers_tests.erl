@@ -50,23 +50,34 @@ gr_providers_test_() ->
 setup() ->
     meck:new(gr_endpoint),
     meck:expect(gr_endpoint, auth_request, fun
-        (client, "/provider", get) -> {ok, "200", response_headers, response_body};
-        (client, "/provider", delete) -> {ok, "202", response_headers, response_body};
-        (client, "/provider/providerId", get) -> {ok, "200", response_headers, response_body};
-        (client, "/provider/spaces", get) -> {ok, "200", response_headers, response_body};
-        (client, "/provider/spaces/spaceId", get) -> {ok, "200", response_headers, response_body};
-        (client, "/provider/spaces/spaceId", delete) -> {ok, "202", response_headers, response_body}
+        (client, "/provider", get) ->
+            {ok, "200", response_headers, response_body};
+        (client, "/provider", delete) ->
+            {ok, "202", response_headers, response_body};
+        (client, "/provider/providerId", get) ->
+            {ok, "200", response_headers, response_body};
+        (client, "/provider/spaces", get) ->
+            {ok, "200", response_headers, response_body};
+        (client, "/provider/spaces/spaceId", get) ->
+            {ok, "200", response_headers, response_body};
+        (client, "/provider/spaces/spaceId", delete) ->
+            {ok, "202", response_headers, response_body}
     end),
     meck:expect(gr_endpoint, auth_request, fun
-        (client, "/provider", patch, <<"body">>) -> {ok, "204", response_headers, response_body};
-        (client, "/provider/spaces", post, <<"body">>) -> {ok, "201", [{"location", "/spaces/spaceId"}], response_body};
+        (client, "/provider", patch, <<"body">>) ->
+            {ok, "204", response_headers, response_body};
+        (client, "/provider/spaces", post, <<"body">>) ->
+            {ok, "201", [{"location", "/spaces/spaceId"}], response_body};
         (client, "/provider/spaces/support", post, <<"body">>) ->
             {ok, "201", [{"location", "/provider/spaces/spaceId"}], response_body}
     end),
     meck:expect(gr_endpoint, noauth_request, fun
-        (client, "/provider", post, <<"body">>) -> {ok, "200", response_headers, response_body};
-        (client, "/provider/test/check_my_ports", post, <<"body">>) -> {ok, "200", response_headers, response_body};
-        (client, "/provider/test/check_my_ip", get, []) -> {ok, "200", response_headers, response_body}
+        (client, "/provider", post, <<"body">>) ->
+            {ok, "200", response_headers, response_body};
+        (client, "/provider/test/check_my_ports", post, <<"body">>) ->
+            {ok, "200", response_headers, response_body};
+        (client, "/provider/test/check_my_ip", get, []) ->
+            {ok, "200", response_headers, response_body}
     end).
 
 
@@ -173,10 +184,12 @@ should_check_ip_address() ->
 should_check_gui_port() ->
     meck:new(mochijson2),
     meck:expect(mochijson2, encode, fun
-        ([{<<"gui">>, <<"https://ipAddress:443/connection_check">>}]) -> <<"body">>
+        ([{<<"gui">>, <<"https://ipAddress:443/connection_check">>}]) ->
+            <<"body">>
     end),
     meck:expect(mochijson2, decode, fun
-        (response_body, [{format, proplist}]) -> [{<<"https://ipAddress:443/connection_check">>, <<"ok">>}]
+        (response_body, [{format, proplist}]) ->
+            [{<<"https://ipAddress:443/connection_check">>, <<"ok">>}]
     end),
 
     Answer = gr_providers:check_port(client, <<"ipAddress">>, 443, <<"gui">>),
@@ -189,10 +202,12 @@ should_check_gui_port() ->
 should_check_rest_port() ->
     meck:new(mochijson2),
     meck:expect(mochijson2, encode, fun
-        ([{<<"rest">>, <<"https://ipAddress:8443/rest/latest/connection_check">>}]) -> <<"body">>
+        ([{<<"rest">>, <<"https://ipAddress:8443/rest/latest/connection_check">>}]) ->
+            <<"body">>
     end),
     meck:expect(mochijson2, decode, fun
-        (response_body, [{format, proplist}]) -> [{<<"https://ipAddress:8443/rest/latest/connection_check">>, <<"ok">>}]
+        (response_body, [{format, proplist}]) ->
+            [{<<"https://ipAddress:8443/rest/latest/connection_check">>, <<"ok">>}]
     end),
 
     Answer = gr_providers:check_port(client, <<"ipAddress">>, 8443, <<"rest">>),

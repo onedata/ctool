@@ -1,13 +1,13 @@
-%% ===================================================================
-%% @author Krzysztof Trzepla
-%% @copyright (C): 2014 ACK CYFRONET AGH
-%% This software is released under the MIT license
-%% cited in 'LICENSE.txt'
-%% @end
-%% ===================================================================
-%% @doc This module allows for Spaces management in Global Registry.
-%% @end
-%% ===================================================================
+%%%-------------------------------------------------------------------
+%%% @author Krzysztof Trzepla
+%%% @copyright (C): 2014 ACK CYFRONET AGH
+%%% This software is released under the MIT license
+%%% cited in 'LICENSE.txt'
+%%% @end
+%%%-------------------------------------------------------------------
+%%% @doc This module allows for Spaces management in Global Registry.
+%%% @end
+%%%-------------------------------------------------------------------
 
 -module(gr_spaces).
 
@@ -32,12 +32,11 @@ space_invite_group | space_remove_group | space_set_privileges |
 space_remove | space_add_provider | space_remove_provider |
 space_change_data | space_view_data.
 
-%% ====================================================================
-%% API functions
-%% ====================================================================
+%%%===================================================================
+%%% API
+%%%===================================================================
 
-%% create/2
-%% ====================================================================
+%%--------------------------------------------------------------------
 %% @doc For:
 %% * user it creates new Space and makes him the only member and administrator
 %%   of created Space. Parameters should contain: "name" of new Space.
@@ -46,9 +45,9 @@ space_change_data | space_view_data.
 %%   for new Space. Parameters should contain: "name" of new Space and
 %%   "token" associated with user/group.
 %% @end
+%%--------------------------------------------------------------------
 -spec create(Client :: gr_endpoint:client(), Parameters :: gr_endpoint:parameters()) ->
     {ok, SpaceId :: binary()} | {error, Reason :: term()}.
-%% ====================================================================
 create(Client, Parameters) ->
     ?run(fun() ->
         URN = "/spaces",
@@ -60,13 +59,12 @@ create(Client, Parameters) ->
         {ok, SpaceId}
     end).
 
-%% remove/2
-%% ====================================================================
+%%--------------------------------------------------------------------
 %% @doc Removes Space.
 %% @end
+%%--------------------------------------------------------------------
 -spec remove(Client :: gr_endpoint:client(), SpaceId :: binary()) ->
     ok | {error, Reason :: term()}.
-%% ====================================================================
 remove(Client, SpaceId) ->
     ?run(fun() ->
         URN = "/spaces/" ++ binary_to_list(SpaceId),
@@ -75,13 +73,12 @@ remove(Client, SpaceId) ->
         ok
     end).
 
-%% get_details/2
-%% ====================================================================
+%%--------------------------------------------------------------------
 %% @doc Returns public details about Space.
 %% @end
+%%--------------------------------------------------------------------
 -spec get_details(Client :: gr_endpoint:client(), SpaceId :: binary()) ->
     {ok, SpaceDetails :: #space_details{}} | {error, Reason :: term()}.
-%% ====================================================================
 get_details(Client, SpaceId) ->
     ?run(fun() ->
         URN = "/spaces/" ++ binary_to_list(SpaceId),
@@ -96,14 +93,13 @@ get_details(Client, SpaceId) ->
         {ok, SpaceDetails}
     end).
 
-%% modify_details/3
-%% ====================================================================
+%%--------------------------------------------------------------------
 %% @doc Modifies public details about Space. Parameters may contain:
 %% "name" of Space.
 %% @end
+%%--------------------------------------------------------------------
 -spec modify_details(Client :: gr_endpoint:client(), SpaceId :: binary(),
     Parameters :: gr_endpoint:parameters()) -> ok | {error, Reason :: term()}.
-%% ====================================================================
 modify_details(Client, SpaceId, Parameters) ->
     ?run(fun() ->
         URN = "/spaces/" ++ binary_to_list(SpaceId),
@@ -113,13 +109,12 @@ modify_details(Client, SpaceId, Parameters) ->
         ok
     end).
 
-%% get_invite_user_token/2
-%% ====================================================================
+%%--------------------------------------------------------------------
 %% @doc Returns token that allows user to join Space.
 %% @end
+%%--------------------------------------------------------------------
 -spec get_invite_user_token(Client :: gr_endpoint:client(), SpaceId :: binary()) ->
     {ok, Token :: binary()} | {error, Reason :: term()}.
-%% ====================================================================
 get_invite_user_token(Client, SpaceId) ->
     ?run(fun() ->
         URN = "/spaces/" ++ binary_to_list(SpaceId) ++ "/users/token",
@@ -130,13 +125,12 @@ get_invite_user_token(Client, SpaceId) ->
         {ok, Token}
     end).
 
-%% get_invite_group_token/2
-%% ====================================================================
+%%--------------------------------------------------------------------
 %% @doc Returns token that allows group to join Space.
 %% @end
+%%--------------------------------------------------------------------
 -spec get_invite_group_token(Client :: gr_endpoint:client(), SpaceId :: binary()) ->
     {ok, Token :: binary()} | {error, Reason :: term()}.
-%% ====================================================================
 get_invite_group_token(Client, SpaceId) ->
     ?run(fun() ->
         URN = "/spaces/" ++ binary_to_list(SpaceId) ++ "/groups/token",
@@ -147,13 +141,12 @@ get_invite_group_token(Client, SpaceId) ->
         {ok, Token}
     end).
 
-%% get_invite_provider_token/2
-%% ====================================================================
+%%--------------------------------------------------------------------
 %% @doc Returns token that allows provider to support Space.
 %% @end
+%%--------------------------------------------------------------------
 -spec get_invite_provider_token(Client :: gr_endpoint:client(), SpaceId :: binary()) ->
     {ok, Token :: binary()} | {error, Reason :: term()}.
-%% ====================================================================
 get_invite_provider_token(Client, SpaceId) ->
     ?run(fun() ->
         URN = "/spaces/" ++ binary_to_list(SpaceId) ++ "/providers/token",
@@ -164,13 +157,12 @@ get_invite_provider_token(Client, SpaceId) ->
         {ok, Token}
     end).
 
-%% remove_user/3
-%% ====================================================================
+%%--------------------------------------------------------------------
 %% @doc Removes user from Space.
 %% @end
+%%--------------------------------------------------------------------
 -spec remove_user(Client :: gr_endpoint:client(), SpaceId :: binary(),
     UserId :: binary()) -> ok | {error, Reason :: term()}.
-%% ====================================================================
 remove_user(Client, SpaceId, UserId) ->
     ?run(fun() ->
         URN = "/spaces/" ++ binary_to_list(SpaceId) ++ "/users/" ++
@@ -180,13 +172,12 @@ remove_user(Client, SpaceId, UserId) ->
         ok
     end).
 
-%% get_users/2
-%% ====================================================================
+%%--------------------------------------------------------------------
 %% @doc Returns list of IDs of users that belong to Space.
 %% @end
+%%--------------------------------------------------------------------
 -spec get_users(Client :: gr_endpoint:client(), SpaceId :: binary()) ->
     {ok, UserIds :: [binary()]} | {error, Reason :: term()}.
-%% ====================================================================
 get_users(Client, SpaceId) ->
     ?run(fun() ->
         URN = "/spaces/" ++ binary_to_list(SpaceId) ++ "/users",
@@ -197,14 +188,13 @@ get_users(Client, SpaceId) ->
         {ok, UserIds}
     end).
 
-%% get_user_details/3
-%% ====================================================================
+%%--------------------------------------------------------------------
 %% @doc Returns public details about user that belongs to Space.
 %% @end
+%%--------------------------------------------------------------------
 -spec get_user_details(Client :: gr_endpoint:client(), SpaceId :: binary(),
     UserId :: binary()) ->
     {ok, UserDetails :: #user_details{}} | {error, Reason :: term()}.
-%% ====================================================================
 get_user_details(Client, SpaceId, UserId) ->
     ?run(fun() ->
         URN = "/spaces/" ++ binary_to_list(SpaceId) ++ "/users/" ++
@@ -219,53 +209,49 @@ get_user_details(Client, SpaceId, UserId) ->
         {ok, UserDetails}
     end).
 
-%% get_user_privileges/3
-%% ====================================================================
+%%--------------------------------------------------------------------
 %% @doc Returns list of privileges of user that belongs to Space.
 %% @end
+%%--------------------------------------------------------------------
 -spec get_user_privileges(Client :: gr_endpoint:client(), GroupId :: binary(),
     UserId :: binary()) ->
     {ok, Privileges :: [space_privilege()]} | {error, Reason :: term()}.
-%% ====================================================================
 get_user_privileges(Client, SpaceId, UserId) ->
     URN = "/spaces/" ++ binary_to_list(SpaceId) ++ "/users/" ++
         binary_to_list(UserId) ++ "/privileges",
     get_privileges(Client, URN).
 
-%% get_effective_user_privileges/3
-%% ====================================================================
+%%--------------------------------------------------------------------
 %% @doc Returns list of privileges of effective Space user.
 %% @end
+%%--------------------------------------------------------------------
 -spec get_effective_user_privileges(Client :: gr_endpoint:client(),
     GroupId :: binary(), UserId :: binary()) ->
     {ok, Privileges :: [space_privilege()]} | {error, Reason :: term()}.
-%% ====================================================================
 get_effective_user_privileges(Client, SpaceId, UserId) ->
     URN = "/spaces/" ++ binary_to_list(SpaceId) ++ "/users/" ++
         binary_to_list(UserId) ++ "/privileges?effective",
     get_privileges(Client, URN).
 
-%% set_user_privileges/4
-%% ====================================================================
+%%--------------------------------------------------------------------
 %% @doc Sets list of privileges for user that belongs to Space.
 %% Parameters should contain: list of "privileges" of type space_privilege().
 %% @end
+%%--------------------------------------------------------------------
 -spec set_user_privileges(Client :: gr_endpoint:client(), SpaceId :: binary(),
     UserId :: binary(), Parameters :: gr_endpoint:parameters()) ->
     ok | {error, Reason :: term()}.
-%% ====================================================================
 set_user_privileges(Client, SpaceId, UserId, Parameters) ->
     URN = "/spaces/" ++ binary_to_list(SpaceId) ++ "/users/" ++
         binary_to_list(UserId) ++ "/privileges",
     set_privileges(Client, URN, Parameters).
 
-%% remove_group/3
-%% ====================================================================
+%%--------------------------------------------------------------------
 %% @doc Removes group from Space.
 %% @end
+%%--------------------------------------------------------------------
 -spec remove_group(Client :: gr_endpoint:client(), SpaceId :: binary(),
     GroupId :: binary()) -> ok | {error, Reason :: term()}.
-%% ====================================================================
 remove_group(Client, SpaceId, GroupId) ->
     ?run(fun() ->
         URN = "/spaces/" ++ binary_to_list(SpaceId) ++ "/groups/" ++
@@ -275,13 +261,12 @@ remove_group(Client, SpaceId, GroupId) ->
         ok
     end).
 
-%% get_groups/2
-%% ====================================================================
+%%--------------------------------------------------------------------
 %% @doc Returns list of IDs of groups that belong to Space.
 %% @end
+%%--------------------------------------------------------------------
 -spec get_groups(Client :: gr_endpoint:client(), SpaceId :: binary()) ->
     {ok, UserIds :: [binary()]} | {error, Reason :: term()}.
-%% ====================================================================
 get_groups(Client, SpaceId) ->
     ?run(fun() ->
         URN = "/spaces/" ++ binary_to_list(SpaceId) ++ "/groups",
@@ -292,14 +277,13 @@ get_groups(Client, SpaceId) ->
         {ok, GroupIds}
     end).
 
-%% get_group_details/3
-%% ====================================================================
+%%--------------------------------------------------------------------
 %% @doc Returns public details about group that belongs to Space.
 %% @end
+%%--------------------------------------------------------------------
 -spec get_group_details(Client :: gr_endpoint:client(), SpaceId :: binary(),
     GroupId :: binary()) ->
     {ok, GroupDetails :: #group_details{}} | {error, Reason :: term()}.
-%% ====================================================================
 get_group_details(Client, SpaceId, GroupId) ->
     ?run(fun() ->
         URN = "/spaces/" ++ binary_to_list(SpaceId) ++ "/groups/" ++
@@ -314,41 +298,38 @@ get_group_details(Client, SpaceId, GroupId) ->
         {ok, GroupDetails}
     end).
 
-%% get_group_privileges/3
-%% ====================================================================
+%%--------------------------------------------------------------------
 %% @doc Returns list of privileges of group that belongs to Space.
 %% @end
+%%--------------------------------------------------------------------
 -spec get_group_privileges(Client :: gr_endpoint:client(), GroupId :: binary(),
     GroupId :: binary()) ->
     {ok, Privileges :: [space_privilege()]} | {error, Reason :: term()}.
-%% ====================================================================
 get_group_privileges(Client, SpaceId, GroupId) ->
     URN = "/spaces/" ++ binary_to_list(SpaceId) ++ "/groups/" ++
         binary_to_list(GroupId) ++ "/privileges",
     get_privileges(Client, URN).
 
-%% set_group_privileges/4
-%% ====================================================================
+%%--------------------------------------------------------------------
 %% @doc Sets list of privileges for group that belongs to Space.
 %% Parameters should contain: list of "privileges" of type space_privilege().
 %% @end
+%%--------------------------------------------------------------------
 -spec set_group_privileges(Client :: gr_endpoint:client(), SpaceId :: binary(),
     GroupId :: binary(), Parameters :: gr_endpoint:parameters()) ->
     ok | {error, Reason :: term()}.
-%% ====================================================================
 set_group_privileges(Client, SpaceId, GroupId, Parameters) ->
     URN = "/spaces/" ++ binary_to_list(SpaceId) ++ "/groups/" ++
         binary_to_list(GroupId) ++ "/privileges",
     set_privileges(Client, URN, Parameters).
 
-%% remove_provider/3
-%% ====================================================================
+%%--------------------------------------------------------------------
 %% @doc Makes provider stop supporting Space.
 %% @end
+%%--------------------------------------------------------------------
 -spec remove_provider(Client :: gr_endpoint:client(), SpaceId :: binary(),
     ProviderId :: binary()) ->
     ok | {error, Reason :: term()}.
-%% ====================================================================
 remove_provider(Client, SpaceId, ProviderId) ->
     ?run(fun() ->
         URN = "/spaces/" ++ binary_to_list(SpaceId) ++ "/providers/" ++
@@ -358,13 +339,12 @@ remove_provider(Client, SpaceId, ProviderId) ->
         ok
     end).
 
-%% get_providers/2
-%% ====================================================================
+%%--------------------------------------------------------------------
 %% @doc Returns list of IDs of providers that supports Space.
 %% @end
+%%--------------------------------------------------------------------
 -spec get_providers(Client :: gr_endpoint:client(), SpaceId :: binary()) ->
     {ok, UserIds :: [binary()]} | {error, Reason :: term()}.
-%% ====================================================================
 get_providers(Client, SpaceId) ->
     ?run(fun() ->
         URN = "/spaces/" ++ binary_to_list(SpaceId) ++ "/providers",
@@ -375,14 +355,13 @@ get_providers(Client, SpaceId) ->
         {ok, ProviderIds}
     end).
 
-%% get_provider_details/3
-%% ====================================================================
+%%--------------------------------------------------------------------
 %% @doc Returns public details about provider that supports Space.
 %% @end
+%%--------------------------------------------------------------------
 -spec get_provider_details(Client :: gr_endpoint:client(), SpaceId :: binary(),
     ProviderId :: binary()) ->
     {ok, ProviderDetails :: #provider_details{}} | {error, Reason :: term()}.
-%% ====================================================================
 get_provider_details(Client, SpaceId, ProviderId) ->
     ?run(fun() ->
         URN = "/spaces/" ++ binary_to_list(SpaceId) ++ "/providers/" ++
@@ -399,17 +378,16 @@ get_provider_details(Client, SpaceId, ProviderId) ->
         {ok, ProviderDetails}
     end).
 
-%% ====================================================================
-%% Internal functions
-%% ====================================================================
+%%%===================================================================
+%%% Internal functions
+%%%===================================================================
 
-%% get_privileges/2
-%% ====================================================================
+%%--------------------------------------------------------------------
 %% @doc Returns list of privileges.
 %% @end
+%%--------------------------------------------------------------------
 -spec get_privileges(Client :: gr_endpoint:client(), gr_endpoint:urn()) ->
     {ok, Privileges :: [space_privilege()]} | {error, Reason :: term()}.
-%% ====================================================================
 get_privileges(Client, URN) ->
     ?run(fun() ->
         {ok, "200", _ResponseHeaders, ResponseBody} =
@@ -419,14 +397,13 @@ get_privileges(Client, URN) ->
         {ok, Privileges}
     end).
 
-%% set_group_privileges/2
-%% ====================================================================
+%%--------------------------------------------------------------------
 %% @doc Sets list of privileges.
 %% @end
+%%--------------------------------------------------------------------
 -spec set_privileges(Client :: gr_endpoint:client(), gr_endpoint:urn(),
     Parameters :: gr_endpoint:parameters()) ->
     ok | {error, Reason :: term()}.
-%% ====================================================================
 set_privileges(Client, URN, Parameters) ->
     ?run(fun() ->
         Body = iolist_to_binary(mochijson2:encode(Parameters)),

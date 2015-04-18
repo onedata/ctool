@@ -1,13 +1,13 @@
-%% ===================================================================
-%% @author Krzysztof Trzepla
-%% @copyright (C): 2014 ACK CYFRONET AGH
-%% This software is released under the MIT license
-%% cited in 'LICENSE.txt'
-%% @end
-%% ===================================================================
-%% @doc This module allows for groups management in Global Registry.
-%% @end
-%% ===================================================================
+%%%-------------------------------------------------------------------
+%%% @author Krzysztof Trzepla
+%%% @copyright (C): 2014 ACK CYFRONET AGH
+%%% This software is released under the MIT license
+%%% cited in 'LICENSE.txt'
+%%% @end
+%%%-------------------------------------------------------------------
+%%% @doc This module allows for groups management in Global Registry.
+%%% @end
+%%%-------------------------------------------------------------------
 
 -module(gr_groups).
 
@@ -30,18 +30,17 @@ group_remove_user | group_join_space | group_create_space |
 group_set_privileges | group_remove | group_leave_space |
 group_view_data | group_create_space_token.
 
-%% ====================================================================
-%% API functions
-%% ====================================================================
+%%%===================================================================
+%%% API
+%%%===================================================================
 
-%% create/2
-%% ====================================================================
+%%--------------------------------------------------------------------
 %% @doc Creates new group and makes user the only member and administrator
 %% of created group. Parameters should contain: "name" of new group.
 %% @end
+%%--------------------------------------------------------------------
 -spec create(Client :: gr_endpoint:client(), Parameters :: gr_endpoint:parameters()) ->
     {ok, SpaceId :: binary()} | {error, Reason :: term()}.
-%% ====================================================================
 create(Client, Parameters) ->
     ?run(fun() ->
         URN = "/groups",
@@ -53,13 +52,12 @@ create(Client, Parameters) ->
         {ok, GroupId}
     end).
 
-%% remove/2
-%% ====================================================================
+%%--------------------------------------------------------------------
 %% @doc Removes group.
 %% @end
+%%--------------------------------------------------------------------
 -spec remove(Client :: gr_endpoint:client(), GroupId :: binary()) ->
     ok | {error, Reason :: term()}.
-%% ====================================================================
 remove(Client, GroupId) ->
     ?run(fun() ->
         URN = "/groups/" ++ binary_to_list(GroupId),
@@ -68,13 +66,12 @@ remove(Client, GroupId) ->
         ok
     end).
 
-%% get_details/2
-%% ====================================================================
+%%--------------------------------------------------------------------
 %% @doc Returns public details about group.
 %% @end
+%%--------------------------------------------------------------------
 -spec get_details(Client :: gr_endpoint:client(), GroupId :: binary()) ->
     {ok, GroupDetails :: #group_details{}} | {error, Reason :: term()}.
-%% ====================================================================
 get_details(Client, GroupId) ->
     ?run(fun() ->
         URN = "/groups/" ++ binary_to_list(GroupId),
@@ -88,14 +85,13 @@ get_details(Client, GroupId) ->
         {ok, GroupDetails}
     end).
 
-%% modify_details/3
-%% ====================================================================
+%%--------------------------------------------------------------------
 %% @doc Modifies public details about group. Parameters may contain:
 %% "name" of group.
 %% @end
+%%--------------------------------------------------------------------
 -spec modify_details(Client :: gr_endpoint:client(), GroupId :: binary(),
     Parameters :: gr_endpoint:parameters()) -> ok | {error, Reason :: term()}.
-%% ====================================================================
 modify_details(Client, GroupId, Parameters) ->
     ?run(fun() ->
         URN = "/groups/" ++ binary_to_list(GroupId),
@@ -105,13 +101,12 @@ modify_details(Client, GroupId, Parameters) ->
         ok
     end).
 
-%% get_create_space_token/2
-%% ====================================================================
+%%--------------------------------------------------------------------
 %% @doc Returns token that allows provider to create Space for group.
 %% @end
+%%--------------------------------------------------------------------
 -spec get_create_space_token(Client :: gr_endpoint:client(), GroupId :: binary()) ->
     {ok, Token :: binary()} | {error, Reason :: term()}.
-%% ====================================================================
 get_create_space_token(Client, GroupId) ->
     ?run(fun() ->
         URN = "/groups/" ++ binary_to_list(GroupId) ++ "/spaces/token",
@@ -122,13 +117,12 @@ get_create_space_token(Client, GroupId) ->
         {ok, Token}
     end).
 
-%% get_invite_user_token/2
-%% ====================================================================
+%%--------------------------------------------------------------------
 %% @doc Returns token that allows user to join group.
 %% @end
+%%--------------------------------------------------------------------
 -spec get_invite_user_token(Client :: gr_endpoint:client(), GroupId :: binary()) ->
     {ok, Token :: binary()} | {error, Reason :: term()}.
-%% ====================================================================
 get_invite_user_token(Client, GroupId) ->
     ?run(fun() ->
         URN = "/groups/" ++ binary_to_list(GroupId) ++ "/users/token",
@@ -139,13 +133,12 @@ get_invite_user_token(Client, GroupId) ->
         {ok, Token}
     end).
 
-%% remove_user/3
-%% ====================================================================
+%%--------------------------------------------------------------------
 %% @doc Removes user from group.
 %% @end
+%%--------------------------------------------------------------------
 -spec remove_user(Client :: gr_endpoint:client(), GroupId :: binary(),
     UserId :: binary()) -> ok | {error, Reason :: term()}.
-%% ====================================================================
 remove_user(Client, GroupId, UserId) ->
     ?run(fun() ->
         URN = "/groups/" ++ binary_to_list(GroupId) ++ "/users/" ++
@@ -155,13 +148,12 @@ remove_user(Client, GroupId, UserId) ->
         ok
     end).
 
-%% get_users/2
-%% ====================================================================
+%%--------------------------------------------------------------------
 %% @doc Returns list of IDs of users that belong to group.
 %% @end
+%%--------------------------------------------------------------------
 -spec get_users(Client :: gr_endpoint:client(), GroupId :: binary()) ->
     {ok, UserIds :: [binary()]} | {error, Reason :: term()}.
-%% ====================================================================
 get_users(Client, GroupId) ->
     ?run(fun() ->
         URN = "/groups/" ++ binary_to_list(GroupId) ++ "/users",
@@ -172,14 +164,13 @@ get_users(Client, GroupId) ->
         {ok, UserIds}
     end).
 
-%% get_user_details/3
-%% ====================================================================
+%%--------------------------------------------------------------------
 %% @doc Returns public details about user that belongs to group.
 %% @end
+%%--------------------------------------------------------------------
 -spec get_user_details(Client :: gr_endpoint:client(), GroupId :: binary(),
     UserId :: binary()) -> {ok, UserDetails :: #user_details{}} | {error,
     Reason :: term()}.
-%% ====================================================================
 get_user_details(Client, GroupId, UserId) ->
     ?run(fun() ->
         URN = "/groups/" ++ binary_to_list(GroupId) ++ "/users/" ++
@@ -194,14 +185,13 @@ get_user_details(Client, GroupId, UserId) ->
         {ok, UserDetails}
     end).
 
-%% get_user_privileges/3
-%% ====================================================================
+%%--------------------------------------------------------------------
 %% @doc Returns list of privileges of user that belongs to group.
 %% @end
+%%--------------------------------------------------------------------
 -spec get_user_privileges(Client :: gr_endpoint:client(), GroupId :: binary(),
     UserId :: binary()) ->
     {ok, Privileges :: [group_privilege()]} | {error, Reason :: term()}.
-%% ====================================================================
 get_user_privileges(Client, GroupId, UserId) ->
     ?run(fun() ->
         URN = "/groups/" ++ binary_to_list(GroupId) ++ "/users/" ++
@@ -213,15 +203,14 @@ get_user_privileges(Client, GroupId, UserId) ->
         {ok, Privileges}
     end).
 
-%% set_user_privileges/4
-%% ====================================================================
+%%--------------------------------------------------------------------
 %% @doc Sets list of privileges for user that belongs to group.
 %% Parameters should contain: list of "privileges" of type group_privilege().
 %% @end
+%%--------------------------------------------------------------------
 -spec set_user_privileges(Client :: gr_endpoint:client(), GroupId :: binary(),
     UserId :: binary(), Parameters :: gr_endpoint:parameters()) ->
     ok | {error, Reason :: term()}.
-%% ====================================================================
 set_user_privileges(Client, GroupId, UserId, Parameters) ->
     ?run(fun() ->
         URN = "/groups/" ++ binary_to_list(GroupId) ++ "/users/" ++
@@ -232,15 +221,14 @@ set_user_privileges(Client, GroupId, UserId, Parameters) ->
         ok
     end).
 
-%% create_space/3
-%% ====================================================================
+%%--------------------------------------------------------------------
 %% @doc Creates new Space and makes group the only member and administrator
 %% of created Space. Parameters should contain: "name" of new Space.
 %% @end
+%%--------------------------------------------------------------------
 -spec create_space(Client :: gr_endpoint:client(), GroupId :: binary(),
     Parameters :: gr_endpoint:parameters()) ->
     {ok, SpaceId :: binary()} | {error, Reason :: term()}.
-%% ====================================================================
 create_space(Client, GroupId, Parameters) ->
     ?run(fun() ->
         URN = "/groups/" ++ binary_to_list(GroupId) ++ "/spaces",
@@ -252,15 +240,14 @@ create_space(Client, GroupId, Parameters) ->
         {ok, SpaceId}
     end).
 
-%% join_space/3
-%% ====================================================================
+%%--------------------------------------------------------------------
 %% @doc Makes group join Space associated with token.
 %% Parameters should contain: "token" associated with Space.
 %% @end
+%%--------------------------------------------------------------------
 -spec join_space(Client :: gr_endpoint:client(), GroupId :: binary(),
     Parameters :: gr_endpoint:parameters()) ->
     {ok, SpaceId :: binary()} | {error, Reason :: term()}.
-%% ====================================================================
 join_space(Client, GroupId, Parameters) ->
     ?run(fun() ->
         URN = "/groups/" ++ binary_to_list(GroupId) ++ "/spaces/join",
@@ -273,13 +260,12 @@ join_space(Client, GroupId, Parameters) ->
         {ok, SpaceId}
     end).
 
-%% leave_space/3
-%% ====================================================================
+%%--------------------------------------------------------------------
 %% @doc Makes group leave Space.
 %% @end
+%%--------------------------------------------------------------------
 -spec leave_space(Client :: gr_endpoint:client(), GroupId :: binary(),
     SpaceId :: binary()) -> ok | {error, Reason :: term()}.
-%% ====================================================================
 leave_space(Client, GroupId, SpaceId) ->
     ?run(fun() ->
         URN = "/groups/" ++ binary_to_list(GroupId) ++ "/spaces/" ++
@@ -289,13 +275,12 @@ leave_space(Client, GroupId, SpaceId) ->
         ok
     end).
 
-%% get_spaces/2
-%% ====================================================================
+%%--------------------------------------------------------------------
 %% @doc Returns list of IDs of Spaces that group belongs to.
 %% @end
+%%--------------------------------------------------------------------
 -spec get_spaces(Client :: gr_endpoint:client(), GroupId :: binary()) ->
     {ok, SpaceIds :: [binary()]} | {error, Reason :: term()}.
-%% ====================================================================
 get_spaces(Client, GroupId) ->
     ?run(fun() ->
         URN = "/groups/" ++ binary_to_list(GroupId) ++ "/spaces",
@@ -306,14 +291,13 @@ get_spaces(Client, GroupId) ->
         {ok, SpaceIds}
     end).
 
-%% get_space_details/3
-%% ====================================================================
+%%--------------------------------------------------------------------
 %% @doc Returns public details about Space that group belongs to.
 %% @end
+%%--------------------------------------------------------------------
 -spec get_space_details(Client :: gr_endpoint:client(), GroupId :: binary(),
     SpaceId :: binary()) ->
     {ok, SpaceDetails :: #space_details{}} | {error, Reason :: term()}.
-%% ====================================================================
 get_space_details(Client, GroupId, SpaceId) ->
     ?run(fun() ->
         URN = "/groups/" ++ binary_to_list(GroupId) ++ "/spaces/" ++
