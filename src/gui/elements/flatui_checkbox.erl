@@ -40,7 +40,7 @@ reflect() ->
 %% ====================================================================
 %% @doc Produces HTML in binary.
 %% @end
--spec render_element(Record :: #flatui_checkbox{}) -> binary().
+-spec render_element(Record :: #flatui_checkbox{}) -> list().
 %% ====================================================================
 render_element(Record) ->
     Id = case Record#flatui_checkbox.id of
@@ -61,8 +61,8 @@ render_element(Record) ->
                                                        end,
                                            "tuple(" ++ Key ++ ", querySource('" ++ SourceId ++ "'))" end || Src <- Record#flatui_checkbox.source]
             ++ ["tuple(tuple(utf8.toByteArray('" ++ Id ++ "'), bin('detail')), event.detail)"], ",") ++ "]",
-            PostbackBin = wf_event:new(Postback, Id, Record#flatui_checkbox.delegate, event, Data),
-            wf:wire([wf:f("$('#~s').change(function (event){", [Id]), PostbackBin, "});"])
+            Event = wf_event:new(Postback, Id, Record#flatui_checkbox.delegate, event, Data),
+            wf:wire(wf:f("$('#~s').change(function (event){", [Id]) ++ Event ++ "});")
     end,
     Label = [wf_tags:emit_tag(<<"input">>, [], [
         % global

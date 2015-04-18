@@ -15,6 +15,7 @@
 %% space_details record contains following fields:
 %% * id   - unique Space ID assigned by Global Registry
 %% * name - Space name
+%% * size - Space size
 -record(space_details, {
     id :: binary(),
     name :: binary(),

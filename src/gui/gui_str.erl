@@ -21,7 +21,6 @@
 % Formatting, escaping and encoding
 -export([format/2, format_bin/2, js_escape/1, html_encode/1, url_encode/1, url_decode/1]).
 
-
 %% ====================================================================
 %% API functions
 %% ====================================================================
@@ -42,7 +41,6 @@ to_list(Term) ->
         lists:flatten(io_lib:format("~p", [Term]))
     end.
 
-
 %% to_binary/1
 %% ====================================================================
 %% @doc Converts any term to binary.
@@ -51,7 +49,6 @@ to_list(Term) ->
 %% ====================================================================
 to_binary(Term) when is_binary(Term) -> Term;
 to_binary(Term) -> list_to_binary(to_list(Term)).
-
 
 %% join_to_binary/1
 %% ====================================================================
@@ -68,7 +65,6 @@ join_to_binary([], Acc) ->
 join_to_binary([H | T], Acc) ->
     join_to_binary(T, <<Acc/binary, (to_binary(H))/binary>>).
 
-
 %% unicode_list_to_binary/1
 %% ====================================================================
 %% @doc Converts a unicode list to utf8 binary.
@@ -77,7 +73,6 @@ join_to_binary([H | T], Acc) ->
 %% ====================================================================
 unicode_list_to_binary(String) ->
     unicode:characters_to_binary(String).
-
 
 %% binary_to_unicode_list/1
 %% ====================================================================
@@ -88,16 +83,14 @@ unicode_list_to_binary(String) ->
 binary_to_unicode_list(Binary) ->
     unicode:characters_to_list(Binary).
 
-
 %% format/2
 %% ====================================================================
 %% @doc Escapes all javascript - sensitive characters.
 %% @end
--spec format(Format :: string(), Args :: [term()]) -> binary().
+-spec format(Format :: string(), Args :: [term()]) -> list().
 %% ====================================================================
 format(Format, Args) ->
     wf:f(Format, Args).
-
 
 %% format_bin/2
 %% ====================================================================
@@ -108,7 +101,6 @@ format(Format, Args) ->
 format_bin(Format, Args) ->
     to_binary(wf:f(Format, Args)).
 
-
 %% js_escape/1
 %% ====================================================================
 %% @doc Escapes all javascript - sensitive characters.
@@ -118,16 +110,19 @@ format_bin(Format, Args) ->
 js_escape(undefined) -> <<"">>;
 js_escape(Value) when is_list(Value) -> js_escape(iolist_to_binary(Value));
 js_escape(Value) -> js_escape(Value, <<"">>).
-js_escape(<<"\\", Rest/binary>>, Acc) -> js_escape(Rest, <<Acc/binary, "\\\\">>);
+js_escape(<<"\\", Rest/binary>>, Acc) ->
+    js_escape(Rest, <<Acc/binary, "\\\\">>);
 js_escape(<<"\r", Rest/binary>>, Acc) -> js_escape(Rest, <<Acc/binary, "\\r">>);
 js_escape(<<"\n", Rest/binary>>, Acc) -> js_escape(Rest, <<Acc/binary, "\\n">>);
-js_escape(<<"\"", Rest/binary>>, Acc) -> js_escape(Rest, <<Acc/binary, "\\\"">>);
+js_escape(<<"\"", Rest/binary>>, Acc) ->
+    js_escape(Rest, <<Acc/binary, "\\\"">>);
 js_escape(<<"'", Rest/binary>>, Acc) -> js_escape(Rest, <<Acc/binary, "\\'">>);
-js_escape(<<"<script", Rest/binary>>, Acc) -> js_escape(Rest, <<Acc/binary, "&lt;script">>);
-js_escape(<<"script>", Rest/binary>>, Acc) -> js_escape(Rest, <<Acc/binary, "script&gt;">>);
+js_escape(<<"<script", Rest/binary>>, Acc) ->
+    js_escape(Rest, <<Acc/binary, "&lt;script">>);
+js_escape(<<"script>", Rest/binary>>, Acc) ->
+    js_escape(Rest, <<Acc/binary, "script&gt;">>);
 js_escape(<<C, Rest/binary>>, Acc) -> js_escape(Rest, <<Acc/binary, C>>);
 js_escape(<<"">>, Acc) -> Acc.
-
 
 %% html_encode/1
 %% ====================================================================
@@ -138,14 +133,13 @@ js_escape(<<"">>, Acc) -> Acc.
 html_encode(List) when is_list(List) ->
     html_encode(to_binary(List));
 
-html_encode(<<"">>)              -> <<"">>;
+html_encode(<<"">>) -> <<"">>;
 html_encode(<<$<, Rest/binary>>) -> <<"&lt;", (html_encode(Rest))/binary>>;
 html_encode(<<$>, Rest/binary>>) -> <<"&gt;", (html_encode(Rest))/binary>>;
 html_encode(<<$", Rest/binary>>) -> <<"&quot;", (html_encode(Rest))/binary>>;
 html_encode(<<$', Rest/binary>>) -> <<"&#39;", (html_encode(Rest))/binary>>;
 html_encode(<<$&, Rest/binary>>) -> <<"&amp;", (html_encode(Rest))/binary>>;
 html_encode(<<H, Rest/binary>>) -> <<H, (html_encode(Rest))/binary>>.
-
 
 %% url_encode/1
 %% ====================================================================
@@ -155,7 +149,6 @@ html_encode(<<H, Rest/binary>>) -> <<H, (html_encode(Rest))/binary>>.
 %% ====================================================================
 url_encode(String) ->
     to_binary(ibrowse_lib:url_encode(to_list(String))).
-
 
 %% url_decode/1
 %% ====================================================================

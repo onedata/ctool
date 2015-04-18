@@ -10,9 +10,6 @@
 %% ===================================================================
 -module(dns_query_handler_behaviour).
 
--include("dns/dns.hrl").
-
-
 %% handle_xxx/1
 %% ====================================================================
 %% @doc Callbacks below handle specific types od DNS queries, in accordance to RFC1035:
@@ -24,25 +21,35 @@
 %% See {@link dns.hrl} for reference and data types that should be returned for specific types of queries.
 %% @end
 %% ====================================================================
--callback handle_a(     Domain :: string()) -> {reply_type(), dns_query_handler_reponse()} | reply_type().
+-callback handle_a(Domain :: string()) ->
+    {dns_server:reply_type(), dns_server:dns_query_handler_reponse()} | dns_server:reply_type().
 
--callback handle_ns(    Domain :: string()) -> {reply_type(), dns_query_handler_reponse()} | reply_type().
+-callback handle_ns(Domain :: string()) ->
+    {dns_server:reply_type(), dns_server:dns_query_handler_reponse()} | dns_server:reply_type().
 
--callback handle_cname( Domain :: string()) -> {reply_type(), dns_query_handler_reponse()} | reply_type().
+-callback handle_cname(Domain :: string()) ->
+    {dns_server:reply_type(), dns_server:dns_query_handler_reponse()} | dns_server:reply_type().
 
--callback handle_soa(   Domain :: string()) -> {reply_type(), dns_query_handler_reponse()} | reply_type().
+-callback handle_soa(Domain :: string()) ->
+    {dns_server:reply_type(), dns_server:dns_query_handler_reponse()} | dns_server:reply_type().
 
--callback handle_wks(   Domain :: string()) -> {reply_type(), dns_query_handler_reponse()} | reply_type().
+-callback handle_wks(Domain :: string()) ->
+    {dns_server:reply_type(), dns_server:dns_query_handler_reponse()} | dns_server:reply_type().
 
--callback handle_ptr(   Domain :: string()) -> {reply_type(), dns_query_handler_reponse()} | reply_type().
+-callback handle_ptr(Domain :: string()) ->
+    {dns_server:reply_type(), dns_server:dns_query_handler_reponse()} | dns_server:reply_type().
 
--callback handle_hinfo( Domain :: string()) -> {reply_type(), dns_query_handler_reponse()} | reply_type().
+-callback handle_hinfo(Domain :: string()) ->
+    {dns_server:reply_type(), dns_server:dns_query_handler_reponse()} | dns_server:reply_type().
 
--callback handle_minfo( Domain :: string()) -> {reply_type(), dns_query_handler_reponse()} | reply_type().
+-callback handle_minfo(Domain :: string()) ->
+    {dns_server:reply_type(), dns_server:dns_query_handler_reponse()} | dns_server:reply_type().
 
--callback handle_mx(    Domain :: string()) -> {reply_type(), dns_query_handler_reponse()} | reply_type().
+-callback handle_mx(Domain :: string()) ->
+    {dns_server:reply_type(), dns_server:dns_query_handler_reponse()} | dns_server:reply_type().
 
--callback handle_txt(   Domain :: string()) -> {reply_type(), dns_query_handler_reponse()} | reply_type().
+-callback handle_txt(Domain :: string()) ->
+    {dns_server:reply_type(), dns_server:dns_query_handler_reponse()} | dns_server:reply_type().
 
 
 

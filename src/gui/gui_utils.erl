@@ -38,19 +38,21 @@
 -define(ca_cert_max_depth, 11).
 
 -define(mail_validation_regexp,
-    <<"^[a-z0-9!#$%&'*+\\/=?^_`{|}~-]+(?:\\.[a-z0-9!#$%&'*+\\/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$">>).
-
+    <<"^[a-z0-9!#$%&'*+\\/=?^_`{|}~-]+(?:\\.[a-z0-9!#$%&'*+\\/=?^_`{|}~-]+)*@(?"
+    ":[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$">>).
 
 %% ====================================================================
 %% API functions
 %% ====================================================================
 
 %% init_n2o_ets_and_envs/4
+%% ====================================================================
 %% @doc Initializes all environment settings required by n2o and creates
 %% required ets tables. Should be called before starting a cowboy listener for
 %% n2o GUI.
 %% @end
--spec init_n2o_ets_and_envs(GuiPort :: integer(), RoutingModule :: atom(), SessionLogicModule :: atom(), BridgeModule :: atom()) -> ok.
+-spec init_n2o_ets_and_envs(GuiPort :: integer(), RoutingModule :: module(),
+    SessionLogicModule :: module(), BridgeModule :: module()) -> ok.
 %% ====================================================================
 init_n2o_ets_and_envs(GuiPort, RoutingModule, SessionLogicModule, BridgeModule) ->
     % Transition port - the same as gui port
@@ -73,13 +75,13 @@ init_n2o_ets_and_envs(GuiPort, RoutingModule, SessionLogicModule, BridgeModule) 
     ets:insert(globals, {onlineusers, 0}),
     ok.
 
-
 %% cleanup_n2o/1
+%% ====================================================================
 %% @doc Cleans up n2o setup, such as ets tables.
 %% Should be called after stopping a cowboy listener for
 %% n2o GUI.
 %% @end
--spec cleanup_n2o(SessionLogicModule :: atom()) -> ok.
+-spec cleanup_n2o(SessionLogicModule :: module()) -> ok.
 %% ====================================================================
 cleanup_n2o(SessionLogicModule) ->
     SessionLogicModule:cleanup(),
@@ -88,30 +90,27 @@ cleanup_n2o(SessionLogicModule) ->
     ets:delete(caching),
     ok.
 
-
 %% cowboy_ensure_header/3
 %% ====================================================================
 %% @doc Sets a response header, but prevents duplicate entries. Header must
 %% be normalized to lowercase (e. g. content-type and not Content-Type)
 %% @end
--spec cowboy_ensure_header(Name :: binary(), Value :: binary(), Req :: req()) -> req().
+-spec cowboy_ensure_header(Name :: binary(), Value :: binary(), Req :: cowboy_req:req()) -> cowboy_req:req().
 %% ====================================================================
 cowboy_ensure_header(Name, Value, Req) when is_binary(Name) and is_binary(Value) ->
     Req2 = cowboy_req:delete_resp_header(Name, Req),
     cowboy_req:set_resp_header(Name, Value, Req2).
-
 
 %% onrequest_adjust_headers/1
 %% ====================================================================
 %% @doc Callback hook for cowboy to modify response headers for HTTPS GUI.
 %% Those headers improve security of https connection.
 %% @end
--spec onrequest_adjust_headers(Req :: req()) -> req().
+-spec onrequest_adjust_headers(Req :: cowboy_req:req()) -> cowboy_req:req().
 %% ====================================================================
 onrequest_adjust_headers(Req) ->
     Req2 = cowboy_req:set_resp_header(<<"Strict-Transport-Security">>, <<"max-age=31536000; includeSubDomains">>, Req),
     cowboy_req:set_resp_header(<<"X-Frame-Options">>, <<"SAMEORIGIN">>, Req2).
-
 
 %% cookie_policy_popup_body/1
 %% ====================================================================
@@ -144,13 +143,12 @@ cookie_policy_popup_body(PrivacyPolicyURL) ->
             ]
     end.
 
-
 %% is_cookie_policy_accepted/1
 %% ====================================================================
 %% @doc Returns true if the client browser has sent a proper cookie
 %% implying that the privacy policy has been accepted.
 %% @end
--spec is_cookie_policy_accepted(Req :: req()) -> term().
+-spec is_cookie_policy_accepted(Req :: cowboy_req:req()) -> term().
 %% ====================================================================
 is_cookie_policy_accepted(Req) ->
     case gui_ctx:cookie(<<?cookie_policy_cookie_name>>, Req) of
@@ -158,24 +156,21 @@ is_cookie_policy_accepted(Req) ->
         _ -> false
     end.
 
-
 %% https_get/2
 %% ====================================================================
 %% @doc Performs a HTTPS GET. Host is verified according to locally installed CA certs
 %% (path is provided in environment variable). Only if connection is secure,
 %% the request is performed.
 %% @end
--spec https_get(URLBin :: binary() | string(), ReqHeadersBin :: [{binary() | string(), binary() | string()}]) ->
+-spec https_get(URLBin :: binary(), ReqHeadersBin :: [{binary(), binary()}]) ->
     {ok, binary()} | {error, unknown_cert} | {error, term()}.
 %% ====================================================================
 https_get(URLBin, ReqHeadersBin) ->
-    URL = gui_str:to_list(URLBin),
-    ReqHeaders = lists:map(
-        fun({Key, Value}) ->
-            {gui_str:to_list(Key), gui_str:to_list(Value)}
-        end, ReqHeadersBin),
-    perform_request(URL, ReqHeaders, get, "", ?max_redirects).
-
+    URL = binary_to_list(URLBin),
+    ReqHeaders = lists:map(fun({Key, Value}) ->
+        {binary_to_list(Key), binary_to_list(Value)}
+    end, ReqHeadersBin),
+    perform_request(URL, ReqHeaders, get, <<>>, ?max_redirects).
 
 %% https_post/3
 %% ====================================================================
@@ -183,28 +178,25 @@ https_get(URLBin, ReqHeadersBin) ->
 %% (path is provided in environment variable). Only if connection is secure,
 %% the request is performed.
 %% @end
--spec https_post(URLBin :: binary() | string(), ReqHeadersBin :: [{binary() | string(), binary() | string()}], Body :: binary() | string()) ->
-    {ok, binary()} | {error, unknown_cert} | {error, term()}.
+-spec https_post(URLBin :: binary(), ReqHeadersBin :: [{binary(), binary()}],
+    Body :: binary()) -> {ok, binary()} | {error, unknown_cert} | {error, term()}.
 %% ====================================================================
 https_post(URLBin, ReqHeadersBin, Body) ->
-    URL = gui_str:to_list(URLBin),
-    ReqHeaders = lists:map(
-        fun({Key, Value}) ->
-            {gui_str:to_list(Key), gui_str:to_list(Value)}
-        end, ReqHeadersBin),
+    URL = binary_to_list(URLBin),
+    ReqHeaders = lists:map(fun({Key, Value}) ->
+        {binary_to_list(Key), binary_to_list(Value)}
+    end, ReqHeadersBin),
     %% 0 max redirects, according to RFC post requests should not be redirected
-    perform_request(URL, ReqHeaders, post, gui_str:to_list(Body), 0).
-
+    perform_request(URL, ReqHeaders, post, Body, 0).
 
 %% toggle_server_cert_verification/1
 %% ====================================================================
 %% @doc This function allows toggling server cert verification in runtime.
 %% @end
--spec toggle_server_cert_verification(boolean()) -> boolean().
+-spec toggle_server_cert_verification(boolean()) -> ok.
 %% ====================================================================
 toggle_server_cert_verification(Flag) ->
     application:set_env(ctool, verify_server_cert, Flag).
-
 
 %% proplist_to_params/1
 %% ====================================================================
@@ -213,7 +205,8 @@ toggle_server_cert_verification(Flag) ->
 %% @end
 %% ====================================================================
 %% @end
--spec proplist_to_url_params([{binary(), binary()} | {binary(), binary(), no_encode}]) -> binary().
+-spec proplist_to_url_params([{binary(), binary()} | {binary(), binary(), no_encode}]) ->
+    binary().
 %% ====================================================================
 proplist_to_url_params(List) ->
     lists:foldl(
@@ -231,7 +224,6 @@ proplist_to_url_params(List) ->
             <<Suffix/binary, KeyEncoded/binary, "=", ValueEncoded/binary>>
         end, <<"">>, List).
 
-
 %% fully_qualified_url/1
 %% ====================================================================
 %% @doc Converts the given URL to a fully quialified url, without leading www.
@@ -248,7 +240,6 @@ fully_qualified_url(Binary) ->
         _ -> <<"https://", Binary/binary>>
     end.
 
-
 %% validate_email/1
 %% ====================================================================
 %% @doc Returns true if the given string is a valid email address according to RFC.
@@ -263,7 +254,6 @@ validate_email(Email) ->
         _ -> false
     end.
 
-
 %% normalize_email/1
 %% ====================================================================
 %% @doc Performs gmail email normalization by removing all the dots in the local part.
@@ -276,13 +266,13 @@ normalize_email(Email) ->
     case binary:split(Email, [<<"@">>], [global]) of
         [Account, Domain] ->
             case Domain of
-                <<"gmail.com">> -> <<(binary:replace(Account, <<".">>, <<"">>, [global]))/binary, "@", Domain/binary>>;
+                <<"gmail.com">> ->
+                    <<(binary:replace(Account, <<".">>, <<"">>, [global]))/binary, "@", Domain/binary>>;
                 _ -> Email
             end;
         _ ->
             Email
     end.
-
 
 %% ====================================================================
 %% Internal functions
@@ -292,7 +282,8 @@ normalize_email(Email) ->
 %% ====================================================================
 %% @doc Performs a HTTPS request with given args.
 %% @end
--spec perform_request(URL :: string(), ReqHeaders :: [{string(), string()}], Method :: atom(), Body :: binary(), Redirects :: integer()) ->
+-spec perform_request(URL :: string(), ReqHeaders :: [{string(), string()}],
+    Method :: atom(), Body :: binary(), Redirects :: integer()) ->
     {ok, binary()} | {error, unknown_cert} | {error, term()}.
 %% ====================================================================
 perform_request(URL, ReqHeaders, Method, Body, Redirects) ->
@@ -312,7 +303,8 @@ perform_request(URL, ReqHeaders, Method, Body, Redirects) ->
                 case get_redirect_url(URL, RespHeaders) of
                     undefined -> ResponseBody;
                     URL -> ResponseBody;
-                    NewURL -> perform_request(NewURL, ReqHeaders, Method, Body, Redirects - 1)
+                    NewURL ->
+                        perform_request(NewURL, ReqHeaders, Method, Body, Redirects - 1)
                 end;
 
             {ok, "200", _, ResponseBody} ->
@@ -334,13 +326,12 @@ perform_request(URL, ReqHeaders, Method, Body, Redirects) ->
             {error, M}
     end.
 
-
 %% get_redirect_url/1
 %% ====================================================================
 %% @doc
 %% Retrieves redirect URL from a HTTP response.
 %% @end
--spec get_redirect_url(OldURL :: string(), Headers :: list()) -> string().
+-spec get_redirect_url(OldURL :: string(), Headers :: list()) -> string() | undefined.
 %% ====================================================================
 get_redirect_url(OldURL, Headers) ->
     Location = proplists:get_value("location", Headers, proplists:get_value("Location", Headers)),
@@ -357,7 +348,6 @@ get_redirect_url(OldURL, Headers) ->
             atom_to_list(Protocol) ++ "://" ++ Host ++ PortFrag ++ Location;
         _ -> undefined
     end.
-
 
 %% ssl_opts/1
 %% ====================================================================

@@ -40,7 +40,6 @@
 % Bootbox functions
 -export([confirm_popup/2, info_popup/3, info_popup/4, dialog_popup/3, dialog_popup/4]).
 
-
 %% ====================================================================
 %% API functions
 %% ====================================================================
@@ -58,7 +57,6 @@
 wire(Action) ->
     wire(Action, false).
 
-
 %% wire/2
 %% ====================================================================
 %% @doc Sends a javascript code snippet or action record (which will be
@@ -69,7 +67,7 @@ wire(Action) ->
 %% Eager flag can be used. It is ensured that all eager actions
 %% will be evaluated before normal actions.
 %% @end
--spec wire(Script :: string() | binary(), Eager :: boolean()) -> ok.
+-spec wire(Script :: string() | binary() | #api{}, Eager :: boolean()) -> ok.
 %% ====================================================================
 wire(Script, Eager) when is_binary(Script) ->
     wire(gui_str:to_list(Script), Eager);
@@ -82,7 +80,6 @@ wire(Action, Eager) ->
         false ->
             put(actions, Actions ++ [#wire{actions = Action}])
     end.
-
 
 %% wire/4
 %% ====================================================================
@@ -101,14 +98,13 @@ wire(TargetID, Method, Args, Eager) ->
     Script = <<"$('#", TargetID/binary, "').", Method/binary, "(", RenderedArgs/binary, ");">>,
     wire(Script, Eager).
 
-
 %% postback_action/2
 %% ====================================================================
 %% @doc Returns action records that can be assigned to actions field of an element.
 %% It will cause form submission with given postback, and values of field(s)
 %% given in Sources arg will be available by gui_ctx:form_param function.
 %% @end
--spec postback_action(TriggerID :: binary(), Postback :: term()) -> ok.
+-spec postback_action(TriggerID :: binary(), Postback :: term()) -> #event{}.
 %% ====================================================================
 postback_action(TriggerID, Postback) ->
     #event{type = "click", postback = Postback, target = gui_str:to_list(TriggerID)}.
@@ -119,12 +115,14 @@ postback_action(TriggerID, Postback) ->
 %% It will cause form submission with given postback, and values of field(s)
 %% given in Sources arg will be available by gui_ctx:form_param function.
 %% @end
--spec form_submit_action(TriggerID :: binary(), Postback :: term(), Sources :: binary() | [binary()]) -> ok.
+-spec form_submit_action(TriggerID :: binary(), Postback :: term(),
+    Sources :: binary() | [binary()]) -> #event{}.
 %% ====================================================================
 form_submit_action(TriggerID, Postback, SourcesArg) ->
-    Sources = lists:map(fun(Source) -> gui_str:to_list(Source) end, lists:flatten([SourcesArg])),
+    Sources = lists:map(fun(Source) ->
+        gui_str:to_list(Source)
+    end, lists:flatten([SourcesArg])),
     #event{type = "click", postback = Postback, target = gui_str:to_list(TriggerID), source = Sources}.
-
 
 %% redirect/1
 %% ====================================================================
@@ -133,8 +131,8 @@ form_submit_action(TriggerID, Postback, SourcesArg) ->
 -spec redirect(URL :: binary()) -> ok.
 %% ====================================================================
 redirect(URL) ->
-    wf:redirect(URL).
-
+    wf:redirect(URL),
+    ok.
 
 %% redirect_to_login/0
 %% ====================================================================
@@ -142,8 +140,8 @@ redirect(URL) ->
 -spec redirect_to_login() -> ok.
 %% ====================================================================
 redirect_to_login() ->
-    redirect_to_login(<<"/login">>).
-
+    redirect_to_login(<<"/login">>),
+    ok.
 
 %% redirect_to_login/1
 %% ====================================================================
@@ -152,8 +150,8 @@ redirect_to_login() ->
 -spec redirect_to_login(LoginURL :: binary()) -> ok.
 %% ====================================================================
 redirect_to_login(LoginURL) ->
-    wf:redirect(LoginURL).
-
+    wf:redirect(LoginURL),
+    ok.
 
 %% redirect_from_login/0
 %% ====================================================================
@@ -162,8 +160,8 @@ redirect_to_login(LoginURL) ->
 -spec redirect_from_login() -> ok.
 %% ====================================================================
 redirect_from_login() ->
-    wf:redirect(<<"/">>).
-
+    wf:redirect(<<"/">>),
+    ok.
 
 %% register_escape_event/1
 %% ====================================================================
@@ -177,20 +175,18 @@ register_escape_event(Tag) ->
     wire(#api{name = Tag, tag = Tag}, false),
     wire(<<"$(document).bind('keydown', function (e){if (e.which == 27) ", (list_to_binary(Tag))/binary, "();});">>, false).
 
-
 %% bind_enter_to_submit_button/2
 %% ====================================================================
 %% @doc Makes any enter keypresses on InputID (whenever it is focused)
 %% perform a click on a selected ButtonToClickID. This way, it allows
 %% easy form submission with enter key.
 %% @end
--spec bind_enter_to_submit_button(InputID :: binary(), ButtonToClickID :: binary()) -> string().
+-spec bind_enter_to_submit_button(InputID :: binary(), ButtonToClickID :: binary()) -> ok.
 %% ====================================================================
 bind_enter_to_submit_button(InputID, ButtonToClickID) ->
     Script = <<"$('#", InputID/binary, "').bind('keydown', function (e){",
     "if (e.which == 13) { e.preventDefault(); document.getElementById('", ButtonToClickID/binary, "').click(); } });">>,
     wire(Script, false).
-
 
 %% bind_enter_to_change_focus/2
 %% ====================================================================
@@ -198,49 +194,45 @@ bind_enter_to_submit_button(InputID, ButtonToClickID) ->
 %% change focus to selected target. This way, it allows
 %% easy switching between text elements with enter key.
 %% @end
--spec bind_enter_to_change_focus(InputID :: binary(), TargetID :: binary()) -> string().
+-spec bind_enter_to_change_focus(InputID :: binary(), TargetID :: binary()) -> ok.
 %% ====================================================================
 bind_enter_to_change_focus(InputID, TargetID) ->
     Script = <<"$('#", InputID/binary, "').bind('keydown', function (e){",
     "if (e.which == 13) { e.preventDefault(); document.getElementById('", TargetID/binary, "').focus(); } });">>,
     wire(Script, false).
 
-
 %% bind_key_to_click/2
 %% ====================================================================
 %% @doc Makes any keypresses of given key to click on selected target.
 %% @end
--spec bind_key_to_click(KeyCode :: binary(), TargetID :: binary()) -> string().
+-spec bind_key_to_click(KeyCode :: binary(), TargetID :: binary()) -> ok.
 %% ====================================================================
 bind_key_to_click(KeyCode, TargetID) ->
     Script = <<"$(document).bind('keydown', function (e){",
     "if (e.which == ", KeyCode/binary, ") { e.preventDefault(); document.getElementById('", TargetID/binary, "').click(); } });">>,
     wire(Script, false).
 
-
 %% bind_key_to_click_on_class/2
 %% ====================================================================
 %% @doc Makes any keypresses of given key to click on selected class.
 %% @end
--spec bind_key_to_click_on_class(KeyCode :: binary(), ClassID :: binary()) -> string().
+-spec bind_key_to_click_on_class(KeyCode :: binary(), ClassID :: binary()) -> ok.
 %% ====================================================================
 bind_key_to_click_on_class(KeyCode, ClassID) ->
     Script = <<"$(document).bind('keydown', function (e){",
     "if (e.which == ", KeyCode/binary, ") { e.preventDefault(); $('.", ClassID/binary, "').click(); } });">>,
-    gui_jq:wire(Script, false).
-
+    wire(Script, false).
 
 %% bind_element_click/2
 %% ====================================================================
 %% @doc Binds click actions on a selected InputID to evaluation of given
 %% javascript code. The code must be wrapped in function(event){}.
 %% @end
--spec bind_element_click(InputID :: binary(), Javascript :: binary()) -> string().
+-spec bind_element_click(InputID :: binary(), Javascript :: binary()) -> ok.
 %% ====================================================================
 bind_element_click(InputID, Javascript) ->
     Script = <<"$('#", InputID/binary, "').bind('click', ", Javascript/binary, ");">>,
     wire(Script, false).
-
 
 %% update/2
 %% ====================================================================
@@ -252,7 +244,6 @@ update(TargetID, Elements) ->
     RenderedElements = gui_str:js_escape(wf:render(Elements)),
     wire(TargetID, <<"html">>, RenderedElements, true).
 
-
 %% replace/2
 %% ====================================================================
 %% @doc Replaces a DOM element with another.
@@ -262,7 +253,6 @@ update(TargetID, Elements) ->
 replace(TargetID, Elements) ->
     RenderedElements = gui_str:js_escape(wf:render(Elements)),
     wire(TargetID, <<"replaceWith">>, RenderedElements, true).
-
 
 %% insert_top/2
 %% ====================================================================
@@ -274,7 +264,6 @@ insert_top(TargetID, Elements) ->
     RenderedElements = gui_str:js_escape(wf:render(Elements)),
     wire(TargetID, <<"prepend">>, RenderedElements, true).
 
-
 %% insert_bottom/2
 %% ====================================================================
 %% @doc Appends an element to a DOM element.
@@ -284,7 +273,6 @@ insert_top(TargetID, Elements) ->
 insert_bottom(TargetID, Elements) ->
     RenderedElements = gui_str:js_escape(wf:render(Elements)),
     wire(TargetID, <<"append">>, RenderedElements, true).
-
 
 %% insert_before/2
 %% ====================================================================
@@ -296,7 +284,6 @@ insert_before(TargetID, Elements) ->
     RenderedElements = gui_str:js_escape(wf:render(Elements)),
     wire(TargetID, <<"before">>, RenderedElements, true).
 
-
 %% insert_after/2
 %% ====================================================================
 %% @doc Inserts an element after a DOM element.
@@ -307,7 +294,6 @@ insert_after(TargetID, Elements) ->
     RenderedElements = gui_str:js_escape(wf:render(Elements)),
     wire(TargetID, <<"after">>, RenderedElements, true).
 
-
 %% remove/1
 %% ====================================================================
 %% @doc Removes an element from DOM.
@@ -316,7 +302,6 @@ insert_after(TargetID, Elements) ->
 %% ====================================================================
 remove(TargetID) ->
     wire(TargetID, <<"remove">>, <<"">>, true).
-
 
 %% show/1
 %% ====================================================================
@@ -327,7 +312,6 @@ remove(TargetID) ->
 show(TargetID) ->
     wire(TargetID, <<"show">>, <<"">>, false).
 
-
 %% hide/1
 %% ====================================================================
 %% @doc Hides an HTML element.
@@ -336,7 +320,6 @@ show(TargetID) ->
 %% ====================================================================
 hide(TargetID) ->
     wire(TargetID, <<"hide">>, <<"">>, false).
-
 
 %% add_class/2
 %% ====================================================================
@@ -347,7 +330,6 @@ hide(TargetID) ->
 add_class(TargetID, Class) ->
     wire(TargetID, <<"addClass">>, Class, false).
 
-
 %% remove_class/2
 %% ====================================================================
 %% @doc Removes a class from an HTML element.
@@ -356,7 +338,6 @@ add_class(TargetID, Class) ->
 %% ====================================================================
 remove_class(TargetID, Class) ->
     wire(TargetID, <<"removeClass">>, Class, false).
-
 
 %% slide_up/2
 %% ====================================================================
@@ -367,7 +348,6 @@ remove_class(TargetID, Class) ->
 slide_up(TargetID, Speed) ->
     wire(TargetID, <<"slideUp">>, Speed, false).
 
-
 %% slide_down/2
 %% ====================================================================
 %% @doc Animates an HTML element, hiding it in sliding motion.
@@ -376,7 +356,6 @@ slide_up(TargetID, Speed) ->
 %% ====================================================================
 slide_down(TargetID, Speed) ->
     wire(TargetID, <<"slideDown">>, Speed, false).
-
 
 %% fade_in/2
 %% ====================================================================
@@ -387,7 +366,6 @@ slide_down(TargetID, Speed) ->
 fade_in(TargetID, Speed) ->
     wire(TargetID, <<"fadeIn">>, Speed, false).
 
-
 %% fade_out/2
 %% ====================================================================
 %% @doc Animates an HTML element, making it disappear over time.
@@ -396,7 +374,6 @@ fade_in(TargetID, Speed) ->
 %% ====================================================================
 fade_out(TargetID, Speed) ->
     wire(TargetID, <<"fadeOut">>, Speed, false).
-
 
 %% delay/2
 %% ====================================================================
@@ -407,7 +384,6 @@ fade_out(TargetID, Speed) ->
 delay(TargetID, Time) ->
     wire(TargetID, <<"delay">>, Time, false).
 
-
 %% focus/1
 %% ====================================================================
 %% @doc Focuses an HTML element.
@@ -416,7 +392,6 @@ delay(TargetID, Time) ->
 %% ====================================================================
 focus(TargetID) ->
     wire(TargetID, <<"focus">>, <<"">>, false).
-
 
 %% set_text/2
 %% ====================================================================
@@ -428,7 +403,6 @@ focus(TargetID) ->
 set_text(TargetID, Value) ->
     wire(TargetID, <<"text">>, Value, false).
 
-
 %% select_text/1
 %% ====================================================================
 %% @doc Focuses an HTML element (e. g. a textbox) and selects its text.
@@ -439,7 +413,6 @@ select_text(TargetID) ->
     Script = <<"$('#", TargetID/binary, "').focus().select();">>,
     wire(Script).
 
-
 %% set_value/2
 %% ====================================================================
 %% @doc Sets value of an HTML element - e. g. textbox.
@@ -448,7 +421,6 @@ select_text(TargetID) ->
 %% ====================================================================
 set_value(TargetID, Value) ->
     wire(TargetID, <<"val">>, Value, false).
-
 
 %% set_width/2
 %% ====================================================================
@@ -459,7 +431,6 @@ set_value(TargetID, Value) ->
 set_width(TargetID, Value) ->
     wire(TargetID, <<"width">>, Value, false).
 
-
 %% click/2
 %% ====================================================================
 %% @doc Performs click action on given element.
@@ -469,28 +440,25 @@ set_width(TargetID, Value) ->
 click(TargetID) ->
     wire(TargetID, <<"click">>, <<"">>, false).
 
-
 %% prop/3
 %% ====================================================================
 %% @doc Set one or more properties for the set of matched elements.
 %% @end
--spec prop(TargetID :: binary(), PropertyName :: binary(), Value :: binary()) -> string().
+-spec prop(TargetID :: binary(), PropertyName :: binary(), Value :: binary()) -> ok.
 %% ====================================================================
 prop(TargetID, PropertyName, Value) ->
     Script = <<"$('#", TargetID/binary, "').prop('", PropertyName/binary, "','", Value/binary, "');">>,
     wire(Script, false).
 
-
 %% css/3
 %% ====================================================================
 %% @doc Set one or more CSS properties for the set of matched elements.
 %% @end
--spec css(TargetID :: binary(), PropertyName :: binary(), Value :: binary()) -> string().
+-spec css(TargetID :: binary(), PropertyName :: binary(), Value :: binary()) -> ok.
 %% ====================================================================
 css(TargetID, PropertyName, Value) ->
     Script = <<"$('#", TargetID/binary, "').css('", PropertyName/binary, "','", Value/binary, "');">>,
     wire(Script, false).
-
 
 %% confirm_popup/2
 %% ====================================================================
@@ -498,26 +466,24 @@ css(TargetID, PropertyName, Value) ->
 %% In case of message confirmation it executes supplied script.
 %% NOTE! It is required to add bootbox.js script to web page.
 %% @end
--spec confirm_popup(Message :: binary(), Script :: binary()) -> binary().
+-spec confirm_popup(Message :: binary(), Script :: binary()) -> ok.
 %% ====================================================================
 confirm_popup(Message, Script) ->
-    gui_jq:wire(<<"bootbox.confirm(
+    wire(<<"bootbox.confirm(
         '", Message/binary, "',
         function(result) {
             if(result) {", Script/binary, "}
         }
     );">>).
 
-
 %% info_popup/3
 %% ====================================================================
 %% @equiv info_popup(Title, Message, Script, <<"btn-primary">>)
 %% @end
--spec info_popup(Title :: binary(), Message :: binary(), Script :: binary()) -> binary().
+-spec info_popup(Title :: binary(), Message :: binary(), Script :: binary()) -> ok.
 %% ====================================================================
 info_popup(Title, Message, Script) ->
     info_popup(Title, Message, Script, <<"btn-primary">>).
-
 
 %% info_popup/4
 %% ====================================================================
@@ -526,10 +492,11 @@ info_popup(Title, Message, Script) ->
 %% supplied script.
 %% NOTE! It is required to add bootbox.js script to web page.
 %% @end
--spec info_popup(Title :: binary(), Message :: binary(), Script :: binary(), ConfirmButtonClass :: binary()) -> binary().
+-spec info_popup(Title :: binary(), Message :: binary(), Script :: binary(),
+    ConfirmButtonClass :: binary()) -> ok.
 %% ====================================================================
 info_popup(Title, Message, Script, ConfirmButtonClass) ->
-    gui_jq:wire(<<"var box = bootbox.dialog({
+    wire(<<"var box = bootbox.dialog({
         title: '", Title/binary, "',
         message: '", Message/binary, "',
         buttons: {
@@ -540,16 +507,14 @@ info_popup(Title, Message, Script, ConfirmButtonClass) ->
         }
     });">>).
 
-
 %% dialog_popup/3
 %% ====================================================================
 %% @equiv dialog_popup(Title, Message, Script, <<"btn-primary">>)
 %% @end
--spec dialog_popup(Title :: binary(), Message :: binary(), Script :: binary()) -> binary().
+-spec dialog_popup(Title :: binary(), Message :: binary(), Script :: binary()) -> ok.
 %% ====================================================================
 dialog_popup(Title, Message, Script) ->
     dialog_popup(Title, Message, Script, <<"btn-primary">>).
-
 
 %% dialog_popup/4
 %% ====================================================================
@@ -558,10 +523,11 @@ dialog_popup(Title, Message, Script) ->
 %% it executes supplied script. Allows to set confirm button class.
 %% NOTE! It is required to add bootbox.js script to web page.
 %% @end
--spec dialog_popup(Title :: binary(), Message :: binary(), Script :: binary(), ConfirmButtonClass :: binary()) -> binary().
+-spec dialog_popup(Title :: binary(), Message :: binary(), Script :: binary(),
+    ConfirmButtonClass :: binary()) -> ok.
 %% ====================================================================
 dialog_popup(Title, Message, Script, ConfirmButtonClass) ->
-    gui_jq:wire(<<"var box = bootbox.dialog({
+    wire(<<"var box = bootbox.dialog({
         title: '", Title/binary, "',
         message: '", Message/binary, "',
         buttons: {

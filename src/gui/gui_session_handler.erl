@@ -229,7 +229,7 @@ random_id() ->
 %% @doc Calls back to session logic module to lookup a session. Will not make
 %% senseless calls, such as those when session cookie yields no session.
 %% @end
--spec lookup_session(SessionID :: binary()) -> binary().
+-spec lookup_session(SessionID :: binary()) -> [tuple()] | undefined.
 %% ====================================================================
 lookup_session(SessionID) ->
     case SessionID of

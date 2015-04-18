@@ -36,7 +36,7 @@ reflect() ->
 %% ====================================================================
 %% @doc Produces HTML in binary.
 %% @end
--spec render_element(Record :: #flatui_label{}) -> binary().
+-spec render_element(Record :: #flatui_label{}) -> list().
 %% ====================================================================
 render_element(Record) ->
     wf_tags:emit_tag(<<"label">>, wf:render(Record#flatui_label.body), [

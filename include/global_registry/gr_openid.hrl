@@ -13,8 +13,8 @@
 -define(GR_OPENID_HRL, 1).
 
 %% @doc token_details record contains following fields:
-%% * access_id   - unique access ID authorized by client
-%% * client_name - client name associated with token
+%% * access_id   - unique access ID authorized by gr_endpoint:client()
+%% * gr_endpoint:client()_name - gr_endpoint:client() name associated with token
 %% @end
 -record(token_details, {
     access_id :: binary(),

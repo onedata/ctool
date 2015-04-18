@@ -28,7 +28,6 @@ should_log(LevelAsInt) ->
         _ -> false
     end.
 
-
 %% dispatch_log/5
 %% ====================================================================
 %% @doc Logs the log locally (it will be intercepted by central_logging_backend and sent to central sink)
@@ -40,8 +39,8 @@ dispatch_log(LoglevelAsInt, Metadata, Format, Args, IncludeStacktrace) ->
     Severity = loglevel_int_to_atom(LoglevelAsInt),
     % Every project using the logging mechanism must contain a module
     % called exactly 'logger_plugin' that implements logic_plugin_behaviour.
-    lager:log(Severity, Metadata ++ logger_plugin:gather_metadata(), compute_message(Format, Args, IncludeStacktrace)).
-
+    lager:log(Severity, Metadata ++ apply(logger_plugin, gather_metadata, []),
+        compute_message(Format, Args, IncludeStacktrace)).
 
 %% set_loglevel/1
 %% ====================================================================
@@ -67,7 +66,6 @@ set_loglevel(Loglevel) when is_integer(Loglevel) andalso (Loglevel >= 0) andalso
 
 set_loglevel(_) ->
     {error, badarg}.
-
 
 %% set_console_loglevel/1
 %% ====================================================================
@@ -99,7 +97,6 @@ set_console_loglevel(Loglevel) when is_atom(Loglevel) ->
 set_console_loglevel(_) ->
     {error, badarg}.
 
-
 %% set_include_stacktrace/1
 %% ====================================================================
 %% @doc Changes include_stacktrace env to true or false
@@ -113,7 +110,6 @@ set_include_stacktrace(Flag) when is_boolean(Flag) ->
 set_include_stacktrace(_) ->
     {error, badarg}.
 
-
 %% get_current_loglevel/0
 %% ====================================================================
 %% @doc Returns current loglevel as set in application's env
@@ -125,7 +121,6 @@ get_current_loglevel() ->
     {ok, Int} = application:get_env(ctool, current_loglevel),
     Int.
 
-
 %% get_default_loglevel/0
 %% ====================================================================
 %% @doc Returns default loglevel as set in application's env
@@ -136,7 +131,6 @@ get_current_loglevel() ->
 get_default_loglevel() ->
     {ok, Int} = application:get_env(ctool, default_loglevel),
     Int.
-
 
 %% get_console_loglevel/0
 %% ====================================================================
@@ -151,7 +145,6 @@ get_console_loglevel() ->
     % which is the lowest loglevel
     loglevel_atom_to_int(lists:nth(1, lager_util:mask_to_levels(Mask))).
 
-
 %% get_include_stacktrace/0
 %% ====================================================================
 %% @doc Returns get_include_stacktrace env value
@@ -162,7 +155,6 @@ get_console_loglevel() ->
 get_include_stacktrace() ->
     {ok, Boolean} = application:get_env(ctool, include_stacktrace),
     Boolean.
-
 
 %% loglevel_int_to_atom/1
 %% ====================================================================
@@ -179,7 +171,6 @@ loglevel_int_to_atom(5) -> critical;
 loglevel_int_to_atom(6) -> alert;
 loglevel_int_to_atom(7) -> emergency.
 
-
 %% loglevel_atom_to_int/1
 %% ====================================================================
 %% @doc Returns loglevel number associated with loglevel name
@@ -195,7 +186,6 @@ loglevel_atom_to_int(critical) -> 5;
 loglevel_atom_to_int(alert) -> 6;
 loglevel_atom_to_int(emergency) -> 7.
 
-
 %% parse_process_info/1
 %% ====================================================================
 %% @doc Changes standard 'process_info' tuple into metadata proplist
@@ -204,7 +194,6 @@ loglevel_atom_to_int(emergency) -> 7.
 %% ====================================================================
 parse_process_info({_, {Module, Function, Arity}}) ->
     [{module, Module}, {function, Function}, {arity, Arity}].
-
 
 %% ===================================================
 %% Internal functions

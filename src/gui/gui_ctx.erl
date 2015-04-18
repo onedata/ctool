@@ -199,7 +199,7 @@ cookie(Name) ->
 %% @doc Returns cookie value for given cookie name. Undefined if no such cookie was sent.
 %% NOTE! This should be used instead of cowboy_req:cookie as it contains a bug.
 %% @end
--spec cookie(Name :: binary(), Req :: req()) -> binary() | undefined.
+-spec cookie(Name :: binary(), Req :: cowboy_req:req()) -> binary() | undefined.
 %% ====================================================================
 cookie(Name, Req) ->
     try

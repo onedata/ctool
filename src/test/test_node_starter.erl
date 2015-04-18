@@ -44,7 +44,7 @@ prepare_test_environment(Config, DescriptionFile, Module) ->
         LogsDir = filename:join(PrivDir, atom_to_list(Module) ++ "_logs"),
         os:cmd("mkdir -p " ++ LogsDir),
 
-        StartLog = utils:cmd([EnvUpScript,
+        StartLog = list_to_binary(utils:cmd([EnvUpScript,
             %% Function is used durgin OP or GR tests so starts OP or GR - not both
             "--bin-provider", ProjectRoot,
             "--bin-gr", ProjectRoot,
@@ -52,7 +52,7 @@ prepare_test_environment(Config, DescriptionFile, Module) ->
             "--bin-appmock", AppmockRoot,
 %%             "--bin-ccm", CcmRoot, %todo enable after merge of VFS-1053
             "--logdir", LogsDir,
-            DescriptionFile, "2> prepare_test_environment_error.log"]),
+            DescriptionFile, "2> prepare_test_environment_error.log"])),
 
         EnvDesc = json_parser:parse_json_binary_to_atom_proplist(StartLog),
 
@@ -140,7 +140,6 @@ ping_nodes(Nodes, Tries) ->
 -spec load_modules(Nodes :: [node()], Modules :: [module()]) -> ok.
 load_modules(_, []) ->
     ok;
-
 load_modules(Nodes, [Module | Modules]) ->
     {Module, Binary, Filename} = code:get_object_code(Module),
     {_, _} = rpc:multicall(Nodes, code, delete, [Module]),
