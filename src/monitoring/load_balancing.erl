@@ -110,7 +110,7 @@ advices_for_dnses(NodeStates) ->
 %% based on node states of all nodes. The list must not be empty.
 %% @end
 %%--------------------------------------------------------------------
--spec advices_for_dispatchers(NodeStates :: [#node_state{}], LBState :: #load_balancing_state{}) ->
+-spec advices_for_dispatchers(NodeStates :: [#node_state{}], LBState :: #load_balancing_state{} | undefined) ->
     [{node(), #dispatcher_lb_advice{}}].
 advices_for_dispatchers(NodeStates, LBState) ->
     ExtraLoads = case LBState of
