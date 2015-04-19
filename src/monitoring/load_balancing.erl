@@ -120,6 +120,9 @@ advices_for_dispatchers(NodeStates, LBState) ->
                          EEL
                  end,
     Nodes = [NodeState#node_state.node || NodeState <- NodeStates],
+    % Calculate loads on nodes, take into account the expected extra load from delegation
+    % i. e. assume the load is lower when deciding where we can delegate (this extra
+    % load should dissappear quickly as the delegated requests are processed).
     LoadsForDisp = lists:map(
         fun(NodeState) ->
             L = load_for_dispatcher(NodeState),
@@ -183,13 +186,13 @@ advices_for_dispatchers(NodeStates, LBState) ->
                     ExtraLoadsAcc;
                 true ->
                     lists:foldl(
-                        fun({NodeTo, _}, Acc) ->
+                        fun({NodeTo, Freq}, Acc) ->
                             case NodeFrom of
                                 NodeTo ->
                                     Acc;
                                 _ ->
                                     Current = proplists:get_value(NodeTo, Acc, 0.0),
-                                    [{NodeTo, Current} | proplists:delete(NodeTo, Acc)]
+                                    [{NodeTo, Current + Freq} | proplists:delete(NodeTo, Acc)]
                             end
                         end, ExtraLoadsAcc, NodesAndFreq)
             end
