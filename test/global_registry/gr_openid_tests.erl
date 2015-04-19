@@ -1,14 +1,14 @@
-%% ===================================================================
-%% @author Krzysztof Trzepla
-%% @copyright (C): 2014 ACK CYFRONET AGH
-%% This software is released under the MIT license
-%% cited in 'LICENSE.txt'.
-%% @end
-%% ===================================================================
-%% @doc This module tests the functionality of gr_openid module.
-%% It contains unit tests that base on eunit.
-%% @end
-%% ===================================================================
+%%%-------------------------------------------------------------------
+%%% @author Krzysztof Trzepla
+%%% @copyright (C) 2014 ACK CYFRONET AGH
+%%% This software is released under the MIT license
+%%% cited in 'LICENSE.txt'.
+%%% @end
+%%%-------------------------------------------------------------------
+%%% @doc This module tests the functionality of gr_openid module.
+%%% It contains unit tests that base on eunit.
+%%% @end
+%%%-------------------------------------------------------------------
 
 -module(gr_openid_tests).
 
@@ -17,9 +17,9 @@
 -include("global_registry/gr_openid.hrl").
 -include_lib("eunit/include/eunit.hrl").
 
-%% ===================================================================
-%% Tests description
-%% ===================================================================
+%%%===================================================================
+%%% Tests description
+%%%===================================================================
 
 gr_openid_test_() ->
     {foreach,
@@ -35,9 +35,9 @@ gr_openid_test_() ->
         ]
     }.
 
-%% ===================================================================
-%% Setup/teardown functions
-%% ===================================================================
+%%%===================================================================
+%%% Setup/teardown functions
+%%%===================================================================
 
 setup() ->
     meck:new(gr_endpoint),
@@ -73,9 +73,9 @@ teardown(_) ->
     ?assert(meck:validate(gr_endpoint)),
     ok = meck:unload(gr_endpoint).
 
-%% ===================================================================
-%% Tests functions
-%% ===================================================================
+%%%===================================================================
+%%% Tests functions
+%%%===================================================================
 
 should_get_tokens() ->
     meck:new(mochijson2),

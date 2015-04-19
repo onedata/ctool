@@ -1,14 +1,14 @@
-%% ===================================================================
-%% @author Krzysztof Trzepla
-%% @copyright (C): 2014 ACK CYFRONET AGH
-%% This software is released under the MIT license
-%% cited in 'LICENSE.txt'.
-%% @end
-%% ===================================================================
-%% @doc This module tests the functionality of gr_providers module.
-%% It contains unit tests that base on eunit.
-%% @end
-%% ===================================================================
+%%%-------------------------------------------------------------------
+%%% @author Krzysztof Trzepla
+%%% @copyright (C) 2014 ACK CYFRONET AGH
+%%% This software is released under the MIT license
+%%% cited in 'LICENSE.txt'.
+%%% @end
+%%%-------------------------------------------------------------------
+%%% @doc This module tests the functionality of gr_providers module.
+%%% It contains unit tests that base on eunit.
+%%% @end
+%%%-------------------------------------------------------------------
 
 -module(gr_providers_tests).
 
@@ -18,9 +18,9 @@
 -include("global_registry/gr_providers.hrl").
 -include_lib("eunit/include/eunit.hrl").
 
-%% ===================================================================
-%% Tests description
-%% ===================================================================
+%%%===================================================================
+%%% Tests description
+%%%===================================================================
 
 gr_providers_test_() ->
     {foreach,
@@ -43,9 +43,9 @@ gr_providers_test_() ->
         ]
     }.
 
-%% ===================================================================
-%% Setup/teardown functions
-%% ===================================================================
+%%%===================================================================
+%%% Setup/teardown functions
+%%%===================================================================
 
 setup() ->
     meck:new(gr_endpoint),
@@ -85,9 +85,9 @@ teardown(_) ->
     ?assert(meck:validate(gr_endpoint)),
     ok = meck:unload(gr_endpoint).
 
-%% ===================================================================
-%% Tests functions
-%% ===================================================================
+%%%===================================================================
+%%% Tests functions
+%%%===================================================================
 
 should_register() ->
     meck:new(mochijson2),

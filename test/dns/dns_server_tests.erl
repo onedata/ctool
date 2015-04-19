@@ -1,13 +1,13 @@
-%% ===================================================================
-%% @author Lukasz Opiola
-%% @copyright (C): 2014 ACK CYFRONET AGH
-%% This software is released under the MIT license
-%% cited in 'LICENSE.txt'.
-%% @end
-%% ===================================================================
-%% @doc This module tests the functionality of dns_server, using eunit tests.
-%% @end
-%% ===================================================================
+%%%-------------------------------------------------------------------
+%%% @author Lukasz Opiola
+%%% @copyright (C) 2014 ACK CYFRONET AGH
+%%% This software is released under the MIT license
+%%% cited in 'LICENSE.txt'.
+%%% @end
+%%%-------------------------------------------------------------------
+%%% @doc This module tests the functionality of dns_server, using eunit tests.
+%%% @end
+%%%-------------------------------------------------------------------
 -module(dns_server_tests).
 
 -ifdef(TEST).
@@ -39,9 +39,9 @@
 
 -define(dump(A), io:format(user, "~nDUMP: ~p~n~n", [A])).
 
-%% ===================================================================
-%% Tests description
-%% ===================================================================
+%%%===================================================================
+%%% Tests description
+%%%===================================================================
 
 %% This test generator tests the functionalities and returned values of functions
 %% included in dns_server module.
@@ -60,9 +60,9 @@ dns_server_test_() ->
         ]
     }.
 
-%% ===================================================================
-%% Test functions
-%% ===================================================================
+%%%===================================================================
+%%% Test functions
+%%%===================================================================
 
 validate_query() ->
     DNSRec = ?EXAMPLE_DNS_REC(1),

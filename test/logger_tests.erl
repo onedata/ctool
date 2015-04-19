@@ -1,13 +1,13 @@
-%% ===================================================================
-%% @author Lukasz Opiola
-%% @copyright (C): 2013 ACK CYFRONET AGH
-%% This software is released under the MIT license
-%% cited in 'LICENSE.txt'.
-%% @end
-%% ===================================================================
-%% @doc This module tests the functionality of logger module, using eunit tests.
-%% @end
-%% ===================================================================
+%%%-------------------------------------------------------------------
+%%% @author Lukasz Opiola
+%%% @copyright (C) 2013 ACK CYFRONET AGH
+%%% This software is released under the MIT license
+%%% cited in 'LICENSE.txt'.
+%%% @end
+%%%-------------------------------------------------------------------
+%%% @doc This module tests the functionality of logger module, using eunit tests.
+%%% @end
+%%%-------------------------------------------------------------------
 -module(logger_tests).
 
 -ifdef(TEST).
