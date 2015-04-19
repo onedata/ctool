@@ -68,7 +68,7 @@
 -export_type([dns_lb_advice/0, dispatcher_lb_advice/0, load_balancing_state/0]).
 
 %% API
--export([advices_for_dnses/1, choose_nodes_for_dns/1, choose_ns_nodes_for_dns/1, initial_advice_for_dns/1]).
+-export([advices_for_dnses/2, choose_nodes_for_dns/1, choose_ns_nodes_for_dns/1, initial_advice_for_dns/1]).
 -export([advices_for_dispatchers/2, choose_node_for_dispatcher/2]).
 -export([initial_advice_for_dispatcher/0, all_nodes_for_dispatcher/1]).
 
@@ -83,10 +83,22 @@
 %% based on node states of all nodes. The list must not be empty.
 %% @end
 %%--------------------------------------------------------------------
--spec advices_for_dnses(NodeStates :: [#node_state{}]) -> [{node(), #dns_lb_advice{}}].
-advices_for_dnses(NodeStates) ->
+-spec advices_for_dnses(NodeStates :: [#node_state{}], LBState :: #load_balancing_state{} | undefined) ->
+    {[{node(), #dispatcher_lb_advice{}}], #load_balancing_state{}}.
+advices_for_dnses(NodeStates, LBState) ->
+    ExtraLoads = case LBState of
+                     undefined ->
+                         [];
+                     #load_balancing_state{expected_extra_load = EEL} ->
+                         EEL
+                 end,
     NodesAndIPs = [{NodeState#node_state.node, NodeState#node_state.ip_addr} || NodeState <- NodeStates],
-    LoadsForDNS = [load_for_dns(NodeState) || NodeState <- NodeStates],
+    LoadsForDNS = lists:map(
+        fun(NodeState) ->
+            L = load_for_dns(NodeState),
+            ExtraLoad = proplists:get_value(NodeState#node_state.node, ExtraLoads, 0.0),
+            L * (1.0 - ExtraLoad)
+        end, NodeStates),
     MinLoadForDNS = lists:min(LoadsForDNS),
     LoadsAndNodes = lists:zip(LoadsForDNS, NodesAndIPs),
     % Calculate how often should given nodes appear in the first row in DNS
@@ -101,7 +113,7 @@ advices_for_dnses(NodeStates) ->
             {Node, #dns_lb_advice{nodes_and_frequency = NormalizedNodesAndFrequency,
                 node_choices = NodeChoicesDuplicated}}
         end, LoadsAndNodes),
-    Result.
+    {Result, LBState}.
 
 
 %%--------------------------------------------------------------------
@@ -111,7 +123,7 @@ advices_for_dnses(NodeStates) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec advices_for_dispatchers(NodeStates :: [#node_state{}], LBState :: #load_balancing_state{} | undefined) ->
-    [{node(), #dispatcher_lb_advice{}}].
+    {[{node(), #dispatcher_lb_advice{}}], #load_balancing_state{}}.
 advices_for_dispatchers(NodeStates, LBState) ->
     ExtraLoads = case LBState of
                      undefined ->
@@ -152,7 +164,7 @@ advices_for_dispatchers(NodeStates, LBState) ->
             NodesAndFrequency =
                 case ShouldDelegate of
                     true ->
-                        OtherNodes = [{FNode, MinLoadForDisp / FNLoad / OverloadedNodesNum} || {FNode ,FNLoad} <- FreeNodes],
+                        OtherNodes = [{FNode, MinLoadForDisp / FNLoad / OverloadedNodesNum} || {FNode, FNLoad} <- FreeNodes],
                         NAndF = [{Node, MinLoadForDisp / Load} | OtherNodes],
                         FrequencySum = lists:foldl(fun({_, Freq}, Acc) -> Acc + Freq end, 0.0, NAndF),
                         [{Node, Freq / FrequencySum} || {Node, Freq} <- NAndF];
@@ -348,7 +360,7 @@ load_for_dispatcher(#node_state{cpu_usage = CPU, mem_usage = Mem}) ->
 %%--------------------------------------------------------------------
 -spec load_for_dns(NodeState :: #node_state{}) -> float().
 load_for_dns(#node_state{net_usage = NetUsage} = NodeState) ->
-    (4.0 + load_for_dispatcher(NodeState) / 100) / 5 * NetUsage.
+    (2.0 + load_for_dispatcher(NodeState) / 100) / 3 * NetUsage.
 
 
 %%--------------------------------------------------------------------
@@ -366,6 +378,8 @@ overloaded_for_dispatcher(LoadForDispatcher, MinLoadForDisp) ->
 %% @private
 %% @doc
 %% Decides if the node is overloaded from DNS point of view.
+%% NOTE: Currently this is not used, as tests have shown that excluding
+%% nodes in DNS when there are heavy loaded in fact decreases the whole system throughput.
 %% @end
 %%--------------------------------------------------------------------
 -spec overloaded_for_dns(NodeState :: #node_state{}, MinLoadForDNS :: float()) -> boolean().
