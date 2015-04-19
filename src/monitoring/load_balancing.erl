@@ -128,15 +128,15 @@ advices_for_dispatchers(NodeStates, LBState) ->
         end, NodeStates),
     AvgLoadForDisp = average(LoadsForDisp),
     MinLoadForDisp = lists:min(LoadsForDisp),
-    LoadsAndNodes = lists:zip(LoadsForDisp, Nodes),
+    LoadsAndNodes = lists:zip(Nodes, LoadsForDisp),
     % Nodes that are loaded less than average
     FreeNodes = lists:filter(
-        fun({Load, _}) ->
+        fun({_, Load}) ->
             Load =< AvgLoadForDisp
         end, LoadsAndNodes),
     % Nodes that are overloaded
     OverloadedNodes = lists:filtermap(
-        fun({Load, Node}) ->
+        fun({Node, Load}) ->
             case overloaded_for_dispatcher(Load, MinLoadForDisp) of
                 false -> false;
                 true -> {true, Node}
@@ -144,12 +144,12 @@ advices_for_dispatchers(NodeStates, LBState) ->
         end, LoadsAndNodes),
     OverloadedNodesNum = length(OverloadedNodes),
     Result = lists:map(
-        fun({Load, Node}) ->
+        fun({Node, Load}) ->
             ShouldDelegate = lists:member(Node, OverloadedNodes),
             NodesAndFrequency =
                 case ShouldDelegate of
                     true ->
-                        OtherNodes = [{FNode, MinLoadForDisp / FNLoad / OverloadedNodesNum} || {FNLoad, FNode} <- FreeNodes],
+                        OtherNodes = [{FNode, MinLoadForDisp / FNLoad / OverloadedNodesNum} || {FNode ,FNLoad} <- FreeNodes],
                         NAndF = [{Node, MinLoadForDisp / Load} | OtherNodes],
                         FrequencySum = lists:foldl(fun({_, Freq}, Acc) -> Acc + Freq end, 0.0, NAndF),
                         [{Node, Freq / FrequencySum} || {Node, Freq} <- NAndF];
