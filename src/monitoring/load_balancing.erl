@@ -119,7 +119,7 @@ advices_for_dispatchers(NodeStates, LBState) ->
                      #load_balancing_state{expected_extra_load = EEL} ->
                          EEL
                  end,
-        Nodes = [NodeState#node_state.node || NodeState <- NodeStates],
+    Nodes = [NodeState#node_state.node || NodeState <- NodeStates],
     LoadsForDisp = lists:foreach(
         fun(NodeState) ->
             L = load_for_dispatcher(NodeState),
@@ -159,6 +159,7 @@ advices_for_dispatchers(NodeStates, LBState) ->
             {Node, #dispatcher_lb_advice{should_delegate = ShouldDelegate,
                 nodes_and_frequency = NodesAndFrequency, all_nodes = Nodes}}
         end, LoadsAndNodes),
+    ?dump(Result),
     % Calculate expected extra loads on each node. For example:
     % node A is overloaded and will delegate 70% reqs to node B
     % node B in not overloaded
@@ -170,6 +171,7 @@ advices_for_dispatchers(NodeStates, LBState) ->
     %
     ExtraLoadsSum = lists:foldl(
         fun({NodeFrom, DispLBAdvice}, ExtraLoadsAcc) ->
+            ?dump(ExtraLoadsAcc),
             #dispatcher_lb_advice{
                 should_delegate = ShouldDelegate,
                 nodes_and_frequency = NodesAndFreq} = DispLBAdvice,
