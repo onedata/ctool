@@ -120,7 +120,7 @@ advices_for_dispatchers(NodeStates, LBState) ->
                          EEL
                  end,
     Nodes = [NodeState#node_state.node || NodeState <- NodeStates],
-    LoadsForDisp = lists:foreach(
+    LoadsForDisp = lists:map(
         fun(NodeState) ->
             L = load_for_dispatcher(NodeState),
             ExtraLoad = proplists:get_value(NodeState#node_state.node, ExtraLoads, 0.0),
