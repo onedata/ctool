@@ -229,9 +229,16 @@ advices_for_dispatchers(NodeStates, LBState) ->
 choose_nodes_for_dns(DNSAdvice) ->
     #dns_lb_advice{nodes_and_frequency = NodesAndFreq,
         node_choices = NodeChoices} = DNSAdvice,
-    Index = choose_index(NodesAndFreq),
-    Nodes = lists:sublist(NodeChoices, Index, length(NodesAndFreq)),
-    Nodes.
+    % TODO tests
+    case application:get_env(lb, dns) of
+        {ok, false} ->
+            % round robin
+            lists:sublist(NodeChoices, random:uniform(length(NodesAndFreq)), length(NodesAndFreq));
+        _ ->
+            Index = choose_index(NodesAndFreq),
+            Nodes = lists:sublist(NodeChoices, Index, length(NodesAndFreq)),
+            Nodes
+    end.
 
 
 %%--------------------------------------------------------------------
@@ -262,7 +269,10 @@ choose_ns_nodes_for_dns(DNSAdvice) ->
 choose_node_for_dispatcher(Advice, WorkerName) ->
     #dispatcher_lb_advice{should_delegate = ShouldDelegate,
         nodes_and_frequency = NodesAndFreq} = Advice,
-    Result = case ShouldDelegate of
+
+    % TODO tests
+    LBEnabled = application:get_env(lb, dispatcher) =/= {ok, false},
+    Result = case ShouldDelegate andalso LBEnabled of
                  false ->
                      node();
                  true ->
