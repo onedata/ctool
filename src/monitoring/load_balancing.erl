@@ -128,12 +128,12 @@ advices_for_dispatchers(NodeStates, LBState) ->
         end, NodeStates),
     AvgLoadForDisp = average(LoadsForDisp),
     MinLoadForDisp = lists:min(LoadsForDisp),
-    LoadsAndNodes = lists:zip(Nodes, LoadsForDisp),
+    NodesAndLoads = lists:zip(Nodes, LoadsForDisp),
     % Nodes that are loaded less than average
     FreeNodes = lists:filter(
         fun({_, Load}) ->
             Load =< AvgLoadForDisp
-        end, LoadsAndNodes),
+        end, NodesAndLoads),
     % Nodes that are overloaded
     OverloadedNodes = lists:filtermap(
         fun({Node, Load}) ->
@@ -141,7 +141,7 @@ advices_for_dispatchers(NodeStates, LBState) ->
                 false -> false;
                 true -> {true, Node}
             end
-        end, LoadsAndNodes),
+        end, NodesAndLoads),
     OverloadedNodesNum = length(OverloadedNodes),
     Result = lists:map(
         fun({Node, Load}) ->
@@ -158,16 +158,19 @@ advices_for_dispatchers(NodeStates, LBState) ->
                 end,
             {Node, #dispatcher_lb_advice{should_delegate = ShouldDelegate,
                 nodes_and_frequency = NodesAndFrequency, all_nodes = Nodes}}
-        end, LoadsAndNodes),
+        end, NodesAndLoads),
     ?dump(Result),
-    % Calculate expected extra loads on each node. For example:
+    % Calculate expected extra loads on each node.
+    % For example:
     % node A is overloaded and will delegate 70% reqs to node B
     % node B in not overloaded
     % expected extra load on each node is:
     % node A = 0.0
-    %                0.7 * node_A_load
-    % node B = -------------------------------
-    %          node_B_load + 0.7 * node_A_load
+    %             0.7
+    % node B = ---------
+    %          1.0 + 0.7
+    %
+    % (1.0 is expected normal load on node B, as it does not delegate anything)
     %
     ExtraLoadsSum = lists:foldl(
         fun({NodeFrom, DispLBAdvice}, ExtraLoadsAcc) ->
@@ -180,14 +183,13 @@ advices_for_dispatchers(NodeStates, LBState) ->
                     ExtraLoadsAcc;
                 true ->
                     lists:foldl(
-                        fun({NodeTo, Freq}, Acc) ->
+                        fun({NodeTo, _}, Acc) ->
                             case NodeFrom of
                                 NodeTo ->
                                     Acc;
                                 _ ->
                                     Current = proplists:get_value(NodeTo, Acc, 0.0),
-                                    NodeToLoad = proplists:get_value(NodeTo, LoadsAndNodes, 0.0),
-                                    [{NodeTo, Current + NodeToLoad * Freq} | proplists:delete(NodeTo, Acc)]
+                                    [{NodeTo, Current} | proplists:delete(NodeTo, Acc)]
                             end
                         end, ExtraLoadsAcc, NodesAndFreq)
             end
@@ -195,8 +197,7 @@ advices_for_dispatchers(NodeStates, LBState) ->
     ?dump(ExtraLoadsSum),
     NewExtraLoads = lists:map(
         fun({Node, ExtraLoadSum}) ->
-            NodeLoad = proplists:get_value(Node, LoadsAndNodes, 0.0),
-            ExtraLoadsSum / (NodeLoad + ExtraLoadsSum)
+            {Node, ExtraLoadSum / (1.0 + ExtraLoadSum)}
         end, ExtraLoadsSum),
     ?dump(NewExtraLoads),
     {Result, #load_balancing_state{expected_extra_load = NewExtraLoads}}.
