@@ -29,7 +29,7 @@
     ok | {error, Reason :: term()}.
 post_compile(Config, AppFile) ->
     try
-        case rebar_app_utils:is_app_dir() of
+        case apply(rebar_app_utils, is_app_dir, []) of
             {true, AppFile} ->
                 inject_git_metadata(Config, AppFile);
             _ ->
@@ -38,8 +38,8 @@ post_compile(Config, AppFile) ->
     catch
         Error:Reason ->
             Stacktrace = erlang:get_stacktrace(),
-            rebar_log:log(error, "~s - Failed to set git metadata due to: "
-            "~p:~p~nStacktrace:~n~p~n", [?MODULE_STRING, Error, Reason, Stacktrace]),
+            apply(rebar_log, log, [error, "~s - Failed to set git metadata due to: "
+            "~p:~p~nStacktrace:~n~p~n", [?MODULE_STRING, Error, Reason, Stacktrace]]),
             {Error, Reason}
     end.
 
@@ -75,7 +75,7 @@ get_git_metadata() ->
 %%--------------------------------------------------------------------
 -spec inject_git_metadata(Config :: term(), AppFile :: string()) -> ok.
 inject_git_metadata(Config, AppFile) ->
-    {_, AppName} = rebar_app_utils:app_name(Config, AppFile),
+    {_, AppName} = apply(rebar_app_utils, app_name, [Config, AppFile]),
     EbinAppFile = filename:join("ebin", erlang:atom_to_list(AppName) ++ ".app"),
     {ok, [{application, AppName, Metadata}]} = file:consult(EbinAppFile),
     Env = proplists:get_value(env, Metadata, []),
