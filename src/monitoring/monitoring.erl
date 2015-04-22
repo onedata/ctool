@@ -404,8 +404,8 @@ get_interface_max_throughput(Interface, TimeElapsed) ->
 %%                        _ ->
 %%                            10
 %%                    end,
-    % TODO TEST - 100 Mbps limit
-    IntSpeedMbps = 100,
+    % TODO TEST - 10 Mbps limit
+    IntSpeedMbps = 10,
     % IntSpeedMbps is in Mbps so (IntSpeedMbps * 131072) is in Bytes/s
     IntSpeedMbps * 131072 * DuplexRatio * TimeElapsed.
 
