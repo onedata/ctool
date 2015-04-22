@@ -164,7 +164,9 @@ net_usage(#node_monitoring_state{net_stats = NetStats}) ->
     % Calc usage in per cent
     case MaxThroughput of
         0 -> 0;
-        _ -> NetUsage / MaxThroughput * 100
+%%         _ -> NetUsage / MaxThroughput * 100
+    % TODO TEST - 100 Mbps limit
+        _ -> NetUsage / 104857600 * 100
     end.
 
 

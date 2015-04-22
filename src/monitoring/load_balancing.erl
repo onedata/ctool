@@ -233,6 +233,7 @@ choose_nodes_for_dns(DNSAdvice) ->
     case application:get_env(lb, dns) of
         {ok, false} ->
             % round robin
+            random:seed(now()),
             lists:sublist(NodeChoices, random:uniform(length(NodesAndFreq)), length(NodesAndFreq));
         _ ->
             Index = choose_index(NodesAndFreq),
