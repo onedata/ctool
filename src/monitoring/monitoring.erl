@@ -164,9 +164,7 @@ net_usage(#node_monitoring_state{net_stats = NetStats}) ->
     % Calc usage in per cent
     case MaxThroughput of
         0 -> 0;
-%%         _ -> NetUsage / MaxThroughput * 100
-    % TODO TEST - 100 Mbps limit
-        _ -> NetUsage / 104857600 * 100
+        _ -> NetUsage / MaxThroughput * 100
     end.
 
 
@@ -400,12 +398,14 @@ get_interface_max_throughput(Interface, TimeElapsed) ->
                       {ok, <<"full\n">>} -> 2;
                       _ -> 1
                   end,
-    IntSpeedMbps = case file:read_file(?NET_SPEED_FILE(Interface)) of
-                       {ok, SpeedBin} ->
-                           binary_to_integer(binary:part(SpeedBin, 0, byte_size(SpeedBin) - 1));
-                       _ ->
-                           10
-                   end,
+%%     IntSpeedMbps = case file:read_file(?NET_SPEED_FILE(Interface)) of
+%%                        {ok, SpeedBin} ->
+%%                            binary_to_integer(binary:part(SpeedBin, 0, byte_size(SpeedBin) - 1));
+%%                        _ ->
+%%                            10
+%%                    end,
+    % TODO TEST - 100 Mbps limit
+    IntSpeedMbps = 100,
     % IntSpeedMbps is in Mbps so (IntSpeedMbps * 131072) is in Bytes/s
     IntSpeedMbps * 131072 * DuplexRatio * TimeElapsed.
 
