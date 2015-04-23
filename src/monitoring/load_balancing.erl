@@ -15,10 +15,6 @@
 -include("logging.hrl").
 -include("monitoring/monitoring.hrl").
 
-% Previous load is taken into account when calcaulated the new load. This value
-% determines its influence compared to current load.
--define(PREVIOUS_LOAD_INFL, 0.4).
-
 % Record used to express how DNS should be answering. Such records are distributed
 % to DNS modules, and later they evaluate choose_nodes_for_dns/1 function on this
 % record. The record structure shall not be visible outside this module.
@@ -62,11 +58,7 @@
     % Contains information how much extra load is expected on given node
     % in current load balancing interval. Extra load is estimated load
     % caused by delegation.
-    expected_extra_load = [] :: [{Node :: node(), ExtraLoad :: float()}],
-    % Computational loads of nodes after last calculations
-    prev_comp_loads = [] :: [{Node :: node(), ExtraLoad :: float()}],
-    % Network loads of nodes after last calculations
-    prev_net_loads = [] :: [{Node :: node(), ExtraLoad :: float()}]
+    expected_extra_load = [] :: [{Node :: node(), ExtraLoad :: float()}]
 }).
 
 -type dns_lb_advice() :: #dns_lb_advice{}.
@@ -94,21 +86,18 @@
 -spec advices_for_dnses(NodeStates :: [#node_state{}], LBState :: #load_balancing_state{} | undefined) ->
     {[{node(), #dispatcher_lb_advice{}}], #load_balancing_state{}}.
 advices_for_dnses(NodeStates, LBState) ->
-    NewLBState = case LBState of
+    ExtraLoads = case LBState of
                      undefined ->
-                         #load_balancing_state{};
-                     #load_balancing_state{} ->
-                         LBState
-                         end,
-    ExtraLoads = NewLBState#load_balancing_state.expected_extra_load,
-    PrevNetLoads = NewLBState#load_balancing_state.prev_net_loads,
+                         [];
+                     #load_balancing_state{expected_extra_load = EEL} ->
+                         EEL
+                 end,
     NodesAndIPs = [{NodeState#node_state.node, NodeState#node_state.ip_addr} || NodeState <- NodeStates],
     LoadsForDNS = lists:map(
         fun(NodeState) ->
             L = load_for_dns(NodeState),
             ExtraLoad = proplists:get_value(NodeState#node_state.node, ExtraLoads, 0.0),
-            PreviousLoad = proplists:get_value(NodeState#node_state.node, PrevNetLoads, 0.0),
-            (L * (1.0 - ExtraLoad) + ?PREVIOUS_LOAD_INFL * PreviousLoad) / (1.0 + ?PREVIOUS_LOAD_INFL)
+            L * (1.0 - ExtraLoad)
         end, NodeStates),
     MinLoadForDNS = lists:min(LoadsForDNS),
     LoadsAndNodes = lists:zip(LoadsForDNS, NodesAndIPs),
@@ -124,11 +113,7 @@ advices_for_dnses(NodeStates, LBState) ->
             {Node, #dns_lb_advice{nodes_and_frequency = NormalizedNodesAndFrequency,
                 node_choices = NodeChoicesDuplicated}}
         end, LoadsAndNodes),
-    NewPrevNetStats = lists:map(
-        fun({Load, {Node, _}}) ->
-            {Node, Load}
-        end, LoadsAndNodes),
-    {Result, NewLBState#load_balancing_state{prev_net_loads = NewPrevNetStats}}.
+    {Result, LBState}.
 
 
 %%--------------------------------------------------------------------
@@ -140,14 +125,12 @@ advices_for_dnses(NodeStates, LBState) ->
 -spec advices_for_dispatchers(NodeStates :: [#node_state{}], LBState :: #load_balancing_state{} | undefined) ->
     {[{node(), #dispatcher_lb_advice{}}], #load_balancing_state{}}.
 advices_for_dispatchers(NodeStates, LBState) ->
-    NewLBState = case LBState of
+    ExtraLoads = case LBState of
                      undefined ->
-                         #load_balancing_state{};
-                     #load_balancing_state{} ->
-                         LBState
+                         [];
+                     #load_balancing_state{expected_extra_load = EEL} ->
+                         EEL
                  end,
-    ExtraLoads = NewLBState#load_balancing_state.expected_extra_load,
-    PrevCompLoads = NewLBState#load_balancing_state.prev_comp_loads,
     Nodes = [NodeState#node_state.node || NodeState <- NodeStates],
     % Calculate loads on nodes, take into account the expected extra load from delegation
     % i. e. assume the load is lower when deciding where we can delegate (this extra
@@ -156,14 +139,8 @@ advices_for_dispatchers(NodeStates, LBState) ->
         fun(NodeState) ->
             L = load_for_dispatcher(NodeState),
             ExtraLoad = proplists:get_value(NodeState#node_state.node, ExtraLoads, 0.0),
-            PreviousLoad = proplists:get_value(NodeState#node_state.node, PrevCompLoads, 0.0),
-            Res = (L * (1.0 - ExtraLoad) + ?PREVIOUS_LOAD_INFL * PreviousLoad) / (1.0 + ?PREVIOUS_LOAD_INFL),
-            % TODO tests
-            io:format("~s: ~.4f ~.4f ~.4f -> ~.4f~n",
-                [lists:nth(1, string:tokens(atom_to_list(NodeState#node_state.node), "@")), ExtraLoad, PreviousLoad, L * (1.0 - ExtraLoad), Res]),
-            Res
+            L * (1.0 - ExtraLoad)
         end, NodeStates),
-    io:format("~n"),
     AvgLoadForDisp = average(LoadsForDisp),
     MinLoadForDisp = lists:min(LoadsForDisp),
     NodesAndLoads = lists:zip(Nodes, LoadsForDisp),
@@ -234,7 +211,7 @@ advices_for_dispatchers(NodeStates, LBState) ->
         fun({Node, ExtraLoadSum}) ->
             {Node, ExtraLoadSum / (1.0 + ExtraLoadSum)}
         end, ExtraLoadsSum),
-    {Result, NewLBState#load_balancing_state{expected_extra_load = NewExtraLoads, prev_comp_loads = NodesAndLoads}}.
+    {Result, #load_balancing_state{expected_extra_load = NewExtraLoads}}.
 
 
 %%--------------------------------------------------------------------
