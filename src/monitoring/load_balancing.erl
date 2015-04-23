@@ -159,7 +159,8 @@ advices_for_dispatchers(NodeStates, LBState) ->
             PreviousLoad = proplists:get_value(NodeState#node_state.node, PrevCompLoads, 0.0),
             Res = (L * (1.0 - ExtraLoad) + ?PREVIOUS_LOAD_INFL * PreviousLoad) / (1.0 + ?PREVIOUS_LOAD_INFL),
             % TODO tests
-            io:format("~s: ~.4f -> ~.4f~n", [lists:nth(1, string:tokens(atom_to_list(NodeState#node_state.node), "@")), L * (1.0 - ExtraLoad), Res]),
+            io:format("~s: ~.4f ~.4f ~.4f -> ~.4f~n",
+                [lists:nth(1, string:tokens(atom_to_list(NodeState#node_state.node), "@")), ExtraLoad, PreviousLoad, L * (1.0 - ExtraLoad), Res]),
             Res
         end, NodeStates),
     io:format("~n"),
@@ -233,7 +234,7 @@ advices_for_dispatchers(NodeStates, LBState) ->
         fun({Node, ExtraLoadSum}) ->
             {Node, ExtraLoadSum / (1.0 + ExtraLoadSum)}
         end, ExtraLoadsSum),
-    {Result, #load_balancing_state{expected_extra_load = NewExtraLoads, prev_comp_loads = NodesAndLoads}}.
+    {Result, NewLBState#load_balancing_state{expected_extra_load = NewExtraLoads, prev_comp_loads = NodesAndLoads}}.
 
 
 %%--------------------------------------------------------------------
