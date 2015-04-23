@@ -174,7 +174,6 @@ advices_for_dispatchers(NodeStates, LBState) ->
             {Node, #dispatcher_lb_advice{should_delegate = ShouldDelegate,
                 nodes_and_frequency = NodesAndFrequency, all_nodes = Nodes}}
         end, NodesAndLoads),
-    ?dump(Result),
     % Calculate expected extra loads on each node.
     % For example:
     % node A is overloaded and will delegate 70% reqs to node B
@@ -189,7 +188,6 @@ advices_for_dispatchers(NodeStates, LBState) ->
     %
     ExtraLoadsSum = lists:foldl(
         fun({NodeFrom, DispLBAdvice}, ExtraLoadsAcc) ->
-            ?dump(ExtraLoadsAcc),
             #dispatcher_lb_advice{
                 should_delegate = ShouldDelegate,
                 nodes_and_frequency = NodesAndFreq} = DispLBAdvice,
@@ -209,12 +207,10 @@ advices_for_dispatchers(NodeStates, LBState) ->
                         end, ExtraLoadsAcc, NodesAndFreq)
             end
         end, [], Result),
-    ?dump(ExtraLoadsSum),
     NewExtraLoads = lists:map(
         fun({Node, ExtraLoadSum}) ->
             {Node, ExtraLoadSum / (1.0 + ExtraLoadSum)}
         end, ExtraLoadsSum),
-    ?dump(NewExtraLoads),
     {Result, #load_balancing_state{expected_extra_load = NewExtraLoads}}.
 
 
