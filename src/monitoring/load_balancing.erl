@@ -159,7 +159,8 @@ advices_for_dispatchers(NodeStates, LBState) ->
             PreviousLoad = proplists:get_value(NodeState#node_state.node, PrevCompLoads, 0.0),
             Res = (L * (1.0 - ExtraLoad) + ?PREVIOUS_LOAD_INFL * PreviousLoad) / (1.0 + ?PREVIOUS_LOAD_INFL),
             % TODO tests
-            io:format("~s: ~.4f -> ~.4f~n", [lists:nth(1, string:tokens(atom_to_list(NodeState#node_state.node), "@")), L * (1.0 - ExtraLoad), Res])
+            io:format("~s: ~.4f -> ~.4f~n", [lists:nth(1, string:tokens(atom_to_list(NodeState#node_state.node), "@")), L * (1.0 - ExtraLoad), Res]),
+            Res
         end, NodeStates),
     io:format("~n"),
     AvgLoadForDisp = average(LoadsForDisp),
