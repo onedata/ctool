@@ -51,13 +51,8 @@ post_compile(Config, AppFile) ->
 %%--------------------------------------------------------------------
 -spec get_git_metadata() -> [{Key :: atom(), Value :: string()}].
 get_git_metadata() ->
-    Url = os:cmd("git config --get remote.origin.url") -- "\n",
-    Repository = case lists:reverse(string:tokens(Url, "/.")) of
-                     [_, Name | _] -> Name;
-                     _ -> ""
-                 end,
     [
-        {git_repository, Repository},
+        {git_repository, os:cmd("basename `git rev-parse --show-toplevel`") -- "\n"},
         {git_branch, os:cmd("git rev-parse --abbrev-ref HEAD") -- "\n"},
         {git_tag, os:cmd("git describe --always --tags") -- "\n"},
         {git_commit, os:cmd("git rev-parse HEAD") -- "\n"}
