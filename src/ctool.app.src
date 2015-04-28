@@ -1,15 +1,18 @@
 %%%-------------------------------------------------------------------
 %%% @author Tomasz Lichon
-%%% @copyright (C) 2014, ACK CYFRONET AGH
-%%% @doc
-%%% This file describes application ctool
+%%% @copyright (C) 2015 ACK CYFRONET AGH
+%%% This software is released under the MIT license
+%%% cited in 'LICENSE.txt'.
 %%% @end
-%%% Created : 23. May 2014 15:11
 %%%-------------------------------------------------------------------
+%%% @doc
+%%% This file describes ctool application.
+%%% @end
+%%%-------------------------------------------------------------------
+
 {application, ctool, [
     {description, "Common tools lib for onedata project"},
     {vsn, git},
-    {modules, [pb, test_node_starter, utils]},
     {registered, []},
     {applications, [
         kernel,

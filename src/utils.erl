@@ -320,7 +320,7 @@ pforeach_f(Parent, Ref, Fun, X) -> catch Fun(X), Parent ! Ref.
 %% Joins pforeach processes.
 %% @end
 %%--------------------------------------------------------------------
--spec pforeach_gather(PIDs :: [pid()], Ref :: reference()) -> ok.
+-spec pforeach_gather(N :: non_neg_integer(), Ref :: reference()) -> ok.
 pforeach_gather(0, _Ref) -> ok;
 pforeach_gather(N, Ref) ->
     receive

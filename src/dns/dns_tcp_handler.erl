@@ -1,49 +1,42 @@
-%% ===================================================================
-%% @author Lukasz Opiola
-%% @copyright (C): 2014 ACK CYFRONET AGH
-%% This software is released under the MIT license
-%% cited in 'LICENSE.txt'.
-%% @end
-%% ===================================================================
-%% @doc: This module is responsible for handling TCP DNS connections.
-%% @end
-%% ===================================================================
+%%%-------------------------------------------------------------------
+%%% @author Lukasz Opiola
+%%% @copyright (C) 2014 ACK CYFRONET AGH
+%%% This software is released under the MIT license
+%%% cited in 'LICENSE.txt'.
+%%% @end
+%%%-------------------------------------------------------------------
+%%% @doc: This module is responsible for handling TCP DNS connections.
+%%% @end
+%%%-------------------------------------------------------------------
 -module(dns_tcp_handler).
 -behaviour(ranch_protocol).
 
 -include("logging.hrl").
 
-%% ====================================================================
 %% API
-%% ====================================================================
 -export([start_link/4, loop/3]).
 
-%% ====================================================================
-%% API functions
-%% ====================================================================
+%%%===================================================================
+%%% API
+%%%===================================================================
 
-%% start_link/4
-%% ====================================================================
+%%--------------------------------------------------------------------
 %% @doc Starts handler.
 %% @end
-%% ====================================================================
+%%--------------------------------------------------------------------
 -spec start_link(Ref :: term(), Socket :: term(), Transport :: term(), Opts :: term()) -> Result when
     Result :: {ok, Pid},
     Pid :: pid().
-%% ====================================================================
 start_link(Ref, Socket, Transport, Opts) ->
     Pid = spawn_link(fun() -> init(Ref, Socket, Transport, Opts) end),
     {ok, Pid}.
 
-
-%% init/4
-%% ====================================================================
+%%--------------------------------------------------------------------
 %% @doc Initializes handler loop.
 %% @end
-%% ====================================================================
+%%--------------------------------------------------------------------
 -spec init(Ref :: term(), Socket :: term(), Transport :: term(), Opts :: list()) -> Result when
     Result :: ok.
-%% ====================================================================
 init(Ref, Socket, Transport, Opts) ->
     TransportOpts = ranch:filter_options(Opts, [packet, keepalive], []),
 
@@ -54,17 +47,14 @@ init(Ref, Socket, Transport, Opts) ->
     ok = ranch:accept_ack(Ref),
     loop(Socket, Transport, TCPIdleTime).
 
-
-%% loop/3
-%% ====================================================================
+%%--------------------------------------------------------------------
 %% @doc Main handler loop.
 %% @end
-%% ====================================================================
+%%--------------------------------------------------------------------
 -spec loop(Socket, Transport, TCPIdleTime) -> ok when
     Socket :: inet:socket(),
     Transport :: term(),
     TCPIdleTime :: non_neg_integer().
-%% ====================================================================
 loop(Socket, Transport, TCPIdleTime) ->
     case Transport:recv(Socket, 0, TCPIdleTime) of
         {ok, Packet} ->
@@ -77,20 +67,17 @@ loop(Socket, Transport, TCPIdleTime) ->
             Transport:close(Socket)
     end.
 
-
-%% handle_request/3
-%% ====================================================================
+%%--------------------------------------------------------------------
 %% @doc Handles dns request.
 %% @end
-%% ====================================================================
+%%--------------------------------------------------------------------
 -spec handle_request(Socket, Transport, Packet) -> term() when
     Socket :: inet:socket(),
     Transport :: term(),
     Packet :: binary().
-%% ====================================================================
 handle_request(Socket, Transport, Packet) ->
     try
-        case  dns_server:handle_query(Packet, tcp) of
+        case dns_server:handle_query(Packet, tcp) of
             {ok, Response} ->
                 Transport:send(Socket, Response);
             _ ->

@@ -15,9 +15,9 @@
 %% API
 -export([prepare_test_environment/3, clean_environment/1]).
 
-%% ====================================================================
-%% Starting and stoping nodes
-%% ====================================================================
+%%%===================================================================
+%%% Starting and stoping nodes
+%%%===================================================================
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -44,15 +44,15 @@ prepare_test_environment(Config, DescriptionFile, Module) ->
         LogsDir = filename:join(PrivDir, atom_to_list(Module) ++ "_logs"),
         os:cmd("mkdir -p " ++ LogsDir),
 
-        StartLog = utils:cmd([EnvUpScript,
+        StartLog = list_to_binary(utils:cmd([EnvUpScript,
             %% Function is used durgin OP or GR tests so starts OP or GR - not both
             "--bin-worker", ProjectRoot,
             "--bin-gr", ProjectRoot,
             %% additionally AppMock can be started
             "--bin-appmock", AppmockRoot,
             "--bin-ccm", CcmRoot,
-            "-l", LogsDir,
-            DescriptionFile, "2> prepare_test_environment_error.log"]),
+            "--logdir", LogsDir,
+            DescriptionFile, "2> prepare_test_environment_error.log"])),
 
         EnvDesc = json_parser:parse_json_binary_to_atom_proplist(StartLog),
 
@@ -104,9 +104,9 @@ clean_environment(Config) ->
     utils:cmd([CleanupScript | DockersStr]),
     ok.
 
-%% ====================================================================
-%% Internal functions
-%% ====================================================================
+%%%===================================================================
+%%% Internal functions
+%%%===================================================================
 
 %%--------------------------------------------------------------------
 %% @private
@@ -140,7 +140,6 @@ ping_nodes(Nodes, Tries) ->
 -spec load_modules(Nodes :: [node()], Modules :: [module()]) -> ok.
 load_modules(_, []) ->
     ok;
-
 load_modules(Nodes, [Module | Modules]) ->
     {Module, Binary, Filename} = code:get_object_code(Module),
     {_, _} = rpc:multicall(Nodes, code, delete, [Module]),

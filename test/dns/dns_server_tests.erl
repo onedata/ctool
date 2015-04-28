@@ -1,19 +1,19 @@
-%% ===================================================================
-%% @author Lukasz Opiola
-%% @copyright (C): 2014 ACK CYFRONET AGH
-%% This software is released under the MIT license
-%% cited in 'LICENSE.txt'.
-%% @end
-%% ===================================================================
-%% @doc This module tests the functionality of dns_server, using eunit tests.
-%% @end
-%% ===================================================================
+%%%-------------------------------------------------------------------
+%%% @author Lukasz Opiola
+%%% @copyright (C) 2014 ACK CYFRONET AGH
+%%% This software is released under the MIT license
+%%% cited in 'LICENSE.txt'.
+%%% @end
+%%%-------------------------------------------------------------------
+%%% @doc This module tests the functionality of dns_server, using eunit tests.
+%%% @end
+%%%-------------------------------------------------------------------
 -module(dns_server_tests).
 
 -ifdef(TEST).
--include_lib("eunit/include/eunit.hrl").
--include("dns/dns.hrl").
 
+-include_lib("kernel/src/inet_dns.hrl").
+-include_lib("eunit/include/eunit.hrl").
 
 % Creates a #dns_rec record with NumberOfRecords answers.
 % 30 answer records = 513 Bytes after encoding.
@@ -39,31 +39,32 @@
 
 -define(dump(A), io:format(user, "~nDUMP: ~p~n~n", [A])).
 
+%%%===================================================================
+%%% Tests description
+%%%===================================================================
+
 %% This test generator tests the functionalities and returned values of functions
 %% included in dns_server module.
-main_test_() ->
+dns_server_test_() ->
     {setup,
         fun() -> ok end,
         fun(_) -> ok end,
         [
-            {"validate_query", fun validate_query_t/0},
-            {"type_to_fun", fun type_to_fun_t/0},
-            {"generate_answer", fun generate_answer_t/0},
-            {"set_reply_code", fun set_reply_code_t/0},
-            {"encode_udp", fun encode_udp_t/0},
-            {"answer sections", fun answer_sections_t/0},
-            {"configuration", fun configuration_t/0}
+            {"validate_query", fun validate_query/0},
+            {"type_to_fun", fun type_to_fun/0},
+            {"generate_answer", fun generate_answer/0},
+            {"set_reply_code", fun set_reply_code/0},
+            {"encode_udp", fun encode_udp/0},
+            {"answer sections", fun answer_sections/0},
+            {"configuration", fun configuration/0}
         ]
     }.
 
+%%%===================================================================
+%%% Test functions
+%%%===================================================================
 
-
-
-%% ===================================================================
-%% Test functions
-%% ===================================================================
-
-validate_query_t() ->
+validate_query() ->
     DNSRec = ?EXAMPLE_DNS_REC(1),
     OPTRR = ?EXAMPLE_OPT_RR(1080),
     ExampleQuery = #dns_query{domain = "www.mail.onedata.org", type = a, class = in},
@@ -87,7 +88,7 @@ validate_query_t() ->
     ?assertEqual(form_error, dns_server:validate_query(DNSRecWrong6)).
 
 
-type_to_fun_t() ->
+type_to_fun() ->
     ?assertEqual(handle_a, dns_server:type_to_fun(?S_A)),
     ?assertEqual(handle_ns, dns_server:type_to_fun(?S_NS)),
     ?assertEqual(handle_cname, dns_server:type_to_fun(?S_CNAME)),
@@ -101,7 +102,7 @@ type_to_fun_t() ->
     ?assertEqual(not_impl, dns_server:type_to_fun(?S_AXFR)).
 
 
-generate_answer_t() ->
+generate_answer() ->
     % This test shall test only TCP answers - the only difference
     % between TCP and UDP is truncation, which is tested in encode_udp_t test.
 
@@ -122,7 +123,7 @@ generate_answer_t() ->
     ?assertEqual({ok, inet_dns:encode(DNSRecOPTRRPresent)}, dns_server:generate_answer(DNSRec, OPTRR, tcp)).
 
 
-set_reply_code_t() ->
+set_reply_code() ->
     #dns_rec{header = Header} = DNSRec = ?EXAMPLE_DNS_REC(1),
     DNSRecServFail = DNSRec#dns_rec{header = Header#dns_header{rcode = ?SERVFAIL}},
     DNSRecNXDomain = DNSRec#dns_rec{header = Header#dns_header{rcode = ?NXDOMAIN}},
@@ -136,7 +137,7 @@ set_reply_code_t() ->
     ?assertEqual(DNSRecNoError, dns_server:set_reply_code(DNSRec, ok)).
 
 
-encode_udp_t() ->
+encode_udp() ->
     % Prepare some example dns answers
     SmallDNSRec = ?EXAMPLE_DNS_REC(1),
     BigDNSRec = ?EXAMPLE_DNS_REC(30),
@@ -188,7 +189,7 @@ encode_udp_t() ->
     ?assertEqual(HugeTruncated1080, dns_server:encode_udp(HugeDNSRec, 1080)).
 
 
-answer_sections_t() ->
+answer_sections() ->
     Domain = "some.domain.com",
     TTL = 3600,
     Type = ?S_NS,
@@ -204,7 +205,7 @@ answer_sections_t() ->
         dns_server:additional_record(Domain, TTL, Type, Data)).
 
 
-configuration_t() ->
+configuration() ->
     HandlerModule = some_module,
     MaxEdnsUdpSize = 123456,
     dns_server:set_handler_module(HandlerModule),

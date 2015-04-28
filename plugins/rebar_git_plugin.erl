@@ -29,7 +29,7 @@
     ok | {error, Reason :: term()}.
 post_compile(Config, AppFile) ->
     try
-        case rebar_app_utils:is_app_dir() of
+        case apply(rebar_app_utils, is_app_dir, []) of
             {true, AppFile} ->
                 inject_git_metadata(Config, AppFile);
             _ ->
@@ -38,8 +38,8 @@ post_compile(Config, AppFile) ->
     catch
         Error:Reason ->
             Stacktrace = erlang:get_stacktrace(),
-            rebar_log:log(error, "~s - Failed to set git metadata due to: "
-            "~p:~p~nStacktrace:~n~p~n", [?MODULE_STRING, Error, Reason, Stacktrace]),
+            apply(rebar_log, log, [error, "~s - Failed to set git metadata due to: "
+            "~p:~p~nStacktrace:~n~p~n", [?MODULE_STRING, Error, Reason, Stacktrace]]),
             {Error, Reason}
     end.
 
@@ -51,13 +51,8 @@ post_compile(Config, AppFile) ->
 %%--------------------------------------------------------------------
 -spec get_git_metadata() -> [{Key :: atom(), Value :: string()}].
 get_git_metadata() ->
-    Url = os:cmd("git config --get remote.origin.url") -- "\n",
-    Repository = case lists:reverse(string:tokens(Url, "/.")) of
-                     [_, Name | _] -> Name;
-                     _ -> ""
-                 end,
     [
-        {git_repository, Repository},
+        {git_repository, os:cmd("basename `git rev-parse --show-toplevel`") -- "\n"},
         {git_branch, os:cmd("git rev-parse --abbrev-ref HEAD") -- "\n"},
         {git_tag, os:cmd("git describe --always --tags") -- "\n"},
         {git_commit, os:cmd("git rev-parse HEAD") -- "\n"}
@@ -75,7 +70,7 @@ get_git_metadata() ->
 %%--------------------------------------------------------------------
 -spec inject_git_metadata(Config :: term(), AppFile :: string()) -> ok.
 inject_git_metadata(Config, AppFile) ->
-    {_, AppName} = rebar_app_utils:app_name(Config, AppFile),
+    {_, AppName} = apply(rebar_app_utils, app_name, [Config, AppFile]),
     EbinAppFile = filename:join("ebin", erlang:atom_to_list(AppName) ++ ".app"),
     {ok, [{application, AppName, Metadata}]} = file:consult(EbinAppFile),
     Env = proplists:get_value(env, Metadata, []),
