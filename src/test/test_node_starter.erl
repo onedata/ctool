@@ -13,7 +13,7 @@
 -include_lib("common_test/include/ct.hrl").
 
 %% API
--export([prepare_test_environment/3, clean_environment/1]).
+-export([prepare_test_environment/3, clean_environment/1, load_modules/2]).
 
 %%%===================================================================
 %%% Starting and stoping nodes
