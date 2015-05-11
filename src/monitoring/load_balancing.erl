@@ -43,8 +43,6 @@
     % List of 3-element tuples {Node, Frequency, RequestCount}.
     % Frequency (relative to other nodes) is how often
     %   should requests be rerouted to given node.
-    % RequestCount is how many times a request WAS redirected to given node
-    %   during using this advice.
     nodes_and_frequency = [] :: [{Node :: node(), Frequency :: float()}],
     % List of all nodes (dispatcher needs such knowledge for multicalls)
     all_nodes = [] :: [node()]
@@ -80,7 +78,7 @@
 %%--------------------------------------------------------------------
 %% @doc
 %% Returns guidelines that should be used by DNS servers in the cluster,
-%% based on node states of all nodes. The list must not be empty.
+%% based on node states of all nodes. The NodeStates list must not be empty.
 %% @end
 %%--------------------------------------------------------------------
 -spec advices_for_dnses(NodeStates :: [#node_state{}], LBState :: #load_balancing_state{} | undefined) ->
@@ -119,7 +117,7 @@ advices_for_dnses(NodeStates, LBState) ->
 %%--------------------------------------------------------------------
 %% @doc
 %% Returns guidelines that should be used by dispatchers in the cluster,
-%% based on node states of all nodes. The list must not be empty.
+%% based on node states of all nodes. The NodeStates list must not be empty.
 %% @end
 %%--------------------------------------------------------------------
 -spec advices_for_dispatchers(NodeStates :: [#node_state{}], LBState :: #load_balancing_state{} | undefined) ->

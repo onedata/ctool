@@ -13,12 +13,14 @@
 -ifndef(NODE_MONITORING_HRL).
 -define(NODE_MONITORING_HRL, 1).
 
+%% Record containing node state. It's used by node managers to send
+%% monitoring data to CCM.
 -record(node_state, {
     node = node() :: node(),
     ip_addr = {127, 0, 0, 1} :: {A :: byte(), B :: byte(), C :: byte(), D :: byte()},
     cpu_usage = [] :: float(),
     mem_usage = [] :: float(),
-    net_usage = [] :: integer()
+    net_usage = [] :: float()
 }).
 
 -endif.
