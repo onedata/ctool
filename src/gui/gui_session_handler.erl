@@ -1,17 +1,17 @@
-%% ===================================================================
-%% @author Lukasz Opiola
-%% @copyright (C): 2014 ACK CYFRONET AGH
-%% This software is released under the MIT license
-%% cited in 'LICENSE.txt'.
-%% @end
-%% ===================================================================
-%% @doc Custom session handler, confirming to n2o session handler behaviour.
-%% Implements safe cookie handling, by setting HttpOnly and Secure flags,
-%% as well as ensuring high session id entropy and no session fixation.
-%% A session logic module (implementing session_logic_behaviour) must
-%% be specified in application's env (key: session_logic_module) for this module to work.
-%% @end
-%% ===================================================================
+%%%-------------------------------------------------------------------
+%%% @author Lukasz Opiola
+%%% @copyright (C) 2014 ACK CYFRONET AGH
+%%% This software is released under the MIT license
+%%% cited in 'LICENSE.txt'.
+%%% @end
+%%%-------------------------------------------------------------------
+%%% @doc Custom session handler, confirming to n2o session handler behaviour.
+%%% Implements safe cookie handling, by setting HttpOnly and Secure flags,
+%%% as well as ensuring high session id entropy and no session fixation.
+%%% A session logic module (implementing session_logic_behaviour) must
+%%% be specified in application's env (key: session_logic_module) for this module to work.
+%%% @end
+%%%-------------------------------------------------------------------
 
 -module(gui_session_handler).
 -include("gui/common.hrl").
@@ -30,18 +30,16 @@
 % Key for process dictionary, holding information if there is a valid session
 -define(session_valid, session_valid).
 
+%%%===================================================================
+%%% API
+%%%===================================================================
 
-%% ====================================================================
-%% API functions
-%% ====================================================================
-
-%% init/2
-%% ====================================================================
+%%--------------------------------------------------------------------
 %% @doc n2o session_handler callback, called before processing every request. Retrieves
 %% user's session from a cookie or creates a new session upon login.
 %% @end
+%%--------------------------------------------------------------------
 -spec init(State :: term(), Ctx :: #context{}) -> {ok, NewState :: term(), NewCtx :: #context{}}.
-%% ====================================================================
 init(State, Ctx) ->
     Cookie = gui_ctx:cookie(?cookie_name, Ctx#context.req),
     {Path, _} = cowboy_req:path(Ctx#context.req),
@@ -75,15 +73,13 @@ init(State, Ctx) ->
                 end,
     {ok, State, Ctx#context{session = SessionID}}.
 
-
-%% finish/2
-%% ====================================================================
+%%--------------------------------------------------------------------
 %% @doc n2o session_handler callback, called after every request. Checks if
 %% there is a valid session in current context. Discards the session if not,
 %% or sets a session cookie if the session is to persist.
 %% @end
+%%--------------------------------------------------------------------
 -spec finish(State :: term(), Ctx :: #context{}) -> {ok, NewState :: term(), NewCtx :: #context{}}.
-%% ====================================================================
 finish(_State, Ctx) ->
     Module = get_session_logic_module(),
     SessionID = Ctx#context.session,
@@ -111,15 +107,13 @@ finish(_State, Ctx) ->
              end,
     {ok, [], Ctx#context{req = NewReq}}.
 
-
-%% set_value/2
-%% ====================================================================
+%%--------------------------------------------------------------------
 %% @doc n2o session_handler callback, called when data is stored in session
 %% memory, e. g. via wf:session or wf:user. Associates a Key, Value pair with the
 %% session.
 %% @end
+%%--------------------------------------------------------------------
 -spec set_value(Key :: term(), Value :: term()) -> Result :: term().
-%% ====================================================================
 set_value(Key, Value) ->
     try
         Module = get_session_logic_module(),
@@ -137,15 +131,13 @@ set_value(Key, Value) ->
         throw({T, M})
     end.
 
-
-%% get_value/2
-%% ====================================================================
+%%--------------------------------------------------------------------
 %% @doc n2o session_handler callback, called when data is retrieved from session
 %% memory, e. g. via wf:session or wf:user. Returns a Value, associated
 %% with given Key in session memory, or default.
 %% @end
+%%--------------------------------------------------------------------
 -spec get_value(Key :: term(), DefaultValue :: term()) -> Result :: term().
-%% ====================================================================
 get_value(Key, DefaultValue) ->
     try
         Props = lookup_session(?CTX#context.session),
@@ -155,39 +147,33 @@ get_value(Key, DefaultValue) ->
             DefaultValue
     end.
 
-
-%% create/0
-%% ====================================================================
+%%--------------------------------------------------------------------
 %% @doc Effectively creates a session - any data stored in the session
 %% memory in current request context will be persisted, and a cookie with
 %% session id will be sent back to the client.
 %% @end
+%%--------------------------------------------------------------------
 -spec create() -> ok.
-%% ====================================================================
 create() ->
     put(?session_valid, true),
     ok.
 
-
-%% clear/0
-%% ====================================================================
+%%--------------------------------------------------------------------
 %% @doc Clears the session - any session data will be discarded, and
 %% session cookie will be invalidated.
 %% @end
+%%--------------------------------------------------------------------
 -spec clear() -> ok.
-%% ====================================================================
 clear() ->
     put(?session_valid, false),
     delete_session(?CTX#context.session),
     ok.
 
-
-%% get_session_logic_module/0
-%% ====================================================================
+%%--------------------------------------------------------------------
 %% @doc Retrieves session_logic module from env.
 %% @end
+%%--------------------------------------------------------------------
 -spec get_session_logic_module() -> atom() | no_return().
-%% ====================================================================
 get_session_logic_module() ->
     case application:get_env(ctool, session_logic_module) of
         {ok, Module} ->
@@ -196,41 +182,35 @@ get_session_logic_module() ->
             throw("No session logic module specified in env")
     end.
 
-
-%% clear_expired_sessions/0
-%% ====================================================================
+%%--------------------------------------------------------------------
 %% @doc Deletes all sessions that have expired. Every session is saved
 %% with a ValidTill arg, that marks a point in time when it expires (in secs since epoch).
 %% It has to be periodically called as it is NOT performed automatically.
 %% @end
+%%--------------------------------------------------------------------
 -spec clear_expired_sessions() -> ok.
-%% ====================================================================
 clear_expired_sessions() ->
     Module = get_session_logic_module(),
     Module:clear_expired_sessions().
 
+%%%===================================================================
+%%% Internal functions
+%%%===================================================================
 
-%% ====================================================================
-%% Internal functions
-%% ====================================================================
-
-%% random_id/0
-%% ====================================================================
+%%--------------------------------------------------------------------
 %% @doc Generates a random, 44 chars long, base64 encoded session id.
 %% @end
+%%--------------------------------------------------------------------
 -spec random_id() -> binary().
-%% ====================================================================
 random_id() ->
     base64:encode(<<(erlang:md5(term_to_binary(now())))/binary, (erlang:md5(term_to_binary(make_ref())))/binary>>).
 
-
-%% lookup_session/1
-%% ====================================================================
+%%--------------------------------------------------------------------
 %% @doc Calls back to session logic module to lookup a session. Will not make
 %% senseless calls, such as those when session cookie yields no session.
 %% @end
--spec lookup_session(SessionID :: binary()) -> binary().
-%% ====================================================================
+%%--------------------------------------------------------------------
+-spec lookup_session(SessionID :: binary()) -> [tuple()] | undefined.
 lookup_session(SessionID) ->
     case SessionID of
         undefined ->
@@ -242,14 +222,12 @@ lookup_session(SessionID) ->
             Module:lookup_session(SessionID)
     end.
 
-
-%% delete_session/1
-%% ====================================================================
+%%--------------------------------------------------------------------
 %% @doc Calls back to session logic module to delete a session. Will not make
 %% senseless calls, such as those when session cookie yields no session.
 %% @end
+%%--------------------------------------------------------------------
 -spec delete_session(SessionID :: binary()) -> binary().
-%% ====================================================================
 delete_session(SessionID) ->
     case SessionID of
         undefined ->

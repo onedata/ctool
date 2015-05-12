@@ -1,14 +1,14 @@
-%% ===================================================================
-%% @author Krzysztof Trzepla
-%% @copyright (C): 2014 ACK CYFRONET AGH
-%% This software is released under the MIT license
-%% cited in 'LICENSE.txt'.
-%% @end
-%% ===================================================================
-%% @doc This module tests the functionality of gr_endpoint module.
-%% It contains unit tests that base on eunit.
-%% @end
-%% ===================================================================
+%%%-------------------------------------------------------------------
+%%% @author Krzysztof Trzepla
+%%% @copyright (C) 2014 ACK CYFRONET AGH
+%%% This software is released under the MIT license
+%%% cited in 'LICENSE.txt'.
+%%% @end
+%%%-------------------------------------------------------------------
+%%% @doc This module tests the functionality of gr_endpoint module.
+%%% It contains unit tests that base on eunit.
+%%% @end
+%%%-------------------------------------------------------------------
 
 -module(gr_endpoint_tests).
 
@@ -16,9 +16,9 @@
 
 -include_lib("eunit/include/eunit.hrl").
 
-%% ===================================================================
-%% Tests description
-%% ===================================================================
+%%%===================================================================
+%%% Tests description
+%%%===================================================================
 
 gr_endpoint_test_() ->
     {foreach,
@@ -36,9 +36,9 @@ gr_endpoint_test_() ->
         ]
     }.
 
-%% ===================================================================
-%% Setup/teardown functions
-%% ===================================================================
+%%%===================================================================
+%%% Setup/teardown functions
+%%%===================================================================
 
 setup() ->
     meck:new(gr_plugin, [non_strict]),
@@ -68,9 +68,9 @@ teardown(_) ->
     ?assert(meck:validate(public_key)),
     ok = meck:unload(public_key).
 
-%% ===================================================================
-%% Tests functions
-%% ===================================================================
+%%%===================================================================
+%%% Tests functions
+%%%===================================================================
 
 should_send_provider_request_1() ->
     meck:new(ibrowse),

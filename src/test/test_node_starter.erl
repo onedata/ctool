@@ -13,11 +13,11 @@
 -include_lib("common_test/include/ct.hrl").
 
 %% API
--export([prepare_test_environment/3, clean_environment/1]).
+-export([prepare_test_environment/3, clean_environment/1, load_modules/2]).
 
-%% ====================================================================
-%% Starting and stoping nodes
-%% ====================================================================
+%%%===================================================================
+%%% Starting and stoping nodes
+%%%===================================================================
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -33,7 +33,7 @@ prepare_test_environment(Config, DescriptionFile, Module) ->
         CtTestRoot = filename:join(DataDir, ".."),
         ProjectRoot = filename:join(CtTestRoot, ".."),
         AppmockRoot = filename:join(ProjectRoot, "appmock"),
-%%         CcmRoot = filename:join(ProjectRoot, "op_ccm"), %todo enable after merge of VFS-1053
+        CcmRoot = filename:join(ProjectRoot, "op_ccm"),
 
         ConfigWithPaths =
             [{ct_test_root, CtTestRoot}, {project_root, ProjectRoot} | Config],
@@ -44,15 +44,15 @@ prepare_test_environment(Config, DescriptionFile, Module) ->
         LogsDir = filename:join(PrivDir, atom_to_list(Module) ++ "_logs"),
         os:cmd("mkdir -p " ++ LogsDir),
 
-        StartLog = utils:cmd([EnvUpScript,
+        StartLog = list_to_binary(utils:cmd([EnvUpScript,
             %% Function is used durgin OP or GR tests so starts OP or GR - not both
-            "--bin-provider", ProjectRoot,
+            "--bin-worker", ProjectRoot,
             "--bin-gr", ProjectRoot,
             %% additionally AppMock can be started
             "--bin-appmock", AppmockRoot,
-%%             "--bin-ccm", CcmRoot, %todo enable after merge of VFS-1053
-            "-l", LogsDir,
-            DescriptionFile, "2> /dev/null"]),
+            "--bin-ccm", CcmRoot,
+            "--logdir", LogsDir,
+            DescriptionFile, "2> prepare_test_environment_error.log"])),
 
         EnvDesc = json_parser:parse_json_binary_to_atom_proplist(StartLog),
 
@@ -63,23 +63,29 @@ prepare_test_environment(Config, DescriptionFile, Module) ->
             CCMs = ?config(op_ccm_nodes, EnvDesc),
             AllNodes = GrNodes ++ Workers ++ CCMs,
 
-            erlang:set_cookie(node(), oneprovider_node),
+            erlang:set_cookie(node(), test_cookie),
             os:cmd("echo nameserver " ++ atom_to_list(Dns) ++ " > /etc/resolv.conf"),
 
             ping_nodes(AllNodes),
             global:sync(),
             ok = load_modules(AllNodes, [Module]),
 
-            lists:append(ConfigWithPaths, proplists:delete(dns, EnvDesc))
+            lists:append([
+                ConfigWithPaths,
+                proplists:delete(dns, EnvDesc),
+                rebar_git_plugin:get_git_metadata()
+            ])
         catch
             E11:E12 ->
-                ct:print("Prepare of environment failed ~p:~p~n~p", [E11, E12, erlang:get_stacktrace()]),
+                ct:print("Prepare of environment failed ~p:~p~n~p",
+                    [E11, E12, erlang:get_stacktrace()]),
                 clean_environment(EnvDesc),
                 {fail, {init_failed, E11, E12}}
         end
     catch
         E21:E22 ->
-            ct:print("Prepare of environment failed ~p:~p~n~p", [E21, E22, erlang:get_stacktrace()]),
+            ct:print("Prepare of environment failed ~p:~p~n~p",
+                [E21, E22, erlang:get_stacktrace()]),
             {fail, {init_failed, E21, E22}}
     end.
 
@@ -98,9 +104,9 @@ clean_environment(Config) ->
     utils:cmd([CleanupScript | DockersStr]),
     ok.
 
-%% ====================================================================
-%% Internal functions
-%% ====================================================================
+%%%===================================================================
+%%% Internal functions
+%%%===================================================================
 
 %%--------------------------------------------------------------------
 %% @private
@@ -116,7 +122,7 @@ ping_nodes(_Nodes, 0) ->
 ping_nodes(Nodes, Tries) ->
     AllConnected = lists:all(
         fun(Node) ->
-            pong == net_adm:ping(Node) 
+            pong == net_adm:ping(Node)
         end, Nodes),
     case AllConnected of
         true -> ok;
@@ -134,10 +140,9 @@ ping_nodes(Nodes, Tries) ->
 -spec load_modules(Nodes :: [node()], Modules :: [module()]) -> ok.
 load_modules(_, []) ->
     ok;
-
 load_modules(Nodes, [Module | Modules]) ->
     {Module, Binary, Filename} = code:get_object_code(Module),
     {_, _} = rpc:multicall(Nodes, code, delete, [Module]),
     {_, _} = rpc:multicall(Nodes, code, purge, [Module]),
-    {_Replies, _} = rpc:multicall(Nodes, code, load_binary, [Module, Filename, Binary]),
+    {_, _} = rpc:multicall(Nodes, code, load_binary, [Module, Filename, Binary]),
     load_modules(Nodes, Modules).

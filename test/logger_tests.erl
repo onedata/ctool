@@ -1,13 +1,13 @@
-%% ===================================================================
-%% @author Lukasz Opiola
-%% @copyright (C): 2013 ACK CYFRONET AGH
-%% This software is released under the MIT license
-%% cited in 'LICENSE.txt'.
-%% @end
-%% ===================================================================
-%% @doc This module tests the functionality of logger module, using eunit tests.
-%% @end
-%% ===================================================================
+%%%-------------------------------------------------------------------
+%%% @author Lukasz Opiola
+%%% @copyright (C) 2013 ACK CYFRONET AGH
+%%% This software is released under the MIT license
+%%% cited in 'LICENSE.txt'.
+%%% @end
+%%%-------------------------------------------------------------------
+%%% @doc This module tests the functionality of logger module, using eunit tests.
+%%% @end
+%%%-------------------------------------------------------------------
 -module(logger_tests).
 
 -ifdef(TEST).
@@ -82,11 +82,13 @@ lager_interfacing_test_() ->
         [
             {"dispatch_log, set/get_include_stacktrace, compute_message, logging macros",
                 fun() ->
-                    meck:expect(logger_plugin, gather_metadata, fun() -> [] end),
+                    meck:expect(logger_plugin, gather_metadata, fun() ->
+                        [] end),
                     meck:expect(lager, log,
                         fun(debug, _, "debug message") -> ok;
                             (info, _, "info message") -> ok;
-                            (warning, _, "warning message" ++ _Stacktrace) -> ok;
+                            (warning, _, "warning message" ++ _Stacktrace) ->
+                                ok;
                             (error, _, "error message") -> ok;
                             (emergency, _, "emergency message") -> ok
                         end),

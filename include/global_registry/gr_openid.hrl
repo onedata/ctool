@@ -1,20 +1,20 @@
-%% ===================================================================
-%% @author Krzysztof Trzepla
-%% @copyright (C): 2014 ACK CYFRONET AGH
-%% This software is released under the MIT license
-%% cited in 'LICENSE.txt'.
-%% @end
-%% ===================================================================
-%% @doc Global Registry definition of OpenID tokens.
-%% @end
-%% ===================================================================
+%%%-------------------------------------------------------------------
+%%% @author Krzysztof Trzepla
+%%% @copyright (C) 2014 ACK CYFRONET AGH
+%%% This software is released under the MIT license
+%%% cited in 'LICENSE.txt'.
+%%% @end
+%%%-------------------------------------------------------------------
+%%% @doc Global Registry definition of OpenID tokens.
+%%% @end
+%%%-------------------------------------------------------------------
 
 -ifndef(GR_OPENID_HRL).
 -define(GR_OPENID_HRL, 1).
 
 %% @doc token_details record contains following fields:
-%% * access_id   - unique access ID authorized by client
-%% * client_name - client name associated with token
+%% * access_id   - unique access ID authorized by gr_endpoint:client()
+%% * gr_endpoint:client()_name - gr_endpoint:client() name associated with token
 %% @end
 -record(token_details, {
     access_id :: binary(),
@@ -48,8 +48,6 @@
     exp :: binary(),
     iat :: binary()
 }).
-
-
 
 %% @doc token_response record contains following fields:
 %% * access_token  - the access token issued by the authorization server
