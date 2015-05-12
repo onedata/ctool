@@ -143,7 +143,7 @@ advices_for_dispatchers(NodeStates, LBState) ->
             ExtraLoad = proplists:get_value(NodeState#node_state.node, ExtraLoads, 0.0),
             L * (1.0 - ExtraLoad)
         end, NodeStates),
-    AvgLoadForDisp = average(LoadsForDisp),
+    AvgLoadForDisp = utils:average(LoadsForDisp),
     MinLoadForDisp = lists:min(LoadsForDisp),
     NodesAndLoads = lists:zip(Nodes, LoadsForDisp),
     % Nodes that are loaded less than average
@@ -378,18 +378,3 @@ overloaded_for_dispatcher(LoadForDispatcher, MinLoadForDisp) ->
 %% -spec overloaded_for_dns(NodeState :: #node_state{}, MinLoadForDNS :: float()) -> boolean().
 %% overloaded_for_dns(LoadForDNS, MinLoadForDNS) ->
 %%     LoadForDNS > 1.5 * MinLoadForDNS.
-
-
-%%--------------------------------------------------------------------
-%% @private
-%% @doc
-%% Calculates average from a list of numeric values.
-%% @end
-%%--------------------------------------------------------------------
--spec average(Values :: [integer() | float()]) -> float().
-average(Values) ->
-    Sum = lists:foldl(
-        fun(Value, Acc) ->
-            Acc + Value
-        end, 0.0, Values),
-    Sum / length(Values).

@@ -237,8 +237,4 @@ choose_index_test() ->
     ?assertEqual(4, load_balancing:choose_index(NodesAndFreq, 0, 1.0)),
     ok.
 
-average_test() ->
-    Values = [0.56, 0.234, 0.64, 0.122, 0.667, 0.185, 0.11, 6.7, 8.13, 4.234],
-    ?assertEqual(load_balancing:average(Values), 2.1582).
-
 -endif.
