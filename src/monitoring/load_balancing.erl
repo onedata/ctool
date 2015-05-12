@@ -223,17 +223,9 @@ advices_for_dispatchers(NodeStates, LBState) ->
 choose_nodes_for_dns(DNSAdvice) ->
     #dns_lb_advice{nodes_and_frequency = NodesAndFreq,
         node_choices = NodeChoices} = DNSAdvice,
-    % TODO tests
-    case application:get_env(lb, dns) of
-        {ok, false} ->
-            % round robin
-            random:seed(now()),
-            lists:sublist(NodeChoices, random:uniform(length(NodesAndFreq)), length(NodesAndFreq));
-        _ ->
-            Index = choose_index(NodesAndFreq),
-            Nodes = lists:sublist(NodeChoices, Index, length(NodesAndFreq)),
-            Nodes
-    end.
+    Index = choose_index(NodesAndFreq),
+    Nodes = lists:sublist(NodeChoices, Index, length(NodesAndFreq)),
+    Nodes.
 
 
 %%--------------------------------------------------------------------
@@ -261,27 +253,17 @@ choose_ns_nodes_for_dns(DNSAdvice) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec choose_node_for_dispatcher(DSNAdvice :: #dispatcher_lb_advice{}, WorkerName :: atom()) -> node().
-choose_node_for_dispatcher(Advice, WorkerName) ->
+choose_node_for_dispatcher(Advice, _WorkerName) ->
     #dispatcher_lb_advice{should_delegate = ShouldDelegate,
         nodes_and_frequency = NodesAndFreq} = Advice,
-
-    % TODO tests
-    LBEnabled = application:get_env(lb, dispatcher) =/= {ok, false},
-    Result = case ShouldDelegate andalso LBEnabled of
-                 false ->
-                     node();
-                 true ->
-                     Index = choose_index(NodesAndFreq),
-                     {Node, _} = lists:nth(Index, NodesAndFreq),
-                     Node
-             end,
-
-    % TODO testy
-    case node() of
-        Result -> ok;
-        _ -> io:format("del ~p -> ~p~n", [WorkerName, Result])
-    end,
-    Result.
+    case ShouldDelegate of
+        false ->
+            node();
+        true ->
+            Index = choose_index(NodesAndFreq),
+            {Node, _} = lists:nth(Index, NodesAndFreq),
+            Node
+    end.
 
 
 %%--------------------------------------------------------------------
@@ -387,9 +369,9 @@ overloaded_for_dispatcher(LoadForDispatcher, MinLoadForDisp) ->
 %% nodes in DNS when there are heavy loaded in fact decreases the whole system throughput.
 %% @end
 %%--------------------------------------------------------------------
--spec overloaded_for_dns(NodeState :: #node_state{}, MinLoadForDNS :: float()) -> boolean().
-overloaded_for_dns(LoadForDNS, MinLoadForDNS) ->
-    LoadForDNS > 1.5 * MinLoadForDNS.
+%% -spec overloaded_for_dns(NodeState :: #node_state{}, MinLoadForDNS :: float()) -> boolean().
+%% overloaded_for_dns(LoadForDNS, MinLoadForDNS) ->
+%%     LoadForDNS > 1.5 * MinLoadForDNS.
 
 
 %%--------------------------------------------------------------------

@@ -398,14 +398,12 @@ get_interface_max_throughput(Interface, TimeElapsed) ->
                       {ok, <<"full\n">>} -> 2;
                       _ -> 1
                   end,
-%%     IntSpeedMbps = case file:read_file(?NET_SPEED_FILE(Interface)) of
-%%                        {ok, SpeedBin} ->
-%%                            binary_to_integer(binary:part(SpeedBin, 0, byte_size(SpeedBin) - 1));
-%%                        _ ->
-%%                            10
-%%                    end,
-    % TODO TEST - 10 Mbps limit
-    IntSpeedMbps = 10,
+    IntSpeedMbps = case file:read_file(?NET_SPEED_FILE(Interface)) of
+                       {ok, SpeedBin} ->
+                           binary_to_integer(binary:part(SpeedBin, 0, byte_size(SpeedBin) - 1));
+                       _ ->
+                           10
+                   end,
     % IntSpeedMbps is in Mbps so (IntSpeedMbps * 131072) is in Bytes/s
     IntSpeedMbps * 131072 * DuplexRatio * TimeElapsed.
 
