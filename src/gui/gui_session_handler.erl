@@ -123,7 +123,7 @@ set_value(Key, Value) ->
                 Module:save_session(SessionID, [{Key, Value} | proplists:delete(Key, Props)], undefined),
                 Value;
             _ ->
-                ?error("Cannot save data in session memory: '~p' is not a valid session."),
+                ?error("Cannot save data in session memory: '~p' is not a valid session.", [SessionID]),
                 throw(invalid_session)
         end
     catch T:M ->
