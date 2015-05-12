@@ -312,7 +312,10 @@ authoritative_answer_flag(Flag) ->
 %%--------------------------------------------------------------------
 -spec answer_record(Domain, TTL, Type, Data) ->
     {answer, Domain, TTL, Type, Data} when
-    Domain :: string(), TTL :: integer(), Type :: dns_query_type(), Data :: term().
+    Domain :: string(),
+    TTL :: integer(),
+    Type :: dns_query_handler_behaviour:dns_query_type(),
+    Data :: term().
 answer_record(Domain, TTL, Type, Data) ->
     {answer, Domain, TTL, Type, Data}.
 
@@ -324,7 +327,10 @@ answer_record(Domain, TTL, Type, Data) ->
 %%--------------------------------------------------------------------
 -spec authority_record(Domain, TTL, Type, Data) ->
     {authority, Domain, TTL, Type, Data} when
-    Domain :: string(), TTL :: integer(), Type :: dns_query_type(), Data :: term().
+    Domain :: string(),
+    TTL :: integer(),
+    Type :: dns_query_handler_behaviour:dns_query_type(),
+    Data :: term().
 authority_record(Domain, TTL, Type, Data) ->
     {authority, Domain, TTL, Type, Data}.
 
@@ -336,7 +342,10 @@ authority_record(Domain, TTL, Type, Data) ->
 %%--------------------------------------------------------------------
 -spec additional_record(Domain, TTL, Type, Data) ->
     {additional, Domain, TTL, Type, Data} when
-    Domain :: string(), TTL :: integer(), Type :: dns_query_type(), Data :: term().
+    Domain :: string(),
+    TTL :: integer(),
+    Type :: dns_query_handler_behaviour:dns_query_type(),
+    Data :: term().
 additional_record(Domain, TTL, Type, Data) ->
     {additional, Domain, TTL, Type, Data}.
 
