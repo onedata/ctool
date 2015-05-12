@@ -10,8 +10,8 @@
 %%% used in applications based on CCM - node_managers distriution model.
 %%% @end
 %%%-------------------------------------------------------------------
--ifndef(GLOBAL_DEFINITIONS_HRL).
--define(GLOBAL_DEFINITIONS_HRL, 1).
+-ifndef(GLOBAL_DEFINITIONS_CTOOL_HRL).
+-define(GLOBAL_DEFINITIONS_CTOOL_HRL, 1).
 
 %%%===================================================================
 %%% Global names

@@ -136,7 +136,7 @@ handle_query(Packet, Transport) ->
 %% @doc Checks if a query is valid.
 %% @end
 %%--------------------------------------------------------------------
--spec validate_query(#dns_rec{}) -> ok | form_error.
+-spec validate_query(#dns_rec{}) -> ok | bad_version | form_error.
 validate_query(DNSRec) ->
     case DNSRec of
         #dns_rec{qdlist = [#dns_query{class = Class}], anlist = [], nslist = [], arlist = []}
