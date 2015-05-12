@@ -152,11 +152,93 @@ choose_nodes_for_dns_test() ->
     IP2 = {200, 0, 0, 2},
     IP3 = {200, 0, 0, 3},
     IP4 = {200, 0, 0, 4},
+    NodeChoices = [IP1, IP2, IP3, IP4, IP1, IP2, IP3, IP4],
     DNSAdvice = #dns_lb_advice{
-        nodes_and_frequency = [{}],
-        node_choices = []},
-    
-
+        nodes_and_frequency = [{IP1, 0.1}, {IP2, 0.2}, {IP3, 0.3}, {IP4, 0.4}],
+        node_choices = NodeChoices},
+    lists:foreach(
+        fun(_) ->
+            [FirstNode | _] = Nodes = load_balancing:choose_nodes_for_dns(DNSAdvice),
+            ?assertEqual(length(Nodes), 4),
+            ExpectedListLong = lists:dropwhile(
+                fun(X) ->
+                    X =/= FirstNode
+                end, NodeChoices),
+            ExpectedList = lists:sublist(ExpectedListLong, 4),
+            ?assertEqual(Nodes, ExpectedList)
+        end, lists:seq(1, 50)),
     ok.
+
+choose_ns_nodes_for_dns_test() ->
+    IP1 = {200, 0, 0, 1},
+    IP2 = {200, 0, 0, 2},
+    IP3 = {200, 0, 0, 3},
+    IP4 = {200, 0, 0, 4},
+    NodeChoices = [IP1, IP2, IP3, IP4, IP1, IP2, IP3, IP4],
+    DNSAdvice = #dns_lb_advice{
+        nodes_and_frequency = [{IP1, 0.1}, {IP2, 0.2}, {IP3, 0.3}, {IP4, 0.4}],
+        node_choices = NodeChoices},
+    lists:foreach(
+        fun(_) ->
+            [FirstNode | _] = Nodes = load_balancing:choose_ns_nodes_for_dns(DNSAdvice),
+            ?assertEqual(length(Nodes), 4),
+            ExpectedListLong = lists:dropwhile(
+                fun(X) ->
+                    X =/= FirstNode
+                end, NodeChoices),
+            ExpectedList = lists:sublist(ExpectedListLong, 4),
+            ?assertEqual(Nodes, ExpectedList)
+        end, lists:seq(1, 50)),
+    ok.
+
+
+choose_nodes_for_dispatcher_test() ->
+    Node1 = node1,
+    Node2 = node2,
+    Node3 = node3,
+    Node4 = node4,
+    Nodes = [Node1, Node2, Node3, Node4],
+    DispAdviceNoDel = #dispatcher_lb_advice{
+        nodes_and_frequency = [],
+        should_delegate = false,
+        all_nodes = Nodes
+    },
+    lists:foreach(
+        fun(_) ->
+            Node = load_balancing:choose_node_for_dispatcher(DispAdviceNoDel, dummy_worker),
+            ?assertEqual(Node, node())
+        end, lists:seq(1, 50)),
+    DispAdviceDel = #dispatcher_lb_advice{
+        nodes_and_frequency = [{Node1, 0.3}, {Node3, 0.6}, {Node4, 0.1}],
+        should_delegate = true,
+        all_nodes = Nodes
+    },
+    lists:foreach(
+        fun(_) ->
+            Node = load_balancing:choose_node_for_dispatcher(DispAdviceDel, dummy_worker),
+            ?assert(lists:member(Node, [Node1, Node3, Node4]))
+        end, lists:seq(1, 50)),
+    ?assertEqual(load_balancing:all_nodes_for_dispatcher(DispAdviceNoDel), Nodes),
+    ?assertEqual(load_balancing:all_nodes_for_dispatcher(DispAdviceDel), Nodes),
+    ok.
+
+choose_index_test() ->
+    NodesAndFreq = [{node1, 0.31}, {node2, 0.16}, {node3, 0.32}, {node4, 0.21}],
+    ?assertEqual(1, load_balancing:choose_index(NodesAndFreq, 0, 0.12)),
+    ?assertEqual(1, load_balancing:choose_index(NodesAndFreq, 0, 0.309999)),
+    ?assertEqual(2, load_balancing:choose_index(NodesAndFreq, 0, 0.311)),
+    ?assertEqual(2, load_balancing:choose_index(NodesAndFreq, 0, 0.46999)),
+    ?assertEqual(3, load_balancing:choose_index(NodesAndFreq, 0, 0.471)),
+    ?assertEqual(3, load_balancing:choose_index(NodesAndFreq, 0, 0.57)),
+    ?assertEqual(3, load_balancing:choose_index(NodesAndFreq, 0, 0.7899)),
+    ?assertEqual(4, load_balancing:choose_index(NodesAndFreq, 0, 0.791)),
+    ?assertEqual(4, load_balancing:choose_index(NodesAndFreq, 0, 0.839)),
+    ?assertEqual(4, load_balancing:choose_index(NodesAndFreq, 0, 0.999)),
+    ?assertEqual(4, load_balancing:choose_index(NodesAndFreq, 0, 1.0)),
+    ok.
+
+average_test() ->
+    Values = [0.56, 0.234, 0.64, 0.122, 0.667, 0.185, 0.11, 6.7, 8.13, 4.234],
+    ?assertEqual(load_balancing:average(Values), 2.1582).
 
 -endif.

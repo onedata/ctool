@@ -12,6 +12,10 @@
 -module(load_balancing).
 -author("lopiola").
 
+-ifdef(TEST).
+-compile(export_all).
+-endif.
+
 -include("logging.hrl").
 -include("monitoring/monitoring.hrl").
 
@@ -68,7 +72,7 @@
 %% API
 -export([advices_for_dnses/2, choose_nodes_for_dns/1, choose_ns_nodes_for_dns/1, initial_advice_for_dns/1]).
 -export([advices_for_dispatchers/2, choose_node_for_dispatcher/2]).
--export([initial_advice_for_dispatcher/0, all_nodes_for_dispatcher/1]).
+-export([all_nodes_for_dispatcher/1, initial_advice_for_dispatcher/0]).
 
 
 %%%===================================================================
@@ -270,6 +274,17 @@ choose_node_for_dispatcher(Advice, _WorkerName) ->
 
 %%--------------------------------------------------------------------
 %% @doc
+%% Returns an initial advice for dispatcher that can be used before CCM
+%% starts broadcasting advices.
+%% @end
+%%--------------------------------------------------------------------
+-spec all_nodes_for_dispatcher(Advice :: #dispatcher_lb_advice{}) -> [node()].
+all_nodes_for_dispatcher(#dispatcher_lb_advice{all_nodes = AllNodes}) ->
+    AllNodes.
+
+
+%%--------------------------------------------------------------------
+%% @doc
 %% Returns an initial advice for DNS that can be used before CCM
 %% starts broadcasting advices.
 %% @end
@@ -289,17 +304,6 @@ initial_advice_for_dns(NodeIP) ->
 -spec initial_advice_for_dispatcher() -> #dispatcher_lb_advice{}.
 initial_advice_for_dispatcher() ->
     #dispatcher_lb_advice{}.
-
-
-%%--------------------------------------------------------------------
-%% @doc
-%% Returns an initial advice for dispatcher that can be used before CCM
-%% starts broadcasting advices.
-%% @end
-%%--------------------------------------------------------------------
--spec all_nodes_for_dispatcher(Advice :: #dispatcher_lb_advice{}) -> [node()].
-all_nodes_for_dispatcher(#dispatcher_lb_advice{all_nodes = AllNodes}) ->
-    AllNodes.
 
 
 %%%===================================================================
