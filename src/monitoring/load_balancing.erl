@@ -19,6 +19,11 @@
 -include("logging.hrl").
 -include("monitoring/monitoring.hrl").
 
+% Both computational and network load of a node will be rounded up to this value
+% if they are smaller. This does not impact the load balancing process but ensures
+% easier calculations (no danger of divison by zero).
+-define(SMALLEST_LOAD, 0.1).
+
 % Record used to express how DNS should be answering. Such records are distributed
 % to DNS modules, and later they evaluate choose_nodes_for_dns/1 function on this
 % record. The record structure shall not be visible outside this module.
@@ -335,11 +340,13 @@ choose_index([{_, Freq} | T], CurrIndex, RandomFloat) ->
 %% @doc
 %% Returns a single value representing node load.
 %% This value is used for comparison in dispatcher load balancing.
+%% This function will never return value smaller than ?SMALLEST_LOAD.
 %% @end
 %%--------------------------------------------------------------------
 -spec load_for_dispatcher(NodeState :: #node_state{}) -> float().
 load_for_dispatcher(#node_state{cpu_usage = CPU, mem_usage = Mem}) ->
-    (CPU * 3 + Mem) / 4.
+    LoadForDispatcher = (CPU * 3 + Mem) / 4,
+    max(?SMALLEST_LOAD, LoadForDispatcher).
 
 
 %%--------------------------------------------------------------------
@@ -351,7 +358,8 @@ load_for_dispatcher(#node_state{cpu_usage = CPU, mem_usage = Mem}) ->
 %%--------------------------------------------------------------------
 -spec load_for_dns(NodeState :: #node_state{}) -> float().
 load_for_dns(#node_state{net_usage = NetUsage} = NodeState) ->
-    (2.0 + load_for_dispatcher(NodeState) / 100) / 3 * NetUsage.
+    LoadForDNS = (2.0 + load_for_dispatcher(NodeState) / 100) / 3 * NetUsage,
+    max(?SMALLEST_LOAD, LoadForDNS).
 
 
 %%--------------------------------------------------------------------
