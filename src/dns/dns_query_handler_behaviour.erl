@@ -13,19 +13,19 @@
 -include_lib("kernel/src/inet_dns.hrl").
 
 % Allowed query types
--type dns_query_type() :: ?S_A | ?S_NS | ?S_CNAME | ?S_SOA | ?S_WKS | ?S_PTR | ?S_HINFO | ?S_MINFO | ?S_MX | ?S_TXT.
+-type query_type() :: ?S_A | ?S_NS | ?S_CNAME | ?S_SOA | ?S_WKS | ?S_PTR | ?S_HINFO | ?S_MINFO | ?S_MX | ?S_TXT.
 
 % Atoms for reply codes for cenvenience
--type reply_type() :: ok | serv_fail | nx_domain | not_impl | refused | form_error | bad_version.
+-type reply_code() :: ok | serv_fail | nx_domain | not_impl | refused | form_error | bad_version.
 
 % Records used internally to pass query results from handler to server, which then puts them in response.
--type answer_record() :: {answer, Type :: dns_query_type(), Data :: term()}.
--type authority_record() :: {authority, Type :: dns_query_type(), Data :: term()}.
--type additional_record() :: {additional, Type :: dns_query_type(), Data :: term()}.
+-type answer_record() :: {answer, Type :: query_type(), Data :: term()}.
+-type authority_record() :: {authority, Type :: query_type(), Data :: term()}.
+-type additional_record() :: {additional, Type :: query_type(), Data :: term()}.
 -type authoritative_answer_flag() :: {aa, Flag :: boolean()}.
--type dns_query_handler_reponse() :: [answer_record() | authority_record () | additional_record() | authoritative_answer_flag()].
+-type reply_record_list() :: [answer_record() | authority_record () | additional_record() | authoritative_answer_flag()].
 
--export_type([reply_type/0, dns_query_handler_reponse/0, authority_record/0]).
+-export_type([query_type/0, reply_code/0, reply_record_list/0, authority_record/0]).
 
 %% Data types that should be returned for specific types of queries:
 %% -----------------------------------------
@@ -121,34 +121,34 @@
 %% @end
 %%--------------------------------------------------------------------
 -callback handle_a(Domain :: string()) ->
-    {reply_type(), dns_query_handler_reponse()} | reply_type().
+    {reply_code(), reply_record_list()} | reply_code().
 
 -callback handle_ns(Domain :: string()) ->
-    {reply_type(), dns_query_handler_reponse()} | reply_type().
+    {reply_code(), reply_record_list()} | reply_code().
 
 -callback handle_cname(Domain :: string()) ->
-    {reply_type(), dns_query_handler_reponse()} | reply_type().
+    {reply_code(), reply_record_list()} | reply_code().
 
 -callback handle_soa(Domain :: string()) ->
-    {reply_type(), dns_query_handler_reponse()} | reply_type().
+    {reply_code(), reply_record_list()} | reply_code().
 
 -callback handle_wks(Domain :: string()) ->
-    {reply_type(), dns_query_handler_reponse()} | reply_type().
+    {reply_code(), reply_record_list()} | reply_code().
 
 -callback handle_ptr(Domain :: string()) ->
-    {reply_type(), dns_query_handler_reponse()} | reply_type().
+    {reply_code(), reply_record_list()} | reply_code().
 
 -callback handle_hinfo(Domain :: string()) ->
-    {reply_type(), dns_query_handler_reponse()} | reply_type().
+    {reply_code(), reply_record_list()} | reply_code().
 
 -callback handle_minfo(Domain :: string()) ->
-    {reply_type(), dns_query_handler_reponse()} | reply_type().
+    {reply_code(), reply_record_list()} | reply_code().
 
 -callback handle_mx(Domain :: string()) ->
-    {reply_type(), dns_query_handler_reponse()} | reply_type().
+    {reply_code(), reply_record_list()} | reply_code().
 
 -callback handle_txt(Domain :: string()) ->
-    {reply_type(), dns_query_handler_reponse()} | reply_type().
+    {reply_code(), reply_record_list()} | reply_code().
 
 
 

@@ -161,8 +161,8 @@ validate_query(DNSRec) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec call_handler_module(HandlerModule :: module(), Domain :: string(), Type :: atom()) ->
-    {dns_query_handler_behaviour:reply_type(), dns_query_handler_behaviour:dns_query_handler_reponse()}
-    | dns_query_handler_behaviour:reply_type() .
+    {dns_query_handler_behaviour:reply_code(), dns_query_handler_behaviour:reply_record_list()}
+    | dns_query_handler_behaviour:reply_code() .
 call_handler_module(HandlerModule, Domain, Type) ->
     case type_to_fun(Type) of
         not_impl ->
@@ -220,7 +220,7 @@ generate_answer(DNSRec, OPTRR, Transport) ->
 %% If there was an OPT RR record in request, it modifies it properly and concates to the ADDITIONAL section.
 %% @end
 %%--------------------------------------------------------------------
--spec set_reply_code(DNSRec :: #dns_rec{header :: #dns_header{}}, ReplyType :: dns_query_handler_behaviour:reply_type()) -> #dns_rec{}.
+-spec set_reply_code(DNSRec :: #dns_rec{header :: #dns_header{}}, ReplyType :: dns_query_handler_behaviour:reply_code()) -> #dns_rec{}.
 set_reply_code(#dns_rec{header = Header} = DNSRec, ReplyType) ->
     ReplyCode = case ReplyType of
                     nx_domain -> ?NXDOMAIN;
@@ -315,7 +315,7 @@ authoritative_answer_flag(Flag) ->
     {answer, Domain, TTL, Type, Data} when
     Domain :: string(),
     TTL :: integer(),
-    Type :: dns_query_handler_behaviour:dns_query_type(),
+    Type :: dns_query_handler_behaviour:query_type(),
     Data :: term().
 answer_record(Domain, TTL, Type, Data) ->
     {answer, Domain, TTL, Type, Data}.
@@ -330,7 +330,7 @@ answer_record(Domain, TTL, Type, Data) ->
     {authority, Domain, TTL, Type, Data} when
     Domain :: string(),
     TTL :: integer(),
-    Type :: dns_query_handler_behaviour:dns_query_type(),
+    Type :: dns_query_handler_behaviour:query_type(),
     Data :: term().
 authority_record(Domain, TTL, Type, Data) ->
     {authority, Domain, TTL, Type, Data}.
@@ -345,7 +345,7 @@ authority_record(Domain, TTL, Type, Data) ->
     {additional, Domain, TTL, Type, Data} when
     Domain :: string(),
     TTL :: integer(),
-    Type :: dns_query_handler_behaviour:dns_query_type(),
+    Type :: dns_query_handler_behaviour:query_type(),
     Data :: term().
 additional_record(Domain, TTL, Type, Data) ->
     {additional, Domain, TTL, Type, Data}.

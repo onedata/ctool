@@ -28,9 +28,9 @@
 % Record holding all monitoring info and required measurement history.
 -record(node_monitoring_state, {
     ip_addr = {127, 0, 0, 1} :: {byte(), byte(), byte(), byte()},
-    cpu_stats = 0.0 :: float(),
-    mem_stats = 0.0 :: float(),
-    net_stats = 0.0 :: float(),
+    cpu_stats = [] :: [{Name :: binary(), Value :: float()}],
+    mem_stats = [] :: [{Name :: binary(), Value :: float()}],
+    net_stats = [] :: [{Name :: binary(), Value :: float()}],
     cpu_last = [] :: [{Name :: binary(), WorkJiffies :: integer(), TotalJiffies :: integer()}],
     net_last = [] :: [{Name :: binary(), Value :: integer()}],
     last_update = {0, 0, 0} :: {integer(), integer(), integer()} % Timestamp of the last measurement
