@@ -33,7 +33,7 @@
     % times it would have to be calculated.
     % This list is a list of nodes, duplicated once, so we can easily
     % pick N consecutive nodes starting from any between 1 and N.
-    node_choices = [] :: [Node :: term()]
+    node_choices = [] :: [{A :: byte(), B :: byte(), C :: byte(), D :: byte()}]
 }).
 
 
@@ -224,7 +224,7 @@ advices_for_dispatchers(NodeStates, LBState) ->
 %% The records are shuffled according to given load balancing advice.
 %% @end
 %%--------------------------------------------------------------------
--spec choose_nodes_for_dns(DSNAdvice :: #dns_lb_advice{}) ->   [{A :: byte(), B :: byte(), C :: byte(), D :: byte()}].
+-spec choose_nodes_for_dns(DSNAdvice :: #dns_lb_advice{}) -> [{A :: byte(), B :: byte(), C :: byte(), D :: byte()}].
 choose_nodes_for_dns(DNSAdvice) ->
     #dns_lb_advice{nodes_and_frequency = NodesAndFreq,
         node_choices = NodeChoices} = DNSAdvice,
@@ -239,7 +239,7 @@ choose_nodes_for_dns(DNSAdvice) ->
 %% As DNS servers work on every node, its always a full list of nodes, but shuffled.
 %% @end
 %%--------------------------------------------------------------------
--spec choose_ns_nodes_for_dns(DSNAdvice :: #dns_lb_advice{}) ->    [{A :: byte(), B :: byte(), C :: byte(), D :: byte()}].
+-spec choose_ns_nodes_for_dns(DSNAdvice :: #dns_lb_advice{}) -> [{A :: byte(), B :: byte(), C :: byte(), D :: byte()}].
 choose_ns_nodes_for_dns(DNSAdvice) ->
     #dns_lb_advice{nodes_and_frequency = NodesAndFreq,
         node_choices = NodeChoices} = DNSAdvice,
