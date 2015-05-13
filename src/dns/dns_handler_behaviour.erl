@@ -8,7 +8,7 @@
 %%% @doc: This behaviour defines API for a DNS query handler.
 %%% @end
 %%%-------------------------------------------------------------------
--module(dns_query_handler_behaviour).
+-module(dns_handler_behaviour).
 
 -include_lib("kernel/src/inet_dns.hrl").
 
@@ -24,8 +24,9 @@
 -type additional_record() :: {additional, Type :: query_type(), Data :: term()}.
 -type authoritative_answer_flag() :: {aa, Flag :: boolean()}.
 -type reply_record_list() :: [answer_record() | authority_record () | additional_record() | authoritative_answer_flag()].
+-type handler_reply() :: reply_code() | {reply_code(), reply_record_list()}.
 
--export_type([query_type/0, reply_code/0, reply_record_list/0, authority_record/0]).
+-export_type([query_type/0, reply_code/0, handler_reply/0, authority_record/0]).
 
 %% Data types that should be returned for specific types of queries:
 %% -----------------------------------------
@@ -120,35 +121,25 @@
 %% See {@link dns.hrl} for reference and data types that should be returned for specific types of queries.
 %% @end
 %%--------------------------------------------------------------------
--callback handle_a(Domain :: string()) ->
-    {reply_code(), reply_record_list()} | reply_code().
+-callback handle_a(Domain :: string()) -> handler_reply().
 
--callback handle_ns(Domain :: string()) ->
-    {reply_code(), reply_record_list()} | reply_code().
+-callback handle_ns(Domain :: string()) -> handler_reply().
 
--callback handle_cname(Domain :: string()) ->
-    {reply_code(), reply_record_list()} | reply_code().
+-callback handle_cname(Domain :: string()) -> handler_reply().
 
--callback handle_soa(Domain :: string()) ->
-    {reply_code(), reply_record_list()} | reply_code().
+-callback handle_soa(Domain :: string()) -> handler_reply().
 
--callback handle_wks(Domain :: string()) ->
-    {reply_code(), reply_record_list()} | reply_code().
+-callback handle_wks(Domain :: string()) -> handler_reply().
 
--callback handle_ptr(Domain :: string()) ->
-    {reply_code(), reply_record_list()} | reply_code().
+-callback handle_ptr(Domain :: string()) -> handler_reply().
 
--callback handle_hinfo(Domain :: string()) ->
-    {reply_code(), reply_record_list()} | reply_code().
+-callback handle_hinfo(Domain :: string()) -> handler_reply().
 
--callback handle_minfo(Domain :: string()) ->
-    {reply_code(), reply_record_list()} | reply_code().
+-callback handle_minfo(Domain :: string()) -> handler_reply().
 
--callback handle_mx(Domain :: string()) ->
-    {reply_code(), reply_record_list()} | reply_code().
+-callback handle_mx(Domain :: string()) -> handler_reply().
 
--callback handle_txt(Domain :: string()) ->
-    {reply_code(), reply_record_list()} | reply_code().
+-callback handle_txt(Domain :: string()) -> handler_reply().
 
 
 
