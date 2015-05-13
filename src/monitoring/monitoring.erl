@@ -32,7 +32,7 @@
     mem_stats = [] :: [{Name :: binary(), Value :: float()}],
     net_stats = [] :: [{Name :: binary(), Value :: float()}],
     cpu_last = [] :: [{Name :: binary(), WorkJiffies :: integer(), TotalJiffies :: integer()}],
-    net_last = [] :: [{Name :: binary(), Value :: integer()}],
+    net_last = [] :: [{rx_b | tx_b | rx_p | tx_p, Name :: binary(), Value :: integer()}],
     last_update = {0, 0, 0} :: {integer(), integer(), integer()} % Timestamp of the last measurement
 }).
 
@@ -65,9 +65,7 @@
 start(IPAddr) ->
     _InitialRecord = update(#node_monitoring_state{
         ip_addr = IPAddr,
-        last_update = now(),
-        cpu_last = [],
-        net_last = []}).
+        last_update = now()}).
 
 
 %%--------------------------------------------------------------------
@@ -259,8 +257,8 @@ calculate_cpu_stats(_, _, Stats) ->
 -spec get_memory_stats() -> [{Name :: binary(), Value :: float()}].
 get_memory_stats() ->
     case file:open(?MEM_STATS_FILE, [read]) of
-        {ok, Fd} -> read_memory_stats(Fd, undefined, undefined, 0);
-        _ -> [{<<"error">>, 0}]
+        {ok, Fd} -> read_memory_stats(Fd, 0, 0, 0);
+        _ -> [{<<"error">>, 0.0}]
     end.
 
 
@@ -298,7 +296,7 @@ read_memory_stats(Fd, MemFree, MemTotal, Counter) ->
 %%--------------------------------------------------------------------
 -spec get_network_stats(NetworkStats, TimeElapsed :: float()) -> {Result, NetworkStats} when
     NetworkStats :: [{rx_b | tx_b | rx_p | tx_p, Name :: binary(), Value :: integer()}],
-    Result :: [{Name :: binary(), Value :: integer() | float()}].
+    Result :: [{Name :: binary(), Value :: float()}].
 get_network_stats(NetworkStats, TimeElapsed) ->
     Dir = "/sys/class/net/",
     case file:list_dir(Dir) of
@@ -331,9 +329,11 @@ get_network_stats(NetworkStats, TimeElapsed) ->
 %% Calculates network usage statistics, given current and previous measurements.
 %% @end
 %%--------------------------------------------------------------------
--spec calculate_network_stats(NetworkStats, NetworkStats, Result, TimeElapsed :: float()) -> Result when
-    NetworkStats :: [{rx_b | tx_b | rx_p | tx_p, Name :: binary(), Value :: integer()}],
-    Result :: [{Name :: binary(), Value :: integer() | float()}].
+-spec calculate_network_stats(CurrentNetworkStats, NetworkStats, Stats, TimeElapsed :: float()) -> Result when
+    CurrentNetworkStats :: [{rx_b | tx_b | rx_p | tx_p | maxthp, Name :: binary(), Value :: float()}],
+    NetworkStats :: [{rx_b | tx_b | rx_p | tx_p | maxthp, Name :: binary(), Value :: float()}],
+    Stats :: [{Name :: binary(), Value :: float()}],
+    Result :: [{Name :: binary(), Value :: float()}].
 % Last net stats were not given (probably first calculation), return empty result.
 calculate_network_stats(_, [], [], _) ->
     [];
@@ -356,8 +356,6 @@ calculate_network_stats([{tx_p, Name, StatA} | CurrentNetworkStats], [{tx_p, Nam
 % maxspeed is maximum interface throughput, considering duplex mode
 calculate_network_stats([{maxthp, Name, MaxSpeed} | CurrentNetworkStats], [{maxthp, Name, _} | NetworkStats], Stats, TimeElapsed) ->
     calculate_network_stats(CurrentNetworkStats, NetworkStats, [{<<"net_maxthp_", Name/binary>>, MaxSpeed} | Stats], TimeElapsed);
-calculate_network_stats([{NameA, _} | CurrentNetworkStats], [{NameB, _} | NetworkStats], Stats, TimeElapsed) when NameA > NameB ->
-    calculate_network_stats(CurrentNetworkStats, NetworkStats, Stats, TimeElapsed);
 calculate_network_stats(_, _, Stats, _) ->
     lists:reverse(Stats).
 
@@ -392,7 +390,7 @@ get_interface_stats(Interface, Type) ->
 %% If the interface works in full duplex, the potential throughput is doubled.
 %% @end
 %%--------------------------------------------------------------------
--spec get_interface_max_throughput(Interface :: string(), TimeElapsed :: integer()) -> non_neg_integer().
+-spec get_interface_max_throughput(Interface :: string(), TimeElapsed :: float()) -> float().
 get_interface_max_throughput(Interface, TimeElapsed) ->
     DuplexRatio = case file:read_file(?NET_DUPLEX_FILE(Interface)) of
                       {ok, <<"full\n">>} -> 2;
@@ -434,17 +432,13 @@ is_valid_name(_, _) ->
 %% Checks whether string contains only following characters a-zA-Z0-9_
 %% @end
 %%--------------------------------------------------------------------
--spec is_valid_name(Name :: string() | binary()) -> boolean().
+-spec is_valid_name(Name :: string()) -> boolean().
 is_valid_name([]) ->
     false;
 is_valid_name([Character]) ->
     is_valid_character(Character);
 is_valid_name([Character | Characters]) ->
-    is_valid_character(Character) andalso is_valid_name(Characters);
-is_valid_name(Name) when is_binary(Name) ->
-    is_valid_name(binary_to_list(Name));
-is_valid_name(_) ->
-    false.
+    is_valid_character(Character) andalso is_valid_name(Characters).
 
 
 %%--------------------------------------------------------------------
