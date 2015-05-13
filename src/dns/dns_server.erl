@@ -122,7 +122,7 @@ handle_query(Packet, Transport) ->
                                                     CurrRec#dns_rec{arlist = CurrArList ++ [RR]}
                                             end
                                     end
-                                end, DNSRecUpdatedHeader#dns_rec{}, ResponseList),
+                                end, DNSRecUpdatedHeader, ResponseList),
                             generate_answer(NewRec#dns_rec{arlist = NewRec#dns_rec.arlist}, OPTRR, Transport)
                     end;
                 Error ->
@@ -161,7 +161,8 @@ validate_query(DNSRec) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec call_handler_module(HandlerModule :: module(), Domain :: string(), Type :: atom()) ->
-    term().
+    {dns_query_handler_behaviour:reply_type(), dns_query_handler_behaviour:dns_query_handler_reponse()}
+    | dns_query_handler_behaviour:reply_type() .
 call_handler_module(HandlerModule, Domain, Type) ->
     case type_to_fun(Type) of
         not_impl ->
@@ -219,7 +220,7 @@ generate_answer(DNSRec, OPTRR, Transport) ->
 %% If there was an OPT RR record in request, it modifies it properly and concates to the ADDITIONAL section.
 %% @end
 %%--------------------------------------------------------------------
--spec set_reply_code(DNSRec :: #dns_rec{}, ReplyType :: term()) -> #dns_rec{}.
+-spec set_reply_code(DNSRec :: #dns_rec{header :: #dns_header{}}, ReplyType :: dns_query_handler_behaviour:reply_type()) -> #dns_rec{}.
 set_reply_code(#dns_rec{header = Header} = DNSRec, ReplyType) ->
     ReplyCode = case ReplyType of
                     nx_domain -> ?NXDOMAIN;
