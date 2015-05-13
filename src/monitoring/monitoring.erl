@@ -32,7 +32,7 @@
     mem_stats = [] :: [{Name :: binary(), Value :: float()}],
     net_stats = [] :: [{Name :: binary(), Value :: float()}],
     cpu_last = [] :: [{Name :: binary(), WorkJiffies :: integer(), TotalJiffies :: integer()}],
-    net_last = [] :: [{rx_b | tx_b | rx_p | tx_p, Name :: binary(), Value :: integer()}],
+    net_last = [] :: [{rx_b | tx_b | rx_p | tx_p | maxthp, Name :: binary(), Value :: integer()}],
     last_update = {0, 0, 0} :: {integer(), integer(), integer()} % Timestamp of the last measurement
 }).
 
@@ -295,7 +295,7 @@ read_memory_stats(Fd, MemFree, MemTotal, Counter) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec get_network_stats(NetworkStats, TimeElapsed :: float()) -> {Result, NetworkStats} when
-    NetworkStats :: [{rx_b | tx_b | rx_p | tx_p, Name :: binary(), Value :: integer()}],
+    NetworkStats :: [{rx_b | tx_b | rx_p | tx_p | maxthp, Name :: binary(), Value :: integer()}],
     Result :: [{Name :: binary(), Value :: float()}].
 get_network_stats(NetworkStats, TimeElapsed) ->
     Dir = "/sys/class/net/",
