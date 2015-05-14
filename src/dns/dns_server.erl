@@ -47,7 +47,7 @@
 
 %%--------------------------------------------------------------------
 %% @doc Starts a DNS server. The server will listen on chosen port (UDP and TCP).
-%% QueryHandlerModule must conform to dns_query_handler_behaviour.
+%% QueryHandlerModule must conform to dns_handler_behaviour.
 %% The server is started in a new process.
 %% OnFailureFun is evalueated by the process if the server fails to start.
 %% @end
@@ -172,7 +172,7 @@ call_handler_module(HandlerModule, Domain, Type) ->
 
 %%--------------------------------------------------------------------
 %% @doc Returns a function that should be called to handle a query of given type.
-%% Those functions are defined in dns_query_handler_behaviour.
+%% Those functions are defined in dns_handler_behaviour.
 %% @end
 %%--------------------------------------------------------------------
 -spec type_to_fun(QueryType :: atom()) -> atom().
