@@ -54,6 +54,9 @@ prepare_test_environment(Config, DescriptionFile, Module) ->
             "--logdir", LogsDir,
             DescriptionFile, "2> prepare_test_environment_error.log"])),
 
+        % Save start log to file
+        utils:cmd(["echo", binary_to_list(<<"'", StartLog/binary, "'">>), "> prepare_test_environment.log"]),
+
         EnvDesc = json_parser:parse_json_binary_to_atom_proplist(StartLog),
 
         try
