@@ -80,8 +80,11 @@ prepare_test_environment(Config, DescriptionFile, Module) ->
             ])
         catch
             E11:E12 ->
-                ct:print("Prepare of environment failed ~p:~p~n~p",
-                    [E11, E12, erlang:get_stacktrace()]),
+                ct:print("Preparation of environment failed ~p:~p~n" ++
+                    "For details, check:~n" ++
+                    "    prepare_test_environment_error.log~n" ++
+                    "    prepare_test_environment.log~n" ++
+                    "Stacktrace: ~p", [E11, E12, erlang:get_stacktrace()]),
                 clean_environment(EnvDesc),
                 {fail, {init_failed, E11, E12}}
         end
