@@ -185,6 +185,7 @@ advices_for_dispatchers(NodeStates, LBState) ->
             {Node, #dispatcher_lb_advice{should_delegate = ShouldDelegate,
                 nodes_and_frequency = NodesAndFrequency, all_nodes = Nodes}}
         end, NodesAndLoads),
+    % TODO test if extra load is useful in DNS advices and maybe move it to a helper function
     % Calculate expected extra loads on each node.
     % For example:
     % node A is overloaded and will delegate 70% reqs to node B
