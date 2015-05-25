@@ -30,99 +30,6 @@
 % Maximum size of UDP DNS reply (without EDNS) as in RFC1035.
 -define(NOEDNS_UDP_SIZE, 512).
 
-% Allowed query types
--type dns_query_type() :: ?S_A | ?S_NS | ?S_CNAME | ?S_SOA | ?S_WKS | ?S_PTR | ?S_HINFO | ?S_MINFO | ?S_MX | ?S_TXT.
-
-% Atoms for reply codes for cenvenience
--type reply_type() :: ok | serv_fail | nx_domain | not_impl | refused | form_error | bad_version.
-
-% Records used internally to pass query results from handler to server, which then puts them in response.
--type answer_record() :: {answer, Type :: dns_query_type(), Data :: term()}.
--type authority_record() :: {authority, Type :: dns_query_type(), Data :: term()}.
--type additional_record() :: {additional, Type :: dns_query_type(), Data :: term()}.
--type authoritative_answer_flag() :: {aa, Flag :: boolean()}.
--type dns_query_handler_reponse() :: [answer_record() | authority_record () | additional_record() | authoritative_answer_flag()].
-
--export_type([reply_type/0, dns_query_handler_reponse/0, authority_record/0]).
-
-%% Data types that should be returned for specific types of queries:
-%% -----------------------------------------
-%% Type A, identified by macro ?S_A (RFC1035 3.4.1)
-%% Data :: {A :: byte(), B :: byte(), C :: byte(), D :: byte()}
-%% IPv4 address(es) - IP address(es) of servers:
-%% {A, B, C, D}: Bytes of IPv4 address
-
-%% -----------------------------------------
-%% Type NS, identified by macro ?S_NS (RFC1035 3.3.11)
-%% Data :: string()
-%% A <domain-name> which specifies a host which should be authoritative for the specified class and domain.
-
-%% -----------------------------------------
-%% Type CNAME, identified by macro ?S_CNAME (RFC1035 3.3.1)
-%% Data :: string()
-%% A <domain-name> which specifies the canonical or primary name for the owner.  The owner name is an alias.
-
-%% -----------------------------------------
-%% Type SOA, identified by macro ?S_SOA (RFC1035 3.3.13)
-%% Data :: {MName :: string() , RName:: string(), Serial :: integer(), Refresh :: integer(), Retry :: integer(), Expiry :: integer(), Minimum :: integer()}
-%% MName: The <domain-name> of the name server that was the original or primary source of data for this zone.
-%% RName: A <domain-name> which specifies the mailbox of the person responsible for this zone.
-%% Serial: The unsigned 32 bit version number of the original copy of the zone.  Zone transfers preserve this value.
-%%    This value wraps and should be compared using sequence space arithmetic.
-%% Refresh: A 32 bit time interval before the zone should be refreshed.
-%% Retry: A 32 bit time interval that should elapse before a failed refresh should be retried.
-%% Expiry: A 32 bit time value that specifies the upper limit on the time interval that can elapse before the zone
-%%   is no longer authoritative.
-%% Minimum: The unsigned 32 bit minimum TTL field that should be exported with any RR from this zone.
-
-%% -----------------------------------------
-%% Type WKS, identified by macro ?S_WKS (RFC1035 3.4.2)
-%% Data :: {{A :: byte(), B :: byte(), C :: byte(), D :: byte()}, Proto :: string(), BitMap :: string()}
-%% {A, B, C, D}: Bytes of IPv4 address
-%% Proto: An 8 bit IP protocol number
-%% BitMap: A variable length bit map. The bit map must be a multiple of 8 bits long.
-%%   A positive bit means, that a port of number equal to its position in bitmap is open.
-%%   BitMap representation as string in erlang is problematic. Example of usage:
-%%   BitMap = [2#11111111, 2#00000000, 2#00000011]
-%%   above bitmap will inform the client, that ports: 0 1 2 3 4 5 6 7 22 23 are open.
-
-%% -----------------------------------------
-%% Type PTR, identified by macro ?S_PTR (RFC1035 3.3.12)
-%% Data :: string()
-%% <domain-name> which points to some location in the domain name space.
-
-%% -----------------------------------------
-%% Type HINFO, identified by macro ?S_HINFO (RFC1035 3.3.2)
-%% Data :: {CPU :: string(), OS :: string()}
-%% CPU: A <character-string> which specifies the CPU type.
-%% OS: A <character-string> which specifies the operatings system type.
-
-%% -----------------------------------------
-%% Type MINFO, identified by macro ?S_MINFO (RFC1035 3.3.7)
-%% Data :: {RM :: string(), EM :: string()}
-%% RM: A <domain-name> which specifies a mailbox which is responsible for the mailing list or mailbox.  If this
-%%   domain name names the root, the owner of the MINFO RR is responsible for itself.  Note that many existing mailing
-%%   lists use a mailbox X-request for the RMAILBX field of mailing list X, e.g., Msgroup-request for Msgroup.  This
-%%   field provides a more general mechanism.
-%% EM: A <domain-name> which specifies a mailbox which is to receive error messages related to the mailing list or
-%%   mailbox specified by the owner of the MINFO RR (similar to the ERRORS-TO: field which has been proposed).  If
-%%   this domain name names the root, errors should be returned to the sender of the message.
-%% -----------------------------------------
-
-%% Type MX, identified by macro ?S_MX (RFC1035 3.3.9)
-%% Data :: {Pref :: integer(), Exch :: string()}
-%% Pref: A 16 bit integer which specifies the preference given to this RR among others at the same owner.
-%%   Lower values are preferred.
-%% Exch: A <domain-name> which specifies a host willing to act as a mail exchange for the owner name.
-%% -----------------------------------------
-
-%% Type TXT, identified by macro ?S_TXT (RFC1035 3.3.14)
-%% text data - one or more <character-string>s:
-%% TXT RRs are used to hold descriptive text. The semantics of the text depends on the domain where it is found.
-%% NOTE: Should return list of strings for every record, for example:
-%% [["string_1_1", "string_1_2"], ["string_2_1", "string_2_2"]] - two records, each with two strings.
-%% -----------------------------------------
-
 %% API
 -export([start/7, stop/1, handle_query/2, start_listening/5]).
 
@@ -140,7 +47,7 @@
 
 %%--------------------------------------------------------------------
 %% @doc Starts a DNS server. The server will listen on chosen port (UDP and TCP).
-%% QueryHandlerModule must conform to dns_query_handler_behaviour.
+%% QueryHandlerModule must conform to dns_handler_behaviour.
 %% The server is started in a new process.
 %% OnFailureFun is evalueated by the process if the server fails to start.
 %% @end
@@ -215,7 +122,7 @@ handle_query(Packet, Transport) ->
                                                     CurrRec#dns_rec{arlist = CurrArList ++ [RR]}
                                             end
                                     end
-                                end, DNSRecUpdatedHeader#dns_rec{}, ResponseList),
+                                end, DNSRecUpdatedHeader, ResponseList),
                             generate_answer(NewRec#dns_rec{arlist = NewRec#dns_rec.arlist}, OPTRR, Transport)
                     end;
                 Error ->
@@ -229,7 +136,7 @@ handle_query(Packet, Transport) ->
 %% @doc Checks if a query is valid.
 %% @end
 %%--------------------------------------------------------------------
--spec validate_query(#dns_rec{}) -> ok | form_error.
+-spec validate_query(#dns_rec{}) -> ok | bad_version | form_error.
 validate_query(DNSRec) ->
     case DNSRec of
         #dns_rec{qdlist = [#dns_query{class = Class}], anlist = [], nslist = [], arlist = []}
@@ -254,7 +161,7 @@ validate_query(DNSRec) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec call_handler_module(HandlerModule :: module(), Domain :: string(), Type :: atom()) ->
-    term().
+    dns_handler_behaviour:handler_reply().
 call_handler_module(HandlerModule, Domain, Type) ->
     case type_to_fun(Type) of
         not_impl ->
@@ -265,7 +172,7 @@ call_handler_module(HandlerModule, Domain, Type) ->
 
 %%--------------------------------------------------------------------
 %% @doc Returns a function that should be called to handle a query of given type.
-%% Those functions are defined in dns_query_handler_behaviour.
+%% Those functions are defined in dns_handler_behaviour.
 %% @end
 %%--------------------------------------------------------------------
 -spec type_to_fun(QueryType :: atom()) -> atom().
@@ -312,7 +219,7 @@ generate_answer(DNSRec, OPTRR, Transport) ->
 %% If there was an OPT RR record in request, it modifies it properly and concates to the ADDITIONAL section.
 %% @end
 %%--------------------------------------------------------------------
--spec set_reply_code(DNSRec :: #dns_rec{}, ReplyType :: term()) -> #dns_rec{}.
+-spec set_reply_code(DNSRec :: #dns_rec{header :: #dns_header{}}, ReplyType :: dns_handler_behaviour:reply_code()) -> #dns_rec{}.
 set_reply_code(#dns_rec{header = Header} = DNSRec, ReplyType) ->
     ReplyCode = case ReplyType of
                     nx_domain -> ?NXDOMAIN;
@@ -405,7 +312,10 @@ authoritative_answer_flag(Flag) ->
 %%--------------------------------------------------------------------
 -spec answer_record(Domain, TTL, Type, Data) ->
     {answer, Domain, TTL, Type, Data} when
-    Domain :: string(), TTL :: integer(), Type :: dns_query_type(), Data :: term().
+    Domain :: string(),
+    TTL :: integer(),
+    Type :: dns_handler_behaviour:query_type(),
+    Data :: term().
 answer_record(Domain, TTL, Type, Data) ->
     {answer, Domain, TTL, Type, Data}.
 
@@ -417,7 +327,10 @@ answer_record(Domain, TTL, Type, Data) ->
 %%--------------------------------------------------------------------
 -spec authority_record(Domain, TTL, Type, Data) ->
     {authority, Domain, TTL, Type, Data} when
-    Domain :: string(), TTL :: integer(), Type :: dns_query_type(), Data :: term().
+    Domain :: string(),
+    TTL :: integer(),
+    Type :: dns_handler_behaviour:query_type(),
+    Data :: term().
 authority_record(Domain, TTL, Type, Data) ->
     {authority, Domain, TTL, Type, Data}.
 
@@ -429,7 +342,10 @@ authority_record(Domain, TTL, Type, Data) ->
 %%--------------------------------------------------------------------
 -spec additional_record(Domain, TTL, Type, Data) ->
     {additional, Domain, TTL, Type, Data} when
-    Domain :: string(), TTL :: integer(), Type :: dns_query_type(), Data :: term().
+    Domain :: string(),
+    TTL :: integer(),
+    Type :: dns_handler_behaviour:query_type(),
+    Data :: term().
 additional_record(Domain, TTL, Type, Data) ->
     {additional, Domain, TTL, Type, Data}.
 
