@@ -120,6 +120,7 @@ get_node_state(#node_monitoring_state{ip_addr = IPAddr} = MonitoringState) ->
 %%--------------------------------------------------------------------
 %% @doc
 %% Returns current cpu usage based on node monitoring state.
+%% Returns 0.0 in case of an error.
 %% @end
 %%--------------------------------------------------------------------
 -spec cpu_usage(MonitoringState :: #node_monitoring_state{}) -> float().
@@ -130,6 +131,7 @@ cpu_usage(#node_monitoring_state{cpu_stats = CPUStats}) ->
 %%--------------------------------------------------------------------
 %% @doc
 %% Returns current memory usage based on node monitoring state.
+%% Returns 0.0 in case of an error.
 %% @end
 %%--------------------------------------------------------------------
 -spec mem_usage(MonitoringState :: #node_monitoring_state{}) -> float().
@@ -140,6 +142,7 @@ mem_usage(#node_monitoring_state{mem_stats = MemStats}) ->
 %%--------------------------------------------------------------------
 %% @doc
 %% Returns current network usage based on node monitoring state.
+%% Returns 0.0 in case of an error.
 %% @end
 %%--------------------------------------------------------------------
 -spec net_usage(MonitoringState :: #node_monitoring_state{}) -> float().
@@ -161,7 +164,7 @@ net_usage(#node_monitoring_state{net_stats = NetStats}) ->
         end, {0, 0}, NetStats),
     % Calc usage in per cent
     case MaxThroughput of
-        0 -> 0;
+        0 -> 0.0;
         _ -> NetUsage / MaxThroughput * 100
     end.
 
@@ -181,19 +184,27 @@ net_usage(#node_monitoring_state{net_stats = NetStats}) ->
     Result :: [{Name :: binary(), Value :: float()}],
     CpuStats :: [{Name :: binary(), WorkJiffies :: integer(), TotalJiffies :: integer()}].
 get_cpu_stats(CpuStats) ->
-    case file:open(?CPU_STATS_FILE, [read]) of
-        {ok, Fd} ->
-            CurrentCpuStats = read_cpu_stats(Fd, []),
-            case calculate_cpu_stats(CurrentCpuStats, CpuStats, []) of
-                [Main, _OneCore] ->
-                    % If there is only one core, make sure that <<"cpu">> entry exists
-                    % Main and _OneCore have keys <<"cpu">> and <<"core0">> and the same values
-                    {_, Load} = Main,
-                    {[{<<"cpu">>, Load}], CurrentCpuStats};
-                MoreCores ->
-                    {MoreCores, CurrentCpuStats}
-            end;
-        _ -> []
+    try
+        case file:open(?CPU_STATS_FILE, [read]) of
+            {ok, Fd} ->
+                CurrentCpuStats = read_cpu_stats(Fd, []),
+                case calculate_cpu_stats(CurrentCpuStats, CpuStats, []) of
+                    [Main, _OneCore] ->
+                        % If there is only one core, make sure that <<"cpu">> entry exists
+                        % Main and _OneCore have keys <<"cpu">> and <<"core0">> and the same values
+                        {_, Load} = Main,
+                        {[{<<"cpu">>, Load}], CurrentCpuStats};
+                    MoreCores ->
+                        {MoreCores, CurrentCpuStats}
+                end;
+            Other ->
+                ?error("Cannot open CPU stats file: ~p", [Other]),
+                {[], []}
+        end
+    catch
+        T:M ->
+            ?error_stacktrace("Cannot calculate CPU usage - ~p:~p", [T, M]),
+            {[], []}
     end.
 
 
@@ -256,9 +267,18 @@ calculate_cpu_stats(_, _, Stats) ->
 %%--------------------------------------------------------------------
 -spec get_memory_stats() -> [{Name :: binary(), Value :: float()}].
 get_memory_stats() ->
-    case file:open(?MEM_STATS_FILE, [read]) of
-        {ok, Fd} -> read_memory_stats(Fd, 0, 0, 0);
-        _ -> [{<<"error">>, 0.0}]
+    try
+        case file:open(?MEM_STATS_FILE, [read]) of
+            {ok, Fd} ->
+                read_memory_stats(Fd, 0, 0, 0);
+            Other ->
+                ?error("Cannot open memory stats file: ~p", [Other]),
+                []
+        end
+    catch
+        T:M ->
+            ?error_stacktrace("Cannot calculate memory usage - ~p:~p", [T, M]),
+            []
     end.
 
 
@@ -298,28 +318,36 @@ read_memory_stats(Fd, MemFree, MemTotal, Counter) ->
     NetworkStats :: [{rx_b | tx_b | rx_p | tx_p | maxthp, Name :: binary(), Value :: integer()}],
     Result :: [{Name :: binary(), Value :: float()}].
 get_network_stats(NetworkStats, TimeElapsed) ->
-    Dir = "/sys/class/net/",
-    case file:list_dir(Dir) of
-        {ok, Interfaces} ->
-            ValidInterfaces = lists:filter(fun(Interface) ->
-                IsEthernetIf = case Interface of
-                                   "eth" ++ _ -> true;
-                                   _ -> false
-                               end,
-                IsEthernetIf andalso is_valid_name(Interface, 11)
-            end, Interfaces),
-            CurrentNetworkStats = lists:foldl(
-                fun(Interface, Stats) -> [
-                    {rx_b, list_to_binary(Interface), get_interface_stats(Interface, "rx_bytes")},
-                    {tx_b, list_to_binary(Interface), get_interface_stats(Interface, "tx_bytes")},
-                    {rx_p, list_to_binary(Interface), get_interface_stats(Interface, "rx_packets")},
-                    {tx_p, list_to_binary(Interface), get_interface_stats(Interface, "tx_packets")},
-                    {maxthp, list_to_binary(Interface), get_interface_max_throughput(Interface, TimeElapsed)} |
-                    Stats
-                ] end, [], ValidInterfaces),
-            Result = calculate_network_stats(CurrentNetworkStats, NetworkStats, [], TimeElapsed),
-            {Result, CurrentNetworkStats};
-        _ -> []
+    try
+        Dir = "/sys/class/net/",
+        case file:list_dir(Dir) of
+            {ok, Interfaces} ->
+                ValidInterfaces = lists:filter(fun(Interface) ->
+                    IsEthernetIf = case Interface of
+                                       "eth" ++ _ -> true;
+                                       _ -> false
+                                   end,
+                    IsEthernetIf andalso is_valid_name(Interface, 11)
+                end, Interfaces),
+                CurrentNetworkStats = lists:foldl(
+                    fun(Interface, Stats) -> [
+                        {rx_b, list_to_binary(Interface), get_interface_stats(Interface, "rx_bytes")},
+                        {tx_b, list_to_binary(Interface), get_interface_stats(Interface, "tx_bytes")},
+                        {rx_p, list_to_binary(Interface), get_interface_stats(Interface, "rx_packets")},
+                        {tx_p, list_to_binary(Interface), get_interface_stats(Interface, "tx_packets")},
+                        {maxthp, list_to_binary(Interface), get_interface_max_throughput(Interface, TimeElapsed)} |
+                        Stats
+                    ] end, [], ValidInterfaces),
+                Result = calculate_network_stats(CurrentNetworkStats, NetworkStats, [], TimeElapsed),
+                {Result, CurrentNetworkStats};
+            Other ->
+                ?error("Cannot open network stats file: ~p", [Other]),
+                {[], []}
+        end
+    catch
+        T:M ->
+            ?error_stacktrace("Cannot calculate network usage - ~p:~p", [T, M]),
+            {[], []}
     end.
 
 
@@ -367,7 +395,7 @@ calculate_network_stats(_, _, Stats, _) ->
 %% and Type is name of collecting statistics (e.g. rx_bytes)
 %% @end
 %%--------------------------------------------------------------------
--spec get_interface_stats(Interface :: string(), Type :: string()) -> non_neg_integer().
+-spec get_interface_stats(Interface :: string(), Type :: string()) -> integer().
 get_interface_stats(Interface, Type) ->
     Filename = ?NET_STATS_FILE(Interface, Type),
     case file:open(Filename, [raw]) of
@@ -378,7 +406,9 @@ get_interface_stats(Interface, Type) ->
                              end,
             file:close(Fd),
             InterfaceStats;
-        _ -> 0
+        Other ->
+            ?error("Cannot open interface stats file: ~p", [Other]),
+            0
     end.
 
 

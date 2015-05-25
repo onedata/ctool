@@ -65,6 +65,16 @@ get_multi_core_cpu_stats_test() ->
     ?assertEqual(ExpectedCpuStats, ActualCpuStats).
 
 
+get_cpu_stats_error_test() ->
+    meck:new(file, [unstick, passthrough]),
+    meck:expect(file, open, fun("/proc/stat", [read]) -> error end),
+    Result = monitoring:get_cpu_stats([{<<"core3">>, 0, 0}, {<<"core2">>, 0, 0}, {<<"core1">>, 0, 0},
+        {<<"core0">>, 0, 0}, {<<"cpu">>, 0, 0}]),
+    ?assertEqual(Result, {[], []}),
+    ?assert(meck:validate(file)),
+    ?assertEqual(ok, meck:unload(file)).
+
+
 get_memory_stats_test() ->
     SampleFile = create_sample_memory_stats_file(),
     ?assertNotEqual(error, SampleFile),
@@ -75,6 +85,15 @@ get_memory_stats_test() ->
     ?assert(meck:validate(file)),
     ?assertEqual(ok, meck:unload(file)),
     ?assertEqual(ExpectedMemoryStats, ActualMemoryStats).
+
+
+get_memory_stats_error_test() ->
+    meck:new(file, [unstick, passthrough]),
+    meck:expect(file, open, fun("/proc/meminfo", [read]) -> error end),
+    Result = monitoring:get_memory_stats(),
+    ?assertEqual(Result, []),
+    ?assert(meck:validate(file)),
+    ?assertEqual(ok, meck:unload(file)).
 
 
 calculate_network_stats_test() ->
@@ -100,6 +119,33 @@ get_interface_stats_test() ->
     ?assert(meck:validate(file)),
     ?assertEqual(ok, meck:unload(file)),
     ?assertEqual(ExpectedInterfaceStats, ActualInterfaceStats).
+
+
+get_network_stats_error_test() ->
+    meck:new(file, [unstick, passthrough]),
+    meck:expect(file, open, fun(_, [raw]) -> error end),
+    Result = monitoring:get_interface_stats("eth0", "rx_bytes"),
+    ?assertEqual(Result, 0),
+    ?assert(meck:validate(file)),
+    ?assertEqual(ok, meck:unload(file)).
+
+
+errors_in_monitoring_collection_test() ->
+    meck:new(file, [unstick, passthrough]),
+    meck:expect(file, open, fun(_, _) -> error end),
+    MonState = monitoring:start({127,0,0,1}),
+    ?assertEqual(monitoring:cpu_usage(MonState), 0.0),
+    ?assertEqual(monitoring:mem_usage(MonState), 0.0),
+    ?assertEqual(monitoring:net_usage(MonState), 0.0),
+    MonState2 = monitoring:update(MonState),
+    MonState3 = monitoring:update(MonState2),
+    ?assertEqual(monitoring:cpu_usage(MonState3), 0.0),
+    ?assertEqual(monitoring:mem_usage(MonState3), 0.0),
+    ?assertEqual(monitoring:net_usage(MonState3), 0.0),
+    ?assert(meck:validate(file)),
+    ?assertEqual(ok, meck:unload(file)).
+
+
 
 
 %% ====================================================================

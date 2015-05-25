@@ -104,6 +104,7 @@ advices_for_dnses(NodeStates, LBState) ->
         fun(NodeState) ->
             L = load_for_dns(NodeState),
             % TODO test if extra load is useful here in DNS and maybe move it to a helper function
+            % Extra load is calculate in advices_for_dispatchers function
             ExtraLoad = proplists:get_value(NodeState#node_state.node, ExtraLoads, 0.0),
             L * (1.0 - ExtraLoad)
         end, NodeStates),
