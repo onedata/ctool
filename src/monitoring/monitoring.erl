@@ -48,7 +48,7 @@
 
 %% API
 -export([start/1, update/1, refresh_ip_address/2]).
--export([get_node_state/1]).
+-export([get_node_state/1, get_memory_stats/0]).
 -export([cpu_usage/1, mem_usage/1, net_usage/1]).
 
 %%%===================================================================
