@@ -102,6 +102,7 @@ mock_unload(Nodes, Modules) ->
     lists:foreach(fun(Node) ->
         lists:foreach(fun(Module) ->
             ?assertEqual(ok, rpc:call(Node, meck, unload, [Module])),
+            rpc:call(Node, code, purge, [Module]),
             ?assertEqual({module, Module}, rpc:call(Node, code, load_file, [Module]))
         end, as_list(Modules))
     end, as_list(Nodes)).
