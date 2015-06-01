@@ -24,8 +24,4 @@
 %% coordinates node life cycle.
 -define(NODE_MANAGER_NAME, node_manager).
 
-%% Local name (name and node is used to identify it) of gen_server that
-%% works as a dispatcher.
--define(DISPATCHER_NAME, request_dispatcher).
-
 -endif.
