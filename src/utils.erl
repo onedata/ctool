@@ -17,7 +17,7 @@
     ensure_unicode_binary/1, access_token_hash/1, trim_spaces/1, ceil/1,
     aggregate_over_first_element/1, average/1, random_shuffle/1,
     random_element/1, get_host/1, get_host_as_atom/1, cmd/1, seconds_diff/2,
-    milliseconds_diff/2]).
+    milliseconds_diff/2, duration/1]).
 
 %%%===================================================================
 %%% API
@@ -278,6 +278,21 @@ milliseconds_diff(Timestamp2, Timestamp1) ->
     Timestamp1 :: erlang:timestamp()) -> SecondsDiff :: integer().
 seconds_diff(Timestamp2, Timestamp1) ->
     round(timer:now_diff(Timestamp2, Timestamp1) / 1000000).
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Measures execution time of a function. Returns function result and its
+%% duration in milliseconds.
+%% @end
+%%--------------------------------------------------------------------
+-spec duration(Function :: fun(() -> Result)) ->
+    {Result, MillisecondsDiff :: integer()} when
+    Result :: term().
+duration(Function) ->
+    T1 = os:timestamp(),
+    Result = Function(),
+    T2 = os:timestamp(),
+    {Result, milliseconds_diff(T2, T1)}.
 
 %%%===================================================================
 %%% Internal functions

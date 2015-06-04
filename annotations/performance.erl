@@ -121,7 +121,7 @@ exec_perf_config(SuiteName, CaseName, CaseDescr, CaseArgs, Config,
     % Inject configuration parameters into common test cases configuration.
     NewCaseArgs = inject_parameters(CaseArgs, ConfigParams),
     {RepsSummary, RepsDetails, FailedReps} =
-        exec_test_repeats(SuiteName, CaseName, NewCaseArgs, ConfigReps),
+        exec_test_repeats(SuiteName, CaseName, ConfigName, NewCaseArgs, ConfigReps),
 
     % Fetch git repository metadata.
     Repository = list_to_binary(proplists:get_value(git_repository, CaseArgs)),
@@ -201,16 +201,18 @@ exec_perf_config(SuiteName, CaseName, CaseDescr, CaseArgs, Config,
 %% Executes test case multiple times.
 %% @end
 %%--------------------------------------------------------------------
--spec exec_test_repeats(SuiteName :: atom(), CaseName :: atom(),
+-spec exec_test_repeats(SuiteName :: atom(), CaseName :: atom(), ConfigName :: string(),
     CaseConfig :: proplist(), Reps :: integer()) -> {RepsSummary :: [#parameter{}],
     RepsDetails :: [#parameter{}], FailedReps :: map()}.
-exec_test_repeats(SuiteName, CaseName, CaseConfig, Reps) ->
-    exec_test_repeats(SuiteName, CaseName, CaseConfig, 1, Reps + 1, [], [], #{}).
-exec_test_repeats(_SuiteName, _CaseName, _CaseConfig, Reps, Reps,
+exec_test_repeats(SuiteName, CaseName, ConfigName, CaseConfig, Reps) ->
+    exec_test_repeats(SuiteName, CaseName, ConfigName, CaseConfig, 1, Reps + 1, [], [], #{}).
+exec_test_repeats(_SuiteName, _CaseName, _ConfigName, _CaseConfig, Reps, Reps,
     RepsSummary, RepsDetails, FailedReps) ->
     {RepsSummary, RepsDetails, FailedReps};
-exec_test_repeats(SuiteName, CaseName, CaseConfig, Rep, Reps,
+exec_test_repeats(SuiteName, CaseName, ConfigName, CaseConfig, Rep, Reps,
     RepsSummary, RepsDetails, FailedReps) ->
+    ct:print("SUITE: ~p~nCASE: ~p~nCONFIG: ~p~nREPEAT: ~p / ~p (~p%)",
+        [SuiteName, CaseName, ConfigName, Rep, Reps - 1, round(100 * Rep / (Reps - 1))]),
     BinRep = integer_to_binary(Rep),
     case exec_test_repeat(SuiteName, CaseName, CaseConfig) of
         {ok, Params} ->
@@ -221,7 +223,7 @@ exec_test_repeats(SuiteName, CaseName, CaseConfig, Rep, Reps,
                         (#parameter{value = Value} = Param) ->
                             Param#parameter{value = maps:put(BinRep, Value, #{})}
                     end, Params),
-                    exec_test_repeats(SuiteName, CaseName, CaseConfig, Rep + 1,
+                    exec_test_repeats(SuiteName, CaseName, ConfigName, CaseConfig, Rep + 1,
                         Reps, Params, NewRepsDetails, FailedReps);
                 _ ->
                     % Merge list of test case parameters from current test case
@@ -234,7 +236,7 @@ exec_test_repeats(SuiteName, CaseName, CaseConfig, Rep, Reps,
                         (#parameter{value = Value1}, #parameter{value = Value2} = Param) ->
                             Param#parameter{value = maps:put(BinRep, Value1, Value2)}
                     end, Params, RepsDetails),
-                    exec_test_repeats(SuiteName, CaseName, CaseConfig, Rep + 1,
+                    exec_test_repeats(SuiteName, CaseName, ConfigName, CaseConfig, Rep + 1,
                         Reps, NewRepsSummary, NewRepsDetails, FailedReps)
             end;
         {error, Reason} ->
@@ -242,7 +244,7 @@ exec_test_repeats(SuiteName, CaseName, CaseConfig, Rep, Reps,
                 Param#parameter{value = maps:put(BinRep, 0, Value)}
             end, RepsDetails),
             NewFailedReps = maps:put(BinRep, Reason, FailedReps),
-            exec_test_repeats(SuiteName, CaseName, CaseConfig, Rep + 1,
+            exec_test_repeats(SuiteName, CaseName, ConfigName, CaseConfig, Rep + 1,
                 Reps, RepsSummary, NewRepsDetails, NewFailedReps)
     end.
 
