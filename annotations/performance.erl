@@ -201,7 +201,7 @@ exec_perf_config(SuiteName, CaseName, CaseDescr, CaseArgs, Config,
 %% Executes test case multiple times.
 %% @end
 %%--------------------------------------------------------------------
--spec exec_test_repeats(SuiteName :: atom(), CaseName :: atom(), ConfigName :: string(),
+-spec exec_test_repeats(SuiteName :: atom(), CaseName :: atom(), ConfigName :: atom(),
     CaseConfig :: proplist(), Reps :: integer()) -> {RepsSummary :: [#parameter{}],
     RepsDetails :: [#parameter{}], FailedReps :: map()}.
 exec_test_repeats(SuiteName, CaseName, ConfigName, CaseConfig, Reps) ->
