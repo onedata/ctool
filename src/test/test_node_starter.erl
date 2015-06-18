@@ -75,6 +75,7 @@ prepare_test_environment(Config, DescriptionFile, Module) ->
             ping_nodes(AllNodes),
             global:sync(),
             ok = load_modules(AllNodes, [Module]),
+            {ok, _} = ct_cover:add_nodes(AllNodes),
 
             lists:append([
                 ConfigWithPaths,
@@ -105,6 +106,12 @@ prepare_test_environment(Config, DescriptionFile, Module) ->
 %%--------------------------------------------------------------------
 -spec clean_environment(Config :: list()) -> ok.
 clean_environment(Config) ->
+    GrNodes = ?config(gr_nodes, Config),
+    Workers = ?config(op_worker_nodes, Config),
+    CCMs = ?config(op_ccm_nodes, Config),
+    AllNodes = GrNodes ++ Workers ++ CCMs,
+    ok = ct_cover:remove_nodes(AllNodes),
+
     Dockers = proplists:get_value(docker_ids, Config, []),
     ProjectRoot = ?config(project_root, Config),
     DockersStr = lists:map(fun atom_to_list/1, Dockers),
