@@ -277,7 +277,7 @@ microseconds_diff(Timestamp2, Timestamp1) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec milliseconds_diff(Timestamp2 :: erlang:timestamp(),
-    Timestamp1 :: erlang:timestamp()) -> MillisecondsDiff :: integer().
+    Timestamp1 :: erlang:timestamp()) -> MillisecondsDiff :: float().
 milliseconds_diff(Timestamp2, Timestamp1) ->
     timer:now_diff(Timestamp2, Timestamp1) / 1000.
 
@@ -287,7 +287,7 @@ milliseconds_diff(Timestamp2, Timestamp1) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec seconds_diff(Timestamp2 :: erlang:timestamp(),
-    Timestamp1 :: erlang:timestamp()) -> SecondsDiff :: integer().
+    Timestamp1 :: erlang:timestamp()) -> SecondsDiff :: float().
 seconds_diff(Timestamp2, Timestamp1) ->
     timer:now_diff(Timestamp2, Timestamp1) / 1000000.
 
@@ -298,7 +298,7 @@ seconds_diff(Timestamp2, Timestamp1) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec duration(Function :: fun(() -> Result)) -> {Result, UsDuration :: integer(),
-    AdjustedDuration :: integer(), TimeUnit :: time_unit()} when
+    AdjustedDuration :: integer() | float(), TimeUnit :: string()} when
     Result :: term().
 duration(Function) ->
     T1 = os:timestamp(),
@@ -313,8 +313,8 @@ duration(Function) ->
 %% Adjusts duration, so that it is in the most condensed and simplified unit.
 %% @end
 %%--------------------------------------------------------------------
--spec adjust_duration(Duration :: integer(), TimeUnit :: time_unit()) ->
-    {AdjustedDuration :: integer(), AdjustedTimeUnit :: time_unit()}.
+-spec adjust_duration(Duration :: integer() | float(), TimeUnit :: time_unit()) ->
+    {AdjustedDuration :: integer() | float(), AdjustedTimeUnit :: string()}.
 adjust_duration(Duration, Unit) ->
     {NextUnit, Factor} = next_time_unit(Unit),
     case (Duration > Factor) and (NextUnit /= undefined) of
