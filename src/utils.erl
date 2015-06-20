@@ -17,7 +17,9 @@
     ensure_unicode_binary/1, access_token_hash/1, trim_spaces/1, ceil/1,
     aggregate_over_first_element/1, average/1, random_shuffle/1,
     random_element/1, get_host/1, get_host_as_atom/1, cmd/1, seconds_diff/2,
-    milliseconds_diff/2, duration/1]).
+    milliseconds_diff/2, microseconds_diff/2, duration/1, adjust_duration/2]).
+
+-type time_unit() :: us | ms | s | min | h.
 
 %%%===================================================================
 %%% API
@@ -261,13 +263,23 @@ cmd(Command) ->
 
 %%--------------------------------------------------------------------
 %% @doc
+%% Returns the time difference Timestamp2 - Timestamp1 in microseconds.
+%% @end
+%%--------------------------------------------------------------------
+-spec microseconds_diff(Timestamp2 :: erlang:timestamp(),
+    Timestamp1 :: erlang:timestamp()) -> MillisecondsDiff :: integer().
+microseconds_diff(Timestamp2, Timestamp1) ->
+    timer:now_diff(Timestamp2, Timestamp1).
+
+%%--------------------------------------------------------------------
+%% @doc
 %% Returns the time difference Timestamp2 - Timestamp1 in milliseconds.
 %% @end
 %%--------------------------------------------------------------------
 -spec milliseconds_diff(Timestamp2 :: erlang:timestamp(),
     Timestamp1 :: erlang:timestamp()) -> MillisecondsDiff :: integer().
 milliseconds_diff(Timestamp2, Timestamp1) ->
-    round(timer:now_diff(Timestamp2, Timestamp1) / 1000).
+    timer:now_diff(Timestamp2, Timestamp1) / 1000.
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -277,26 +289,56 @@ milliseconds_diff(Timestamp2, Timestamp1) ->
 -spec seconds_diff(Timestamp2 :: erlang:timestamp(),
     Timestamp1 :: erlang:timestamp()) -> SecondsDiff :: integer().
 seconds_diff(Timestamp2, Timestamp1) ->
-    round(timer:now_diff(Timestamp2, Timestamp1) / 1000000).
+    timer:now_diff(Timestamp2, Timestamp1) / 1000000.
 
 %%--------------------------------------------------------------------
 %% @doc
 %% Measures execution time of a function. Returns function result and its
-%% duration in milliseconds.
+%% duration both in microseconds and addjusted using adjust_duration function.
 %% @end
 %%--------------------------------------------------------------------
--spec duration(Function :: fun(() -> Result)) ->
-    {Result, MillisecondsDiff :: integer()} when
+-spec duration(Function :: fun(() -> Result)) -> {Result, UsDuration :: integer(),
+    AdjustedDuration :: integer(), TimeUnit :: time_unit()} when
     Result :: term().
 duration(Function) ->
     T1 = os:timestamp(),
     Result = Function(),
     T2 = os:timestamp(),
-    {Result, milliseconds_diff(T2, T1)}.
+    UsDuration = microseconds_diff(T2, T1),
+    {AdjustedDuration, TimeUnit} = adjust_duration(UsDuration, us),
+    {Result, UsDuration, AdjustedDuration, TimeUnit}.
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Adjusts duration, so that it is in the most condensed and simplified unit.
+%% @end
+%%--------------------------------------------------------------------
+-spec adjust_duration(Duration :: integer(), TimeUnit :: time_unit()) ->
+    {AdjustedDuration :: integer(), AdjustedTimeUnit :: time_unit()}.
+adjust_duration(Duration, Unit) ->
+    {NextUnit, Factor} = next_time_unit(Unit),
+    case (Duration > Factor) and (NextUnit /= undefined) of
+        true -> adjust_duration(Duration / Factor, NextUnit);
+        _ -> {Duration, atom_to_list(Unit)}
+    end.
 
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
+
+%%--------------------------------------------------------------------
+%% @doc
+%% For given time unit returns the next one and division factor describing how
+%% many times the next unit is bigger that the current unit.
+%% @end
+%%--------------------------------------------------------------------
+-spec next_time_unit(TimeUnit :: time_unit()) ->
+    {NextTimeUnit :: time_unit(), Factor :: integer()}.
+next_time_unit(us) -> {ms, 1000};
+next_time_unit(ms) -> {s, 1000};
+next_time_unit(s) -> {min, 60};
+next_time_unit(min) -> {h, 60};
+next_time_unit(h) -> {undefined, undefiend}.
 
 %%--------------------------------------------------------------------
 %% @private
