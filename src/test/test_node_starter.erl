@@ -22,6 +22,7 @@
 %%--------------------------------------------------------------------
 %% @doc
 %% Starts deps and dockers with needed applications and mocks.
+%% Adds started nodes to ct_cover analysis.
 %% @end
 %%--------------------------------------------------------------------
 -spec prepare_test_environment(Config :: list(), DescriptionFile :: string(),
@@ -101,7 +102,8 @@ prepare_test_environment(Config, DescriptionFile, Module) ->
 
 %%--------------------------------------------------------------------
 %% @doc
-%% Cleans environment by running 'cleanup.py' script.
+%% Removes nodes from ct_cover analysis.
+%% Afterwards, cleans environment by running 'cleanup.py' script.
 %% @end
 %%--------------------------------------------------------------------
 -spec clean_environment(Config :: list()) -> ok.
