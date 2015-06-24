@@ -148,7 +148,7 @@ exec_perf_config(SuiteName, CaseName, CaseDescr, CaseArgs, Config,
     BinConfigName = atom_to_binary(ConfigName, utf8),
     SuccessfulReps = ConfigReps - maps:size(FailedReps),
     RepsAverage = lists:map(fun(#parameter{value = Value} = Param) ->
-        Param#parameter{value = round(Value / SuccessfulReps)}
+        Param#parameter{value = Value / SuccessfulReps}
     end, RepsSummary),
 
     SuitesMap = maps:get(<<"suites">>, PerfResults, #{}),
@@ -212,7 +212,7 @@ exec_test_repeats(_SuiteName, _CaseName, _ConfigName, _CaseConfig, Reps, Reps,
 exec_test_repeats(SuiteName, CaseName, ConfigName, CaseConfig, Rep, Reps,
     RepsSummary, RepsDetails, FailedReps) ->
     ct:print("SUITE: ~p~nCASE: ~p~nCONFIG: ~p~nREPEAT: ~p / ~p (~p%)",
-        [SuiteName, CaseName, ConfigName, Rep, Reps - 1, round(100 * Rep / (Reps - 1))]),
+        [SuiteName, CaseName, ConfigName, Rep, Reps - 1, (100 * Rep div (Reps - 1))]),
     BinRep = integer_to_binary(Rep),
     case exec_test_repeat(SuiteName, CaseName, CaseConfig) of
         {ok, Params} ->
@@ -309,11 +309,26 @@ format_parameters(Params) ->
         (#parameter{name = Name, value = Value, unit = Unit, description = Descr}) ->
             #{
                 <<"name">> => Name,
-                <<"value">> => Value,
+                <<"value">> => maybe_round(Value),
                 <<"unit">> => list_to_binary(Unit),
                 <<"description">> => list_to_binary(Descr)
             }
     end, Params).
+
+%%--------------------------------------------------------------------
+%% @doc
+%% If value is numeric returns number rounded to three decimal digits, otherwise
+%% returns unmodified value.
+%% @end
+%%--------------------------------------------------------------------
+-spec maybe_round(Value :: term()) -> NewValue :: term().
+maybe_round(Value) when is_number(Value) ->
+    case Value == round(Value) of
+        true -> Value;
+        false -> round(Value * 1000) / 1000
+    end;
+maybe_round(Value) ->
+    Value.
 
 %%--------------------------------------------------------------------
 %% @private
@@ -390,7 +405,7 @@ merge_parameter(#parameter{unit = Unit1, description = Descr1} = ConfigParam,
 -spec get_timestamp() -> integer().
 get_timestamp() ->
     {Mega, Sec, Micro} = os:timestamp(),
-    (Mega * 1000000 + Sec) * 1000 + round(Micro / 1000).
+    (Mega * 1000000 + Sec) * 1000 + (Micro div 1000).
 
 %%--------------------------------------------------------------------
 %% @private
