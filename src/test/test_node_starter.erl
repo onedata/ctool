@@ -79,9 +79,9 @@ prepare_test_environment(Config, DescriptionFile, Module) ->
 
             case performance:is_performance() of
                 true ->
-                    {ok, _} = ct_cover:add_nodes(AllNodes);
+                    false;
                 _ ->
-                    ok
+                    {ok, _} = ct_cover:add_nodes(AllNodes)
             end,
 
             lists:append([
@@ -116,13 +116,13 @@ prepare_test_environment(Config, DescriptionFile, Module) ->
 clean_environment(Config) ->
     case performance:is_performance() of
         true ->
+            ok;
+        _ ->
             GrNodes = ?config(gr_nodes, Config),
             Workers = ?config(op_worker_nodes, Config),
             CCMs = ?config(op_ccm_nodes, Config),
             AllNodes = GrNodes ++ Workers ++ CCMs,
-            ok = ct_cover:remove_nodes(AllNodes);
-        _ ->
-            ok
+            ok = ct_cover:remove_nodes(AllNodes)
     end,
 
     Dockers = proplists:get_value(docker_ids, Config, []),
