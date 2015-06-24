@@ -21,7 +21,7 @@
 -include_lib("ctool/include/test/assertions.hrl").
 -include_lib("ctool/include/test/performance.hrl").
 
--export([around_advice/4]).
+-export([around_advice/4, is_performance/0]).
 
 -type proplist() :: [{Key :: atom(), Value :: term()}].
 
@@ -32,6 +32,12 @@
 %%%===================================================================
 %%% API
 %%%===================================================================
+
+is_performance() ->
+    case os:getenv(?PERFORMANCE_ENV_VARIABLE) of
+        "true" -> true;
+        _ -> false
+    end.
 
 %%--------------------------------------------------------------------
 %% @doc
