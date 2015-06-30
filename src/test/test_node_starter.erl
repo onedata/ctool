@@ -77,9 +77,9 @@ prepare_test_environment(Config, DescriptionFile, Module) ->
             global:sync(),
             ok = load_modules(AllNodes, [Module]),
 
-            case performance:is_performance() of
-                true ->
-                    false;
+            case performance:is_standard_test() of
+                false ->
+                    ok;
                 _ ->
                     {ok, _} = ct_cover:add_nodes(AllNodes)
             end,
@@ -114,8 +114,8 @@ prepare_test_environment(Config, DescriptionFile, Module) ->
 %%--------------------------------------------------------------------
 -spec clean_environment(Config :: list()) -> ok.
 clean_environment(Config) ->
-    case performance:is_performance() of
-        true ->
+    case performance:is_standard_test() of
+        false ->
             ok;
         _ ->
             GrNodes = ?config(gr_nodes, Config),
