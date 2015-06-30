@@ -96,20 +96,12 @@ around_advice(#annotation{data = Data}, SuiteName, stress_test, [CaseArgs]) ->
         _ ->
             run_annotated(Data, SuiteName, stress_test, CaseArgs)
     end;
+around_advice(#annotation{data = Data}, _SuiteName, _CaseName, [get_params]) ->
+    get_config_params(Data);
 around_advice(#annotation{data = Data}, SuiteName, CaseName, [CaseArgs]) ->
     case is_stress_test() of
         true ->
-            DefaultParams = parse_parameters(proplists:get_value(parameters, Data, [])),
-            Config = case proplists:get_all_values(config, Data) of
-                          [] ->
-                              [];
-                          [C1 | _] ->
-                              C1
-                      end,
-            ConfigParams = merge_parameters(
-                parse_parameters(proplists:get_value(parameters, Config, [])),
-                DefaultParams
-            ),
+            ConfigParams = get_config_params(Data),
             NewCaseArgs = inject_parameters(CaseArgs, ConfigParams),
             exec_test_repeat(SuiteName, CaseName, NewCaseArgs);
         _ ->
@@ -117,13 +109,12 @@ around_advice(#annotation{data = Data}, SuiteName, CaseName, [CaseArgs]) ->
     end.
 
 stress_test(Config) ->
-    timer:sleep(300),
     [{suite, Suite}] = ets:lookup(stress_ets, suite),
     [{cases, Cases}] = ets:lookup(stress_ets, cases),
 %%     [{timeout, Timeout}] = ets:lookup(stress_ets, timeout),
 %%     ct:timetrap({seconds, Timeout + 360}),
 
-    Ans = lists:foldl(fun(Case, Ans) ->
+    lists:foldl(fun(Case, Ans) ->
         case apply(Suite, Case, [Config]) of
             {ok, TmpAns} ->
                 TmpAns2 = lists:map(fun(Param) ->
@@ -134,8 +125,20 @@ stress_test(Config) ->
             {error, E} ->
                 throw({concat_atoms(Case, error), E})
         end
-    end, [], Cases),
-    Ans.
+    end, [], Cases).
+
+get_stress_test_params() ->
+    [{suite, Suite}] = ets:lookup(stress_ets, suite),
+    [{cases, Cases}] = ets:lookup(stress_ets, cases),
+
+    lists:foldl(fun(Case, Ans) ->
+        Params =  apply(Suite, Case, [get_params]),
+        Params2 = lists:map(fun(Param) ->
+            PName = Param#parameter.name,
+            Param#parameter{name = concat_atoms(Case, PName)}
+        end, Params),
+        Params2 ++ Ans
+    end, [], Cases).
 
 %%%===================================================================
 %%% Internal functions
@@ -181,6 +184,19 @@ save_suite_and_cases(Suite, Cases) ->
             ets:insert(stress_ets, {suite, Suite}),
             ets:insert(stress_ets, {cases, Cases})
     end.
+
+get_config_params(Data) ->
+    DefaultParams = parse_parameters(proplists:get_value(parameters, Data, [])),
+    Config = case proplists:get_all_values(config, Data) of
+                 [] ->
+                     [];
+                 [C1 | _] ->
+                     C1
+             end,
+    merge_parameters(
+        parse_parameters(proplists:get_value(parameters, Config, [])),
+        DefaultParams
+    ).
 
 concat_atoms(A1, A2) ->
     list_to_atom(atom_to_list(A1) ++ "_" ++ atom_to_list(A2)).
@@ -241,6 +257,7 @@ exec_perf_config(SuiteName, CaseName, CaseDescr, CaseArgs, Config,
     ),
     % Inject configuration parameters into common test cases configuration.
     NewCaseArgs = inject_parameters(CaseArgs, ConfigParams),
+    ConfigParamsToJSON = ConfigParams ++ get_stress_test_params(),
 
     ConfigReps = case is_stress_test() of
         true ->
@@ -301,7 +318,7 @@ exec_perf_config(SuiteName, CaseName, CaseDescr, CaseArgs, Config,
     ConfigMap = #{
         <<"name">> => BinConfigName,
         <<"completed">> => get_timestamp(),
-        <<"parameters">> => format_parameters(ConfigParams),
+        <<"parameters">> => format_parameters(ConfigParamsToJSON),
         <<"description">> => list_to_binary(ConfigDescr),
         <<"repeats_number">> => RepeatsDone,
         <<"successful_repeats_number">> => SuccessfulReps,
