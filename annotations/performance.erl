@@ -80,18 +80,15 @@ around_advice(#annotation{data = {test_cases, CasesNames}}, SuiteName, all, []) 
             end
     end;
 around_advice(#annotation{data = CasesNames}, SuiteName, all, []) ->
-    case os:getenv(?STRESS_ENV_VARIABLE) of
-        "true" ->
+    case {os:getenv(?STRESS_ENV_VARIABLE), os:getenv(?STRESS_NO_CLEARING_ENV_VARIABLE)} of
+        {"true", _} ->
             save_suite_and_cases(SuiteName, proplists:get_value(stress, CasesNames, [])),
             [stress_test];
+        {_, "true"} ->
+            save_suite_and_cases(SuiteName, proplists:get_value(stress_no_clearing, CasesNames, [])),
+            [stress_test];
         _ ->
-            case os:getenv(?STRESS_NO_CLEARING_ENV_VARIABLE) of
-                "true" ->
-                    save_suite_and_cases(SuiteName, proplists:get_value(stress_no_clearing, CasesNames, [])),
-                    [stress_test];
-                _ ->
-                    annotation:call_advised(SuiteName, all, [])
-            end
+            annotation:call_advised(SuiteName, all, [])
     end;
 around_advice(#annotation{data = Data}, SuiteName, stress_test, [CaseArgs]) ->
     case is_stress_test() of
@@ -123,7 +120,7 @@ around_advice(#annotation{data = Data}, SuiteName, CaseName, [CaseArgs]) ->
                       end,
             exec_test_repeat(SuiteName, CaseName, Configs);
         _ ->
-            run_annotated(Data, SuiteName, stress_test, CaseArgs)
+            run_annotated(Data, SuiteName, CaseName, CaseArgs)
     end.
 
 %%--------------------------------------------------------------------
@@ -135,8 +132,8 @@ around_advice(#annotation{data = Data}, SuiteName, CaseName, [CaseArgs]) ->
 stress_test(Config) ->
     [{suite, Suite}] = ets:lookup(stress_ets, suite),
     [{cases, Cases}] = ets:lookup(stress_ets, cases),
-%%     [{timeout, Timeout}] = ets:lookup(stress_ets, timeout),
-%%     ct:timetrap({seconds, Timeout + 360}),
+    [{timeout, Timeout}] = ets:lookup(stress_ets, timeout),
+    ct:timetrap({seconds, Timeout + 300}),
 
     lists:foldl(fun(Case, Ans) ->
         case apply(Suite, Case, [Config]) of
@@ -154,22 +151,28 @@ stress_test(Config) ->
 
 %%--------------------------------------------------------------------
 %% @doc
-%% Returns list of test's parameters.
+%% Returns list of test's parameters or empty list if test is
+%% standard or performance.
 %% @end
 %%--------------------------------------------------------------------
 -spec get_stress_test_params() -> list().
 get_stress_test_params() ->
-    [{suite, Suite}] = ets:lookup(stress_ets, suite),
-    [{cases, Cases}] = ets:lookup(stress_ets, cases),
+    case is_stress_test() of
+        true ->
+            [{suite, Suite}] = ets:lookup(stress_ets, suite),
+            [{cases, Cases}] = ets:lookup(stress_ets, cases),
 
-    lists:foldl(fun(Case, Ans) ->
-        Params =  apply(Suite, Case, [get_params]),
-        Params2 = lists:map(fun(Param) ->
-            PName = Param#parameter.name,
-            Param#parameter{name = concat_atoms(Case, PName)}
-        end, Params),
-        Params2 ++ Ans
-    end, [], Cases).
+            lists:foldl(fun(Case, Ans) ->
+                Params =  apply(Suite, Case, [get_params]),
+                Params2 = lists:map(fun(Param) ->
+                    PName = Param#parameter.name,
+                    Param#parameter{name = concat_atoms(Case, PName)}
+                end, Params),
+                Params2 ++ Ans
+            end, [], Cases);
+        _ ->
+            []
+    end.
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -336,7 +339,7 @@ exec_perf_config(SuiteName, CaseName, CaseDescr, CaseArgs, Config,
                        false -> ?STRESS_DEFAULT_TIME;
                        V -> list_to_integer(V)
                    end,
-%%             ets:insert(stress_ets, {timeout, Time}),
+            ets:insert(stress_ets, {timeout, Time}),
             {timeout, Time};
         _ ->
             proplists:get_value(repeats, Config, DefaultReps)
@@ -347,7 +350,15 @@ exec_perf_config(SuiteName, CaseName, CaseDescr, CaseArgs, Config,
 
     % Fetch git repository metadata.
     Repository = list_to_binary(proplists:get_value(git_repository, CaseArgs)),
-    Branch = list_to_binary(proplists:get_value(git_branch, CaseArgs)),
+    BranchBeg = proplists:get_value(git_branch, CaseArgs),
+    Branch = case {os:getenv(?STRESS_ENV_VARIABLE), os:getenv(?STRESS_NO_CLEARING_ENV_VARIABLE)} of
+                 {"true", _} ->
+                     list_to_binary(BranchBeg ++ "/" ++ ?STRESS_ENV_VARIABLE);
+                 {_, "true"} ->
+                     list_to_binary(BranchBeg ++ "/" ++ ?STRESS_NO_CLEARING_ENV_VARIABLE);
+                 _ ->
+                     list_to_binary(BranchBeg)
+             end,
     Commit = list_to_binary(proplists:get_value(git_commit, CaseArgs)),
 
     #{<<"performance">> := PerfResults} =
@@ -424,7 +435,7 @@ exec_perf_config(SuiteName, CaseName, CaseDescr, CaseArgs, Config,
 %% @end
 %%--------------------------------------------------------------------
 -spec exec_test_repeats(SuiteName :: atom(), CaseName :: atom(), ConfigName :: atom(),
-    CaseConfig :: proplist(), Reps :: integer() | {test_time, integer()}) -> {RepsSummary :: [#parameter{}],
+    CaseConfig :: proplist(), Reps :: integer() | {test_time, integer()}) -> {RepsDone :: integer(), RepsSummary :: [#parameter{}],
     RepsDetails :: [#parameter{}], FailedReps :: map()}.
 exec_test_repeats(SuiteName, CaseName, ConfigName, CaseConfig, {timeout, TimeLimit}) ->
     exec_test_repeats(SuiteName, CaseName, ConfigName, CaseConfig, 1, {timeout, os:timestamp(), TimeLimit} , [], [], #{});
