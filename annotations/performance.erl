@@ -20,8 +20,9 @@
 -include_lib("annotations/include/types.hrl").
 -include_lib("ctool/include/test/assertions.hrl").
 -include_lib("ctool/include/test/performance.hrl").
+-include_lib("common_test/include/ct.hrl").
 
--export([around_advice/4, is_standard_test/0, stress_test/1]).
+-export([around_advice/4, is_standard_test/0, stress_test/1, should_clear/1]).
 
 -type proplist() :: [{Key :: atom(), Value :: term()}].
 
@@ -32,11 +33,18 @@
 -define(STRESS_NO_CLEARING_ENV_VARIABLE, "stress_no_clearing").
 -define(STRESS_TIME_ENV_VARIABLE, "stress_time").
 -define(STRESS_DEFAULT_TIME, timer:hours(3) div 1000).
+-define(STRESS_ERRORS_TO_STOP, 100).
 
 %%%===================================================================
 %%% API
 %%%===================================================================
 
+%%--------------------------------------------------------------------
+%% @doc
+%% Function checks if test is integration test (not performance or stress).
+%% @end
+%%--------------------------------------------------------------------
+-spec is_standard_test() -> boolean().
 is_standard_test() ->
     Envs = [os:getenv(?PERFORMANCE_ENV_VARIABLE),
         os:getenv(?STRESS_ENV_VARIABLE), os:getenv(?STRESS_NO_CLEARING_ENV_VARIABLE)],
@@ -79,13 +87,7 @@ around_advice(#annotation{data = Data}, SuiteName, stress_test, [CaseArgs]) ->
     case is_stress_test() of
         true ->
             CaseDescr = proplists:get_value(description, Data, ""),
-            Configs = case os:getenv(?STRESS_NO_CLEARING_ENV_VARIABLE) of
-                          "true" ->
-                              TmpConf = proplists:get_all_values(config, Data),
-                              [{clearing, true} | TmpConf];
-                          _ ->
-                              proplists:get_all_values(config, Data)
-                      end,
+            Configs = proplists:get_all_values(config, Data),
             DefaultParams = parse_parameters(proplists:get_value(parameters, Data, [])),
             Ans = exec_perf_configs(SuiteName, stress_test, CaseDescr, CaseArgs,
                 Configs, 1, DefaultParams),
@@ -103,11 +105,23 @@ around_advice(#annotation{data = Data}, SuiteName, CaseName, [CaseArgs]) ->
         true ->
             ConfigParams = get_config_params(Data),
             NewCaseArgs = inject_parameters(CaseArgs, ConfigParams),
-            exec_test_repeat(SuiteName, CaseName, NewCaseArgs);
+            Configs = case os:getenv(?STRESS_NO_CLEARING_ENV_VARIABLE) of
+                          "true" ->
+                              [{clearing, false} | NewCaseArgs];
+                          _ ->
+                              NewCaseArgs
+                      end,
+            exec_test_repeat(SuiteName, CaseName, Configs);
         _ ->
             run_annotated(Data, SuiteName, stress_test, CaseArgs)
     end.
 
+%%--------------------------------------------------------------------
+%% @doc
+%% Basic function for stress test.
+%% @end
+%%--------------------------------------------------------------------
+-spec stress_test(Config :: list()) -> term() | no_return().
 stress_test(Config) ->
     [{suite, Suite}] = ets:lookup(stress_ets, suite),
     [{cases, Cases}] = ets:lookup(stress_ets, cases),
@@ -123,10 +137,17 @@ stress_test(Config) ->
                 end, TmpAns),
                 TmpAns2 ++ Ans;
             {error, E} ->
-                throw({concat_atoms(Case, error), E})
+                Message = gui_str:format("Case: ~p, error: ~p", [Case, binary_to_list(E)]),
+                throw(Message)
         end
     end, [], Cases).
 
+%%--------------------------------------------------------------------
+%% @doc
+%% Returns list of test's parameters.
+%% @end
+%%--------------------------------------------------------------------
+-spec get_stress_test_params() -> list().
 get_stress_test_params() ->
     [{suite, Suite}] = ets:lookup(stress_ets, suite),
     [{cases, Cases}] = ets:lookup(stress_ets, cases),
@@ -140,10 +161,32 @@ get_stress_test_params() ->
         Params2 ++ Ans
     end, [], Cases).
 
+%%--------------------------------------------------------------------
+%% @doc
+%% Checks if function should clear or leave changes (e.g. docs in DB).
+%% @end
+%%--------------------------------------------------------------------
+-spec should_clear(Config :: list()) -> boolean().
+should_clear(Config) ->
+    case ?config(clearing, Config) of
+        false ->
+            false;
+        _ ->
+            true
+    end.
+
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
 
+%%--------------------------------------------------------------------
+%% @private
+%% @doc
+%% Runs annotated function with apropriate parameters.
+%% @end
+%%--------------------------------------------------------------------
+-spec run_annotated(Data :: list(), SuiteName :: atom(), CaseName :: atom(),
+    CaseArgs :: list()) -> term().
 run_annotated(Data, SuiteName, CaseName, CaseArgs) ->
     DefaultReps = proplists:get_value(repeats, Data, 1),
     DefaultParams = parse_parameters(proplists:get_value(parameters, Data, [])),
@@ -157,10 +200,24 @@ run_annotated(Data, SuiteName, CaseName, CaseArgs) ->
             exec_ct_config(SuiteName, CaseName, CaseArgs, DefaultParams)
     end.
 
+%%--------------------------------------------------------------------
+%% @private
+%% @doc
+%% Checks if current run is stress test.
+%% @end
+%%--------------------------------------------------------------------
+-spec is_stress_test() -> boolean().
 is_stress_test() ->
     Envs = [os:getenv(?STRESS_ENV_VARIABLE), os:getenv(?STRESS_NO_CLEARING_ENV_VARIABLE)],
     lists:member("true", Envs).
 
+%%--------------------------------------------------------------------
+%% @private
+%% @doc
+%% Saves information about tests to be done during stress test.
+%% @end
+%%--------------------------------------------------------------------
+-spec save_suite_and_cases(Suite :: atom(), Cases :: list()) -> ok.
 save_suite_and_cases(Suite, Cases) ->
     Pid = self(),
     case ets:info(stress_ets) of
@@ -183,8 +240,16 @@ save_suite_and_cases(Suite, Cases) ->
         ets_created ->
             ets:insert(stress_ets, {suite, Suite}),
             ets:insert(stress_ets, {cases, Cases})
-    end.
+    end,
+    ok.
 
+%%--------------------------------------------------------------------
+%% @private
+%% @doc
+%% Gets parameters for stress test from annotation data.
+%% @end
+%%--------------------------------------------------------------------
+-spec get_config_params(Data :: list()) -> list().
 get_config_params(Data) ->
     DefaultParams = parse_parameters(proplists:get_value(parameters, Data, [])),
     Config = case proplists:get_all_values(config, Data) of
@@ -198,6 +263,13 @@ get_config_params(Data) ->
         DefaultParams
     ).
 
+%%--------------------------------------------------------------------
+%% @private
+%% @doc
+%% Concatenates two atoms.
+%% @end
+%%--------------------------------------------------------------------
+-spec concat_atoms(A1 :: atom(), A2 :: atom()) -> atom().
 concat_atoms(A1, A2) ->
     list_to_atom(atom_to_list(A1) ++ "_" ++ atom_to_list(A2)).
 
@@ -369,7 +441,7 @@ exec_test_repeats(SuiteName, CaseName, ConfigName, CaseConfig, Rep, Reps,
             Now = os:timestamp(),
             TestTime = timer:now_diff(Now, StartTime) / 1000000,
             TimeLeft = TimeLimit - TestTime,
-            case TimeLeft > 0 of
+            case (TimeLeft > 0) and (maps:size(FailedReps) < ?STRESS_ERRORS_TO_STOP) of
                 true ->
                     ct:print("SUITE: ~p~nCASE: ~p~nCONFIG: ~p~nREPEAT: ~p, TEST TIME ~p sek, TIME LEFT ~p sek",
                         [SuiteName, CaseName, ConfigName, Rep, TestTime, TimeLeft]),
