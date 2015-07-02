@@ -22,7 +22,7 @@
 -include_lib("ctool/include/test/performance.hrl").
 -include_lib("common_test/include/ct.hrl").
 
--export([around_advice/4, is_standard_test/0, stress_test/1, should_clear/1]).
+-export([around_advice/4, is_standard_test/0, is_stress_test/0, stress_test/1, should_clear/1]).
 
 -type proplist() :: [{Key :: atom(), Value :: term()}].
 
@@ -49,6 +49,16 @@ is_standard_test() ->
     Envs = [os:getenv(?PERFORMANCE_ENV_VARIABLE),
         os:getenv(?STRESS_ENV_VARIABLE), os:getenv(?STRESS_NO_CLEARING_ENV_VARIABLE)],
     not lists:member("true", Envs).
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Checks if current run is stress test.
+%% @end
+%%--------------------------------------------------------------------
+-spec is_stress_test() -> boolean().
+is_stress_test() ->
+    Envs = [os:getenv(?STRESS_ENV_VARIABLE), os:getenv(?STRESS_NO_CLEARING_ENV_VARIABLE)],
+    lists:member("true", Envs).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -199,17 +209,6 @@ run_annotated(Data, SuiteName, CaseName, CaseArgs) ->
         _ ->
             exec_ct_config(SuiteName, CaseName, CaseArgs, DefaultParams)
     end.
-
-%%--------------------------------------------------------------------
-%% @private
-%% @doc
-%% Checks if current run is stress test.
-%% @end
-%%--------------------------------------------------------------------
--spec is_stress_test() -> boolean().
-is_stress_test() ->
-    Envs = [os:getenv(?STRESS_ENV_VARIABLE), os:getenv(?STRESS_NO_CLEARING_ENV_VARIABLE)],
-    lists:member("true", Envs).
 
 %%--------------------------------------------------------------------
 %% @private
