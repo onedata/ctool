@@ -16,7 +16,7 @@
 -include("global_registry/gr_providers.hrl").
 
 %% API
--export([register/2, unregister/1, get_details/1, get_details/2, modify_details/2]).
+-export([register/2, register_with_uuid/2, unregister/1, get_details/1, get_details/2, modify_details/2]).
 -export([check_ip_address/1, check_port/4]).
 -export([create_space/2, support_space/2, revoke_space_support/2, get_spaces/1,
     get_space_details/2]).
@@ -28,7 +28,7 @@
 %%--------------------------------------------------------------------
 %% @doc Registers provider in Global Registry. Parameters should contain:
 %% "csr" that will be signed by Global Registry, "urls" to cluster nodes
-%% "redirectionPoint" to provider's GUI and "gr_endpoint:client()Name".
+%% "redirectionPoint" to provider's GUI and "clientName".
 %% @end
 %%--------------------------------------------------------------------
 -spec register(Client :: gr_endpoint:client(), Parameters :: gr_endpoint:parameters()) ->
@@ -36,6 +36,27 @@
 register(Client, Parameters) ->
     ?run(fun() ->
         URN = "/provider",
+        Body = iolist_to_binary(mochijson2:encode(Parameters)),
+        {ok, "200", _ResponseHeaders, ResponseBody} =
+            gr_endpoint:noauth_request(Client, URN, post, Body),
+        Proplist = mochijson2:decode(ResponseBody, [{format, proplist}]),
+        ProviderId = proplists:get_value(<<"providerId">>, Proplist),
+        Cert = proplists:get_value(<<"certificate">>, Proplist),
+        {ok, ProviderId, Cert}
+    end).
+
+%%--------------------------------------------------------------------
+%% @doc Registers provider in Global Registry with given UUI.
+%% This is used mainly for tests. Parameters should contain:
+%% "csr" that will be signed by Global Registry, "urls" to cluster nodes
+%% "redirectionPoint" to provider's GUI, "clientName" and "uuid".
+%% @end
+%%--------------------------------------------------------------------
+-spec register(Client :: gr_endpoint:client(), Parameters :: gr_endpoint:parameters()) ->
+    {ok, ProviderId :: binary(), Cert :: binary()} | {error, Reason :: term()}.
+register_with_uuid(Client, Parameters) ->
+    ?run(fun() ->
+        URN = "/provider_test",
         Body = iolist_to_binary(mochijson2:encode(Parameters)),
         {ok, "200", _ResponseHeaders, ResponseBody} =
             gr_endpoint:noauth_request(Client, URN, post, Body),
