@@ -52,7 +52,7 @@ register(Client, Parameters) ->
 %% "redirectionPoint" to provider's GUI, "clientName" and "uuid".
 %% @end
 %%--------------------------------------------------------------------
--spec register(Client :: gr_endpoint:client(), Parameters :: gr_endpoint:parameters()) ->
+-spec register_with_uuid(Client :: gr_endpoint:client(), Parameters :: gr_endpoint:parameters()) ->
     {ok, ProviderId :: binary(), Cert :: binary()} | {error, Reason :: term()}.
 register_with_uuid(Client, Parameters) ->
     ?run(fun() ->
