@@ -34,6 +34,7 @@
 -define(STRESS_TIME_ENV_VARIABLE, "stress_time").
 -define(STRESS_DEFAULT_TIME, timer:hours(3) div 1000).
 -define(STRESS_ERRORS_TO_STOP, 100).
+-define(STRESS_ETS_NAME, stress_ets).
 
 %%%===================================================================
 %%% API
@@ -98,8 +99,8 @@ around_advice(#annotation{data = Data}, SuiteName, stress_test, [CaseArgs]) ->
             DefaultParams = parse_parameters(proplists:get_value(parameters, Data, [])),
             Ans = exec_perf_configs(SuiteName, stress_test, CaseDescr, CaseArgs,
                 Configs, 1, DefaultParams),
-            EtsOwner = ets:info(stress_ets, owner),
-            ets:delete(stress_ets),
+            EtsOwner = ets:info(?STRESS_ETS_NAME, owner),
+            ets:delete(?STRESS_ETS_NAME),
             EtsOwner ! kill_ets_owner,
             Ans;
         _ ->
@@ -130,9 +131,9 @@ around_advice(#annotation{data = Data}, SuiteName, CaseName, [CaseArgs]) ->
 %%--------------------------------------------------------------------
 -spec stress_test(Config :: list()) -> term() | no_return().
 stress_test(Config) ->
-    [{suite, Suite}] = ets:lookup(stress_ets, suite),
-    [{cases, Cases}] = ets:lookup(stress_ets, cases),
-    [{timeout, Timeout}] = ets:lookup(stress_ets, timeout),
+    [{suite, Suite}] = ets:lookup(?STRESS_ETS_NAME, suite),
+    [{cases, Cases}] = ets:lookup(?STRESS_ETS_NAME, cases),
+    [{timeout, Timeout}] = ets:lookup(?STRESS_ETS_NAME, timeout),
     ct:timetrap({seconds, Timeout + 300}),
 
     lists:foldl(fun(Case, Ans) ->
@@ -159,8 +160,8 @@ stress_test(Config) ->
 get_stress_test_params() ->
     case is_stress_test() of
         true ->
-            [{suite, Suite}] = ets:lookup(stress_ets, suite),
-            [{cases, Cases}] = ets:lookup(stress_ets, cases),
+            [{suite, Suite}] = ets:lookup(?STRESS_ETS_NAME, suite),
+            [{cases, Cases}] = ets:lookup(?STRESS_ETS_NAME, cases),
 
             lists:foldl(fun(Case, Ans) ->
                 Params =  apply(Suite, Case, [get_params]),
@@ -222,11 +223,11 @@ run_annotated(Data, SuiteName, CaseName, CaseArgs) ->
 -spec save_suite_and_cases(Suite :: atom(), Cases :: list()) -> ok.
 save_suite_and_cases(Suite, Cases) ->
     Pid = self(),
-    case ets:info(stress_ets) of
+    case ets:info(?STRESS_ETS_NAME) of
         undefined ->
             spawn(fun() ->
                 try
-                    ets:new(stress_ets, [set, public, named_table]),
+                    ets:new(?STRESS_ETS_NAME, [set, public, named_table]),
                     Pid ! ets_created,
                     receive
                         kill_ets_owner -> ok
@@ -240,8 +241,8 @@ save_suite_and_cases(Suite, Cases) ->
     end,
     receive
         ets_created ->
-            ets:insert(stress_ets, {suite, Suite}),
-            ets:insert(stress_ets, {cases, Cases})
+            ets:insert(?STRESS_ETS_NAME, {suite, Suite}),
+            ets:insert(?STRESS_ETS_NAME, {cases, Cases})
     end,
     ok.
 
@@ -339,7 +340,7 @@ exec_perf_config(SuiteName, CaseName, CaseDescr, CaseArgs, Config,
                        false -> ?STRESS_DEFAULT_TIME;
                        V -> list_to_integer(V)
                    end,
-            ets:insert(stress_ets, {timeout, Time}),
+            ets:insert(?STRESS_ETS_NAME, {timeout, Time}),
             {timeout, Time};
         _ ->
             proplists:get_value(repeats, Config, DefaultReps)
