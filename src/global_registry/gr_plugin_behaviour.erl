@@ -29,6 +29,11 @@
 -callback get_key_path() -> file:name_all().
 
 %%--------------------------------------------------------------------
+%% @doc Should return a path to file containing provider's CSR.
+%%--------------------------------------------------------------------
+-callback get_csr_path() -> file:name_all().
+
+%%--------------------------------------------------------------------
 %% @doc Should return a path to file containing provider's public
 %% certificate signed by Global Registry.
 %% @end
