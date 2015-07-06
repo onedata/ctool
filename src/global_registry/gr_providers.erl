@@ -56,7 +56,7 @@ register(Client, Parameters) ->
     {ok, ProviderId :: binary(), Cert :: binary()} | {error, Reason :: term()}.
 register_with_uuid(Client, Parameters) ->
     ?run(fun() ->
-        URN = "/provider_test",
+        URN = "/provider_dev",
         Body = iolist_to_binary(mochijson2:encode(Parameters)),
         {ok, "200", _ResponseHeaders, ResponseBody} =
             gr_endpoint:noauth_request(Client, URN, post, Body),
