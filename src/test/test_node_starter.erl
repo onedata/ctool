@@ -164,6 +164,8 @@ clean_environment(Config) ->
 -spec start_cover() -> ok.
 start_cover() ->
     case application:get_env(covered_dirs) of
+        {ok, []} ->
+            ok;
         {ok, Dirs} when is_list(Dirs) ->
             cover:start(),
             lists:foreach(fun(D) ->
@@ -181,6 +183,8 @@ start_cover() ->
 %%--------------------------------------------------------------------
 stop_cover() ->
     case application:get_env(covered_dirs) of
+        {ok, []} ->
+            ok;
         {ok, Dirs} when is_list(Dirs) ->
             CoverFile = "cv.coverdata",
             cover:export(CoverFile),
