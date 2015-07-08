@@ -135,15 +135,15 @@ clean_environment(Config) ->
 
             lists:foreach(fun(_N) ->
                 receive
-                    {app_ended, FileData} ->
-                        CoverFile = "cv.coverdata",
+                    {app_ended, CoverNode, FileData} ->
+                        {Mega,Sec,Micro} = os:timestamp(),
+                        CoverFile = atom_to_list(CoverNode) ++ integer_to_list((Mega*1000000 + Sec)*1000000 + Micro) ++ ".coverdata",
                         ok = file:write_file(CoverFile, FileData),
                         cover:import(CoverFile),
                         file:delete(CoverFile)
                     after
                         timer:minutes(1) ->
                             throw(cover_not_received)
-
                 end
             end, AllNodes)
     end,
@@ -190,7 +190,7 @@ stop_cover() ->
             cover:export(CoverFile),
             {ok, FileData} = file:read_file(CoverFile),
             ok = file:delete(CoverFile),
-            true = is_pid(global:send(?CLEANING_PROC_NAME, {app_ended, FileData})),
+            true = is_pid(global:send(?CLEANING_PROC_NAME, {app_ended, node(), FileData})),
             cover:stop(),
             ok;
         _ ->
