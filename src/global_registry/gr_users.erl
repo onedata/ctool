@@ -168,7 +168,7 @@ leave_space(Client, SpaceId) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec get_spaces(Client :: gr_endpoint:client()) ->
-    {ok, SpaceIds :: [binary()]} | {error, Reason :: term()}.
+    {ok, UserSpaces :: #user_spaces{}} | {error, Reason :: term()}.
 get_spaces(Client) ->
     ?run(fun() ->
         URN = "/user/spaces",
