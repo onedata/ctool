@@ -105,8 +105,10 @@ cowboy_ensure_header(Name, Value, Req) when is_binary(Name) and is_binary(Value)
 %%--------------------------------------------------------------------
 -spec onrequest_adjust_headers(Req :: cowboy_req:req()) -> cowboy_req:req().
 onrequest_adjust_headers(Req) ->
-    Req2 = cowboy_req:set_resp_header(<<"Strict-Transport-Security">>, <<"max-age=31536000; includeSubDomains">>, Req),
-    cowboy_req:set_resp_header(<<"X-Frame-Options">>, <<"SAMEORIGIN">>, Req2).
+    % TODO: HSTS is disabled for demo purposes
+%%     Req2 = cowboy_req:set_resp_header(<<"Strict-Transport-Security">>, <<"max-age=31536000; includeSubDomains">>, Req),
+%%     cowboy_req:set_resp_header(<<"X-Frame-Options">>, <<"SAMEORIGIN">>, Req2).
+    cowboy_req:set_resp_header(<<"X-Frame-Options">>, <<"SAMEORIGIN">>, Req).
 
 %%--------------------------------------------------------------------
 %% @doc Returns a set of elements that renders to a floating popup asking for acceptance
