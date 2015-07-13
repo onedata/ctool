@@ -42,7 +42,7 @@
 
 %%--------------------------------------------------------------------
 %% @doc
-%% Function checks if test is integration test (not performance or stress).
+%% Function returns information if test is integration test (not performance or stress).
 %% @end
 %%--------------------------------------------------------------------
 -spec is_standard_test() -> boolean().
@@ -134,7 +134,7 @@ stress_test(Config) ->
     [{suite, Suite}] = ets:lookup(?STRESS_ETS_NAME, suite),
     [{cases, Cases}] = ets:lookup(?STRESS_ETS_NAME, cases),
     [{timeout, Timeout}] = ets:lookup(?STRESS_ETS_NAME, timeout),
-    ct:timetrap({seconds, Timeout + 300}),
+    ct:timetrap({seconds, Timeout + 600}), % add 10 minutes to let running tests end
 
     lists:foldl(fun(Case, Ans) ->
         case apply(Suite, Case, [Config]) of
@@ -182,12 +182,7 @@ get_stress_test_params() ->
 %%--------------------------------------------------------------------
 -spec should_clear(Config :: list()) -> boolean().
 should_clear(Config) ->
-    case ?config(clearing, Config) of
-        false ->
-            false;
-        _ ->
-            true
-    end.
+    ?config(clearing, Config) =/= false.
 
 %%%===================================================================
 %%% Internal functions
@@ -450,7 +445,7 @@ exec_test_repeats(SuiteName, CaseName, ConfigName, CaseConfig, Rep, Reps,
     TimeStop = case Reps of
         {timeout, StartTime, TimeLimit} ->
             Now = os:timestamp(),
-            TestTime = timer:now_diff(Now, StartTime) / 1000000,
+            TestTime = timer:now_diff(Now, StartTime) div 1000000,
             TimeLeft = TimeLimit - TestTime,
             case (TimeLeft > 0) and (maps:size(FailedReps) < ?STRESS_ERRORS_TO_STOP) of
                 true ->
