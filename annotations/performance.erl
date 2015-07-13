@@ -35,6 +35,7 @@
 -define(STRESS_DEFAULT_TIME, timer:hours(3) div 1000).
 -define(STRESS_ERRORS_TO_STOP, 100).
 -define(STRESS_ETS_NAME, stress_ets).
+-define(STRESS_TIMEOUT_EXTENSION_SECONDS, 600). % extension of ct timeout to let running tests end
 
 %%%===================================================================
 %%% API
@@ -134,7 +135,7 @@ stress_test(Config) ->
     [{suite, Suite}] = ets:lookup(?STRESS_ETS_NAME, suite),
     [{cases, Cases}] = ets:lookup(?STRESS_ETS_NAME, cases),
     [{timeout, Timeout}] = ets:lookup(?STRESS_ETS_NAME, timeout),
-    ct:timetrap({seconds, Timeout + 600}), % add 10 minutes to let running tests end
+    ct:timetrap({seconds, Timeout + ?STRESS_TIMEOUT_EXTENSION_SECONDS}), % add 10 minutes to let running tests end
 
     lists:foldl(fun(Case, Ans) ->
         case apply(Suite, Case, [Config]) of
