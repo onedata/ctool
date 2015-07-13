@@ -13,7 +13,10 @@
 -include_lib("common_test/include/ct.hrl").
 
 %% API
--export([prepare_test_environment/3, clean_environment/1, load_modules/2]).
+-export([prepare_test_environment/3, clean_environment/1, load_modules/2,
+    start_cover/0, stop_cover/0]).
+
+-define(CLEANING_PROC_NAME, cleaning_proc).
 
 %%%===================================================================
 %%% Starting and stoping nodes
@@ -22,7 +25,6 @@
 %%--------------------------------------------------------------------
 %% @doc
 %% Starts deps and dockers with needed applications and mocks.
-%% Adds started nodes to ct_cover analysis if needed (test is not performance).
 %% @end
 %%--------------------------------------------------------------------
 -spec prepare_test_environment(Config :: list(), DescriptionFile :: string(),
@@ -77,13 +79,6 @@ prepare_test_environment(Config, DescriptionFile, Module) ->
             global:sync(),
             ok = load_modules(AllNodes, [Module]),
 
-            case performance:is_standard_test() of
-                false ->
-                    ok;
-                _ ->
-                    {ok, _} = ct_cover:add_nodes(AllNodes)
-            end,
-
             lists:append([
                 ConfigWithPaths,
                 proplists:delete(dns, EnvDesc),
@@ -108,21 +103,49 @@ prepare_test_environment(Config, DescriptionFile, Module) ->
 
 %%--------------------------------------------------------------------
 %% @doc
-%% Removes nodes from ct_cover analysis if cover is started.
+%% Gathers cover analysis reports if cover is started.
 %% Afterwards, cleans environment by running 'cleanup.py' script.
 %% @end
 %%--------------------------------------------------------------------
 -spec clean_environment(Config :: list()) -> ok.
 clean_environment(Config) ->
-    case performance:is_standard_test() of
-        false ->
+    case cover:modules() of
+        [] ->
             ok;
         _ ->
             GrNodes = ?config(gr_nodes, Config),
             Workers = ?config(op_worker_nodes, Config),
             CCMs = ?config(op_ccm_nodes, Config),
             AllNodes = GrNodes ++ Workers ++ CCMs,
-            ok = ct_cover:remove_nodes(AllNodes)
+
+            global:register_name(?CLEANING_PROC_NAME, self()),
+            global:sync(),
+
+            lists:foreach(fun(N) ->
+                ok = rpc:call(N, application, stop, [op_worker])
+            end, Workers),
+
+            lists:foreach(fun(N) ->
+                ok = rpc:call(N, application, stop, [op_ccm])
+            end, CCMs),
+
+            lists:foreach(fun(N) ->
+                ok = rpc:call(N, application, stop, [globalregistry])
+            end, GrNodes),
+
+            lists:foreach(fun(_N) ->
+                receive
+                    {app_ended, CoverNode, FileData} ->
+                        {Mega,Sec,Micro} = os:timestamp(),
+                        CoverFile = atom_to_list(CoverNode) ++ integer_to_list((Mega*1000000 + Sec)*1000000 + Micro) ++ ".coverdata",
+                        ok = file:write_file(CoverFile, FileData),
+                        cover:import(CoverFile),
+                        file:delete(CoverFile)
+                    after
+                        timer:minutes(1) ->
+                            throw(cover_not_received)
+                end
+            end, AllNodes)
     end,
 
     Dockers = proplists:get_value(docker_ids, Config, []),
@@ -132,6 +155,47 @@ clean_environment(Config) ->
         filename:join([ProjectRoot, "bamboos", "docker", "cleanup.py"]),
     utils:cmd([CleanupScript | DockersStr]),
     ok.
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Starts cover server if needed (if apropriate env is set).
+%% @end
+%%--------------------------------------------------------------------
+-spec start_cover() -> ok.
+start_cover() ->
+    case application:get_env(covered_dirs) of
+        {ok, []} ->
+            ok;
+        {ok, Dirs} when is_list(Dirs) ->
+            cover:start(),
+            lists:foreach(fun(D) ->
+                cover:compile_beam_directory(atom_to_list(D))
+            end, Dirs),
+            ok;
+        _ ->
+            ok
+    end.
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Stops cover server if it is running.
+%% @end
+%%--------------------------------------------------------------------
+stop_cover() ->
+    case application:get_env(covered_dirs) of
+        {ok, []} ->
+            ok;
+        {ok, Dirs} when is_list(Dirs) ->
+            CoverFile = "cv.coverdata",
+            cover:export(CoverFile),
+            {ok, FileData} = file:read_file(CoverFile),
+            ok = file:delete(CoverFile),
+            true = is_pid(global:send(?CLEANING_PROC_NAME, {app_ended, node(), FileData})),
+            cover:stop(),
+            ok;
+        _ ->
+            ok
+    end.
 
 %%%===================================================================
 %%% Internal functions
