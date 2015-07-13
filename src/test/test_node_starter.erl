@@ -14,7 +14,7 @@
 
 %% API
 -export([prepare_test_environment/3, clean_environment/1, load_modules/2,
-    start_cover/0, stop_cover/0]).
+    maybe_start_cover/0, maybe_stop_cover/0]).
 
 -define(CLEANING_PROC_NAME, cleaning_proc).
 
@@ -161,8 +161,8 @@ clean_environment(Config) ->
 %% Starts cover server if needed (if apropriate env is set).
 %% @end
 %%--------------------------------------------------------------------
--spec start_cover() -> ok.
-start_cover() ->
+-spec maybe_start_cover() -> ok.
+maybe_start_cover() ->
     case application:get_env(covered_dirs) of
         {ok, []} ->
             ok;
@@ -181,7 +181,8 @@ start_cover() ->
 %% Stops cover server if it is running.
 %% @end
 %%--------------------------------------------------------------------
-stop_cover() ->
+-spec maybe_stop_cover() -> ok.
+maybe_stop_cover() ->
     case application:get_env(covered_dirs) of
         {ok, []} ->
             ok;
