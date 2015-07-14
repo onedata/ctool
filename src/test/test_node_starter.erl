@@ -183,19 +183,23 @@ maybe_start_cover() ->
                     end, Dirs);
                 _ ->
                     lists:foreach(fun(D) ->
-                        DStr = atom_to_list(D),
-                        {ok, AllBeams} = file:list_dir(DStr),
-                        ExcludedModulesFiles = lists:map(fun(M) ->
-                            atom_to_list(M) ++ ".beam"
-                        end, ExcludedModules),
-                        lists:foreach(fun(File) ->
-                            case lists:suffix(".beam", File) of
-                                true ->
-                                    cover:compile_beam(DStr ++ "/" ++ File);
-                                _ ->
-                                    ok
-                            end
-                        end, AllBeams -- ExcludedModulesFiles)
+                        try
+                            DStr = atom_to_list(D),
+                            {ok, AllBeams} = file:list_dir(DStr),
+                            ExcludedModulesFiles = lists:map(fun(M) ->
+                                atom_to_list(M) ++ ".beam"
+                            end, ExcludedModules),
+                            lists:foreach(fun(File) ->
+                                case lists:suffix(".beam", File) of
+                                    true ->
+                                        cover:compile_beam(DStr ++ "/" ++ File);
+                                    _ ->
+                                        ok
+                                end
+                            end, AllBeams -- ExcludedModulesFiles)
+                        catch
+                            _:_ -> ok % a dir may not exist (it is added for other project)
+                        end
                     end, Dirs)
             end,
             ok;
