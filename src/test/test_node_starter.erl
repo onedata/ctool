@@ -168,9 +168,36 @@ maybe_start_cover() ->
             ok;
         {ok, Dirs} when is_list(Dirs) ->
             cover:start(),
-            lists:foreach(fun(D) ->
-                cover:compile_beam_directory(atom_to_list(D))
-            end, Dirs),
+
+            ExcludedModules = case application:get_env(covered_excluded_modules) of
+                                  {ok, Mods} when is_list(Dirs) ->
+                                      Mods;
+                                  _ ->
+                                      []
+                              end,
+
+            case ExcludedModules of
+                [] ->
+                    lists:foreach(fun(D) ->
+                        cover:compile_beam_directory(atom_to_list(D))
+                    end, Dirs);
+                _ ->
+                    lists:foreach(fun(D) ->
+                        DStr = atom_to_list(D),
+                        {ok, AllBeams} = file:list_dir(DStr),
+                        ExcludedModulesFiles = lists:map(fun(M) ->
+                            atom_to_list(M) ++ ".beam"
+                        end, ExcludedModules),
+                        lists:foreach(fun(File) ->
+                            case lists:suffix(".beam", File) of
+                                true ->
+                                    cover:compile_beam(DStr ++ "/" ++ File);
+                                _ ->
+                                    ok
+                            end
+                        end, AllBeams -- ExcludedModulesFiles)
+                    end, Dirs)
+            end,
             ok;
         _ ->
             ok
