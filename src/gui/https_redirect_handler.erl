@@ -8,7 +8,7 @@
 %%% @doc This module handles requests directed to http and returns a 301 redirect to https.
 %%% @end
 %%%-------------------------------------------------------------------
--module(redirect_handler).
+-module(https_redirect_handler).
 
 -include("logging.hrl").
 
