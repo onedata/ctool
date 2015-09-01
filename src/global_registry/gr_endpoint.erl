@@ -34,8 +34,11 @@
 -type parameters() :: [{Key :: binary(), Value :: binary()}].
 
 %% Global Registry gr_endpoint:client()
--type client() :: client | provider | {user, AccessToken :: binary()} |
-{try_user, AccessToken :: binary()}.
+% Tuple containing root macaroon and discharge macaroons for user auth
+% (all macaroons are serialized).
+-type macaroons() :: {Macaroon :: binary(), DischMacaroons :: [binary()]}.
+-type client() :: client | provider | {user, macaroons()} |
+{try_user, macaroons()}.
 
 -export_type([client/0, parameters/0, urn/0]).
 
@@ -87,10 +90,10 @@ auth_request({Type, undefined}, URN, Method, Headers, Body, Options)
     when Type =:= user; Type =:= try_user ->
     do_auth_request(URN, Method, Headers, Body, Options);
 
-auth_request({Type, AccessToken}, URN, Method, Headers, Body, Options)
+auth_request({Type, Macaroons}, URN, Method, Headers, Body, Options)
     when Type =:= user; Type =:= try_user ->
-    AuthorizationHeader = {"authorization", "Bearer " ++ binary_to_list(AccessToken)},
-    do_auth_request(URN, Method, [AuthorizationHeader | Headers], Body, Options).
+    AuthHeaders = prepare_auth_headers(Macaroons),
+    do_auth_request(URN, Method, AuthHeaders ++ Headers, Body, Options).
 
 %%--------------------------------------------------------------------
 %% @equiv noauth_request(Client, URN, Method, [])
@@ -136,10 +139,10 @@ noauth_request({Type, undefined}, URN, Method, Headers, Body, Options)
     when Type =:= user; Type =:= try_user ->
     do_noauth_request(URN, Method, Headers, Body, Options);
 
-noauth_request({Type, AccessToken}, URN, Method, Headers, Body, Options)
+noauth_request({Type, Macaroons}, URN, Method, Headers, Body, Options)
     when Type =:= user; Type =:= try_user ->
-    AuthorizationHeader = {"authorization", "Bearer " ++ binary_to_list(AccessToken)},
-    do_noauth_request(URN, Method, [AuthorizationHeader | Headers], Body, Options).
+    AuthHeaders = prepare_auth_headers(Macaroons),
+    do_noauth_request(URN, Method, AuthHeaders ++ Headers, Body, Options).
 
 %%%===================================================================
 %%% Internal functions
@@ -180,3 +183,22 @@ do_noauth_request(URN, Method, Headers, Body, Options) ->
     URL = apply(gr_plugin, get_gr_url, []),
     NewHeaders = [{"content-type", "application/json"} | Headers],
     ibrowse:send_req(URL ++ URN, NewHeaders, Method, Body, Options).
+
+
+-spec prepare_auth_headers(Macaroons :: macaroons()) ->
+    [{Key :: string(), Val :: string()}].
+prepare_auth_headers({SrlzdMacaroon, SrlzdDischMacaroons}) ->
+    {ok, Macaroon} = macaroon:deserialize(SrlzdMacaroon),
+    BindedMacaroons = lists:map(
+        fun(SrlzdDischMacaroon) ->
+            {ok, DM} = macaroon:deserialize(SrlzdDischMacaroon),
+            {ok, BDM} = macaroon:prepare_for_request(Macaroon, DM),
+            {ok, SBDM} = macaroon:serialize(BDM),
+            binary_to_list(SBDM)
+        end, SrlzdDischMacaroons),
+    [
+        {"macaroon", binary_to_list(SrlzdMacaroon)},
+        % Binded discharge macaroons are sent in one header,
+        % separated by spaces.
+        {"discharge-macaroons", string:join(BindedMacaroons, " ")}
+    ].
