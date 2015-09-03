@@ -40,9 +40,8 @@ authorize(CaveatId) ->
         URN = "/user/authorize",
         Body = jiffy:encode({[{<<"identifier">>, CaveatId}]}),
         {ok, "200", _ResponseHeaders, ResponseBody} =
-            gr_endpoint:auth_request(provider, URN, post, Body,
-                [{response_format, binary}]),
-        {ok, ResponseBody}
+            gr_endpoint:auth_request(provider, URN, post, Body),
+        {ok, iolist_to_binary(ResponseBody)}
     end).
 
 %%--------------------------------------------------------------------
