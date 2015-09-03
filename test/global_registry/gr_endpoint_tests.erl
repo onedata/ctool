@@ -81,11 +81,11 @@ setup() ->
     end),
 
     meck:new(macaroon),
-    meck:expect(macaroon, deserialize, fun(X) -> X end),
-    meck:expect(macaroon, serialize, fun(X) -> X end),
+    meck:expect(macaroon, deserialize, fun(X) -> {ok, X} end),
+    meck:expect(macaroon, serialize, fun(X) -> {ok, X} end),
     meck:expect(macaroon, prepare_for_request,
         fun(_Macaroon, DischMacaroon) ->
-            <<"binded_", DischMacaroon/binary>>
+            {ok, <<"binded_", DischMacaroon/binary>>}
         end).
 
 
