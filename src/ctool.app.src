@@ -21,7 +21,7 @@
         ibrowse,
         cowboy,
         gproc
-        % n2o and erlydtl are not listed here, because we do not want them to start as applications
+        % n2o, erlydtl and macaroons are not listed here, because we do not want them to start as applications
     ]},
 
     {env, [
