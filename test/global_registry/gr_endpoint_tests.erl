@@ -31,7 +31,7 @@
     {"macaroon", "macaroon"}
 ).
 
-% Binded disch macaroons joined into one string with spaces for request header.
+% Bound disch macaroons joined into one string with spaces for request header.
 -define(DISCHARGE_MACAROONS_HEADER,
     {"discharge-macaroons", "binded_disch_macaroon binded_another_disch_macaroon binded_moar_disch_macaroon"}
 ).

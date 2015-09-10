@@ -189,7 +189,7 @@ do_noauth_request(URN, Method, Headers, Body, Options) ->
     [{Key :: string(), Val :: string()}].
 prepare_auth_headers({SrlzdMacaroon, SrlzdDischMacaroons}) ->
     {ok, Macaroon} = macaroon:deserialize(SrlzdMacaroon),
-    BindedMacaroons = lists:map(
+    BoundMacaroons = lists:map(
         fun(SrlzdDischMacaroon) ->
             {ok, DM} = macaroon:deserialize(SrlzdDischMacaroon),
             {ok, BDM} = macaroon:prepare_for_request(Macaroon, DM),
@@ -200,5 +200,5 @@ prepare_auth_headers({SrlzdMacaroon, SrlzdDischMacaroons}) ->
         {"macaroon", binary_to_list(SrlzdMacaroon)},
         % Binded discharge macaroons are sent in one header,
         % separated by spaces.
-        {"discharge-macaroons", string:join(BindedMacaroons, " ")}
+        {"discharge-macaroons", string:join(BoundMacaroons, " ")}
     ].
