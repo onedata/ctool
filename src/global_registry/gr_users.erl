@@ -17,6 +17,7 @@
 -include("global_registry/gr_groups.hrl").
 
 %% API
+-export([authorize/1]).
 -export([get_details/1, modify_details/2, merge_account/2]).
 -export([get_create_space_token/1, get_merge_account_token/1]).
 -export([create_space/2, join_space/2, leave_space/2, get_spaces/1,
@@ -27,6 +28,21 @@
 %%%===================================================================
 %%% API
 %%%===================================================================
+
+%%--------------------------------------------------------------------
+%% @doc Returns a discharge macaroon for given caveat ID.
+%% @end
+%%--------------------------------------------------------------------
+-spec authorize(CaveatId :: binary()) ->
+    {ok, DischMacaroon :: binary()} | {error, Reason :: term()}.
+authorize(CaveatId) ->
+    ?run(fun() ->
+        URN = "/user/authorize",
+        Body = jiffy:encode({[{<<"identifier">>, CaveatId}]}),
+        {ok, "200", _ResponseHeaders, ResponseBody} =
+            gr_endpoint:auth_request(provider, URN, post, Body),
+        {ok, iolist_to_binary(ResponseBody)}
+    end).
 
 %%--------------------------------------------------------------------
 %% @doc Returns public details about user.

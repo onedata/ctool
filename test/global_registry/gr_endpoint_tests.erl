@@ -16,6 +16,26 @@
 
 -include_lib("eunit/include/eunit.hrl").
 
+% Root macaroon
+-define(MACAROON, <<"macaroon">>).
+% List of disch macaroons
+-define(DISCH_MACAROONS,
+    [<<"disch_macaroon">>, <<"another_disch_macaroon">>, <<"moar_disch_macaroon">>]
+).
+
+-define(CONTENT_TYPE_HEADER,
+    {"content-type", "application/json"}
+).
+
+-define(MACAROON_HEADER,
+    {"macaroon", "macaroon"}
+).
+
+% Bound disch macaroons joined into one string with spaces for request header.
+-define(DISCHARGE_MACAROONS_HEADER,
+    {"discharge-macaroons", "binded_disch_macaroon binded_another_disch_macaroon binded_moar_disch_macaroon"}
+).
+
 %%%===================================================================
 %%% Tests description
 %%%===================================================================
@@ -52,12 +72,21 @@ setup() ->
         (cert_path) -> {ok, cert};
         (cacert_path) -> {ok, cacert}
     end),
+
     meck:new(public_key, [unstick, passthrough]),
     meck:expect(public_key, pem_decode, fun
         (key) -> [{key_type, key_encoded, not_encrypted}];
         (cert) -> [{cert_type, cert_encoded, not_encrypted}];
         (cacert) -> [{cacert_type, cacert_encoded, not_encrypted}]
-    end).
+    end),
+
+    meck:new(macaroon),
+    meck:expect(macaroon, deserialize, fun(X) -> {ok, X} end),
+    meck:expect(macaroon, serialize, fun(X) -> {ok, X} end),
+    meck:expect(macaroon, prepare_for_request,
+        fun(_Macaroon, DischMacaroon) ->
+            {ok, <<"binded_", DischMacaroon/binary>>}
+        end).
 
 
 teardown(_) ->
@@ -66,7 +95,9 @@ teardown(_) ->
     ?assert(meck:validate(file)),
     ok = meck:unload(file),
     ?assert(meck:validate(public_key)),
-    ok = meck:unload(public_key).
+    ok = meck:unload(public_key),
+    ?assert(meck:validate(macaroon)),
+    ok = meck:unload(macaroon).
 
 %%%===================================================================
 %%% Tests functions
@@ -77,14 +108,14 @@ should_send_provider_request_1() ->
     meck:expect(ibrowse, send_req, fun
         (
             "URL/URN",
-            [{"content-type", "application/json"}],
+            [?CONTENT_TYPE_HEADER],
             method,
             [],
             []
         ) -> ok;
         (
             "URL/URN",
-            [{"content-type", "application/json"}],
+            [?CONTENT_TYPE_HEADER],
             method,
             [],
             [{ssl_options, [{cacerts, [cacert_encoded]}, {key, {key_type, key_encoded}}, {cert, cert_encoded}]}]
@@ -105,14 +136,14 @@ should_send_provider_request_2() ->
     meck:expect(ibrowse, send_req, fun
         (
             "URL/URN",
-            [{"content-type", "application/json"}],
+            [?CONTENT_TYPE_HEADER],
             method,
             body,
             []
         ) -> ok;
         (
             "URL/URN",
-            [{"content-type", "application/json"}],
+            [?CONTENT_TYPE_HEADER],
             method,
             body,
             [{ssl_options, [{cacerts, [cacert_encoded]}, {key, {key_type, key_encoded}}, {cert, cert_encoded}]}]
@@ -133,14 +164,14 @@ should_send_provider_request_3() ->
     meck:expect(ibrowse, send_req, fun
         (
             "URL/URN",
-            [{"content-type", "application/json"}],
+            [?CONTENT_TYPE_HEADER],
             method,
             body,
             [options]
         ) -> ok;
         (
             "URL/URN",
-            [{"content-type", "application/json"}],
+            [?CONTENT_TYPE_HEADER],
             method,
             body,
             [{ssl_options, [{cacerts, [cacert_encoded]}, {key, {key_type, key_encoded}}, {cert, cert_encoded}]}, options]
@@ -161,14 +192,14 @@ should_send_provider_request_4() ->
     meck:expect(ibrowse, send_req, fun
         (
             "URL/URN",
-            [{"content-type", "application/json"}, headers],
+            [?CONTENT_TYPE_HEADER, headers],
             method,
             body,
             [options]
         ) -> ok;
         (
             "URL/URN",
-            [{"content-type", "application/json"}, headers],
+            [?CONTENT_TYPE_HEADER, headers],
             method,
             body,
             [{ssl_options, [{cacerts, [cacert_encoded]}, {key, {key_type, key_encoded}}, {cert, cert_encoded}]}, options]
@@ -189,24 +220,24 @@ should_send_user_request_1() ->
     meck:expect(ibrowse, send_req, fun
         (
             "URL/URN",
-            [{"content-type", "application/json"}, {"authorization", "Bearer AccessToken"}],
+            [?CONTENT_TYPE_HEADER, ?MACAROON_HEADER, ?DISCHARGE_MACAROONS_HEADER],
             method,
             [],
             []
         ) -> ok;
         (
             "URL/URN",
-            [{"content-type", "application/json"}, {"authorization", "Bearer AccessToken"}],
+            [?CONTENT_TYPE_HEADER, ?MACAROON_HEADER, ?DISCHARGE_MACAROONS_HEADER],
             method,
             [],
             [{ssl_options, [{cacerts, [cacert_encoded]}, {key, {key_type, key_encoded}}, {cert, cert_encoded}]}]
         ) -> ok
     end),
 
-    ?assertEqual(ok, gr_endpoint:auth_request({user, <<"AccessToken">>}, "URN", method)),
-    ?assertEqual(ok, gr_endpoint:noauth_request({user, <<"AccessToken">>}, "URN", method)),
-    ?assertEqual(ok, gr_endpoint:auth_request({try_user, <<"AccessToken">>}, "URN", method)),
-    ?assertEqual(ok, gr_endpoint:noauth_request({try_user, <<"AccessToken">>}, "URN", method)),
+    ?assertEqual(ok, gr_endpoint:auth_request({user, {?MACAROON, ?DISCH_MACAROONS}}, "URN", method)),
+    ?assertEqual(ok, gr_endpoint:noauth_request({user, {?MACAROON, ?DISCH_MACAROONS}}, "URN", method)),
+    ?assertEqual(ok, gr_endpoint:auth_request({try_user, {?MACAROON, ?DISCH_MACAROONS}}, "URN", method)),
+    ?assertEqual(ok, gr_endpoint:noauth_request({try_user, {?MACAROON, ?DISCH_MACAROONS}}, "URN", method)),
 
     ?assert(meck:validate(ibrowse)),
     ok = meck:unload(ibrowse).
@@ -217,24 +248,24 @@ should_send_user_request_2() ->
     meck:expect(ibrowse, send_req, fun
         (
             "URL/URN",
-            [{"content-type", "application/json"}, {"authorization", "Bearer AccessToken"}],
+            [?CONTENT_TYPE_HEADER, ?MACAROON_HEADER, ?DISCHARGE_MACAROONS_HEADER],
             method,
             body,
             []
         ) -> ok;
         (
             "URL/URN",
-            [{"content-type", "application/json"}, {"authorization", "Bearer AccessToken"}],
+            [?CONTENT_TYPE_HEADER, ?MACAROON_HEADER, ?DISCHARGE_MACAROONS_HEADER],
             method,
             body,
             [{ssl_options, [{cacerts, [cacert_encoded]}, {key, {key_type, key_encoded}}, {cert, cert_encoded}]}]
         ) -> ok
     end),
 
-    ?assertEqual(ok, gr_endpoint:auth_request({user, <<"AccessToken">>}, "URN", method, body)),
-    ?assertEqual(ok, gr_endpoint:noauth_request({user, <<"AccessToken">>}, "URN", method, body)),
-    ?assertEqual(ok, gr_endpoint:auth_request({try_user, <<"AccessToken">>}, "URN", method, body)),
-    ?assertEqual(ok, gr_endpoint:noauth_request({try_user, <<"AccessToken">>}, "URN", method, body)),
+    ?assertEqual(ok, gr_endpoint:auth_request({user, {?MACAROON, ?DISCH_MACAROONS}}, "URN", method, body)),
+    ?assertEqual(ok, gr_endpoint:noauth_request({user, {?MACAROON, ?DISCH_MACAROONS}}, "URN", method, body)),
+    ?assertEqual(ok, gr_endpoint:auth_request({try_user, {?MACAROON, ?DISCH_MACAROONS}}, "URN", method, body)),
+    ?assertEqual(ok, gr_endpoint:noauth_request({try_user, {?MACAROON, ?DISCH_MACAROONS}}, "URN", method, body)),
 
     ?assert(meck:validate(ibrowse)),
     ok = meck:unload(ibrowse).
@@ -245,24 +276,24 @@ should_send_user_request_3() ->
     meck:expect(ibrowse, send_req, fun
         (
             "URL/URN",
-            [{"content-type", "application/json"}, {"authorization", "Bearer AccessToken"}],
+            [?CONTENT_TYPE_HEADER, ?MACAROON_HEADER, ?DISCHARGE_MACAROONS_HEADER],
             method,
             body,
             [options]
         ) -> ok;
         (
             "URL/URN",
-            [{"content-type", "application/json"}, {"authorization", "Bearer AccessToken"}],
+            [?CONTENT_TYPE_HEADER, ?MACAROON_HEADER, ?DISCHARGE_MACAROONS_HEADER],
             method,
             body,
             [{ssl_options, [{cacerts, [cacert_encoded]}, {key, {key_type, key_encoded}}, {cert, cert_encoded}]}, options]
         ) -> ok
     end),
 
-    ?assertEqual(ok, gr_endpoint:auth_request({user, <<"AccessToken">>}, "URN", method, body, [options])),
-    ?assertEqual(ok, gr_endpoint:noauth_request({user, <<"AccessToken">>}, "URN", method, body, [options])),
-    ?assertEqual(ok, gr_endpoint:auth_request({try_user, <<"AccessToken">>}, "URN", method, body, [options])),
-    ?assertEqual(ok, gr_endpoint:noauth_request({try_user, <<"AccessToken">>}, "URN", method, body, [options])),
+    ?assertEqual(ok, gr_endpoint:auth_request({user, {?MACAROON, ?DISCH_MACAROONS}}, "URN", method, body, [options])),
+    ?assertEqual(ok, gr_endpoint:noauth_request({user, {?MACAROON, ?DISCH_MACAROONS}}, "URN", method, body, [options])),
+    ?assertEqual(ok, gr_endpoint:auth_request({try_user, {?MACAROON, ?DISCH_MACAROONS}}, "URN", method, body, [options])),
+    ?assertEqual(ok, gr_endpoint:noauth_request({try_user, {?MACAROON, ?DISCH_MACAROONS}}, "URN", method, body, [options])),
 
     ?assert(meck:validate(ibrowse)),
     ok = meck:unload(ibrowse).
@@ -273,24 +304,24 @@ should_send_user_request_4() ->
     meck:expect(ibrowse, send_req, fun
         (
             "URL/URN",
-            [{"content-type", "application/json"}, {"authorization", "Bearer AccessToken"}, headers],
+            [?CONTENT_TYPE_HEADER, ?MACAROON_HEADER, ?DISCHARGE_MACAROONS_HEADER, headers],
             method,
             body,
             [options]
         ) -> ok;
         (
             "URL/URN",
-            [{"content-type", "application/json"}, {"authorization", "Bearer AccessToken"}, headers],
+            [?CONTENT_TYPE_HEADER, ?MACAROON_HEADER, ?DISCHARGE_MACAROONS_HEADER, headers],
             method,
             body,
             [{ssl_options, [{cacerts, [cacert_encoded]}, {key, {key_type, key_encoded}}, {cert, cert_encoded}]}, options]
         ) -> ok
     end),
 
-    ?assertEqual(ok, gr_endpoint:auth_request({user, <<"AccessToken">>}, "URN", method, [headers], body, [options])),
-    ?assertEqual(ok, gr_endpoint:noauth_request({user, <<"AccessToken">>}, "URN", method, [headers], body, [options])),
-    ?assertEqual(ok, gr_endpoint:auth_request({try_user, <<"AccessToken">>}, "URN", method, [headers], body, [options])),
-    ?assertEqual(ok, gr_endpoint:noauth_request({try_user, <<"AccessToken">>}, "URN", method, [headers], body, [options])),
+    ?assertEqual(ok, gr_endpoint:auth_request({user, {?MACAROON, ?DISCH_MACAROONS}}, "URN", method, [headers], body, [options])),
+    ?assertEqual(ok, gr_endpoint:noauth_request({user, {?MACAROON, ?DISCH_MACAROONS}}, "URN", method, [headers], body, [options])),
+    ?assertEqual(ok, gr_endpoint:auth_request({try_user, {?MACAROON, ?DISCH_MACAROONS}}, "URN", method, [headers], body, [options])),
+    ?assertEqual(ok, gr_endpoint:noauth_request({try_user, {?MACAROON, ?DISCH_MACAROONS}}, "URN", method, [headers], body, [options])),
 
     ?assert(meck:validate(ibrowse)),
     ok = meck:unload(ibrowse).
