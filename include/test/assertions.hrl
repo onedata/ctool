@@ -35,7 +35,7 @@
 -define(assertMatch(Guard, Expr),
     ((fun() ->
         case (Expr) of
-            Guard -> ok;
+            Guard -> Expr;
             __V ->
                 __Args = [{module, ?MODULE},
                     {line, ?LINE},
@@ -62,6 +62,41 @@
                 erlang:error({assertEqual_failed, __Args})
         end
     end)(Expect))).
+
+-define(assertReceived(Expect), ?assertReceived(Expect, 0)).
+
+-define(assertReceived(Expect, Timeout),
+    ((fun() ->
+        receive
+            Expect = Result -> Result
+        after
+            Timeout ->
+                __Args = [{module, ?MODULE},
+                    {line, ?LINE},
+                    {expected, (??Expect)},
+                    {value, timeout}],
+                ct:print("assertReceived_failed: ~p~n", [__Args]),
+                erlang:error({assertReceived_failed, __Args})
+        end
+    end)())).
+
+-define(assertNotReceived(Expect), ?assertNotReceived(Expect, 0)).
+
+-define(assertNotReceived(Expect, Timeout),
+    ((fun() ->
+        receive
+            Expect = Result ->
+                __Args = [{module, ?MODULE},
+                    {line, ?LINE},
+                    {expression, (??Expect)},
+                    {expected, timeout},
+                    {value, (??Result)}],
+                ct:print("assertNotReceived_failed: ~p~n", [__Args]),
+                erlang:error({assertNotReceived_failed, __Args})
+        after
+            Timeout -> ok
+        end
+    end)())).
 
 -undef(assertException).
 -define(assertException(Class, Term, Expr),
