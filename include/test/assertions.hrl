@@ -35,7 +35,7 @@
 -define(assertMatch(Guard, Expr),
     ((fun() ->
         case (Expr) of
-            Guard -> Expr;
+            Guard = Result -> Result;
             __V ->
                 __Args = [{module, ?MODULE},
                     {line, ?LINE},
