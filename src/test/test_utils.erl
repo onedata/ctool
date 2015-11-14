@@ -12,18 +12,15 @@
 -module(test_utils).
 -author("Krzysztof Trzepla").
 
+-include("test/assertions.hrl").
 -include("test/test_utils.hrl").
 
 %% API
--export([mock_new/2, mock_new/3, mock_expect/4, mock_validate/2, mock_unload/2]).
--export([receive_any/0, receive_any/1, receive_msg/1, receive_msg/2]).
+-export([mock_new/2, mock_new/3, mock_expect/4, mock_validate/2, mock_unload/1,
+    mock_unload/2]).
 -export([get_env/3, set_env/4]).
 
--type mock_opts() :: passthrough | non_strict | unstick | no_link.
--type mock_module_opts() :: [mock_opts()].
--type mock_module_spec() :: module() | {module(), mock_module_opts()}.
-
--define(NEW_MOCK_DEFAULT_OPTIONS, [passthrough, non_strict, unstick, no_link]).
+-type mock_opt() :: passthrough | non_strict | unstick | no_link.
 
 %%%===================================================================
 %%% API
@@ -31,38 +28,44 @@
 
 %%--------------------------------------------------------------------
 %% @doc
-%% Mocks given modules on given nodes using default options:
+%% Mocks module on provided nodes using default options.
+%% @equiv mock_new(Nodes, Modules, [passthrough])
+%% @end
+%%--------------------------------------------------------------------
+-spec mock_new(Nodes :: node() | [node()], Modules :: module() | [module()]) -> ok.
+mock_new(Nodes, Modules) ->
+    mock_new(Nodes, Modules, [passthrough]).
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Mocks module on provided nodes using custom options. Possible options are:
 %% * passthrough - original module will be kept in the mock
 %% * non_strict  - does not throw an error when mocking a module that doesn't
 %%                 exist or has been renamed
 %% * unstick     - mocking of sticky modules
 %% * no_link     - mock is not linked to the creating process and will not
 %%                 unload automatically when a crash occurs
-%% @equiv mock_new(Nodes, ModuleSpecs, [passthrough, non_strict, unstick, no_link])
+%% IMPORTANT! This mock will be automatically removed on calling process exit.
 %% @end
 %%--------------------------------------------------------------------
--spec mock_new(Nodes :: node() | [node()],
-    ModuleSpecs :: mock_module_spec() | [mock_module_spec()]) -> ok | no_return().
-mock_new(Nodes, ModuleSpec) ->
-    mock_new(Nodes, ModuleSpec, ?NEW_MOCK_DEFAULT_OPTIONS).
-
-%%--------------------------------------------------------------------
-%% @doc
-%% Mocks given modules on given nodes using custom options for each module
-%% if not provided.
-%% @end
-%%--------------------------------------------------------------------
--spec mock_new(Nodes :: node() | [node()],
-    ModuleSpecs :: mock_module_spec() | [mock_module_spec()],
-    CustomOptions :: mock_module_opts()) -> ok | no_return().
-mock_new(Nodes, ModuleSpecs, CustomOptions) ->
+-spec mock_new(Nodes :: node() | [node()], Modules :: module() | [module()],
+    Options :: [mock_opt()]) -> ok.
+mock_new(Nodes, Modules, Options) ->
+    Parent = self(),
     lists:foreach(fun(Node) ->
-        lists:foreach(fun
-            ({ModuleSpec, Options}) ->
-                ?assertEqual(ok, rpc:call(Node, meck, new, [ModuleSpec, Options]));
-            (ModuleSpec) ->
-                ?assertEqual(ok, rpc:call(Node, meck, new, [ModuleSpec, CustomOptions]))
-        end, as_list(ModuleSpecs))
+        lists:foreach(fun(Module) ->
+            Ref = make_ref(),
+            erlang:spawn_link(Node, fun() ->
+                process_flag(trap_exit, true),
+                meck:new(Module, Options),
+                Parent ! Ref,
+                receive
+                    {'EXIT', Parent, _} -> meck:unload(Module);
+                    {'EXIT', _, normal} -> ok
+                end
+            end),
+            ?assertReceived(Ref, timer:seconds(5))
+        end, as_list(Modules))
     end, as_list(Nodes)).
 
 %%--------------------------------------------------------------------
@@ -71,91 +74,48 @@ mock_new(Nodes, ModuleSpecs, CustomOptions) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec mock_expect(Nodes :: node() | [node()], Module :: module(),
-    FunctionName :: atom(), Expectation :: function()) -> ok | no_return().
+    FunctionName :: atom(), Expectation :: function()) -> ok.
 mock_expect(Nodes, Module, FunctionName, Expectation) ->
-    lists:foreach(fun(Node) ->
-        ?assertEqual(ok, rpc:call(Node, meck, expect, [Module, FunctionName, Expectation]))
-    end, as_list(Nodes)).
+    {Results, _} = ?assertMatch({_, []}, rpc:multicall(
+        as_list(Nodes), meck, expect, [Module, FunctionName, Expectation]
+    )),
+    ?assert(lists:all(fun(Result) -> Result =:= ok end, Results)).
 
 %%--------------------------------------------------------------------
 %% @doc
-%% Validates modules' mocks on given nodes.
+%% Validates modules' mocks on provided nodes.
 %% @end
 %%--------------------------------------------------------------------
--spec mock_validate(Nodes :: node() | [node()], Modules :: module() | [module()]) ->
-    ok | no_return().
+-spec mock_validate(Nodes :: node() | [node()],
+    Modules :: module() | [module()]) -> ok.
 mock_validate(Nodes, Modules) ->
     lists:foreach(fun(Node) ->
-        lists:foreach(fun(Module) ->
-            ?assert(rpc:call(Node, meck, validate, [Module]))
-        end, as_list(Modules))
+        ?assert(rpc:call(Node, meck, validate, [as_list(Modules)]))
+    end, as_list(Nodes)).
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Unloads all mocks on provided nodes.
+%% @end
+%%--------------------------------------------------------------------
+-spec mock_unload(Nodes :: node() | [node()]) -> ok.
+mock_unload(Nodes) ->
+    lists:foreach(fun(Node) ->
+        ?assertEqual(ok, rpc:call(Node, meck, unload, []))
     end, as_list(Nodes)).
 
 %%--------------------------------------------------------------------
 %% @doc
-%% Unloads modules' mocks on given nodes.
+%% Unloads modules' mocks on provided nodes.
 %% @end
 %%--------------------------------------------------------------------
--spec mock_unload(Nodes :: node() | [node()], Modules :: module() | [module()]) ->
-    ok | no_return().
+-spec mock_unload(Nodes :: node() | [node()],
+    Modules :: module() | [module()]) -> ok.
 mock_unload(Nodes, Modules) ->
     lists:foreach(fun(Node) ->
-        lists:foreach(fun(Module) ->
-            ?assertEqual(ok, rpc:call(Node, meck, unload, [Module])),
-            rpc:call(Node, code, purge, [Module]),
-            ?assertEqual({module, Module}, rpc:call(Node, code, load_file, [Module]))
-        end, as_list(Modules))
+        ?assertEqual(ok, rpc:call(Node, meck, unload, [as_list(Modules)]))
     end, as_list(Nodes)).
-
-%%--------------------------------------------------------------------
-%% @doc
-%% Receives any message or returns immediately with an error.
-%% @equiv receive_any(0)
-%% @end
-%%--------------------------------------------------------------------
--spec receive_any() -> {ok, ReceivedMsg :: term()} | {error, timeout}.
-receive_any() ->
-    receive_any(timer:seconds(0)).
-
-%%--------------------------------------------------------------------
-%% @doc
-%% Receives any message or returns an error after timeout.
-%% @equiv receive_any(0)
-%% @end
-%%--------------------------------------------------------------------
--spec receive_any(Timeout :: timeout()) ->
-    {ok, ReceivedMsg :: term()} | {error, timeout}.
-receive_any(Timeout) ->
-    receive
-        Msg -> {ok, Msg}
-    after
-        Timeout -> {error, timeout}
-    end.
-
-%%--------------------------------------------------------------------
-%% @doc
-%% Receives given message or returns immediately with an error.
-%% @equiv receive_msg(Msg, 0)
-%% @end
-%%--------------------------------------------------------------------
--spec receive_msg(Msg :: term()) ->
-    {ok, ReceivedMsg :: term()} | {error, {timeout, UnreceivedMsg :: term()}}.
-receive_msg(Msg) ->
-    receive_msg(Msg, timer:seconds(0)).
-
-%%--------------------------------------------------------------------
-%% @doc
-%% Receives given message or returns an error after timeout.
-%% @end
-%%--------------------------------------------------------------------
--spec receive_msg(Msg :: term(), Timeout :: timeout()) ->
-    {ok, ReceivedMsg :: term()} | {error, {timeout, UnreceivedMsg :: term()}}.
-receive_msg(Msg, Timeout) ->
-    receive
-        Msg -> {ok, Msg}
-    after
-        Timeout -> {error, {timeout, Msg}}
-    end.
 
 %%--------------------------------------------------------------------
 %% @doc
