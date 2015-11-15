@@ -66,7 +66,7 @@ mock_new(Nodes, Modules, Options) ->
                     {'EXIT', _, normal} -> ok
                 end
             end),
-            ?assertReceived(Ref, ?TIMEOUT)
+            ?assertReceivedEqual(Ref, ?TIMEOUT)
         end, as_list(Modules))
     end, as_list(Nodes)).
 

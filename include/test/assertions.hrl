@@ -15,25 +15,8 @@
 -define(TEST, true).
 -include_lib("eunit/include/eunit.hrl").
 
--undef(assert).
--define(assert(BoolExpr),
-    ((fun() ->
-        case (BoolExpr) of
-            true -> ok;
-            __V ->
-                __Args = [{module, ?MODULE},
-                    {line, ?LINE},
-                    {expression, (??BoolExpr)},
-                    {expected, true},
-                    {value, __V}],
-                ct:print("assertion_failed: ~p~n", [__Args]),
-                erlang:error({assertion_failed, __Args})
-        end
-    end)())).
-
--undef(assertMatch).
--define(assertMatch(Guard, Expr),
-    ((fun() ->
+-define(assertMatchFun(Guard, Expr, Print),
+    fun() ->
         case (Expr) of
             Guard = Result -> Result;
             __V ->
@@ -42,14 +25,44 @@
                     {expression, (??Expr)},
                     {expected, (??Guard)},
                     {value, __V}],
-                ct:print("assertMatch_failed: ~p~n", [__Args]),
+                case Print of
+                    true -> ct:print("assertMatch_failed: ~p~n", [__Args]);
+                    false -> ok
+                end,
                 erlang:error({assertMatch_failed, __Args})
+        end
+    end).
+
+-undef(assertMatch).
+-define(assertMatch(Guard, Expr),
+    ((?assertMatchFun(Guard, Expr, true))())).
+
+-define(assertMatch(Expect, Expr, Attempts),
+    ?assertMatch(Expect, Expr, Attempts, timer:seconds(1))).
+
+-define(assertMatch(Expect, Expr, Attempts, Timeout),
+    ((fun() ->
+        __M = lists:foldl(fun
+            (_, {true, __V}) -> {true, __V};
+            (__F, {false, __V}) -> try
+                                       timer:sleep(Timeout),
+                                       {true, __F()}
+                                   catch
+                                       error:{assertMatch_failed, _} ->
+                                           {false, __V}
+                                   end
+        end, {false, undefined}, lists:duplicate(Attempts - 1,
+            ?assertMatchFun(Expect, Expr, false))),
+        case __M of
+            {true, __V} -> __V;
+            {false, _} ->
+                timer:sleep(Timeout),
+                ?assertMatch(Expect, Expr)
         end
     end)())).
 
--undef(assertEqual).
--define(assertEqual(Expect, Expr),
-    ((fun(__X) ->
+-define(assertEqualFun(Expect, Expr, Print),
+    fun(__X) ->
         case (Expr) of
             __X -> ok;
             __V ->
@@ -58,14 +71,47 @@
                     {expression, (??Expr)},
                     {expected, __X},
                     {value, __V}],
-                ct:print("assertEqual_failed: ~p~n", [__Args]),
+                case Print of
+                    true -> ct:print("assertEqual_failed: ~p~n", [__Args]);
+                    false -> ok
+                end,
                 erlang:error({assertEqual_failed, __Args})
         end
-    end)(Expect))).
+    end).
 
--define(assertReceived(Expect), ?assertReceived(Expect, 0)).
+-undef(assertEqual).
+-define(assertEqual(Expect, Expr),
+    ((?assertEqualFun(Expect, Expr, true))(Expect))).
 
--define(assertReceived(Expect, Timeout),
+-define(assertEqual(Expect, Expr, Attempts),
+    ?assertEqual(Expect, Expr, Attempts, timer:seconds(1))).
+
+-define(assertEqual(Expect, Expr, Attempts, Timeout),
+    ((fun() ->
+        __E = lists:foldl(fun
+            (_, true) -> true;
+            (__F, false) -> try
+                                timer:sleep(Timeout),
+                                __F(Expect),
+                                true
+                            catch
+                                error:{assertEqual_failed, _} -> false
+                            end
+        end, false, lists:duplicate(Attempts - 1, ?assertEqualFun(Expect, Expr, false))),
+        case __E of
+            true -> ok;
+            false ->
+                timer:sleep(Timeout),
+                ?assertEqual(Expect, Expr)
+        end
+    end)())).
+
+-undef(assert).
+-define(assert(Expr), ?assertEqual(true, Expr)).
+
+-define(assertReceivedMatch(Expect), ?assertReceivedMatch(Expect, 0)).
+
+-define(assertReceivedMatch(Expect, Timeout),
     ((fun() ->
         receive
             Expect = Result -> Result
@@ -75,14 +121,38 @@
                     {line, ?LINE},
                     {expected, (??Expect)},
                     {value, timeout}],
-                ct:print("assertReceived_failed: ~p~n", [__Args]),
-                erlang:error({assertReceived_failed, __Args})
+                ct:print("assertReceivedMatch_failed: ~p~n", [__Args]),
+                erlang:error({assertReceivedMatch_failed, __Args})
         end
     end)())).
 
--define(assertNotReceived(Expect), ?assertNotReceived(Expect, 0)).
+-define(assertReceivedNextMatch(Expect), ?assertReceivedNextMatch(Expect, 0)).
 
--define(assertNotReceived(Expect, Timeout),
+-define(assertReceivedNextMatch(Expect, Timeout),
+    ((fun() ->
+        receive
+            Expect = Result -> Result;
+            __V ->
+                __Args = [{module, ?MODULE},
+                    {line, ?LINE},
+                    {expected, (??Expect)},
+                    {value, __V}],
+                ct:print("assertReceivedNextMatch_failed: ~p~n", [__Args]),
+                erlang:error({assertReceivedNextMatch_failed, __Args})
+        after
+            Timeout ->
+                __Args = [{module, ?MODULE},
+                    {line, ?LINE},
+                    {expected, (??Expect)},
+                    {value, timeout}],
+                ct:print("assertReceivedNextMatch_failed: ~p~n", [__Args]),
+                erlang:error({assertReceivedNextMatch_failed, __Args})
+        end
+    end)())).
+
+-define(assertNotReceivedMatch(Expect), ?assertNotReceivedMatch(Expect, 0)).
+
+-define(assertNotReceivedMatch(Expect, Timeout),
     ((fun() ->
         receive
             Expect = Result ->
@@ -91,12 +161,70 @@
                     {expression, (??Expect)},
                     {expected, timeout},
                     {value, (??Result)}],
-                ct:print("assertNotReceived_failed: ~p~n", [__Args]),
-                erlang:error({assertNotReceived_failed, __Args})
+                ct:print("assertNotReceivedMatch_failed: ~p~n", [__Args]),
+                erlang:error({assertNotReceivedMatch_failed, __Args})
         after
             Timeout -> ok
         end
     end)())).
+
+-define(assertReceivedEqual(Expect), ?assertReceivedEqual(Expect, 0)).
+
+-define(assertReceivedEqual(Expect, Timeout),
+    ((fun(__X) ->
+        receive
+            __X -> __X
+        after
+            Timeout ->
+                __Args = [{module, ?MODULE},
+                    {line, ?LINE},
+                    {expected, (??Expect)},
+                    {value, timeout}],
+                ct:print("assertReceivedEqual_failed: ~p~n", [__Args]),
+                erlang:error({assertReceived_failed, __Args})
+        end
+    end)(Expect))).
+
+-define(assertReceivedNextEqual(Expect), ?assertReceivedNextEqual(Expect, 0)).
+
+-define(assertReceivedNextEqual(Expect, Timeout),
+    ((fun(__X) ->
+        receive
+            __X -> __X;
+            __V ->
+                __Args = [{module, ?MODULE},
+                    {line, ?LINE},
+                    {expected, __X},
+                    {value, __V}],
+                ct:print("assertReceivedNextEqual_failed: ~p~n", [__Args]),
+                erlang:error({assertReceivedNextEqual_failed, __Args})
+        after
+            Timeout ->
+                __Args = [{module, ?MODULE},
+                    {line, ?LINE},
+                    {expected, (??Expect)},
+                    {value, timeout}],
+                ct:print("assertReceivedNextEqual_failed: ~p~n", [__Args]),
+                erlang:error({assertReceivedNextEqual_failed, __Args})
+        end
+    end)(Expect))).
+
+-define(assertNotReceivedEqual(Expect), ?assertNotReceivedEqual(Expect, 0)).
+
+-define(assertNotReceivedEqual(Expect, Timeout),
+    ((fun(__X) ->
+        receive
+            __X ->
+                __Args = [{module, ?MODULE},
+                    {line, ?LINE},
+                    {expected, timeout},
+                    {value, __X}],
+                ct:print("assertNotReceivedEqual_failed: ~p~n", [__Args]),
+                erlang:error({assertNotReceivedEqual_failed, __Args})
+        after
+            Timeout -> ok
+        end
+    end)(Expect))).
 
 -undef(assertException).
 -define(assertException(Class, Term, Expr),
