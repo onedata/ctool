@@ -22,6 +22,8 @@
 
 -type mock_opt() :: passthrough | non_strict | unstick | no_link.
 
+-define(TIMEOUT, timer:seconds(60)).
+
 %%%===================================================================
 %%% API
 %%%===================================================================
@@ -64,7 +66,7 @@ mock_new(Nodes, Modules, Options) ->
                     {'EXIT', _, normal} -> ok
                 end
             end),
-            ?assertReceived(Ref, timer:seconds(60))
+            ?assertReceived(Ref, ?TIMEOUT)
         end, as_list(Modules))
     end, as_list(Nodes)).
 
@@ -76,10 +78,11 @@ mock_new(Nodes, Modules, Options) ->
 -spec mock_expect(Nodes :: node() | [node()], Module :: module(),
     FunctionName :: atom(), Expectation :: function()) -> ok.
 mock_expect(Nodes, Module, FunctionName, Expectation) ->
-    {Results, _} = ?assertMatch({_, []}, rpc:multicall(
-        as_list(Nodes), meck, expect, [Module, FunctionName, Expectation]
-    )),
-    ?assert(lists:all(fun(Result) -> Result =:= ok end, Results)).
+    lists:foreach(fun(Node) ->
+        ?assertEqual(ok, rpc:call(
+            Node, meck, expect, [Module, FunctionName, Expectation], ?TIMEOUT
+        ))
+    end, as_list(Nodes)).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -90,7 +93,7 @@ mock_expect(Nodes, Module, FunctionName, Expectation) ->
     Modules :: module() | [module()]) -> ok.
 mock_validate(Nodes, Modules) ->
     lists:foreach(fun(Node) ->
-        ?assert(rpc:call(Node, meck, validate, [as_list(Modules)]))
+        ?assert(rpc:call(Node, meck, validate, [as_list(Modules)], ?TIMEOUT))
     end, as_list(Nodes)).
 
 
@@ -102,7 +105,7 @@ mock_validate(Nodes, Modules) ->
 -spec mock_unload(Nodes :: node() | [node()]) -> ok.
 mock_unload(Nodes) ->
     lists:foreach(fun(Node) ->
-        ?assertEqual(ok, rpc:call(Node, meck, unload, []))
+        ?assertEqual(ok, rpc:call(Node, meck, unload, [], ?TIMEOUT))
     end, as_list(Nodes)).
 
 %%--------------------------------------------------------------------
@@ -114,7 +117,9 @@ mock_unload(Nodes) ->
     Modules :: module() | [module()]) -> ok.
 mock_unload(Nodes, Modules) ->
     lists:foreach(fun(Node) ->
-        ?assertEqual(ok, rpc:call(Node, meck, unload, [as_list(Modules)]))
+        ?assertEqual(ok, rpc:call(
+            Node, meck, unload, [as_list(Modules)], ?TIMEOUT
+        ))
     end, as_list(Nodes)).
 
 %%--------------------------------------------------------------------

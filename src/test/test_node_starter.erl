@@ -17,6 +17,7 @@
     maybe_start_cover/0, maybe_stop_cover/0]).
 
 -define(CLEANING_PROC_NAME, cleaning_proc).
+-define(TIMEOUT, timer:seconds(60)).
 
 %%%===================================================================
 %%% Starting and stoping nodes
@@ -144,8 +145,7 @@ clean_environment(Config) ->
                         cover:import(CoverFile),
                         file:delete(CoverFile)
                 after
-                    timer:minutes(1) ->
-                        throw(cover_not_received)
+                    ?TIMEOUT -> throw(cover_not_received)
                 end
             end, AllNodes)
     end,
@@ -269,10 +269,10 @@ load_modules(Nodes, Modules) ->
     lists:foreach(fun(Node) ->
         lists:foreach(fun(Module) ->
             {Module, Binary, Filename} = code:get_object_code(Module),
-            rpc:call(Node, code, delete, [Module]),
-            rpc:call(Node, code, purge, [Module]),
+            rpc:call(Node, code, delete, [Module], ?TIMEOUT),
+            rpc:call(Node, code, purge, [Module], ?TIMEOUT),
             ?assertEqual({module, Module}, rpc:call(
-                Node, code, load_binary, [Module, Filename, Binary]
+                Node, code, load_binary, [Module, Filename, Binary], ?TIMEOUT
             ))
         end, Modules)
     end, Nodes).
