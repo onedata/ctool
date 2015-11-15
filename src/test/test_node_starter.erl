@@ -265,14 +265,14 @@ ping_nodes(Nodes, Tries) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec load_modules(Nodes :: [node()], Modules :: [module()]) -> ok.
-load_modules(_, []) ->
-    ok;
-load_modules(Nodes, [Module | Modules]) ->
-    {Module, Binary, Filename} = code:get_object_code(Module),
-    {Results, _} = ?assertMatch({_, []}, rpc:multicall(
-        Nodes, code, load_binary, [Module, Filename, Binary]
-    )),
-    ?assert(lists:all(fun(Result) ->
-        Result =:= {module, Module}
-    end, Results)),
-    load_modules(Nodes, Modules).
+load_modules(Nodes, Modules) ->
+    lists:foreach(fun(Node) ->
+        lists:foreach(fun(Module) ->
+            {Module, Binary, Filename} = code:get_object_code(Module),
+            rpc:call(Node, code, delete, [Module]),
+            rpc:call(Node, code, purge, [Module]),
+            ?assertEqual({module, Module}, rpc:call(
+                Node, code, load_binary, [Module, Filename, Binary]
+            ))
+        end, Modules)
+    end, Nodes).

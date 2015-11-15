@@ -64,7 +64,7 @@ mock_new(Nodes, Modules, Options) ->
                     {'EXIT', _, normal} -> ok
                 end
             end),
-            ?assertReceived(Ref, timer:seconds(5))
+            ?assertReceived(Ref, timer:seconds(60))
         end, as_list(Modules))
     end, as_list(Nodes)).
 
