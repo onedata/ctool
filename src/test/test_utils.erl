@@ -127,7 +127,8 @@ mock_unload(Nodes, Modules) ->
 %% Returns the value of the environment variable 'Name' for 'Application'.
 %% @end
 %%--------------------------------------------------------------------
--spec get_env(Node :: node(), Application :: atom(), Name :: atom()) -> Value :: term().
+-spec get_env(Node :: node(), Application :: atom(), Name :: atom()) ->
+    {ok, Value :: term()} | {badrpc, Reason :: term()}.
 get_env(Node, Application, Name) ->
     rpc:call(Node, application, get_env, [Application, Name]).
 
@@ -136,7 +137,8 @@ get_env(Node, Application, Name) ->
 %% Sets the value of the environment variable 'Name' for 'Application'.
 %% @end
 %%--------------------------------------------------------------------
--spec set_env(Node :: node(), Application :: atom(), Name :: atom(), Value :: term()) -> ok.
+-spec set_env(Node :: node(), Application :: atom(), Name :: atom(), Value :: term()) ->
+    ok | {badrpc, Reason :: term()}.
 set_env(Node, Application, Name, Value) ->
     rpc:call(Node, application, set_env, [Application, Name, Value]).
 

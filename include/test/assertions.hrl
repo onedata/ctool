@@ -15,8 +15,8 @@
 -define(TEST, true).
 -include_lib("eunit/include/eunit.hrl").
 
--define(assertMatchFun(Guard, Expr, Print),
-    fun() ->
+-define(assertMatchFun(Guard, Expr),
+    fun(__P) ->
         case (Expr) of
             Guard = Result -> Result;
             __V ->
@@ -25,9 +25,9 @@
                     {expression, (??Expr)},
                     {expected, (??Guard)},
                     {value, __V}],
-                case Print of
-                    true -> ct:print("assertMatch_failed: ~p~n", [__Args]);
-                    false -> ok
+                if
+                    __P -> ct:print("assertMatch_failed: ~p~n", [__Args]);
+                    true -> ok
                 end,
                 erlang:error({assertMatch_failed, __Args})
         end
@@ -35,7 +35,7 @@
 
 -undef(assertMatch).
 -define(assertMatch(Guard, Expr),
-    ((?assertMatchFun(Guard, Expr, true))())).
+    ((?assertMatchFun(Guard, Expr))(true))).
 
 -define(assertMatch(Expect, Expr, Attempts),
     ?assertMatch(Expect, Expr, Attempts, timer:seconds(1))).
@@ -46,13 +46,13 @@
             (_, {true, __V}) -> {true, __V};
             (__F, {false, __V}) -> try
                                        timer:sleep(Timeout),
-                                       {true, __F()}
+                                       {true, __F(false)}
                                    catch
                                        error:{assertMatch_failed, _} ->
                                            {false, __V}
                                    end
         end, {false, undefined}, lists:duplicate(Attempts - 1,
-            ?assertMatchFun(Expect, Expr, false))),
+            ?assertMatchFun(Expect, Expr))),
         case __M of
             {true, __V} -> __V;
             {false, _} ->
@@ -61,8 +61,8 @@
         end
     end)())).
 
--define(assertEqualFun(Expect, Expr, Print),
-    fun(__X) ->
+-define(assertEqualFun(Expect, Expr),
+    fun(__X, __P) ->
         case (Expr) of
             __X -> ok;
             __V ->
@@ -71,9 +71,9 @@
                     {expression, (??Expr)},
                     {expected, __X},
                     {value, __V}],
-                case Print of
-                    true -> ct:print("assertEqual_failed: ~p~n", [__Args]);
-                    false -> ok
+                if
+                    __P -> ct:print("assertEqual_failed: ~p~n", [__Args]);
+                    true -> ok
                 end,
                 erlang:error({assertEqual_failed, __Args})
         end
@@ -81,7 +81,7 @@
 
 -undef(assertEqual).
 -define(assertEqual(Expect, Expr),
-    ((?assertEqualFun(Expect, Expr, true))(Expect))).
+    ((?assertEqualFun(Expect, Expr))(Expect, true))).
 
 -define(assertEqual(Expect, Expr, Attempts),
     ?assertEqual(Expect, Expr, Attempts, timer:seconds(1))).
@@ -92,12 +92,12 @@
             (_, true) -> true;
             (__F, false) -> try
                                 timer:sleep(Timeout),
-                                __F(Expect),
+                                __F(Expect, false),
                                 true
                             catch
                                 error:{assertEqual_failed, _} -> false
                             end
-        end, false, lists:duplicate(Attempts - 1, ?assertEqualFun(Expect, Expr, false))),
+        end, false, lists:duplicate(Attempts - 1, ?assertEqualFun(Expect, Expr))),
         case __E of
             true -> ok;
             false ->
