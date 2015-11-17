@@ -9,7 +9,7 @@
 %%% Tests of json utility functions.
 %%% @end
 %%%--------------------------------------------------------------------
--module(json_tests).
+-module(json_utils_tests).
 -author("Tomasz Lichon").
 
 -include_lib("eunit/include/eunit.hrl").
@@ -18,10 +18,10 @@
 
 encode_proplist_test() ->
     Proplist = [{first, <<"first">>}, {second, <<"second">>}],
-    Json = json:encode(Proplist),
+    Json = json_utils:encode(Proplist),
     ?assertEqual(<<"{\"first\":\"first\",\"second\":\"second\"}">>, Json).
 
 decode_test() ->
     Json = <<"{\"first\":\"first\",\"second\":\"second\"}">>,
-    Proplist = json:decode(Json),
+    Proplist = json_utils:decode(Json),
     ?assertEqual([{<<"first">>, <<"first">>}, {<<"second">>, <<"second">>}], Proplist).

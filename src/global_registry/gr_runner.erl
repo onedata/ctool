@@ -70,7 +70,7 @@ get_error_details({error, Reason}) ->
 
 get_error_details({ok, Status, _ResponseHeaders, ResponseBody}) ->
     try
-        Proplist = mochijson2:decode(ResponseBody, [{format, proplist}]),
+        Proplist = json_utils:decode(ResponseBody),
         Error = proplists:get_value(<<"error">>, Proplist, <<"">>),
         ErrorDescription = proplists:get_value(<<"error_description">>, Proplist, <<"">>),
         {Status, Error, ErrorDescription}

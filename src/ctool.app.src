@@ -18,7 +18,8 @@
         kernel,
         stdlib,
         lager,
-        ibrowse,
+        % Web client will start ssl2 and hackney
+        web_client,
         cowboy,
         gproc
         % n2o, erlydtl and macaroons are not listed here, because we do not want them to start as applications

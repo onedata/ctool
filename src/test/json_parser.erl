@@ -29,7 +29,7 @@
 %%--------------------------------------------------------------------
 -spec parse_json_binary_to_atom_proplist(JsonBinary :: binary()) -> list() | no_return().
 parse_json_binary_to_atom_proplist(JsonBinary) ->
-    Json = mochijson2:decode(JsonBinary, [{format, proplist}]),
+    Json = json_utils:decode(JsonBinary),
     convert_to_atoms(Json).
 
 %%%===================================================================

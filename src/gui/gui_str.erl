@@ -13,7 +13,7 @@
 -include("logging.hrl").
 
 % Conversion
--export([to_list/1, to_binary/1, join_to_binary/1]).
+-export([to_list/1, to_binary/1, join_to_binary/2]).
 
 % Conversion between unicode and binaries
 -export([unicode_list_to_binary/1, binary_to_unicode_list/1]).
@@ -40,6 +40,7 @@ to_list(Term) ->
         lists:flatten(io_lib:format("~p", [Term]))
     end.
 
+
 %%--------------------------------------------------------------------
 %% @doc Converts any term to binary.
 %% @end
@@ -48,19 +49,21 @@ to_list(Term) ->
 to_binary(Term) when is_binary(Term) -> Term;
 to_binary(Term) -> list_to_binary(to_list(Term)).
 
+
 %%--------------------------------------------------------------------
-%% @doc Joins any terms to a binary.
+%% @doc Joins a list of binaries into one binary, using delimiter.
 %% @end
 %%--------------------------------------------------------------------
--spec join_to_binary(List :: [term()]) -> binary().
-join_to_binary(Terms) ->
-    join_to_binary(Terms, <<"">>).
+-spec join_to_binary(List :: [binary()], Delimiter :: binary()) -> binary().
+join_to_binary(Terms, Delimiter) ->
+    join_to_binary(Terms, Delimiter, <<"">>).
 
-join_to_binary([], Acc) ->
+join_to_binary([], _, Acc) ->
     Acc;
 
-join_to_binary([H | T], Acc) ->
-    join_to_binary(T, <<Acc/binary, (to_binary(H))/binary>>).
+join_to_binary([H | T], Delimiter, Acc) ->
+    join_to_binary(T, <<Acc/binary, Delimiter/binary, (to_binary(H))/binary>>).
+
 
 %%--------------------------------------------------------------------
 %% @doc Converts a unicode list to utf8 binary.
@@ -70,6 +73,7 @@ join_to_binary([H | T], Acc) ->
 unicode_list_to_binary(String) ->
     unicode:characters_to_binary(String).
 
+
 %%--------------------------------------------------------------------
 %% @doc Converts a utf8 binary to unicode list.
 %% @end
@@ -77,6 +81,7 @@ unicode_list_to_binary(String) ->
 -spec binary_to_unicode_list(Binary :: binary()) -> string().
 binary_to_unicode_list(Binary) ->
     unicode:characters_to_list(Binary).
+
 
 %%--------------------------------------------------------------------
 %% @doc Escapes all javascript - sensitive characters.
@@ -86,6 +91,7 @@ binary_to_unicode_list(Binary) ->
 format(Format, Args) ->
     wf:f(Format, Args).
 
+
 %%--------------------------------------------------------------------
 %% @doc Escapes all javascript - sensitive characters.
 %% @end
@@ -93,6 +99,7 @@ format(Format, Args) ->
 -spec format_bin(Format :: string(), Args :: [term()]) -> binary().
 format_bin(Format, Args) ->
     to_binary(wf:f(Format, Args)).
+
 
 %%--------------------------------------------------------------------
 %% @doc Escapes all javascript - sensitive characters.
@@ -124,6 +131,7 @@ js_escape(<<C, Rest/binary>>, Acc) ->
 js_escape(<<"">>, Acc) ->
     Acc.
 
+
 %%--------------------------------------------------------------------
 %% @doc Performs safe URL encoding.
 %% @end
@@ -140,18 +148,20 @@ html_encode(<<$', Rest/binary>>) -> <<"&#39;", (html_encode(Rest))/binary>>;
 html_encode(<<$&, Rest/binary>>) -> <<"&amp;", (html_encode(Rest))/binary>>;
 html_encode(<<H, Rest/binary>>) -> <<H, (html_encode(Rest))/binary>>.
 
+
 %%--------------------------------------------------------------------
 %% @doc Performs safe URL encoding
 %% @end
 %%--------------------------------------------------------------------
--spec url_encode(String :: binary() | string()) -> binary().
-url_encode(String) ->
-    to_binary(ibrowse_lib:url_encode(to_list(String))).
+-spec url_encode(Data :: binary() | string()) -> binary().
+url_encode(Data) ->
+    hackney_url:urlencode(Data).
+
 
 %%--------------------------------------------------------------------
 %% @doc Performs URL-uncoded string decoding
 %% @end
 %%--------------------------------------------------------------------
--spec url_decode(String :: binary() | string()) -> binary().
-url_decode(String) ->
-    to_binary(wf:url_decode(to_list(String))).
+-spec url_decode(Data :: binary() | string()) -> binary().
+url_decode(Data) ->
+    hackney_url:urldecode(Data).
