@@ -24,19 +24,12 @@
 % Cookies policy handling
 -export([cookie_policy_popup_body/1, is_cookie_policy_accepted/1]).
 
-% Misscellaneous convenience functions
--export([proplist_to_url_params/1, fully_qualified_url/1, validate_email/1, normalize_email/1]).
-
 %% Name of cookie remembering if cookie policy is accepted (value is T/F)
 -define(cookie_policy_cookie_name, "cookie_policy_accepted").
 %% Maximum redirects to follow when doing http request
 -define(max_redirects, 5).
 %% Maximum depth of CA cert analize
 -define(ca_cert_max_depth, 11).
-
--define(mail_validation_regexp,
-    <<"^[a-z0-9!#$%&'*+\\/=?^_`{|}~-]+(?:\\.[a-z0-9!#$%&'*+\\/=?^_`{|}~-]+)*@(?"
-    ":[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$">>).
 
 %%%===================================================================
 %%% API
@@ -152,74 +145,3 @@ is_cookie_policy_accepted(Req) ->
         _ -> false
     end.
 
-
-%%--------------------------------------------------------------------
-%% @doc Converts a proplist to a single x-www-urlencoded binary. Adding a third
-%% field 'no_encode' to a tuple will prevent URL encoding.
-%% @end
-%% @end
-%%--------------------------------------------------------------------
--spec proplist_to_url_params([{binary(), binary()} | {binary(), binary(), no_encode}]) ->
-    binary().
-proplist_to_url_params(List) ->
-    lists:foldl(
-        fun(Tuple, Acc) ->
-            {KeyEncoded, ValueEncoded} = case Tuple of
-                                             {Key, Value, no_encode} ->
-                                                 {Key, Value};
-                                             {Key, Value} ->
-                                                 {http_utils:url_encode(Key), http_utils:url_encode(Value)}
-                                         end,
-            Suffix = case Acc of
-                         <<"">> -> <<"">>;
-                         _ -> <<Acc/binary, "&">>
-                     end,
-            <<Suffix/binary, KeyEncoded/binary, "=", ValueEncoded/binary>>
-        end, <<"">>, List).
-
-
-%%--------------------------------------------------------------------
-%% @doc Converts the given URL to a fully quialified url, without leading www.
-%% @end
-%% @end
-%%--------------------------------------------------------------------
--spec fully_qualified_url(binary()) -> binary().
-fully_qualified_url(Binary) ->
-    case Binary of
-        <<"https://www.", Rest/binary>> -> <<"https://", Rest/binary>>;
-        <<"https://", _/binary>> -> Binary;
-        <<"www.", Rest/binary>> -> <<"https://", Rest/binary>>;
-        _ -> <<"https://", Binary/binary>>
-    end.
-
-
-%%--------------------------------------------------------------------
-%% @doc Returns true if the given string is a valid email address according to RFC.
-%% @end
-%% @end
-%%--------------------------------------------------------------------
--spec validate_email(binary()) -> boolean().
-validate_email(Email) ->
-    case re:run(Email, ?mail_validation_regexp) of
-        {match, _} -> true;
-        _ -> false
-    end.
-
-
-%%--------------------------------------------------------------------
-%% @doc Performs gmail email normalization by removing all the dots in the local part.
-%% @end
-%% @end
-%%--------------------------------------------------------------------
--spec normalize_email(binary()) -> binary().
-normalize_email(Email) ->
-    case binary:split(Email, [<<"@">>], [global]) of
-        [Account, Domain] ->
-            case Domain of
-                <<"gmail.com">> ->
-                    <<(binary:replace(Account, <<".">>, <<"">>, [global]))/binary, "@", Domain/binary>>;
-                _ -> Email
-            end;
-        _ ->
-            Email
-    end.
