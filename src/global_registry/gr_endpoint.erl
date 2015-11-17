@@ -196,7 +196,7 @@ prepare_auth_headers({SrlzdMacaroon, SrlzdDischMacaroons}) ->
         end, SrlzdDischMacaroons),
     % Bound discharge macaroons are sent in one header,
     % separated by spaces.
-    BoundMacaroonsValue = gui_str:join_to_binary(BoundMacaroons, <<" ">>),
+    BoundMacaroonsValue = str_utils:join_bin(BoundMacaroons, <<" ">>),
     [
         {<<"macaroon">>, SrlzdMacaroon},
         {<<"discharge-macaroons">>, BoundMacaroonsValue}

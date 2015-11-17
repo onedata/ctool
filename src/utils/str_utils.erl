@@ -8,12 +8,10 @@
 %%% @doc This file contains various functions operating on strings (both lists and binaries).
 %%% @end
 %%%-------------------------------------------------------------------
-
--module(gui_str).
--include("logging.hrl").
+-module(str_utils).
 
 % Conversion
--export([to_list/1, to_binary/1, join_to_binary/2]).
+-export([to_list/1, to_binary/1, join_bin/2]).
 
 % Conversion between unicode and binaries
 -export([unicode_list_to_binary/1, binary_to_unicode_list/1]).
@@ -54,15 +52,15 @@ to_binary(Term) -> list_to_binary(to_list(Term)).
 %% @doc Joins a list of binaries into one binary, using delimiter.
 %% @end
 %%--------------------------------------------------------------------
--spec join_to_binary(List :: [binary()], Delimiter :: binary()) -> binary().
-join_to_binary(Terms, Delimiter) ->
-    join_to_binary(Terms, Delimiter, <<"">>).
+-spec join_bin(List :: [binary()], Delimiter :: binary()) -> binary().
+join_bin(Terms, Delimiter) ->
+    join_binary(Terms, Delimiter, <<"">>).
 
-join_to_binary([], _, Acc) ->
+join_binary([], _, Acc) ->
     Acc;
 
-join_to_binary([H | T], Delimiter, Acc) ->
-    join_to_binary(T, <<Acc/binary, Delimiter/binary, (to_binary(H))/binary>>).
+join_binary([H | T], Delimiter, Acc) ->
+    join_bin(T, <<Acc/binary, Delimiter/binary, (to_binary(H))/binary>>).
 
 
 %%--------------------------------------------------------------------
@@ -89,7 +87,7 @@ binary_to_unicode_list(Binary) ->
 %%--------------------------------------------------------------------
 -spec format(Format :: string(), Args :: [term()]) -> list().
 format(Format, Args) ->
-    wf:f(Format, Args).
+    lists:flatten(io_lib:format(Format, Args)).
 
 
 %%--------------------------------------------------------------------
@@ -98,4 +96,4 @@ format(Format, Args) ->
 %%--------------------------------------------------------------------
 -spec format_bin(Format :: string(), Args :: [term()]) -> binary().
 format_bin(Format, Args) ->
-    to_binary(wf:f(Format, Args)).
+    to_binary(format(Format, Args)).

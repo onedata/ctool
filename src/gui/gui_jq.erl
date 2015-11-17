@@ -68,7 +68,7 @@ wire(Action) ->
 %%--------------------------------------------------------------------
 -spec wire(Script :: string() | binary() | #api{} | #alert{} | #confirm{}, Eager :: boolean()) -> ok.
 wire(Script, Eager) when is_binary(Script) ->
-    wire(gui_str:to_list(Script), Eager);
+    wire(str_utils:to_list(Script), Eager);
 
 wire(Action, Eager) ->
     Actions = case get(actions) of undefined -> []; E -> E end,
@@ -103,7 +103,7 @@ wire(TargetID, Method, Args, Eager) ->
 %%--------------------------------------------------------------------
 -spec postback_action(TriggerID :: binary(), Postback :: term()) -> #event{}.
 postback_action(TriggerID, Postback) ->
-    #event{type = "click", postback = Postback, target = gui_str:to_list(TriggerID)}.
+    #event{type = "click", postback = Postback, target = str_utils:to_list(TriggerID)}.
 
 %%--------------------------------------------------------------------
 %% @doc Returns action records that can be assigned to actions field of an element.
@@ -115,9 +115,9 @@ postback_action(TriggerID, Postback) ->
     Sources :: binary() | [binary()]) -> #event{}.
 form_submit_action(TriggerID, Postback, SourcesArg) ->
     Sources = lists:map(fun(Source) ->
-        gui_str:to_list(Source)
+        str_utils:to_list(Source)
     end, lists:flatten([SourcesArg])),
-    #event{type = "click", postback = Postback, target = gui_str:to_list(TriggerID), source = Sources}.
+    #event{type = "click", postback = Postback, target = str_utils:to_list(TriggerID), source = Sources}.
 
 %%--------------------------------------------------------------------
 %% @doc Redirects to given page.
