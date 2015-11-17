@@ -11,7 +11,7 @@
 -module(str_utils).
 
 % Conversion
--export([to_list/1, to_binary/1, join_bin/2]).
+-export([to_list/1, to_binary/1, join_binary/2]).
 
 % Conversion between unicode and binaries
 -export([unicode_list_to_binary/1, binary_to_unicode_list/1]).
@@ -45,22 +45,26 @@ to_list(Term) ->
 %%--------------------------------------------------------------------
 -spec to_binary(Term :: term()) -> binary().
 to_binary(Term) when is_binary(Term) -> Term;
-to_binary(Term) -> list_to_binary(to_list(Term)).
+to_binary(List) when is_list(List) -> iolist_to_binary(List);
+to_binary(Integer) when is_integer(Integer) -> integer_to_binary(Integer);
+to_binary(Atom) when is_atom(Atom) -> atom_to_binary(Atom, utf8);
+to_binary(Term) -> to_binary(to_list(Term)).
 
 
 %%--------------------------------------------------------------------
-%% @doc Joins a list of binaries into one binary, using delimiter.
+%% @doc Joins a list of binaries into one binary, using separator.
 %% @end
 %%--------------------------------------------------------------------
--spec join_bin(List :: [binary()], Delimiter :: binary()) -> binary().
-join_bin(Terms, Delimiter) ->
-    join_binary(Terms, Delimiter, <<"">>).
-
-join_binary([], _, Acc) ->
-    Acc;
-
-join_binary([H | T], Delimiter, Acc) ->
-    join_bin(T, <<Acc/binary, Delimiter/binary, (to_binary(H))/binary>>).
+-spec join_binary(Terms :: [binary()], Separator :: binary()) -> binary().
+join_binary([], _Sep) ->
+    <<>>;
+join_binary([Part], _Sep) ->
+    Part;
+join_binary([Head | Tail], Sep) ->
+    lists:foldl(
+        fun(A, B) ->
+            <<B/binary, Sep/binary, A/binary>>
+        end, Head, Tail).
 
 
 %%--------------------------------------------------------------------
