@@ -14,7 +14,8 @@
 
 %% API
 -export([auth_request/3, auth_request/4, auth_request/5, auth_request/6]).
--export([noauth_request/3, noauth_request/4, noauth_request/5, noauth_request/6]).
+-export([noauth_request/3, noauth_request/4, noauth_request/5,
+    noauth_request/6]).
 
 %% Uniform Resource Name -
 %% for more details see: http://pl.wikipedia.org/wiki/Uniform_Resource_Name

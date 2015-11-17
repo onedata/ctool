@@ -18,8 +18,8 @@
 % Conversion between unicode and binaries
 -export([unicode_list_to_binary/1, binary_to_unicode_list/1]).
 
-% Formatting, escaping and encoding
--export([format/2, format_bin/2, js_escape/1, html_encode/1, url_encode/1, url_decode/1]).
+% String formatting
+-export([format/2, format_bin/2]).
 
 %%%===================================================================
 %%% API
@@ -99,69 +99,3 @@ format(Format, Args) ->
 -spec format_bin(Format :: string(), Args :: [term()]) -> binary().
 format_bin(Format, Args) ->
     to_binary(wf:f(Format, Args)).
-
-
-%%--------------------------------------------------------------------
-%% @doc Escapes all javascript - sensitive characters.
-%% @end
-%%--------------------------------------------------------------------
--spec js_escape(String :: binary() | string()) -> binary().
-js_escape(undefined) ->
-    <<"">>;
-js_escape(Value) when is_list(Value) ->
-    js_escape(iolist_to_binary(Value));
-js_escape(Value) ->
-    js_escape(Value, <<"">>).
-js_escape(<<"\\", Rest/binary>>, Acc) ->
-    js_escape(Rest, <<Acc/binary, "\\\\">>);
-js_escape(<<"\r", Rest/binary>>, Acc) ->
-    js_escape(Rest, <<Acc/binary, "\\r">>);
-js_escape(<<"\n", Rest/binary>>, Acc) ->
-    js_escape(Rest, <<Acc/binary, "\\n">>);
-js_escape(<<"\"", Rest/binary>>, Acc) ->
-    js_escape(Rest, <<Acc/binary, "\\\"">>);
-js_escape(<<"'", Rest/binary>>, Acc) ->
-    js_escape(Rest, <<Acc/binary, "\\'">>);
-js_escape(<<"<script", Rest/binary>>, Acc) ->
-    js_escape(Rest, <<Acc/binary, "&lt;script">>);
-js_escape(<<"script>", Rest/binary>>, Acc) ->
-    js_escape(Rest, <<Acc/binary, "script&gt;">>);
-js_escape(<<C, Rest/binary>>, Acc) ->
-    js_escape(Rest, <<Acc/binary, C>>);
-js_escape(<<"">>, Acc) ->
-    Acc.
-
-
-%%--------------------------------------------------------------------
-%% @doc Performs safe URL encoding.
-%% @end
-%%--------------------------------------------------------------------
--spec html_encode(String :: binary() | string()) -> binary().
-html_encode(List) when is_list(List) ->
-    html_encode(to_binary(List));
-
-html_encode(<<"">>) -> <<"">>;
-html_encode(<<$<, Rest/binary>>) -> <<"&lt;", (html_encode(Rest))/binary>>;
-html_encode(<<$>, Rest/binary>>) -> <<"&gt;", (html_encode(Rest))/binary>>;
-html_encode(<<$", Rest/binary>>) -> <<"&quot;", (html_encode(Rest))/binary>>;
-html_encode(<<$', Rest/binary>>) -> <<"&#39;", (html_encode(Rest))/binary>>;
-html_encode(<<$&, Rest/binary>>) -> <<"&amp;", (html_encode(Rest))/binary>>;
-html_encode(<<H, Rest/binary>>) -> <<H, (html_encode(Rest))/binary>>.
-
-
-%%--------------------------------------------------------------------
-%% @doc Performs safe URL encoding
-%% @end
-%%--------------------------------------------------------------------
--spec url_encode(Data :: binary() | string()) -> binary().
-url_encode(Data) ->
-    hackney_url:urlencode(Data).
-
-
-%%--------------------------------------------------------------------
-%% @doc Performs URL-uncoded string decoding
-%% @end
-%%--------------------------------------------------------------------
--spec url_decode(Data :: binary() | string()) -> binary().
-url_decode(Data) ->
-    hackney_url:urldecode(Data).

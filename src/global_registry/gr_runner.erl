@@ -39,7 +39,8 @@ run({Module, Function, Arity}, RequestBody) ->
                 [Module, Function, Arity, ErrorDetails]),
             {error, ErrorDetails};
         error:{badmatch, Reason} ->
-            %% Bad Match assertion - something went wrong, but it could be expected.
+            %% Bad Match assertion - something went wrong,
+            %% but it could be expected.
             ErrorDetails = get_error_details(Reason),
             ?warning("Error in function ~p:~p/~p: ~p",
                 [Module, Function, Arity, ErrorDetails]),
@@ -47,13 +48,15 @@ run({Module, Function, Arity}, RequestBody) ->
                 [Module, Function, Arity, ErrorDetails]),
             {error, ErrorDetails};
         error:{case_clause, Reason} ->
-            %% Case clause assertion - something went seriously wrong and we should know about it.
+            %% Case clause assertion - something went seriously wrong
+            %% and we should know about it.
             ErrorDetails = get_error_details(Reason),
             ?error_stacktrace("Error in function ~p:~p/~p: ~p",
                 [Module, Function, Arity, ErrorDetails]),
             {error, ErrorDetails};
         error:UnknownError ->
-            %% Unknown error - something went horribly wrong. This should not happen.
+            %% Unknown error - something went horribly wrong.
+            %% This should not happen.
             ?error_stacktrace("Error in function ~p:~p/~p: ~p",
                 [Module, Function, Arity, UnknownError]),
             {error, UnknownError}
@@ -72,7 +75,8 @@ get_error_details({ok, Status, _ResponseHeaders, ResponseBody}) ->
     try
         Proplist = json_utils:decode(ResponseBody),
         Error = proplists:get_value(<<"error">>, Proplist, <<"">>),
-        ErrorDescription = proplists:get_value(<<"error_description">>, Proplist, <<"">>),
+        ErrorDescription = proplists:get_value(<<"error_description">>,
+            Proplist, <<"">>),
         {Status, Error, ErrorDescription}
     catch
         _:_ -> {Status, <<"">>, <<"">>}

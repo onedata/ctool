@@ -16,7 +16,8 @@
 -include("global_registry/gr_providers.hrl").
 
 %% API
--export([register/2, register_with_uuid/2, unregister/1, get_details/1, get_details/2, modify_details/2]).
+-export([register/2, register_with_uuid/2, unregister/1]).
+-export([get_details/1, get_details/2, modify_details/2]).
 -export([check_ip_address/1, check_port/4]).
 -export([create_space/2, support_space/2, revoke_space_support/2, get_spaces/1,
     get_space_details/2]).
@@ -31,8 +32,10 @@
 %% "redirectionPoint" to provider's GUI and "clientName".
 %% @end
 %%--------------------------------------------------------------------
--spec register(Client :: gr_endpoint:client(), Parameters :: gr_endpoint:params()) ->
-    {ok, ProviderId :: binary(), Cert :: binary()} | {error, Reason :: term()}.
+-spec register(Client :: gr_endpoint:client(),
+    Parameters :: gr_endpoint:params()) ->
+    {ok, ProviderId :: binary(), Cert :: binary()} |
+    {error, Reason :: term()}.
 register(Client, Parameters) ->
     ?run(fun() ->
         URN = "/provider",
@@ -52,8 +55,10 @@ register(Client, Parameters) ->
 %% "redirectionPoint" to provider's GUI, "clientName" and "uuid".
 %% @end
 %%--------------------------------------------------------------------
--spec register_with_uuid(Client :: gr_endpoint:client(), Parameters :: gr_endpoint:params()) ->
-    {ok, ProviderId :: binary(), Cert :: binary()} | {error, Reason :: term()}.
+-spec register_with_uuid(Client :: gr_endpoint:client(),
+    Parameters :: gr_endpoint:params()) ->
+    {ok, ProviderId :: binary(), Cert :: binary()} |
+    {error, Reason :: term()}.
 register_with_uuid(Client, Parameters) ->
     ?run(fun() ->
         URN = "/provider_dev",
@@ -96,7 +101,8 @@ get_details(Client) ->
             id = proplists:get_value(<<"providerId">>, Proplist),
             name = proplists:get_value(<<"clientName">>, Proplist),
             urls = proplists:get_value(<<"urls">>, Proplist),
-            redirection_point = proplists:get_value(<<"redirectionPoint">>, Proplist)
+            redirection_point = proplists:get_value(<<"redirectionPoint">>,
+                Proplist)
         },
         {ok, ProviderDetails}
     end).
@@ -117,7 +123,8 @@ get_details(Client, ProviderId) ->
             id = proplists:get_value(<<"providerId">>, Proplist),
             name = proplists:get_value(<<"clientName">>, Proplist),
             urls = proplists:get_value(<<"urls">>, Proplist),
-            redirection_point = proplists:get_value(<<"redirectionPoint">>, Proplist)
+            redirection_point = proplists:get_value(<<"redirectionPoint">>,
+                Proplist)
         },
         {ok, ProviderDetails}
     end).
@@ -223,8 +230,8 @@ support_space(Client, Parameters) ->
 %% @doc Makes provider stop supporting Space.
 %% @end
 %%--------------------------------------------------------------------
--spec revoke_space_support(Client :: gr_endpoint:client(), SpaceId :: binary()) ->
-    ok | {error, Reason :: term()}.
+-spec revoke_space_support(Client :: gr_endpoint:client(),
+    SpaceId :: binary()) -> ok | {error, Reason :: term()}.
 revoke_space_support(Client, SpaceId) ->
     ?run(fun() ->
         URN = "/provider/spaces/" ++ binary_to_list(SpaceId),
@@ -258,7 +265,8 @@ get_spaces(Client) ->
 get_space_details(Client, SpaceId) ->
     ?run(fun() ->
         URN = "/provider/spaces/" ++ binary_to_list(SpaceId),
-        {ok, 200, _ResponseHeaders, ResponseBody} = gr_endpoint:auth_request(Client, URN, get),
+        {ok, 200, _ResponseHeaders, ResponseBody} =
+            gr_endpoint:auth_request(Client, URN, get),
         Proplist = json_utils:decode(ResponseBody),
         SpaceDetails = #space_details{
             id = proplists:get_value(<<"spaceId">>, Proplist),

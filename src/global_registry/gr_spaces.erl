@@ -113,8 +113,8 @@ modify_details(Client, SpaceId, Parameters) ->
 %% @doc Returns token that allows user to join Space.
 %% @end
 %%--------------------------------------------------------------------
--spec get_invite_user_token(Client :: gr_endpoint:client(), SpaceId :: binary()) ->
-    {ok, Token :: binary()} | {error, Reason :: term()}.
+-spec get_invite_user_token(Client :: gr_endpoint:client(),
+    SpaceId :: binary()) -> {ok, Token :: binary()} | {error, Reason :: term()}.
 get_invite_user_token(Client, SpaceId) ->
     ?run(fun() ->
         URN = "/spaces/" ++ binary_to_list(SpaceId) ++ "/users/token",
@@ -129,8 +129,8 @@ get_invite_user_token(Client, SpaceId) ->
 %% @doc Returns token that allows group to join Space.
 %% @end
 %%--------------------------------------------------------------------
--spec get_invite_group_token(Client :: gr_endpoint:client(), SpaceId :: binary()) ->
-    {ok, Token :: binary()} | {error, Reason :: term()}.
+-spec get_invite_group_token(Client :: gr_endpoint:client(),
+    SpaceId :: binary()) -> {ok, Token :: binary()} | {error, Reason :: term()}.
 get_invite_group_token(Client, SpaceId) ->
     ?run(fun() ->
         URN = "/spaces/" ++ binary_to_list(SpaceId) ++ "/groups/token",
@@ -145,8 +145,8 @@ get_invite_group_token(Client, SpaceId) ->
 %% @doc Returns token that allows provider to support Space.
 %% @end
 %%--------------------------------------------------------------------
--spec get_invite_provider_token(Client :: gr_endpoint:client(), SpaceId :: binary()) ->
-    {ok, Token :: binary()} | {error, Reason :: term()}.
+-spec get_invite_provider_token(Client :: gr_endpoint:client(),
+    SpaceId :: binary()) -> {ok, Token :: binary()} | {error, Reason :: term()}.
 get_invite_provider_token(Client, SpaceId) ->
     ?run(fun() ->
         URN = "/spaces/" ++ binary_to_list(SpaceId) ++ "/providers/token",
@@ -373,7 +373,8 @@ get_provider_details(Client, SpaceId, ProviderId) ->
             id = proplists:get_value(<<"providerId">>, Proplist),
             name = proplists:get_value(<<"clientName">>, Proplist),
             urls = proplists:get_value(<<"urls">>, Proplist),
-            redirection_point = proplists:get_value(<<"redirectionPoint">>, Proplist)
+            redirection_point = proplists:get_value(<<"redirectionPoint">>,
+                Proplist)
         },
         {ok, ProviderDetails}
     end).

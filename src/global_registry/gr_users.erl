@@ -193,7 +193,8 @@ get_spaces(Client) ->
         Proplist = json_utils:decode(ResponseBody),
         UserSpaces = #user_spaces{
             ids = proplists:get_value(<<"spaces">>, Proplist),
-            default = proplists:get_value(<<"default">>, Proplist, <<"undefined">>)
+            default = proplists:get_value(<<"default">>, Proplist,
+                <<"undefined">>)
         },
         {ok, UserSpaces}
     end).

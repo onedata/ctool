@@ -8,7 +8,8 @@
 %%% @doc This behaviour specifies an API for Global Registry plugin -
 %%% a module that provides necessary data to connect to Global Registry.
 %%% Every project using Global Registry REST API gr_endpoint:client() must
-%%% implement this behaviour and the implementing module must be called gr_plugin.
+%%% implement this behaviour and the implementing module
+%%% must be called gr_plugin.
 %%% @end
 %%%-------------------------------------------------------------------
 

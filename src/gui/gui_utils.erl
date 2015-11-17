@@ -168,7 +168,7 @@ proplist_to_url_params(List) ->
                                              {Key, Value, no_encode} ->
                                                  {Key, Value};
                                              {Key, Value} ->
-                                                 {gui_str:url_encode(Key), gui_str:url_encode(Value)}
+                                                 {http_utils:url_encode(Key), http_utils:url_encode(Value)}
                                          end,
             Suffix = case Acc of
                          <<"">> -> <<"">>;
