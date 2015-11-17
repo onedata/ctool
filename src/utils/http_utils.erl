@@ -88,7 +88,7 @@ js_escape(<<"">>, Acc) ->
 %%--------------------------------------------------------------------
 -spec html_encode(String :: binary() | string()) -> binary().
 html_encode(List) when is_list(List) ->
-    html_encode(to_binary(List));
+    html_encode(str_utils:to_binary(List));
 
 html_encode(<<"">>) -> <<"">>;
 html_encode(<<$<, Rest/binary>>) -> <<"&lt;", (html_encode(Rest))/binary>>;

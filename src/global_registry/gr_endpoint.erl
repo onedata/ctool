@@ -184,7 +184,7 @@ do_noauth_request(URN, Method, ReqHeaders, ReqBody, Options) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec prepare_auth_headers(Macaroons :: macaroons()) ->
-    [{Key :: string(), Val :: string()}].
+    [{Key :: binary(), Val :: term()}].
 prepare_auth_headers({SrlzdMacaroon, SrlzdDischMacaroons}) ->
     {ok, Macaroon} = macaroon:deserialize(SrlzdMacaroon),
     BoundMacaroons = lists:map(

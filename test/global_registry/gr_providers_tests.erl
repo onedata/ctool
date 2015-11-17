@@ -51,33 +51,33 @@ setup() ->
     meck:new(gr_endpoint),
     meck:expect(gr_endpoint, auth_request, fun
         (client, "/provider", get) ->
-            {ok, "200", response_headers, response_body};
+            {ok, 200, response_headers, response_body};
         (client, "/provider", delete) ->
-            {ok, "202", response_headers, response_body};
+            {ok, 202, response_headers, response_body};
         (client, "/provider/providerId", get) ->
-            {ok, "200", response_headers, response_body};
+            {ok, 200, response_headers, response_body};
         (client, "/provider/spaces", get) ->
-            {ok, "200", response_headers, response_body};
+            {ok, 200, response_headers, response_body};
         (client, "/provider/spaces/spaceId", get) ->
-            {ok, "200", response_headers, response_body};
+            {ok, 200, response_headers, response_body};
         (client, "/provider/spaces/spaceId", delete) ->
-            {ok, "202", response_headers, response_body}
+            {ok, 202, response_headers, response_body}
     end),
     meck:expect(gr_endpoint, auth_request, fun
         (client, "/provider", patch, <<"body">>) ->
-            {ok, "204", response_headers, response_body};
+            {ok, 204, response_headers, response_body};
         (client, "/provider/spaces", post, <<"body">>) ->
-            {ok, "201", [{"location", "/spaces/spaceId"}], response_body};
+            {ok, 201, [{<<"location">>, <<"/spaces/spaceId">>}], response_body};
         (client, "/provider/spaces/support", post, <<"body">>) ->
-            {ok, "201", [{"location", "/provider/spaces/spaceId"}], response_body}
+            {ok, 201, [{<<"location">>, <<"/provider/spaces/spaceId">>}], response_body}
     end),
     meck:expect(gr_endpoint, noauth_request, fun
         (client, "/provider", post, <<"body">>) ->
-            {ok, "200", response_headers, response_body};
+            {ok, 200, response_headers, response_body};
         (client, "/provider/test/check_my_ports", post, <<"body">>) ->
-            {ok, "200", response_headers, response_body};
+            {ok, 200, response_headers, response_body};
         (client, "/provider/test/check_my_ip", get, []) ->
-            {ok, "200", response_headers, response_body}
+            {ok, 200, response_headers, response_body}
     end).
 
 

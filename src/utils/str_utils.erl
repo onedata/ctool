@@ -28,15 +28,11 @@
 %% @end
 %%--------------------------------------------------------------------
 -spec to_list(Term :: term()) -> list().
-to_list(undefined) -> [];
-to_list(Term) when is_list(Term) -> Term;
-to_list(Term) when is_binary(Term) -> binary_to_list(Term);
-to_list(Term) ->
-    try
-        wf:to_list(Term)
-    catch _:_ ->
-        lists:flatten(io_lib:format("~p", [Term]))
-    end.
+to_list(List) when is_list(List) -> List;
+to_list(Binary) when is_binary(Binary) -> binary_to_list(Binary);
+to_list(Atom) when is_atom(Atom) -> atom_to_list(Atom);
+to_list(Integer) when is_integer(Integer) -> integer_to_list(Integer);
+to_list(Term) -> format("~p", [Term]).
 
 
 %%--------------------------------------------------------------------
@@ -44,15 +40,15 @@ to_list(Term) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec to_binary(Term :: term()) -> binary().
-to_binary(Term) when is_binary(Term) -> Term;
+to_binary(Binary) when is_binary(Binary) -> Binary;
 to_binary(List) when is_list(List) -> iolist_to_binary(List);
-to_binary(Integer) when is_integer(Integer) -> integer_to_binary(Integer);
 to_binary(Atom) when is_atom(Atom) -> atom_to_binary(Atom, utf8);
-to_binary(Term) -> to_binary(to_list(Term)).
+to_binary(Integer) when is_integer(Integer) -> integer_to_binary(Integer);
+to_binary(Term) -> list_to_binary(to_list(Term)).
 
 
 %%--------------------------------------------------------------------
-%% @doc Joins a list of binaries into one binary, using separator.
+%% @doc Joins a list of binaries into one binary, using a separator.
 %% @end
 %%--------------------------------------------------------------------
 -spec join_binary(Terms :: [binary()], Separator :: binary()) -> binary().

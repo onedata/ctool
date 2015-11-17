@@ -43,29 +43,29 @@ setup() ->
     meck:new(gr_endpoint),
     meck:expect(gr_endpoint, auth_request, fun
         (client, "/openid/client/tokens", get) ->
-            {ok, "200", response_headers, response_body};
+            {ok, 200, response_headers, response_body};
         (client, "/openid/client/tokens/accessId", delete) ->
-            {ok, "202", response_headers, response_body};
+            {ok, 202, response_headers, response_body};
         (client, "/openid/client/authorization_code", get) ->
-            {ok, "200", response_headers, response_body};
+            {ok, 200, response_headers, response_body};
         (client, "/openid/provider/tokens", get) ->
-            {ok, "200", response_headers, response_body};
+            {ok, 200, response_headers, response_body};
         (client, "/openid/provider/tokens/accessId", delete) ->
-            {ok, "202", response_headers, response_body}
+            {ok, 202, response_headers, response_body}
     end),
     meck:expect(gr_endpoint, auth_request, fun
         (client, "/openid/client/verify", post, <<"body">>) ->
-            {ok, "200", response_headers, response_body};
+            {ok, 200, response_headers, response_body};
         (client, "/openid/client/tokens/accessId", patch, <<"body">>) ->
-            {ok, "204", response_headers, response_body};
+            {ok, 204, response_headers, response_body};
         (client, "/openid/provider/tokens/accessId", patch, <<"body">>) ->
-            {ok, "204", response_headers, response_body};
+            {ok, 204, response_headers, response_body};
         (provider, "/openid/provider/tokens", post, <<"body">>) ->
-            {ok, "200", response_headers, response_body}
+            {ok, 200, response_headers, response_body}
     end),
     meck:expect(gr_endpoint, noauth_request, fun
         (client, "/openid/client/tokens", post, <<"body">>) ->
-            {ok, "200", response_headers, response_body}
+            {ok, 200, response_headers, response_body}
     end).
 
 
