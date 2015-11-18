@@ -155,7 +155,7 @@ check_ip_address(Client) ->
     ?run(fun() ->
         URN = "/provider/test/check_my_ip",
         {ok, 200, _ResponseHeaders, ResponseBody} =
-            gr_endpoint:noauth_request(Client, URN, get, []),
+            gr_endpoint:noauth_request(Client, URN, get, <<>>),
         IpAddress = json_utils:decode(ResponseBody),
         {ok, IpAddress}
     end).

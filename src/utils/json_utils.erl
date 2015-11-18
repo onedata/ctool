@@ -40,7 +40,7 @@ encode(Term) ->
 %% Convenience function that convert JSON binary to an erlang term.
 %% @end
 %%--------------------------------------------------------------------
--spec decode(binary()) -> term().
+-spec decode(binary()) -> proplists:proplist().
 decode(JSON) ->
     try mochijson2:decode(JSON, [{format, proplist}]) catch _:_ -> throw(invalid_json) end.
 
