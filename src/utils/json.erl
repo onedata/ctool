@@ -40,6 +40,7 @@ encode(Term) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec decode(binary()) -> term().
+decode(<<"">>) -> [];
 decode(JSON) ->
     try mochijson2:decode(JSON, [{format, proplist}]) catch _:_ -> throw(invalid_json) end.
 
