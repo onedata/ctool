@@ -13,10 +13,11 @@
 -include_lib("common_test/include/ct.hrl").
 
 %% API
--export([prepare_test_environment/3, clean_environment/1, load_modules/2,
+-export([prepare_test_environment/4, clean_environment/1, load_modules/2,
     maybe_start_cover/0, maybe_stop_cover/0]).
 
 -define(CLEANING_PROC_NAME, cleaning_proc).
+-define(TIMEOUT, timer:seconds(60)).
 
 %%%===================================================================
 %%% Starting and stoping nodes
@@ -28,8 +29,8 @@
 %% @end
 %%--------------------------------------------------------------------
 -spec prepare_test_environment(Config :: list(), DescriptionFile :: string(),
-    Module :: module()) -> Result :: list() | {fail, tuple()}.
-prepare_test_environment(Config, DescriptionFile, Module) ->
+    TestModule :: module(), LoadModules :: [module()]) -> Result :: list() | {fail, tuple()}.
+prepare_test_environment(Config, DescriptionFile, TestModule, LoadModules) ->
     try
         DataDir = ?config(data_dir, Config),
         PrivDir = ?config(priv_dir, Config),
@@ -44,11 +45,11 @@ prepare_test_environment(Config, DescriptionFile, Module) ->
         EnvUpScript =
             filename:join([ProjectRoot, "bamboos", "docker", "env_up.py"]),
 
-        LogsDir = filename:join(PrivDir, atom_to_list(Module) ++ "_logs"),
+        LogsDir = filename:join(PrivDir, atom_to_list(TestModule) ++ "_logs"),
         os:cmd("mkdir -p " ++ LogsDir),
 
-        utils:cmd(["echo", "'" ++ DescriptionFile ++ ":'",">> prepare_test_environment.log"]),
-        utils:cmd(["echo", "'" ++ DescriptionFile ++ ":'",">> prepare_test_environment_error.log"]),
+        utils:cmd(["echo", "'" ++ DescriptionFile ++ ":'", ">> prepare_test_environment.log"]),
+        utils:cmd(["echo", "'" ++ DescriptionFile ++ ":'", ">> prepare_test_environment_error.log"]),
 
         StartLog = list_to_binary(utils:cmd([EnvUpScript,
             %% Function is used durgin OP or GR tests so starts OP or GR - not both
@@ -77,7 +78,7 @@ prepare_test_environment(Config, DescriptionFile, Module) ->
 
             ping_nodes(AllNodes),
             global:sync(),
-            ok = load_modules(AllNodes, [Module]),
+            load_modules(AllNodes, [TestModule, test_utils | LoadModules]),
 
             lists:append([
                 ConfigWithPaths,
@@ -136,14 +137,15 @@ clean_environment(Config) ->
             lists:foreach(fun(_N) ->
                 receive
                     {app_ended, CoverNode, FileData} ->
-                        {Mega,Sec,Micro} = os:timestamp(),
-                        CoverFile = atom_to_list(CoverNode) ++ integer_to_list((Mega*1000000 + Sec)*1000000 + Micro) ++ ".coverdata",
+                        {Mega, Sec, Micro} = os:timestamp(),
+                        CoverFile = atom_to_list(CoverNode) ++
+                            integer_to_list((Mega * 1000000 + Sec) * 1000000 + Micro) ++
+                            ".coverdata",
                         ok = file:write_file(CoverFile, FileData),
                         cover:import(CoverFile),
                         file:delete(CoverFile)
-                    after
-                        timer:minutes(1) ->
-                            throw(cover_not_received)
+                after
+                    ?TIMEOUT -> throw(cover_not_received)
                 end
             end, AllNodes)
     end,
@@ -263,11 +265,14 @@ ping_nodes(Nodes, Tries) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec load_modules(Nodes :: [node()], Modules :: [module()]) -> ok.
-load_modules(_, []) ->
-    ok;
-load_modules(Nodes, [Module | Modules]) ->
-    {Module, Binary, Filename} = code:get_object_code(Module),
-    {_, _} = rpc:multicall(Nodes, code, delete, [Module]),
-    {_, _} = rpc:multicall(Nodes, code, purge, [Module]),
-    {_, _} = rpc:multicall(Nodes, code, load_binary, [Module, Filename, Binary]),
-    load_modules(Nodes, Modules).
+load_modules(Nodes, Modules) ->
+    lists:foreach(fun(Node) ->
+        lists:foreach(fun(Module) ->
+            {Module, Binary, Filename} = code:get_object_code(Module),
+            rpc:call(Node, code, delete, [Module], ?TIMEOUT),
+            rpc:call(Node, code, purge, [Module], ?TIMEOUT),
+            ?assertEqual({module, Module}, rpc:call(
+                Node, code, load_binary, [Module, Filename, Binary], ?TIMEOUT
+            ))
+        end, Modules)
+    end, Nodes).

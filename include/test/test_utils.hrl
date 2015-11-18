@@ -22,8 +22,9 @@
 -define(TEST_FILE(Config, X), filename:join(?config(data_dir, Config), X)).
 
 %% Initializes test environment
--define(TEST_INIT(Config, EnvDescription),
-    test_node_starter:prepare_test_environment(Config, EnvDescription, ?MODULE)
+-define(TEST_INIT(Config, EnvDescription), ?TEST_INIT(Config, EnvDescription, [])).
+-define(TEST_INIT(Config, EnvDescription, LoadModules),
+    test_node_starter:prepare_test_environment(Config, EnvDescription, ?MODULE, LoadModules)
 ).
 
 %% Utility macros
