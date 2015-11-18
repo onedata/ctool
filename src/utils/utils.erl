@@ -17,7 +17,8 @@
     ensure_unicode_binary/1, access_token_hash/1, trim_spaces/1, ceil/1,
     aggregate_over_first_element/1, average/1, random_shuffle/1,
     random_element/1, get_host/1, get_host_as_atom/1, cmd/1, seconds_diff/2,
-    milliseconds_diff/2, microseconds_diff/2, duration/1, adjust_duration/2]).
+    milliseconds_diff/2, microseconds_diff/2, duration/1, adjust_duration/2,
+    ensure_path_ends_with_slash/1]).
 
 -type time_unit() :: us | ms | s | min | h.
 
@@ -320,6 +321,20 @@ adjust_duration(Duration, Unit) ->
     case (Duration > Factor) and (NextUnit /= undefined) of
         true -> adjust_duration(Duration / Factor, NextUnit);
         _ -> {Duration, atom_to_list(Unit)}
+    end.
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Appends '/' to the end of filepath if last character is different
+%% @end
+%%--------------------------------------------------------------------
+-spec ensure_path_ends_with_slash(binary()) -> binary().
+ensure_path_ends_with_slash(<<"">>) ->
+    <<"/">>;
+ensure_path_ends_with_slash(Path) ->
+    case binary:last(Path) of
+        $/ -> Path;
+        _ -> <<Path/binary, "/">>
     end.
 
 %%%===================================================================
