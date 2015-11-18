@@ -23,14 +23,10 @@
 %% HTTP request types
 -type method() :: put | post | get | patch | delete.
 -type headers() :: [{Key :: binary(), Value :: binary()}].
--type response() :: {ok,
-    Status :: integer(),
-    ResponseHeaders :: [{Name :: binary(), Value :: binary()}],
-    ResponseBody :: binary()
-} | {error, Reason :: term()}.
--type body() :: [] | string() | binary().
--type options() :: [option()].
--type option() :: {ssl_options, [SSLOpt :: term()]} | {content_type, string()}.
+-type body() :: binary().
+-type options() :: http_client:opts().
+-type response() :: {ok, Status :: integer(), ResponseHeaders :: headers(),
+ResponseBody :: body()} | {error, Reason :: term()}.
 -type params() :: [{Key :: binary(), Value :: binary()}].
 
 %% Global Registry gr_endpoint:client()
@@ -53,7 +49,7 @@
 -spec auth_request(Client :: client(), URN :: urn(), Method :: method()) ->
     response().
 auth_request(Client, URN, Method) ->
-    gr_endpoint:auth_request(Client, URN, Method, []).
+    gr_endpoint:auth_request(Client, URN, Method, <<>>).
 
 %%--------------------------------------------------------------------
 %% @equiv auth_request(Client, URN, Method, Body, [])
@@ -102,7 +98,7 @@ auth_request({Type, Macaroons}, URN, Method, Headers, Body, Options)
 -spec noauth_request(Client :: client(), URN :: urn(), Method :: method()) ->
     response().
 noauth_request(Client, URN, Method) ->
-    gr_endpoint:noauth_request(Client, URN, Method, []).
+    gr_endpoint:noauth_request(Client, URN, Method, <<>>).
 
 %%--------------------------------------------------------------------
 %% @equiv noauth_request(Client, URN, Method, Body, [])
@@ -184,7 +180,7 @@ do_noauth_request(URN, Method, ReqHeaders, ReqBody, Options) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec prepare_auth_headers(Macaroons :: macaroons()) ->
-    [{Key :: binary(), Val :: term()}].
+    [{Key :: binary(), Val :: binary()}].
 prepare_auth_headers({SrlzdMacaroon, SrlzdDischMacaroons}) ->
     {ok, Macaroon} = macaroon:deserialize(SrlzdMacaroon),
     BoundMacaroons = lists:map(
