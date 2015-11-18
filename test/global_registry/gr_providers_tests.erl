@@ -30,7 +30,8 @@ gr_providers_test_() ->
             {"register", fun should_register/0},
             {"unregister", fun should_unregister/0},
             {"get details", fun should_get_details/0},
-            {"get details for given provider", fun should_get_details_for_given_provider/0},
+            {"get details for given provider",
+                fun should_get_details_for_given_provider/0},
             {"modify details", fun should_modify_details/0},
             {"check ip address", fun should_check_ip_address/0},
             {"check GUI port", fun should_check_gui_port/0},
@@ -69,7 +70,8 @@ setup() ->
         (client, "/provider/spaces", post, <<"body">>) ->
             {ok, 201, [{<<"location">>, <<"/spaces/spaceId">>}], response_body};
         (client, "/provider/spaces/support", post, <<"body">>) ->
-            {ok, 201, [{<<"location">>, <<"/provider/spaces/spaceId">>}], response_body}
+            {ok, 201, [{<<"location">>, <<"/provider/spaces/spaceId">>}],
+                response_body}
     end),
     meck:expect(gr_endpoint, noauth_request, fun
         (client, "/provider", post, <<"body">>) ->
@@ -90,20 +92,21 @@ teardown(_) ->
 %%%===================================================================
 
 should_register() ->
-    meck:new(mochijson2),
-    meck:expect(mochijson2, encode, fun(parameters) -> <<"body">> end),
-    meck:expect(mochijson2, decode, fun
-        (response_body, [{format, proplist}]) -> [
-            {<<"providerId">>, <<"providerId">>},
-            {<<"certificate">>, <<"certificate">>}
-        ]
-    end),
+    meck:new(json_utils),
+    meck:expect(json_utils, encode, fun(parameters) -> <<"body">> end),
+    meck:expect(json_utils, decode,
+        fun(response_body) ->
+            [
+                {<<"providerId">>, <<"providerId">>},
+                {<<"certificate">>, <<"certificate">>}
+            ]
+        end),
 
     Answer = gr_providers:register(client, parameters),
     ?assertEqual({ok, <<"providerId">>, <<"certificate">>}, Answer),
 
-    ?assert(meck:validate(mochijson2)),
-    ok = meck:unload(mochijson2).
+    ?assert(meck:validate(json_utils)),
+    ok = meck:unload(json_utils).
 
 
 should_unregister() ->
@@ -112,15 +115,16 @@ should_unregister() ->
 
 
 should_get_details() ->
-    meck:new(mochijson2),
-    meck:expect(mochijson2, decode, fun
-        (response_body, [{format, proplist}]) -> [
-            {<<"providerId">>, <<"providerId">>},
-            {<<"clientName">>, <<"name">>},
-            {<<"urls">>, <<"urls">>},
-            {<<"redirectionPoint">>, <<"redirectionPoint">>}
-        ]
-    end),
+    meck:new(json_utils),
+    meck:expect(json_utils, decode,
+        fun(response_body) ->
+            [
+                {<<"providerId">>, <<"providerId">>},
+                {<<"clientName">>, <<"name">>},
+                {<<"urls">>, <<"urls">>},
+                {<<"redirectionPoint">>, <<"redirectionPoint">>}
+            ]
+        end),
 
     Answer = gr_providers:get_details(client),
     ?assertEqual({ok, #provider_details{
@@ -130,20 +134,21 @@ should_get_details() ->
         redirection_point = <<"redirectionPoint">>}
     }, Answer),
 
-    ?assert(meck:validate(mochijson2)),
-    ok = meck:unload(mochijson2).
+    ?assert(meck:validate(json_utils)),
+    ok = meck:unload(json_utils).
 
 
 should_get_details_for_given_provider() ->
-    meck:new(mochijson2),
-    meck:expect(mochijson2, decode, fun
-        (response_body, [{format, proplist}]) -> [
-            {<<"providerId">>, <<"providerId">>},
-            {<<"clientName">>, <<"name">>},
-            {<<"urls">>, <<"urls">>},
-            {<<"redirectionPoint">>, <<"redirectionPoint">>}
-        ]
-    end),
+    meck:new(json_utils),
+    meck:expect(json_utils, decode,
+        fun(response_body) ->
+            [
+                {<<"providerId">>, <<"providerId">>},
+                {<<"clientName">>, <<"name">>},
+                {<<"urls">>, <<"urls">>},
+                {<<"redirectionPoint">>, <<"redirectionPoint">>}
+            ]
+        end),
 
     Answer = gr_providers:get_details(client, <<"providerId">>),
     ?assertEqual({ok, #provider_details{
@@ -153,90 +158,86 @@ should_get_details_for_given_provider() ->
         redirection_point = <<"redirectionPoint">>}
     }, Answer),
 
-    ?assert(meck:validate(mochijson2)),
-    ok = meck:unload(mochijson2).
+    ?assert(meck:validate(json_utils)),
+    ok = meck:unload(json_utils).
 
 
 should_modify_details() ->
-    meck:new(mochijson2),
-    meck:expect(mochijson2, encode, fun(parameters) -> <<"body">> end),
+    meck:new(json_utils),
+    meck:expect(json_utils, encode, fun(parameters) -> <<"body">> end),
 
     Answer = gr_providers:modify_details(client, parameters),
     ?assertEqual(ok, Answer),
 
-    ?assert(meck:validate(mochijson2)),
-    ok = meck:unload(mochijson2).
+    ?assert(meck:validate(json_utils)),
+    ok = meck:unload(json_utils).
 
 
 should_check_ip_address() ->
-    meck:new(mochijson2),
-    meck:expect(mochijson2, decode, fun
-        (response_body) -> <<"ipAddress">>
-    end),
+    meck:new(json_utils),
+    meck:expect(json_utils, decode, fun(response_body) -> <<"ipAddress">> end),
 
     Answer = gr_providers:check_ip_address(client),
     ?assertEqual({ok, <<"ipAddress">>}, Answer),
 
-    ?assert(meck:validate(mochijson2)),
-    ok = meck:unload(mochijson2).
+    ?assert(meck:validate(json_utils)),
+    ok = meck:unload(json_utils).
 
 
 should_check_gui_port() ->
-    meck:new(mochijson2),
-    meck:expect(mochijson2, encode, fun
+    meck:new(json_utils),
+    meck:expect(json_utils, encode, fun
         ([{<<"gui">>, <<"https://ipAddress:443/connection_check">>}]) ->
             <<"body">>
     end),
-    meck:expect(mochijson2, decode, fun
-        (response_body, [{format, proplist}]) ->
-            [{<<"https://ipAddress:443/connection_check">>, <<"ok">>}]
+    meck:expect(json_utils, decode, fun(response_body) ->
+        [{<<"https://ipAddress:443/connection_check">>, <<"ok">>}]
     end),
 
     Answer = gr_providers:check_port(client, <<"ipAddress">>, 443, <<"gui">>),
     ?assertEqual(ok, Answer),
 
-    ?assert(meck:validate(mochijson2)),
-    ok = meck:unload(mochijson2).
+    ?assert(meck:validate(json_utils)),
+    ok = meck:unload(json_utils).
 
 
 should_check_rest_port() ->
-    meck:new(mochijson2),
-    meck:expect(mochijson2, encode, fun
-        ([{<<"rest">>, <<"https://ipAddress:8443/rest/latest/connection_check">>}]) ->
-            <<"body">>
+    meck:new(json_utils),
+    meck:expect(json_utils, encode, fun([{<<"rest">>,
+        <<"https://ipAddress:8443/rest/latest/connection_check">>}]) ->
+        <<"body">>
     end),
-    meck:expect(mochijson2, decode, fun
-        (response_body, [{format, proplist}]) ->
-            [{<<"https://ipAddress:8443/rest/latest/connection_check">>, <<"ok">>}]
+    meck:expect(json_utils, decode, fun(response_body) ->
+        [{<<"https://ipAddress:8443/rest/latest/connection_check">>, <<"ok">>}]
     end),
 
     Answer = gr_providers:check_port(client, <<"ipAddress">>, 8443, <<"rest">>),
     ?assertEqual(ok, Answer),
 
-    ?assert(meck:validate(mochijson2)),
-    ok = meck:unload(mochijson2).
+    ?assert(meck:validate(json_utils)),
+    ok = meck:unload(json_utils).
 
 
 should_create_space() ->
-    meck:new(mochijson2),
-    meck:expect(mochijson2, encode, fun(parameters) -> <<"body">> end),
+    meck:new(json_utils),
+    meck:expect(json_utils, encode, fun(parameters) -> <<"body">> end),
 
     Answer = gr_providers:create_space(client, parameters),
     ?assertEqual({ok, <<"spaceId">>}, Answer),
 
-    ?assert(meck:validate(mochijson2)),
-    ok = meck:unload(mochijson2).
+    ?assert(meck:validate(json_utils)),
+    ok = meck:unload(json_utils).
 
 
 should_support_space() ->
-    meck:new(mochijson2),
-    meck:expect(mochijson2, encode, fun(parameters) -> <<"body">> end),
+    meck:new(json_utils),
+    meck:expect(json_utils, encode, fun(parameters) -> <<"body">> end),
 
     Answer = gr_providers:support_space(client, parameters),
     ?assertEqual({ok, <<"spaceId">>}, Answer),
 
-    ?assert(meck:validate(mochijson2)),
-    ok = meck:unload(mochijson2).
+    ?assert(meck:validate(json_utils)),
+    ok = meck:unload(json_utils).
 
 
 should_revoke_space_support() ->
@@ -245,29 +246,33 @@ should_revoke_space_support() ->
 
 
 should_get_spaces() ->
-    meck:new(mochijson2),
-    meck:expect(mochijson2, decode, fun
-        (response_body, [{format, proplist}]) -> [{<<"spaces">>, <<"spaces">>}]
+    meck:new(json_utils),
+    meck:expect(json_utils, decode, fun(response_body) ->
+        [{<<"spaces">>, <<"spaces">>}]
     end),
 
     Answer = gr_providers:get_spaces(client),
     ?assertEqual({ok, <<"spaces">>}, Answer),
 
-    ?assert(meck:validate(mochijson2)),
-    ok = meck:unload(mochijson2).
+    ?assert(meck:validate(json_utils)),
+    ok = meck:unload(json_utils).
 
 
 should_get_space_details() ->
-    meck:new(mochijson2),
-    meck:expect(mochijson2, decode, fun
-        (response_body, [{format, proplist}]) ->
-            [{<<"spaceId">>, <<"spaceId">>}, {<<"name">>, <<"name">>}, {<<"size">>, [{<<"providerId">>, 123}]}]
+    meck:new(json_utils),
+    meck:expect(json_utils, decode, fun(response_body) ->
+        [
+            {<<"spaceId">>, <<"spaceId">>},
+            {<<"name">>, <<"name">>},
+            {<<"size">>, [{<<"providerId">>, 123}]}
+        ]
     end),
 
     Answer = gr_providers:get_space_details(client, <<"spaceId">>),
-    ?assertEqual({ok, #space_details{id = <<"spaceId">>, name = <<"name">>, size = [{<<"providerId">>, 123}]}}, Answer),
+    ?assertEqual({ok, #space_details{id = <<"spaceId">>,
+        name = <<"name">>, size = [{<<"providerId">>, 123}]}}, Answer),
 
-    ?assert(meck:validate(mochijson2)),
-    ok = meck:unload(mochijson2).
+    ?assert(meck:validate(json_utils)),
+    ok = meck:unload(json_utils).
 
 -endif.
