@@ -14,7 +14,7 @@
 
 -include_lib("eunit/include/eunit.hrl").
 
--export([encode_proplist_test/0]).
+-export([encode_proplist_test/0, decode_test/0]).
 
 encode_proplist_test() ->
     Proplist = [{first, <<"first">>}, {second, <<"second">>}],
