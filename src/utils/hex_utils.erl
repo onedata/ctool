@@ -38,7 +38,7 @@
 -export([to_hex/1, to_bin/1, to_int/1, dehex/1, hexdigit/1]).
 
 %% @doc Convert an iolist to a hexadecimal string.
--spec to_hex(integer | iolist()) -> string().
+-spec to_hex(integer() | iolist()) -> string().
 to_hex(0) ->
     "0";
 to_hex(I) when is_integer(I), I > 0 ->
