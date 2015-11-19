@@ -18,6 +18,7 @@
     random_element/1, get_host/1, get_host_as_atom/1, cmd/1]).
 -export([seconds_diff/2, milliseconds_diff/2, microseconds_diff/2]).
 -export([duration/1, adjust_duration/2]).
+-export([mkdtemp/0, mkdtemp/3, rmtempdir/1]).
 
 -type time_unit() :: us | ms | s | min | h.
 
@@ -253,6 +254,35 @@ adjust_duration(Duration, Unit) ->
         true -> adjust_duration(Duration / Factor, NextUnit);
         _ -> {Duration, atom_to_list(Unit)}
     end.
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Creates a temporary dir (with any name) and returns its path.
+%% @end
+%%--------------------------------------------------------------------
+-spec mkdtemp() ->    DirPath :: list().
+mkdtemp() ->
+    mochitemp:mkdtemp().
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Creates a temporary dir (with given location and name) and returns its path.
+%% @end
+%%--------------------------------------------------------------------
+mkdtemp(Suffix, Prefix, Dir) ->
+    mochitemp:mkdtemp(Suffix, Prefix, Dir).
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Removes a temporary dir.
+%% @end
+%%--------------------------------------------------------------------
+rmtempdir(Dir) ->
+    mochitemp:rmtempdir(Dir).
+
 
 %%%===================================================================
 %%% Internal functions
