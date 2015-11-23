@@ -17,6 +17,10 @@
 -export([noauth_request/3, noauth_request/4, noauth_request/5,
     noauth_request/6]).
 
+% Options for creating hackney pools (pools of keep-alive connections)
+-define(CONNECTION_POOL_SIZE, 50).
+-define(CONNECTION_TIMEOUT, 150000).
+
 %% Uniform Resource Name -
 %% for more details see: http://pl.wikipedia.org/wiki/Uniform_Resource_Name
 -type urn() :: string().
@@ -26,7 +30,7 @@
 -type body() :: binary().
 -type options() :: http_client:opts().
 -type response() :: {ok, Status :: integer(), ResponseHeaders :: headers(),
-ResponseBody :: body()} | {error, Reason :: term()}.
+    ResponseBody :: body()} | {error, Reason :: term()}.
 -type params() :: [{Key :: binary(), Value :: binary()}].
 
 %% Global Registry gr_endpoint:client()
@@ -140,6 +144,7 @@ noauth_request({Type, Macaroons}, URN, Method, Headers, Body, Options)
     AuthHeaders = prepare_auth_headers(Macaroons),
     do_noauth_request(URN, Method, AuthHeaders ++ Headers, Body, Options).
 
+
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
@@ -151,11 +156,16 @@ noauth_request({Type, Macaroons}, URN, Method, Headers, Body, Options)
 %%--------------------------------------------------------------------
 -spec do_auth_request(URN :: urn(), Method :: method(), Headers :: headers(),
     Body :: body(), Options :: options()) -> response().
-do_auth_request(URN, Method, Headers, Body, Options) ->
+do_auth_request(URN, Method, Headers, Body, Opts) ->
     KeyPath = apply(gr_plugin, get_key_path, []),
     CertPath = apply(gr_plugin, get_cert_path, []),
-    SSLOptions = {ssl_options, [{keyfile, KeyPath}, {certfile, CertPath}]},
-    do_noauth_request(URN, Method, Headers, Body, [SSLOptions | Options]).
+    SSLOpts = {ssl_options, [{keyfile, KeyPath}, {certfile, CertPath}]},
+    % Use a pool of connections (the same for all auth requests)
+    % start_pool will just return ok if the pool exists
+    ok = hackney_pool:start_pool(auth, [
+        {timeout, ?CONNECTION_TIMEOUT}, {max_connections, ?CONNECTION_POOL_SIZE}
+    ]),
+    do_request(URN, Method, Headers, Body, [SSLOpts, {pool, auth} | Opts]).
 
 
 %%--------------------------------------------------------------------
@@ -165,7 +175,22 @@ do_auth_request(URN, Method, Headers, Body, Options) ->
 %%--------------------------------------------------------------------
 -spec do_noauth_request(URN :: urn(), Method :: method(), ReqHdrs :: headers(),
     Body :: body(), Options :: [term()]) -> response().
-do_noauth_request(URN, Method, ReqHeaders, ReqBody, Options) ->
+do_noauth_request(URN, Method, Headers, Body, Opts) ->
+    % Use a pool of connections (the same for all noauth requests)
+    % start_pool will just return ok if the pool exists
+    ok = hackney_pool:start_pool(no_auth, [
+        {timeout, ?CONNECTION_TIMEOUT}, {max_connections, ?CONNECTION_POOL_SIZE}
+    ]),
+    do_request(URN, Method, Headers, Body, [{pool, no_auth} | Opts]).
+
+
+%%--------------------------------------------------------------------
+%% @doc Sends request to Global Registry using REST API with given params.
+%% @end
+%%--------------------------------------------------------------------
+-spec do_noauth_request(URN :: urn(), Method :: method(), ReqHdrs :: headers(),
+    Body :: body(), Options :: [term()]) -> response().
+do_request(URN, Method, ReqHeaders, ReqBody, Options) ->
     Opts = case application:get_env(ctool, verify_gr_cert) of
                {ok, false} -> [insecure | Options];
                _ -> Options
