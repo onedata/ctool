@@ -173,8 +173,8 @@ do_auth_request(URN, Method, Headers, Body, Opts) ->
 %% Request is not authenticated with provider certificate.
 %% @end
 %%--------------------------------------------------------------------
--spec do_noauth_request(URN :: urn(), Method :: method(), ReqHdrs :: headers(),
-    Body :: body(), Options :: [term()]) -> response().
+-spec do_noauth_request(URN :: urn(), Method :: method(), Headers :: headers(),
+    Body :: body(), Options :: options()) -> response().
 do_noauth_request(URN, Method, Headers, Body, Opts) ->
     % Use a pool of connections (the same for all noauth requests)
     % start_pool will just return ok if the pool exists
@@ -188,16 +188,18 @@ do_noauth_request(URN, Method, Headers, Body, Opts) ->
 %% @doc Sends request to Global Registry using REST API with given params.
 %% @end
 %%--------------------------------------------------------------------
--spec do_request(URN :: urn(), Method :: method(), ReqHdrs :: headers(),
-    Body :: body(), Options :: [term()]) -> response().
-do_request(URN, Method, ReqHeaders, ReqBody, Options) ->
+-spec do_request(URN :: urn(), Method :: method(), Headers :: headers(),
+    Body :: body(), Options :: options()) -> response().
+do_request(URN, Method, Headers, Body, Options) ->
     Opts = case application:get_env(ctool, verify_gr_cert) of
                {ok, false} -> [insecure | Options];
                _ -> Options
            end,
-    NewHeaders = [{<<"content-type">>, <<"application/json">>} | ReqHeaders],
+    NewHeaders = [{<<"content-type">>, <<"application/json">>} | Headers],
     URL = gr_plugin:get_gr_url() ++ URN,
-    http_client:request(Method, URL, NewHeaders, ReqBody, Opts).
+%%     http_client:request(Method, URL, NewHeaders, Body, Opts).
+    http_client:request(Method, URL, NewHeaders, Body, Opts).
+
 
 
 %%--------------------------------------------------------------------
