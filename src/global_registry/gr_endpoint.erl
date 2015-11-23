@@ -165,7 +165,7 @@ do_auth_request(URN, Method, Headers, Body, Opts) ->
     ok = hackney_pool:start_pool(auth, [
         {timeout, ?CONNECTION_TIMEOUT}, {max_connections, ?CONNECTION_POOL_SIZE}
     ]),
-    do_request(URN, Method, Headers, Body, [SSLOpts, {pool, auth} | Opts]).
+    do_request(URN, Method, Headers, Body, [{pool, auth}, SSLOpts | Opts]).
 
 
 %%--------------------------------------------------------------------
@@ -188,7 +188,7 @@ do_noauth_request(URN, Method, Headers, Body, Opts) ->
 %% @doc Sends request to Global Registry using REST API with given params.
 %% @end
 %%--------------------------------------------------------------------
--spec do_noauth_request(URN :: urn(), Method :: method(), ReqHdrs :: headers(),
+-spec do_request(URN :: urn(), Method :: method(), ReqHdrs :: headers(),
     Body :: body(), Options :: [term()]) -> response().
 do_request(URN, Method, ReqHeaders, ReqBody, Options) ->
     Opts = case application:get_env(ctool, verify_gr_cert) of

@@ -97,6 +97,11 @@ teardown(_) ->
 %%%===================================================================
 
 should_send_provider_request_1() ->
+    meck:new(hackney_pool),
+    meck:expect(hackney_pool, start_pool, fun
+        (auth, _) -> ok;
+        (no_auth, _) -> ok
+    end),
     meck:new(http_client),
     meck:expect(http_client, request, fun
         (
@@ -104,14 +109,17 @@ should_send_provider_request_1() ->
             "URL/URN",
             [?CONTENT_TYPE_HEADER],
             <<>>,
-            []
+            [{pool, no_auth}]
         ) -> ok;
         (
             method,
             "URL/URN",
             [?CONTENT_TYPE_HEADER],
             <<>>,
-            [{ssl_options, [{keyfile, key_path}, {certfile, cert_path}]}]
+            [
+                {pool, auth},
+                {ssl_options, [{keyfile, key_path}, {certfile, cert_path}]}
+            ]
         ) -> ok
     end),
 
@@ -124,11 +132,18 @@ should_send_provider_request_1() ->
     ?assertEqual(ok, gr_endpoint:noauth_request(
         {try_user, undefined}, "URN", method)),
 
+    ?assert(meck:validate(hackney_pool)),
     ?assert(meck:validate(http_client)),
-    ok = meck:unload(http_client).
+    ok = meck:unload(http_client),
+    ok = meck:unload(hackney_pool).
 
 
 should_send_provider_request_2() ->
+    meck:new(hackney_pool),
+    meck:expect(hackney_pool, start_pool, fun
+        (auth, _) -> ok;
+        (no_auth, _) -> ok
+    end),
     meck:new(http_client),
     meck:expect(http_client, request, fun
         (
@@ -136,14 +151,17 @@ should_send_provider_request_2() ->
             "URL/URN",
             [?CONTENT_TYPE_HEADER],
             body,
-            []
+            [{pool, no_auth}]
         ) -> ok;
         (
             method,
             "URL/URN",
             [?CONTENT_TYPE_HEADER],
             body,
-            [{ssl_options, [{keyfile, key_path}, {certfile, cert_path}]}]
+            [
+                {pool, auth},
+                {ssl_options, [{keyfile, key_path}, {certfile, cert_path}]}
+            ]
         ) -> ok
     end),
 
@@ -156,11 +174,18 @@ should_send_provider_request_2() ->
     ?assertEqual(ok, gr_endpoint:noauth_request(
         {try_user, undefined}, "URN", method, body)),
 
+    ?assert(meck:validate(hackney_pool)),
     ?assert(meck:validate(http_client)),
-    ok = meck:unload(http_client).
+    ok = meck:unload(http_client),
+    ok = meck:unload(hackney_pool).
 
 
 should_send_provider_request_3() ->
+    meck:new(hackney_pool),
+    meck:expect(hackney_pool, start_pool, fun
+        (auth, _) -> ok;
+        (no_auth, _) -> ok
+    end),
     meck:new(http_client),
     meck:expect(http_client, request, fun
         (
@@ -168,14 +193,18 @@ should_send_provider_request_3() ->
             "URL/URN",
             [?CONTENT_TYPE_HEADER],
             body,
-            [options]
+            [{pool, no_auth}, options]
         ) -> ok;
         (
             method,
             "URL/URN",
             [?CONTENT_TYPE_HEADER],
             body,
-            [{ssl_options, [{keyfile, key_path}, {certfile, cert_path}]}, options]
+            [
+                {pool, auth},
+                {ssl_options, [{keyfile, key_path}, {certfile, cert_path}]},
+                options
+            ]
         ) -> ok
     end),
 
@@ -188,11 +217,18 @@ should_send_provider_request_3() ->
     ?assertEqual(ok, gr_endpoint:noauth_request(
         {try_user, undefined}, "URN", method, body, [options])),
 
+    ?assert(meck:validate(hackney_pool)),
     ?assert(meck:validate(http_client)),
-    ok = meck:unload(http_client).
+    ok = meck:unload(http_client),
+    ok = meck:unload(hackney_pool).
 
 
 should_send_provider_request_4() ->
+    meck:new(hackney_pool),
+    meck:expect(hackney_pool, start_pool, fun
+        (auth, _) -> ok;
+        (no_auth, _) -> ok
+    end),
     meck:new(http_client),
     meck:expect(http_client, request, fun
         (
@@ -200,31 +236,42 @@ should_send_provider_request_4() ->
             "URL/URN",
             [?CONTENT_TYPE_HEADER, headers],
             body,
-            [opts]
+            [{pool, no_auth}, options]
         ) -> ok;
         (
             method,
             "URL/URN",
             [?CONTENT_TYPE_HEADER, headers],
             body,
-            [{ssl_options, [{keyfile, key_path}, {certfile, cert_path}]}, opts]
+            [
+                {pool, auth},
+                {ssl_options, [{keyfile, key_path}, {certfile, cert_path}]},
+                options
+            ]
         ) -> ok
     end),
 
     ?assertEqual(ok, gr_endpoint:auth_request(
-        provider, "URN", method, [headers], body, [opts])),
+        provider, "URN", method, [headers], body, [options])),
     ?assertEqual(ok, gr_endpoint:noauth_request(
-        provider, "URN", method, [headers], body, [opts])),
+        provider, "URN", method, [headers], body, [options])),
     ?assertEqual(ok, gr_endpoint:auth_request(
-        {try_user, undefined}, "URN", method, [headers], body, [opts])),
+        {try_user, undefined}, "URN", method, [headers], body, [options])),
     ?assertEqual(ok, gr_endpoint:noauth_request(
-        {try_user, undefined}, "URN", method, [headers], body, [opts])),
+        {try_user, undefined}, "URN", method, [headers], body, [options])),
 
+    ?assert(meck:validate(hackney_pool)),
     ?assert(meck:validate(http_client)),
-    ok = meck:unload(http_client).
+    ok = meck:unload(http_client),
+    ok = meck:unload(hackney_pool).
 
 
 should_send_user_request_1() ->
+    meck:new(hackney_pool),
+    meck:expect(hackney_pool, start_pool, fun
+        (auth, _) -> ok;
+        (no_auth, _) -> ok
+    end),
     meck:new(http_client),
     meck:expect(http_client, request, fun
         (
@@ -232,14 +279,17 @@ should_send_user_request_1() ->
             "URL/URN",
             [?CONTENT_TYPE_HEADER, ?MACAROON_HEADER, ?DISCH_MACAROONS_HEADER],
             <<>>,
-            []
+            [{pool, no_auth}]
         ) -> ok;
         (
             method,
             "URL/URN",
             [?CONTENT_TYPE_HEADER, ?MACAROON_HEADER, ?DISCH_MACAROONS_HEADER],
             <<>>,
-            [{ssl_options, [{keyfile, key_path}, {certfile, cert_path}]}]
+            [
+                {pool, auth},
+                {ssl_options, [{keyfile, key_path}, {certfile, cert_path}]}
+            ]
         ) -> ok
     end),
 
@@ -252,11 +302,18 @@ should_send_user_request_1() ->
     ?assertEqual(ok, gr_endpoint:noauth_request(
         {try_user, {?MACAROON, ?DISCH_MACAROONS}}, "URN", method)),
 
+    ?assert(meck:validate(hackney_pool)),
     ?assert(meck:validate(http_client)),
-    ok = meck:unload(http_client).
+    ok = meck:unload(http_client),
+    ok = meck:unload(hackney_pool).
 
 
 should_send_user_request_2() ->
+    meck:new(hackney_pool),
+    meck:expect(hackney_pool, start_pool, fun
+        (auth, _) -> ok;
+        (no_auth, _) -> ok
+    end),
     meck:new(http_client),
     meck:expect(http_client, request, fun
         (
@@ -264,14 +321,17 @@ should_send_user_request_2() ->
             "URL/URN",
             [?CONTENT_TYPE_HEADER, ?MACAROON_HEADER, ?DISCH_MACAROONS_HEADER],
             body,
-            []
+            [{pool, no_auth}]
         ) -> ok;
         (
             method,
             "URL/URN",
             [?CONTENT_TYPE_HEADER, ?MACAROON_HEADER, ?DISCH_MACAROONS_HEADER],
             body,
-            [{ssl_options, [{keyfile, key_path}, {certfile, cert_path}]}]
+            [
+                {pool, auth},
+                {ssl_options, [{keyfile, key_path}, {certfile, cert_path}]}
+            ]
         ) -> ok
     end),
 
@@ -284,11 +344,18 @@ should_send_user_request_2() ->
     ?assertEqual(ok, gr_endpoint:noauth_request(
         {try_user, {?MACAROON, ?DISCH_MACAROONS}}, "URN", method, body)),
 
+    ?assert(meck:validate(hackney_pool)),
     ?assert(meck:validate(http_client)),
-    ok = meck:unload(http_client).
+    ok = meck:unload(http_client),
+    ok = meck:unload(hackney_pool).
 
 
 should_send_user_request_3() ->
+    meck:new(hackney_pool),
+    meck:expect(hackney_pool, start_pool, fun
+        (auth, _) -> ok;
+        (no_auth, _) -> ok
+    end),
     meck:new(http_client),
     meck:expect(http_client, request, fun
         (
@@ -296,14 +363,18 @@ should_send_user_request_3() ->
             "URL/URN",
             [?CONTENT_TYPE_HEADER, ?MACAROON_HEADER, ?DISCH_MACAROONS_HEADER],
             body,
-            [opts]
+            [{pool, no_auth}, opts]
         ) -> ok;
         (
             mthd,
             "URL/URN",
             [?CONTENT_TYPE_HEADER, ?MACAROON_HEADER, ?DISCH_MACAROONS_HEADER],
             body,
-            [{ssl_options, [{keyfile, key_path}, {certfile, cert_path}]}, opts]
+            [
+                {pool, auth},
+                {ssl_options, [{keyfile, key_path}, {certfile, cert_path}]},
+                opts
+            ]
         ) -> ok
     end),
 
@@ -316,11 +387,18 @@ should_send_user_request_3() ->
     ?assertEqual(ok, gr_endpoint:noauth_request(
         {try_user, {?MACAROON, ?DISCH_MACAROONS}}, "URN", mthd, body, [opts])),
 
+    ?assert(meck:validate(hackney_pool)),
     ?assert(meck:validate(http_client)),
-    ok = meck:unload(http_client).
+    ok = meck:unload(http_client),
+    ok = meck:unload(hackney_pool).
 
 
 should_send_user_request_4() ->
+    meck:new(hackney_pool),
+    meck:expect(hackney_pool, start_pool, fun
+        (auth, _) -> ok;
+        (no_auth, _) -> ok
+    end),
     meck:new(http_client),
     meck:expect(http_client, request, fun
         (
@@ -329,7 +407,7 @@ should_send_user_request_4() ->
             [?CONTENT_TYPE_HEADER, ?MACAROON_HEADER, ?DISCH_MACAROONS_HEADER,
                 headers],
             body,
-            [options]
+            [{pool, no_auth}, options]
         ) -> ok;
         (
             method,
@@ -337,7 +415,11 @@ should_send_user_request_4() ->
             [?CONTENT_TYPE_HEADER, ?MACAROON_HEADER, ?DISCH_MACAROONS_HEADER,
                 headers],
             body,
-            [{ssl_options, [{keyfile, key_path}, {certfile, cert_path}]}, options]
+            [
+                {pool, auth},
+                {ssl_options, [{keyfile, key_path}, {certfile, cert_path}]},
+                options
+            ]
         ) -> ok
     end),
 
@@ -354,7 +436,9 @@ should_send_user_request_4() ->
         {try_user, {?MACAROON, ?DISCH_MACAROONS}}, "URN", method,
         [headers], body, [options])),
 
+    ?assert(meck:validate(hackney_pool)),
     ?assert(meck:validate(http_client)),
-    ok = meck:unload(http_client).
+    ok = meck:unload(http_client),
+    ok = meck:unload(hackney_pool).
 
 -endif.
