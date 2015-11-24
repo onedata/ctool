@@ -160,12 +160,7 @@ do_auth_request(URN, Method, Headers, Body, Opts) ->
     KeyPath = apply(gr_plugin, get_key_path, []),
     CertPath = apply(gr_plugin, get_cert_path, []),
     SSLOpts = {ssl_options, [{keyfile, KeyPath}, {certfile, CertPath}]},
-    % Use a pool of connections (the same for all auth requests)
-    % start_pool will just return ok if the pool exists
-    ok = hackney_pool:start_pool(auth, [
-        {timeout, ?CONNECTION_TIMEOUT}, {max_connections, ?CONNECTION_POOL_SIZE}
-    ]),
-    do_request(URN, Method, Headers, Body, [{pool, auth}, SSLOpts | Opts]).
+    do_noauth_request(URN, Method, Headers, Body, [SSLOpts | Opts]).
 
 
 %%--------------------------------------------------------------------
@@ -175,31 +170,14 @@ do_auth_request(URN, Method, Headers, Body, Opts) ->
 %%--------------------------------------------------------------------
 -spec do_noauth_request(URN :: urn(), Method :: method(), Headers :: headers(),
     Body :: body(), Options :: options()) -> response().
-do_noauth_request(URN, Method, Headers, Body, Opts) ->
-    % Use a pool of connections (the same for all noauth requests)
-    % start_pool will just return ok if the pool exists
-    ok = hackney_pool:start_pool(no_auth, [
-        {timeout, ?CONNECTION_TIMEOUT}, {max_connections, ?CONNECTION_POOL_SIZE}
-    ]),
-    do_request(URN, Method, Headers, Body, [{pool, no_auth} | Opts]).
-
-
-%%--------------------------------------------------------------------
-%% @doc Sends request to Global Registry using REST API with given params.
-%% @end
-%%--------------------------------------------------------------------
--spec do_request(URN :: urn(), Method :: method(), Headers :: headers(),
-    Body :: body(), Options :: options()) -> response().
-do_request(URN, Method, Headers, Body, Options) ->
+do_noauth_request(URN, Method, Headers, Body, Options) ->
     Opts = case application:get_env(ctool, verify_gr_cert) of
                {ok, false} -> [insecure | Options];
                _ -> Options
            end,
     NewHeaders = [{<<"content-type">>, <<"application/json">>} | Headers],
     URL = gr_plugin:get_gr_url() ++ URN,
-%%     http_client:request(Method, URL, NewHeaders, Body, Opts).
     http_client:request(Method, URL, NewHeaders, Body, Opts).
-
 
 
 %%--------------------------------------------------------------------
