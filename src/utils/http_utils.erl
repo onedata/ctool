@@ -131,7 +131,8 @@ base64url_decode(Data) ->
 %% @end
 %% @end
 %%--------------------------------------------------------------------
--spec proplist_to_url_params([{binary(), binary()} | {binary(), binary(), no_encode}]) ->
+-spec proplist_to_url_params(
+    [{binary(), binary()} | {binary(), binary(), no_encode}]) ->
     binary().
 proplist_to_url_params(List) ->
     lists:foldl(
