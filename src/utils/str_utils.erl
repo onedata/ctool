@@ -70,7 +70,9 @@ join_binary([Head | Tail], Sep) ->
 %% @doc Converts a unicode list to utf8 binary.
 %% @end
 %%--------------------------------------------------------------------
--spec unicode_list_to_binary(String :: string()) -> binary().
+-spec unicode_list_to_binary(String :: string() | binary()) -> binary().
+unicode_list_to_binary(Binary) when is_binary(Binary) ->
+    Binary;
 unicode_list_to_binary(String) ->
     unicode:characters_to_binary(String).
 
@@ -79,7 +81,9 @@ unicode_list_to_binary(String) ->
 %% @doc Converts a utf8 binary to unicode list.
 %% @end
 %%--------------------------------------------------------------------
--spec binary_to_unicode_list(Binary :: binary()) -> string().
+-spec binary_to_unicode_list(Binary :: binary() | string()) -> string().
+binary_to_unicode_list(String) when is_list(String) ->
+    String;
 binary_to_unicode_list(Binary) ->
     unicode:characters_to_list(Binary).
 
