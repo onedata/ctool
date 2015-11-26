@@ -19,6 +19,9 @@
 % String formatting
 -export([format/2, format_bin/2]).
 
+% File path manipulation
+-export([ensure_path_ends_with_slash/1]).
+
 %%%===================================================================
 %%% API
 %%%===================================================================
@@ -97,3 +100,18 @@ format(Format, Args) ->
 -spec format_bin(Format :: string(), Args :: [term()]) -> binary().
 format_bin(Format, Args) ->
     to_binary(format(Format, Args)).
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Appends '/' to the end of filepath if last character is different
+%% @end
+%%--------------------------------------------------------------------
+-spec ensure_path_ends_with_slash(binary()) -> binary().
+ensure_path_ends_with_slash(<<"">>) ->
+    <<"/">>;
+ensure_path_ends_with_slash(Path) ->
+    case binary:last(Path) of
+        $/ -> Path;
+        _ -> <<Path/binary, "/">>
+    end.
