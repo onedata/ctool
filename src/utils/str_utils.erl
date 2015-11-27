@@ -20,7 +20,7 @@
 -export([format/2, format_bin/2]).
 
 % File path manipulation
--export([ensure_path_ends_with_slash/1]).
+-export([ensure_ends_with_slash/1]).
 
 %%%===================================================================
 %%% API
@@ -111,10 +111,10 @@ format_bin(Format, Args) ->
 %% Appends '/' to the end of filepath if last character is different
 %% @end
 %%--------------------------------------------------------------------
--spec ensure_path_ends_with_slash(binary()) -> binary().
-ensure_path_ends_with_slash(<<"">>) ->
+-spec ensure_ends_with_slash(binary()) -> binary().
+ensure_ends_with_slash(<<"">>) ->
     <<"/">>;
-ensure_path_ends_with_slash(Path) ->
+ensure_ends_with_slash(Path) ->
     case binary:last(Path) of
         $/ -> Path;
         _ -> <<Path/binary, "/">>
