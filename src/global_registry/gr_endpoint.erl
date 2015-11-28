@@ -17,10 +17,6 @@
 -export([noauth_request/3, noauth_request/4, noauth_request/5,
     noauth_request/6]).
 
-% Options for creating hackney pools (pools of keep-alive connections)
--define(CONNECTION_POOL_SIZE, 50).
--define(CONNECTION_TIMEOUT, 150000).
-
 %% Uniform Resource Name -
 %% for more details see: http://pl.wikipedia.org/wiki/Uniform_Resource_Name
 -type urn() :: string().
