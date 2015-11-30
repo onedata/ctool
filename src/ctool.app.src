@@ -18,18 +18,17 @@
         kernel,
         stdlib,
         lager,
-        ibrowse,
+        % Web client will start ssl2 and hackney
+        web_client,
         cowboy,
         gproc
         % n2o, erlydtl and macaroons are not listed here, because we do not want them to start as applications
     ]},
 
     {env, [
-        % Secure (HTTPS) connections:
-        % Path to .pem or .crt file containing CA certs installed on the system
-        {root_cacert_file, '/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem'},
-        % The env below decides if the server certificates will be checked against ca bundle during every secure connection
-        {verify_server_cert, true},
+        % The env below decides if the GR certificate should be verified
+        % during REST calls
+        {verify_gr_cert, true},
 
         % ==================================
 

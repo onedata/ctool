@@ -68,7 +68,7 @@ wire(Action) ->
 %%--------------------------------------------------------------------
 -spec wire(Script :: string() | binary() | #api{} | #alert{} | #confirm{}, Eager :: boolean()) -> ok.
 wire(Script, Eager) when is_binary(Script) ->
-    wire(gui_str:to_list(Script), Eager);
+    wire(str_utils:to_list(Script), Eager);
 
 wire(Action, Eager) ->
     Actions = case get(actions) of undefined -> []; E -> E end,
@@ -103,7 +103,7 @@ wire(TargetID, Method, Args, Eager) ->
 %%--------------------------------------------------------------------
 -spec postback_action(TriggerID :: binary(), Postback :: term()) -> #event{}.
 postback_action(TriggerID, Postback) ->
-    #event{type = "click", postback = Postback, target = gui_str:to_list(TriggerID)}.
+    #event{type = "click", postback = Postback, target = str_utils:to_list(TriggerID)}.
 
 %%--------------------------------------------------------------------
 %% @doc Returns action records that can be assigned to actions field of an element.
@@ -115,9 +115,9 @@ postback_action(TriggerID, Postback) ->
     Sources :: binary() | [binary()]) -> #event{}.
 form_submit_action(TriggerID, Postback, SourcesArg) ->
     Sources = lists:map(fun(Source) ->
-        gui_str:to_list(Source)
+        str_utils:to_list(Source)
     end, lists:flatten([SourcesArg])),
-    #event{type = "click", postback = Postback, target = gui_str:to_list(TriggerID), source = Sources}.
+    #event{type = "click", postback = Postback, target = str_utils:to_list(TriggerID), source = Sources}.
 
 %%--------------------------------------------------------------------
 %% @doc Redirects to given page.
@@ -225,7 +225,7 @@ bind_element_click(InputID, Javascript) ->
 %%--------------------------------------------------------------------
 -spec update(TargetID :: binary(), Content :: term()) -> ok.
 update(TargetID, Elements) ->
-    RenderedElements = gui_str:js_escape(wf:render(Elements)),
+    RenderedElements = http_utils:js_escape(wf:render(Elements)),
     wire(TargetID, <<"html">>, RenderedElements, true).
 
 %%--------------------------------------------------------------------
@@ -234,7 +234,7 @@ update(TargetID, Elements) ->
 %%--------------------------------------------------------------------
 -spec replace(TargetID :: binary(), Content :: term()) -> ok.
 replace(TargetID, Elements) ->
-    RenderedElements = gui_str:js_escape(wf:render(Elements)),
+    RenderedElements = http_utils:js_escape(wf:render(Elements)),
     wire(TargetID, <<"replaceWith">>, RenderedElements, true).
 
 %%--------------------------------------------------------------------
@@ -243,7 +243,7 @@ replace(TargetID, Elements) ->
 %%--------------------------------------------------------------------
 -spec insert_top(TargetID :: binary(), Content :: term()) -> ok.
 insert_top(TargetID, Elements) ->
-    RenderedElements = gui_str:js_escape(wf:render(Elements)),
+    RenderedElements = http_utils:js_escape(wf:render(Elements)),
     wire(TargetID, <<"prepend">>, RenderedElements, true).
 
 %%--------------------------------------------------------------------
@@ -252,7 +252,7 @@ insert_top(TargetID, Elements) ->
 %%--------------------------------------------------------------------
 -spec insert_bottom(TargetID :: binary(), Content :: term()) -> ok.
 insert_bottom(TargetID, Elements) ->
-    RenderedElements = gui_str:js_escape(wf:render(Elements)),
+    RenderedElements = http_utils:js_escape(wf:render(Elements)),
     wire(TargetID, <<"append">>, RenderedElements, true).
 
 %%--------------------------------------------------------------------
@@ -261,7 +261,7 @@ insert_bottom(TargetID, Elements) ->
 %%--------------------------------------------------------------------
 -spec insert_before(TargetID :: binary(), Content :: term()) -> ok.
 insert_before(TargetID, Elements) ->
-    RenderedElements = gui_str:js_escape(wf:render(Elements)),
+    RenderedElements = http_utils:js_escape(wf:render(Elements)),
     wire(TargetID, <<"before">>, RenderedElements, true).
 
 %%--------------------------------------------------------------------
@@ -270,7 +270,7 @@ insert_before(TargetID, Elements) ->
 %%--------------------------------------------------------------------
 -spec insert_after(TargetID :: binary(), Content :: term()) -> ok.
 insert_after(TargetID, Elements) ->
-    RenderedElements = gui_str:js_escape(wf:render(Elements)),
+    RenderedElements = http_utils:js_escape(wf:render(Elements)),
     wire(TargetID, <<"after">>, RenderedElements, true).
 
 %%--------------------------------------------------------------------

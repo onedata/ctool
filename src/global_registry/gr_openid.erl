@@ -15,9 +15,12 @@
 -include("global_registry/gr_openid.hrl").
 
 %% API
--export([get_client_tokens/1, revoke_client_token/2, modify_client_token_details/3]).
--export([get_provider_tokens/1, revoke_provider_token/2, modify_provider_token_details/3]).
--export([get_client_authorization_code/1, verify_client/2, get_token_response/2]).
+-export([get_client_tokens/1, revoke_client_token/2,
+    modify_client_token_details/3]).
+-export([get_provider_tokens/1, revoke_provider_token/2,
+    modify_provider_token_details/3]).
+-export([get_client_authorization_code/1, verify_client/2,
+    get_token_response/2]).
 
 %%%===================================================================
 %%% API
@@ -37,8 +40,8 @@ get_client_tokens(Client) ->
 %% @doc Revokes gr_endpoint:client()'s token validity.
 %% @end
 %%--------------------------------------------------------------------
--spec revoke_client_token(Client :: gr_endpoint:client(), AccessId :: binary()) ->
-    ok | {error, Reason :: term()}.
+-spec revoke_client_token(Client :: gr_endpoint:client(),
+    AccessId :: binary()) -> ok | {error, Reason :: term()}.
 revoke_client_token(Client, AccessId) ->
     URN = "/openid/client/tokens/" ++ binary_to_list(AccessId),
     revoke_token(Client, URN).
@@ -49,7 +52,7 @@ revoke_client_token(Client, AccessId) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec modify_client_token_details(Client :: gr_endpoint:client(),
-    AccessId :: binary(), Parameters :: gr_endpoint:parameters()) ->
+    AccessId :: binary(), Parameters :: gr_endpoint:params()) ->
     ok | {error, Reason :: term()}.
 modify_client_token_details(Client, AccessId, Parameters) ->
     URN = "/openid/client/tokens/" ++ binary_to_list(AccessId),
@@ -69,8 +72,8 @@ get_provider_tokens(Client) ->
 %% @doc Revokes provider's token validity.
 %% @end
 %%--------------------------------------------------------------------
--spec revoke_provider_token(Client :: gr_endpoint:client(), AccessId :: binary()) ->
-    ok | {error, Reason :: term()}.
+-spec revoke_provider_token(Client :: gr_endpoint:client(),
+    AccessId :: binary()) -> ok | {error, Reason :: term()}.
 revoke_provider_token(Client, AccessId) ->
     URN = "/openid/provider/tokens/" ++ binary_to_list(AccessId),
     revoke_token(Client, URN).
@@ -81,7 +84,7 @@ revoke_provider_token(Client, AccessId) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec modify_provider_token_details(Client :: gr_endpoint:client(),
-    AccessId :: binary(), Parameters :: gr_endpoint:parameters()) ->
+    AccessId :: binary(), Parameters :: gr_endpoint:params()) ->
     ok | {error, Reason :: term()}.
 modify_provider_token_details(Client, AccessId, Parameters) ->
     URN = "/openid/provider/tokens/" ++ binary_to_list(AccessId),
@@ -96,29 +99,29 @@ modify_provider_token_details(Client, AccessId, Parameters) ->
 get_client_authorization_code(Client) ->
     ?run(fun() ->
         URN = "/openid/client/authorization_code",
-        {ok, "200", _ResponseHeaders, ResponseBody} =
+        {ok, 200, _ResponseHeaders, ResponseBody} =
             gr_endpoint:auth_request(Client, URN, get),
-        Proplist = mochijson2:decode(ResponseBody, [{format, proplist}]),
-        AuthorizationCode = proplists:get_value(<<"authorizationCode">>, Proplist),
-        {ok, AuthorizationCode}
+        Proplist = json_utils:decode(ResponseBody),
+        AuthZCode = proplists:get_value(<<"authorizationCode">>, Proplist),
+        {ok, AuthZCode}
     end).
 
 %%--------------------------------------------------------------------
 %% @doc Verifies gr_endpoint:client() identity in Global Registry.
-%% Parameters should contain: "userId" of gr_endpoint:client() to be verified and
-%% associated with gr_endpoint:client() "secret" token.
+%% Parameters should contain: "userId" of gr_endpoint:client()
+%% to be verified and associated with gr_endpoint:client() "secret" token.
 %% @end
 %%--------------------------------------------------------------------
 -spec verify_client(Client :: gr_endpoint:client(),
-    Parameters :: gr_endpoint:parameters()) ->
+    Parameters :: gr_endpoint:params()) ->
     {ok, VerifyStatus :: boolean()} | {error, Reason :: term()}.
 verify_client(Client, Parameters) ->
     ?run(fun() ->
         URN = "/openid/client/verify",
-        Body = iolist_to_binary(mochijson2:encode(Parameters)),
-        {ok, "200", _ResponseHeaders, ResponseBody} =
+        Body = json_utils:encode(Parameters),
+        {ok, 200, _ResponseHeaders, ResponseBody} =
             gr_endpoint:auth_request(Client, URN, post, Body),
-        Proplist = mochijson2:decode(ResponseBody, [{format, proplist}]),
+        Proplist = json_utils:decode(ResponseBody),
         VerifyStatus = proplists:get_value(<<"verified">>, Proplist),
         {ok, VerifyStatus}
     end).
@@ -131,12 +134,12 @@ verify_client(Client, Parameters) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec get_token_response(Client :: gr_endpoint:client(),
-    Parameters :: gr_endpoint:parameters()) ->
+    Parameters :: gr_endpoint:params()) ->
     {ok, Tokens :: #token_response{}} | {error, Reason :: term()}.
 get_token_response(Client, Parameters) ->
     ?run(fun() ->
-        Body = iolist_to_binary(mochijson2:encode(Parameters)),
-        {ok, "200", _ResponseHeaders, ResponseBody} =
+        Body = json_utils:encode(Parameters),
+        {ok, 200, _ResponseHeaders, ResponseBody} =
             case Client of
                 client ->
                     URN = "/openid/client/tokens",
@@ -145,13 +148,11 @@ get_token_response(Client, Parameters) ->
                     URN = "/openid/provider/tokens",
                     gr_endpoint:auth_request(Client, URN, post, Body)
             end,
-        Proplist = mochijson2:decode(ResponseBody, [{format, proplist}]),
+        Proplist = json_utils:decode(ResponseBody),
         IdToken = proplists:get_value(<<"id_token">>, Proplist),
-        [_Header, Payload, _Signature] = binary:split(IdToken, <<".">>, [global]),
-        IdTokenProplist = mochijson2:decode(
-            mochiweb_base64url:decode(Payload), [{format, proplist}]
-        ),
-        LoginsProplist = proplists:get_value(<<"logins">>, IdTokenProplist),
+        [_Header, Payload, _Signtre] = binary:split(IdToken, <<".">>, [global]),
+        IdTokenProps = json_utils:decode(http_utils:base64url_decode(Payload)),
+        LoginsProplist = proplists:get_value(<<"logins">>, IdTokenProps),
         Logins = lists:map(fun(LoginProplist) ->
             #id_token_login{
                 provider_id = binary_to_atom(
@@ -169,14 +170,14 @@ get_token_response(Client, Parameters) ->
             refresh_token = proplists:get_value(<<"refresh_token">>, Proplist),
             scope = proplists:get_value(<<"scope">>, Proplist),
             id_token = #id_token{
-                iss = proplists:get_value(<<"iss">>, IdTokenProplist),
-                sub = proplists:get_value(<<"sub">>, IdTokenProplist),
-                aud = proplists:get_value(<<"aud">>, IdTokenProplist),
-                name = proplists:get_value(<<"name">>, IdTokenProplist),
+                iss = proplists:get_value(<<"iss">>, IdTokenProps),
+                sub = proplists:get_value(<<"sub">>, IdTokenProps),
+                aud = proplists:get_value(<<"aud">>, IdTokenProps),
+                name = proplists:get_value(<<"name">>, IdTokenProps),
                 logins = Logins,
-                emails = proplists:get_value(<<"emails">>, IdTokenProplist),
-                exp = proplists:get_value(<<"exp">>, IdTokenProplist),
-                iat = proplists:get_value(<<"iat">>, IdTokenProplist)
+                emails = proplists:get_value(<<"emails">>, IdTokenProps),
+                exp = proplists:get_value(<<"exp">>, IdTokenProps),
+                iat = proplists:get_value(<<"iat">>, IdTokenProps)
             }
         },
         {ok, TokenResponse}
@@ -194,9 +195,9 @@ get_token_response(Client, Parameters) ->
     {ok, Tokens :: [#token_details{}]} | {error, Reason :: term()}.
 get_tokens(Client, URN) ->
     ?run(fun() ->
-        {ok, "200", _ResponseHeaders, ResponseBody} =
+        {ok, 200, _ResponseHeaders, ResponseBody} =
             gr_endpoint:auth_request(Client, URN, get),
-        Proplist = mochijson2:decode(ResponseBody, [{format, proplist}]),
+        Proplist = json_utils:decode(ResponseBody),
         TokenDetails = proplists:get_value(<<"tokenInfo">>, Proplist),
         Tokens = lists:map(fun(Token) ->
             #token_details{
@@ -215,7 +216,7 @@ get_tokens(Client, URN) ->
     ok | {error, Reason :: term()}.
 revoke_token(Client, URN) ->
     ?run(fun() ->
-        {ok, "202", _ResponseHeaders, _ResponseBody} =
+        {ok, 202, _ResponseHeaders, _ResponseBody} =
             gr_endpoint:auth_request(Client, URN, delete),
         ok
     end).
@@ -226,11 +227,11 @@ revoke_token(Client, URN) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec modify_token_details(Client :: gr_endpoint:client(), gr_endpoint:urn(),
-    Parameters :: gr_endpoint:parameters()) -> ok | {error, Reason :: term()}.
+    Parameters :: gr_endpoint:params()) -> ok | {error, Reason :: term()}.
 modify_token_details(Client, URN, Parameters) ->
     ?run(fun() ->
-        Body = iolist_to_binary(mochijson2:encode(Parameters)),
-        {ok, "204", _ResponseHeaders, _ResponseBody} =
+        Body = json_utils:encode(Parameters),
+        {ok, 204, _ResponseHeaders, _ResponseBody} =
             gr_endpoint:auth_request(Client, URN, patch, Body),
         ok
     end).
