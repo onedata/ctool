@@ -24,22 +24,12 @@
 % Cookies policy handling
 -export([cookie_policy_popup_body/1, is_cookie_policy_accepted/1]).
 
-% Functions used to perform secure server-server http requests
--export([https_get/2, https_post/3, toggle_server_cert_verification/1]).
-
-% Misscellaneous convenience functions
--export([proplist_to_url_params/1, fully_qualified_url/1, validate_email/1, normalize_email/1]).
-
 %% Name of cookie remembering if cookie policy is accepted (value is T/F)
 -define(cookie_policy_cookie_name, "cookie_policy_accepted").
 %% Maximum redirects to follow when doing http request
 -define(max_redirects, 5).
 %% Maximum depth of CA cert analize
 -define(ca_cert_max_depth, 11).
-
--define(mail_validation_regexp,
-    <<"^[a-z0-9!#$%&'*+\\/=?^_`{|}~-]+(?:\\.[a-z0-9!#$%&'*+\\/=?^_`{|}~-]+)*@(?"
-    ":[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$">>).
 
 %%%===================================================================
 %%% API
@@ -74,6 +64,7 @@ init_n2o_ets_and_envs(GuiPort, RoutingModule, SessionLogicModule, BridgeModule) 
     ets:insert(globals, {onlineusers, 0}),
     ok.
 
+
 %%--------------------------------------------------------------------
 %% @doc Cleans up n2o setup, such as ets tables.
 %% Should be called after stopping a cowboy listener for
@@ -88,6 +79,7 @@ cleanup_n2o(SessionLogicModule) ->
     ets:delete(caching),
     ok.
 
+
 %%--------------------------------------------------------------------
 %% @doc Sets a response header, but prevents duplicate entries. Header must
 %% be normalized to lowercase (e. g. content-type and not Content-Type)
@@ -98,6 +90,7 @@ cowboy_ensure_header(Name, Value, Req) when is_binary(Name) and is_binary(Value)
     Req2 = cowboy_req:delete_resp_header(Name, Req),
     cowboy_req:set_resp_header(Name, Value, Req2).
 
+
 %%--------------------------------------------------------------------
 %% @doc Callback hook for cowboy to modify response headers for HTTPS GUI.
 %% Those headers improve security of https connection.
@@ -105,10 +98,9 @@ cowboy_ensure_header(Name, Value, Req) when is_binary(Name) and is_binary(Value)
 %%--------------------------------------------------------------------
 -spec onrequest_adjust_headers(Req :: cowboy_req:req()) -> cowboy_req:req().
 onrequest_adjust_headers(Req) ->
-    % TODO: HSTS is disabled for demo purposes
-%%     Req2 = cowboy_req:set_resp_header(<<"Strict-Transport-Security">>, <<"max-age=31536000; includeSubDomains">>, Req),
-%%     cowboy_req:set_resp_header(<<"X-Frame-Options">>, <<"SAMEORIGIN">>, Req2).
-    cowboy_req:set_resp_header(<<"X-Frame-Options">>, <<"SAMEORIGIN">>, Req).
+    Req2 = cowboy_req:set_resp_header(<<"Strict-Transport-Security">>, <<"max-age=31536000; includeSubDomains">>, Req),
+    cowboy_req:set_resp_header(<<"X-Frame-Options">>, <<"SAMEORIGIN">>, Req2).
+
 
 %%--------------------------------------------------------------------
 %% @doc Returns a set of elements that renders to a floating popup asking for acceptance
@@ -140,6 +132,7 @@ cookie_policy_popup_body(PrivacyPolicyURL) ->
             ]
     end.
 
+
 %%--------------------------------------------------------------------
 %% @doc Returns true if the client browser has sent a proper cookie
 %% implying that the privacy policy has been accepted.
@@ -152,239 +145,3 @@ is_cookie_policy_accepted(Req) ->
         _ -> false
     end.
 
-%%--------------------------------------------------------------------
-%% @doc Performs a HTTPS GET. Host is verified according to locally installed CA certs
-%% (path is provided in environment variable). Only if connection is secure,
-%% the request is performed.
-%% @end
-%%--------------------------------------------------------------------
--spec https_get(URLBin :: binary(), ReqHeadersBin :: [{binary(), binary()}]) ->
-    {ok, binary()} | {error, unknown_cert} | {error, term()}.
-https_get(URLBin, ReqHeadersBin) ->
-    URL = binary_to_list(URLBin),
-    ReqHeaders = lists:map(fun({Key, Value}) ->
-        {binary_to_list(Key), binary_to_list(Value)}
-    end, ReqHeadersBin),
-    perform_request(URL, ReqHeaders, get, <<>>, ?max_redirects).
-
-%%--------------------------------------------------------------------
-%% @doc Performs a HTTPS POST. Host is verified according to locally installed CA certs
-%% (path is provided in environment variable). Only if connection is secure,
-%% the request is performed.
-%% @end
-%%--------------------------------------------------------------------
--spec https_post(URLBin :: binary(), ReqHeadersBin :: [{binary(), binary()}],
-    Body :: binary()) -> {ok, binary()} | {error, unknown_cert} | {error, term()}.
-https_post(URLBin, ReqHeadersBin, Body) ->
-    URL = binary_to_list(URLBin),
-    ReqHeaders = lists:map(fun({Key, Value}) ->
-        {binary_to_list(Key), binary_to_list(Value)}
-    end, ReqHeadersBin),
-    %% 0 max redirects, according to RFC post requests should not be redirected
-    perform_request(URL, ReqHeaders, post, Body, 0).
-
-%%--------------------------------------------------------------------
-%% @doc This function allows toggling server cert verification in runtime.
-%% @end
-%%--------------------------------------------------------------------
--spec toggle_server_cert_verification(boolean()) -> ok.
-toggle_server_cert_verification(Flag) ->
-    application:set_env(ctool, verify_server_cert, Flag).
-
-%%--------------------------------------------------------------------
-%% @doc Converts a proplist to a single x-www-urlencoded binary. Adding a third
-%% field 'no_encode' to a tuple will prevent URL encoding.
-%% @end
-%% @end
-%%--------------------------------------------------------------------
--spec proplist_to_url_params([{binary(), binary()} | {binary(), binary(), no_encode}]) ->
-    binary().
-proplist_to_url_params(List) ->
-    lists:foldl(
-        fun(Tuple, Acc) ->
-            {KeyEncoded, ValueEncoded} = case Tuple of
-                                             {Key, Value, no_encode} ->
-                                                 {Key, Value};
-                                             {Key, Value} ->
-                                                 {gui_str:url_encode(Key), gui_str:url_encode(Value)}
-                                         end,
-            Suffix = case Acc of
-                         <<"">> -> <<"">>;
-                         _ -> <<Acc/binary, "&">>
-                     end,
-            <<Suffix/binary, KeyEncoded/binary, "=", ValueEncoded/binary>>
-        end, <<"">>, List).
-
-%%--------------------------------------------------------------------
-%% @doc Converts the given URL to a fully quialified url, without leading www.
-%% @end
-%% @end
-%%--------------------------------------------------------------------
--spec fully_qualified_url(binary()) -> binary().
-fully_qualified_url(Binary) ->
-    case Binary of
-        <<"https://www.", Rest/binary>> -> <<"https://", Rest/binary>>;
-        <<"https://", _/binary>> -> Binary;
-        <<"www.", Rest/binary>> -> <<"https://", Rest/binary>>;
-        _ -> <<"https://", Binary/binary>>
-    end.
-
-%%--------------------------------------------------------------------
-%% @doc Returns true if the given string is a valid email address according to RFC.
-%% @end
-%% @end
-%%--------------------------------------------------------------------
--spec validate_email(binary()) -> boolean().
-validate_email(Email) ->
-    case re:run(Email, ?mail_validation_regexp) of
-        {match, _} -> true;
-        _ -> false
-    end.
-
-%%--------------------------------------------------------------------
-%% @doc Performs gmail email normalization by removing all the dots in the local part.
-%% @end
-%% @end
-%%--------------------------------------------------------------------
--spec normalize_email(binary()) -> binary().
-normalize_email(Email) ->
-    case binary:split(Email, [<<"@">>], [global]) of
-        [Account, Domain] ->
-            case Domain of
-                <<"gmail.com">> ->
-                    <<(binary:replace(Account, <<".">>, <<"">>, [global]))/binary, "@", Domain/binary>>;
-                _ -> Email
-            end;
-        _ ->
-            Email
-    end.
-
-%%%===================================================================
-%%% Internal functions
-%%%===================================================================
-
-%%--------------------------------------------------------------------
-%% @doc Performs a HTTPS request with given args.
-%% @end
-%%--------------------------------------------------------------------
--spec perform_request(URL :: string(), ReqHeaders :: [{string(), string()}],
-    Method :: atom(), Body :: binary(), Redirects :: integer()) ->
-    {ok, binary()} | {error, unknown_cert} | {error, term()}.
-perform_request(URL, ReqHeaders, Method, Body, Redirects) ->
-    try
-        {ok, {_, _, Domain, _, _, _}} = http_uri:parse(URL),
-        Options = case application:get_env(ctool, verify_server_cert) of
-                      {ok, true} ->
-                          [{response_format, binary}, {ssl_options, ssl_opts(Domain)}];
-                      _ ->
-                          ?debug("Performing a HTTPS connection without server cert verification [~p]", [URL]),
-                          [{response_format, binary}]
-                  end,
-        case ibrowse:send_req(URL, ReqHeaders, Method, Body, Options) of
-            {ok, Rcode, RespHeaders, ResponseBody}
-                when (Rcode =:= "301" orelse Rcode =:= "302" orelse Rcode =:= "303" orelse Rcode =:= "307") andalso Redirects > 0 ->
-                % Code in {301, 302, 303, 307} - we are being redirected
-                case get_redirect_url(URL, RespHeaders) of
-                    undefined -> ResponseBody;
-                    URL -> ResponseBody;
-                    NewURL ->
-                        perform_request(NewURL, ReqHeaders, Method, Body, Redirects - 1)
-                end;
-
-            {ok, "200", _, ResponseBody} ->
-                % Answer ok
-                {ok, ResponseBody};
-
-            {error, {conn_failed, {error, {tls_alert, "certificate unknown"}}}} ->
-                % Host authenticity cannot be confirmed
-                {error, unknown_cert};
-
-            {error, Other} ->
-                {error, Other};
-
-            Other ->
-                {error, Other}
-        end
-    catch
-        _:M ->
-            {error, M}
-    end.
-
-%%--------------------------------------------------------------------
-%% @doc
-%% Retrieves redirect URL from a HTTP response.
-%% @end
-%%--------------------------------------------------------------------
--spec get_redirect_url(OldURL :: string(), Headers :: list()) -> string() | undefined.
-get_redirect_url(OldURL, Headers) ->
-    Location = proplists:get_value("location", Headers, proplists:get_value("Location", Headers)),
-    case Location of
-        "http://" ++ _ -> Location;
-        "https://" ++ _ -> Location;
-        [$/ | _] = Location ->
-            {url, _, Host, Port, _, _, _, Protocol, _} = ibrowse_lib:parse_url(OldURL),
-            PortFrag = case {Protocol, Port} of
-                           {http, 80} -> "";
-                           {https, 443} -> "";
-                           _ -> ":" ++ integer_to_list(Port)
-                       end,
-            atom_to_list(Protocol) ++ "://" ++ Host ++ PortFrag ++ Location;
-        _ -> undefined
-    end.
-
-%%--------------------------------------------------------------------
-%% @doc Returns list of ssl opts for secure connection.
-%% @end
-%%--------------------------------------------------------------------
--spec ssl_opts(ReqHostname :: string()) -> [tuple()].
-ssl_opts(ReqHostname) ->
-    VerifyFun =
-        fun(_, {bad_cert, _}, RequestedHostname) ->
-            {unknown, RequestedHostname};
-
-            (_, {extension, _}, RequestedHostname) ->
-                {unknown, RequestedHostname};
-
-            (_, valid, RequestedHostname) ->
-                {valid, RequestedHostname};
-
-            (Cert, valid_peer, RequestedHostname) ->
-                % If peer is valid, make sure one of domain names contained in cert matches our requested adress
-                #'OTPCertificate'{tbsCertificate = #'OTPTBSCertificate'{extensions = Extensions}} = Cert,
-                AllowedHostnames = lists:foldl(
-                    fun(#'Extension'{extnID = ExtID, extnValue = ExtVal}, Acc) ->
-                        case ExtID of
-                            ?'id-ce-subjectAltName' ->
-                                Acc ++ lists:map(
-                                    fun({dNSName, DNSName}) ->
-                                        % Create regexps from allowed domain names, to later match them against requested address
-                                        ReplacedDots = re:replace(DNSName, "\\.", "\\\\.", [global, {return, list}]),
-                                        _ReplacedWildcards = re:replace(ReplacedDots, "\\*", ".*", [global, {return, list}])
-                                    end, ExtVal);
-                            _ ->
-                                Acc
-                        end
-                    end, [], Extensions),
-
-                Valid = lists:foldl(
-                    fun(RegExp, Acc) ->
-                        case re:run(RequestedHostname, RegExp) of
-                        % At least one domain name matched, the peer is indeed valid
-                            {match, _} -> valid;
-                            _ -> Acc
-                        end
-                    end, unknown, AllowedHostnames),
-                {Valid, RequestedHostname}
-        end,
-
-    CaCertFileAtom = case application:get_env(ctool, root_cacert_file) of
-                         {ok, Val} -> Val;
-                         _ -> throw("root_cacert_file env missing")
-                     end,
-    % Return ssl opts for a secure connection
-    [
-        {verify, verify_peer},
-        {cacertfile, atom_to_list(CaCertFileAtom)},
-        {verify_fun, {VerifyFun, ReqHostname}},
-        {depth, ?ca_cert_max_depth}
-    ].

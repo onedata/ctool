@@ -53,7 +53,8 @@ messages() ->
 %% {@link ranch_transport} callback listen/1.
 %% @end
 %%--------------------------------------------------------------------
--spec listen(ssl2:listen_opts()) -> {ok, ssl2:socket()} | {error, atom()}.
+-spec listen([ssl2:option() | ssl2:ssl_option()]) ->
+    {ok, ssl2:socket()} |{error, atom()}.
 listen(Opts) ->
     Port = proplists:get_value(port, Opts),
     ssl2:listen(Port, Opts).
@@ -93,7 +94,8 @@ accept_ack(Socket, Timeout) ->
 %% {@link ranch_transport} callback connect/3.
 %% @end
 %%--------------------------------------------------------------------
--spec connect(string(), inet:port_number(), ssl2:listen_opts()) ->
+-spec connect(string(), inet:port_number(),
+    [ssl2:option() | ssl2:ssl_option()]) ->
     {ok, ssl2:socket()} |
     {error, atom()}.
 connect(Host, Port, Opts) ->
@@ -104,7 +106,8 @@ connect(Host, Port, Opts) ->
 %% {@link ranch_transport} callback connect/4.
 %% @end
 %%--------------------------------------------------------------------
--spec connect(string(), inet:port_number(), ssl2:listen_opts(), timeout()) ->
+-spec connect(string(), inet:port_number(), [ssl2:option() | ssl2:ssl_option()],
+    timeout()) ->
     {ok, ssl2:socket()} |
     {error, atom()}.
 connect(Host, Port, Opts, Timeout) ->
@@ -135,7 +138,8 @@ send(Socket, Data) ->
 %% {@link ranch_transport} callback setopts/2.
 %% @end
 %%--------------------------------------------------------------------
--spec setopts(ssl2:socket(), ssl2:opts()) -> ok | {error, atom()}.
+-spec setopts(ssl2:socket(), [ssl2:option() | ssl2:ssl_option()]) ->
+    ok | {error, atom()}.
 setopts(Socket, Opts) ->
     ssl2:setopts(Socket, Opts).
 

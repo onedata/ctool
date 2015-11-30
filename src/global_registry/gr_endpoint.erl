@@ -14,24 +14,20 @@
 
 %% API
 -export([auth_request/3, auth_request/4, auth_request/5, auth_request/6]).
--export([noauth_request/3, noauth_request/4, noauth_request/5, noauth_request/6]).
+-export([noauth_request/3, noauth_request/4, noauth_request/5,
+    noauth_request/6]).
 
+%% Uniform Resource Name -
+%% for more details see: http://pl.wikipedia.org/wiki/Uniform_Resource_Name
+-type urn() :: string().
 %% HTTP request types
--type urn() :: string(). %% Uniform Resource Name - for more details see: http://pl.wikipedia.org/wiki/Uniform_Resource_Name
 -type method() :: put | post | get | patch | delete.
--type header() :: atom() | string().
--type value() :: term().
--type headers() :: [{header(), value()}].
--type response() :: {ok,
-    Status :: string(),
-    ResponseHeaders :: [{Name :: string(), Value :: string()}],
-    ResponseBody :: string()
-} | {ibrowse_req_id, req_id()} | {error, Reason :: term()}.
--type req_id() :: term().
--type body() :: [] | string() | binary().
--type options() :: [option()].
--type option() :: {ssl_options, [SSLOpt :: term()]} | {content_type, string()}.
--type parameters() :: [{Key :: binary(), Value :: binary()}].
+-type headers() :: [{Key :: binary(), Value :: binary()}].
+-type body() :: binary().
+-type options() :: http_client:opts().
+-type response() :: {ok, Status :: integer(), ResponseHeaders :: headers(),
+    ResponseBody :: body()} | {error, Reason :: term()}.
+-type params() :: [{Key :: binary(), Value :: binary()}].
 
 %% Global Registry gr_endpoint:client()
 % Tuple containing root macaroon and discharge macaroons for user auth
@@ -40,7 +36,7 @@
 -type client() :: client | provider | {user, macaroons()} |
 {try_user, macaroons()}.
 
--export_type([client/0, parameters/0, urn/0]).
+-export_type([client/0, params/0, urn/0]).
 
 %%%===================================================================
 %%% API
@@ -53,7 +49,7 @@
 -spec auth_request(Client :: client(), URN :: urn(), Method :: method()) ->
     response().
 auth_request(Client, URN, Method) ->
-    gr_endpoint:auth_request(Client, URN, Method, []).
+    gr_endpoint:auth_request(Client, URN, Method, <<>>).
 
 %%--------------------------------------------------------------------
 %% @equiv auth_request(Client, URN, Method, Body, [])
@@ -102,7 +98,7 @@ auth_request({Type, Macaroons}, URN, Method, Headers, Body, Options)
 -spec noauth_request(Client :: client(), URN :: urn(), Method :: method()) ->
     response().
 noauth_request(Client, URN, Method) ->
-    gr_endpoint:noauth_request(Client, URN, Method, []).
+    gr_endpoint:noauth_request(Client, URN, Method, <<>>).
 
 %%--------------------------------------------------------------------
 %% @equiv noauth_request(Client, URN, Method, Body, [])
@@ -144,6 +140,7 @@ noauth_request({Type, Macaroons}, URN, Method, Headers, Body, Options)
     AuthHeaders = prepare_auth_headers(Macaroons),
     do_noauth_request(URN, Method, AuthHeaders ++ Headers, Body, Options).
 
+
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
@@ -155,22 +152,12 @@ noauth_request({Type, Macaroons}, URN, Method, Headers, Body, Options)
 %%--------------------------------------------------------------------
 -spec do_auth_request(URN :: urn(), Method :: method(), Headers :: headers(),
     Body :: body(), Options :: options()) -> response().
-do_auth_request(URN, Method, Headers, Body, Options) ->
+do_auth_request(URN, Method, Headers, Body, Opts) ->
     KeyPath = apply(gr_plugin, get_key_path, []),
     CertPath = apply(gr_plugin, get_cert_path, []),
-    CACertPath = apply(gr_plugin, get_cacert_path, []),
-    {ok, Key} = file:read_file(KeyPath),
-    {ok, Cert} = file:read_file(CertPath),
-    {ok, CACert} = file:read_file(CACertPath),
-    [{KeyType, KeyEncoded, _} | _] = public_key:pem_decode(Key),
-    [{_, CertEncoded, _} | _] = public_key:pem_decode(Cert),
-    [{_, CACertEncoded, _} | _] = public_key:pem_decode(CACert),
-    SSLOptions = {ssl_options, [
-        {cacerts, [CACertEncoded]},
-        {key, {KeyType, KeyEncoded}},
-        {cert, CertEncoded}
-    ]},
-    do_noauth_request(URN, Method, Headers, Body, [SSLOptions | Options]).
+    SSLOpts = {ssl_options, [{keyfile, KeyPath}, {certfile, CertPath}]},
+    do_noauth_request(URN, Method, Headers, Body, [SSLOpts | Opts]).
+
 
 %%--------------------------------------------------------------------
 %% @doc Sends request to Global Registry using REST API.
@@ -178,15 +165,23 @@ do_auth_request(URN, Method, Headers, Body, Options) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec do_noauth_request(URN :: urn(), Method :: method(), Headers :: headers(),
-    Body :: body(), Options :: list()) -> response().
+    Body :: body(), Options :: options()) -> response().
 do_noauth_request(URN, Method, Headers, Body, Options) ->
-    URL = apply(gr_plugin, get_gr_url, []),
-    NewHeaders = [{"content-type", "application/json"} | Headers],
-    ibrowse:send_req(URL ++ URN, NewHeaders, Method, Body, Options).
+    Opts = case application:get_env(ctool, verify_gr_cert) of
+               {ok, false} -> [insecure | Options];
+               _ -> Options
+           end,
+    NewHeaders = [{<<"content-type">>, <<"application/json">>} | Headers],
+    URL = gr_plugin:get_gr_url() ++ URN,
+    http_client:request(Method, URL, NewHeaders, Body, Opts).
 
 
+%%--------------------------------------------------------------------
+%% @doc Returns properly formatted headers with macaroons.
+%% @end
+%%--------------------------------------------------------------------
 -spec prepare_auth_headers(Macaroons :: macaroons()) ->
-    [{Key :: string(), Val :: string()}].
+    [{Key :: binary(), Val :: binary()}].
 prepare_auth_headers({SrlzdMacaroon, SrlzdDischMacaroons}) ->
     {ok, Macaroon} = macaroon:deserialize(SrlzdMacaroon),
     BoundMacaroons = lists:map(
@@ -194,11 +189,12 @@ prepare_auth_headers({SrlzdMacaroon, SrlzdDischMacaroons}) ->
             {ok, DM} = macaroon:deserialize(SrlzdDischMacaroon),
             {ok, BDM} = macaroon:prepare_for_request(Macaroon, DM),
             {ok, SBDM} = macaroon:serialize(BDM),
-            binary_to_list(SBDM)
+            SBDM
         end, SrlzdDischMacaroons),
+    % Bound discharge macaroons are sent in one header,
+    % separated by spaces.
+    BoundMacaroonsValue = str_utils:join_binary(BoundMacaroons, <<" ">>),
     [
-        {"macaroon", binary_to_list(SrlzdMacaroon)},
-        % Bound discharge macaroons are sent in one header,
-        % separated by spaces.
-        {"discharge-macaroons", string:join(BoundMacaroons, " ")}
+        {<<"macaroon">>, SrlzdMacaroon},
+        {<<"discharge-macaroons">>, BoundMacaroonsValue}
     ].

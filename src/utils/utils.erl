@@ -12,34 +12,19 @@
 -module(utils).
 
 %% API
--export([binary_join/2, ensure_running/1, pmap/2, pforeach/2, time/0, mtime/0,
-    record_type/1, ensure_binary/1, ensure_list/1, ensure_unicode_list/1,
-    ensure_unicode_binary/1, access_token_hash/1, trim_spaces/1, ceil/1,
+-export([ensure_running/1, pmap/2, pforeach/2, time/0, mtime/0,
+    record_type/1, access_token_hash/1, trim_spaces/1, ceil/1,
     aggregate_over_first_element/1, average/1, random_shuffle/1,
-    random_element/1, get_host/1, get_host_as_atom/1, cmd/1, seconds_diff/2,
-    milliseconds_diff/2, microseconds_diff/2, duration/1, adjust_duration/2]).
+    random_element/1, get_host/1, get_host_as_atom/1, cmd/1]).
+-export([seconds_diff/2, milliseconds_diff/2, microseconds_diff/2]).
+-export([duration/1, adjust_duration/2]).
+-export([mkdtemp/0, mkdtemp/3, rmtempdir/1]).
 
 -type time_unit() :: us | ms | s | min | h.
 
 %%%===================================================================
 %%% API
 %%%===================================================================
-
-%%--------------------------------------------------------------------
-%% @doc
-%% Joins bineries with Separator
-%% @end
-%%--------------------------------------------------------------------
--spec binary_join(Binaries :: [binary()], Separator :: binary()) -> binary().
-binary_join([], _Sep) ->
-    <<>>;
-binary_join([Part], _Sep) ->
-    Part;
-binary_join([Head | Tail], Sep) ->
-    lists:foldl(
-        fun(A, B) ->
-            <<B/binary, Sep/binary, A/binary>>
-        end, Head, Tail).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -120,58 +105,6 @@ mtime() ->
     atom() | no_return().
 record_type(Record) when is_tuple(Record) ->
     element(1, Record).
-
-%%--------------------------------------------------------------------
-%% @doc
-%% Translates given term to binary if needed.
-%% @end
-%%--------------------------------------------------------------------
--spec ensure_binary(BinLikeTerm :: atom() | binary() | integer() | string() | list()) -> binary().
-ensure_binary(Bin) when is_binary(Bin) ->
-    Bin;
-ensure_binary(List) when is_list(List) ->
-    iolist_to_binary(List);
-ensure_binary(Integer) when is_integer(Integer) ->
-    integer_to_binary(Integer);
-ensure_binary(Atom) when is_atom(Atom) ->
-    atom_to_binary(Atom, utf8).
-
-%%--------------------------------------------------------------------
-%% @doc
-%% Translates given term to list if needed.
-%% @end
-%%--------------------------------------------------------------------
--spec ensure_list(ListLikeTerm :: atom() | binary() | integer() | string() | list()) -> list().
-ensure_list(Binary) when is_binary(Binary) ->
-    binary_to_list(Binary);
-ensure_list(Integer) when is_integer(Integer) ->
-    integer_to_list(Integer);
-ensure_list(List) when is_list(List) ->
-    List;
-ensure_list(Atom) when is_atom(Atom) ->
-    atom_to_list(Atom).
-
-%%--------------------------------------------------------------------
-%% @doc
-%% Converts a unicode list to utf8 binary.
-%% @end
-%%--------------------------------------------------------------------
--spec ensure_unicode_binary(String :: string() | binary()) -> binary().
-ensure_unicode_binary(Binary) when is_binary(Binary) ->
-    Binary;
-ensure_unicode_binary(String) ->
-    unicode:characters_to_binary(String).
-
-%%--------------------------------------------------------------------
-%% @doc
-%% Converts a utf8 binary to unicode list.
-%% @end
-%%--------------------------------------------------------------------
--spec ensure_unicode_list(Binary :: binary() | string()) -> string().
-ensure_unicode_list(String) when is_list(String) ->
-    String;
-ensure_unicode_list(Binary) ->
-    unicode:characters_to_list(Binary).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -321,6 +254,35 @@ adjust_duration(Duration, Unit) ->
         true -> adjust_duration(Duration / Factor, NextUnit);
         _ -> {Duration, atom_to_list(Unit)}
     end.
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Creates a temporary dir (with any name) and returns its path.
+%% @end
+%%--------------------------------------------------------------------
+-spec mkdtemp() ->    DirPath :: list().
+mkdtemp() ->
+    mochitemp:mkdtemp().
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Creates a temporary dir (with given location and name) and returns its path.
+%% @end
+%%--------------------------------------------------------------------
+mkdtemp(Suffix, Prefix, Dir) ->
+    mochitemp:mkdtemp(Suffix, Prefix, Dir).
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Removes a temporary dir.
+%% @end
+%%--------------------------------------------------------------------
+rmtempdir(Dir) ->
+    mochitemp:rmtempdir(Dir).
+
 
 %%%===================================================================
 %%% Internal functions

@@ -146,7 +146,7 @@ stress_test(Config) ->
                 end, TmpAns),
                 TmpAns2 ++ Ans;
             {error, E} ->
-                Message = gui_str:format("Case: ~p, error: ~p", [Case, binary_to_list(E)]),
+                Message = str_utils:format("Case: ~p, error: ~p", [Case, binary_to_list(E)]),
                 throw(Message)
         end
     end, [], Cases).
@@ -528,7 +528,7 @@ exec_test_repeat(SuiteName, CaseName, CaseConfig) ->
     catch
         Error:Reason ->
             Stacktrace = erlang:get_stacktrace(),
-            Message = gui_str:format("~p:~p~n~p", [Error, Reason, Stacktrace]),
+            Message = str_utils:format("~p:~p~n~p", [Error, Reason, Stacktrace]),
             {error, list_to_binary(Message)}
     end.
 

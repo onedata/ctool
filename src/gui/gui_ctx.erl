@@ -136,7 +136,7 @@ user_logged_in() ->
 %%--------------------------------------------------------------------
 -spec postback_param(ParamName :: string() | binary()) -> binary() | undefined.
 postback_param(ParamName) ->
-    gui_str:to_binary(wf:q(gui_str:to_list(ParamName))).
+    str_utils:to_binary(wf:q(str_utils:to_list(ParamName))).
 
 %%--------------------------------------------------------------------
 %% @doc Retrieves a URL parameter for given key. Returns undefined if
@@ -145,7 +145,7 @@ postback_param(ParamName) ->
 %%--------------------------------------------------------------------
 -spec url_param(ParamName :: string() | binary()) -> binary() | undefined.
 url_param(ParamName) ->
-    wf:q(gui_str:to_binary(ParamName)).
+    wf:q(str_utils:to_binary(ParamName)).
 
 %%--------------------------------------------------------------------
 %% @doc Retrieves all form parameters (request body) sent by POST.
