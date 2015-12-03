@@ -31,7 +31,7 @@
 }).
 
 -record(xattr, {
-    key :: binary(),
+    name :: binary(),
     value :: binary()
 }).
 
