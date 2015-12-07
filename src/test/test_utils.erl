@@ -17,7 +17,7 @@
 
 %% API
 -export([mock_new/2, mock_new/3, mock_expect/4, mock_validate/2, mock_unload/1,
-    mock_unload/2]).
+    mock_unload/2, mock_validate_and_unload/2]).
 -export([get_env/3, set_env/4]).
 
 -type mock_opt() :: passthrough | non_strict | unstick | no_link.
@@ -121,6 +121,17 @@ mock_unload(Nodes, Modules) ->
             Node, meck, unload, [as_list(Modules)], ?TIMEOUT
         ))
     end, as_list(Nodes)).
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Validates and unloads modules' mocks on provided nodes.
+%% @end
+%%--------------------------------------------------------------------
+-spec mock_validate_and_unload(Nodes :: node() | [node()],
+    Modules :: module() | [module()]) -> ok.
+mock_validate_and_unload(Nodes, Modules) ->
+    mock_validate(Nodes, Modules),
+    mock_unload(Nodes, Modules).
 
 %%--------------------------------------------------------------------
 %% @doc
