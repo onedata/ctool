@@ -15,7 +15,7 @@
 -export([ensure_running/1, pmap/2, pforeach/2, time/0, mtime/0,
     record_type/1, access_token_hash/1, trim_spaces/1, ceil/1,
     aggregate_over_first_element/1, average/1, random_shuffle/1,
-    random_element/1, get_host/1, get_host_as_atom/1, cmd/1]).
+    random_element/1, get_host/1, get_host_as_atom/1, cmd/1, ensure_defined/3]).
 -export([seconds_diff/2, milliseconds_diff/2, microseconds_diff/2]).
 -export([duration/1, adjust_duration/2]).
 -export([mkdtemp/0, mkdtemp/3, rmtempdir/1]).
@@ -345,3 +345,15 @@ pforeach_gather(N, Ref) ->
     receive
         Ref -> pforeach_gather(N - 1, Ref)
     end.
+
+%%--------------------------------------------------------------------
+%% @private
+%% @doc
+%% Ensures value is defined.
+%% @end
+%%--------------------------------------------------------------------
+-spec ensure_defined(Value :: term(), UndefinedValue :: term(), DefaultValue :: term()) ->term().
+ensure_defined(UndefinedValue, UndefinedValue, DefaultValue) ->
+    DefaultValue;
+ensure_defined(Value, _, _) ->
+    Value.
