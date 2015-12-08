@@ -30,5 +30,9 @@
     size = 0 :: non_neg_integer()
 }).
 
+-record(xattr, {
+    name :: binary(),
+    value :: binary()
+}).
 
 -endif.
