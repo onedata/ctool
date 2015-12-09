@@ -117,16 +117,21 @@ clean_environment(Config) ->
             ok;
         _ ->
             GrNodes = ?config(gr_nodes, Config),
-            Workers = ?config(op_worker_nodes, Config),
+            OpWorkers = ?config(op_worker_nodes, Config),
+            ClusterWorkers = ?config(cluster_worker_nodes, Config),
             CCMs = ?config(op_ccm_nodes, Config),
-            AllNodes = GrNodes ++ Workers ++ CCMs,
+            AllNodes = GrNodes ++ OpWorkers ++ ClusterWorkers ++ CCMs,
 
             global:register_name(?CLEANING_PROC_NAME, self()),
             global:sync(),
 
             lists:foreach(fun(N) ->
                 ok = rpc:call(N, application, stop, [op_worker])
-            end, Workers),
+            end, OpWorkers),
+
+            lists:foreach(fun(N) ->
+                ok = rpc:call(N, application, stop, [cluster_worker])
+            end, ClusterWorkers),
 
             lists:foreach(fun(N) ->
                 ok = rpc:call(N, application, stop, [op_ccm])
