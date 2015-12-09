@@ -53,6 +53,7 @@ prepare_test_environment(Config, DescriptionFile, TestModule, LoadModules) ->
 
         StartLog = list_to_binary(utils:cmd([EnvUpScript,
             %% Function is used durgin OP or GR tests so starts OP or GR - not both
+            "--bin-cluster-worker", ProjectRoot,
             "--bin-worker", ProjectRoot,
             "--bin-gr", ProjectRoot,
             %% additionally AppMock can be started
@@ -69,9 +70,10 @@ prepare_test_environment(Config, DescriptionFile, TestModule, LoadModules) ->
         try
             Dns = ?config(dns, EnvDesc),
             GrNodes = ?config(gr_nodes, EnvDesc),
-            Workers = ?config(op_worker_nodes, EnvDesc),
+            OpWorkers = ?config(op_worker_nodes, EnvDesc),
+            ClusterWorkers = ?config(cluster_worker_nodes, EnvDesc),
             CCMs = ?config(op_ccm_nodes, EnvDesc),
-            AllNodes = GrNodes ++ Workers ++ CCMs,
+            AllNodes = GrNodes ++ ClusterWorkers ++ OpWorkers ++ CCMs,
 
             erlang:set_cookie(node(), test_cookie),
             os:cmd("echo nameserver " ++ atom_to_list(Dns) ++ " > /etc/resolv.conf"),
