@@ -13,11 +13,17 @@
 -include_lib("common_test/include/ct.hrl").
 
 %% API
--export([prepare_test_environment/4, clean_environment/1, load_modules/2,
-    maybe_start_cover/0, maybe_stop_cover/0]).
+-export([prepare_test_environment/5, prepare_test_environment/4, clean_environment/2, clean_environment/1,
+    load_modules/2, maybe_start_cover/0, maybe_stop_cover/0]).
 
 -define(CLEANING_PROC_NAME, cleaning_proc).
 -define(TIMEOUT, timer:seconds(60)).
+-define(ALL_POSSIBLE_APPS, [
+    {op_worker, op_worker_nodes},
+    {cluster_worker, cluster_worker_nodes},
+    {op_ccm, op_ccm_nodes},
+    {globalregistry, gr_nodes}
+]).
 
 %%%===================================================================
 %%% Starting and stoping nodes
@@ -31,6 +37,17 @@
 -spec prepare_test_environment(Config :: list(), DescriptionFile :: string(),
     TestModule :: module(), LoadModules :: [module()]) -> Result :: list() | {fail, tuple()}.
 prepare_test_environment(Config, DescriptionFile, TestModule, LoadModules) ->
+    prepare_test_environment(Config, DescriptionFile, TestModule, LoadModules, ?ALL_POSSIBLE_APPS).
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Starts deps and dockers with needed applications and mocks.
+%% @end
+%%--------------------------------------------------------------------
+-spec prepare_test_environment(Config :: list(), DescriptionFile :: string(),
+    TestModule :: module(), LoadModules :: [module()], Apps :: [{AppName :: atom(), ConfigName :: atom()}])
+      -> Result :: list() | {fail, tuple()}.
+prepare_test_environment(Config, DescriptionFile, TestModule, LoadModules, Apps) ->
     try
         DataDir = ?config(data_dir, Config),
         PrivDir = ?config(priv_dir, Config),
@@ -42,8 +59,7 @@ prepare_test_environment(Config, DescriptionFile, TestModule, LoadModules) ->
         ConfigWithPaths =
             [{ct_test_root, CtTestRoot}, {project_root, ProjectRoot} | Config],
 
-        EnvUpScript =
-            filename:join([ProjectRoot, "bamboos", "docker", "env_up.py"]),
+        EnvUpScript = filename:join([ProjectRoot, "bamboos", "docker", "env_up.py"]),
 
         LogsDir = filename:join(PrivDir, atom_to_list(TestModule) ++ "_logs"),
         os:cmd("mkdir -p " ++ LogsDir),
@@ -69,11 +85,7 @@ prepare_test_environment(Config, DescriptionFile, TestModule, LoadModules) ->
 
         try
             Dns = ?config(dns, EnvDesc),
-            GrNodes = ?config(gr_nodes, EnvDesc),
-            OpWorkers = ?config(op_worker_nodes, EnvDesc),
-            ClusterWorkers = ?config(cluster_worker_nodes, EnvDesc),
-            CCMs = ?config(op_ccm_nodes, EnvDesc),
-            AllNodes = GrNodes ++ ClusterWorkers ++ OpWorkers ++ CCMs,
+            AllNodes = lists:flatmap(fun({_, ConfigName}) -> ?config(ConfigName, Config) end, Apps),
 
             erlang:set_cookie(node(), test_cookie),
             os:cmd("echo nameserver " ++ atom_to_list(Dns) ++ " > /etc/resolv.conf"),
@@ -112,56 +124,54 @@ prepare_test_environment(Config, DescriptionFile, TestModule, LoadModules) ->
 %%--------------------------------------------------------------------
 -spec clean_environment(Config :: list()) -> ok.
 clean_environment(Config) ->
+    clean_environment(Config, ?ALL_POSSIBLE_APPS).
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Gathers cover analysis reports if cover is started.
+%% Afterwards, cleans environment by running 'cleanup.py' script.
+%% @end
+%%--------------------------------------------------------------------
+-spec clean_environment(Config :: list(), Apps::[{AppName::atom(), ConfigName::atom()}]) -> ok.
+clean_environment(Config, Apps) ->
     case cover:modules() of
         [] ->
             ok;
         _ ->
-            GrNodes = ?config(gr_nodes, Config),
-            OpWorkers = ?config(op_worker_nodes, Config),
-            ClusterWorkers = ?config(cluster_worker_nodes, Config),
-            CCMs = ?config(op_ccm_nodes, Config),
-            AllNodes = GrNodes ++ OpWorkers ++ ClusterWorkers ++ CCMs,
-
             global:register_name(?CLEANING_PROC_NAME, self()),
             global:sync(),
 
-            lists:foreach(fun(N) ->
-                ok = rpc:call(N, application, stop, [op_worker])
-            end, OpWorkers),
+            lists:foreach(
+                fun({AppName, ConfigName}) ->
+                    Nodes = ?config(ConfigName, Config),
+                    lists:foreach(fun(N) -> ok = rpc:call(N, application, stop, [AppName]) end, Nodes)
+                end, Apps
+            ),
 
-            lists:foreach(fun(N) ->
-                ok = rpc:call(N, application, stop, [cluster_worker])
-            end, ClusterWorkers),
+            AllNodes = lists:flatmap(fun({_, ConfigName}) -> ?config(ConfigName, Config) end, Apps),
 
-            lists:foreach(fun(N) ->
-                ok = rpc:call(N, application, stop, [op_ccm])
-            end, CCMs),
-
-            lists:foreach(fun(N) ->
-                ok = rpc:call(N, application, stop, [globalregistry])
-            end, GrNodes),
-
-            lists:foreach(fun(_N) ->
-                receive
-                    {app_ended, CoverNode, FileData} ->
-                        {Mega, Sec, Micro} = os:timestamp(),
-                        CoverFile = atom_to_list(CoverNode) ++
-                            integer_to_list((Mega * 1000000 + Sec) * 1000000 + Micro) ++
-                            ".coverdata",
-                        ok = file:write_file(CoverFile, FileData),
-                        cover:import(CoverFile),
-                        file:delete(CoverFile)
-                after
-                    ?TIMEOUT -> throw(cover_not_received)
-                end
-            end, AllNodes)
+            lists:foreach(
+                fun(_N) ->
+                    receive
+                        {app_ended, CoverNode, FileData} ->
+                            {Mega, Sec, Micro} = os:timestamp(),
+                            CoverFile = atom_to_list(CoverNode) ++
+                                integer_to_list((Mega * 1000000 + Sec) * 1000000 + Micro) ++
+                                ".coverdata",
+                            ok = file:write_file(CoverFile, FileData),
+                            cover:import(CoverFile),
+                            file:delete(CoverFile)
+                    after
+                        ?TIMEOUT -> throw(cover_not_received)
+                    end
+                end, AllNodes
+            )
     end,
 
     Dockers = proplists:get_value(docker_ids, Config, []),
     ProjectRoot = ?config(project_root, Config),
     DockersStr = lists:map(fun atom_to_list/1, Dockers),
-    CleanupScript =
-        filename:join([ProjectRoot, "bamboos", "docker", "cleanup.py"]),
+    CleanupScript = filename:join([ProjectRoot, "bamboos", "docker", "cleanup.py"]),
     utils:cmd([CleanupScript | DockersStr]),
     ok.
 
