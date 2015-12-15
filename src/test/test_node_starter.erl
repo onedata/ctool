@@ -85,7 +85,7 @@ prepare_test_environment(Config, DescriptionFile, TestModule, LoadModules, Apps)
 
         try
             Dns = ?config(dns, EnvDesc),
-            AllNodes = lists:flatmap(fun({_, ConfigName}) -> ?config(ConfigName, Config) end, Apps),
+            AllNodes = lists:flatmap(fun({_, ConfigName}) -> ?config(ConfigName, EnvDesc) end, Apps),
 
             erlang:set_cookie(node(), test_cookie),
             os:cmd("echo nameserver " ++ atom_to_list(Dns) ++ " > /etc/resolv.conf"),
