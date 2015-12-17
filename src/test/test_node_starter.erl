@@ -18,6 +18,10 @@
 
 -define(CLEANING_PROC_NAME, cleaning_proc).
 -define(TIMEOUT, timer:seconds(60)).
+
+%% This is list of all applications that possibly could be started by test_node_starter
+%% Update when adding new application (if you want to use callbacks without specifying apps list)
+%% List of tuples {application name, name of node in json output}
 -define(ALL_POSSIBLE_APPS, [
     {op_worker, op_worker_nodes},
     {cluster_worker, cluster_worker_nodes},
