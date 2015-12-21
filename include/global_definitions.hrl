@@ -17,8 +17,8 @@
 %%% Global names
 %%%===================================================================
 
-%% Global name of gen_server that provides ccm functionality.
--define(CCM, cluster_manager).
+%% Global name of gen_server that provides cluster manager functionality.
+-define(CLUSTER_MANAGER, cluster_manager).
 
 %% Local name (name and node is used to identify it) of gen_server that
 %% coordinates node life cycle.
