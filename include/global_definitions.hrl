@@ -7,7 +7,7 @@
 %%%-------------------------------------------------------------------
 %%% @doc
 %%% This file contains global definitions of component names, macros and types
-%%% used in applications based on CCM - node_managers distriution model.
+%%% used in applications based on cluster managers - node_managers distribution model.
 %%% @end
 %%%-------------------------------------------------------------------
 -ifndef(GLOBAL_DEFINITIONS_CTOOL_HRL).

@@ -280,7 +280,7 @@ choose_node_for_dispatcher(Advice, _WorkerName) ->
 
 %%--------------------------------------------------------------------
 %% @doc
-%% Returns an initial advice for dispatcher that can be used before CCM
+%% Returns an initial advice for dispatcher that can be used before cluster manager
 %% starts broadcasting advices.
 %% @end
 %%--------------------------------------------------------------------
@@ -291,7 +291,7 @@ all_nodes_for_dispatcher(#dispatcher_lb_advice{all_nodes = AllNodes}) ->
 
 %%--------------------------------------------------------------------
 %% @doc
-%% Returns an initial advice for DNS that can be used before CCM
+%% Returns an initial advice for DNS that can be used before cluster manager
 %% starts broadcasting advices.
 %% @end
 %%--------------------------------------------------------------------
@@ -303,7 +303,7 @@ initial_advice_for_dns(NodeIP) ->
 
 %%--------------------------------------------------------------------
 %% @doc
-%% Returns an initial advice for dispatcher that can be used before CCM
+%% Returns an initial advice for dispatcher that can be used before cluster manager
 %% starts broadcasting advices.
 %% @end
 %%--------------------------------------------------------------------
