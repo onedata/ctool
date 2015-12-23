@@ -19,13 +19,6 @@
 % String formatting
 -export([format/2, format_bin/2]).
 
-% File path validation
--export([ends_with_slash/1]).
-
-% File path manipulation
--export([ensure_ends_with_slash/1, ensure_begins_with_slash/1,
-    ensure_begins_with_prefix/2, parent/1]).
-
 %%%===================================================================
 %%% API
 %%%===================================================================
@@ -114,56 +107,3 @@ format(Format, Args) ->
 -spec format_bin(Format :: string(), Args :: [term()]) -> binary().
 format_bin(Format, Args) ->
     to_binary(format(Format, Args)).
-
-
-%%--------------------------------------------------------------------
-%% @equiv binary:last(Path) =:= $/
-%%--------------------------------------------------------------------
--spec ends_with_slash(binary()) -> boolean().
-ends_with_slash(Path) ->
-    binary:last(Path) =:= $/.
-
-
-%%--------------------------------------------------------------------
-%% @doc
-%% Appends '/' to the end of filepath if last character is different
-%% @end
-%%--------------------------------------------------------------------
--spec ensure_ends_with_slash(binary()) -> binary().
-ensure_ends_with_slash(<<"">>) ->
-    <<"/">>;
-ensure_ends_with_slash(Path) ->
-    case ends_with_slash(Path) of
-        true -> Path;
-        false -> <<Path/binary, "/">>
-    end.
-
-
-%%--------------------------------------------------------------------
-%% @equiv ensure_begins_with_prefix(Path, <<"/">>)
-%%--------------------------------------------------------------------
--spec ensure_begins_with_slash(Path :: file_meta:path()) -> file_meta:path().
-ensure_begins_with_slash(Path) ->
-    ensure_begins_with_prefix(Path, <<"/">>).
-
-
-%%--------------------------------------------------------------------
-%% @doc Ensures that path begins with given prefix
-%%--------------------------------------------------------------------
--spec ensure_begins_with_prefix(Path :: file_meta:path(), Prefix :: binary()) -> file_meta:path().
-ensure_begins_with_prefix(Path, Prefix) ->
-    Size = size(Prefix),
-    case Path of
-        <<Prefix:Size/binary, _/binary>> ->
-            Path;
-        _ ->
-            <<Prefix/binary, Path/binary>>
-    end.
-
-
-%%--------------------------------------------------------------------
-%% @doc Get parent dir
-%%--------------------------------------------------------------------
--spec parent(onedata_file_api:file_path()) -> onedata_file_api:file_path().
-parent(Path) ->
-    ensure_ends_with_slash(filename:dirname(filename:absname(Path))).
