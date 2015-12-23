@@ -11,7 +11,7 @@
 -module(str_utils).
 
 % Conversion
--export([to_list/1, to_binary/1, join_binary/2]).
+-export([to_list/1, to_binary/1, join_binary/2, reverse_binary/1]).
 
 % Conversion between unicode and binaries
 -export([unicode_list_to_binary/1, binary_to_unicode_list/1]).
@@ -19,9 +19,12 @@
 % String formatting
 -export([format/2, format_bin/2]).
 
-% File path manipulation
--export([ensure_ends_with_slash/1]).
+% File path validation
+-export([ends_with_slash/1]).
 
+% File path manipulation
+-export([ensure_ends_with_slash/1, ensure_begins_with_slash/1,
+    ensure_begins_with_prefix/2, parent/1]).
 
 %%%===================================================================
 %%% API
@@ -68,6 +71,16 @@ join_binary([Head | Tail], Sep) ->
 
 
 %%--------------------------------------------------------------------
+%% @doc Reverse given binary.
+%%--------------------------------------------------------------------
+-spec reverse_binary(binary()) -> binary().
+reverse_binary(Binary) ->
+    S = size(Binary) * 8,
+    <<X:S/integer-little>> = Binary,
+    <<X:S/integer-big>>.
+
+
+%%--------------------------------------------------------------------
 %% @doc Converts a unicode list to utf8 binary.
 %% @end
 %%--------------------------------------------------------------------
@@ -104,6 +117,14 @@ format_bin(Format, Args) ->
 
 
 %%--------------------------------------------------------------------
+%% @equiv binary:last(Path) =:= $/
+%%--------------------------------------------------------------------
+-spec ends_with_slash(binary()) -> boolean().
+ends_with_slash(Path) ->
+    binary:last(Path) =:= $/.
+
+
+%%--------------------------------------------------------------------
 %% @doc
 %% Appends '/' to the end of filepath if last character is different
 %% @end
@@ -112,7 +133,37 @@ format_bin(Format, Args) ->
 ensure_ends_with_slash(<<"">>) ->
     <<"/">>;
 ensure_ends_with_slash(Path) ->
-    case binary:last(Path) of
-        $/ -> Path;
-        _ -> <<Path/binary, "/">>
+    case ends_with_slash(Path) of
+        true -> Path;
+        false -> <<Path/binary, "/">>
     end.
+
+
+%%--------------------------------------------------------------------
+%% @equiv ensure_begins_with_prefix(Path, <<"/">>)
+%%--------------------------------------------------------------------
+-spec ensure_begins_with_slash(Path :: file_meta:path()) -> file_meta:path().
+ensure_begins_with_slash(Path) ->
+    ensure_begins_with_prefix(Path, <<"/">>).
+
+
+%%--------------------------------------------------------------------
+%% @doc Ensures that path begins with given prefix
+%%--------------------------------------------------------------------
+-spec ensure_begins_with_prefix(Path :: file_meta:path(), Prefix :: binary()) -> file_meta:path().
+ensure_begins_with_prefix(Path, Prefix) ->
+    Size = size(Prefix),
+    case Path of
+        <<Prefix:Size/binary, _/binary>> ->
+            Path;
+        _ ->
+            <<Prefix/binary, Path/binary>>
+    end.
+
+
+%%--------------------------------------------------------------------
+%% @doc Get parent dir
+%%--------------------------------------------------------------------
+-spec parent(onedata_file_api:file_path()) -> onedata_file_api:file_path().
+parent(Path) ->
+    ensure_ends_with_slash(filename:dirname(filename:absname(Path))).
