@@ -24,9 +24,11 @@
 %%%===================================================================
 
 %%--------------------------------------------------------------------
-%% @equiv binary:last(Path) =:= $/
+%% @doc Returns true when given path ends with '/'
 %%--------------------------------------------------------------------
 -spec ends_with_slash(binary()) -> boolean().
+ends_with_slash(<<"">>) ->
+    false;
 ends_with_slash(Path) ->
     binary:last(Path) =:= $/.
 
