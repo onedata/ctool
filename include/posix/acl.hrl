@@ -13,6 +13,8 @@
 -ifndef(FSLOGIC_ACL_HRL).
 -define(FSLOGIC_ACL_HRL, 1).
 
+-define(ACL_XATTR_NAME, <<"cdmi_acl">>). %todo use everywhere
+
 % Returns true if Bitmask contains all bits from Flag
 -define(has_flag(Bitmask, Flag), ((Bitmask band Flag) =:= Flag)).
 
