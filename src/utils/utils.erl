@@ -265,7 +265,6 @@ adjust_duration(Duration, Unit) ->
 mkdtemp() ->
     mochitemp:mkdtemp().
 
-
 %%--------------------------------------------------------------------
 %% @doc
 %% Creates a temporary dir (with given location and name) and returns its path.
@@ -273,7 +272,6 @@ mkdtemp() ->
 %%--------------------------------------------------------------------
 mkdtemp(Suffix, Prefix, Dir) ->
     mochitemp:mkdtemp(Suffix, Prefix, Dir).
-
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -283,6 +281,17 @@ mkdtemp(Suffix, Prefix, Dir) ->
 rmtempdir(Dir) ->
     mochitemp:rmtempdir(Dir).
 
+%%--------------------------------------------------------------------
+%% @private
+%% @doc
+%% Ensures value is defined.
+%% @end
+%%--------------------------------------------------------------------
+-spec ensure_defined(Value :: term(), UndefinedValue :: term(), DefaultValue :: term()) ->term().
+ensure_defined(UndefinedValue, UndefinedValue, DefaultValue) ->
+    DefaultValue;
+ensure_defined(Value, _, _) ->
+    Value.
 
 %%%===================================================================
 %%% Internal functions
@@ -346,14 +355,3 @@ pforeach_gather(N, Ref) ->
         Ref -> pforeach_gather(N - 1, Ref)
     end.
 
-%%--------------------------------------------------------------------
-%% @private
-%% @doc
-%% Ensures value is defined.
-%% @end
-%%--------------------------------------------------------------------
--spec ensure_defined(Value :: term(), UndefinedValue :: term(), DefaultValue :: term()) ->term().
-ensure_defined(UndefinedValue, UndefinedValue, DefaultValue) ->
-    DefaultValue;
-ensure_defined(Value, _, _) ->
-    Value.
