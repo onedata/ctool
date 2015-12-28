@@ -18,6 +18,7 @@
 
 -define(CLEANING_PROC_NAME, cleaning_proc).
 -define(TIMEOUT, timer:seconds(60)).
+-define(COOKIE_KEY, "vm.args/setcookie").
 
 %% This is list of all applications that possibly could be started by test_node_starter
 %% Update when adding new application (if you want to use callbacks without specifying apps list)
@@ -63,7 +64,8 @@ prepare_test_environment(Config, DescriptionFile, TestModule, LoadModules, Apps)
         ConfigWithPaths =
             [{ct_test_root, CtTestRoot}, {project_root, ProjectRoot} | Config],
 
-        EnvUpScript = filename:join([ProjectRoot, "bamboos", "docker", "env_up.py"]),
+        EnvUpScript =
+            filename:join([ProjectRoot, "bamboos", "docker", "env_up.py"]),
 
         LogsDir = filename:join(PrivDir, atom_to_list(TestModule) ++ "_logs"),
         os:cmd("mkdir -p " ++ LogsDir),
@@ -89,19 +91,25 @@ prepare_test_environment(Config, DescriptionFile, TestModule, LoadModules, Apps)
 
         try
             Dns = ?config(dns, EnvDesc),
-            AllNodes = lists:flatmap(fun({_, ConfigName}) -> ?config(ConfigName, EnvDesc) end, Apps),
+            AllNodesWithCookies = lists:flatmap(
+                fun({AppName, ConfigName}) ->
+                    Nodes = ?config(ConfigName, EnvDesc),
+                    get_cookies(Nodes, AppName, ?COOKIE_KEY, DescriptionFile)
+                end, Apps
+            ),
 
-            erlang:set_cookie(node(), test_cookie),
             os:cmd("echo nameserver " ++ atom_to_list(Dns) ++ " > /etc/resolv.conf"),
 
-            ping_nodes(AllNodes),
+            ping_nodes(AllNodesWithCookies),
             global:sync(),
-            load_modules(AllNodes, [TestModule, test_utils | LoadModules]),
+            load_modules(AllNodesWithCookies, [TestModule, test_utils | LoadModules]),
 
             lists:append([
                 ConfigWithPaths,
                 proplists:delete(dns, EnvDesc),
-                rebar_git_plugin:get_git_metadata()
+                rebar_git_plugin:get_git_metadata(),
+                [{env_description, DescriptionFile}]
+
             ])
         catch
             E11:E12 ->
@@ -142,6 +150,7 @@ clean_environment(Config, Apps) ->
         [] ->
             ok;
         _ ->
+            DescriptionFile = ?config(env_description, Config),
             global:register_name(?CLEANING_PROC_NAME, self()),
             global:sync(),
 
@@ -152,30 +161,34 @@ clean_environment(Config, Apps) ->
                 end, Apps
             ),
 
-            AllNodes = lists:flatmap(fun({_, ConfigName}) -> ?config(ConfigName, Config) end, Apps),
+            AllNodesWithCookies = lists:flatmap(
+                fun({AppName, ConfigName}) ->
+                    Nodes = ?config(ConfigName, Config),
+                    get_cookies(Nodes, AppName, ?COOKIE_KEY, DescriptionFile)
+                end, Apps
+            ),
 
-            lists:foreach(
-                fun(_N) ->
-                    receive
-                        {app_ended, CoverNode, FileData} ->
-                            {Mega, Sec, Micro} = os:timestamp(),
-                            CoverFile = atom_to_list(CoverNode) ++
-                                integer_to_list((Mega * 1000000 + Sec) * 1000000 + Micro) ++
-                                ".coverdata",
-                            ok = file:write_file(CoverFile, FileData),
-                            cover:import(CoverFile),
-                            file:delete(CoverFile)
-                    after
-                        ?TIMEOUT -> throw(cover_not_received)
-                    end
-                end, AllNodes
-            )
+            lists:foreach(fun({_N, _C}) ->
+                receive
+                    {app_ended, CoverNode, FileData} ->
+                        {Mega, Sec, Micro} = os:timestamp(),
+                        CoverFile = atom_to_list(CoverNode) ++
+                            integer_to_list((Mega * 1000000 + Sec) * 1000000 + Micro) ++
+                            ".coverdata",
+                        ok = file:write_file(CoverFile, FileData),
+                        cover:import(CoverFile),
+                        file:delete(CoverFile)
+                after
+                    ?TIMEOUT -> throw(cover_not_received)
+                end
+            end, AllNodesWithCookies)
     end,
 
     Dockers = proplists:get_value(docker_ids, Config, []),
     ProjectRoot = ?config(project_root, Config),
     DockersStr = lists:map(fun atom_to_list/1, Dockers),
-    CleanupScript = filename:join([ProjectRoot, "bamboos", "docker", "cleanup.py"]),
+    CleanupScript =
+        filename:join([ProjectRoot, "bamboos", "docker", "cleanup.py"]),
     utils:cmd([CleanupScript | DockersStr]),
     ok.
 
@@ -262,21 +275,22 @@ maybe_stop_cover() ->
 %% Checks connection with nodes.
 %% @end
 %%--------------------------------------------------------------------
--spec ping_nodes(Nodes :: list()) -> ok | no_return().
-ping_nodes(Nodes) ->
-    ping_nodes(Nodes, 300).
+-spec ping_nodes(NodesWithCookies :: [{node(), atom()}]) -> ok | no_return().
+ping_nodes(NodesWithCookies) ->
+    ping_nodes(NodesWithCookies, 300).
 ping_nodes(_Nodes, 0) ->
     throw(nodes_connection_error);
-ping_nodes(Nodes, Tries) ->
+ping_nodes(NodesWithCookies, Tries) ->
     AllConnected = lists:all(
-        fun(Node) ->
+        fun({Node, Cookie}) ->
+            erlang:set_cookie(node(), Cookie),
             pong == net_adm:ping(Node)
-        end, Nodes),
+        end, NodesWithCookies),
     case AllConnected of
         true -> ok;
         _ ->
             timer:sleep(timer:seconds(1)),
-            ping_nodes(Nodes, Tries - 1)
+            ping_nodes(NodesWithCookies, Tries - 1)
     end.
 
 %%--------------------------------------------------------------------
@@ -285,9 +299,10 @@ ping_nodes(Nodes, Tries) ->
 %% Loads modules code on given nodes.
 %% @end
 %%--------------------------------------------------------------------
--spec load_modules(Nodes :: [node()], Modules :: [module()]) -> ok.
-load_modules(Nodes, Modules) ->
-    lists:foreach(fun(Node) ->
+-spec load_modules(NodesWithCookies :: [{node(), atom()}], Modules :: [module()]) -> ok.
+load_modules(NodesWithCookies, Modules) ->
+    lists:foreach(fun({Node, Cookie}) ->
+        erlang:set_cookie(node(), Cookie),
         lists:foreach(fun(Module) ->
             {Module, Binary, Filename} = code:get_object_code(Module),
             rpc:call(Node, code, delete, [Module], ?TIMEOUT),
@@ -296,4 +311,50 @@ load_modules(Nodes, Modules) ->
                 Node, code, load_binary, [Module, Filename, Binary], ?TIMEOUT
             ))
         end, Modules)
+    end, NodesWithCookies).
+
+
+%%%===================================================================
+%%% Internal functions
+%%%===================================================================
+
+%%--------------------------------------------------------------------
+%% @private
+%% @doc
+%% Get one key by concatenating many json keys, separated with "/" 
+%% @end
+%%--------------------------------------------------------------------
+-spec get_json_key(Node :: string(), Domain :: string(), NodeType :: string(),
+        Key :: string()) -> string().
+get_json_key(Node, Domain, NodeType, Key) ->
+    [NodeName, DomainName | _] = string:tokens(utils:get_host(Node), "."),
+    string:join([Domain, DomainName, NodeType, NodeName, Key], "/").
+
+%%--------------------------------------------------------------------
+%% @private
+%% @doc
+%% Get cookies for each Node in Nodes list.
+%% CookieKey is the nested json key, independent of node type.
+%% Returns list of tuples {Node, Cookie}
+%% @end
+%%--------------------------------------------------------------------
+-spec get_cookies(Nodes::[node()] | [] | undefined , AppName :: string(), CookieKey :: string(),
+        DescriptionFile :: string()) -> [{Node :: node(), Cookie :: atom()}] | [].
+get_cookies(undefined, _AppName, _CookieKey, _DescriptionFile) -> [];
+get_cookies([], _AppName, _CookieKey, _DescriptionFile) -> [];
+get_cookies(Nodes, AppName, CookieKey, DescriptionFile) ->
+    lists:map(fun(Node) ->
+
+        Key = case AppName of
+              globalregistry ->
+                  get_json_key(Node, "globalregistry_domains", "globalregistry", CookieKey);
+              op_ccm ->
+                  get_json_key(Node, "provider_domains", "op_ccm", CookieKey);
+              op_worker ->
+                  get_json_key(Node, "provider_domains", "op_worker", CookieKey);
+              cluster_worker ->
+                  get_json_key(Node, "cluster_domains", "cluster_worker", CookieKey)
+          end,
+
+        {Node, json_parser:get_value(Key, DescriptionFile, "/")}
     end, Nodes).
