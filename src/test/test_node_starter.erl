@@ -324,7 +324,7 @@ load_modules(NodesWithCookies, Modules) ->
 %% Get one key by concatenating many json keys, separated with "/" 
 %% @end
 %%--------------------------------------------------------------------
--spec get_json_key(Node :: string(), Domain :: string(), NodeType :: string(),
+-spec get_json_key(Node :: atom(), Domain :: string(), NodeType :: string(),
         Key :: string()) -> string().
 get_json_key(Node, Domain, NodeType, Key) ->
     [NodeName, DomainName | _] = string:tokens(utils:get_host(Node), "."),
