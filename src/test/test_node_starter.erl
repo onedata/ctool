@@ -51,7 +51,7 @@ prepare_test_environment(Config, DescriptionFile, TestModule, LoadModules) ->
 %%--------------------------------------------------------------------
 -spec prepare_test_environment(Config :: list(), DescriptionFile :: string(),
     TestModule :: module(), LoadModules :: [module()], Apps :: [{AppName :: atom(), ConfigName :: atom()}])
-      -> Result :: list() | {fail, tuple()}.
+        -> Result :: list() | {fail, tuple()}.
 prepare_test_environment(Config, DescriptionFile, TestModule, LoadModules, Apps) ->
     try
         DataDir = ?config(data_dir, Config),
@@ -75,7 +75,8 @@ prepare_test_environment(Config, DescriptionFile, TestModule, LoadModules, Apps)
 
         StartLog = list_to_binary(utils:cmd([EnvUpScript,
             %% Function is used durgin OP or GR tests so starts OP or GR - not both
-            "--bin-cluster-worker", ProjectRoot,
+%% TODO uncomment below line after merging VFS-1426 and VFS-1431 to develop
+%%             "--bin-cluster-worker", ProjectRoot,
             "--bin-worker", ProjectRoot,
             "--bin-gr", ProjectRoot,
             %% additionally AppMock can be started
@@ -325,7 +326,7 @@ load_modules(NodesWithCookies, Modules) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec get_json_key(Node :: atom(), Domain :: string(), NodeType :: string(),
-        Key :: string()) -> string().
+    Key :: string()) -> string().
 get_json_key(Node, Domain, NodeType, Key) ->
     [NodeName, DomainName | _] = string:tokens(utils:get_host(Node), "."),
     string:join([Domain, DomainName, NodeType, NodeName, Key], "/").
@@ -339,22 +340,21 @@ get_json_key(Node, Domain, NodeType, Key) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec get_cookies(Nodes::[node()] | [] | undefined , AppName :: string(), CookieKey :: string(),
-        DescriptionFile :: string()) -> [{Node :: node(), Cookie :: atom()}] | [].
+    DescriptionFile :: string()) -> [{Node :: node(), Cookie :: atom()}] | [].
 get_cookies(undefined, _AppName, _CookieKey, _DescriptionFile) -> [];
 get_cookies([], _AppName, _CookieKey, _DescriptionFile) -> [];
 get_cookies(Nodes, AppName, CookieKey, DescriptionFile) ->
+%% TODO change key for ccm and worker if test is in cluster_worker repo
     lists:map(fun(Node) ->
-
         Key = case AppName of
-              globalregistry ->
-                  get_json_key(Node, "globalregistry_domains", "globalregistry", CookieKey);
-              op_ccm ->
-                  get_json_key(Node, "provider_domains", "op_ccm", CookieKey);
-              op_worker ->
-                  get_json_key(Node, "provider_domains", "op_worker", CookieKey);
-              cluster_worker ->
-                  get_json_key(Node, "cluster_domains", "cluster_worker", CookieKey)
-          end,
-
+                  globalregistry ->
+                      get_json_key(Node, "globalregistry_domains", "globalregistry", CookieKey);
+                  op_ccm ->
+                      get_json_key(Node, "provider_domains", "op_ccm", CookieKey);
+                  op_worker ->
+                      get_json_key(Node, "provider_domains", "op_worker", CookieKey);
+                  cluster_worker ->
+                      get_json_key(Node, "cluster_domains", "cluster_worker", CookieKey)
+              end,
         {Node, json_parser:get_value(Key, DescriptionFile, "/")}
-    end, Nodes).
+end, Nodes).
