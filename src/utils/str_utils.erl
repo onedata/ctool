@@ -11,17 +11,13 @@
 -module(str_utils).
 
 % Conversion
--export([to_list/1, to_binary/1, join_binary/2]).
+-export([to_list/1, to_binary/1, join_binary/2, reverse_binary/1]).
 
 % Conversion between unicode and binaries
 -export([unicode_list_to_binary/1, binary_to_unicode_list/1]).
 
 % String formatting
 -export([format/2, format_bin/2]).
-
-% File path manipulation
--export([ensure_ends_with_slash/1]).
-
 
 %%%===================================================================
 %%% API
@@ -68,6 +64,16 @@ join_binary([Head | Tail], Sep) ->
 
 
 %%--------------------------------------------------------------------
+%% @doc Reverse given binary.
+%%--------------------------------------------------------------------
+-spec reverse_binary(binary()) -> binary().
+reverse_binary(Binary) ->
+    S = size(Binary) * 8,
+    <<X:S/integer-little>> = Binary,
+    <<X:S/integer-big>>.
+
+
+%%--------------------------------------------------------------------
 %% @doc Converts a unicode list to utf8 binary.
 %% @end
 %%--------------------------------------------------------------------
@@ -101,18 +107,3 @@ format(Format, Args) ->
 -spec format_bin(Format :: string(), Args :: [term()]) -> binary().
 format_bin(Format, Args) ->
     to_binary(format(Format, Args)).
-
-
-%%--------------------------------------------------------------------
-%% @doc
-%% Appends '/' to the end of filepath if last character is different
-%% @end
-%%--------------------------------------------------------------------
--spec ensure_ends_with_slash(binary()) -> binary().
-ensure_ends_with_slash(<<"">>) ->
-    <<"/">>;
-ensure_ends_with_slash(Path) ->
-    case binary:last(Path) of
-        $/ -> Path;
-        _ -> <<Path/binary, "/">>
-    end.
