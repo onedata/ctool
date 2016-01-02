@@ -14,7 +14,7 @@
 -define(NODE_MONITORING_HRL, 1).
 
 %% Record containing node state. It's used by node managers to send
-%% monitoring data to CCM.
+%% monitoring data to cluster manager.
 -record(node_state, {
     node = node() :: node(),
     ip_addr = {127, 0, 0, 1} :: {A :: byte(), B :: byte(), C :: byte(), D :: byte()},
