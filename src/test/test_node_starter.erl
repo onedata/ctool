@@ -155,17 +155,19 @@ clean_environment(Config, Apps) ->
             global:register_name(?CLEANING_PROC_NAME, self()),
             global:sync(),
 
-            lists:foreach(
-                fun({AppName, ConfigName}) ->
-                    Nodes = ?config(ConfigName, Config),
-                    lists:foreach(fun(N) -> ok = rpc:call(N, application, stop, [AppName]) end, Nodes)
-                end, Apps
-            ),
-
             AllNodesWithCookies = lists:flatmap(
                 fun({AppName, ConfigName}) ->
                     Nodes = ?config(ConfigName, Config),
-                    get_cookies(Nodes, AppName, ?COOKIE_KEY, DescriptionFile)
+                    NodesWithCookies =
+                        get_cookies(Nodes, AppName, ?COOKIE_KEY, DescriptionFile),
+
+                    %% stop applications                     
+                    lists:foreach(fun({N, C}) ->
+                        erlang:set_cookie(node(), C),
+                        ok = rpc:call(N, application, stop, [AppName])
+                    end, NodesWithCookies),
+
+                    NodesWithCookies
                 end, Apps
             ),
 
@@ -357,4 +359,4 @@ get_cookies(Nodes, AppName, CookieKey, DescriptionFile) ->
                       get_json_key(Node, "cluster_domains", "cluster_worker", CookieKey)
               end,
         {Node, json_parser:get_value(Key, DescriptionFile, "/")}
-end, Nodes).
+    end, Nodes).
