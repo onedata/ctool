@@ -7,7 +7,7 @@
 %%%-------------------------------------------------------------------
 %%% @doc
 %%% This file contains global definitions of component names, macros and types
-%%% used in applications based on CCM - node_managers distriution model.
+%%% used in applications based on cluster managers - node_managers distribution model.
 %%% @end
 %%%-------------------------------------------------------------------
 -ifndef(GLOBAL_DEFINITIONS_CTOOL_HRL).
@@ -17,8 +17,8 @@
 %%% Global names
 %%%===================================================================
 
-%% Global name of gen_server that provides ccm functionality.
--define(CCM, cluster_manager).
+%% Global name of gen_server that provides cluster manager functionality.
+-define(CLUSTER_MANAGER, cluster_manager).
 
 %% Local name (name and node is used to identify it) of gen_server that
 %% coordinates node life cycle.
