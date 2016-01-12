@@ -75,8 +75,7 @@ prepare_test_environment(Config, DescriptionFile, TestModule, LoadModules, Apps)
 
         StartLog = list_to_binary(utils:cmd([EnvUpScript,
             %% Function is used durgin OP or GR tests so starts OP or GR - not both
-%% TODO uncomment below line after merging VFS-1426 and VFS-1431 to develop
-%%             "--bin-cluster-worker", ProjectRoot,
+            "--bin-cluster-worker", ProjectRoot,
             "--bin-worker", ProjectRoot,
             "--bin-gr", ProjectRoot,
             %% additionally AppMock can be started
@@ -328,7 +327,9 @@ load_modules(NodesWithCookies, Modules) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec get_json_key(Node :: atom(), Domain :: string(), NodeType :: string(),
-    Key :: string()) -> string().
+    Key :: string() | Keys :: [string()]) -> string() | [string()].
+get_json_key(Node, Domain, NodeType, Keys) when is_list(Keys) ->
+    [get_json_key(Node, Domain, NodeType, Key) || Key <- Keys];
 get_json_key(Node, Domain, NodeType, Key) ->
     [NodeName, DomainName | _] = string:tokens(utils:get_host(Node), "."),
     string:join([Domain, DomainName, NodeType, NodeName, Key], "/").
@@ -346,17 +347,31 @@ get_json_key(Node, Domain, NodeType, Key) ->
 get_cookies(undefined, _AppName, _CookieKey, _DescriptionFile) -> [];
 get_cookies([], _AppName, _CookieKey, _DescriptionFile) -> [];
 get_cookies(Nodes, AppName, CookieKey, DescriptionFile) ->
-%% TODO change key for ccm and worker if test is in cluster_worker repo
     lists:map(fun(Node) ->
         Key = case AppName of
                   globalregistry ->
                       get_json_key(Node, "globalregistry_domains", "globalregistry", CookieKey);
-                  op_ccm ->
-                      get_json_key(Node, "provider_domains", "op_ccm", CookieKey);
+                  cluster_manager ->
+                      get_json_key(
+                          Node, ["provider_domains", "cluster_domains"],
+                          "cluster_manager", CookieKey
+                      );
                   op_worker ->
                       get_json_key(Node, "provider_domains", "op_worker", CookieKey);
                   cluster_worker ->
                       get_json_key(Node, "cluster_domains", "cluster_worker", CookieKey)
               end,
-        {Node, json_parser:get_value(Key, DescriptionFile, "/")}
+        case is_list(Key) of
+            false -> {Node, json_parser:get_value(Key, DescriptionFile, "/")};
+                _ ->
+                    %% if Key is a list, choose value that is different that undefined,
+                    %% there should be only one such value
+                    fun F([ H | T] = Key) ->
+                        case json_parser:get_value(H, DescriptionFile, "/") of
+                            undefined -> F(T);
+                            Value -> {Node, Value}
+                        end
+                    end
+        end
     end, Nodes).
+
