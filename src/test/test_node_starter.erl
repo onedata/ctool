@@ -50,7 +50,7 @@ prepare_test_environment(Config, DescriptionFile, TestModule, LoadModules) ->
 %%--------------------------------------------------------------------
 -spec prepare_test_environment(Config :: list(), DescriptionFile :: string(),
     TestModule :: module(), LoadModules :: [module()], Apps :: [{AppName :: atom(), ConfigName :: atom()}])
-      -> Result :: list() | {fail, tuple()}.
+        -> Result :: list() | {fail, tuple()}.
 prepare_test_environment(Config, DescriptionFile, TestModule, LoadModules, Apps) ->
     try
         DataDir = ?config(data_dir, Config),
@@ -140,7 +140,12 @@ clean_environment(Config) ->
 clean_environment(Config, Apps) ->
     case cover:modules() of
         [] ->
-            ok;
+            lists:foreach(
+                fun({AppName, ConfigName}) ->
+                    Nodes = ?config(ConfigName, Config),
+                    lists:foreach(fun(N) -> ok = rpc:call(N, application, stop, [AppName]) end, Nodes)
+                end, Apps
+            );
         _ ->
             global:register_name(?CLEANING_PROC_NAME, self()),
             global:sync(),
