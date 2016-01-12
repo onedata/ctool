@@ -26,7 +26,7 @@
 -define(ALL_POSSIBLE_APPS, [
     {op_worker, op_worker_nodes},
     {cluster_worker, cluster_worker_nodes},
-    {op_ccm, op_ccm_nodes},
+    {cluster_manager, cluster_manager_nodes},
     {globalregistry, gr_nodes}
 ]).
 
@@ -59,7 +59,7 @@ prepare_test_environment(Config, DescriptionFile, TestModule, LoadModules, Apps)
         CtTestRoot = filename:join(DataDir, ".."),
         ProjectRoot = filename:join(CtTestRoot, ".."),
         AppmockRoot = filename:join(ProjectRoot, "appmock"),
-        CcmRoot = filename:join(ProjectRoot, "op_ccm"),
+        CmRoot = filename:join(ProjectRoot, "cluster_manager"),
 
         ConfigWithPaths =
             [{ct_test_root, CtTestRoot}, {project_root, ProjectRoot} | Config],
@@ -81,7 +81,7 @@ prepare_test_environment(Config, DescriptionFile, TestModule, LoadModules, Apps)
             "--bin-gr", ProjectRoot,
             %% additionally AppMock can be started
             "--bin-appmock", AppmockRoot,
-            "--bin-ccm", CcmRoot,
+            "--bin-cm", CmRoot,
             "--logdir", LogsDir,
             DescriptionFile, "2>> prepare_test_environment_error.log"])),
 
