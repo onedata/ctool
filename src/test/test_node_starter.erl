@@ -327,7 +327,7 @@ load_modules(NodesWithCookies, Modules) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec get_json_key(Node :: atom(), Domain :: string(), NodeType :: string(),
-    Key :: string() | Keys :: [string()]) -> string() | [string()].
+     string() | [string()]) -> string() | [string()].
 get_json_key(Node, Domain, NodeType, Keys) when is_list(Keys) ->
     [get_json_key(Node, Domain, NodeType, Key) || Key <- Keys];
 get_json_key(Node, Domain, NodeType, Key) ->
@@ -366,7 +366,7 @@ get_cookies(Nodes, AppName, CookieKey, DescriptionFile) ->
                 _ ->
                     %% if Key is a list, choose value that is different that undefined,
                     %% there should be only one such value
-                    fun F([ H | T] = Key) ->
+                    fun F([H | T] = Key) ->
                         case json_parser:get_value(H, DescriptionFile, "/") of
                             undefined -> F(T);
                             Value -> {Node, Value}
