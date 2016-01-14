@@ -138,43 +138,49 @@ clean_environment(Config) ->
 %%--------------------------------------------------------------------
 -spec clean_environment(Config :: list(), Apps::[{AppName::atom(), ConfigName::atom()}]) -> ok.
 clean_environment(Config, Apps) ->
-    case cover:modules() of
-        [] ->
-            lists:foreach(
-                fun({AppName, ConfigName}) ->
-                    Nodes = ?config(ConfigName, Config),
-                    lists:foreach(fun(N) -> ok = rpc:call(N, application, stop, [AppName]) end, Nodes)
-                end, Apps
-            );
-        _ ->
-            global:register_name(?CLEANING_PROC_NAME, self()),
-            global:sync(),
+    try
+        case cover:modules() of
+            [] ->
+                lists:foreach(
+                    fun({AppName, ConfigName}) ->
+                        Nodes = ?config(ConfigName, Config),
+                        lists:foreach(fun(N) -> ok = rpc:call(N, application, stop, [AppName]) end, Nodes)
+                    end, Apps
+                );
+            _ ->
+                global:register_name(?CLEANING_PROC_NAME, self()),
+                global:sync(),
 
-            lists:foreach(
-                fun({AppName, ConfigName}) ->
-                    Nodes = ?config(ConfigName, Config),
-                    lists:foreach(fun(N) -> ok = rpc:call(N, application, stop, [AppName]) end, Nodes)
-                end, Apps
-            ),
+                lists:foreach(
+                    fun({AppName, ConfigName}) ->
+                        Nodes = ?config(ConfigName, Config),
+                        lists:foreach(fun(N) -> ok = rpc:call(N, application, stop, [AppName]) end, Nodes)
+                    end, Apps
+                ),
 
-            AllNodes = lists:flatmap(fun({_, ConfigName}) -> ?config(ConfigName, Config) end, Apps),
+                AllNodes = lists:flatmap(fun({_, ConfigName}) -> ?config(ConfigName, Config) end, Apps),
 
-            lists:foreach(
-                fun(_N) ->
-                    receive
-                        {app_ended, CoverNode, FileData} ->
-                            {Mega, Sec, Micro} = os:timestamp(),
-                            CoverFile = atom_to_list(CoverNode) ++
-                                integer_to_list((Mega * 1000000 + Sec) * 1000000 + Micro) ++
-                                ".coverdata",
-                            ok = file:write_file(CoverFile, FileData),
-                            cover:import(CoverFile),
-                            file:delete(CoverFile)
-                    after
-                        ?TIMEOUT -> throw(cover_not_received)
-                    end
-                end, AllNodes
-            )
+                lists:foreach(
+                    fun(_N) ->
+                        receive
+                            {app_ended, CoverNode, FileData} ->
+                                {Mega, Sec, Micro} = os:timestamp(),
+                                CoverFile = atom_to_list(CoverNode) ++
+                                    integer_to_list((Mega * 1000000 + Sec) * 1000000 + Micro) ++
+                                    ".coverdata",
+                                ok = file:write_file(CoverFile, FileData),
+                                cover:import(CoverFile),
+                                file:delete(CoverFile)
+                        after
+                            ?TIMEOUT -> throw(cover_not_received)
+                        end
+                    end, AllNodes
+                )
+        end
+    catch
+        E1:E2 ->
+            ct:print("Clearing of environment failed ~p:~p~n" ++
+                "Stacktrace: ~p", [E1, E2, erlang:get_stacktrace()])
     end,
 
     Dockers = proplists:get_value(docker_ids, Config, []),
