@@ -144,7 +144,7 @@ clean_environment(Config) ->
 %% Afterwards, cleans environment by running 'cleanup.py' script.
 %% @end
 %%--------------------------------------------------------------------
--spec clean_environment(Config :: list(), Apps::[{AppName::atom(), ConfigName::atom()}]) -> ok.
+-spec clean_environment(Config :: list(), Apps :: [{AppName :: atom(), ConfigName :: atom()}]) -> ok.
 clean_environment(Config, Apps) ->
     case cover:modules() of
         [] ->
@@ -236,7 +236,8 @@ maybe_start_cover() ->
                                 end
                             end, AllBeams -- ExcludedModulesFiles)
                         catch
-                            _:_ -> ok % a dir may not exist (it is added for other project)
+                            _:_ ->
+                                ok % a dir may not exist (it is added for other project)
                         end
                     end, Dirs)
             end,
@@ -327,9 +328,7 @@ load_modules(NodesWithCookies, Modules) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec get_json_key(Node :: atom(), Domain :: string(), NodeType :: string(),
-     string() | [string()]) -> string() | [string()].
-get_json_key(Node, Domain, NodeType, Keys) when is_list(Keys) ->
-    [get_json_key(Node, Domain, NodeType, Key) || Key <- Keys];
+    Key :: string()) -> string().
 get_json_key(Node, Domain, NodeType, Key) ->
     [NodeName, DomainName | _] = string:tokens(utils:get_host(Node), "."),
     string:join([Domain, DomainName, NodeType, NodeName, Key], "/").
@@ -342,7 +341,7 @@ get_json_key(Node, Domain, NodeType, Key) ->
 %% Returns list of tuples {Node, Cookie}
 %% @end
 %%--------------------------------------------------------------------
--spec get_cookies(Nodes::[node()] | [] | undefined , AppName :: string(), CookieKey :: string(),
+-spec get_cookies(Nodes :: [node()] | [] | undefined, AppName :: string(), CookieKey :: string(),
     DescriptionFile :: string()) -> [{Node :: node(), Cookie :: atom()}] | [].
 get_cookies(undefined, _AppName, _CookieKey, _DescriptionFile) -> [];
 get_cookies([], _AppName, _CookieKey, _DescriptionFile) -> [];
@@ -352,26 +351,27 @@ get_cookies(Nodes, AppName, CookieKey, DescriptionFile) ->
                   globalregistry ->
                       get_json_key(Node, "globalregistry_domains", "globalregistry", CookieKey);
                   cluster_manager ->
-                      get_json_key(
-                          Node, ["provider_domains", "cluster_domains"],
-                          "cluster_manager", CookieKey
-                      );
+                      [
+                          get_json_key(Node, "provider_domains", "cluster_manager", CookieKey),
+                          get_json_key(Node, "cluster_domains", "cluster_manager", CookieKey)
+                      ];
                   op_worker ->
                       get_json_key(Node, "provider_domains", "op_worker", CookieKey);
                   cluster_worker ->
                       get_json_key(Node, "cluster_domains", "cluster_worker", CookieKey)
               end,
-        case is_list(Key) of
-            false -> {Node, json_parser:get_value(Key, DescriptionFile, "/")};
-                _ ->
-                    %% if Key is a list, choose value that is different that undefined,
-                    %% there should be only one such value
-                    fun F([H | T] = Key) ->
-                        case json_parser:get_value(H, DescriptionFile, "/") of
-                            undefined -> F(T);
-                            Value -> {Node, Value}
-                        end
+        case AppName of
+            cluster_manager ->
+                %% if AppName is cluster_manager, the Key is a list
+                %% choose value that is different that undefined,
+                %% there should be only one such value
+                FilterUndefined = fun F([H | T]) ->
+                    case json_parser:get_value(H, DescriptionFile, "/") of
+                        undefined -> F(T);
+                        Value -> {Node, Value}
                     end
+                end,
+                FilterUndefined(Key);
+            _ -> {Node, json_parser:get_value(Key, DescriptionFile, "/")}
         end
     end, Nodes).
-
