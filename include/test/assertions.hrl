@@ -85,7 +85,9 @@
     ((?assertEqualFun(Expect, Expr))(Expect, true, false))).
 
 -define(assertEqualThrow(Expect, Expr),
-    ((?assertEqualFun(Expect, Expr))(Expect, true, true))).
+    lists:foreach(fun
+        (__F) -> __F(Expect, true, true)
+    end, [?assertEqualFun(Expect, Expr)])).
 
 -define(assertEqual(Expect, Expr, Attempts),
     ?assertEqual(Expect, Expr, Attempts, timer:seconds(1))).
@@ -101,7 +103,7 @@
                             catch
                                 error:{assertEqual_failed, _} -> false
                             end
-        end, false, lists:duplicate(Attempts - 1, ?assertEqualThrow(Expect, Expr))),
+        end, false, lists:duplicate(Attempts - 1, ?assertEqualFun(Expect, Expr))),
         case __E of
             true -> ok;
             false ->
