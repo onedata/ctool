@@ -96,7 +96,7 @@
             (_, true) -> true;
             (__F, false) -> try
                                 timer:sleep(Timeout),
-                                __F(Expect, false),
+                                __F(Expect, false, true),
                                 true
                             catch
                                 error:{assertEqual_failed, _} -> false

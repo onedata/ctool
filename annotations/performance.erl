@@ -131,7 +131,7 @@ around_advice(#annotation{data = Data}, SuiteName, CaseName, [CaseArgs]) ->
 %% Basic function for stress test.
 %% @end
 %%--------------------------------------------------------------------
--spec stress_test(Config :: list()) -> term() | no_return().
+-spec stress_test(Config :: list()) -> list() | no_return().
 stress_test(Config) ->
     [{suite, Suite}] = ets:lookup(?STRESS_ETS_NAME, suite),
     [{cases, Cases}] = ets:lookup(?STRESS_ETS_NAME, cases),
@@ -640,7 +640,7 @@ proccess_repeat_result(RepeatResult, Rep, RepsSummary, RepsDetails, FailedReps) 
 %% @end
 %%--------------------------------------------------------------------
 -spec exec_test_repeat(SuiteName :: atom(), CaseName :: atom(), CaseConfig :: proplist()) ->
-    {ok, [#parameter{}]} | {error, Reason :: binary()}.
+    {ok, [#parameter{}]} | {error, Reason :: binary()} | list().
 exec_test_repeat(SuiteName, CaseName, CaseConfig) ->
     try
         put(case_errors, []),
