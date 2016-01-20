@@ -29,7 +29,8 @@
                     __P -> ct:print("assertMatch_failed: ~p~n", [__Args]);
                     true -> ok
                 end,
-                erlang:error({assertMatch_failed, __Args})
+                test_utils:handle_assertion_error({assertMatch_failed, __Args}, not __P),
+                __V
         end
     end).
 
@@ -62,7 +63,7 @@
     end)())).
 
 -define(assertEqualFun(Expect, Expr),
-    fun(__X, __P) ->
+    fun(__X, __P, __ST) ->
         case (Expr) of
             __X -> ok;
             __V ->
@@ -75,13 +76,16 @@
                     __P -> ct:print("assertEqual_failed: ~p~n", [__Args]);
                     true -> ok
                 end,
-                erlang:error({assertEqual_failed, __Args})
+                test_utils:handle_assertion_error({assertEqual_failed, __Args}, __ST)
         end
     end).
 
 -undef(assertEqual).
 -define(assertEqual(Expect, Expr),
-    ((?assertEqualFun(Expect, Expr))(Expect, true))).
+    ((?assertEqualFun(Expect, Expr))(Expect, true, false))).
+
+-define(assertEqualThrow(Expect, Expr),
+    ((?assertEqualFun(Expect, Expr))(Expect, true, true))).
 
 -define(assertEqual(Expect, Expr, Attempts),
     ?assertEqual(Expect, Expr, Attempts, timer:seconds(1))).
@@ -97,7 +101,7 @@
                             catch
                                 error:{assertEqual_failed, _} -> false
                             end
-        end, false, lists:duplicate(Attempts - 1, ?assertEqualFun(Expect, Expr))),
+        end, false, lists:duplicate(Attempts - 1, ?assertEqualThrow(Expect, Expr))),
         case __E of
             true -> ok;
             false ->
@@ -122,7 +126,7 @@
                     {expected, (??Expect)},
                     {value, timeout}],
                 ct:print("assertReceivedMatch_failed: ~p~n", [__Args]),
-                erlang:error({assertReceivedMatch_failed, __Args})
+                test_utils:handle_assertion_error({assertReceivedMatch_failed, __Args})
         end
     end)())).
 
@@ -138,7 +142,8 @@
                     {expected, (??Expect)},
                     {value, __V}],
                 ct:print("assertReceivedNextMatch_failed: ~p~n", [__Args]),
-                erlang:error({assertReceivedNextMatch_failed, __Args})
+                test_utils:handle_assertion_error({assertReceivedNextMatch_failed, __Args}),
+                __V
         after
             Timeout ->
                 __Args = [{module, ?MODULE},
@@ -146,7 +151,7 @@
                     {expected, (??Expect)},
                     {value, timeout}],
                 ct:print("assertReceivedNextMatch_failed: ~p~n", [__Args]),
-                erlang:error({assertReceivedNextMatch_failed, __Args})
+                test_utils:handle_assertion_error({assertReceivedNextMatch_failed, __Args})
         end
     end)())).
 
@@ -162,7 +167,7 @@
                     {expected, timeout},
                     {value, (??Result)}],
                 ct:print("assertNotReceivedMatch_failed: ~p~n", [__Args]),
-                erlang:error({assertNotReceivedMatch_failed, __Args})
+                test_utils:handle_assertion_error({assertNotReceivedMatch_failed, __Args})
         after
             Timeout -> ok
         end
@@ -181,7 +186,7 @@
                     {expected, (??Expect)},
                     {value, timeout}],
                 ct:print("assertReceivedEqual_failed: ~p~n", [__Args]),
-                erlang:error({assertReceived_failed, __Args})
+                test_utils:handle_assertion_error({assertReceived_failed, __Args})
         end
     end)(Expect))).
 
@@ -197,7 +202,8 @@
                     {expected, __X},
                     {value, __V}],
                 ct:print("assertReceivedNextEqual_failed: ~p~n", [__Args]),
-                erlang:error({assertReceivedNextEqual_failed, __Args})
+                test_utils:handle_assertion_error({assertReceivedNextEqual_failed, __Args}),
+                __V
         after
             Timeout ->
                 __Args = [{module, ?MODULE},
@@ -205,7 +211,7 @@
                     {expected, (??Expect)},
                     {value, timeout}],
                 ct:print("assertReceivedNextEqual_failed: ~p~n", [__Args]),
-                erlang:error({assertReceivedNextEqual_failed, __Args})
+                test_utils:handle_assertion_error({assertReceivedNextEqual_failed, __Args})
         end
     end)(Expect))).
 
@@ -220,7 +226,7 @@
                     {expected, timeout},
                     {value, __X}],
                 ct:print("assertNotReceivedEqual_failed: ~p~n", [__Args]),
-                erlang:error({assertNotReceivedEqual_failed, __Args})
+                test_utils:handle_assertion_error({assertNotReceivedEqual_failed, __Args})
         after
             Timeout -> ok
         end
@@ -239,7 +245,7 @@
                             ++ " , [...] }"},
                     {unexpected_success, __V}],
                 ct:print("assertException_failed: ~p~n", [__Args]),
-                erlang:error({assertException_failed, __Args})
+                test_utils:handle_assertion_error({assertException_failed, __Args})
         catch
             Class:Term -> ok;
             __C:__T ->
@@ -252,7 +258,7 @@
                     {unexpected_exception,
                         {__C, __T, erlang:get_stacktrace()}}],
                 ct:print("assertException_failed: ~p~n", [__Args]),
-                erlang:error({assertException_failed, __Args})
+                test_utils:handle_assertion_error({assertException_failed, __Args})
         end
     end)())).
 
@@ -268,7 +274,7 @@
                     {expected_status, (N)},
                     {status, __N}],
                 ct:print("command_failed: ~p~n", [__Args]),
-                erlang:error({command_failed, __Args})
+                test_utils:handle_assertion_error({command_failed, __Args})
         end
     end)())).
 
@@ -284,7 +290,7 @@
                     {expected_status, (N)},
                     {status, __N}],
                 ct:print("assertCmd_failed: ~p~n", [__Args]),
-                erlang:error({assertCmd_failed, __Args})
+                test_utils:handle_assertion_error({assertCmd_failed, __Args})
         end
     end)())).
 
@@ -300,7 +306,7 @@
                     {expected_output, (T)},
                     {output, __T}],
                 ct:print("assertCmdOutput_failed: ~p~n", [__Args]),
-                erlang:error({assertCmdOutput_failed, __Args})
+                test_utils:handle_assertion_error({assertCmdOutput_failed, __Args})
         end
     end)())).
 

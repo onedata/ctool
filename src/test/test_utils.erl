@@ -18,7 +18,7 @@
 %% API
 -export([mock_new/2, mock_new/3, mock_expect/4, mock_validate/2, mock_unload/1,
     mock_unload/2, mock_validate_and_unload/2]).
--export([get_env/3, set_env/4]).
+-export([get_env/3, set_env/4, handle_assertion_error/1, handle_assertion_error/2]).
 
 -type mock_opt() :: passthrough | non_strict | unstick | no_link.
 
@@ -152,6 +152,32 @@ get_env(Node, Application, Name) ->
     ok | {badrpc, Reason :: term()}.
 set_env(Node, Application, Name, Value) ->
     rpc:call(Node, application, set_env, [Application, Name, Value]).
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Handles assertion error depending on test type.
+%% @end
+%%--------------------------------------------------------------------
+-spec handle_assertion_error(Error :: term()) -> term() | no_return().
+handle_assertion_error(Error) ->
+    handle_assertion_error(Error, false).
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Handles assertion error depending on test type.
+%% @end
+%%--------------------------------------------------------------------
+-spec handle_assertion_error(Error :: term(), ShouldThrow :: boolean()) -> term() | no_return().
+handle_assertion_error(Error, ShouldThrow) ->
+    case (performance:is_standard_test() or ShouldThrow) of
+        true ->
+            erlang:error(Error);
+        _ ->
+            CaseErrors = get(case_errors),
+            put(case_errors, [Error | CaseErrors]),
+            Error
+    end.
 
 %%%===================================================================
 %%% Internal functions
