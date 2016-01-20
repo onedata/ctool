@@ -138,25 +138,15 @@ clean_environment(Config) ->
 %%--------------------------------------------------------------------
 -spec clean_environment(Config :: list(), Apps::[{AppName::atom(), ConfigName::atom()}]) -> ok.
 clean_environment(Config, Apps) ->
-    try
+    StopStatus = try
         case cover:modules() of
             [] ->
-                lists:foreach(
-                    fun({AppName, ConfigName}) ->
-                        Nodes = ?config(ConfigName, Config),
-                        lists:foreach(fun(N) -> ok = rpc:call(N, application, stop, [AppName]) end, Nodes)
-                    end, Apps
-                );
+                stop_applications(Config, Apps);
             _ ->
                 global:register_name(?CLEANING_PROC_NAME, self()),
                 global:sync(),
 
-                lists:foreach(
-                    fun({AppName, ConfigName}) ->
-                        Nodes = ?config(ConfigName, Config),
-                        lists:foreach(fun(N) -> ok = rpc:call(N, application, stop, [AppName]) end, Nodes)
-                    end, Apps
-                ),
+                stop_applications(Config, Apps),
 
                 AllNodes = lists:flatmap(fun({_, ConfigName}) -> ?config(ConfigName, Config) end, Apps),
 
@@ -175,12 +165,14 @@ clean_environment(Config, Apps) ->
                             ?TIMEOUT -> throw(cover_not_received)
                         end
                     end, AllNodes
-                )
+                ),
+                ok
         end
     catch
         E1:E2 ->
-            ct:print("Clearing of environment failed ~p:~p~n" ++
-                "Stacktrace: ~p", [E1, E2, erlang:get_stacktrace()])
+            ct:print("Stopping of applications failed failed ~p:~p~n" ++
+                "Stacktrace: ~p", [E1, E2, erlang:get_stacktrace()]),
+            E2
     end,
 
     Dockers = proplists:get_value(docker_ids, Config, []),
@@ -188,7 +180,13 @@ clean_environment(Config, Apps) ->
     DockersStr = lists:map(fun atom_to_list/1, Dockers),
     CleanupScript = filename:join([ProjectRoot, "bamboos", "docker", "cleanup.py"]),
     utils:cmd([CleanupScript | DockersStr]),
-    ok.
+
+    case StopStatus of
+        ok ->
+            ok;
+        _ ->
+            throw(StopStatus)
+    end.
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -266,6 +264,21 @@ maybe_stop_cover() ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
+
+%%--------------------------------------------------------------------
+%% @private
+%% @doc
+%% Stops all started applications
+%% @end
+%%--------------------------------------------------------------------
+-spec stop_applications(Config :: list(), Apps::[{AppName::atom(), ConfigName::atom()}]) -> ok.
+stop_applications(Config, Apps) ->
+    lists:foreach(
+        fun({AppName, ConfigName}) ->
+            Nodes = ?config(ConfigName, Config),
+            lists:foreach(fun(N) -> ok = rpc:call(N, application, stop, [AppName]) end, Nodes)
+        end, Apps
+    ).
 
 %%--------------------------------------------------------------------
 %% @private
