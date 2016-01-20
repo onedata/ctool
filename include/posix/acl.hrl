@@ -77,9 +77,13 @@
 -define(write_owner_mask, 16#00080000).
 
 % custom access flags
--define(read, <<"READ">>).
+-define(all_perms, <<"ALL_PERMS">>).
+-define(all_perms_mask, (?read_mask bor ?write_mask bor ?execute_mask)).
+-define(rw, <<"RW_ALL">>).
+-define(rw_mask, (?read_mask bor ?write_mask)).
+-define(read, <<"READ_ALL">>).
 -define(read_mask, (?read_object_mask bor ?read_metadata_mask bor ?read_attributes_mask bor ?read_acl_mask)).
--define(write, <<"WRITE">>).
+-define(write, <<"WRITE_ALL">>).
 -define(write_mask, (?write_object_mask bor ?append_data_mask bor ?write_metadata_mask bor ?delete_object_mask bor ?write_attributes_mask bor ?delete_mask bor ?write_acl_mask)).
 
 -type user_id() :: binary().
