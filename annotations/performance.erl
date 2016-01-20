@@ -32,8 +32,7 @@
 -define(STRESS_ENV_VARIABLE, "stress").
 -define(STRESS_NO_CLEARING_ENV_VARIABLE, "stress_no_clearing").
 -define(STRESS_TIME_ENV_VARIABLE, "stress_time").
-%% -define(STRESS_DEFAULT_TIME, timer:hours(3) div 1000).
--define(STRESS_DEFAULT_TIME, timer:seconds(2) div 1000).
+-define(STRESS_DEFAULT_TIME, timer:hours(3) div 1000).
 -define(STRESS_ERRORS_TO_STOP, 100).
 -define(STRESS_ETS_NAME, stress_ets).
 -define(STRESS_TIMEOUT_EXTENSION_SECONDS, 600). % extension of ct timeout to let running tests end
@@ -151,11 +150,11 @@ stress_test(Config) ->
                     end,
         CaseAns = case apply(Suite, Case, [NewConfig]) of
                       {ok, TmpAns} ->
-%%                 TmpAns2 = lists:map(fun(Param) ->
-%%                     PName = Param#parameter.name,
-%%                     Param#parameter{name = concat_atoms(Case, PName)}
-%%                 end, TmpAns),
-%%                 [{ok, TmpAns2} | Ans];
+%%                           TmpAns2 = lists:map(fun(Param) ->
+%%                               PName = Param#parameter.name,
+%%                               Param#parameter{name = concat_atoms(Case, PName)}
+%%                           end, TmpAns),
+%%                           [{ok, TmpAns2} | Ans];
                           [{ok, TmpAns} | Ans];
                       {error, E} ->
                           Message = str_utils:format("Case: ~p, error: ~p", [Case, E]),
@@ -472,7 +471,6 @@ exec_perf_config(SuiteName, CaseName, CaseDescr, CaseArgs, Config,
         }, SuitesMap)
     },
 
-%%     ct:print("dddd ~p", [NewPerfResults]),
     NewJson = jiffy:encode(#{<<"performance">> => NewPerfResults}, [pretty]),
     file:write_file(?PERFORMANCE_RESULT_FILE, NewJson),
 
@@ -510,8 +508,9 @@ exec_perf_config(SuiteName, CaseName, CaseDescr, CaseArgs, Config,
 %% @end
 %%--------------------------------------------------------------------
 -spec exec_test_repeats(SuiteName :: atom(), CaseName :: atom(), ConfigName :: atom(),
-    CaseConfig :: proplist(), Reps :: integer() | {test_time, integer()}) -> {RepsDone :: integer(), RepsSummary :: [#parameter{}],
-    RepsDetails :: [#parameter{}], FailedReps :: map()}.
+    CaseConfig :: proplist(), Reps :: integer() | {test_time, integer()}) -> {RepsDone :: integer(),
+    RepsSummary :: [#parameter{}] | [[#parameter{}]], RepsDetails :: [#parameter{}] | [[#parameter{}]],
+    FailedReps :: map() | [map()]}.
 exec_test_repeats(SuiteName, CaseName, ConfigName, CaseConfig, {timeout, TimeLimit}) ->
     [{cases, Cases}] = ets:lookup(?STRESS_ETS_NAME, cases),
     exec_test_repeats(SuiteName, CaseName, ConfigName, CaseConfig, 1, {timeout, os:timestamp(), TimeLimit},
@@ -573,6 +572,13 @@ exec_test_repeats(SuiteName, CaseName, ConfigName, CaseConfig, Rep, Reps,
             end
     end.
 
+%%--------------------------------------------------------------------
+%% @private
+%% @doc
+%% Check if stress test should be stopped because of error.
+%% @end
+%%--------------------------------------------------------------------
+-spec check_error(Rep :: integer(), FailedReps :: map()) -> ok | error.
 check_error(Rep, _FailedReps) when Rep < ?STRESS_ERRORS_TO_STOP ->
     ok;
 check_error(Rep, FailedReps) ->
@@ -588,6 +594,15 @@ check_error(Check, Start, FailedReps) ->
             check_error(Check - 1, Start, FailedReps)
     end.
 
+%%--------------------------------------------------------------------
+%% @private
+%% @doc
+%% Processes test's repeat result.
+%% @end
+%%--------------------------------------------------------------------
+-spec proccess_repeat_result(RepeatResult :: {ok, [#parameter{}]} | {error, Reason :: binary()},
+    Rep :: integer(), RepsSummary :: [#parameter{}], RepsDetails :: [#parameter{}], FailedReps :: map()) ->
+    {NewRepsSummary :: [#parameter{}], NewRepsDetails :: [#parameter{}], NewFailedReps :: map()}.
 proccess_repeat_result(RepeatResult, Rep, RepsSummary, RepsDetails, FailedReps) ->
     BinRep = integer_to_binary(Rep),
     case RepeatResult of
@@ -685,7 +700,7 @@ parse_parameters(Params) ->
 %% field name to its value.
 %% @end
 %%--------------------------------------------------------------------
--spec format_parameters(Params :: [#parameter{}] | map()) -> [map()].
+-spec format_parameters(Params :: term()) -> term().
 format_parameters(Params) when is_list(Params)->
     lists:map(fun
         (#parameter{name = Name, value = Value, unit = Unit, description = Descr}) ->
