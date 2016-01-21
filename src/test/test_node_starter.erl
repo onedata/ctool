@@ -98,11 +98,15 @@ prepare_test_environment(Config, DescriptionFile, TestModule, LoadModules, Apps)
                 end, Apps
             ),
 
-            os:cmd("echo nameserver " ++ atom_to_list(Dns) ++ " > /etc/resolv.conf"),
+            set_cookies(AllNodesWithCookies),
 
-            ping_nodes(AllNodesWithCookies),
+            os:cmd("echo nameserver " ++ atom_to_list(Dns) ++ " > /etc/resolv.conf"),
+                
+            AllNodes = [N || {N, _C} <- AllNodesWithCookies],
+                
+            ping_nodes(AllNodes),
             global:sync(),
-            load_modules(AllNodesWithCookies, [TestModule, test_utils | LoadModules]),
+            load_modules(AllNodes, [TestModule, test_utils | LoadModules]),
 
             lists:append([
                 ConfigWithPaths,
@@ -154,23 +158,20 @@ clean_environment(Config, Apps) ->
             global:register_name(?CLEANING_PROC_NAME, self()),
             global:sync(),
 
-            AllNodesWithCookies = lists:flatmap(
+            AllNodes = lists:flatmap(
                 fun({AppName, ConfigName}) ->
                     Nodes = ?config(ConfigName, Config),
-                    NodesWithCookies =
-                        get_cookies(Nodes, AppName, ?COOKIE_KEY, DescriptionFile),
 
                     %% stop applications                     
-                    lists:foreach(fun({N, C}) ->
-                        erlang:set_cookie(node(), C),
+                    lists:foreach(fun(N) ->
                         ok = rpc:call(N, application, stop, [AppName])
-                    end, NodesWithCookies),
+                    end, Nodes),
 
-                    NodesWithCookies
+                    Nodes
                 end, Apps
             ),
 
-            lists:foreach(fun({_N, _C}) ->
+            lists:foreach(fun(_N) ->
                 receive
                     {app_ended, CoverNode, FileData} ->
                         {Mega, Sec, Micro} = os:timestamp(),
@@ -183,7 +184,7 @@ clean_environment(Config, Apps) ->
                 after
                     ?TIMEOUT -> throw(cover_not_received)
                 end
-            end, AllNodesWithCookies)
+            end, AllNodes)
     end,
 
     Dockers = proplists:get_value(docker_ids, Config, []),
@@ -278,22 +279,21 @@ maybe_stop_cover() ->
 %% Checks connection with nodes.
 %% @end
 %%--------------------------------------------------------------------
--spec ping_nodes(NodesWithCookies :: [{node(), atom()}]) -> ok | no_return().
-ping_nodes(NodesWithCookies) ->
-    ping_nodes(NodesWithCookies, 300).
+-spec ping_nodes(Nodes :: [{node(), atom()}]) -> ok | no_return().
+ping_nodes(Nodes) ->
+    ping_nodes(Nodes, 300).
 ping_nodes(_Nodes, 0) ->
     throw(nodes_connection_error);
-ping_nodes(NodesWithCookies, Tries) ->
+ping_nodes(Nodes, Tries) ->
     AllConnected = lists:all(
-        fun({Node, Cookie}) ->
-            erlang:set_cookie(node(), Cookie),
+        fun(Node) ->
             pong == net_adm:ping(Node)
-        end, NodesWithCookies),
+        end, Nodes),
     case AllConnected of
         true -> ok;
         _ ->
             timer:sleep(timer:seconds(1)),
-            ping_nodes(NodesWithCookies, Tries - 1)
+            ping_nodes(Nodes, Tries - 1)
     end.
 
 %%--------------------------------------------------------------------
@@ -302,10 +302,9 @@ ping_nodes(NodesWithCookies, Tries) ->
 %% Loads modules code on given nodes.
 %% @end
 %%--------------------------------------------------------------------
--spec load_modules(NodesWithCookies :: [{node(), atom()}], Modules :: [module()]) -> ok.
-load_modules(NodesWithCookies, Modules) ->
-    lists:foreach(fun({Node, Cookie}) ->
-        erlang:set_cookie(node(), Cookie),
+-spec load_modules(Nodes :: [{node(), atom()}], Modules :: [module()]) -> ok.
+load_modules(Nodes, Modules) ->
+    lists:foreach(fun(Node) ->
         lists:foreach(fun(Module) ->
             {Module, Binary, Filename} = code:get_object_code(Module),
             rpc:call(Node, code, delete, [Module], ?TIMEOUT),
@@ -314,7 +313,7 @@ load_modules(NodesWithCookies, Modules) ->
                 Node, code, load_binary, [Module, Filename, Binary], ?TIMEOUT
             ))
         end, Modules)
-    end, NodesWithCookies).
+    end, Nodes).
 
 
 %%%===================================================================
@@ -375,3 +374,9 @@ get_cookies(Nodes, AppName, CookieKey, DescriptionFile) ->
             _ -> {Node, json_parser:get_value(Key, DescriptionFile, "/")}
         end
     end, Nodes).
+
+
+set_cookies(NodesWithCookies) ->
+    lists:foreach(fun({N, C}) ->
+        erlang:set_cookie(N, C)
+    end, NodesWithCookies).
