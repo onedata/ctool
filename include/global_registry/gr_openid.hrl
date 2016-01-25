@@ -67,4 +67,13 @@
     id_token :: #id_token{}
 }).
 
+%% @doc token_issuer record contains following fields:
+%% * client_type - one of user, provider
+%% * client_id   - ID of client associated with token
+%% @end
+-record(token_issuer, {
+    client_type :: binary(),
+    client_id :: binary()
+}).
+
 -endif.
