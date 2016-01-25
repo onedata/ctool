@@ -37,6 +37,7 @@
 %%--------------------------------------------------------------------
 %% @doc
 %% Starts deps and dockers with needed applications and mocks.
+%% Sets cookies (read from DescriptionFile) for erlang nodes.
 %% @end
 %%--------------------------------------------------------------------
 -spec prepare_test_environment(Config :: list(), DescriptionFile :: string(),
@@ -47,6 +48,7 @@ prepare_test_environment(Config, DescriptionFile, TestModule, LoadModules) ->
 %%--------------------------------------------------------------------
 %% @doc
 %% Starts deps and dockers with needed applications and mocks.
+%% Sets cookies (read from DescriptionFile) for erlang nodes.
 %% @end
 %%--------------------------------------------------------------------
 -spec prepare_test_environment(Config :: list(), DescriptionFile :: string(),
@@ -154,7 +156,6 @@ clean_environment(Config, Apps) ->
         [] ->
             ok;
         _ ->
-            DescriptionFile = ?config(env_description, Config),
             global:register_name(?CLEANING_PROC_NAME, self()),
             global:sync(),
 
@@ -166,7 +167,6 @@ clean_environment(Config, Apps) ->
                     lists:foreach(fun(N) ->
                         ok = rpc:call(N, application, stop, [AppName])
                     end, Nodes),
-
                     Nodes
                 end, Apps
             ),
@@ -375,7 +375,13 @@ get_cookies(Nodes, AppName, CookieKey, DescriptionFile) ->
         end
     end, Nodes).
 
-
+%%--------------------------------------------------------------------
+%% @private
+%% @doc
+%% Set cookies for each Node in NodesWithCookies list
+%% @end
+%%--------------------------------------------------------------------
+-spec set_cookies([{node(), atom()}]) -> ok.
 set_cookies(NodesWithCookies) ->
     lists:foreach(fun({N, C}) ->
         erlang:set_cookie(N, C)
