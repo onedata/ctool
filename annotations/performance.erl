@@ -317,7 +317,7 @@ exec_ct_config(SuiteName, CaseName, CaseArgs, Params) ->
     DefaultReps :: non_neg_integer(), DefaultSuccessRate :: number(), DefaultParams :: [#parameter{}]) -> ok.
 exec_perf_configs(SuiteName, CaseName, CaseDescr, CaseArgs, Configs,
     DefaultReps, DefaultSuccessRate, DefaultParams) ->
-    ?assertEqualThrow(ok, lists:foldl(fun(Config, Status) ->
+    ?assertEqual(ok, lists:foldl(fun(Config, Status) ->
         case exec_perf_config(SuiteName, CaseName, CaseDescr, CaseArgs,
             Config, DefaultReps, DefaultSuccessRate, DefaultParams) of
             ok -> Status;
@@ -643,7 +643,6 @@ proccess_repeat_result(RepeatResult, Rep, RepsSummary, RepsDetails, FailedReps) 
     {ok, [#parameter{}]} | {error, Reason :: binary()} | list().
 exec_test_repeat(SuiteName, CaseName, CaseConfig) ->
     try
-        put(case_errors, []),
         Timestamp1 = os:timestamp(),
         Result = annotation:call_advised(SuiteName, CaseName, [CaseConfig]),
         Timestamp2 = os:timestamp(),
@@ -654,26 +653,20 @@ exec_test_repeat(SuiteName, CaseName, CaseConfig) ->
             true ->
                 Result;
             _ ->
-                case get(case_errors) of
-                    [] ->
-                        {ok, [#parameter{
-                            name = test_time,
-                            description = "Test execution time.",
-                            value = TestTime,
-                            unit = "ms"} | lists:filter(fun
-                            (#parameter{}) -> true;
-                            (_) -> false
-                        end, lists:flatten([Result]))]};
-                    Errors ->
-                        Message = str_utils:format("~p", [Errors]),
-                        {error, list_to_binary(Message)}
-                end
+                {ok, [#parameter{
+                    name = test_time,
+                    description = "Test execution time.",
+                    value = TestTime,
+                    unit = "ms"} | lists:filter(fun
+                    (#parameter{}) -> true;
+                    (_) -> false
+                end, lists:flatten([Result]))]}
         end
     catch
         Error:Reason ->
             Stacktrace = erlang:get_stacktrace(),
-            Message2 = str_utils:format("~p:~p~n~p", [Error, Reason, Stacktrace]),
-            {error, list_to_binary(Message2)}
+            Message = str_utils:format("~p:~p~n~p", [Error, Reason, Stacktrace]),
+            {error, list_to_binary(Message)}
     end.
 
 %%--------------------------------------------------------------------
