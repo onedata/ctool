@@ -50,7 +50,7 @@ prepare_test_environment(Config, DescriptionFile, TestModule, LoadModules) ->
 %%--------------------------------------------------------------------
 -spec prepare_test_environment(Config :: list(), DescriptionFile :: string(),
     TestModule :: module(), LoadModules :: [module()], Apps :: [{AppName :: atom(), ConfigName :: atom()}])
-      -> Result :: list() | {fail, tuple()}.
+        -> Result :: list() | {fail, tuple()}.
 prepare_test_environment(Config, DescriptionFile, TestModule, LoadModules, Apps) ->
     try
         DataDir = ?config(data_dir, Config),
@@ -138,38 +138,41 @@ clean_environment(Config) ->
 %%--------------------------------------------------------------------
 -spec clean_environment(Config :: list(), Apps::[{AppName::atom(), ConfigName::atom()}]) -> ok.
 clean_environment(Config, Apps) ->
-    case cover:modules() of
-        [] ->
-            ok;
-        _ ->
-            global:register_name(?CLEANING_PROC_NAME, self()),
-            global:sync(),
+    StopStatus = try
+        case cover:modules() of
+            [] ->
+                stop_applications(Config, Apps);
+            _ ->
+                global:register_name(?CLEANING_PROC_NAME, self()),
+                global:sync(),
 
-            lists:foreach(
-                fun({AppName, ConfigName}) ->
-                    Nodes = ?config(ConfigName, Config),
-                    lists:foreach(fun(N) -> ok = rpc:call(N, application, stop, [AppName]) end, Nodes)
-                end, Apps
-            ),
+                stop_applications(Config, Apps),
 
-            AllNodes = lists:flatmap(fun({_, ConfigName}) -> ?config(ConfigName, Config) end, Apps),
+                AllNodes = lists:flatmap(fun({_, ConfigName}) -> ?config(ConfigName, Config) end, Apps),
 
-            lists:foreach(
-                fun(_N) ->
-                    receive
-                        {app_ended, CoverNode, FileData} ->
-                            {Mega, Sec, Micro} = os:timestamp(),
-                            CoverFile = atom_to_list(CoverNode) ++
-                                integer_to_list((Mega * 1000000 + Sec) * 1000000 + Micro) ++
-                                ".coverdata",
-                            ok = file:write_file(CoverFile, FileData),
-                            cover:import(CoverFile),
-                            file:delete(CoverFile)
-                    after
-                        ?TIMEOUT -> throw(cover_not_received)
-                    end
-                end, AllNodes
-            )
+                lists:foreach(
+                    fun(_N) ->
+                        receive
+                            {app_ended, CoverNode, FileData} ->
+                                {Mega, Sec, Micro} = os:timestamp(),
+                                CoverFile = atom_to_list(CoverNode) ++
+                                    integer_to_list((Mega * 1000000 + Sec) * 1000000 + Micro) ++
+                                    ".coverdata",
+                                ok = file:write_file(CoverFile, FileData),
+                                cover:import(CoverFile),
+                                file:delete(CoverFile)
+                        after
+                            ?TIMEOUT -> throw(cover_not_received)
+                        end
+                    end, AllNodes
+                ),
+                ok
+        end
+    catch
+        E1:E2 ->
+            ct:print("Stopping of applications failed failed ~p:~p~n" ++
+                "Stacktrace: ~p", [E1, E2, erlang:get_stacktrace()]),
+            E2
     end,
 
     Dockers = proplists:get_value(docker_ids, Config, []),
@@ -177,7 +180,13 @@ clean_environment(Config, Apps) ->
     DockersStr = lists:map(fun atom_to_list/1, Dockers),
     CleanupScript = filename:join([ProjectRoot, "bamboos", "docker", "cleanup.py"]),
     utils:cmd([CleanupScript | DockersStr]),
-    ok.
+
+    case StopStatus of
+        ok ->
+            ok;
+        _ ->
+            throw(StopStatus)
+    end.
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -255,6 +264,21 @@ maybe_stop_cover() ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
+
+%%--------------------------------------------------------------------
+%% @private
+%% @doc
+%% Stops all started applications
+%% @end
+%%--------------------------------------------------------------------
+-spec stop_applications(Config :: list(), Apps::[{AppName::atom(), ConfigName::atom()}]) -> ok.
+stop_applications(Config, Apps) ->
+    lists:foreach(
+        fun({AppName, ConfigName}) ->
+            Nodes = ?config(ConfigName, Config),
+            lists:foreach(fun(N) -> ok = rpc:call(N, application, stop, [AppName]) end, Nodes)
+        end, Apps
+    ).
 
 %%--------------------------------------------------------------------
 %% @private

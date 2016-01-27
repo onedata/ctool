@@ -98,8 +98,9 @@ around_advice(#annotation{data = Data}, SuiteName, stress_test, [CaseArgs]) ->
             CaseDescr = proplists:get_value(description, Data, ""),
             Configs = proplists:get_all_values(config, Data),
             DefaultParams = parse_parameters(proplists:get_value(parameters, Data, [])),
+            DefaultSuccessRate = proplists:get_value(success_rate, Data, 100),
             Ans = exec_perf_configs(SuiteName, stress_test, CaseDescr, CaseArgs,
-                Configs, 1, DefaultParams),
+                Configs, 1, DefaultSuccessRate, DefaultParams),
             EtsOwner = ets:info(?STRESS_ETS_NAME, owner),
             ets:delete(?STRESS_ETS_NAME),
             EtsOwner ! kill_ets_owner,
@@ -130,26 +131,46 @@ around_advice(#annotation{data = Data}, SuiteName, CaseName, [CaseArgs]) ->
 %% Basic function for stress test.
 %% @end
 %%--------------------------------------------------------------------
--spec stress_test(Config :: list()) -> term() | no_return().
+-spec stress_test(Config :: list()) -> list() | no_return().
 stress_test(Config) ->
     [{suite, Suite}] = ets:lookup(?STRESS_ETS_NAME, suite),
     [{cases, Cases}] = ets:lookup(?STRESS_ETS_NAME, cases),
     [{timeout, Timeout}] = ets:lookup(?STRESS_ETS_NAME, timeout),
     ct:timetrap({seconds, Timeout + ?STRESS_TIMEOUT_EXTENSION_SECONDS}), % add 10 minutes to let running tests end
 
-    lists:foldl(fun(Case, Ans) ->
-        case apply(Suite, Case, [Config]) of
-            {ok, TmpAns} ->
-                TmpAns2 = lists:map(fun(Param) ->
-                    PName = Param#parameter.name,
-                    Param#parameter{name = concat_atoms(Case, PName)}
-                end, TmpAns),
-                TmpAns2 ++ Ans;
-            {error, E} ->
-                Message = str_utils:format("Case: ~p, error: ~p", [Case, binary_to_list(E)]),
-                throw(Message)
-        end
-    end, [], Cases).
+    AnsList = lists:foldl(fun(Case, Ans) ->
+        NewConfig = try
+                        apply(Suite, init_per_testcase, [Case, Config])
+                    catch
+                        error:undef ->
+                            Config;
+                        E1:E2 ->
+                            ct:print("Case: ~p, init_per_testcase error: ~p:~p", [Case, E1, E2]),
+                            Config
+                    end,
+        CaseAns = case apply(Suite, Case, [NewConfig]) of
+                      {ok, TmpAns} ->
+%%                           TmpAns2 = lists:map(fun(Param) ->
+%%                               PName = Param#parameter.name,
+%%                               Param#parameter{name = concat_atoms(Case, PName)}
+%%                           end, TmpAns),
+%%                           [{ok, TmpAns2} | Ans];
+                          [{ok, TmpAns} | Ans];
+                      {error, E} ->
+                          Message = str_utils:format("Case: ~p, error: ~p", [Case, E]),
+                          [{error, Message} | Ans]
+                  end,
+        try
+            apply(Suite, end_per_testcase, [Case, Config])
+        catch
+            error:undef ->
+                ok;
+            E1_2:E2_2 ->
+                ct:print("Case: ~p, end_per_testcase error: ~p:~p", [Case, E1_2, E2_2])
+        end,
+        CaseAns
+    end, [], Cases),
+    lists:reverse(AnsList).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -199,13 +220,14 @@ should_clear(Config) ->
     CaseArgs :: list()) -> term().
 run_annotated(Data, SuiteName, CaseName, CaseArgs) ->
     DefaultReps = proplists:get_value(repeats, Data, 1),
+    DefaultSuccessRate = proplists:get_value(success_rate, Data, 100),
     DefaultParams = parse_parameters(proplists:get_value(parameters, Data, [])),
     case is_standard_test() of
         false ->
             CaseDescr = proplists:get_value(description, Data, ""),
             Configs = proplists:get_all_values(config, Data),
             exec_perf_configs(SuiteName, CaseName, CaseDescr, CaseArgs,
-                Configs, DefaultReps, DefaultParams);
+                Configs, DefaultReps, DefaultSuccessRate, DefaultParams);
         _ ->
             exec_ct_config(SuiteName, CaseName, CaseArgs, DefaultParams)
     end.
@@ -292,12 +314,12 @@ exec_ct_config(SuiteName, CaseName, CaseArgs, Params) ->
 %%--------------------------------------------------------------------
 -spec exec_perf_configs(SuiteName :: atom(), CaseName :: atom(),
     CaseDescr :: string(), CaseArgs :: proplist(), Config :: proplist(),
-    DefaultReps :: non_neg_integer(), DefaultParams :: [#parameter{}]) -> ok.
+    DefaultReps :: non_neg_integer(), DefaultSuccessRate :: number(), DefaultParams :: [#parameter{}]) -> ok.
 exec_perf_configs(SuiteName, CaseName, CaseDescr, CaseArgs, Configs,
-    DefaultReps, DefaultParams) ->
+    DefaultReps, DefaultSuccessRate, DefaultParams) ->
     ?assertEqual(ok, lists:foldl(fun(Config, Status) ->
         case exec_perf_config(SuiteName, CaseName, CaseDescr, CaseArgs,
-            Config, DefaultReps, DefaultParams) of
+            Config, DefaultReps, DefaultSuccessRate, DefaultParams) of
             ok -> Status;
             _ -> error
         end
@@ -311,10 +333,10 @@ exec_perf_configs(SuiteName, CaseName, CaseDescr, CaseArgs, Configs,
 %%--------------------------------------------------------------------
 -spec exec_perf_config(SuiteName :: atom(), CaseName :: atom(),
     CaseDescr :: string(), CaseArgs :: proplist(), Config :: proplist(),
-    DefaultReps :: non_neg_integer(), DefaultParams :: [#parameter{}]) ->
+    DefaultReps :: non_neg_integer(), DefaultSuccessRate :: number(), DefaultParams :: [#parameter{}]) ->
     ok | error.
 exec_perf_config(SuiteName, CaseName, CaseDescr, CaseArgs, Config,
-    DefaultReps, DefaultParams) ->
+    DefaultReps, DefaultSuccessRate, DefaultParams) ->
 
     % Fetch and prepare test case configuration.
     TestRoot = proplists:get_value(ct_test_root, CaseArgs),
@@ -331,19 +353,57 @@ exec_perf_config(SuiteName, CaseName, CaseDescr, CaseArgs, Config,
     ConfigParamsToJSON = ConfigParams ++ get_stress_test_params(),
 
     ConfigReps = case is_stress_test() of
-        true ->
-            Time = case os:getenv(?STRESS_TIME_ENV_VARIABLE) of
-                       false -> ?STRESS_DEFAULT_TIME;
-                       V -> list_to_integer(V)
-                   end,
-            ets:insert(?STRESS_ETS_NAME, {timeout, Time}),
-            {timeout, Time};
-        _ ->
-            proplists:get_value(repeats, Config, DefaultReps)
-    end,
+                     true ->
+                         Time = case os:getenv(?STRESS_TIME_ENV_VARIABLE) of
+                                    false -> ?STRESS_DEFAULT_TIME;
+                                    V -> list_to_integer(V)
+                                end,
+                         ets:insert(?STRESS_ETS_NAME, {timeout, Time}),
+                         {timeout, Time};
+                     _ ->
+                         proplists:get_value(repeats, Config, DefaultReps)
+                 end,
 
-    {RepeatsDone, RepsSummary, RepsDetails, FailedReps} =
+    {RepeatsDone, RepsSummary0, RepsDetails0, FailedReps0} =
         exec_test_repeats(SuiteName, CaseName, ConfigName, NewCaseArgs, ConfigReps),
+
+    {RepsSummary, RepsDetails, FailedReps, SuccessfulReps, RepsAverage} =
+        case is_stress_test() of
+            true ->
+                [{cases, Cases}] = ets:lookup(?STRESS_ETS_NAME, cases),
+                ToMap = fun(InputList) ->
+                    ZippedList = lists:zip(InputList, Cases),
+                    lists:foldl(fun({Element, Case}, Acc) ->
+                        maps:put(atom_to_binary(Case, utf8), Element, Acc)
+                    end, #{}, ZippedList)
+                end,
+
+%%                 FRs = maps:fold(fun(Case, FR, Acc) ->
+%%                     maps:fold(fun(K, V, Acc2) ->
+%%                         CaseBin = atom_to_binary(Case, utf8),
+%%                         K2 = <<CaseBin/binary, <<"_">>/binary, K/binary>>,
+%%                         maps:put(K2, V, Acc2)
+%%                     end, Acc, FR)
+%%                 end, #{}, ToMap(FailedReps0)),
+
+                SRs = lists:map(fun(FR) ->
+                    RepeatsDone - maps:size(FR)
+                end, FailedReps0),
+
+                RAs = lists:map(fun({RS, SR}) ->
+                    lists:map(fun(#parameter{value = Value} = Param) ->
+                        Param#parameter{value = Value / SR}
+                    end, RS)
+                end, lists:zip(RepsSummary0, SRs)),
+
+                {ToMap(RepsSummary0), ToMap(RepsDetails0), ToMap(FailedReps0), ToMap(SRs), ToMap(RAs)};
+            _ ->
+                SuccessfulReps0 = RepeatsDone - maps:size(FailedReps0),
+                RepsAverage0 = lists:map(fun(#parameter{value = Value} = Param) ->
+                    Param#parameter{value = Value / SuccessfulReps0}
+                end, RepsSummary0),
+                {RepsSummary0, RepsDetails0, FailedReps0, SuccessfulReps0, RepsAverage0}
+        end,
 
     % Fetch git repository metadata.
     Repository = list_to_binary(proplists:get_value(git_repository, CaseArgs)),
@@ -376,10 +436,6 @@ exec_perf_config(SuiteName, CaseName, CaseDescr, CaseArgs, Config,
     BinSuiteName = atom_to_binary(SuiteName, utf8),
     BinCaseName = atom_to_binary(CaseName, utf8),
     BinConfigName = atom_to_binary(ConfigName, utf8),
-    SuccessfulReps = RepeatsDone - maps:size(FailedReps),
-    RepsAverage = lists:map(fun(#parameter{value = Value} = Param) ->
-        Param#parameter{value = Value / SuccessfulReps}
-    end, RepsSummary),
 
     SuitesMap = maps:get(<<"suites">>, PerfResults, #{}),
     SuiteMap = maps:get(BinSuiteName, SuitesMap, #{
@@ -400,7 +456,7 @@ exec_perf_config(SuiteName, CaseName, CaseDescr, CaseArgs, Config,
         <<"parameters">> => format_parameters(ConfigParamsToJSON),
         <<"description">> => list_to_binary(ConfigDescr),
         <<"repeats_number">> => RepeatsDone,
-        <<"successful_repeats_number">> => SuccessfulReps,
+        <<"successful_repeats">> => format_parameters(SuccessfulReps),
         <<"successful_repeats_summary">> => format_parameters(RepsSummary),
         <<"successful_repeats_average">> => format_parameters(RepsAverage),
         <<"successful_repeats_details">> => format_parameters(RepsDetails),
@@ -418,11 +474,31 @@ exec_perf_config(SuiteName, CaseName, CaseDescr, CaseArgs, Config,
     NewJson = jiffy:encode(#{<<"performance">> => NewPerfResults}, [pretty]),
     file:write_file(?PERFORMANCE_RESULT_FILE, NewJson),
 
-    % Check whether performance configuration execution has been successfully
+    % Check whether performance/stress configuration execution has been successfully
     % completed.
-    case maps:size(FailedReps) of
-        0 -> ok;
-        _ -> error
+    SuccessRate = proplists:get_value(success_rate, Config, DefaultSuccessRate),
+    case is_stress_test() of
+        true ->
+            StressStatus = maps:fold(fun(Case, SReps, Acc) ->
+                CaseRate = 100.0 * SReps / RepeatsDone,
+                ct:print("Done CASE: ~p~nOk percent: ~p, Required ok percent ~p",
+                    [Case, CaseRate, SuccessRate]),
+                case CaseRate >= SuccessRate of
+                    true -> Acc;
+                    _ -> error
+                end
+            end, ok, SuccessfulReps),
+            ct:print("Stress test: SUITE: ~p~nCASE: ~p~nCONFIG: ~p~nStatus: ~p",
+                [SuiteName, CaseName, ConfigName, StressStatus]),
+            StressStatus;
+        _ ->
+            CaseRate = 100.0 * SuccessfulReps / RepeatsDone,
+            ct:print("Done:~nSUITE: ~p~nCASE: ~p~nCONFIG: ~p~nOk percent: ~p, Required ok percent ~p",
+                [SuiteName, CaseName, ConfigName, CaseRate, SuccessRate]),
+            case CaseRate >= SuccessRate of
+                true -> ok;
+                _ -> error
+            end
     end.
 
 %%--------------------------------------------------------------------
@@ -432,10 +508,14 @@ exec_perf_config(SuiteName, CaseName, CaseDescr, CaseArgs, Config,
 %% @end
 %%--------------------------------------------------------------------
 -spec exec_test_repeats(SuiteName :: atom(), CaseName :: atom(), ConfigName :: atom(),
-    CaseConfig :: proplist(), Reps :: integer() | {test_time, integer()}) -> {RepsDone :: integer(), RepsSummary :: [#parameter{}],
-    RepsDetails :: [#parameter{}], FailedReps :: map()}.
+    CaseConfig :: proplist(), Reps :: integer() | {test_time, integer()}) -> {RepsDone :: integer(),
+    RepsSummary :: [#parameter{}] | [[#parameter{}]], RepsDetails :: [#parameter{}] | [[#parameter{}]],
+    FailedReps :: map() | [map()]}.
 exec_test_repeats(SuiteName, CaseName, ConfigName, CaseConfig, {timeout, TimeLimit}) ->
-    exec_test_repeats(SuiteName, CaseName, ConfigName, CaseConfig, 1, {timeout, os:timestamp(), TimeLimit} , [], [], #{});
+    [{cases, Cases}] = ets:lookup(?STRESS_ETS_NAME, cases),
+    exec_test_repeats(SuiteName, CaseName, ConfigName, CaseConfig, 1, {timeout, os:timestamp(), TimeLimit},
+        lists:map(fun(_) -> [] end, Cases), lists:map(fun(_) -> [] end, Cases),
+        lists:map(fun(_) -> #{} end, Cases));
 exec_test_repeats(SuiteName, CaseName, ConfigName, CaseConfig, Reps) ->
     exec_test_repeats(SuiteName, CaseName, ConfigName, CaseConfig, 1, Reps + 1, [], [], #{}).
 exec_test_repeats(_SuiteName, _CaseName, _ConfigName, _CaseConfig, Reps, Reps,
@@ -444,61 +524,113 @@ exec_test_repeats(_SuiteName, _CaseName, _ConfigName, _CaseConfig, Reps, Reps,
 exec_test_repeats(SuiteName, CaseName, ConfigName, CaseConfig, Rep, Reps,
     RepsSummary, RepsDetails, FailedReps) ->
     TimeStop = case Reps of
-        {timeout, StartTime, TimeLimit} ->
-            Now = os:timestamp(),
-            TestTime = timer:now_diff(Now, StartTime) div 1000000,
-            TimeLeft = TimeLimit - TestTime,
-            case (TimeLeft > 0) and (maps:size(FailedReps) < ?STRESS_ERRORS_TO_STOP) of
-                true ->
-                    ct:print("SUITE: ~p~nCASE: ~p~nCONFIG: ~p~nREPEAT: ~p, TEST TIME ~p sek, TIME LEFT ~p sek",
-                        [SuiteName, CaseName, ConfigName, Rep, TestTime, TimeLeft]),
-                    ok;
-                _ ->
-                    stop
-            end;
-        _ ->
-            ct:print("SUITE: ~p~nCASE: ~p~nCONFIG: ~p~nREPEAT: ~p / ~p (~p%)",
-                [SuiteName, CaseName, ConfigName, Rep, Reps - 1, (100 * Rep div (Reps - 1))]),
-            ok
-    end,
+                   {timeout, StartTime, TimeLimit} ->
+                       Now = os:timestamp(),
+                       TestTime = timer:now_diff(Now, StartTime) div 1000000,
+                       TimeLeft = TimeLimit - TestTime,
+
+                       ErrorsHistoryOK = lists:foldl(fun(FR, Acc) ->
+                           case Acc of
+                               error ->
+                                   error;
+                               _ ->
+                                   check_error(Rep, FR)
+                           end
+                       end, ok, FailedReps),
+
+                       case (TimeLeft > 0) and (ErrorsHistoryOK =:= ok) of
+                           true ->
+                               ct:print("SUITE: ~p~nCASE: ~p~nCONFIG: ~p~nREPEAT: ~p, TEST TIME ~p sek, TIME LEFT ~p sek",
+                                   [SuiteName, CaseName, ConfigName, Rep, TestTime, TimeLeft]),
+                               ok;
+                           _ ->
+                               stop
+                       end;
+                   _ ->
+                       ct:print("SUITE: ~p~nCASE: ~p~nCONFIG: ~p~nREPEAT: ~p / ~p (~p%)",
+                           [SuiteName, CaseName, ConfigName, Rep, Reps - 1, (100 * Rep div (Reps - 1))]),
+                       ok
+               end,
     case TimeStop of
         stop ->
             {Rep - 1, RepsSummary, RepsDetails, FailedReps};
         _ ->
-            BinRep = integer_to_binary(Rep),
             case exec_test_repeat(SuiteName, CaseName, CaseConfig) of
-                {ok, Params} ->
-                    case RepsSummary of
-                        [] ->
-                            % Initialize list of parameters for test case repeats.
-                            NewRepsDetails = lists:map(fun
-                                (#parameter{value = Value} = Param) ->
-                                    Param#parameter{value = maps:put(BinRep, Value, #{})}
-                            end, Params),
-                            exec_test_repeats(SuiteName, CaseName, ConfigName, CaseConfig, Rep + 1,
-                                Reps, Params, NewRepsDetails, FailedReps);
-                        _ ->
-                            % Merge list of test case parameters from current test case
-                            % repeat with list of parameters from previous test case repeats.
-                            NewRepsSummary = lists:zipwith(fun
-                                (#parameter{value = Value1}, #parameter{value = Value2} = Param) ->
-                                    Param#parameter{value = Value1 + Value2}
-                            end, Params, RepsSummary),
-                            NewRepsDetails = lists:zipwith(fun
-                                (#parameter{value = Value1}, #parameter{value = Value2} = Param) ->
-                                    Param#parameter{value = maps:put(BinRep, Value1, Value2)}
-                            end, Params, RepsDetails),
-                            exec_test_repeats(SuiteName, CaseName, ConfigName, CaseConfig, Rep + 1,
-                                Reps, NewRepsSummary, NewRepsDetails, FailedReps)
-                    end;
-                {error, Reason} ->
-                    NewRepsDetails = lists:map(fun(#parameter{value = Value} = Param) ->
-                        Param#parameter{value = maps:put(BinRep, 0, Value)}
-                    end, RepsDetails),
-                    NewFailedReps = maps:put(BinRep, Reason, FailedReps),
+                List when is_list(List) ->
+                    List2 = lists:zip(List, lists:zip3(RepsSummary, RepsDetails, FailedReps)),
+                    {R1, R2, R3} = lists:foldl(fun({R, {RS, RD, FR}}, {A1, A2, A3}) ->
+                        {NewRepsSummary, NewRepsDetails, NewFailedReps} = proccess_repeat_result(R, Rep, RS, RD, FR),
+                        {[NewRepsSummary | A1], [NewRepsDetails | A2], [NewFailedReps | A3]}
+                    end, {[], [], []}, List2),
                     exec_test_repeats(SuiteName, CaseName, ConfigName, CaseConfig, Rep + 1,
-                        Reps, RepsSummary, NewRepsDetails, NewFailedReps)
+                        Reps, lists:reverse(R1), lists:reverse(R2), lists:reverse(R3));
+                RepeatResult ->
+                    {NewRepsSummary, NewRepsDetails, NewFailedReps} =
+                        proccess_repeat_result(RepeatResult, Rep, RepsSummary, RepsDetails, FailedReps),
+                    exec_test_repeats(SuiteName, CaseName, ConfigName, CaseConfig, Rep + 1,
+                        Reps, NewRepsSummary, NewRepsDetails, NewFailedReps)
             end
+    end.
+
+%%--------------------------------------------------------------------
+%% @private
+%% @doc
+%% Check if stress test should be stopped because of error.
+%% @end
+%%--------------------------------------------------------------------
+-spec check_error(Rep :: integer(), FailedReps :: map()) -> ok | error.
+check_error(Rep, _FailedReps) when Rep < ?STRESS_ERRORS_TO_STOP ->
+    ok;
+check_error(Rep, FailedReps) ->
+    check_error(Rep - 1, Rep, FailedReps).
+
+check_error(Check, Start, _FailedReps) when Start - ?STRESS_ERRORS_TO_STOP > Check ->
+    error;
+check_error(Check, Start, FailedReps) ->
+    case maps:is_key(integer_to_binary(Check), FailedReps) of
+        false ->
+            ok;
+        _ ->
+            check_error(Check - 1, Start, FailedReps)
+    end.
+
+%%--------------------------------------------------------------------
+%% @private
+%% @doc
+%% Processes test's repeat result.
+%% @end
+%%--------------------------------------------------------------------
+-spec proccess_repeat_result(RepeatResult :: {ok, [#parameter{}]} | {error, Reason :: binary()},
+    Rep :: integer(), RepsSummary :: [#parameter{}], RepsDetails :: [#parameter{}], FailedReps :: map()) ->
+    {NewRepsSummary :: [#parameter{}], NewRepsDetails :: [#parameter{}], NewFailedReps :: map()}.
+proccess_repeat_result(RepeatResult, Rep, RepsSummary, RepsDetails, FailedReps) ->
+    BinRep = integer_to_binary(Rep),
+    case RepeatResult of
+        {ok, Params} ->
+            case RepsSummary of
+                [] ->
+                    % Initialize list of parameters for test case repeats.
+                    NewRepsDetails = lists:map(fun
+                        (#parameter{value = Value} = Param) ->
+                            Param#parameter{value = maps:put(BinRep, Value, #{})}
+                    end, Params),
+                    {Params, NewRepsDetails, FailedReps};
+                _ ->
+                    % Merge list of test case parameters from current test case
+                    % repeat with list of parameters from previous test case repeats.
+                    NewRepsSummary = lists:zipwith(fun
+                        (#parameter{value = Value1}, #parameter{value = Value2} = Param) ->
+                            Param#parameter{value = Value1 + Value2}
+                    end, Params, RepsSummary),
+                    NewRepsDetails = lists:zipwith(fun
+                        (#parameter{value = Value1}, #parameter{value = Value2} = Param) ->
+                            Param#parameter{value = maps:put(BinRep, Value1, Value2)}
+                    end, Params, RepsDetails),
+                    {NewRepsSummary, NewRepsDetails, FailedReps}
+            end;
+        {error, Reason} ->
+            NewFailedReps = maps:put(BinRep, Reason, FailedReps),
+            {RepsSummary, RepsDetails, NewFailedReps}
     end.
 
 %%--------------------------------------------------------------------
@@ -508,7 +640,7 @@ exec_test_repeats(SuiteName, CaseName, ConfigName, CaseConfig, Rep, Reps,
 %% @end
 %%--------------------------------------------------------------------
 -spec exec_test_repeat(SuiteName :: atom(), CaseName :: atom(), CaseConfig :: proplist()) ->
-    {ok, [#parameter{}]} | {error, Reason :: binary()}.
+    {ok, [#parameter{}]} | {error, Reason :: binary()} | list().
 exec_test_repeat(SuiteName, CaseName, CaseConfig) ->
     try
         Timestamp1 = os:timestamp(),
@@ -517,14 +649,19 @@ exec_test_repeat(SuiteName, CaseName, CaseConfig) ->
         TestTime = utils:milliseconds_diff(Timestamp2, Timestamp1),
         % Return list of parameters consisting of default 'test_time' parameter
         % and parameters returned from test case.
-        {ok, [#parameter{
-            name = test_time,
-            description = "Test execution time.",
-            value = TestTime,
-            unit = "ms"} | lists:filter(fun
-            (#parameter{}) -> true;
-            (_) -> false
-        end, lists:flatten([Result]))]}
+        case is_stress_test() and (CaseName =:= stress_test) of
+            true ->
+                Result;
+            _ ->
+                {ok, [#parameter{
+                    name = test_time,
+                    description = "Test execution time.",
+                    value = TestTime,
+                    unit = "ms"} | lists:filter(fun
+                    (#parameter{}) -> true;
+                    (_) -> false
+                end, lists:flatten([Result]))]}
+        end
     catch
         Error:Reason ->
             Stacktrace = erlang:get_stacktrace(),
@@ -556,8 +693,8 @@ parse_parameters(Params) ->
 %% field name to its value.
 %% @end
 %%--------------------------------------------------------------------
--spec format_parameters(Params :: [#parameter{}]) -> [map()].
-format_parameters(Params) ->
+-spec format_parameters(Params :: term()) -> term().
+format_parameters(Params) when is_list(Params)->
     lists:map(fun
         (#parameter{name = Name, value = Value, unit = Unit, description = Descr}) ->
             #{
@@ -566,7 +703,13 @@ format_parameters(Params) ->
                 <<"unit">> => list_to_binary(Unit),
                 <<"description">> => list_to_binary(Descr)
             }
-    end, Params).
+    end, Params);
+format_parameters(Params) when is_map (Params)->
+    maps:map(fun(_, V) ->
+        format_parameters(V)
+    end, Params);
+format_parameters(Params) ->
+    Params.
 
 %%--------------------------------------------------------------------
 %% @doc
