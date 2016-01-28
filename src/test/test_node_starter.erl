@@ -66,8 +66,7 @@ prepare_test_environment(Config, DescriptionFile, TestModule, LoadModules, Apps)
         ConfigWithPaths =
             [{ct_test_root, CtTestRoot}, {project_root, ProjectRoot} | Config],
 
-        EnvUpScript =
-            filename:join([ProjectRoot, "bamboos", "docker", "env_up.py"]),
+        EnvUpScript = filename:join([ProjectRoot, "bamboos", "docker", "env_up.py"]),
 
         LogsDir = filename:join(PrivDir, atom_to_list(TestModule) ++ "_logs"),
         os:cmd("mkdir -p " ++ LogsDir),
@@ -101,11 +100,9 @@ prepare_test_environment(Config, DescriptionFile, TestModule, LoadModules, Apps)
             ),
 
             set_cookies(AllNodesWithCookies),
-
             os:cmd("echo nameserver " ++ atom_to_list(Dns) ++ " > /etc/resolv.conf"),
-                
+            
             AllNodes = [N || {N, _C} <- AllNodesWithCookies],
-                
             ping_nodes(AllNodes),
             global:sync(),
             load_modules(AllNodes, [TestModule, test_utils | LoadModules]),
@@ -113,9 +110,7 @@ prepare_test_environment(Config, DescriptionFile, TestModule, LoadModules, Apps)
             lists:append([
                 ConfigWithPaths,
                 proplists:delete(dns, EnvDesc),
-                rebar_git_plugin:get_git_metadata(),
-                [{env_description, DescriptionFile}]
-
+                rebar_git_plugin:get_git_metadata()
             ])
         catch
             E11:E12 ->
@@ -150,41 +145,45 @@ clean_environment(Config) ->
 %% Afterwards, cleans environment by running 'cleanup.py' script.
 %% @end
 %%--------------------------------------------------------------------
--spec clean_environment(Config :: list(), Apps :: [{AppName :: atom(), ConfigName :: atom()}]) -> ok.
+-spec clean_environment(Config :: list(), Apps::[{AppName::atom(), ConfigName::atom()}]) -> ok.
 clean_environment(Config, Apps) ->
-    case cover:modules() of
-        [] ->
-            ok;
-        _ ->
-            global:register_name(?CLEANING_PROC_NAME, self()),
-            global:sync(),
+    StopStatus = try
+        case cover:modules() of
+            [] ->
+                stop_applications(Config, Apps);
+            _ ->
+                global:register_name(?CLEANING_PROC_NAME, self()),
+                global:sync(),
 
-            AllNodes = lists:flatmap(
-                fun({AppName, ConfigName}) ->
-                    Nodes = ?config(ConfigName, Config),
+                stop_applications(Config, Apps),
 
-                    %% stop applications                     
-                    lists:foreach(fun(N) ->
-                        ok = rpc:call(N, application, stop, [AppName])
-                    end, Nodes),
-                    Nodes
-                end, Apps
-            ),
+                AllNodes = lists:flatmap(fun({_, ConfigName}) -> 
+                    ?config(ConfigName, Config) 
+                end, Apps),
 
-            lists:foreach(fun(_N) ->
-                receive
-                    {app_ended, CoverNode, FileData} ->
-                        {Mega, Sec, Micro} = os:timestamp(),
-                        CoverFile = atom_to_list(CoverNode) ++
-                            integer_to_list((Mega * 1000000 + Sec) * 1000000 + Micro) ++
-                            ".coverdata",
-                        ok = file:write_file(CoverFile, FileData),
-                        cover:import(CoverFile),
-                        file:delete(CoverFile)
-                after
-                    ?TIMEOUT -> throw(cover_not_received)
-                end
-            end, AllNodes)
+                lists:foreach(
+                    fun(_N) ->
+                        receive
+                            {app_ended, CoverNode, FileData} ->
+                                {Mega, Sec, Micro} = os:timestamp(),
+                                CoverFile = atom_to_list(CoverNode) ++
+                                    integer_to_list((Mega * 1000000 + Sec) * 1000000 + Micro) ++
+                                    ".coverdata",
+                                ok = file:write_file(CoverFile, FileData),
+                                cover:import(CoverFile),
+                                file:delete(CoverFile)
+                        after
+                            ?TIMEOUT -> throw(cover_not_received)
+                        end
+                    end, AllNodes
+                ),
+                ok
+        end
+    catch
+        E1:E2 ->
+            ct:print("Stopping of applications failed failed ~p:~p~n" ++
+                "Stacktrace: ~p", [E1, E2, erlang:get_stacktrace()]),
+            E2
     end,
 
     Dockers = proplists:get_value(docker_ids, Config, []),
@@ -193,7 +192,13 @@ clean_environment(Config, Apps) ->
     CleanupScript =
         filename:join([ProjectRoot, "bamboos", "docker", "cleanup.py"]),
     utils:cmd([CleanupScript | DockersStr]),
-    ok.
+
+    case StopStatus of
+        ok ->
+            ok;
+        _ ->
+            throw(StopStatus)
+    end.
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -237,8 +242,7 @@ maybe_start_cover() ->
                                 end
                             end, AllBeams -- ExcludedModulesFiles)
                         catch
-                            _:_ ->
-                                ok % a dir may not exist (it is added for other project)
+                            _:_ -> ok % a dir may not exist (it is added for other project)
                         end
                     end, Dirs)
             end,
@@ -276,10 +280,25 @@ maybe_stop_cover() ->
 %%--------------------------------------------------------------------
 %% @private
 %% @doc
+%% Stops all started applications
+%% @end
+%%--------------------------------------------------------------------
+-spec stop_applications(Config :: list(), Apps::[{AppName::atom(), ConfigName::atom()}]) -> ok.
+stop_applications(Config, Apps) ->
+    lists:foreach(
+        fun({AppName, ConfigName}) ->
+            Nodes = ?config(ConfigName, Config),
+            lists:foreach(fun(N) -> ok = rpc:call(N, application, stop, [AppName]) end, Nodes)
+        end, Apps
+    ).
+
+%%--------------------------------------------------------------------
+%% @private
+%% @doc
 %% Checks connection with nodes.
 %% @end
 %%--------------------------------------------------------------------
--spec ping_nodes(Nodes :: [{node(), atom()}]) -> ok | no_return().
+-spec ping_nodes(Nodes :: list()) -> ok | no_return().
 ping_nodes(Nodes) ->
     ping_nodes(Nodes, 300).
 ping_nodes(_Nodes, 0) ->
@@ -302,7 +321,7 @@ ping_nodes(Nodes, Tries) ->
 %% Loads modules code on given nodes.
 %% @end
 %%--------------------------------------------------------------------
--spec load_modules(Nodes :: [{node(), atom()}], Modules :: [module()]) -> ok.
+-spec load_modules(Nodes :: [node()], Modules :: [module()]) -> ok.
 load_modules(Nodes, Modules) ->
     lists:foreach(fun(Node) ->
         lists:foreach(fun(Module) ->
