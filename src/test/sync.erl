@@ -7,7 +7,7 @@
 %%%-------------------------------------------------------------------
 %%% @doc
 %%% Developer module that allows for easy recompilation and reload of
-%%% erlang modules and static GUI files.
+%%% erlang modules.
 %%% @end
 %%%-------------------------------------------------------------------
 -module(sync).
@@ -16,12 +16,8 @@
 %% ETS name that holds md5 checksums of files
 -define(MD5_ETS, md5_ets).
 
-%% Predefined file with config (location relative to including project root).
--define(GUI_CONFIG_LOCATION, "rel/gui.config").
-
 %% API
 -export([start/1, ensure_started/1, reset/0]).
--export([track_gui/0, dont_track_gui/0]).
 -export([track_dep/1, dont_track_dep/1]).
 -export([track_dir/1, dont_track_dir/1]).
 -export([track_module/1, dont_track_module/1]).
@@ -83,38 +79,6 @@ ensure_started(ProjectSourceDir) ->
 reset() ->
     ProjectDir = ets_lookup(project_dir),
     start(ProjectDir).
-
-
-%%--------------------------------------------------------------------
-%% @doc
-%% Causes sync to track all GUI files. Their location is resolved
-%% according to gui.config found in the including project.
-%% @end
-%%--------------------------------------------------------------------
--spec track_gui() -> boolean().
-track_gui() ->
-    % Make sure ets exists.
-    case ensure_ets() of
-        false -> false;
-        true -> toggle_track_gui(true)
-    end.
-
-
-%%--------------------------------------------------------------------
-%% @doc
-%% Causes sync to stop tracking GUI files. Their location is resolved
-%% according to gui.config found in the including project.
-%% @end
-%%--------------------------------------------------------------------
--spec dont_track_gui() -> boolean().
-dont_track_gui() ->
-    % Make sure ets exists.
-    case ensure_ets() of
-        false ->
-            false;
-        true ->
-            toggle_track_gui(false)
-    end.
 
 
 %%--------------------------------------------------------------------
@@ -301,33 +265,12 @@ sync() ->
             DirsToRecompile = ets_lookup(dirs, []),
             Includes = ets_lookup(includes, []),
 
-            % Check if GUI is tracked.
-            GuiTracked = ets_lookup(track_gui, false),
-            UpdateGUIFilesRes =
-                case GuiTracked of
-                    true ->
-                        {ok, GuiCfg} = get_gui_config(),
-                        SrcGuiDir = proplists:get_value(source_gui_dir, GuiCfg),
-                        {EOK, EUTD, EErr} =
-                            update_erl_files(ProjectDir, [SrcGuiDir], Includes),
-                        {SOK, SUTD, SErr} =
-                            update_gui_static_files(ProjectDir, GuiCfg),
-                        {EOK + SOK, EUTD + SUTD, EErr + SErr};
-                    false ->
-                        {0, 0, 0}
-                end,
-
             % Recompile erl files. If gui.config exists, GUI erl files will
             % be recompiled automatically.
-            UpdateErlFilesRes = update_erl_files(
+            {OK, UpToDate, Error} = update_erl_files(
                 ProjectDir, DirsToRecompile, Includes),
 
             % Check the results.
-            {GUIOK, GUIUpToDate, GUIError} = UpdateGUIFilesRes,
-            {ErlOK, ErlUpToDate, ErlError} = UpdateErlFilesRes,
-            OK = GUIOK + ErlOK,
-            UpToDate = GUIUpToDate + ErlUpToDate,
-            Error = GUIError + ErlError,
             case OK + UpToDate + Error of
                 0 ->
                     info_msg("No files are tracked. Use sync:track_* first.");
@@ -359,31 +302,6 @@ sync() ->
 %%%===================================================================
 %%% Internal funtions
 %%%===================================================================
-
-%%--------------------------------------------------------------------
-%% @private
-%% @doc
-%% Toggles if GUI files are tracked by sync.
-%% @end
-%%--------------------------------------------------------------------
--spec toggle_track_gui(Flag :: boolean()) -> boolean().
-toggle_track_gui(Flag) ->
-    case get_gui_config() of
-        {error, enoent} ->
-            error_msg("Cannot track GUI: gui.config not found in `~s`.",
-                [?GUI_CONFIG_LOCATION]),
-            false;
-        {ok, _} ->
-            case Flag of
-                true ->
-                    info_msg("Tracking all GUI files");
-                false ->
-                    info_msg("Untracked GUI files")
-            end,
-            ets_insert(track_gui, Flag),
-            true
-    end.
-
 
 %%--------------------------------------------------------------------
 %% @private
@@ -509,70 +427,6 @@ update_erl_files(ProjectDir, DirsToRecompile, Includes) ->
 %%--------------------------------------------------------------------
 %% @private
 %% @doc
-%% Updates all static GUI files that have changes
-%% (including coffee scripts and handlebars templates, which require compiling).
-%% Returns a triple meaning how many files were updated, did not need updating
-%% or could not be updated.
-%% @end
-%%--------------------------------------------------------------------
--spec update_gui_static_files(ProjectDir :: string(),
-    GuiConfig :: proplists:proplist()) ->
-    {OK :: integer(), UpToDate :: integer(), Error :: integer()}.
-update_gui_static_files(ProjectDir, GuiConfig) ->
-    RelaseStaticFilesDir = proplists:get_value(
-        release_static_files_dir, GuiConfig),
-    SourceGuiDir = filename:join(
-        [ProjectDir, proplists:get_value(source_gui_dir, GuiConfig)]),
-
-    % Returns tuples with source file path, and target file path but relative to
-    % RelaseStaticFilesDir.
-    SourceFileMappings = lists:map(
-        fun(File) ->
-            {filename:join([SourceGuiDir, File]), File}
-        end, find_all_files(SourceGuiDir, "*", true)),
-
-    % Do the updating
-    CompilationResults = utils:pmap(
-        fun({SourceFilePath, FileName}) ->
-            case filename:extension(FileName) of
-                ".erl" ->
-                    % Do not copy erl files
-                    skip;
-                ".coffee" ->
-                    % Compile coffee files, place js in release
-                    update_coffee_script(SourceFilePath,
-                        RelaseStaticFilesDir, FileName);
-                ".hbs" ->
-                    % Precompile handlebars files, place js in release
-                    update_handlebars_template(SourceFilePath,
-                        RelaseStaticFilesDir, FileName);
-                ".html" ->
-                    % Copy html files to static files root
-                    update_static_file(SourceFilePath,
-                        RelaseStaticFilesDir,
-                        filename:basename(SourceFilePath));
-                _ ->
-                    % Copy all other files 1:1 (path-wise)
-                    update_static_file(SourceFilePath,
-                        RelaseStaticFilesDir, FileName)
-            end
-        end, SourceFileMappings),
-
-    % Count number of successful updates, files that were up to data and
-    % fiels that were failed to update.
-    lists:foldl(fun(Res, {AccOK, AccUpToDate, AccError}) ->
-        case Res of
-            true -> {AccOK + 1, AccUpToDate, AccError};
-            up_to_date -> {AccOK, AccUpToDate + 1, AccError};
-            false -> {AccOK, AccUpToDate, AccError + 1};
-            skip -> {AccOK, AccUpToDate, AccError}
-        end
-    end, {0, 0, 0}, CompilationResults).
-
-
-%%--------------------------------------------------------------------
-%% @private
-%% @doc
 %% Updates an erl file, if needed - compiles it and loads into erlang VM.
 %% @end
 %%--------------------------------------------------------------------
@@ -596,134 +450,6 @@ update_erl_file(File, CompileOpts) ->
     end.
 
 
-%%--------------------------------------------------------------------
-%% @private
-%% @doc
-%% Updates a static GUI file, if needed - copies it to release dir.
-%% @end
-%%--------------------------------------------------------------------
--spec update_static_file(SourceFile :: string(),
-    RelaseStaticFilesDir :: string(), FileName :: string()) -> boolean().
-update_static_file(SourceFile, RelaseStaticFilesDir, FileName) ->
-    TargetPath = filename:join(RelaseStaticFilesDir, FileName),
-    CurrentMD5 = file_md5(SourceFile),
-    case should_update(SourceFile, CurrentMD5) of
-        false ->
-            up_to_date;
-        true ->
-            case shell_cmd(["mkdir -p", filename:dirname(TargetPath)]) of
-                [] ->
-                    case shell_cmd(["cp -f", SourceFile, TargetPath]) of
-                        [] ->
-                            info_msg("Updated:   ~s", [abs_path(FileName)]),
-                            update_file_md5(SourceFile, CurrentMD5),
-                            true;
-                        Other1 ->
-                            error_msg("Cannot copy ~s: ~s", [FileName, Other1]),
-                            false
-                    end;
-                Other2 ->
-                    error_msg("Cannot create dir ~s: ~s",
-                        [filename:dirname(FileName), Other2]),
-                    false
-            end
-    end.
-
-
-%%--------------------------------------------------------------------
-%% @private
-%% @doc
-%% Updates a coffee script file, if needed. Compiles it to .js before copying
-%% to release dir.
-%% @end
-%%--------------------------------------------------------------------
--spec update_coffee_script(SourceFile :: string(),
-    RelaseStaticFilesDir :: string(), FileName :: string()) -> boolean().
-update_coffee_script(SourceFile, RelaseStaticFilesDir, FileName) ->
-    TargetPath = filename:join(RelaseStaticFilesDir, FileName),
-    TargetDir = filename:dirname(TargetPath),
-    CurrentMD5 = file_md5(SourceFile),
-    case should_update(SourceFile, CurrentMD5) of
-        false ->
-            up_to_date;
-        true ->
-            case shell_cmd(["mkdir -p", TargetDir]) of
-                [] ->
-                    case shell_cmd(
-                        ["coffee", "-o", TargetDir, "-c", SourceFile]) of
-                        [] ->
-                            JSFile = filename:rootname(FileName) ++ ".js",
-                            update_file_md5(SourceFile, CurrentMD5),
-                            info_msg("Compiled:  ~s -> ~s",
-                                [abs_path(FileName), abs_path(JSFile)]),
-                            true;
-                        Other ->
-                            error_msg("Cannot compile ~s: ~s",
-                                [SourceFile, Other]),
-                            false
-                    end;
-                Other2 ->
-                    error_msg("Cannot create dir ~s: ~s", [TargetDir, Other2]),
-                    false
-            end
-    end.
-
-
-%%--------------------------------------------------------------------
-%% @private
-%% @doc
-%% Updates a handlebars template, if needed. Compiles it to .js before copying
-%% to release dir.
-%% @end
-%%--------------------------------------------------------------------
--spec update_handlebars_template(SourceFile :: string(),
-    RelaseStaticFilesDir :: string(), FileName :: string()) -> boolean().
-update_handlebars_template(SourceFile, RelaseStaticFilesDir, FileName) ->
-    TargetFileName = filename:rootname(FileName) ++ ".js",
-    TargetPath = filename:join([RelaseStaticFilesDir, TargetFileName]),
-    TargetDir = filename:dirname(TargetPath),
-    CurrentMD5 = file_md5(SourceFile),
-    case should_update(SourceFile, CurrentMD5) of
-        false ->
-            up_to_date;
-        true ->
-            case shell_cmd(["mkdir -p", TargetDir]) of
-                [] ->
-                    case shell_cmd(
-                        ["ember-precompile", SourceFile, "-f", TargetPath]) of
-                        [] ->
-                            update_file_md5(SourceFile, CurrentMD5),
-                            info_msg("Compiled:  ~s -> ~s",
-                                [abs_path(FileName), abs_path(TargetFileName)]),
-                            true;
-                        Other ->
-                            error_msg("Cannot compile ~s: ~s",
-                                [SourceFile, Other]),
-                            false
-                    end;
-                Other2 ->
-                    error_msg("Cannot create dir ~s: ~s", [TargetDir, Other2]),
-                    false
-            end
-    end.
-
-
-%%--------------------------------------------------------------------
-%% @private
-%% @doc
-%% Returns parsed GUI config, or error if it does not exist.
-%% @end
-%%--------------------------------------------------------------------
--spec get_gui_config() -> {ok, proplists:proplist()} | {error, enoent}.
-get_gui_config() ->
-    ProjectDir = ets_lookup(project_dir),
-    GuiConfigPath = filename:join([ProjectDir, ?GUI_CONFIG_LOCATION]),
-    case file:consult(GuiConfigPath) of
-        {ok, GuiConfig} -> {ok, GuiConfig};
-        {error, enoent} -> {error, enoent}
-    end.
-
-
 %--------------------------------------------------------------------
 %% @private
 %% @doc
@@ -733,17 +459,6 @@ get_gui_config() ->
 -spec shell_cmd([string()]) -> string().
 shell_cmd(List) ->
     os:cmd(string:join(List, " ")).
-
-
-%%--------------------------------------------------------------------
-%% @private
-%% @doc
-%% Returns absolute path to a file.
-%% @end
-%%--------------------------------------------------------------------
--spec abs_path(FilePath :: string()) -> string().
-abs_path(FilePath) ->
-    str_utils:to_list(filename:absname_join("/", FilePath)).
 
 
 %%--------------------------------------------------------------------
