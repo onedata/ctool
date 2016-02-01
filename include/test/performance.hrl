@@ -1,5 +1,6 @@
 %%%-------------------------------------------------------------------
 %%% @author Krzysztof Trzepla
+%%% @author Jakub Kudzia
 %%% @copyright (C) 2015 ACK CYFRONET AGH
 %%% This software is released under the MIT license
 %%% cited in 'LICENSE.txt'.
@@ -7,6 +8,7 @@
 %%%-------------------------------------------------------------------
 %%% @doc
 %%% This file contains configuration records for performance tests.
+%%TODO complete
 %%% @end
 %%%-------------------------------------------------------------------
 -ifndef(PERFORMANCE_HRL).
