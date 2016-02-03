@@ -47,6 +47,7 @@ start(ProjectSourceDir) ->
             filename:join(DepPath, "include")
         end, Deps),
     ets_insert(includes, ProjIncludes ++ DepsIncludes),
+    info_msg("Project sources directory set to ~s.", [ProjectSourceDir]),
     ok.
 
 
