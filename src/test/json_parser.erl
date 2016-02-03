@@ -75,7 +75,8 @@ convert_to_atoms(Other) ->
 %% Get value from a json represented as a proplist
 %% @end
 %%--------------------------------------------------------------------
--spec get_value_from_key(list(), list()) -> atom().
+-spec get_value_from_key(list(), list() | atom()) -> atom().
+get_value_from_key(_, undefined) -> undefined;
 get_value_from_key([Key], JsonProplist) ->
     proplists:get_value(list_to_atom(Key), JsonProplist);
 get_value_from_key([Key | Keys], JsonProplist) ->
