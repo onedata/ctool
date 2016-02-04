@@ -40,20 +40,13 @@
     element(2, element(2, process_info(self(), current_function)))
 ).
 
--define(ALL(CasesNames1, CasesNames2),
-    case os:getenv(?PERFORMANCE_ENV_VARIABLE) of
-        "true" ->
-            CasesNames2;
-        _ ->
-            case performance_macros:is_stress_test() of
-                true ->
-                    performance_macros:set_up_stress_test(
-                        ?MODULE, CasesNames1, CasesNames2
-                    );
-                _ ->
-                    CasesNames1
-            end
-    end
+-define(ALL(CasesNames), ?ALL(CasesNames, [])).
+-define(ALL(CasesNames, PerformanceCasesNames),
+    performance_macros:all(CasesNames, PerformanceCasesNames)
+).
+
+-define(STRESS_ALL(CasesNames, NoClearingCasesNames),
+    performance_macros:stress_all(?MODULE, CasesNames, NoClearingCasesNames)
 ).
 
 -define(PERFORMANCE(Config, PerformanceConfig, TestFun),
@@ -61,7 +54,6 @@
         ?MODULE, ?FUNCTION, Config, PerformanceConfig, TestFun
     )
 ).
-
 
 -define(STRESS(Config, StressConfig, TestFun),
     performance_macros:run_stress_test(?MODULE, Config, StressConfig, TestFun)
