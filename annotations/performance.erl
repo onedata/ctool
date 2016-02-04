@@ -26,17 +26,6 @@
 
 -type proplist() :: [{Key :: atom(), Value :: term()}].
 
--define(BRANCH_ENV_VARIABLE, "branch").
--define(PERFORMANCE_ENV_VARIABLE, "performance").
--define(PERFORMANCE_RESULT_FILE, "performance.json").
--define(STRESS_ENV_VARIABLE, "stress").
--define(STRESS_NO_CLEARING_ENV_VARIABLE, "stress_no_clearing").
--define(STRESS_TIME_ENV_VARIABLE, "stress_time").
--define(STRESS_DEFAULT_TIME, timer:hours(3) div 1000).
--define(STRESS_ERRORS_TO_STOP, 100).
--define(STRESS_ETS_NAME, stress_ets).
--define(STRESS_TIMEOUT_EXTENSION_SECONDS, 600). % extension of ct timeout to let running tests end
-
 %%%===================================================================
 %%% API
 %%%===================================================================
