@@ -74,7 +74,7 @@ is_stress_test() ->
 %% TODO add doc
 %% @end
 %%--------------------------------------------------------------------
-run_test(_SuiteName, _CaseName, [get_params], Data, _TestFun) ->
+run_test(_SuiteName, _CaseName, get_params, Data, _TestFun) ->
   get_config_params(Data);
 run_test(SuiteName, CaseName, CaseArgs, Data, TestFun) ->
   case is_stress_test() of
@@ -278,6 +278,8 @@ get_stress_test_params() ->
 
       lists:foldl(fun(Case, Ans) ->
         Params =  apply(Suite, Case, [get_params]),
+        io:format("DEBUG: ~p~n",[Params]),
+        ct:pal("DEBUG: ~p~n",[Params]),
         Params2 = lists:map(fun(Param) ->
           PName = Param#parameter.name,
           Param#parameter{name = concat_atoms(Case, PName)}

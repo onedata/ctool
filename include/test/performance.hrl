@@ -40,29 +40,19 @@
     element(2, element(2, process_info(self(), current_function)))
 ).
 
--define(ALL(CasesNames, PerformanceCasesNames),
+-define(ALL(CasesNames1, CasesNames2),
     case os:getenv(?PERFORMANCE_ENV_VARIABLE) of
         "true" ->
-            PerformanceCasesNames;
+            CasesNames2;
         _ ->
             case performance_macros:is_stress_test() of
                 true ->
-                    [];
+                    performance_macros:set_up_stress_test(
+                        ?MODULE, CasesNames1, CasesNames2
+                    );
                 _ ->
-                    CasesNames
+                    CasesNames1
             end
-    end
-).
-
-%%TODO połączyć z ALL
--define(STRESS_ALL(CasesNames, NoClearingCasesNames),
-    case performance_macros:is_stress_test() of
-        true ->
-            performance_macros:set_up_stress_test(
-                ?MODULE, CasesNames, NoClearingCasesNames
-            );
-        _ ->
-            []
     end
 ).
 
