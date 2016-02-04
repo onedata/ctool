@@ -36,6 +36,10 @@
     unit = "" :: string()
 }).
 
+-define(FUNCTION,
+    element(2, element(2, process_info(self(), current_function)))
+).
+
 -define(ALL(CasesNames, PerformanceCasesNames),
     case os:getenv(?PERFORMANCE_ENV_VARIABLE) of
         "true" ->
@@ -43,7 +47,6 @@
         _ ->
             case performance_macros:is_stress_test() of
                 true ->
-%%          TODO
                     [];
                 _ ->
                     CasesNames
@@ -51,10 +54,27 @@
     end
 ).
 
--define(PERFORMANCE(SuiteName, CaseName, Config, PerformanceConfig, TestFun),
-    performance_macros:run_appropriate_test_type(
-        SuiteName, CaseName, Config, PerformanceConfig, TestFun
+%%TODO połączyć z ALL
+-define(STRESS_ALL(CasesNames, NoClearingCasesNames),
+    case performance_macros:is_stress_test() of
+        true ->
+            performance_macros:set_up_stress_test(
+                ?MODULE, CasesNames, NoClearingCasesNames
+            );
+        _ ->
+            []
+    end
+).
+
+-define(PERFORMANCE(Config, PerformanceConfig, TestFun),
+    performance_macros:run_test(
+        ?MODULE, ?FUNCTION, Config, PerformanceConfig, TestFun
     )
+).
+
+
+-define(STRESS(Config, StressConfig, TestFun),
+    performance_macros:run_stress_test(?MODULE, Config, StressConfig, TestFun)
 ).
 
 -endif.
