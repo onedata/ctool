@@ -30,6 +30,8 @@
 
 -type proplist() :: [{Key :: atom(), Value :: term()}].
 
+-define(BASE_SUFFIX, "_base").
+
 %%%===================================================================
 %%% API
 %%%===================================================================
@@ -177,7 +179,7 @@ stress_test(Config) ->
                     ct:print("Case: ~p, init_per_testcase error: ~p:~p", [Case, E1, E2]),
                     Config
                 end,
-    CaseAns = case apply(Suite, Case, [NewConfig]) of
+    CaseAns = case apply(Suite, base_case(Case), [NewConfig]) of
                 {ok, TmpAns} ->
 %%                           TmpAns2 = lists:map(fun(Param) ->
 %%                               PName = Param#parameter.name,
@@ -247,13 +249,13 @@ run_testcase(SuiteName, CaseName, CaseArgs, Data, TestFun) ->
       exec_perf_configs(TestFun, CaseDescr, SuiteName, CaseName, CaseArgs,
         Configs, DefaultReps, DefaultSuccessRate, DefaultParams);
     _ ->
-      exec_ct_config(TestFun, CaseArgs, DefaultParams)
+      exec_ct_config(TestFun, SuiteName, CaseName, CaseArgs, DefaultParams)
   end.
 
 %%--------------------------------------------------------------------
 %% @doc
 %% This function saves suite and cases names for sress test.
-%% @end
+%% @endt
 %%--------------------------------------------------------------------
 -spec set_up_stress_test(SuiteName :: atom(), CasesNames ::  [atom()],
     NoClearing ::  [atom()]) -> any().
@@ -336,10 +338,10 @@ concat_atoms(A1, A2) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec exec_ct_config(TestFun :: fun(), CaseArgs :: proplist(), Params :: [#parameter{}]) -> term().
-exec_ct_config(TestFun, CaseArgs, Params) ->
+exec_ct_config(TestFun, SuiteName, CaseName, CaseArgs, Params) ->
   NewCaseArgs = inject_parameters(CaseArgs, Params),
-  TestFun(NewCaseArgs).
-
+%%  TestFun(NewCaseArgs).
+  apply(SuiteName, base_case(CaseName),[NewCaseArgs]).
 %%--------------------------------------------------------------------
 %% @private
 %% @doc
@@ -680,7 +682,8 @@ proccess_repeat_result(RepeatResult, Rep, RepsSummary, RepsDetails, FailedReps) 
 exec_test_repeat(TestFun, SuiteName, CaseName, CaseConfig) ->
   try
     Timestamp1 = os:timestamp(),
-    Result = TestFun(CaseConfig),
+%%    Result = TestFun(CaseConfig),
+    Result = apply(SuiteName, base_case(CaseName),[CaseConfig]),
     Timestamp2 = os:timestamp(),
     TestTime = utils:milliseconds_diff(Timestamp2, Timestamp1),
     % Return list of parameters consisting of default 'test_time' parameter
@@ -897,3 +900,7 @@ get_copyright(TestRoot, SuiteName) ->
                          {true, list_to_binary(Copyright#xmlText.value)};
                        (_) -> false
                      end, Doc#xmlElement.content)).
+
+
+base_case(CaseName) ->
+  list_to_atom(atom_to_list(CaseName) ++ ?BASE_SUFFIX).
