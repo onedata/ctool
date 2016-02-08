@@ -139,26 +139,31 @@ stress_test(Config) ->
     ct:timetrap({seconds, Timeout + ?STRESS_TIMEOUT_EXTENSION_SECONDS}), % add 10 minutes to let running tests end
 
     AnsList = lists:foldl(fun(Case, Ans) ->
-        NewConfig = try
-                        apply(Suite, init_per_testcase, [Case, Config])
-                    catch
-                        error:undef ->
-                            Config;
-                        E1:E2 ->
-                            ct:print("Case: ~p, init_per_testcase error: ~p:~p", [Case, E1, E2]),
-                            Config
-                    end,
-        CaseAns = case apply(Suite, Case, [NewConfig]) of
-                      {ok, TmpAns} ->
+        CaseAns = try
+                      NewConfig = try
+                                      apply(Suite, init_per_testcase, [Case, Config])
+                      catch
+                          error:undef ->
+                              Config
+                      end,
+                      case apply(Suite, Case, [NewConfig]) of
+                          {ok, TmpAns} ->
 %%                           TmpAns2 = lists:map(fun(Param) ->
 %%                               PName = Param#parameter.name,
 %%                               Param#parameter{name = concat_atoms(Case, PName)}
 %%                           end, TmpAns),
 %%                           [{ok, TmpAns2} | Ans];
-                          [{ok, TmpAns} | Ans];
-                      {error, E} ->
-                          Message = str_utils:format("Case: ~p, error: ~p", [Case, E]),
-                          [{error, Message} | Ans]
+                              [{ok, TmpAns} | Ans];
+                          {error, E} ->
+                              Message = str_utils:format("Case: ~p, error: ~p", [Case, E]),
+                              [{error, Message} | Ans]
+                      end
+                  catch
+                      E1:E2 ->
+                          % only init_per_testcase can throw (case has catch inside)
+                          ct:print("Case: ~p, init_per_testcase error: ~p:~p", [Case, E1, E2]),
+                          Message2 = str_utils:format("Case: ~p, init_per_testcase error: ~p:~p", [Case, E1, E2]),
+                          [{error, Message2} | Ans]
                   end,
         try
             apply(Suite, end_per_testcase, [Case, Config])
@@ -317,6 +322,11 @@ exec_ct_config(SuiteName, CaseName, CaseArgs, Params) ->
     DefaultReps :: non_neg_integer(), DefaultSuccessRate :: number(), DefaultParams :: [#parameter{}]) -> ok.
 exec_perf_configs(SuiteName, CaseName, CaseDescr, CaseArgs, Configs,
     DefaultReps, DefaultSuccessRate, DefaultParams) ->
+    {Time, _Scale} = ct:get_timetrap_info(),
+    Multiplier = lists:foldl(fun(Config, Sum) ->
+        Sum + proplists:get_value(repeats, Config, DefaultReps)
+    end, 0, Configs),
+    ct:timetrap(Time * Multiplier),
     ?assertEqual(ok, lists:foldl(fun(Config, Status) ->
         case exec_perf_config(SuiteName, CaseName, CaseDescr, CaseArgs,
             Config, DefaultReps, DefaultSuccessRate, DefaultParams) of

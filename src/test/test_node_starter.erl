@@ -18,6 +18,7 @@
 
 -define(CLEANING_PROC_NAME, cleaning_proc).
 -define(TIMEOUT, timer:seconds(60)).
+-define(COOKIE_KEY, "vm.args/setcookie").
 
 %% This is list of all applications that possibly could be started by test_node_starter
 %% Update when adding new application (if you want to use callbacks without specifying apps list)
@@ -36,6 +37,7 @@
 %%--------------------------------------------------------------------
 %% @doc
 %% Starts deps and dockers with needed applications and mocks.
+%% Sets cookies (read from DescriptionFile) for erlang nodes.
 %% @end
 %%--------------------------------------------------------------------
 -spec prepare_test_environment(Config :: list(), DescriptionFile :: string(),
@@ -46,6 +48,7 @@ prepare_test_environment(Config, DescriptionFile, TestModule, LoadModules) ->
 %%--------------------------------------------------------------------
 %% @doc
 %% Starts deps and dockers with needed applications and mocks.
+%% Sets cookies (read from DescriptionFile) for erlang nodes.
 %% @end
 %%--------------------------------------------------------------------
 -spec prepare_test_environment(Config :: list(), DescriptionFile :: string(),
@@ -89,11 +92,17 @@ prepare_test_environment(Config, DescriptionFile, TestModule, LoadModules, Apps)
 
         try
             Dns = ?config(dns, EnvDesc),
-            AllNodes = lists:flatmap(fun({_, ConfigName}) -> ?config(ConfigName, EnvDesc) end, Apps),
+            AllNodesWithCookies = lists:flatmap(
+                fun({AppName, ConfigName}) ->
+                    Nodes = ?config(ConfigName, EnvDesc),
+                    get_cookies(Nodes, AppName, ?COOKIE_KEY, DescriptionFile)
+                end, Apps
+            ),
 
-            erlang:set_cookie(node(), test_cookie),
+            set_cookies(AllNodesWithCookies),
             os:cmd("echo nameserver " ++ atom_to_list(Dns) ++ " > /etc/resolv.conf"),
-
+            
+            AllNodes = [N || {N, _C} <- AllNodesWithCookies],
             ping_nodes(AllNodes),
             global:sync(),
             load_modules(AllNodes, [TestModule, test_utils | LoadModules]),
@@ -148,7 +157,9 @@ clean_environment(Config, Apps) ->
 
                 stop_applications(Config, Apps),
 
-                AllNodes = lists:flatmap(fun({_, ConfigName}) -> ?config(ConfigName, Config) end, Apps),
+                AllNodes = lists:flatmap(fun({_, ConfigName}) -> 
+                    ?config(ConfigName, Config) 
+                end, Apps),
 
                 lists:foreach(
                     fun(_N) ->
@@ -178,7 +189,8 @@ clean_environment(Config, Apps) ->
     Dockers = proplists:get_value(docker_ids, Config, []),
     ProjectRoot = ?config(project_root, Config),
     DockersStr = lists:map(fun atom_to_list/1, Dockers),
-    CleanupScript = filename:join([ProjectRoot, "bamboos", "docker", "cleanup.py"]),
+    CleanupScript =
+        filename:join([ProjectRoot, "bamboos", "docker", "cleanup.py"]),
     utils:cmd([CleanupScript | DockersStr]),
 
     case StopStatus of
@@ -321,3 +333,75 @@ load_modules(Nodes, Modules) ->
             ))
         end, Modules)
     end, Nodes).
+
+
+%%%===================================================================
+%%% Internal functions
+%%%===================================================================
+
+%%--------------------------------------------------------------------
+%% @private
+%% @doc
+%% Get one key by concatenating many json keys, separated with "/" 
+%% @end
+%%--------------------------------------------------------------------
+-spec get_json_key(Node :: atom(), Domain :: string(), NodeType :: string(),
+    Key :: string()) -> string().
+get_json_key(Node, Domain, NodeType, Key) ->
+    [NodeName, DomainName | _] = string:tokens(utils:get_host(Node), "."),
+    string:join([Domain, DomainName, NodeType, NodeName, Key], "/").
+
+%%--------------------------------------------------------------------
+%% @private
+%% @doc
+%% Get cookies for each Node in Nodes list.
+%% CookieKey is the nested json key, independent of node type.
+%% Returns list of tuples {Node, Cookie}
+%% @end
+%%--------------------------------------------------------------------
+-spec get_cookies(Nodes :: [node()] | [] | undefined, AppName :: string(), CookieKey :: string(),
+    DescriptionFile :: string()) -> [{Node :: node(), Cookie :: atom()}] | [].
+get_cookies(undefined, _AppName, _CookieKey, _DescriptionFile) -> [];
+get_cookies([], _AppName, _CookieKey, _DescriptionFile) -> [];
+get_cookies(Nodes, AppName, CookieKey, DescriptionFile) ->
+    lists:map(fun(Node) ->
+        Key = case AppName of
+                  globalregistry ->
+                      get_json_key(Node, "globalregistry_domains", "globalregistry", CookieKey);
+                  cluster_manager ->
+                      [
+                          get_json_key(Node, "provider_domains", "cluster_manager", CookieKey),
+                          get_json_key(Node, "cluster_domains", "cluster_manager", CookieKey)
+                      ];
+                  op_worker ->
+                      get_json_key(Node, "provider_domains", "op_worker", CookieKey);
+                  cluster_worker ->
+                      get_json_key(Node, "cluster_domains", "cluster_worker", CookieKey)
+              end,
+        case AppName of
+            cluster_manager ->
+                %% if AppName is cluster_manager, the Key is a list
+                %% choose value that is different that undefined,
+                %% there should be only one such value
+                FilterUndefined = fun F([H | T]) ->
+                    case json_parser:get_value(H, DescriptionFile, "/") of
+                        undefined -> F(T);
+                        Value -> {Node, Value}
+                    end
+                end,
+                FilterUndefined(Key);
+            _ -> {Node, json_parser:get_value(Key, DescriptionFile, "/")}
+        end
+    end, Nodes).
+
+%%--------------------------------------------------------------------
+%% @private
+%% @doc
+%% Set cookies for each Node in NodesWithCookies list
+%% @end
+%%--------------------------------------------------------------------
+-spec set_cookies([{node(), atom()}]) -> ok.
+set_cookies(NodesWithCookies) ->
+    lists:foreach(fun({N, C}) ->
+        erlang:set_cookie(N, C)
+    end, NodesWithCookies).
