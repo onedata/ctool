@@ -347,7 +347,7 @@ exec_ct_config(TestFun, CaseArgs, Params) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec exec_perf_configs(TestFun :: function(), CaseDescr :: string(),
-    SuiteName :: list(), CaseName :: list(), CaseArgs :: proplist(),
+    SuiteName :: atom(), CaseName :: atom(), CaseArgs :: proplist(),
     Config :: proplist(), DefaultReps :: non_neg_integer(),
     DefaultSuccessRate :: number(), DefaultParams :: [#parameter{}]) -> ok.
 exec_perf_configs(TestFun, CaseDescr, SuiteName, CaseName, CaseArgs, Configs,
@@ -368,7 +368,7 @@ exec_perf_configs(TestFun, CaseDescr, SuiteName, CaseName, CaseArgs, Configs,
 %% @end
 %%--------------------------------------------------------------------
 -spec exec_perf_config(TestFun :: function(), CaseDescr :: string(),
-    SuiteName :: list(), CaseName :: list(), CaseArgs :: proplist(),
+    SuiteName :: atom(), CaseName :: atom(), CaseArgs :: proplist(),
     Config :: proplist(), DefaultReps :: non_neg_integer(),
     DefaultSuccessRate :: number(), DefaultParams :: [#parameter{}]) -> ok | error.
 exec_perf_config(TestFun, CaseDescr, SuiteName, CaseName, CaseArgs, Config,
