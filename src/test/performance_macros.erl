@@ -101,7 +101,7 @@ is_stress_test() ->
 %% This function runs given test case in given suite.
 %% @end
 %%--------------------------------------------------------------------
--spec run_test(atom(), atom(), term(), Data :: [term()], TestFun :: function())
+-spec run_test(atom(), atom(), term(), Data :: [term()], TestFun :: fun())
       -> list().
 run_test(_SuiteName, _CaseName, get_params, Data, _TestFun) ->
   get_config_params(Data);
@@ -127,7 +127,7 @@ run_test(SuiteName, CaseName, CaseArgs, Data, TestFun) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec run_stress_test(SuiteName :: atom(), CaseArgs :: term(),
-    Data :: [term()], TestFun :: function()) -> any().
+    Data :: [term()], TestFun :: fun()) -> any().
 run_stress_test(SuiteName, CaseArgs, Data, TestFun) ->
 
   CaseDescr = proplists:get_value(description, Data, ""),
@@ -235,7 +235,7 @@ get_stress_test_params() ->
 %% @end
 %%--------------------------------------------------------------------
 -spec run_testcase(SuiteName :: list(), CaseName :: list(), CaseArgs :: list(),
-    Data :: list(), TestFun :: function()) -> term().
+    Data :: list(), TestFun :: fun()) -> term().
 run_testcase(SuiteName, CaseName, CaseArgs, Data, TestFun) ->
   DefaultReps = proplists:get_value(repeats, Data, 1),
   DefaultSuccessRate = proplists:get_value(success_rate, Data, 100),
@@ -335,7 +335,7 @@ concat_atoms(A1, A2) ->
 %% Executes common test using non-performance configurations.
 %% @end
 %%--------------------------------------------------------------------
--spec exec_ct_config(TestFun :: function(), CaseArgs :: proplist(), Params :: [#parameter{}]) -> term().
+-spec exec_ct_config(TestFun :: fun(), CaseArgs :: proplist(), Params :: [#parameter{}]) -> term().
 exec_ct_config(TestFun, CaseArgs, Params) ->
   NewCaseArgs = inject_parameters(CaseArgs, Params),
   TestFun(NewCaseArgs).
@@ -346,7 +346,7 @@ exec_ct_config(TestFun, CaseArgs, Params) ->
 %% Executes common test case using performance configurations.
 %% @end
 %%--------------------------------------------------------------------
--spec exec_perf_configs(TestFun :: function(), CaseDescr :: string(),
+-spec exec_perf_configs(TestFun :: fun(), CaseDescr :: string(),
     SuiteName :: atom(), CaseName :: atom(), CaseArgs :: proplist(),
     Config :: proplist(), DefaultReps :: non_neg_integer(),
     DefaultSuccessRate :: number(), DefaultParams :: [#parameter{}]) -> ok.
@@ -367,7 +367,7 @@ exec_perf_configs(TestFun, CaseDescr, SuiteName, CaseName, CaseArgs, Configs,
 %% Executes common test case using performance configuration.
 %% @end
 %%--------------------------------------------------------------------
--spec exec_perf_config(TestFun :: function(), CaseDescr :: string(),
+-spec exec_perf_config(TestFun :: fun(), CaseDescr :: string(),
     SuiteName :: atom(), CaseName :: atom(), CaseArgs :: proplist(),
     Config :: proplist(), DefaultReps :: non_neg_integer(),
     DefaultSuccessRate :: number(), DefaultParams :: [#parameter{}]) -> ok | error.
@@ -543,7 +543,7 @@ exec_perf_config(TestFun, CaseDescr, SuiteName, CaseName, CaseArgs, Config,
 %% Executes test case multiple times.
 %% @end
 %%--------------------------------------------------------------------
--spec exec_test_repeats(TestFun :: function(), SuiteName :: atom(), CaseName :: atom(), ConfigName :: atom(),
+-spec exec_test_repeats(TestFun :: fun(), SuiteName :: atom(), CaseName :: atom(), ConfigName :: atom(),
     CaseConfig :: proplist(), Reps :: integer() | {test_time, integer()}) -> {RepsDone :: integer(),
   RepsSummary :: [#parameter{}] | [[#parameter{}]], RepsDetails :: [#parameter{}] | [[#parameter{}]],
   FailedReps :: map() | [map()]}.
@@ -675,7 +675,7 @@ proccess_repeat_result(RepeatResult, Rep, RepsSummary, RepsDetails, FailedReps) 
 %% Executes test case once.
 %% @end
 %%--------------------------------------------------------------------
--spec exec_test_repeat(TestFun :: function(), SuiteName :: atom(), CaseName :: atom(), CaseConfig :: proplist()) ->
+-spec exec_test_repeat(TestFun :: fun(), SuiteName :: atom(), CaseName :: atom(), CaseConfig :: proplist()) ->
   {ok, [#parameter{}]} | {error, Reason :: binary()} | list().
 exec_test_repeat(TestFun, SuiteName, CaseName, CaseConfig) ->
   try
