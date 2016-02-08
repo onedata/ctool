@@ -25,10 +25,8 @@
 -include_lib("ctool/include/logging.hrl").
 -include_lib("common_test/include/ct.hrl").
 
--export([%around_advice/4,
-  is_standard_test/0, is_stress_test/0, stress_test/1, should_clear/1,
-  inject_parameters/2, get_config_params/1, run_testcase/5, set_up_stress_test/3,
-  run_stress_test/4, run_test/5, all/2, stress_all/3]).
+-export([is_standard_test/0, is_stress_test/0, stress_test/1, should_clear/1,
+  all/2, stress_all/3, run_stress_test/4, run_test/5]).
 
 -type proplist() :: [{Key :: atom(), Value :: term()}].
 
@@ -39,10 +37,12 @@
 %%--------------------------------------------------------------------
 %% @private
 %% @doc
-%% TODO add doc
+%% This function is meant to replace all() function in ct test suite
+%% It checks what kind (normal ct, performance, stress) of test is started
+%% and returns list of appropriate test cases.
 %% @end
 %%--------------------------------------------------------------------
-%%TODO add spec
+-spec all(CasesNames :: [atom()], PerformanceCasesNames :: [atom()]) -> [atom()].
 all(CasesNames, PerformanceCasesNames) ->
   case os:getenv(?PERFORMANCE_ENV_VARIABLE) of
     "true" ->
@@ -59,10 +59,11 @@ all(CasesNames, PerformanceCasesNames) ->
 %%--------------------------------------------------------------------
 %% @private
 %% @doc
-%% TODO add doc
+%% This function returns list of stress test cases in given suite.
 %% @end
 %%--------------------------------------------------------------------
-%%TODO add spec
+-spec stress_all(SuiteName :: atom(), CasesNames :: [atom()],
+    NoClearingCasesNames :: [atom()]) -> any().
 stress_all(SuiteName, CasesNames, NoClearingCasesNames) ->
   case is_stress_test() of
     true ->
@@ -97,10 +98,11 @@ is_stress_test() ->
 %%--------------------------------------------------------------------
 %% @private
 %% @doc
-%% TODO add doc
+%% This function runs given test case in given suite.
 %% @end
 %%--------------------------------------------------------------------
-%%TODO add spec
+-spec run_test(atom(), atom(), term(), Data :: [term()], TestFun :: function())
+      -> list().
 run_test(_SuiteName, _CaseName, get_params, Data, _TestFun) ->
   get_config_params(Data);
 run_test(SuiteName, CaseName, CaseArgs, Data, TestFun) ->
@@ -119,52 +121,13 @@ run_test(SuiteName, CaseName, CaseArgs, Data, TestFun) ->
       run_testcase(SuiteName, CaseName, CaseArgs, Data, TestFun)
   end.
 
-
-%%--------------------------------------------------------------------
-%% @private
-%% @doc
-%% TODO add doc
-%% @end
-%%--------------------------------------------------------------------
-%% TODO update spec
--spec run_testcase(SuiteName :: list(), CaseName :: list(), CaseArgs :: list(),
-    Data :: list(), TestFun :: function()) -> term().
-run_testcase(SuiteName, CaseName, CaseArgs, Data, TestFun) ->
-  DefaultReps = proplists:get_value(repeats, Data, 1),
-  DefaultSuccessRate = proplists:get_value(success_rate, Data, 100),
-  DefaultParams = parse_parameters(proplists:get_value(parameters, Data, [])),
-  case is_standard_test() of
-    false ->
-      CaseDescr = proplists:get_value(description, Data, ""),
-      Configs = proplists:get_all_values(config, Data),
-      exec_perf_configs(TestFun, CaseDescr, SuiteName, CaseName, CaseArgs,
-        Configs, DefaultReps, DefaultSuccessRate, DefaultParams);
-    _ ->
-      exec_ct_config(TestFun, CaseArgs, DefaultParams)
-  end.
-
 %%--------------------------------------------------------------------
 %% @doc
-%%TODO add doc
+%% This function runs stress tests in given suite.
 %% @end
 %%--------------------------------------------------------------------
-%%TODO add spec
-set_up_stress_test(SuiteName, CasesNames, NoClearingCases) ->
-  case {os:getenv(?STRESS_ENV_VARIABLE), os:getenv(?STRESS_NO_CLEARING_ENV_VARIABLE)} of
-    {"true", _} ->
-      save_suite_and_cases(SuiteName, CasesNames),
-      [stress_test];
-    {_, "true"} ->
-      save_suite_and_cases(SuiteName, NoClearingCases),
-      [stress_test]
-  end.
-
-%%--------------------------------------------------------------------
-%% @doc
-%%TODO add doc
-%% @end
-%%--------------------------------------------------------------------
-%%TODO add spec
+-spec run_stress_test(SuiteName :: atom(), CaseArgs :: term(),
+    Data :: [term()], TestFun :: function()) -> any().
 run_stress_test(SuiteName, CaseArgs, Data, TestFun) ->
 
   CaseDescr = proplists:get_value(description, Data, ""),
@@ -177,6 +140,20 @@ run_stress_test(SuiteName, CaseArgs, Data, TestFun) ->
   ets:delete(?STRESS_ETS_NAME),
   EtsOwner ! kill_ets_owner,
   Ans.
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Checks if function should clear or leave changes (e.g. docs in DB).
+%% @end
+%%--------------------------------------------------------------------
+-spec should_clear(Config :: list()) -> boolean().
+should_clear(Config) ->
+  ?config(clearing, Config) =/= false.
+
+%%%===================================================================
+%%% Internal functions
+%%%===================================================================
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -252,17 +229,43 @@ get_stress_test_params() ->
   end.
 
 %%--------------------------------------------------------------------
+%% @private
 %% @doc
-%% Checks if function should clear or leave changes (e.g. docs in DB).
+%% This function runs given ct or performance test case in given suite.
 %% @end
 %%--------------------------------------------------------------------
--spec should_clear(Config :: list()) -> boolean().
-should_clear(Config) ->
-  ?config(clearing, Config) =/= false.
+-spec run_testcase(SuiteName :: list(), CaseName :: list(), CaseArgs :: list(),
+    Data :: list(), TestFun :: function()) -> term().
+run_testcase(SuiteName, CaseName, CaseArgs, Data, TestFun) ->
+  DefaultReps = proplists:get_value(repeats, Data, 1),
+  DefaultSuccessRate = proplists:get_value(success_rate, Data, 100),
+  DefaultParams = parse_parameters(proplists:get_value(parameters, Data, [])),
+  case is_standard_test() of
+    false ->
+      CaseDescr = proplists:get_value(description, Data, ""),
+      Configs = proplists:get_all_values(config, Data),
+      exec_perf_configs(TestFun, CaseDescr, SuiteName, CaseName, CaseArgs,
+        Configs, DefaultReps, DefaultSuccessRate, DefaultParams);
+    _ ->
+      exec_ct_config(TestFun, CaseArgs, DefaultParams)
+  end.
 
-%%%===================================================================
-%%% Internal functions
-%%%===================================================================
+%%--------------------------------------------------------------------
+%% @doc
+%% This function saves suite and cases names for sress test.
+%% @end
+%%--------------------------------------------------------------------
+-spec set_up_stress_test(SuiteName :: atom(), CasesNames ::  [atom()],
+    NoClearing ::  [atom()]) -> any().
+set_up_stress_test(SuiteName, CasesNames, NoClearingCases) ->
+  case {os:getenv(?STRESS_ENV_VARIABLE), os:getenv(?STRESS_NO_CLEARING_ENV_VARIABLE)} of
+    {"true", _} ->
+      save_suite_and_cases(SuiteName, CasesNames),
+      [stress_test];
+    {_, "true"} ->
+      save_suite_and_cases(SuiteName, NoClearingCases),
+      [stress_test]
+  end.
 
 %%--------------------------------------------------------------------
 %% @private
