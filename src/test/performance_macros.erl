@@ -337,7 +337,7 @@ concat_atoms(A1, A2) ->
 %% Executes common test using non-performance configurations.
 %% @end
 %%--------------------------------------------------------------------
--spec exec_ct_config(TestFun :: fun(), CaseArgs :: proplist(), Params :: [#parameter{}]) -> term().
+%%-spec exec_ct_config(TestFun :: fun(), CaseArgs :: proplist(), Params :: [#parameter{}]) -> term().
 exec_ct_config(TestFun, SuiteName, CaseName, CaseArgs, Params) ->
   NewCaseArgs = inject_parameters(CaseArgs, Params),
 %%  TestFun(NewCaseArgs).
