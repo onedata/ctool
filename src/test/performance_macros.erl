@@ -135,7 +135,7 @@ run_stress_test(SuiteName, CaseArgs, Data) ->
   Configs = proplists:get_all_values(config, Data),
   DefaultParams = parse_parameters(proplists:get_value(parameters, Data, [])),
   DefaultSuccessRate = proplists:get_value(success_rate, Data, 100),
-  Ans = exec_perf_configs(CaseDescr, SuiteName, stress_test, CaseArgs,
+  Ans = exec_perf_configs(CaseDescr, SuiteName, stress_test_base, CaseArgs,
     Configs, 1, DefaultSuccessRate, DefaultParams),
   EtsOwner = ets:info(?STRESS_ETS_NAME, owner),
   ets:delete(?STRESS_ETS_NAME),
