@@ -235,7 +235,7 @@ get_stress_test_params() ->
 %% This function runs given ct or performance test case in given suite.
 %% @end
 %%--------------------------------------------------------------------
--spec run_testcase(SuiteName :: list(), CaseName :: list(), CaseArgs :: list(),
+-spec run_testcase(SuiteName :: atom(), CaseName :: atom(), CaseArgs :: list(),
     Data :: list()) -> term().
 run_testcase(SuiteName, CaseName, CaseArgs, Data) ->
   DefaultReps = proplists:get_value(repeats, Data, 1),
