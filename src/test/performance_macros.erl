@@ -26,7 +26,7 @@
 -include_lib("common_test/include/ct.hrl").
 
 -export([is_standard_test/0, is_stress_test/0, stress_test/1, should_clear/1,
-  all/2, stress_all/3, run_stress_test/4, run_test/4]).
+  all/2, stress_all/3, run_stress_test/3, run_test/4]).
 
 -type proplist() :: [{Key :: atom(), Value :: term()}].
 
