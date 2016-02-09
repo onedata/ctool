@@ -26,7 +26,7 @@
 -include_lib("common_test/include/ct.hrl").
 
 -export([is_standard_test/0, is_stress_test/0, stress_test/1, should_clear/1,
-  all/2, stress_all/3, run_stress_test/4, run_test/5]).
+  all/2, stress_all/3, run_stress_test/4, run_test/4]).
 
 -type proplist() :: [{Key :: atom(), Value :: term()}].
 
@@ -103,11 +103,10 @@ is_stress_test() ->
 %% This function runs given test case in given suite.
 %% @end
 %%--------------------------------------------------------------------
--spec run_test(atom(), atom(), term(), Data :: [term()], TestFun :: fun())
-      -> list().
-run_test(_SuiteName, _CaseName, get_params, Data, _TestFun) ->
+-spec run_test(atom(), atom(), term(), Data :: [term()]) -> list().
+run_test(_SuiteName, _CaseName, get_params, Data) ->
   get_config_params(Data);
-run_test(SuiteName, CaseName, CaseArgs, Data, TestFun) ->
+run_test(SuiteName, CaseName, CaseArgs, Data) ->
   case is_stress_test() of
     true ->
       ConfigParams = get_config_params(Data),
@@ -118,9 +117,9 @@ run_test(SuiteName, CaseName, CaseArgs, Data, TestFun) ->
                   _ ->
                     NewCaseArgs
                 end,
-      exec_test_repeat(TestFun, SuiteName, CaseName, Configs);
+      exec_test_repeat(SuiteName, CaseName, Configs);
     _ ->
-      run_testcase(SuiteName, CaseName, CaseArgs, Data, TestFun)
+      run_testcase(SuiteName, CaseName, CaseArgs, Data)
   end.
 
 %%--------------------------------------------------------------------
@@ -129,14 +128,14 @@ run_test(SuiteName, CaseName, CaseArgs, Data, TestFun) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec run_stress_test(SuiteName :: atom(), CaseArgs :: term(),
-    Data :: [term()], TestFun :: fun()) -> any().
-run_stress_test(SuiteName, CaseArgs, Data, TestFun) ->
+    Data :: [term()]) -> any().
+run_stress_test(SuiteName, CaseArgs, Data) ->
 
   CaseDescr = proplists:get_value(description, Data, ""),
   Configs = proplists:get_all_values(config, Data),
   DefaultParams = parse_parameters(proplists:get_value(parameters, Data, [])),
   DefaultSuccessRate = proplists:get_value(success_rate, Data, 100),
-  Ans = exec_perf_configs(TestFun, CaseDescr, SuiteName, stress_test, CaseArgs,
+  Ans = exec_perf_configs(CaseDescr, SuiteName, stress_test, CaseArgs,
     Configs, 1, DefaultSuccessRate, DefaultParams),
   EtsOwner = ets:info(?STRESS_ETS_NAME, owner),
   ets:delete(?STRESS_ETS_NAME),
@@ -237,8 +236,8 @@ get_stress_test_params() ->
 %% @end
 %%--------------------------------------------------------------------
 -spec run_testcase(SuiteName :: list(), CaseName :: list(), CaseArgs :: list(),
-    Data :: list(), TestFun :: fun()) -> term().
-run_testcase(SuiteName, CaseName, CaseArgs, Data, TestFun) ->
+    Data :: list()) -> term().
+run_testcase(SuiteName, CaseName, CaseArgs, Data) ->
   DefaultReps = proplists:get_value(repeats, Data, 1),
   DefaultSuccessRate = proplists:get_value(success_rate, Data, 100),
   DefaultParams = parse_parameters(proplists:get_value(parameters, Data, [])),
@@ -246,10 +245,10 @@ run_testcase(SuiteName, CaseName, CaseArgs, Data, TestFun) ->
     false ->
       CaseDescr = proplists:get_value(description, Data, ""),
       Configs = proplists:get_all_values(config, Data),
-      exec_perf_configs(TestFun, CaseDescr, SuiteName, CaseName, CaseArgs,
+      exec_perf_configs(CaseDescr, SuiteName, CaseName, CaseArgs,
         Configs, DefaultReps, DefaultSuccessRate, DefaultParams);
     _ ->
-      exec_ct_config(TestFun, SuiteName, CaseName, CaseArgs, DefaultParams)
+      exec_ct_config(SuiteName, CaseName, CaseArgs, DefaultParams)
   end.
 
 %%--------------------------------------------------------------------
@@ -337,10 +336,10 @@ concat_atoms(A1, A2) ->
 %% Executes common test using non-performance configurations.
 %% @end
 %%--------------------------------------------------------------------
-%%-spec exec_ct_config(TestFun :: fun(), CaseArgs :: proplist(), Params :: [#parameter{}]) -> term().
-exec_ct_config(TestFun, SuiteName, CaseName, CaseArgs, Params) ->
+-spec exec_ct_config(SuiteName :: atom(), CaseName :: atom(),
+    CaseArgs :: proplist(), Params :: [#parameter{}]) -> term().
+exec_ct_config(SuiteName, CaseName, CaseArgs, Params) ->
   NewCaseArgs = inject_parameters(CaseArgs, Params),
-%%  TestFun(NewCaseArgs).
   apply(SuiteName, base_case(CaseName),[NewCaseArgs]).
 %%--------------------------------------------------------------------
 %% @private
@@ -348,15 +347,15 @@ exec_ct_config(TestFun, SuiteName, CaseName, CaseArgs, Params) ->
 %% Executes common test case using performance configurations.
 %% @end
 %%--------------------------------------------------------------------
--spec exec_perf_configs(TestFun :: fun(), CaseDescr :: string(),
+-spec exec_perf_configs(CaseDescr :: string(),
     SuiteName :: atom(), CaseName :: atom(), CaseArgs :: proplist(),
     Config :: proplist(), DefaultReps :: non_neg_integer(),
     DefaultSuccessRate :: number(), DefaultParams :: [#parameter{}]) -> ok.
-exec_perf_configs(TestFun, CaseDescr, SuiteName, CaseName, CaseArgs, Configs,
+exec_perf_configs(CaseDescr, SuiteName, CaseName, CaseArgs, Configs,
     DefaultReps, DefaultSuccessRate, DefaultParams) ->
   ?assertEqual(ok, lists:foldl(
     fun(Config, Status) ->
-      case exec_perf_config(TestFun, CaseDescr, SuiteName, CaseName, CaseArgs,
+      case exec_perf_config(CaseDescr, SuiteName, CaseName, CaseArgs,
         Config, DefaultReps, DefaultSuccessRate, DefaultParams) of
         ok -> Status;
         _ -> error
@@ -369,11 +368,11 @@ exec_perf_configs(TestFun, CaseDescr, SuiteName, CaseName, CaseArgs, Configs,
 %% Executes common test case using performance configuration.
 %% @end
 %%--------------------------------------------------------------------
--spec exec_perf_config(TestFun :: fun(), CaseDescr :: string(),
+-spec exec_perf_config(CaseDescr :: string(),
     SuiteName :: atom(), CaseName :: atom(), CaseArgs :: proplist(),
     Config :: proplist(), DefaultReps :: non_neg_integer(),
     DefaultSuccessRate :: number(), DefaultParams :: [#parameter{}]) -> ok | error.
-exec_perf_config(TestFun, CaseDescr, SuiteName, CaseName, CaseArgs, Config,
+exec_perf_config(CaseDescr, SuiteName, CaseName, CaseArgs, Config,
     DefaultReps, DefaultSuccessRate, DefaultParams) ->
 
   % Fetch and prepare test case configuration.
@@ -403,7 +402,7 @@ exec_perf_config(TestFun, CaseDescr, SuiteName, CaseName, CaseArgs, Config,
                end,
 
   {RepeatsDone, RepsSummary0, RepsDetails0, FailedReps0} =
-    exec_test_repeats(TestFun, SuiteName, CaseName, ConfigName, NewCaseArgs, ConfigReps),
+    exec_test_repeats(SuiteName, CaseName, ConfigName, NewCaseArgs, ConfigReps),
 
   {RepsSummary, RepsDetails, FailedReps, SuccessfulReps, RepsAverage} =
     case is_stress_test() of
@@ -545,21 +544,21 @@ exec_perf_config(TestFun, CaseDescr, SuiteName, CaseName, CaseArgs, Config,
 %% Executes test case multiple times.
 %% @end
 %%--------------------------------------------------------------------
--spec exec_test_repeats(TestFun :: fun(), SuiteName :: atom(), CaseName :: atom(), ConfigName :: atom(),
+-spec exec_test_repeats(SuiteName :: atom(), CaseName :: atom(), ConfigName :: atom(),
     CaseConfig :: proplist(), Reps :: integer() | {test_time, integer()}) -> {RepsDone :: integer(),
   RepsSummary :: [#parameter{}] | [[#parameter{}]], RepsDetails :: [#parameter{}] | [[#parameter{}]],
   FailedReps :: map() | [map()]}.
-exec_test_repeats(TestFun, SuiteName, CaseName, ConfigName, CaseConfig, {timeout, TimeLimit}) ->
+exec_test_repeats(SuiteName, CaseName, ConfigName, CaseConfig, {timeout, TimeLimit}) ->
   [{cases, Cases}] = ets:lookup(?STRESS_ETS_NAME, cases),
-  exec_test_repeats(TestFun, SuiteName, CaseName, ConfigName, CaseConfig, 1, {timeout, os:timestamp(), TimeLimit},
+  exec_test_repeats(SuiteName, CaseName, ConfigName, CaseConfig, 1, {timeout, os:timestamp(), TimeLimit},
     lists:map(fun(_) -> [] end, Cases), lists:map(fun(_) -> [] end, Cases),
     lists:map(fun(_) -> #{} end, Cases));
-exec_test_repeats(TestFun, SuiteName, CaseName, ConfigName, CaseConfig, Reps) ->
-  exec_test_repeats(TestFun, SuiteName, CaseName, ConfigName, CaseConfig, 1, Reps + 1, [], [], #{}).
-exec_test_repeats(_TestFun, _SuiteName, _CaseName, _ConfigName, _CaseConfig, Reps, Reps,
+exec_test_repeats(SuiteName, CaseName, ConfigName, CaseConfig, Reps) ->
+  exec_test_repeats(SuiteName, CaseName, ConfigName, CaseConfig, 1, Reps + 1, [], [], #{}).
+exec_test_repeats(_SuiteName, _CaseName, _ConfigName, _CaseConfig, Reps, Reps,
     RepsSummary, RepsDetails, FailedReps) ->
   {Reps - 1, RepsSummary, RepsDetails, FailedReps};
-exec_test_repeats(TestFun, SuiteName, CaseName, ConfigName, CaseConfig, Rep, Reps,
+exec_test_repeats(SuiteName, CaseName, ConfigName, CaseConfig, Rep, Reps,
     RepsSummary, RepsDetails, FailedReps) ->
   TimeStop = case Reps of
                {timeout, StartTime, TimeLimit} ->
@@ -593,19 +592,19 @@ exec_test_repeats(TestFun, SuiteName, CaseName, ConfigName, CaseConfig, Rep, Rep
     stop ->
       {Rep - 1, RepsSummary, RepsDetails, FailedReps};
     _ ->
-      case exec_test_repeat(TestFun, SuiteName, CaseName, CaseConfig) of
+      case exec_test_repeat(SuiteName, CaseName, CaseConfig) of
         List when is_list(List) ->
           List2 = lists:zip(List, lists:zip3(RepsSummary, RepsDetails, FailedReps)),
           {R1, R2, R3} = lists:foldl(fun({R, {RS, RD, FR}}, {A1, A2, A3}) ->
             {NewRepsSummary, NewRepsDetails, NewFailedReps} = proccess_repeat_result(R, Rep, RS, RD, FR),
             {[NewRepsSummary | A1], [NewRepsDetails | A2], [NewFailedReps | A3]}
                                      end, {[], [], []}, List2),
-          exec_test_repeats(TestFun, SuiteName, CaseName, ConfigName, CaseConfig, Rep + 1,
+          exec_test_repeats(SuiteName, CaseName, ConfigName, CaseConfig, Rep + 1,
             Reps, lists:reverse(R1), lists:reverse(R2), lists:reverse(R3));
         RepeatResult ->
           {NewRepsSummary, NewRepsDetails, NewFailedReps} =
             proccess_repeat_result(RepeatResult, Rep, RepsSummary, RepsDetails, FailedReps),
-          exec_test_repeats(TestFun, SuiteName, CaseName, ConfigName, CaseConfig, Rep + 1,
+          exec_test_repeats(SuiteName, CaseName, ConfigName, CaseConfig, Rep + 1,
             Reps, NewRepsSummary, NewRepsDetails, NewFailedReps)
       end
   end.
@@ -677,12 +676,11 @@ proccess_repeat_result(RepeatResult, Rep, RepsSummary, RepsDetails, FailedReps) 
 %% Executes test case once.
 %% @end
 %%--------------------------------------------------------------------
--spec exec_test_repeat(TestFun :: fun(), SuiteName :: atom(), CaseName :: atom(), CaseConfig :: proplist()) ->
+-spec exec_test_repeat(SuiteName :: atom(), CaseName :: atom(), CaseConfig :: proplist()) ->
   {ok, [#parameter{}]} | {error, Reason :: binary()} | list().
-exec_test_repeat(TestFun, SuiteName, CaseName, CaseConfig) ->
+exec_test_repeat(SuiteName, CaseName, CaseConfig) ->
   try
     Timestamp1 = os:timestamp(),
-%%    Result = TestFun(CaseConfig),
     Result = apply(SuiteName, base_case(CaseName),[CaseConfig]),
     Timestamp2 = os:timestamp(),
     TestTime = utils:milliseconds_diff(Timestamp2, Timestamp1),

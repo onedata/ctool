@@ -49,14 +49,12 @@
     performance_macros:stress_all(?MODULE, CasesNames, NoClearingCasesNames)
 ).
 
--define(PERFORMANCE(Config, PerformanceConfig, TestFun),
-    performance_macros:run_test(
-        ?MODULE, ?FUNCTION, Config, PerformanceConfig, TestFun
-    )
+-define(PERFORMANCE(Config, PerformanceConfig),
+    performance_macros:run_test(?MODULE, ?FUNCTION, Config, PerformanceConfig)
 ).
 
--define(STRESS(Config, StressConfig, TestFun),
-    performance_macros:run_stress_test(?MODULE, Config, StressConfig, TestFun)
+-define(STRESS(Config, StressConfig),
+    performance_macros:run_stress_test(?MODULE, Config, StressConfig)
 ).
 
 -endif.
