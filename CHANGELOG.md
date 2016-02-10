@@ -4,6 +4,11 @@
 CHANGELOG
 ---------
 
+### 2.0.1
+
+* Dependencies management update
+
+
 ### 2.0.0
 
 
