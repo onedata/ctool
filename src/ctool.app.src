@@ -1,32 +1,34 @@
 %%%-------------------------------------------------------------------
 %%% @author Tomasz Lichon
-%%% @copyright (C) 2014, ACK CYFRONET AGH
-%%% @doc
-%%% This file describes application ctool
+%%% @copyright (C) 2015 ACK CYFRONET AGH
+%%% This software is released under the MIT license
+%%% cited in 'LICENSE.txt'.
 %%% @end
-%%% Created : 23. May 2014 15:11
 %%%-------------------------------------------------------------------
+%%% @doc
+%%% This file describes ctool application.
+%%% @end
+%%%-------------------------------------------------------------------
+
 {application, ctool, [
     {description, "Common tools lib for onedata project"},
-    {vsn, git},
-    {modules, [test_node_starter, utils]},
+    {vsn, "2.0.1"},
     {registered, []},
     {applications, [
         kernel,
         stdlib,
         lager,
-        ibrowse,
+        % Web client will start ssl2 and hackney
+        web_client,
         cowboy,
         gproc
-        % n2o and erlydtl are not listed here, because we do not want them to start as applications
+        % n2o, erlydtl and macaroons are not listed here, because we do not want them to start as applications
     ]},
 
     {env, [
-        % Secure (HTTPS) connections:
-        % Path to .pem or .crt file containing CA certs installed on the system
-        {root_cacert_file, '/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem'},
-        % The env below decides if the server certificates will be checked against ca bundle during every secure connection
-        {verify_server_cert, true},
+        % The env below decides if the GR certificate should be verified
+        % during REST calls
+        {verify_gr_cert, true},
 
         % ==================================
 
