@@ -9,387 +9,399 @@
 -module(test_node_starter).
 -author("Tomasz Lichon").
 
--include("test/test_node_starter.hrl").
 -include("test/assertions.hrl").
+-include_lib("common_test/include/ct.hrl").
 
 %% API
-% Starting and stoping nodes
--export([start_test_nodes/1, start_test_nodes/2, start_test_node/3, start_test_node/4]).
--export([stop_test_nodes/1]).
+-export([prepare_test_environment/5, prepare_test_environment/4, clean_environment/2, clean_environment/1,
+    load_modules/2, maybe_start_cover/0, maybe_stop_cover/0]).
 
-% Starting nodes with distributed app
--export([start_test_nodes_with_dist_app/2, start_test_nodes_with_dist_app/3]).
+-define(CLEANING_PROC_NAME, cleaning_proc).
+-define(TIMEOUT, timer:seconds(60)).
+-define(COOKIE_KEY, "vm.args/setcookie").
 
-% Starting and stoping app
--export([start_app_on_nodes/4]).
--export([stop_app_on_nodes/3]).
+%% This is list of all applications that possibly could be started by test_node_starter
+%% Update when adding new application (if you want to use callbacks without specifying apps list)
+%% List of tuples {application name, name of node in json output}
+-define(ALL_POSSIBLE_APPS, [
+    {op_worker, op_worker_nodes},
+    {cluster_worker, cluster_worker_nodes},
+    {cluster_manager, cluster_manager_nodes},
+    {globalregistry, gr_nodes}
+]).
 
-% Preparing environment for app
--export([set_default_env_vars/1, set_env_vars/2, start_deps/1, stop_deps/1]).
+%%%===================================================================
+%%% Starting and stoping nodes
+%%%===================================================================
 
-% Starting and stoping deps for tester node (ct runner node)
--export([start_deps_for_tester_node/0, stop_deps_for_tester_node/0]).
-
-
-%% ====================================================================
-%% Starting and stoping nodes
-%% ====================================================================
-
-%% start_test_nodes/1
-%% ====================================================================
-%% @doc Starts new nodes for test, with disabled verbose option
+%%--------------------------------------------------------------------
+%% @doc
+%% Starts deps and dockers with needed applications and mocks.
+%% Sets cookies (read from DescriptionFile) for erlang nodes.
 %% @end
--spec start_test_nodes(NodesNum :: integer()) -> Result when
-    Result :: list().
-%% ====================================================================
-start_test_nodes(NodesNum) ->
-    start_test_nodes(NodesNum, false).
+%%--------------------------------------------------------------------
+-spec prepare_test_environment(Config :: list(), DescriptionFile :: string(),
+    TestModule :: module(), LoadModules :: [module()]) -> Result :: list() | {fail, tuple()}.
+prepare_test_environment(Config, DescriptionFile, TestModule, LoadModules) ->
+    prepare_test_environment(Config, DescriptionFile, TestModule, LoadModules, ?ALL_POSSIBLE_APPS).
 
-%% start_test_nodes/2
-%% ====================================================================
-%% @doc Starts new nodes for test, with default names
+%%--------------------------------------------------------------------
+%% @doc
+%% Starts deps and dockers with needed applications and mocks.
+%% Sets cookies (read from DescriptionFile) for erlang nodes.
 %% @end
--spec start_test_nodes(NodesNum :: integer(), Verbose :: boolean()) -> Result when
-    Result :: list().
-%% ====================================================================
-start_test_nodes(0, _Verbose) ->
-    [];
-start_test_nodes(NodesNum, Verbose) ->
-    NodeName = list_to_atom("slave" ++ integer_to_list(NodesNum)),
-    Host = ?CURRENT_HOST,
+%%--------------------------------------------------------------------
+-spec prepare_test_environment(Config :: list(), DescriptionFile :: string(),
+    TestModule :: module(), LoadModules :: [module()], Apps :: [{AppName :: atom(), ConfigName :: atom()}])
+        -> Result :: list() | {fail, tuple()}.
+prepare_test_environment(Config, DescriptionFile, TestModule, LoadModules, Apps) ->
+    try
+        DataDir = ?config(data_dir, Config),
+        PrivDir = ?config(priv_dir, Config),
+        CtTestRoot = filename:join(DataDir, ".."),
+        ProjectRoot = filename:join(CtTestRoot, ".."),
+        AppmockRoot = filename:join(ProjectRoot, "appmock"),
+        CmRoot = filename:join(ProjectRoot, "cluster_manager"),
 
-    [start_test_node(NodeName, Host, Verbose) | start_test_nodes(NodesNum - 1, Verbose)].
+        ConfigWithPaths =
+            [{ct_test_root, CtTestRoot}, {project_root, ProjectRoot} | Config],
 
-%% start_test_node/3
-%% ====================================================================
-%% @doc Starts new test node, with no additional parameters
-%% @end
--spec start_test_node(NodeName :: atom(), Host :: atom(), Verbose :: boolean()) -> Result when
-    Result :: node() | no_return().
-%% ====================================================================
-start_test_node(NodeName, Host, Verbose) ->
-    start_test_node(NodeName, Host, Verbose, "").
+        EnvUpScript = filename:join([ProjectRoot, "bamboos", "docker", "env_up.py"]),
 
-%% start_test_node/4
-%% ====================================================================
-%% @doc Starts new test node.
-%% @end
--spec start_test_node(NodeName :: atom(), Host :: atom(), Verbose :: boolean(), Params :: string()) -> Result when
-    Result :: node() | no_return().
-%% ====================================================================
-start_test_node(NodeName, Host, Verbose, Params) ->
-    % Prepare opts
-    CodePathOpt = make_code_path(),
-    VerboseOpt = case Verbose of
-                     true -> "";
-                     false -> " -noshell "
-                 end,
-    CookieOpt = " -setcookie " ++ atom_to_list(erlang:get_cookie()) ++ " ",
+        LogsDir = filename:join(PrivDir, atom_to_list(TestModule) ++ "_logs"),
+        os:cmd("mkdir -p " ++ LogsDir),
 
-    % Restart node
-    stop_test_nodes([?NODE(Host, NodeName)]),
-    {Status, Node} = slave:start(Host, NodeName, CodePathOpt ++ VerboseOpt ++ CookieOpt ++ Params),
-    ?assertEqual(ok, Status),
-    Node.
+        utils:cmd(["echo", "'" ++ DescriptionFile ++ ":'", ">> prepare_test_environment.log"]),
+        utils:cmd(["echo", "'" ++ DescriptionFile ++ ":'", ">> prepare_test_environment_error.log"]),
 
-%% stop_test_nodes/1
-%% ====================================================================
-%% @doc Stops test nodes.
-%% @end
--spec stop_test_nodes(Node :: list(node())) -> list(Status) when
-    Status :: ok.
-%% ====================================================================
-stop_test_nodes([]) ->
-    ok;
-stop_test_nodes([Node | Rest]) ->
-    slave:stop(Node),
-    stop_test_nodes(Rest).
+        StartLog = list_to_binary(utils:cmd([EnvUpScript,
+            %% Function is used durgin OP or GR tests so starts OP or GR - not both
+            "--bin-cluster-worker", ProjectRoot,
+            "--bin-worker", ProjectRoot,
+            "--bin-gr", ProjectRoot,
+            %% additionally AppMock can be started
+            "--bin-appmock", AppmockRoot,
+            "--bin-cm", CmRoot,
+            "--logdir", LogsDir,
+            DescriptionFile, "2>> prepare_test_environment_error.log"])),
 
-%% ====================================================================
-%% Starting and stoping nodes with distributed app
-%% ====================================================================
+        % Save start log to file
+        utils:cmd(["echo", binary_to_list(<<"'", StartLog/binary, "'">>), ">> prepare_test_environment.log"]),
 
-%% start_test_nodes_with_dist_app/2
-%% ====================================================================
-%% @doc Starts nodes needed for test as distributed erlang application, with disabled verbose option
-%% @end
--spec start_test_nodes_with_dist_app(NodesNum :: integer(), CCMNum :: integer()) -> Result when
-    Result :: list().
-%% ====================================================================
-start_test_nodes_with_dist_app(NodesNum, CCMNum) ->
-    start_test_nodes_with_dist_app(NodesNum, CCMNum, false).
+        EnvDesc = json_parser:parse_json_binary_to_atom_proplist(StartLog),
 
-%% start_test_nodes_with_dist_app/3
-%% ====================================================================
-%% @doc Starts nodes needed for test as distributed erlang application
-%% @end
--spec start_test_nodes_with_dist_app(NodesNum :: integer(), CCMNum :: integer(), Verbose :: boolean()) -> Result when
-    Result :: list().
-%% ====================================================================
-start_test_nodes_with_dist_app(0, _CCMNum, _Verbose) ->
-    {[], []};
-start_test_nodes_with_dist_app(NodesNum, CCMNum, Verbose) ->
-    Nodes = create_nodes_description(?CURRENT_HOST, [], NodesNum),
-    DistNodes = create_dist_nodes_list(Nodes, CCMNum),
-    DistAppDesc = create_dist_app_description(DistNodes),
-    Params = create_nodes_params_for_dist_nodes(Nodes, DistNodes, DistAppDesc),
+        try
+            Dns = ?config(dns, EnvDesc),
+            AllNodesWithCookies = lists:flatmap(
+                fun({AppName, ConfigName}) ->
+                    Nodes = ?config(ConfigName, EnvDesc),
+                    get_cookies(Nodes, AppName, ?COOKIE_KEY, DescriptionFile)
+                end, Apps
+            ),
 
-    {utils:pmap(fun({{NodeName, Host}, Par}) ->
-        start_test_node(NodeName, Host, Verbose, Par) end, lists:zip(Nodes, Params)), Params}.
+            set_cookies(AllNodesWithCookies),
+            os:cmd("echo nameserver " ++ atom_to_list(Dns) ++ " > /etc/resolv.conf"),
+            
+            AllNodes = [N || {N, _C} <- AllNodesWithCookies],
+            ping_nodes(AllNodes),
+            global:sync(),
+            load_modules(AllNodes, [TestModule, test_utils | LoadModules]),
 
-%% ====================================================================
-%% Starting and stoping app
-%% ====================================================================
-
-%% start_app_on_nodes/4
-%% ====================================================================
-%% @doc Starts app on test node.
-%% @end
--spec start_app_on_nodes(Application :: atom(), Deps :: list(list(atom())), Nodes :: list(atom()), EnvVars :: list(list(Env))) -> Result when
-    Env :: {Name, Value},
-    Name :: atom(),
-    Value :: term(),
-    Result :: ok | no_return().
-%% ====================================================================
-start_app_on_nodes(_Application, _Deps, [], []) ->
-    ok;
-start_app_on_nodes(Application, Deps, [Node | OtherNodes], [EnvVars | OtherEnvVars]) ->
-    start_app_on_node(Application, Deps, Node, EnvVars),
-    start_app_on_nodes(Application, Deps, OtherNodes, OtherEnvVars).
-
-%% start_app_on_node/4
-%% ====================================================================
-%% @doc Starts app on test node.
-%% @end
--spec start_app_on_node(Application :: atom(), Deps :: list(atom()), Node :: atom(), EnvVars :: list(Env)) -> Result when
-    Env :: {Name, Value},
-    Name :: atom(),
-    Value :: term(),
-    Result :: ok | no_return().
-%% ====================================================================
-start_app_on_node(Application, Deps, Node, EnvVars) ->
-    rpc:call(Node, application, start, [ctool]),
-    rpc:call(Node, test_node_starter, start_deps, [Deps]),
-    rpc:call(Node, application, load, [Application]),
-    rpc:call(Node, test_node_starter, set_default_env_vars, [Application]),
-    rpc:call(Node, test_node_starter, set_env_vars, [Application, EnvVars]),
-    ?assertEqual(ok, rpc:call(Node, application, start, [Application])),
-    ok.
-
-%% stop_app_on_nodes/3
-%% ====================================================================
-%% @doc Stops app on test nodes.
-%% @end
--spec stop_app_on_nodes(Application :: atom(), Deps :: list(atom()), Nodes :: list(atom())) -> Result when
-    Result :: ok | no_return().
-%% ====================================================================
-stop_app_on_nodes(_Application, _Deps, []) ->
-    ok;
-stop_app_on_nodes(Application, Deps, [Node | OtherNodes]) ->
-    stop_app_on_node(Application, Deps, Node),
-    stop_app_on_nodes(Application, Deps, OtherNodes).
-
-%% stop_app_on_node/3
-%% ====================================================================
-%% @doc Stops app on test node.
-%% @end
--spec stop_app_on_node(Application :: atom(), Deps :: list(atom()), Node :: atom()) -> Result when
-    Result :: ok | no_return().
-%% ====================================================================
-stop_app_on_node(Application, Deps, Node) ->
-    ?assertEqual(ok, rpc:call(Node, application, stop, [Application])),
-    rpc:call(Node, test_node_starter, stop_deps, [Deps]),
-    rpc:call(Node, application, unload, [Application]),
-    rpc:call(Node, application, stop, [ctool]),
-    ok.
-
-%% ====================================================================
-%% Preparing environment for app
-%% ====================================================================
-
-%% stop_deps/1
-%% ====================================================================
-%% @doc This function clears after the test.
-%% @end
--spec stop_deps(Deps :: list(atom)) -> list(Result :: term()).
-%% ====================================================================
-stop_deps([]) ->
-    [];
-stop_deps([FirstDep | Rest]) ->
-    [application:stop(FirstDep) | stop_deps(Rest)].
-
-%% start_deps/1
-%% ====================================================================
-%% @doc This function sets environment for application.
-%% @end
--spec start_deps(Deps :: list(atom)) -> list(Result :: term()).
-%% ====================================================================
-start_deps([]) ->
-    [];
-start_deps([lager | Rest]) ->
-    application:load(lager),
-    {ok, [Data]} = file:consult("sys.config"),
-    Config = proplists:get_value(lager, Data),
-    lists:foreach(
-        fun(Key) ->
-            case Key of
-                error_logger_hwm ->
-                    % Disable error_logger high water mark during tests
-                    application:set_env(lager, error_logger_hwm, undefined);
-                _ ->
-                    application:set_env(lager, Key, proplists:get_value(Key, Config))
-            end
-        end, proplists:get_keys(Config)),
-    [lager:start() | start_deps(Rest)];
-start_deps([ssl | Rest]) ->
-    [ssl:start() | start_deps(Rest)];
-start_deps([FirstDep | Rest]) ->
-    [application:start(FirstDep) | start_deps(Rest)].
-
-
-%% set_default_env_vars/1
-%% ====================================================================
-%% @doc This function sets default environment variables for application
-%% read from 'sys.config' file.
-%% @end
--spec set_default_env_vars(Application :: atom()) -> ok.
-%% ====================================================================
-set_default_env_vars(Application) ->
-    {ok, [Data]} = file:consult("sys.config"),
-    Config = proplists:get_value(Application, Data, []),
-    lists:foreach(fun({Key, Value}) ->
-        application:set_env(Application, Key, Value)
-    end, Config).
-
-
-%% set_env_vars/2
-%% ====================================================================
-%% @doc This function sets environment variables for application.
-%% @end
--spec set_env_vars(Application :: atom(), EnvVars :: list()) -> ok.
-%% ====================================================================
-set_env_vars(_Application, []) ->
-    ok;
-set_env_vars(Application, [{Variable, Value} | Vars]) ->
-    application:set_env(Application, Variable, Value),
-    set_env_vars(Application, Vars).
-
-%% ====================================================================
-%% Starting and stoping deps for tester node (ct runner node)
-%% ====================================================================
-
-%% start_deps_for_tester_node/0
-%% ====================================================================
-%% @doc Starts dependencies needed by tester node (node that does not
-%% host application but coordinates test).
-%% @end
--spec start_deps_for_tester_node() -> Result when
-    Result :: ok | {error, Reason},
-    Reason :: term().
-%% ====================================================================
-start_deps_for_tester_node() ->
-    %% SASL reboot/start in order to disable TTY logging
-    %% Normally `error_logger:tty(false)` should be enough, but some apps could start SASL anyway without our boot options
-    application:stop(sasl),
-    application:unload(sasl),
-    application:load(sasl),
-    application:set_env(sasl, sasl_error_logger, false),
-    application:start(sasl),
-    error_logger:tty(false),
-    ssl:start().
-
-%% stop_deps_for_tester_node/0
-%% ====================================================================
-%% @doc Stops dependencies needed by tester node (node that does not
-%% host application but coordinates test).
-%% @end
--spec stop_deps_for_tester_node() -> Result when
-    Result :: ok | {error, Reason},
-    Reason :: term().
-%% ====================================================================
-stop_deps_for_tester_node() ->
-    application:stop(ssl),
-    application:stop(crypto),
-    application:stop(public_key).
-
-%% ====================================================================
-%% Internal Functions
-%% ====================================================================
-
-%% make_code_path/0
-%% ====================================================================
-%% @doc Returns current code path string, formatted as erlang slave node argument.
-%% @end
--spec make_code_path() -> string().
-%% ====================================================================
-make_code_path() ->
-    lists:foldl(fun(Node, Path) -> " -pa " ++ Node ++ Path end,
-        [], code:get_path()).
-
-%% create_nodes_description/3
-%% ====================================================================
-%% @doc Creates description of nodes needed for test.
-%% @end
--spec create_nodes_description(Host :: atom(), TmpAns :: list(), Counter :: integer()) -> Result when
-    Result :: list().
-%% ====================================================================
-create_nodes_description(_Host, Ans, 0) ->
-    Ans;
-create_nodes_description(Host, Ans, Counter) ->
-    Desc = {list_to_atom("slave" ++ integer_to_list(Counter)), Host},
-    create_nodes_description(Host, [Desc | Ans], Counter - 1).
-
-%% create_dist_nodes_list/2
-%% ====================================================================
-%% @doc Creates list of nodes for distributed application
-%% @end
--spec create_dist_nodes_list(Nodes :: list(), DistNodesNum :: integer()) -> Result when
-    Result :: list().
-%% ====================================================================
-create_dist_nodes_list(_, 0) ->
-    [];
-create_dist_nodes_list([{NodeName, Host} | Nodes], DistNodesNum) ->
-    Node = "'" ++ atom_to_list(NodeName) ++ "@" ++ atom_to_list(Host) ++ "'",
-    [Node | create_dist_nodes_list(Nodes, DistNodesNum - 1)].
-
-%% create_dist_app_description/1
-%% ====================================================================
-%% @doc Creates description of distributed application
-%% @end
--spec create_dist_app_description(DistNodes :: list()) -> Result when
-    Result :: string().
-%% ====================================================================
-create_dist_app_description(DistNodes) ->
-    [Main | Rest] = DistNodes,
-    RestString = lists:foldl(fun(N, TmpAns) ->
-        case TmpAns of
-            "" -> N;
-            _ -> TmpAns ++ ", " ++ N
+            lists:append([
+                ConfigWithPaths,
+                proplists:delete(dns, EnvDesc),
+                rebar_git_plugin:get_git_metadata()
+            ])
+        catch
+            E11:E12 ->
+                ct:print("Preparation of environment failed ~p:~p~n" ++
+                    "For details, check:~n" ++
+                    "    prepare_test_environment_error.log~n" ++
+                    "    prepare_test_environment.log~n" ++
+                    "Stacktrace: ~p", [E11, E12, erlang:get_stacktrace()]),
+                clean_environment(EnvDesc),
+                {fail, {init_failed, E11, E12}}
         end
-    end, "", Rest),
-    "\"[{oneprovider_node, 1000, [" ++ Main ++ ", {" ++ RestString ++ "}]}]\"".
-
-%% create_nodes_params_for_dist_nodes/3
-%% ====================================================================
-%% @doc Creates list of nodes for distributed application
-%% @end
--spec create_nodes_params_for_dist_nodes(Nodes :: list(), DistNodes :: list(), DistAppDescription :: string()) -> Result when
-    Result :: list().
-%% ====================================================================
-create_nodes_params_for_dist_nodes([], _DistNodes, _DistAppDescription) ->
-    [];
-create_nodes_params_for_dist_nodes([{NodeName, Host} | Nodes], DistNodes, DistAppDescription) ->
-    Node = "'" ++ atom_to_list(NodeName) ++ "@" ++ atom_to_list(Host) ++ "'",
-    case lists:member(Node, DistNodes) of
-        true ->
-            SynchNodes = lists:delete(Node, DistNodes),
-            SynchNodesString = lists:foldl(fun(N, TmpAns) ->
-                case TmpAns of
-                    "" -> N;
-                    _ -> TmpAns ++ ", " ++ N
-                end
-            end, "", SynchNodes),
-            Param = " -kernel distributed " ++ DistAppDescription ++ " -kernel sync_nodes_mandatory \"[" ++ SynchNodesString ++ "]\" -kernel sync_nodes_timeout 30000 ",
-            [Param | create_nodes_params_for_dist_nodes(Nodes, DistNodes, DistAppDescription)];
-        false -> ["" | create_nodes_params_for_dist_nodes(Nodes, DistNodes, DistAppDescription)]
+    catch
+        E21:E22 ->
+            ct:print("Prepare of environment failed ~p:~p~n~p",
+                [E21, E22, erlang:get_stacktrace()]),
+            {fail, {init_failed, E21, E22}}
     end.
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Gathers cover analysis reports if cover is started.
+%% Afterwards, cleans environment by running 'cleanup.py' script.
+%% @end
+%%--------------------------------------------------------------------
+-spec clean_environment(Config :: list()) -> ok.
+clean_environment(Config) ->
+    clean_environment(Config, ?ALL_POSSIBLE_APPS).
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Gathers cover analysis reports if cover is started.
+%% Afterwards, cleans environment by running 'cleanup.py' script.
+%% @end
+%%--------------------------------------------------------------------
+-spec clean_environment(Config :: list(), Apps::[{AppName::atom(), ConfigName::atom()}]) -> ok.
+clean_environment(Config, Apps) ->
+    StopStatus = try
+        case cover:modules() of
+            [] ->
+                stop_applications(Config, Apps);
+            _ ->
+                global:register_name(?CLEANING_PROC_NAME, self()),
+                global:sync(),
+
+                stop_applications(Config, Apps),
+
+                AllNodes = lists:flatmap(fun({_, ConfigName}) -> 
+                    ?config(ConfigName, Config) 
+                end, Apps),
+
+                lists:foreach(
+                    fun(_N) ->
+                        receive
+                            {app_ended, CoverNode, FileData} ->
+                                {Mega, Sec, Micro} = os:timestamp(),
+                                CoverFile = atom_to_list(CoverNode) ++
+                                    integer_to_list((Mega * 1000000 + Sec) * 1000000 + Micro) ++
+                                    ".coverdata",
+                                ok = file:write_file(CoverFile, FileData),
+                                cover:import(CoverFile),
+                                file:delete(CoverFile)
+                        after
+                            ?TIMEOUT -> throw(cover_not_received)
+                        end
+                    end, AllNodes
+                ),
+                ok
+        end
+    catch
+        E1:E2 ->
+            ct:print("Stopping of applications failed failed ~p:~p~n" ++
+                "Stacktrace: ~p", [E1, E2, erlang:get_stacktrace()]),
+            E2
+    end,
+
+    Dockers = proplists:get_value(docker_ids, Config, []),
+    ProjectRoot = ?config(project_root, Config),
+    DockersStr = lists:map(fun atom_to_list/1, Dockers),
+    CleanupScript =
+        filename:join([ProjectRoot, "bamboos", "docker", "cleanup.py"]),
+    utils:cmd([CleanupScript | DockersStr]),
+
+    case StopStatus of
+        ok ->
+            ok;
+        _ ->
+            throw(StopStatus)
+    end.
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Starts cover server if needed (if apropriate env is set).
+%% @end
+%%--------------------------------------------------------------------
+-spec maybe_start_cover() -> ok.
+maybe_start_cover() ->
+    case application:get_env(covered_dirs) of
+        {ok, []} ->
+            ok;
+        {ok, Dirs} when is_list(Dirs) ->
+            cover:start(),
+
+            ExcludedModules = case application:get_env(covered_excluded_modules) of
+                                  {ok, Mods} when is_list(Dirs) ->
+                                      Mods;
+                                  _ ->
+                                      []
+                              end,
+
+            case ExcludedModules of
+                [] ->
+                    lists:foreach(fun(D) ->
+                        cover:compile_beam_directory(atom_to_list(D))
+                    end, Dirs);
+                _ ->
+                    lists:foreach(fun(D) ->
+                        try
+                            DStr = atom_to_list(D),
+                            {ok, AllBeams} = file:list_dir(DStr),
+                            ExcludedModulesFiles = lists:map(fun(M) ->
+                                atom_to_list(M) ++ ".beam"
+                            end, ExcludedModules),
+                            lists:foreach(fun(File) ->
+                                case lists:suffix(".beam", File) of
+                                    true ->
+                                        cover:compile_beam(DStr ++ "/" ++ File);
+                                    _ ->
+                                        ok
+                                end
+                            end, AllBeams -- ExcludedModulesFiles)
+                        catch
+                            _:_ -> ok % a dir may not exist (it is added for other project)
+                        end
+                    end, Dirs)
+            end,
+            ok;
+        _ ->
+            ok
+    end.
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Stops cover server if it is running.
+%% @end
+%%--------------------------------------------------------------------
+-spec maybe_stop_cover() -> ok.
+maybe_stop_cover() ->
+    case application:get_env(covered_dirs) of
+        {ok, []} ->
+            ok;
+        {ok, Dirs} when is_list(Dirs) ->
+            CoverFile = "cv.coverdata",
+            cover:export(CoverFile),
+            {ok, FileData} = file:read_file(CoverFile),
+            ok = file:delete(CoverFile),
+            true = is_pid(global:send(?CLEANING_PROC_NAME, {app_ended, node(), FileData})),
+            cover:stop(),
+            ok;
+        _ ->
+            ok
+    end.
+
+%%%===================================================================
+%%% Internal functions
+%%%===================================================================
+
+%%--------------------------------------------------------------------
+%% @private
+%% @doc
+%% Stops all started applications
+%% @end
+%%--------------------------------------------------------------------
+-spec stop_applications(Config :: list(), Apps::[{AppName::atom(), ConfigName::atom()}]) -> ok.
+stop_applications(Config, Apps) ->
+    lists:foreach(
+        fun({AppName, ConfigName}) ->
+            Nodes = ?config(ConfigName, Config),
+            lists:foreach(fun(N) -> ok = rpc:call(N, application, stop, [AppName]) end, Nodes)
+        end, Apps
+    ).
+
+%%--------------------------------------------------------------------
+%% @private
+%% @doc
+%% Checks connection with nodes.
+%% @end
+%%--------------------------------------------------------------------
+-spec ping_nodes(Nodes :: list()) -> ok | no_return().
+ping_nodes(Nodes) ->
+    ping_nodes(Nodes, 300).
+ping_nodes(_Nodes, 0) ->
+    throw(nodes_connection_error);
+ping_nodes(Nodes, Tries) ->
+    AllConnected = lists:all(
+        fun(Node) ->
+            pong == net_adm:ping(Node)
+        end, Nodes),
+    case AllConnected of
+        true -> ok;
+        _ ->
+            timer:sleep(timer:seconds(1)),
+            ping_nodes(Nodes, Tries - 1)
+    end.
+
+%%--------------------------------------------------------------------
+%% @private
+%% @doc
+%% Loads modules code on given nodes.
+%% @end
+%%--------------------------------------------------------------------
+-spec load_modules(Nodes :: [node()], Modules :: [module()]) -> ok.
+load_modules(Nodes, Modules) ->
+    lists:foreach(fun(Node) ->
+        lists:foreach(fun(Module) ->
+            {Module, Binary, Filename} = code:get_object_code(Module),
+            rpc:call(Node, code, delete, [Module], ?TIMEOUT),
+            rpc:call(Node, code, purge, [Module], ?TIMEOUT),
+            ?assertEqual({module, Module}, rpc:call(
+                Node, code, load_binary, [Module, Filename, Binary], ?TIMEOUT
+            ))
+        end, Modules)
+    end, Nodes).
+
+
+%%%===================================================================
+%%% Internal functions
+%%%===================================================================
+
+%%--------------------------------------------------------------------
+%% @private
+%% @doc
+%% Get one key by concatenating many json keys, separated with "/" 
+%% @end
+%%--------------------------------------------------------------------
+-spec get_json_key(Node :: atom(), Domain :: string(), NodeType :: string(),
+    Key :: string()) -> string().
+get_json_key(Node, Domain, NodeType, Key) ->
+    [NodeName, DomainName | _] = string:tokens(utils:get_host(Node), "."),
+    string:join([Domain, DomainName, NodeType, NodeName, Key], "/").
+
+%%--------------------------------------------------------------------
+%% @private
+%% @doc
+%% Get cookies for each Node in Nodes list.
+%% CookieKey is the nested json key, independent of node type.
+%% Returns list of tuples {Node, Cookie}
+%% @end
+%%--------------------------------------------------------------------
+-spec get_cookies(Nodes :: [node()] | [] | undefined, AppName :: string(), CookieKey :: string(),
+    DescriptionFile :: string()) -> [{Node :: node(), Cookie :: atom()}] | [].
+get_cookies(undefined, _AppName, _CookieKey, _DescriptionFile) -> [];
+get_cookies([], _AppName, _CookieKey, _DescriptionFile) -> [];
+get_cookies(Nodes, AppName, CookieKey, DescriptionFile) ->
+    lists:map(fun(Node) ->
+        Key = case AppName of
+                  globalregistry ->
+                      get_json_key(Node, "globalregistry_domains", "globalregistry", CookieKey);
+                  cluster_manager ->
+                      [
+                          get_json_key(Node, "provider_domains", "cluster_manager", CookieKey),
+                          get_json_key(Node, "cluster_domains", "cluster_manager", CookieKey)
+                      ];
+                  op_worker ->
+                      get_json_key(Node, "provider_domains", "op_worker", CookieKey);
+                  cluster_worker ->
+                      get_json_key(Node, "cluster_domains", "cluster_worker", CookieKey)
+              end,
+        case AppName of
+            cluster_manager ->
+                %% if AppName is cluster_manager, the Key is a list
+                %% choose value that is different that undefined,
+                %% there should be only one such value
+                FilterUndefined = fun F([H | T]) ->
+                    case json_parser:get_value(H, DescriptionFile, "/") of
+                        undefined -> F(T);
+                        Value -> {Node, Value}
+                    end
+                end,
+                FilterUndefined(Key);
+            _ -> {Node, json_parser:get_value(Key, DescriptionFile, "/")}
+        end
+    end, Nodes).
+
+%%--------------------------------------------------------------------
+%% @private
+%% @doc
+%% Set cookies for each Node in NodesWithCookies list
+%% @end
+%%--------------------------------------------------------------------
+-spec set_cookies([{node(), atom()}]) -> ok.
+set_cookies(NodesWithCookies) ->
+    lists:foreach(fun({N, C}) ->
+        erlang:set_cookie(N, C)
+    end, NodesWithCookies).

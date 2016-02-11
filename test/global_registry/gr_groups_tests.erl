@@ -1,14 +1,14 @@
-%% ===================================================================
-%% @author Krzysztof Trzepla
-%% @copyright (C): 2014 ACK CYFRONET AGH
-%% This software is released under the MIT license
-%% cited in 'LICENSE.txt'.
-%% @end
-%% ===================================================================
-%% @doc This module tests the functionality of gr_groups module.
-%% It contains unit tests that base on eunit.
-%% @end
-%% ===================================================================
+%%%-------------------------------------------------------------------
+%%% @author Krzysztof Trzepla
+%%% @copyright (C) 2014 ACK CYFRONET AGH
+%%% This software is released under the MIT license
+%%% cited in 'LICENSE.txt'.
+%%% @end
+%%%-------------------------------------------------------------------
+%%% @doc This module tests the functionality of gr_groups module.
+%%% It contains unit tests that base on eunit.
+%%% @end
+%%%-------------------------------------------------------------------
 
 -module(gr_groups_tests).
 
@@ -19,9 +19,9 @@
 -include("global_registry/gr_spaces.hrl").
 -include_lib("eunit/include/eunit.hrl").
 
-%% ===================================================================
-%% Tests description
-%% ===================================================================
+%%%===================================================================
+%%% Tests description
+%%%===================================================================
 
 gr_groups_test_() ->
     {foreach,
@@ -47,31 +47,47 @@ gr_groups_test_() ->
         ]
     }.
 
-%% ===================================================================
-%% Setup/teardown functions
-%% ===================================================================
+%%%===================================================================
+%%% Setup/teardown functions
+%%%===================================================================
 
 setup() ->
     meck:new(gr_endpoint),
     meck:expect(gr_endpoint, auth_request, fun
-        (client, "/groups/groupId", get) -> {ok, "200", response_headers, response_body};
-        (client, "/groups/groupId", delete) -> {ok, "202", response_headers, response_body};
-        (client, "/groups/groupId/spaces", get) -> {ok, "200", response_headers, response_body};
-        (client, "/groups/groupId/spaces/spaceId", get) -> {ok, "200", response_headers, response_body};
-        (client, "/groups/groupId/spaces/token", get) -> {ok, "200", response_headers, response_body};
-        (client, "/groups/groupId/spaces/spaceId", delete) -> {ok, "202", response_headers, response_body};
-        (client, "/groups/groupId/users", get) -> {ok, "200", response_headers, response_body};
-        (client, "/groups/groupId/users/token", get) -> {ok, "200", response_headers, response_body};
-        (client, "/groups/groupId/users/userId", get) -> {ok, "200", response_headers, response_body};
-        (client, "/groups/groupId/users/userId", delete) -> {ok, "202", response_headers, response_body};
-        (client, "/groups/groupId/users/userId/privileges", get) -> {ok, "200", response_headers, response_body}
+        (client, "/groups/groupId", get) ->
+            {ok, 200, response_headers, response_body};
+        (client, "/groups/groupId", delete) ->
+            {ok, 202, response_headers, response_body};
+        (client, "/groups/groupId/spaces", get) ->
+            {ok, 200, response_headers, response_body};
+        (client, "/groups/groupId/spaces/spaceId", get) ->
+            {ok, 200, response_headers, response_body};
+        (client, "/groups/groupId/spaces/token", get) ->
+            {ok, 200, response_headers, response_body};
+        (client, "/groups/groupId/spaces/spaceId", delete) ->
+            {ok, 202, response_headers, response_body};
+        (client, "/groups/groupId/users", get) ->
+            {ok, 200, response_headers, response_body};
+        (client, "/groups/groupId/users/token", get) ->
+            {ok, 200, response_headers, response_body};
+        (client, "/groups/groupId/users/userId", get) ->
+            {ok, 200, response_headers, response_body};
+        (client, "/groups/groupId/users/userId", delete) ->
+            {ok, 202, response_headers, response_body};
+        (client, "/groups/groupId/users/userId/privileges", get) ->
+            {ok, 200, response_headers, response_body}
     end),
     meck:expect(gr_endpoint, auth_request, fun
-        (client, "/groups", post, <<"body">>) -> {ok, "201", [{"location", "/groups/groupId"}], response_body};
-        (client, "/groups/groupId", patch, <<"body">>) -> {ok, "204", response_headers, response_body};
-        (client, "/groups/groupId/spaces", post, <<"body">>) -> {ok, "201", [{"location", "/spaces/spaceId"}], response_body};
-        (client, "/groups/groupId/spaces/join", post, <<"body">>) -> {ok, "201", [{"location", "/groups/groupId/spaces/spaceId"}], response_body};
-        (client, "/groups/groupId/users/userId/privileges", put, <<"body">>) -> {ok, "204", response_headers, response_body}
+        (client, "/groups", post, <<"body">>) ->
+            {ok, 201, [{<<"location">>, <<"/groups/groupId">>}], response_body};
+        (client, "/groups/groupId", patch, <<"body">>) ->
+            {ok, 204, response_headers, response_body};
+        (client, "/groups/groupId/spaces", post, <<"body">>) ->
+            {ok, 201, [{<<"location">>, <<"/spaces/spaceId">>}], response_body};
+        (client, "/groups/groupId/spaces/join", post, <<"body">>) ->
+            {ok, 201, [{<<"location">>, <<"/groups/groupId/spaces/spaceId">>}], response_body};
+        (client, "/groups/groupId/users/userId/privileges", put, <<"body">>) ->
+            {ok, 204, response_headers, response_body}
     end).
 
 
@@ -79,19 +95,19 @@ teardown(_) ->
     ?assert(meck:validate(gr_endpoint)),
     ok = meck:unload(gr_endpoint).
 
-%% ===================================================================
-%% Tests functions
-%% ===================================================================
+%%%===================================================================
+%%% Tests functions
+%%%===================================================================
 
 should_create() ->
-    meck:new(mochijson2),
-    meck:expect(mochijson2, encode, fun(parameters) -> <<"body">> end),
+    meck:new(json_utils),
+    meck:expect(json_utils, encode, fun(parameters) -> <<"body">> end),
 
     Answer = gr_groups:create(client, parameters),
     ?assertEqual({ok, <<"groupId">>}, Answer),
 
-    ?assert(meck:validate(mochijson2)),
-    ok = meck:unload(mochijson2).
+    ?assert(meck:validate(json_utils)),
+    ok = meck:unload(json_utils).
 
 
 should_remove() ->
@@ -100,53 +116,54 @@ should_remove() ->
 
 
 should_get_details() ->
-    meck:new(mochijson2),
-    meck:expect(mochijson2, decode, fun
-        (response_body, [{format, proplist}]) -> [{<<"groupId">>, <<"groupId">>}, {<<"name">>, <<"name">>}]
+    meck:new(json_utils),
+    meck:expect(json_utils, decode, fun(response_body) ->
+        [{<<"groupId">>, <<"groupId">>}, {<<"name">>, <<"name">>}]
     end),
 
     Answer = gr_groups:get_details(client, <<"groupId">>),
-    ?assertEqual({ok, #group_details{id = <<"groupId">>, name = <<"name">>}}, Answer),
+    ?assertEqual({ok, #group_details{id = <<"groupId">>,
+        name = <<"name">>}}, Answer),
 
-    ?assert(meck:validate(mochijson2)),
-    ok = meck:unload(mochijson2).
+    ?assert(meck:validate(json_utils)),
+    ok = meck:unload(json_utils).
 
 
 should_modify_details() ->
-    meck:new(mochijson2),
-    meck:expect(mochijson2, encode, fun(parameters) -> <<"body">> end),
+    meck:new(json_utils),
+    meck:expect(json_utils, encode, fun(parameters) -> <<"body">> end),
 
     Answer = gr_groups:modify_details(client, <<"groupId">>, parameters),
     ?assertEqual(ok, Answer),
 
-    ?assert(meck:validate(mochijson2)),
-    ok = meck:unload(mochijson2).
+    ?assert(meck:validate(json_utils)),
+    ok = meck:unload(json_utils).
 
 
 should_get_create_space_token() ->
-    meck:new(mochijson2),
-    meck:expect(mochijson2, decode, fun
-        (response_body, [{format, proplist}]) -> [{<<"token">>, <<"token">>}]
+    meck:new(json_utils),
+    meck:expect(json_utils, decode, fun(response_body) ->
+        [{<<"token">>, <<"token">>}]
     end),
 
     Answer = gr_groups:get_create_space_token(client, <<"groupId">>),
     ?assertEqual({ok, <<"token">>}, Answer),
 
-    ?assert(meck:validate(mochijson2)),
-    ok = meck:unload(mochijson2).
+    ?assert(meck:validate(json_utils)),
+    ok = meck:unload(json_utils).
 
 
 should_get_invite_user_token() ->
-    meck:new(mochijson2),
-    meck:expect(mochijson2, decode, fun
-        (response_body, [{format, proplist}]) -> [{<<"token">>, <<"token">>}]
+    meck:new(json_utils),
+    meck:expect(json_utils, decode, fun(response_body) ->
+        [{<<"token">>, <<"token">>}]
     end),
 
     Answer = gr_groups:get_invite_user_token(client, <<"groupId">>),
     ?assertEqual({ok, <<"token">>}, Answer),
 
-    ?assert(meck:validate(mochijson2)),
-    ok = meck:unload(mochijson2).
+    ?assert(meck:validate(json_utils)),
+    ok = meck:unload(json_utils).
 
 
 should_remove_user() ->
@@ -155,75 +172,77 @@ should_remove_user() ->
 
 
 should_get_users() ->
-    meck:new(mochijson2),
-    meck:expect(mochijson2, decode, fun
-        (response_body, [{format, proplist}]) -> [{<<"users">>, <<"users">>}]
+    meck:new(json_utils),
+    meck:expect(json_utils, decode, fun(response_body) ->
+        [{<<"users">>, <<"users">>}]
     end),
 
     Answer = gr_groups:get_users(client, <<"groupId">>),
     ?assertEqual({ok, <<"users">>}, Answer),
 
-    ?assert(meck:validate(mochijson2)),
-    ok = meck:unload(mochijson2).
+    ?assert(meck:validate(json_utils)),
+    ok = meck:unload(json_utils).
 
 
 should_get_user_details() ->
-    meck:new(mochijson2),
-    meck:expect(mochijson2, decode, fun
-        (response_body, [{format, proplist}]) -> [{<<"userId">>, <<"userId">>}, {<<"name">>, <<"name">>}]
+    meck:new(json_utils),
+    meck:expect(json_utils, decode, fun(response_body) ->
+        [{<<"userId">>, <<"userId">>}, {<<"name">>, <<"name">>}]
     end),
 
     Answer = gr_groups:get_user_details(client, <<"groupId">>, <<"userId">>),
-    ?assertEqual({ok, #user_details{id = <<"userId">>, name = <<"name">>}}, Answer),
+    ?assertEqual({ok, #user_details{id = <<"userId">>,
+        name = <<"name">>}}, Answer),
 
-    ?assert(meck:validate(mochijson2)),
-    ok = meck:unload(mochijson2).
+    ?assert(meck:validate(json_utils)),
+    ok = meck:unload(json_utils).
 
 
 should_get_user_privileges() ->
-    meck:new(mochijson2),
-    meck:expect(mochijson2, decode, fun
-        (response_body, [{format, proplist}]) -> [{<<"privileges">>, <<"privileges">>}]
+    meck:new(json_utils),
+    meck:expect(json_utils, decode, fun(response_body) ->
+        [{<<"privileges">>, <<"privileges">>}]
     end),
 
     Answer = gr_groups:get_user_privileges(client, <<"groupId">>, <<"userId">>),
     ?assertEqual({ok, <<"privileges">>}, Answer),
 
-    ?assert(meck:validate(mochijson2)),
-    ok = meck:unload(mochijson2).
+    ?assert(meck:validate(json_utils)),
+    ok = meck:unload(json_utils).
 
 
 should_set_user_privileges() ->
-    meck:new(mochijson2),
-    meck:expect(mochijson2, encode, fun(parameters) -> <<"body">> end),
+    meck:new(json_utils),
+    meck:expect(json_utils, encode, fun(parameters) -> <<"body">> end),
 
-    Answer = gr_groups:set_user_privileges(client, <<"groupId">>, <<"userId">>, parameters),
+    Answer = gr_groups:set_user_privileges(client,
+        <<"groupId">>, <<"userId">>, parameters),
     ?assertEqual(ok, Answer),
 
-    ?assert(meck:validate(mochijson2)),
-    ok = meck:unload(mochijson2).
+    ?assert(meck:validate(json_utils)),
+    ok = meck:unload(json_utils).
 
 
 should_create_space() ->
-    meck:new(mochijson2),
-    meck:expect(mochijson2, encode, fun(parameters) -> <<"body">> end),
+    meck:new(json_utils),
+    meck:expect(json_utils, encode, fun(parameters) -> <<"body">> end),
 
     Answer = gr_groups:create_space(client, <<"groupId">>, parameters),
     ?assertEqual({ok, <<"spaceId">>}, Answer),
 
-    ?assert(meck:validate(mochijson2)),
-    ok = meck:unload(mochijson2).
+    ?assert(meck:validate(json_utils)),
+    ok = meck:unload(json_utils).
 
 
 should_join_space() ->
-    meck:new(mochijson2),
-    meck:expect(mochijson2, encode, fun(parameters) -> <<"body">> end),
+    meck:new(json_utils),
+    meck:expect(json_utils, encode, fun(parameters) -> <<"body">> end),
 
     Answer = gr_groups:join_space(client, <<"groupId">>, parameters),
     ?assertEqual({ok, <<"spaceId">>}, Answer),
 
-    ?assert(meck:validate(mochijson2)),
-    ok = meck:unload(mochijson2).
+    ?assert(meck:validate(json_utils)),
+    ok = meck:unload(json_utils).
 
 
 should_leave_space() ->
@@ -232,28 +251,33 @@ should_leave_space() ->
 
 
 should_get_spaces() ->
-    meck:new(mochijson2),
-    meck:expect(mochijson2, decode, fun
-        (response_body, [{format, proplist}]) -> [{<<"spaces">>, <<"spaces">>}]
+    meck:new(json_utils),
+    meck:expect(json_utils, decode, fun(response_body) ->
+        [{<<"spaces">>, <<"spaces">>}]
     end),
 
     Answer = gr_groups:get_spaces(client, <<"groupId">>),
     ?assertEqual({ok, <<"spaces">>}, Answer),
 
-    ?assert(meck:validate(mochijson2)),
-    ok = meck:unload(mochijson2).
+    ?assert(meck:validate(json_utils)),
+    ok = meck:unload(json_utils).
 
 
 should_get_space_details() ->
-    meck:new(mochijson2),
-    meck:expect(mochijson2, decode, fun
-        (response_body, [{format, proplist}]) -> [{<<"spaceId">>, <<"spaceId">>}, {<<"name">>, <<"name">>}]
+    meck:new(json_utils),
+    meck:expect(json_utils, decode, fun(response_body) ->
+        [
+            {<<"spaceId">>, <<"spaceId">>},
+            {<<"name">>, <<"name">>},
+            {<<"size">>, [{<<"providerId">>, 123}]}
+        ]
     end),
 
     Answer = gr_groups:get_space_details(client, <<"groupId">>, <<"spaceId">>),
-    ?assertEqual({ok, #space_details{id = <<"spaceId">>, name = <<"name">>}}, Answer),
+    ?assertEqual({ok, #space_details{id = <<"spaceId">>, name = <<"name">>,
+        size = [{<<"providerId">>, 123}]}}, Answer),
 
-    ?assert(meck:validate(mochijson2)),
-    ok = meck:unload(mochijson2).
+    ?assert(meck:validate(json_utils)),
+    ok = meck:unload(json_utils).
 
 -endif.
