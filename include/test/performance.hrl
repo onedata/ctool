@@ -42,19 +42,19 @@
 
 -define(ALL(CasesNames), ?ALL(CasesNames, [])).
 -define(ALL(CasesNames, PerformanceCasesNames),
-    performance_macros:all(CasesNames, PerformanceCasesNames)
+    performance:all(CasesNames, PerformanceCasesNames)
 ).
 
 -define(STRESS_ALL(CasesNames, NoClearingCasesNames),
-    performance_macros:stress_all(?MODULE, CasesNames, NoClearingCasesNames)
+    performance:stress_all(?MODULE, CasesNames, NoClearingCasesNames)
 ).
 
 -define(PERFORMANCE(Config, PerformanceConfig),
-    performance_macros:run_test(?MODULE, ?FUNCTION, Config, PerformanceConfig)
+    performance:run_test(?MODULE, ?FUNCTION, Config, PerformanceConfig)
 ).
 
 -define(STRESS(Config, StressConfig),
-    performance_macros:run_stress_test(?MODULE, Config, StressConfig)
+    performance:run_stress_test(?MODULE, Config, StressConfig)
 ).
 
 -endif.
