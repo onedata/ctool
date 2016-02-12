@@ -213,7 +213,7 @@ stress_test(Config) ->
                 ct:print("Case: ~p, end_per_testcase error: ~p:~p", [Case, E1_2, E2_2])
         end,
         CaseAns
-                          end, [], Cases),
+    end, [], Cases),
     lists:reverse(AnsList).
 
 %%--------------------------------------------------------------------
