@@ -141,7 +141,6 @@ run_test(SuiteName, CaseName, CaseArgs, Data) ->
 -spec run_stress_test(SuiteName :: atom(), CaseArgs :: term(),
     Data :: [term()]) -> any().
 run_stress_test(SuiteName, CaseArgs, Data) ->
-
     CaseDescr = proplists:get_value(description, Data, ""),
     Configs = proplists:get_all_values(config, Data),
     DefaultParams = parse_parameters(proplists:get_value(parameters, Data, [])),
@@ -152,7 +151,6 @@ run_stress_test(SuiteName, CaseArgs, Data) ->
     ets:delete(?STRESS_ETS_NAME),
     EtsOwner ! kill_ets_owner,
     Ans.
-
 
 %%--------------------------------------------------------------------
 %% @doc
