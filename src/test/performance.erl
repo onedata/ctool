@@ -178,15 +178,7 @@ stress_test(Config) ->
     ct:timetrap({seconds, Timeout + ?STRESS_TIMEOUT_EXTENSION_SECONDS}), % add 10 minutes to let running tests end
 
     AnsList = lists:foldl(fun(Case, Ans) ->
-        NewConfig = try
-                        apply(Suite, init_per_testcase, [Case, Config])
-                    catch
-                        error:undef ->
-                            Config;
-                        E1:E2 ->
-                            ct:print("Case: ~p, init_per_testcase error: ~p:~p", [Case, E1, E2]),
-                            Config
-                    end,
+        NewConfig = apply(Suite, init_per_testcase, [Case, Config]),
         CaseAns = case apply(Suite, base_case(Case), [NewConfig]) of
                       {ok, TmpAns} ->
 %%                           TmpAns2 = lists:map(fun(Param) ->
@@ -226,8 +218,6 @@ get_stress_test_params() ->
 
             lists:foldl(fun(Case, Ans) ->
                 Params = apply(Suite, Case, [get_params]),
-                io:format("DEBUG: ~p~n", [Params]),
-                ct:pal("DEBUG: ~p~n", [Params]),
                 Params2 = lists:map(fun(Param) ->
                     PName = Param#parameter.name,
                     Param#parameter{name = concat_atoms(Case, PName)}
@@ -362,6 +352,11 @@ exec_ct_config(SuiteName, CaseName, CaseArgs, Params) ->
     DefaultParams :: [#parameter{}]) -> ok.
 exec_perf_configs(SuiteName, CaseName, CaseArgs, CaseDescr, Configs,
     DefaultReps, DefaultSuccessRate, DefaultParams) ->
+    {Time, _Scale} = ct:get_timetrap_info(),
+    Multiplier = lists:foldl(fun(Config, Sum) ->
+        Sum + proplists:get_value(repeats, Config, DefaultReps)
+    end, 0, Configs),
+    ct:timetrap(Time * Multiplier),
     ?assertEqual(ok, lists:foldl(
         fun(Config, Status) ->
             case exec_perf_config(SuiteName, CaseName, CaseArgs, CaseDescr,
