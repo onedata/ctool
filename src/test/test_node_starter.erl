@@ -101,7 +101,7 @@ prepare_test_environment(Config, DescriptionFile, TestModule, LoadModules, Apps)
 
             set_cookies(AllNodesWithCookies),
             os:cmd("echo nameserver " ++ atom_to_list(Dns) ++ " > /etc/resolv.conf"),
-            
+
             AllNodes = [N || {N, _C} <- AllNodesWithCookies],
             ping_nodes(AllNodes),
             global:sync(),
@@ -157,8 +157,8 @@ clean_environment(Config, Apps) ->
 
                 stop_applications(Config, Apps),
 
-                AllNodes = lists:flatmap(fun({_, ConfigName}) -> 
-                    ?config(ConfigName, Config) 
+                AllNodes = lists:flatmap(fun({_, ConfigName}) ->
+                    ?config(ConfigName, Config)
                 end, Apps),
 
                 lists:foreach(
@@ -370,6 +370,7 @@ get_cookies(Nodes, AppName, CookieKey, DescriptionFile) ->
                       get_json_key(Node, "globalregistry_domains", "globalregistry", CookieKey);
                   cluster_manager ->
                       [
+                          get_json_key(Node, "globalregistry_domains", "cluster_manager", CookieKey),
                           get_json_key(Node, "provider_domains", "cluster_manager", CookieKey),
                           get_json_key(Node, "cluster_domains", "cluster_manager", CookieKey)
                       ];
