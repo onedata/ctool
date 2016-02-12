@@ -145,7 +145,7 @@ run_stress_test(SuiteName, CaseArgs, Data) ->
     Configs = proplists:get_all_values(config, Data),
     DefaultParams = parse_parameters(proplists:get_value(parameters, Data, [])),
     DefaultSuccessRate = proplists:get_value(success_rate, Data, 100),
-    Ans = exec_perf_configs(SuiteName, base_case(stress_test), CaseArgs, CaseDescr,
+    Ans = exec_perf_configs(SuiteName, stress_test, CaseArgs, CaseDescr,
         Configs, 1, DefaultSuccessRate, DefaultParams),
     EtsOwner = ets:info(?STRESS_ETS_NAME, owner),
     ets:delete(?STRESS_ETS_NAME),
@@ -178,18 +178,31 @@ stress_test(Config) ->
     ct:timetrap({seconds, Timeout + ?STRESS_TIMEOUT_EXTENSION_SECONDS}), % add 10 minutes to let running tests end
 
     AnsList = lists:foldl(fun(Case, Ans) ->
-        NewConfig = apply(Suite, init_per_testcase, [Case, Config]),
-        CaseAns = case apply(Suite, base_case(Case), [NewConfig]) of
-                      {ok, TmpAns} ->
+        CaseAns = try
+                      NewConfig = try
+                                      apply(Suite, init_per_testcase, [Case, Config])
+                                  catch
+                                      error:undef ->
+                                          Config
+                                  end,
+                      case apply(Suite, Case, [NewConfig]) of
+                          {ok, TmpAns} ->
 %%                           TmpAns2 = lists:map(fun(Param) ->
 %%                               PName = Param#parameter.name,
 %%                               Param#parameter{name = concat_atoms(Case, PName)}
 %%                           end, TmpAns),
 %%                           [{ok, TmpAns2} | Ans];
-                          [{ok, TmpAns} | Ans];
-                      {error, E} ->
-                          Message = str_utils:format("Case: ~p, error: ~p", [Case, E]),
-                          [{error, Message} | Ans]
+                              [{ok, TmpAns} | Ans];
+                          {error, E} ->
+                              Message = str_utils:format("Case: ~p, error: ~p", [Case, E]),
+                              [{error, Message} | Ans]
+                      end
+                  catch
+                      E1:E2 ->
+                          % only init_per_testcase can throw (case has catch inside)
+                          ct:print("Case: ~p, init_per_testcase error: ~p:~p", [Case, E1, E2]),
+                          Message2 = str_utils:format("Case: ~p, init_per_testcase error: ~p:~p", [Case, E1, E2]),
+                          [{error, Message2} | Ans]
                   end,
         try
             apply(Suite, end_per_testcase, [Case, Config])
@@ -200,7 +213,7 @@ stress_test(Config) ->
                 ct:print("Case: ~p, end_per_testcase error: ~p:~p", [Case, E1_2, E2_2])
         end,
         CaseAns
-    end, [], Cases),
+                          end, [], Cases),
     lists:reverse(AnsList).
 
 %%--------------------------------------------------------------------
