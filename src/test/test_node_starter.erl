@@ -27,7 +27,7 @@
     {op_worker, op_worker_nodes},
     {cluster_worker, cluster_worker_nodes},
     {cluster_manager, cluster_manager_nodes},
-    {globalregistry, gr_nodes}
+    {oz_worker, oz_worker_nodes}
 ]).
 
 %%%===================================================================
@@ -75,10 +75,10 @@ prepare_test_environment(Config, DescriptionFile, TestModule, LoadModules, Apps)
         utils:cmd(["echo", "'" ++ DescriptionFile ++ ":'", ">> prepare_test_environment_error.log"]),
 
         StartLog = list_to_binary(utils:cmd([EnvUpScript,
-            %% Function is used durgin OP or GR tests so starts OP or GR - not both
+            %% Function is used durgin OP or OZ tests so starts OP or OZ - not both
             "--bin-cluster-worker", ProjectRoot,
             "--bin-worker", ProjectRoot,
-            "--bin-gr", ProjectRoot,
+            "--bin-oz", ProjectRoot,
             %% additionally AppMock can be started
             "--bin-appmock", AppmockRoot,
             "--bin-cm", CmRoot,
@@ -145,7 +145,7 @@ clean_environment(Config) ->
 %% Afterwards, cleans environment by running 'cleanup.py' script.
 %% @end
 %%--------------------------------------------------------------------
--spec clean_environment(Config :: list(), Apps::[{AppName::atom(), ConfigName::atom()}]) -> ok.
+-spec clean_environment(Config :: list(), Apps :: [{AppName :: atom(), ConfigName :: atom()}]) -> ok.
 clean_environment(Config, Apps) ->
     StopStatus = try
         case cover:modules() of
@@ -182,7 +182,7 @@ clean_environment(Config, Apps) ->
     catch
         E1:E2 ->
             ct:print("Stopping of applications failed failed ~p:~p~n" ++
-                "Stacktrace: ~p", [E1, E2, erlang:get_stacktrace()]),
+            "Stacktrace: ~p", [E1, E2, erlang:get_stacktrace()]),
             E2
     end,
 
@@ -214,11 +214,11 @@ maybe_start_cover() ->
             cover:start(),
 
             ExcludedModules = case application:get_env(covered_excluded_modules) of
-                                  {ok, Mods} when is_list(Dirs) ->
-                                      Mods;
-                                  _ ->
-                                      []
-                              end,
+                {ok, Mods} when is_list(Dirs) ->
+                    Mods;
+                _ ->
+                    []
+            end,
 
             case ExcludedModules of
                 [] ->
@@ -283,12 +283,14 @@ maybe_stop_cover() ->
 %% Stops all started applications
 %% @end
 %%--------------------------------------------------------------------
--spec stop_applications(Config :: list(), Apps::[{AppName::atom(), ConfigName::atom()}]) -> ok.
+-spec stop_applications(Config :: list(), Apps :: [{AppName :: atom(), ConfigName :: atom()}]) -> ok.
 stop_applications(Config, Apps) ->
     lists:foreach(
         fun({AppName, ConfigName}) ->
             Nodes = ?config(ConfigName, Config),
-            lists:foreach(fun(N) -> ok = rpc:call(N, application, stop, [AppName]) end, Nodes)
+            lists:foreach(fun(N) ->
+                ok = rpc:call(N, application, stop, [AppName])
+            end, Nodes)
         end, Apps
     ).
 
@@ -366,19 +368,19 @@ get_cookies([], _AppName, _CookieKey, _DescriptionFile) -> [];
 get_cookies(Nodes, AppName, CookieKey, DescriptionFile) ->
     lists:map(fun(Node) ->
         Key = case AppName of
-                  globalregistry ->
-                      get_json_key(Node, "globalregistry_domains", "globalregistry", CookieKey);
-                  cluster_manager ->
-                      [
-                          get_json_key(Node, "globalregistry_domains", "cluster_manager", CookieKey),
-                          get_json_key(Node, "provider_domains", "cluster_manager", CookieKey),
-                          get_json_key(Node, "cluster_domains", "cluster_manager", CookieKey)
-                      ];
-                  op_worker ->
-                      get_json_key(Node, "provider_domains", "op_worker", CookieKey);
-                  cluster_worker ->
-                      get_json_key(Node, "cluster_domains", "cluster_worker", CookieKey)
-              end,
+            oz_worker ->
+                get_json_key(Node, "zone_domains", "oz_worker", CookieKey);
+            cluster_manager ->
+                [
+                    get_json_key(Node, "zone_domains", "cluster_manager", CookieKey),
+                    get_json_key(Node, "provider_domains", "cluster_manager", CookieKey),
+                    get_json_key(Node, "cluster_domains", "cluster_manager", CookieKey)
+                ];
+            op_worker ->
+                get_json_key(Node, "provider_domains", "op_worker", CookieKey);
+            cluster_worker ->
+                get_json_key(Node, "cluster_domains", "cluster_worker", CookieKey)
+        end,
         case AppName of
             cluster_manager ->
                 %% if AppName is cluster_manager, the Key is a list
