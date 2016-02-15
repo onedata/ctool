@@ -252,7 +252,7 @@ choose_ns_nodes_for_dns(DNSAdvice) ->
     #dns_lb_advice{nodes_and_frequency = NodesAndFreq,
         node_choices = NodeChoices} = DNSAdvice,
     NumberOfNodes = length(NodesAndFreq),
-    random:seed(erlang:timestamp()),
+    random:seed(now()),
     Index = random:uniform(NumberOfNodes),
     Nodes = lists:sublist(NodeChoices, Index, NumberOfNodes),
     Nodes.
@@ -325,7 +325,7 @@ initial_advice_for_dispatcher() ->
 %%--------------------------------------------------------------------
 -spec choose_index(NodesAndFrequencies :: [{Node :: term(), Frequency :: float()}]) -> integer().
 choose_index(NodesAndFrequencies) ->
-    random:seed(erlang:timestamp()),
+    random:seed(now()),
     choose_index(NodesAndFrequencies, 0, random:uniform()).
 
 choose_index([], CurrIndex, _) ->

@@ -46,7 +46,8 @@ init(State, Ctx) ->
 
     Module = get_session_logic_module(),
 
-    Till = erlang:system_time(seconds) + Module:get_cookie_ttl(),
+    {Megaseconds, Seconds, _} = now(),
+    Till = Megaseconds * 1000000 + Seconds + Module:get_cookie_ttl(),
 
     SessionID = case lookup_session(Cookie) of
                     undefined ->
@@ -202,8 +203,7 @@ clear_expired_sessions() ->
 %%--------------------------------------------------------------------
 -spec random_id() -> binary().
 random_id() ->
-    base64:encode(<<(erlang:md5(term_to_binary(erlang:timestamp())))/binary,
-        (erlang:md5(term_to_binary(make_ref())))/binary>>).
+    base64:encode(<<(erlang:md5(term_to_binary(now())))/binary, (erlang:md5(term_to_binary(make_ref())))/binary>>).
 
 %%--------------------------------------------------------------------
 %% @doc Calls back to session logic module to lookup a session. Will not make
