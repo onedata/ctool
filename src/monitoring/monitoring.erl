@@ -314,7 +314,7 @@ read_memory_stats(Fd, MemFree, MemTotal, Counter) ->
 %% Also, returns current measurements that will be used for next calculation.
 %% @end
 %%--------------------------------------------------------------------
--spec get_network_stats(NetworkStats, TimeElapsed :: float()) -> {Result, NetworkStats} when
+-spec get_network_stats(NetworkStats, TimeElapsed :: integer() | float()) -> {Result, NetworkStats} when
     NetworkStats :: [{rx_b | tx_b | rx_p | tx_p | maxthp, Name :: binary(), Value :: integer()}],
     Result :: [{Name :: binary(), Value :: float()}].
 get_network_stats(NetworkStats, TimeElapsed) ->
@@ -357,7 +357,7 @@ get_network_stats(NetworkStats, TimeElapsed) ->
 %% Calculates network usage statistics, given current and previous measurements.
 %% @end
 %%--------------------------------------------------------------------
--spec calculate_network_stats(CurrentNetworkStats, NetworkStats, Stats, TimeElapsed :: float()) -> Result when
+-spec calculate_network_stats(CurrentNetworkStats, NetworkStats, Stats, TimeElapsed :: integer() | float()) -> Result when
     CurrentNetworkStats :: [{rx_b | tx_b | rx_p | tx_p | maxthp, Name :: binary(), Value :: float()}],
     NetworkStats :: [{rx_b | tx_b | rx_p | tx_p | maxthp, Name :: binary(), Value :: float()}],
     Stats :: [{Name :: binary(), Value :: float()}],
@@ -420,7 +420,7 @@ get_interface_stats(Interface, Type) ->
 %% If the interface works in full duplex, the potential throughput is doubled.
 %% @end
 %%--------------------------------------------------------------------
--spec get_interface_max_throughput(Interface :: string(), TimeElapsed :: float()) -> float().
+-spec get_interface_max_throughput(Interface :: string(), TimeElapsed :: integer() | float()) -> integer() | float().
 get_interface_max_throughput(Interface, TimeElapsed) ->
     DuplexRatio = case file:read_file(?NET_DUPLEX_FILE(Interface)) of
                       {ok, <<"full\n">>} -> 2;
