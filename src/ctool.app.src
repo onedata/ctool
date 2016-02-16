@@ -12,7 +12,7 @@
 
 {application, ctool, [
     {description, "Common tools lib for onedata project"},
-    {vsn, git},
+    {vsn, "2.0.1"},
     {registered, []},
     {applications, [
         kernel,
