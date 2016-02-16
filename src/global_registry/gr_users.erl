@@ -58,7 +58,10 @@ get_details(Client) ->
         Proplist = json_utils:decode(ResponseBody),
         UserDetails = #user_details{
             id = proplists:get_value(<<"userId">>, Proplist),
-            name = proplists:get_value(<<"name">>, Proplist)
+            name = proplists:get_value(<<"name">>, Proplist),
+            connected_accounts = proplists:get_value(<<"connectedAccounts">>, Proplist),
+            alias = proplists:get_value(<<"alias">>, Proplist),
+            email_list = proplists:get_value(<<"emailList">>, Proplist)
         },
         {ok, UserDetails}
     end).
