@@ -33,7 +33,7 @@
     net_stats = [] :: [{Name :: binary(), Value :: float()}],
     cpu_last = [] :: [{Name :: binary(), WorkJiffies :: integer(), TotalJiffies :: integer()}],
     net_last = [] :: [{rx_b | tx_b | rx_p | tx_p | maxthp, Name :: binary(), Value :: integer()}],
-    last_update = {0, 0, 0} :: {integer(), integer(), integer()} % Timestamp of the last measurement
+    last_update = 0 :: integer() % Timestamp of the last measurement in seconds since epoch
 }).
 
 -type node_monitoring_state() :: #node_monitoring_state{}.
@@ -65,7 +65,7 @@
 start(IPAddr) ->
     _InitialRecord = update(#node_monitoring_state{
         ip_addr = IPAddr,
-        last_update = now()}).
+        last_update = erlang:system_time(milli_seconds)}).
 
 
 %%--------------------------------------------------------------------
@@ -90,9 +90,11 @@ update(MonitoringState) ->
         last_update = LastUpdate,
         cpu_last = CPULast,
         net_last = NetLast} = MonitoringState,
-    Now = now(),
+    Now = erlang:system_time(milli_seconds),
+    % Time difference is in seconds, float is required for better accuracy
+    TimeDiff = (Now - LastUpdate) / 1000,
     {CPUStats, NewCPULast} = get_cpu_stats(CPULast),
-    {NetStats, NewNetLast} = get_network_stats(NetLast, timer:now_diff(Now, LastUpdate) / 1000000),
+    {NetStats, NewNetLast} = get_network_stats(NetLast, TimeDiff),
     MemStats = get_memory_stats(),
     MonitoringState#node_monitoring_state{
         last_update = Now,
@@ -420,7 +422,7 @@ get_interface_stats(Interface, Type) ->
 %% If the interface works in full duplex, the potential throughput is doubled.
 %% @end
 %%--------------------------------------------------------------------
--spec get_interface_max_throughput(Interface :: string(), TimeElapsed :: float()) -> float().
+-spec get_interface_max_throughput(Interface :: string(), TimeElapsed :: float()) -> integer() | float().
 get_interface_max_throughput(Interface, TimeElapsed) ->
     DuplexRatio = case file:read_file(?NET_DUPLEX_FILE(Interface)) of
                       {ok, <<"full\n">>} -> 2;
