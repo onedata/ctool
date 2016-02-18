@@ -1,28 +1,32 @@
 %%%--------------------------------------------------------------------
 %%% @author Michal Wrzeszcz
 %%% @author Krzysztof Trzepla
-%%% @copyright (C) 2015 ACK CYFRONET AGH
+%%% @author Jakub Kudzia
+%%% @copyright (C) 2016 ACK CYFRONET AGH
 %%% This software is released under the MIT license
 %%% cited in 'LICENSE.txt'.
 %%% @end
 %%%--------------------------------------------------------------------
-%%% @doc This file contains definitions of annotations used during
+%%% @doc This file contains definitions of macros used during
 %%% performance tests.
 %%% @end
 %%%--------------------------------------------------------------------
 -module(performance).
+
 -author("Michal Wrzeszcz").
 -author("Krzysztof Trzepla").
--annotation('function').
+-author("Jakub Kudzia").
 
 % this file is built by parent project so include_lib must be used
 -include_lib("xmerl/include/xmerl.hrl").
 -include_lib("annotations/include/types.hrl").
 -include_lib("ctool/include/test/assertions.hrl").
 -include_lib("ctool/include/test/performance.hrl").
+-include_lib("ctool/include/logging.hrl").
 -include_lib("common_test/include/ct.hrl").
 
--export([around_advice/4, is_standard_test/0, is_stress_test/0, stress_test/1, should_clear/1]).
+-export([is_standard_test/0, is_stress_test/0, stress_test/1, should_clear/1,
+    all/2, stress_all/3, run_stress_test/3, run_test/4]).
 
 -type proplist() :: [{Key :: atom(), Value :: term()}].
 
@@ -37,9 +41,51 @@
 -define(STRESS_ETS_NAME, stress_ets).
 -define(STRESS_TIMEOUT_EXTENSION_SECONDS, 600). % extension of ct timeout to let running tests end
 
+-define(BASE_SUFFIX, "_base").
+
 %%%===================================================================
 %%% API
 %%%===================================================================
+
+%%--------------------------------------------------------------------
+%% @private
+%% @doc
+%% This function is meant to replace all() function in ct test suite
+%% It checks what kind (normal ct, performance, stress) of test is started
+%% and returns list of appropriate test cases.
+%% @end
+%%--------------------------------------------------------------------
+-spec all(CasesNames :: [atom()], PerformanceCasesNames :: [atom()]) -> [atom()].
+all(CasesNames, PerformanceCasesNames) ->
+    case os:getenv(?PERFORMANCE_ENV_VARIABLE) of
+        "true" ->
+            PerformanceCasesNames;
+        _ ->
+            case is_stress_test() of
+                true ->
+                    [];
+                _ ->
+                    CasesNames
+            end
+    end.
+
+%%--------------------------------------------------------------------
+%% @private
+%% @doc
+%% This function returns list of stress test cases in given suite.
+%% @end
+%%--------------------------------------------------------------------
+-spec stress_all(SuiteName :: atom(), CasesNames :: [atom()],
+    NoClearingCasesNames :: [atom()]) -> any().
+stress_all(SuiteName, CasesNames, NoClearingCasesNames) ->
+    case is_stress_test() of
+        true ->
+            set_up_stress_test(
+                SuiteName, CasesNames, NoClearingCasesNames
+            );
+        _ ->
+            []
+    end.
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -63,54 +109,15 @@ is_stress_test() ->
     lists:member("true", Envs).
 
 %%--------------------------------------------------------------------
+%% @private
 %% @doc
-%% Function executed instead of annotated function. May start
-%% annotated function inside.
+%% This function runs given test case in given suite.
 %% @end
 %%--------------------------------------------------------------------
--spec around_advice(Annotation :: #annotation{}, Module :: atom(),
-    Function :: atom(), Args :: [term()]) -> Result :: [atom()] | term().
-around_advice(#annotation{data = {test_cases, CasesNames}}, SuiteName, all, []) ->
-    case os:getenv(?PERFORMANCE_ENV_VARIABLE) of
-        "true" -> CasesNames;
-        _ ->
-            case is_stress_test() of
-                true ->
-                    [];
-                _ ->
-                    annotation:call_advised(SuiteName, all, [])
-            end
-    end;
-around_advice(#annotation{data = CasesNames}, SuiteName, all, []) ->
-    case {os:getenv(?STRESS_ENV_VARIABLE), os:getenv(?STRESS_NO_CLEARING_ENV_VARIABLE)} of
-        {"true", _} ->
-            save_suite_and_cases(SuiteName, proplists:get_value(stress, CasesNames, [])),
-            [stress_test];
-        {_, "true"} ->
-            save_suite_and_cases(SuiteName, proplists:get_value(stress_no_clearing, CasesNames, [])),
-            [stress_test];
-        _ ->
-            annotation:call_advised(SuiteName, all, [])
-    end;
-around_advice(#annotation{data = Data}, SuiteName, stress_test, [CaseArgs]) ->
-    case is_stress_test() of
-        true ->
-            CaseDescr = proplists:get_value(description, Data, ""),
-            Configs = proplists:get_all_values(config, Data),
-            DefaultParams = parse_parameters(proplists:get_value(parameters, Data, [])),
-            DefaultSuccessRate = proplists:get_value(success_rate, Data, 100),
-            Ans = exec_perf_configs(SuiteName, stress_test, CaseDescr, CaseArgs,
-                Configs, 1, DefaultSuccessRate, DefaultParams),
-            EtsOwner = ets:info(?STRESS_ETS_NAME, owner),
-            ets:delete(?STRESS_ETS_NAME),
-            EtsOwner ! kill_ets_owner,
-            Ans;
-        _ ->
-            run_annotated(Data, SuiteName, stress_test, CaseArgs)
-    end;
-around_advice(#annotation{data = Data}, _SuiteName, _CaseName, [get_params]) ->
+-spec run_test(atom(), atom(), term(), Data :: [term()]) -> list().
+run_test(_SuiteName, _CaseName, get_params, Data) ->
     get_config_params(Data);
-around_advice(#annotation{data = Data}, SuiteName, CaseName, [CaseArgs]) ->
+run_test(SuiteName, CaseName, CaseArgs, Data) ->
     case is_stress_test() of
         true ->
             ConfigParams = get_config_params(Data),
@@ -123,8 +130,40 @@ around_advice(#annotation{data = Data}, SuiteName, CaseName, [CaseArgs]) ->
                       end,
             exec_test_repeat(SuiteName, CaseName, Configs);
         _ ->
-            run_annotated(Data, SuiteName, CaseName, CaseArgs)
+            run_testcase(SuiteName, CaseName, CaseArgs, Data)
     end.
+
+%%--------------------------------------------------------------------
+%% @doc
+%% This function runs stress tests in given suite.
+%% @end
+%%--------------------------------------------------------------------
+-spec run_stress_test(SuiteName :: atom(), CaseArgs :: term(),
+    Data :: [term()]) -> any().
+run_stress_test(SuiteName, CaseArgs, Data) ->
+    CaseDescr = proplists:get_value(description, Data, ""),
+    Configs = proplists:get_all_values(config, Data),
+    DefaultParams = parse_parameters(proplists:get_value(parameters, Data, [])),
+    DefaultSuccessRate = proplists:get_value(success_rate, Data, 100),
+    Ans = exec_perf_configs(SuiteName, stress_test, CaseArgs, CaseDescr,
+        Configs, 1, DefaultSuccessRate, DefaultParams),
+    EtsOwner = ets:info(?STRESS_ETS_NAME, owner),
+    ets:delete(?STRESS_ETS_NAME),
+    EtsOwner ! kill_ets_owner,
+    Ans.
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Checks if function should clear or leave changes (e.g. docs in DB).
+%% @end
+%%--------------------------------------------------------------------
+-spec should_clear(Config :: list()) -> boolean().
+should_clear(Config) ->
+    ?config(clearing, Config) =/= false.
+
+%%%===================================================================
+%%% Internal functions
+%%%===================================================================
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -142,10 +181,10 @@ stress_test(Config) ->
         CaseAns = try
                       NewConfig = try
                                       apply(Suite, init_per_testcase, [Case, Config])
-                      catch
-                          error:undef ->
-                              Config
-                      end,
+                                  catch
+                                      error:undef ->
+                                          Config
+                                  end,
                       case apply(Suite, Case, [NewConfig]) of
                           {ok, TmpAns} ->
 %%                           TmpAns2 = lists:map(fun(Param) ->
@@ -191,7 +230,7 @@ get_stress_test_params() ->
             [{cases, Cases}] = ets:lookup(?STRESS_ETS_NAME, cases),
 
             lists:foldl(fun(Case, Ans) ->
-                Params =  apply(Suite, Case, [get_params]),
+                Params = apply(Suite, Case, [get_params]),
                 Params2 = lists:map(fun(Param) ->
                     PName = Param#parameter.name,
                     Param#parameter{name = concat_atoms(Case, PName)}
@@ -203,27 +242,14 @@ get_stress_test_params() ->
     end.
 
 %%--------------------------------------------------------------------
-%% @doc
-%% Checks if function should clear or leave changes (e.g. docs in DB).
-%% @end
-%%--------------------------------------------------------------------
--spec should_clear(Config :: list()) -> boolean().
-should_clear(Config) ->
-    ?config(clearing, Config) =/= false.
-
-%%%===================================================================
-%%% Internal functions
-%%%===================================================================
-
-%%--------------------------------------------------------------------
 %% @private
 %% @doc
-%% Runs annotated function with apropriate parameters.
+%% This function runs given ct or performance test case in given suite.
 %% @end
 %%--------------------------------------------------------------------
--spec run_annotated(Data :: list(), SuiteName :: atom(), CaseName :: atom(),
-    CaseArgs :: list()) -> term().
-run_annotated(Data, SuiteName, CaseName, CaseArgs) ->
+-spec run_testcase(SuiteName :: atom(), CaseName :: atom(), CaseArgs :: list(),
+    Data :: list()) -> term().
+run_testcase(SuiteName, CaseName, CaseArgs, Data) ->
     DefaultReps = proplists:get_value(repeats, Data, 1),
     DefaultSuccessRate = proplists:get_value(success_rate, Data, 100),
     DefaultParams = parse_parameters(proplists:get_value(parameters, Data, [])),
@@ -231,10 +257,27 @@ run_annotated(Data, SuiteName, CaseName, CaseArgs) ->
         false ->
             CaseDescr = proplists:get_value(description, Data, ""),
             Configs = proplists:get_all_values(config, Data),
-            exec_perf_configs(SuiteName, CaseName, CaseDescr, CaseArgs,
+            exec_perf_configs(SuiteName, CaseName, CaseArgs, CaseDescr,
                 Configs, DefaultReps, DefaultSuccessRate, DefaultParams);
         _ ->
             exec_ct_config(SuiteName, CaseName, CaseArgs, DefaultParams)
+    end.
+
+%%--------------------------------------------------------------------
+%% @doc
+%% This function saves suite and cases names for sress test.
+%% @endt
+%%--------------------------------------------------------------------
+-spec set_up_stress_test(SuiteName :: atom(), CasesNames :: [atom()],
+    NoClearing :: [atom()]) -> any().
+set_up_stress_test(SuiteName, CasesNames, NoClearingCases) ->
+    case {os:getenv(?STRESS_ENV_VARIABLE), os:getenv(?STRESS_NO_CLEARING_ENV_VARIABLE)} of
+        {"true", _} ->
+            save_suite_and_cases(SuiteName, CasesNames),
+            [stress_test];
+        {_, "true"} ->
+            save_suite_and_cases(SuiteName, NoClearingCases),
+            [stress_test]
     end.
 
 %%--------------------------------------------------------------------
@@ -309,8 +352,7 @@ concat_atoms(A1, A2) ->
     CaseArgs :: proplist(), Params :: [#parameter{}]) -> term().
 exec_ct_config(SuiteName, CaseName, CaseArgs, Params) ->
     NewCaseArgs = inject_parameters(CaseArgs, Params),
-    annotation:call_advised(SuiteName, CaseName, [NewCaseArgs]).
-
+    apply(SuiteName, base_case(CaseName), [NewCaseArgs]).
 %%--------------------------------------------------------------------
 %% @private
 %% @doc
@@ -318,22 +360,24 @@ exec_ct_config(SuiteName, CaseName, CaseArgs, Params) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec exec_perf_configs(SuiteName :: atom(), CaseName :: atom(),
-    CaseDescr :: string(), CaseArgs :: proplist(), Config :: proplist(),
-    DefaultReps :: non_neg_integer(), DefaultSuccessRate :: number(), DefaultParams :: [#parameter{}]) -> ok.
-exec_perf_configs(SuiteName, CaseName, CaseDescr, CaseArgs, Configs,
+    CaseArgs :: proplist(), CaseDescr :: string(), Config :: proplist(),
+    DefaultReps :: non_neg_integer(), DefaultSuccessRate :: number(),
+    DefaultParams :: [#parameter{}]) -> ok.
+exec_perf_configs(SuiteName, CaseName, CaseArgs, CaseDescr, Configs,
     DefaultReps, DefaultSuccessRate, DefaultParams) ->
     {Time, _Scale} = ct:get_timetrap_info(),
     Multiplier = lists:foldl(fun(Config, Sum) ->
         Sum + proplists:get_value(repeats, Config, DefaultReps)
     end, 0, Configs),
     ct:timetrap(Time * Multiplier),
-    ?assertEqual(ok, lists:foldl(fun(Config, Status) ->
-        case exec_perf_config(SuiteName, CaseName, CaseDescr, CaseArgs,
-            Config, DefaultReps, DefaultSuccessRate, DefaultParams) of
-            ok -> Status;
-            _ -> error
-        end
-    end, ok, Configs)).
+    ?assertEqual(ok, lists:foldl(
+        fun(Config, Status) ->
+            case exec_perf_config(SuiteName, CaseName, CaseArgs, CaseDescr,
+                Config, DefaultReps, DefaultSuccessRate, DefaultParams) of
+                ok -> Status;
+                _ -> error
+            end
+        end, ok, Configs)).
 
 %%--------------------------------------------------------------------
 %% @private
@@ -342,11 +386,11 @@ exec_perf_configs(SuiteName, CaseName, CaseDescr, CaseArgs, Configs,
 %% @end
 %%--------------------------------------------------------------------
 -spec exec_perf_config(SuiteName :: atom(), CaseName :: atom(),
-    CaseDescr :: string(), CaseArgs :: proplist(), Config :: proplist(),
-    DefaultReps :: non_neg_integer(), DefaultSuccessRate :: number(), DefaultParams :: [#parameter{}]) ->
-    ok | error.
-exec_perf_config(SuiteName, CaseName, CaseDescr, CaseArgs, Config,
-    DefaultReps, DefaultSuccessRate, DefaultParams) ->
+    CaseArgs :: proplist(), CaseDescr :: string(), Config :: proplist(),
+    DefaultReps :: non_neg_integer(), DefaultSuccessRate :: number(),
+    DefaultParams :: [#parameter{}]) -> ok | error.
+exec_perf_config(SuiteName, CaseName, CaseArgs, CaseDescr, Config, DefaultReps,
+    DefaultSuccessRate, DefaultParams) ->
 
     % Fetch and prepare test case configuration.
     TestRoot = proplists:get_value(ct_test_root, CaseArgs),
@@ -653,10 +697,10 @@ proccess_repeat_result(RepeatResult, Rep, RepsSummary, RepsDetails, FailedReps) 
     {ok, [#parameter{}]} | {error, Reason :: binary()} | list().
 exec_test_repeat(SuiteName, CaseName, CaseConfig) ->
     try
-        Timestamp1 = os:timestamp(),
-        Result = annotation:call_advised(SuiteName, CaseName, [CaseConfig]),
-        Timestamp2 = os:timestamp(),
-        TestTime = utils:milliseconds_diff(Timestamp2, Timestamp1),
+        Timestamp1 = erlang:monotonic_time(milli_seconds),
+        Result = apply(SuiteName, base_case(CaseName), [CaseConfig]),
+        Timestamp2 = erlang:monotonic_time(milli_seconds),
+        TestTime = Timestamp2 - Timestamp1,
         % Return list of parameters consisting of default 'test_time' parameter
         % and parameters returned from test case.
         case is_stress_test() and (CaseName =:= stress_test) of
@@ -866,8 +910,17 @@ get_description(TestRoot, SuiteName) ->
 get_copyright(TestRoot, SuiteName) ->
     SuiteFile = filename:join(TestRoot, atom_to_list(SuiteName) ++ ".erl"),
     {SuiteName, Doc} = edoc:get_doc(SuiteFile),
-    hd(lists:filtermap(fun
-        (#xmlElement{name = copyright, content = [Copyright]}) ->
-            {true, list_to_binary(Copyright#xmlText.value)};
+    hd(lists:filtermap(fun(#xmlElement{name = copyright, content = [Copyright]}) ->
+        {true, list_to_binary(Copyright#xmlText.value)};
         (_) -> false
-    end, Doc#xmlElement.content)).
+   end, Doc#xmlElement.content)).
+
+%%--------------------------------------------------------------------
+%% @private
+%% @doc
+%% Returns base function name of a testcase as atom.
+%% @end
+%%--------------------------------------------------------------------
+-spec base_case(CaseName :: atom()) -> atom().
+base_case(CaseName) ->
+    list_to_atom(atom_to_list(CaseName) ++ ?BASE_SUFFIX).

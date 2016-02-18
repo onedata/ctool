@@ -4,6 +4,7 @@
 *.beam
 .eunit
 .dialyzer.plt
+.rebar
 
 deps
 ebin

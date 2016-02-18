@@ -12,11 +12,10 @@
 -module(utils).
 
 %% API
--export([ensure_running/1, pmap/2, pforeach/2, time/0, mtime/0,
+-export([ensure_running/1, pmap/2, pforeach/2,
     record_type/1, access_token_hash/1, trim_spaces/1, ceil/1,
     aggregate_over_first_element/1, average/1, random_shuffle/1,
     random_element/1, get_host/1, get_host_as_atom/1, cmd/1, ensure_defined/3]).
--export([seconds_diff/2, milliseconds_diff/2, microseconds_diff/2]).
 -export([duration/1, adjust_duration/2]).
 -export([mkdtemp/0, mkdtemp/3, rmtempdir/1]).
 
@@ -74,26 +73,6 @@ pforeach(Fun, L) ->
 -spec access_token_hash(AccessToken :: binary()) -> Hash :: binary().
 access_token_hash(AccessToken) ->
     base64:encode(crypto:hash(sha512, AccessToken)).
-
-%%--------------------------------------------------------------------
-%% @doc
-%% Returns time in seconds.
-%% @end
-%%--------------------------------------------------------------------
--spec time() -> Result :: integer().
-time() ->
-    {M, S, _} = now(),
-    M * 1000000 + S.
-
-%%--------------------------------------------------------------------
-%% @doc
-%% Returns time in milliseconds.
-%% @end
-%%--------------------------------------------------------------------
--spec mtime() -> Result :: integer().
-mtime() ->
-    {M, S, U} = now(),
-    erlang:trunc(M * 1000000000 + S * 1000 + U / 1000).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -194,35 +173,6 @@ get_host_as_atom(Node) ->
 cmd(Command) ->
     os:cmd(string:join(Command, " ")).
 
-%%--------------------------------------------------------------------
-%% @doc
-%% Returns the time difference Timestamp2 - Timestamp1 in microseconds.
-%% @end
-%%--------------------------------------------------------------------
--spec microseconds_diff(Timestamp2 :: erlang:timestamp(),
-    Timestamp1 :: erlang:timestamp()) -> MillisecondsDiff :: integer().
-microseconds_diff(Timestamp2, Timestamp1) ->
-    timer:now_diff(Timestamp2, Timestamp1).
-
-%%--------------------------------------------------------------------
-%% @doc
-%% Returns the time difference Timestamp2 - Timestamp1 in milliseconds.
-%% @end
-%%--------------------------------------------------------------------
--spec milliseconds_diff(Timestamp2 :: erlang:timestamp(),
-    Timestamp1 :: erlang:timestamp()) -> MillisecondsDiff :: float().
-milliseconds_diff(Timestamp2, Timestamp1) ->
-    timer:now_diff(Timestamp2, Timestamp1) / 1000.
-
-%%--------------------------------------------------------------------
-%% @doc
-%% Returns the time difference Timestamp2 - Timestamp1 in seconds.
-%% @end
-%%--------------------------------------------------------------------
--spec seconds_diff(Timestamp2 :: erlang:timestamp(),
-    Timestamp1 :: erlang:timestamp()) -> SecondsDiff :: float().
-seconds_diff(Timestamp2, Timestamp1) ->
-    timer:now_diff(Timestamp2, Timestamp1) / 1000000.
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -234,10 +184,10 @@ seconds_diff(Timestamp2, Timestamp1) ->
     AdjustedDuration :: integer() | float(), TimeUnit :: string()} when
     Result :: term().
 duration(Function) ->
-    T1 = os:timestamp(),
+    T1 = erlang:monotonic_time(micro_seconds),
     Result = Function(),
-    T2 = os:timestamp(),
-    UsDuration = microseconds_diff(T2, T1),
+    T2 = erlang:monotonic_time(micro_seconds),
+    UsDuration = T2 - T1,
     {AdjustedDuration, TimeUnit} = adjust_duration(UsDuration, us),
     {Result, UsDuration, AdjustedDuration, TimeUnit}.
 
