@@ -4,6 +4,15 @@
 CHANGELOG
 ---------
 
+### 2.0.2
+
+* VFS-1571 Treat rebar_git_plugin as normal source file.
+* VFS-1528 Remove *time and *diff methods.
+* VFS-1520 - tests with removed annotations
+* VFS-1528 Remove deprecated use of erlang:now/0
+
+
+
 ### 2.0.1
 
 * Dependencies management update
