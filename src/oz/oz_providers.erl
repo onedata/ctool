@@ -5,16 +5,16 @@
 %%% cited in 'LICENSE.txt'
 %%% @end
 %%%-------------------------------------------------------------------
-%%% @doc This module allows for providers management in Global Registry.
+%%% @doc This module allows for providers management in OZ.
 %%% @end
 %%%-------------------------------------------------------------------
 
--module(gr_providers).
+-module(oz_providers).
 
--include("global_registry/gr_runner.hrl").
--include("global_registry/gr_spaces.hrl").
--include("global_registry/gr_providers.hrl").
--include("global_registry/gr_openid.hrl").
+-include("oz/oz_runner.hrl").
+-include("oz/oz_spaces.hrl").
+-include("oz/oz_providers.hrl").
+-include("oz/oz_openid.hrl").
 
 %% API
 -export([register/2, register_with_uuid/2, unregister/1]).
@@ -29,13 +29,13 @@
 %%%===================================================================
 
 %%--------------------------------------------------------------------
-%% @doc Registers provider in Global Registry. Parameters should contain:
-%% "csr" that will be signed by Global Registry, "urls" to cluster nodes
+%% @doc Registers provider in OZ. Parameters should contain:
+%% "csr" that will be signed by OZ, "urls" to cluster nodes
 %% "redirectionPoint" to provider's GUI and "clientName".
 %% @end
 %%--------------------------------------------------------------------
--spec register(Client :: gr_endpoint:client(),
-    Parameters :: gr_endpoint:params()) ->
+-spec register(Client :: oz_endpoint:client(),
+    Parameters :: oz_endpoint:params()) ->
     {ok, ProviderId :: binary(), Cert :: binary()} |
     {error, Reason :: term()}.
 register(Client, Parameters) ->
@@ -43,7 +43,7 @@ register(Client, Parameters) ->
         URN = "/provider",
         Body = json_utils:encode(Parameters),
         {ok, 200, _ResponseHeaders, ResponseBody} =
-            gr_endpoint:noauth_request(Client, URN, post, Body),
+            oz_endpoint:noauth_request(Client, URN, post, Body),
         Proplist = json_utils:decode(ResponseBody),
         ProviderId = proplists:get_value(<<"providerId">>, Proplist),
         Cert = proplists:get_value(<<"certificate">>, Proplist),
@@ -51,14 +51,14 @@ register(Client, Parameters) ->
     end).
 
 %%--------------------------------------------------------------------
-%% @doc Registers provider in Global Registry with given UUI.
+%% @doc Registers provider in OZ with given UUI.
 %% This is used mainly for tests. Parameters should contain:
-%% "csr" that will be signed by Global Registry, "urls" to cluster nodes
+%% "csr" that will be signed by OZ, "urls" to cluster nodes
 %% "redirectionPoint" to provider's GUI, "clientName" and "uuid".
 %% @end
 %%--------------------------------------------------------------------
--spec register_with_uuid(Client :: gr_endpoint:client(),
-    Parameters :: gr_endpoint:params()) ->
+-spec register_with_uuid(Client :: oz_endpoint:client(),
+    Parameters :: oz_endpoint:params()) ->
     {ok, ProviderId :: binary(), Cert :: binary()} |
     {error, Reason :: term()}.
 register_with_uuid(Client, Parameters) ->
@@ -66,7 +66,7 @@ register_with_uuid(Client, Parameters) ->
         URN = "/provider_dev",
         Body = json_utils:encode(Parameters),
         {ok, 200, _ResponseHeaders, ResponseBody} =
-            gr_endpoint:noauth_request(Client, URN, post, Body),
+            oz_endpoint:noauth_request(Client, URN, post, Body),
         Proplist = json_utils:decode(ResponseBody),
         ProviderId = proplists:get_value(<<"providerId">>, Proplist),
         Cert = proplists:get_value(<<"certificate">>, Proplist),
@@ -74,16 +74,16 @@ register_with_uuid(Client, Parameters) ->
     end).
 
 %%--------------------------------------------------------------------
-%% @doc Unregisters provider from Global Registry.
+%% @doc Unregisters provider from OZ.
 %% @end
 %%--------------------------------------------------------------------
--spec unregister(Client :: gr_endpoint:client()) ->
+-spec unregister(Client :: oz_endpoint:client()) ->
     ok | {error, Reason :: term()}.
 unregister(Client) ->
     ?run(fun() ->
         URN = "/provider",
         {ok, 202, _ResponseHeaders, _ResponseBody} =
-            gr_endpoint:auth_request(Client, URN, delete),
+            oz_endpoint:auth_request(Client, URN, delete),
         ok
     end).
 
@@ -91,13 +91,13 @@ unregister(Client) ->
 %% @doc Returns public details about provider.
 %% @end
 %%--------------------------------------------------------------------
--spec get_details(Client :: gr_endpoint:client()) ->
+-spec get_details(Client :: oz_endpoint:client()) ->
     {ok, ProviderDetails :: #provider_details{}} | {error, Reason :: term()}.
 get_details(Client) ->
     ?run(fun() ->
         URN = "/provider",
         {ok, 200, _ResponseHeaders, ResponseBody} =
-            gr_endpoint:auth_request(Client, URN, get),
+            oz_endpoint:auth_request(Client, URN, get),
         Proplist = json_utils:decode(ResponseBody),
         ProviderDetails = #provider_details{
             id = proplists:get_value(<<"providerId">>, Proplist),
@@ -113,13 +113,13 @@ get_details(Client) ->
 %% @doc Returns public details about given provider.
 %% @end
 %%--------------------------------------------------------------------
--spec get_details(Client :: gr_endpoint:client(), ProviderId :: binary()) ->
+-spec get_details(Client :: oz_endpoint:client(), ProviderId :: binary()) ->
     {ok, ProviderDetails :: #provider_details{}} | {error, Reason :: term()}.
 get_details(Client, ProviderId) ->
     ?run(fun() ->
         URN = "/provider/" ++ binary_to_list(ProviderId),
         {ok, 200, _ResponseHeaders, ResponseBody} =
-            gr_endpoint:auth_request(Client, URN, get),
+            oz_endpoint:auth_request(Client, URN, get),
         Proplist = json_utils:decode(ResponseBody),
         ProviderDetails = #provider_details{
             id = proplists:get_value(<<"providerId">>, Proplist),
@@ -136,14 +136,14 @@ get_details(Client, ProviderId) ->
 %% "urls" to cluster nodes and "redirectionPoint" to provider's GUI.
 %% @end
 %%--------------------------------------------------------------------
--spec modify_details(Client :: gr_endpoint:client(),
-    Parameters :: gr_endpoint:params()) -> ok | {error, Reason :: term()}.
+-spec modify_details(Client :: oz_endpoint:client(),
+    Parameters :: oz_endpoint:params()) -> ok | {error, Reason :: term()}.
 modify_details(Client, Parameters) ->
     ?run(fun() ->
         URN = "/provider",
         Body = json_utils:encode(Parameters),
         {ok, 204, _ResponseHeaders, _ResponseBody} =
-            gr_endpoint:auth_request(Client, URN, patch, Body),
+            oz_endpoint:auth_request(Client, URN, patch, Body),
         ok
     end).
 
@@ -151,13 +151,13 @@ modify_details(Client, Parameters) ->
 %% @doc Returns token issuer.
 %% @end
 %%--------------------------------------------------------------------
--spec get_token_issuer(Client :: gr_endpoint:client(), Token :: binary()) ->
+-spec get_token_issuer(Client :: oz_endpoint:client(), Token :: binary()) ->
     {ok, TokenData :: #token_issuer{}} | {error, Reason :: term()}.
 get_token_issuer(Client, Token) ->
     ?run(fun() ->
         URN = "/provider/token/" ++ binary_to_list(Token),
         {ok, 200, _ResponseHeaders, ResponseBody} =
-            gr_endpoint:auth_request(Client, URN, get),
+            oz_endpoint:auth_request(Client, URN, get),
         Proplist = json_utils:decode(ResponseBody),
         TokenIssuer = #token_issuer{
             client_type = proplists:get_value(<<"clientType">>, Proplist),
@@ -167,25 +167,25 @@ get_token_issuer(Client, Token) ->
     end).
 
 %%--------------------------------------------------------------------
-%% @doc Returns ip address that is visible for Global Registry.
+%% @doc Returns ip address that is visible for OZ.
 %% @end
 %%--------------------------------------------------------------------
--spec check_ip_address(Client :: gr_endpoint:client()) ->
+-spec check_ip_address(Client :: oz_endpoint:client()) ->
     {ok, IpAddress :: binary()} | {error, Reason :: term()}.
 check_ip_address(Client) ->
     ?run(fun() ->
         URN = "/provider/test/check_my_ip",
         {ok, 200, _ResponseHeaders, ResponseBody} =
-            gr_endpoint:noauth_request(Client, URN, get, <<>>),
+            oz_endpoint:noauth_request(Client, URN, get, <<>>),
         IpAddress = json_utils:decode(ResponseBody),
         {ok, IpAddress}
     end).
 
 %%--------------------------------------------------------------------
-%% @doc Checks port availability for Global Registry.
+%% @doc Checks port availability for OZ.
 %% @end
 %%--------------------------------------------------------------------
--spec check_port(Client :: gr_endpoint:client(), IpAddress :: binary(),
+-spec check_port(Client :: oz_endpoint:client(), IpAddress :: binary(),
     Port :: integer(), Type :: binary()) ->
     ok | {error, Reason :: term()}.
 check_port(Client, IpAddress, Port, Type) ->
@@ -199,7 +199,7 @@ check_port(Client, IpAddress, Port, Type) ->
         (integer_to_binary(Port))/binary, Resource/binary>>,
         Body = json_utils:encode([{Type, CheckURL}]),
         {ok, 200, _ResponseHeaders, ResponseBody} =
-            gr_endpoint:noauth_request(Client, URN, post, Body),
+            oz_endpoint:noauth_request(Client, URN, post, Body),
         Proplist = json_utils:decode(ResponseBody),
         <<"ok">> = proplists:get_value(CheckURL, Proplist),
         ok
@@ -213,15 +213,15 @@ check_port(Client, IpAddress, Port, Type) ->
 %% intends to give for the Space.
 %% @end
 %%--------------------------------------------------------------------
--spec create_space(Client :: gr_endpoint:client(),
-    Parameters :: gr_endpoint:params()) ->
+-spec create_space(Client :: oz_endpoint:client(),
+    Parameters :: oz_endpoint:params()) ->
     {ok, SpaceId :: binary()} | {error, Reason :: term()}.
 create_space(Client, Parameters) ->
     ?run(fun() ->
         URN = "/provider/spaces",
         Body = json_utils:encode(Parameters),
         {ok, 201, ResponseHeaders, _ResponseBody} =
-            gr_endpoint:auth_request(Client, URN, post, Body),
+            oz_endpoint:auth_request(Client, URN, post, Body),
         <<"/spaces/", SpaceId/binary>> =
             proplists:get_value(<<"location">>, ResponseHeaders),
         {ok, SpaceId}
@@ -233,15 +233,15 @@ create_space(Client, Parameters) ->
 %% "size" in bytes the provider intends to give for the Space.
 %% @end
 %%--------------------------------------------------------------------
--spec support_space(Client :: gr_endpoint:client(),
-    Parameters :: gr_endpoint:params()) ->
+-spec support_space(Client :: oz_endpoint:client(),
+    Parameters :: oz_endpoint:params()) ->
     {ok, SpaceId :: binary()} | {error, Reason :: term()}.
 support_space(Client, Parameters) ->
     ?run(fun() ->
         URN = "/provider/spaces/support",
         Body = json_utils:encode(Parameters),
         {ok, 201, ResponseHeaders, _ResponseBody} =
-            gr_endpoint:auth_request(Client, URN, post, Body),
+            oz_endpoint:auth_request(Client, URN, post, Body),
         <<"/provider/spaces/", SpaceId/binary>> =
             proplists:get_value(<<"location">>, ResponseHeaders),
         {ok, SpaceId}
@@ -251,13 +251,13 @@ support_space(Client, Parameters) ->
 %% @doc Makes provider stop supporting Space.
 %% @end
 %%--------------------------------------------------------------------
--spec revoke_space_support(Client :: gr_endpoint:client(),
+-spec revoke_space_support(Client :: oz_endpoint:client(),
     SpaceId :: binary()) -> ok | {error, Reason :: term()}.
 revoke_space_support(Client, SpaceId) ->
     ?run(fun() ->
         URN = "/provider/spaces/" ++ binary_to_list(SpaceId),
         {ok, 202, _ResponseHeaders, _ResponseBody} =
-            gr_endpoint:auth_request(Client, URN, delete),
+            oz_endpoint:auth_request(Client, URN, delete),
         ok
     end).
 
@@ -265,13 +265,13 @@ revoke_space_support(Client, SpaceId) ->
 %% @doc Returns list of IDs of Spaces supported by provider.
 %% @end
 %%--------------------------------------------------------------------
--spec get_spaces(Client :: gr_endpoint:client()) ->
+-spec get_spaces(Client :: oz_endpoint:client()) ->
     {ok, SpaceIds :: [binary()]} | {error, Reason :: term()}.
 get_spaces(Client) ->
     ?run(fun() ->
         URN = "/provider/spaces",
         {ok, 200, _ResponseHeaders, ResponseBody} =
-            gr_endpoint:auth_request(Client, URN, get),
+            oz_endpoint:auth_request(Client, URN, get),
         Proplist = json_utils:decode(ResponseBody),
         SpaceIds = proplists:get_value(<<"spaces">>, Proplist),
         {ok, SpaceIds}
@@ -281,13 +281,13 @@ get_spaces(Client) ->
 %% @doc Returns public details about Space supported by provider.
 %% @end
 %%--------------------------------------------------------------------
--spec get_space_details(Client :: gr_endpoint:client(), SpaceId :: binary()) ->
+-spec get_space_details(Client :: oz_endpoint:client(), SpaceId :: binary()) ->
     {ok, SpaceDetails :: #space_details{}} | {error, Reason :: term()}.
 get_space_details(Client, SpaceId) ->
     ?run(fun() ->
         URN = "/provider/spaces/" ++ binary_to_list(SpaceId),
         {ok, 200, _ResponseHeaders, ResponseBody} =
-            gr_endpoint:auth_request(Client, URN, get),
+            oz_endpoint:auth_request(Client, URN, get),
         Proplist = json_utils:decode(ResponseBody),
         SpaceDetails = #space_details{
             id = proplists:get_value(<<"spaceId">>, Proplist),

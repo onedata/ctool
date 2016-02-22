@@ -6,11 +6,11 @@
 %%% @end
 %%%-------------------------------------------------------------------
 %%% @doc This is a communication layer module. It sends requests to
-%%% Global Registry using REST API and returns responses.
+%%% OZ using REST API and returns responses.
 %%% @end
 %%%-------------------------------------------------------------------
 
--module(gr_endpoint).
+-module(oz_endpoint).
 
 %% API
 -export([auth_request/3, auth_request/4, auth_request/5, auth_request/6]).
@@ -29,7 +29,7 @@
     ResponseBody :: body()} | {error, Reason :: term()}.
 -type params() :: [{Key :: binary(), Value :: binary()}].
 
-%% Global Registry gr_endpoint:client()
+%% OZ oz_endpoint:client()
 % Tuple containing root macaroon and discharge macaroons for user auth
 % (all macaroons are serialized).
 -type macaroons() :: {Macaroon :: binary(), DischMacaroons :: [binary()]}.
@@ -49,7 +49,7 @@
 -spec auth_request(Client :: client(), URN :: urn(), Method :: method()) ->
     response().
 auth_request(Client, URN, Method) ->
-    gr_endpoint:auth_request(Client, URN, Method, <<>>).
+    oz_endpoint:auth_request(Client, URN, Method, <<>>).
 
 %%--------------------------------------------------------------------
 %% @equiv auth_request(Client, URN, Method, Body, [])
@@ -58,7 +58,7 @@ auth_request(Client, URN, Method) ->
 -spec auth_request(Client :: client(), URN :: urn(), Method :: method(),
     Body :: body()) -> response().
 auth_request(Client, URN, Method, Body) ->
-    gr_endpoint:auth_request(Client, URN, Method, Body, []).
+    oz_endpoint:auth_request(Client, URN, Method, Body, []).
 
 %%--------------------------------------------------------------------
 %% @equiv auth_request(Client, URN, Method, [], Body, Options)
@@ -67,11 +67,11 @@ auth_request(Client, URN, Method, Body) ->
 -spec auth_request(Client :: client(), URN :: urn(), Method :: method(),
     Body :: body(), Options :: options()) -> response().
 auth_request(Client, URN, Method, Body, Options) ->
-    gr_endpoint:auth_request(Client, URN, Method, [], Body, Options).
+    oz_endpoint:auth_request(Client, URN, Method, [], Body, Options).
 
 %%--------------------------------------------------------------------
-%% @doc Sends authenticated request to Global Registry.
-%% Context depends on gr_endpoint:client() type.
+%% @doc Sends authenticated request to OZ.
+%% Context depends on oz_endpoint:client() type.
 %% @end
 %%--------------------------------------------------------------------
 -spec auth_request(Client :: client(), URN :: urn(), Method :: method(),
@@ -98,7 +98,7 @@ auth_request({Type, Macaroons}, URN, Method, Headers, Body, Options)
 -spec noauth_request(Client :: client(), URN :: urn(), Method :: method()) ->
     response().
 noauth_request(Client, URN, Method) ->
-    gr_endpoint:noauth_request(Client, URN, Method, <<>>).
+    oz_endpoint:noauth_request(Client, URN, Method, <<>>).
 
 %%--------------------------------------------------------------------
 %% @equiv noauth_request(Client, URN, Method, Body, [])
@@ -107,7 +107,7 @@ noauth_request(Client, URN, Method) ->
 -spec noauth_request(Client :: client(), URN :: urn(), Method :: method(),
     Body :: body()) -> response().
 noauth_request(Client, URN, Method, Body) ->
-    gr_endpoint:noauth_request(Client, URN, Method, Body, []).
+    oz_endpoint:noauth_request(Client, URN, Method, Body, []).
 
 %%--------------------------------------------------------------------
 %% @equiv noauth_request(Client, URN, Method, [], Body, Options)
@@ -116,11 +116,11 @@ noauth_request(Client, URN, Method, Body) ->
 -spec noauth_request(Client :: client(), URN :: urn(), Method :: method(),
     Body :: body(), Options :: list()) -> response().
 noauth_request(Client, URN, Method, Body, Options) ->
-    gr_endpoint:noauth_request(Client, URN, Method, [], Body, Options).
+    oz_endpoint:noauth_request(Client, URN, Method, [], Body, Options).
 
 %%--------------------------------------------------------------------
-%% @doc Sends unauthenticated request to Global Registry.
-%% Context depends on gr_endpoint:client() type.
+%% @doc Sends unauthenticated request to OZ.
+%% Context depends on oz_endpoint:client() type.
 %% @end
 %%--------------------------------------------------------------------
 -spec noauth_request(Client :: client(), URN :: urn(), Method :: method(),
@@ -146,33 +146,33 @@ noauth_request({Type, Macaroons}, URN, Method, Headers, Body, Options)
 %%%===================================================================
 
 %%--------------------------------------------------------------------
-%% @doc Sends request to Global Registry using REST API.
+%% @doc Sends request to OZ using REST API.
 %% Request is authenticated with provider certificate.
 %% @end
 %%--------------------------------------------------------------------
 -spec do_auth_request(URN :: urn(), Method :: method(), Headers :: headers(),
     Body :: body(), Options :: options()) -> response().
 do_auth_request(URN, Method, Headers, Body, Opts) ->
-    KeyPath = apply(gr_plugin, get_key_path, []),
-    CertPath = apply(gr_plugin, get_cert_path, []),
+    KeyPath = apply(oz_plugin, get_key_path, []),
+    CertPath = apply(oz_plugin, get_cert_path, []),
     SSLOpts = {ssl_options, [{keyfile, KeyPath}, {certfile, CertPath}]},
     do_noauth_request(URN, Method, Headers, Body, [SSLOpts | Opts]).
 
 
 %%--------------------------------------------------------------------
-%% @doc Sends request to Global Registry using REST API.
+%% @doc Sends request to OZ using REST API.
 %% Request is not authenticated with provider certificate.
 %% @end
 %%--------------------------------------------------------------------
 -spec do_noauth_request(URN :: urn(), Method :: method(), Headers :: headers(),
     Body :: body(), Options :: options()) -> response().
 do_noauth_request(URN, Method, Headers, Body, Options) ->
-    Opts = case application:get_env(ctool, verify_gr_cert) of
+    Opts = case application:get_env(ctool, verify_oz_cert) of
                {ok, false} -> [insecure | Options];
                _ -> Options
            end,
     NewHeaders = [{<<"content-type">>, <<"application/json">>} | Headers],
-    URL = gr_plugin:get_gr_url() ++ URN,
+    URL = oz_plugin:get_oz_url() ++ URN,
     http_client:request(Method, URL, NewHeaders, Body, Opts).
 
 

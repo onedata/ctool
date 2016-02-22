@@ -5,23 +5,23 @@
 %%% cited in 'LICENSE.txt'.
 %%% @end
 %%%-------------------------------------------------------------------
-%%% @doc This module tests the functionality of gr_openid module.
+%%% @doc This module tests the functionality of oz_openid module.
 %%% It contains unit tests that base on eunit.
 %%% @end
 %%%-------------------------------------------------------------------
 
--module(gr_openid_tests).
+-module(oz_openid_tests).
 
 -ifdef(TEST).
 
--include("global_registry/gr_openid.hrl").
+-include("oz/oz_openid.hrl").
 -include_lib("eunit/include/eunit.hrl").
 
 %%%===================================================================
 %%% Tests description
 %%%===================================================================
 
-gr_openid_test_() ->
+oz_openid_test_() ->
     {foreach,
         fun setup/0,
         fun teardown/1,
@@ -41,8 +41,8 @@ gr_openid_test_() ->
 %%%===================================================================
 
 setup() ->
-    meck:new(gr_endpoint),
-    meck:expect(gr_endpoint, auth_request, fun
+    meck:new(oz_endpoint),
+    meck:expect(oz_endpoint, auth_request, fun
         (client, "/openid/client/tokens", get) ->
             {ok, 200, response_headers, response_body};
         (client, "/openid/client/tokens/accessId", delete) ->
@@ -54,7 +54,7 @@ setup() ->
         (client, "/openid/provider/tokens/accessId", delete) ->
             {ok, 202, response_headers, response_body}
     end),
-    meck:expect(gr_endpoint, auth_request, fun
+    meck:expect(oz_endpoint, auth_request, fun
         (client, "/openid/client/verify", post, <<"body">>) ->
             {ok, 200, response_headers, response_body};
         (client, "/openid/client/tokens/accessId", patch, <<"body">>) ->
@@ -64,15 +64,15 @@ setup() ->
         (provider, "/openid/provider/tokens", post, <<"body">>) ->
             {ok, 200, response_headers, response_body}
     end),
-    meck:expect(gr_endpoint, noauth_request, fun
+    meck:expect(oz_endpoint, noauth_request, fun
         (client, "/openid/client/tokens", post, <<"body">>) ->
             {ok, 200, response_headers, response_body}
     end).
 
 
 teardown(_) ->
-    ?assert(meck:validate(gr_endpoint)),
-    ok = meck:unload(gr_endpoint).
+    ?assert(meck:validate(oz_endpoint)),
+    ok = meck:unload(oz_endpoint).
 
 %%%===================================================================
 %%% Tests functions
@@ -93,7 +93,7 @@ should_get_tokens() ->
     end),
 
     lists:foreach(fun(Function) ->
-        Answer = gr_openid:Function(client),
+        Answer = oz_openid:Function(client),
         ?assertEqual({ok, [
             #token_details{
                 access_id = <<"accessId1">>,
@@ -112,7 +112,7 @@ should_get_tokens() ->
 
 should_revoke_token() ->
     lists:foreach(fun(Function) ->
-        Answer = gr_openid:Function(client, <<"accessId">>),
+        Answer = oz_openid:Function(client, <<"accessId">>),
         ?assertEqual(ok, Answer)
     end, [revoke_client_token, revoke_provider_token]).
 
@@ -122,7 +122,7 @@ should_modify_token_details() ->
     meck:expect(json_utils, encode, fun(parameters) -> <<"body">> end),
 
     lists:foreach(fun(Function) ->
-        Answer = gr_openid:Function(client, <<"accessId">>, parameters),
+        Answer = oz_openid:Function(client, <<"accessId">>, parameters),
         ?assertEqual(ok, Answer)
     end, [modify_client_token_details, modify_provider_token_details]),
 
@@ -136,7 +136,7 @@ should_get_client_authorization_code() ->
         [{<<"authorizationCode">>, <<"authorizationCode">>}]
     end),
 
-    Answer = gr_openid:get_client_authorization_code(client),
+    Answer = oz_openid:get_client_authorization_code(client),
     ?assertEqual({ok, <<"authorizationCode">>}, Answer),
 
     ?assert(meck:validate(json_utils)),
@@ -150,7 +150,7 @@ should_verify_client() ->
         [{<<"verified">>, <<"verified">>}]
     end),
 
-    Answer = gr_openid:verify_client(client, parameters),
+    Answer = oz_openid:verify_client(client, parameters),
     ?assertEqual({ok, <<"verified">>}, Answer),
 
     ?assert(meck:validate(json_utils)),
@@ -193,7 +193,7 @@ should_get_token_response() ->
         [header, <<"">>, signature] end),
 
     lists:foreach(fun(ClientType) ->
-        Answer = gr_openid:get_token_response(ClientType, parameters),
+        Answer = oz_openid:get_token_response(ClientType, parameters),
         ?assertEqual({ok, #token_response{
             access_token = <<"access_token">>,
             token_type = <<"token_type">>,
