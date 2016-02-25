@@ -10,7 +10,7 @@
 %%% @end
 %%%-------------------------------------------------------------------
 
--module(gr_runner).
+-module(oz_runner).
 
 -include("logging.hrl").
 
