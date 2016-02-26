@@ -30,9 +30,9 @@
 -type params() :: [{Key :: binary(), Value :: binary()}].
 
 %% OZ oz_endpoint:client()
-% Tuple containing root macaroon and discharge macaroons for user auth
-% (all macaroons are serialized).
--type macaroons() :: {Macaroon :: binary(), DischMacaroons :: [binary()]}.
+% Tuple containing root macaroon and discharge macaroons for user auth.
+-type macaroons() :: {Macaroon :: macaroon:macaroon(),
+    DischargeMacaroons :: [macaroon:macaroon()]}.
 -type client() :: client | provider | {user, macaroons()} |
 {try_user, macaroons()}.
 
@@ -182,19 +182,18 @@ do_noauth_request(URN, Method, Headers, Body, Options) ->
 %%--------------------------------------------------------------------
 -spec prepare_auth_headers(Macaroons :: macaroons()) ->
     [{Key :: binary(), Val :: binary()}].
-prepare_auth_headers({SrlzdMacaroon, SrlzdDischMacaroons}) ->
-    {ok, Macaroon} = macaroon:deserialize(SrlzdMacaroon),
+prepare_auth_headers({Macaroon, DischargeMacaroons}) ->
     BoundMacaroons = lists:map(
-        fun(SrlzdDischMacaroon) ->
-            {ok, DM} = macaroon:deserialize(SrlzdDischMacaroon),
-            {ok, BDM} = macaroon:prepare_for_request(Macaroon, DM),
-            {ok, SBDM} = macaroon:serialize(BDM),
-            SBDM
-        end, SrlzdDischMacaroons),
+        fun(DM) ->
+            BDM = macaroon:prepare_for_request(Macaroon, DM),
+            {ok, SerializedBDM} = macaroon:serialize(BDM),
+            SerializedBDM
+        end, DischargeMacaroons),
     % Bound discharge macaroons are sent in one header,
     % separated by spaces.
+    {ok, SerializedMacaroon} = macaroon:serialize(Macaroon),
     BoundMacaroonsValue = str_utils:join_binary(BoundMacaroons, <<" ">>),
     [
-        {<<"macaroon">>, SrlzdMacaroon},
+        {<<"macaroon">>, SerializedMacaroon},
         {<<"discharge-macaroons">>, BoundMacaroonsValue}
     ].
