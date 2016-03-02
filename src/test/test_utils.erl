@@ -29,6 +29,14 @@
 %%% API
 %%%===================================================================
 
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Enables given local models in datastore that runs on given nodes.
+%% All given nodes should be form one single provider.
+%% @end
+%%--------------------------------------------------------------------
+-spec enable_datastore_models(Nodes :: [node()], Models :: [model_behaviour:model_type()]) -> ok | no_return().
 enable_datastore_models([H | _] = Nodes, Models) ->
     lists:foreach(
         fun(Model) ->
