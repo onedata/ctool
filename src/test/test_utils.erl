@@ -17,7 +17,7 @@
 
 %% API
 -export([mock_new/2, mock_new/3, mock_expect/4, mock_validate/2, mock_unload/1,
-    mock_unload/2, mock_validate_and_unload/2]).
+    mock_unload/2, mock_validate_and_unload/2, mock_num_calls/5]).
 -export([get_env/3, set_env/4]).
 
 -type mock_opt() :: passthrough | non_strict | unstick | no_link.
@@ -132,6 +132,20 @@ mock_unload(Nodes, Modules) ->
 mock_validate_and_unload(Nodes, Modules) ->
     mock_validate(Nodes, Modules),
     mock_unload(Nodes, Modules).
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Validates number of function calls for given nodes.
+%% @end
+%%--------------------------------------------------------------------
+-spec mock_num_calls(Nodes :: node() | [node()], Module :: module(),
+    FunctionName :: atom(), FunctionArgs :: meck:args_spec(), CallsNumber :: non_neg_integer()) -> ok.
+mock_num_calls(Nodes, Module, FunctionName, FunctionArgs, CallsNumber) ->
+    lists:foreach(fun(Node) ->
+        ?assertEqual(CallsNumber, rpc:call(
+            Node, meck, num_calls, [Module, FunctionName, FunctionArgs], ?TIMEOUT
+        ))
+    end, as_list(Nodes)).
 
 %%--------------------------------------------------------------------
 %% @doc
