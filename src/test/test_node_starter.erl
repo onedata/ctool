@@ -74,7 +74,7 @@ prepare_test_environment(Config, DescriptionFile, TestModule, LoadModules, Apps)
         utils:cmd(["echo", "'" ++ DescriptionFile ++ ":'", ">> prepare_test_environment.log"]),
         utils:cmd(["echo", "'" ++ DescriptionFile ++ ":'", ">> prepare_test_environment_error.log"]),
 
-        StartLog = list_to_binary(utils:cmd([EnvUpScript,
+        StartLogRaw = list_to_binary(utils:cmd([EnvUpScript,
             %% Function is used durgin OP or GR tests so starts OP or GR - not both
             "--bin-cluster-worker", ProjectRoot,
             "--bin-worker", ProjectRoot,
@@ -84,6 +84,8 @@ prepare_test_environment(Config, DescriptionFile, TestModule, LoadModules, Apps)
             "--bin-cm", CmRoot,
             "--logdir", LogsDir,
             DescriptionFile, "2>> prepare_test_environment_error.log"])),
+        % Remove logs from env_up output
+        StartLog = list_to_binary(lists:last(string:tokens(binary_to_list(StartLogRaw), "\n"))),
 
         % Save start log to file
         utils:cmd(["echo", binary_to_list(<<"'", StartLog/binary, "'">>), ">> prepare_test_environment.log"]),
