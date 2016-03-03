@@ -44,15 +44,15 @@ enable_datastore_models([H | _] = Nodes, Models) ->
             {_, []} = rpc:multicall(Nodes, code, load_binary, [Module, Filename, Binary])
         end, Models),
 
-    catch mock_new(Nodes, [datastore_config]),
-    ok = mock_expect(Nodes, datastore_config, models,
-        fun() ->
-            meck:passthrough([]) ++ Models
+    catch mock_new(Nodes, [plugins]),
+    ok = mock_expect(Nodes, plugins, apply,
+        fun(datastore_config_plugin, models, []) ->
+            meck:passthrough([datastore_config_plugin, models, []]) ++ Models
         end),
 
     lists:foreach(
         fun(Node) ->
-            ok = rpc:call(Node, datastore, initialize_state, [H])
+            ok = rpc:call(Node, gen_server, call, [node_manager, {apply, datastore, initialize_state, [H]}], timer:seconds(5))
         end, Nodes).
 
 
