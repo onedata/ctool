@@ -88,39 +88,42 @@ prepare_test_environment(Config, DescriptionFile, TestModule, LoadModules, Apps)
         % Save start log to file
         utils:cmd(["echo", binary_to_list(<<"'", StartLog/binary, "'">>), ">> prepare_test_environment.log"]),
 
-        EnvDesc = json_parser:parse_json_binary_to_atom_proplist(StartLog),
+        case json_parser:parse_json_binary_to_atom_proplist(StartLog) of
+            [] -> ct:print("Prepare of environment failed~n"),
+                error(env_up_failed);
+            EnvDesc  ->
+                try
+                    Dns = ?config(dns, EnvDesc),
+                    AllNodesWithCookies = lists:flatmap(
+                        fun({AppName, ConfigName}) ->
+                            Nodes = ?config(ConfigName, EnvDesc),
+                            get_cookies(Nodes, AppName, ?COOKIE_KEY, DescriptionFile)
+                        end, Apps
+                    ),
 
-        try
-            Dns = ?config(dns, EnvDesc),
-            AllNodesWithCookies = lists:flatmap(
-                fun({AppName, ConfigName}) ->
-                    Nodes = ?config(ConfigName, EnvDesc),
-                    get_cookies(Nodes, AppName, ?COOKIE_KEY, DescriptionFile)
-                end, Apps
-            ),
+                    set_cookies(AllNodesWithCookies),
+                    os:cmd("echo nameserver " ++ atom_to_list(Dns) ++ " > /etc/resolv.conf"),
 
-            set_cookies(AllNodesWithCookies),
-            os:cmd("echo nameserver " ++ atom_to_list(Dns) ++ " > /etc/resolv.conf"),
-            
-            AllNodes = [N || {N, _C} <- AllNodesWithCookies],
-            ping_nodes(AllNodes),
-            global:sync(),
-            load_modules(AllNodes, [TestModule, test_utils | LoadModules]),
+                    AllNodes = [N || {N, _C} <- AllNodesWithCookies],
+                    ping_nodes(AllNodes),
+                    global:sync(),
+                    load_modules(AllNodes, [TestModule, test_utils | LoadModules]),
 
-            lists:append([
-                ConfigWithPaths,
-                proplists:delete(dns, EnvDesc),
-                rebar_git_plugin:get_git_metadata()
-            ])
-        catch
-            E11:E12 ->
-                ct:print("Preparation of environment failed ~p:~p~n" ++
-                    "For details, check:~n" ++
-                    "    prepare_test_environment_error.log~n" ++
-                    "    prepare_test_environment.log~n" ++
-                    "Stacktrace: ~p", [E11, E12, erlang:get_stacktrace()]),
-                clean_environment(EnvDesc),
-                {fail, {init_failed, E11, E12}}
+                    lists:append([
+                        ConfigWithPaths,
+                        proplists:delete(dns, EnvDesc),
+                        rebar_git_plugin:get_git_metadata()
+                    ])
+                catch
+                    E11:E12 ->
+                        ct:print("Preparation of environment failed ~p:~p~n" ++
+                            "For details, check:~n" ++
+                            "    prepare_test_environment_error.log~n" ++
+                            "    prepare_test_environment.log~n" ++
+                            "Stacktrace: ~p", [E11, E12, erlang:get_stacktrace()]),
+                        clean_environment(EnvDesc),
+                        {fail, {init_failed, E11, E12}}
+                end
         end
     catch
         E21:E22 ->
@@ -157,8 +160,8 @@ clean_environment(Config, Apps) ->
 
                 stop_applications(Config, Apps),
 
-                AllNodes = lists:flatmap(fun({_, ConfigName}) -> 
-                    ?config(ConfigName, Config) 
+                AllNodes = lists:flatmap(fun({_, ConfigName}) ->
+                    ?config(ConfigName, Config)
                 end, Apps),
 
                 lists:foreach(
