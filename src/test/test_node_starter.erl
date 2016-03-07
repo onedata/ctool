@@ -89,8 +89,7 @@ prepare_test_environment(Config, DescriptionFile, TestModule, LoadModules, Apps)
         utils:cmd(["echo", binary_to_list(<<"'", StartLog/binary, "'">>), ">> prepare_test_environment.log"]),
 
         case json_parser:parse_json_binary_to_atom_proplist(StartLog) of
-            [] -> ct:print("Prepare of environment failed~n"),
-                error(env_up_failed);
+            [] -> error(env_up_failed);
             EnvDesc  ->
                 try
                     Dns = ?config(dns, EnvDesc),
