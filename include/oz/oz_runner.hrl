@@ -10,13 +10,13 @@
 %%% @end
 %%%-------------------------------------------------------------------
 
--ifndef(GR_RUNNER_HRL).
--define(GR_RUNNER_HRL, 1).
+-ifndef(OZ_RUNNER_HRL).
+-define(OZ_RUNNER_HRL, 1).
 
 -define(run(RequestBody),
     begin
         {current_function, CurrentFunction} = process_info(self(), current_function),
-        gr_runner:run(CurrentFunction, RequestBody)
+        oz_runner:run(CurrentFunction, RequestBody)
     end).
 
 -endif.
