@@ -5,15 +5,15 @@
 %%% cited in 'LICENSE.txt'.
 %%% @end
 %%%-------------------------------------------------------------------
-%%% @doc Global Registry definition of user record.
+%%% @doc OZ definition of user record.
 %%% @end
 %%%-------------------------------------------------------------------
 
--ifndef(GR_USERS_HRL).
--define(GR_USERS_HRL, 1).
+-ifndef(OZ_USERS_HRL).
+-define(OZ_USERS_HRL, 1).
 
 %% user_details record contains following fields:
-%% * id   - unique user ID assigned by Global Registry
+%% * id   - unique user ID assigned by OZ
 %% * name - username
 -record(user_details, {
     id :: binary(),

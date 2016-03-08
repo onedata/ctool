@@ -5,14 +5,14 @@
 %%% cited in 'LICENSE.txt'
 %%% @end
 %%%-------------------------------------------------------------------
-%%% @doc This module allows for OpenID management in Global Registry.
+%%% @doc This module allows for OpenID management in OZ.
 %%% @end
 %%%-------------------------------------------------------------------
 
--module(gr_openid).
+-module(oz_openid).
 
--include("global_registry/gr_runner.hrl").
--include("global_registry/gr_openid.hrl").
+-include("oz/oz_runner.hrl").
+-include("oz/oz_openid.hrl").
 
 %% API
 -export([get_client_tokens/1, revoke_client_token/2,
@@ -27,32 +27,32 @@
 %%%===================================================================
 
 %%--------------------------------------------------------------------
-%% @doc Returns list of gr_endpoint:client()s' token details.
+%% @doc Returns list of oz_endpoint:client()s' token details.
 %% @end
 %%--------------------------------------------------------------------
--spec get_client_tokens(Client :: gr_endpoint:client()) ->
+-spec get_client_tokens(Client :: oz_endpoint:client()) ->
     {ok, Tokens :: [#token_details{}]} | {error, Reason :: term()}.
 get_client_tokens(Client) ->
     URN = "/openid/client/tokens",
     get_tokens(Client, URN).
 
 %%--------------------------------------------------------------------
-%% @doc Revokes gr_endpoint:client()'s token validity.
+%% @doc Revokes oz_endpoint:client()'s token validity.
 %% @end
 %%--------------------------------------------------------------------
--spec revoke_client_token(Client :: gr_endpoint:client(),
+-spec revoke_client_token(Client :: oz_endpoint:client(),
     AccessId :: binary()) -> ok | {error, Reason :: term()}.
 revoke_client_token(Client, AccessId) ->
     URN = "/openid/client/tokens/" ++ binary_to_list(AccessId),
     revoke_token(Client, URN).
 
 %%--------------------------------------------------------------------
-%% @doc Modifies public details about gr_endpoint:client()'s token.
-%% Parameters may contain: token's "gr_endpoint:client()Name".
+%% @doc Modifies public details about oz_endpoint:client()'s token.
+%% Parameters may contain: token's "oz_endpoint:client()Name".
 %% @end
 %%--------------------------------------------------------------------
--spec modify_client_token_details(Client :: gr_endpoint:client(),
-    AccessId :: binary(), Parameters :: gr_endpoint:params()) ->
+-spec modify_client_token_details(Client :: oz_endpoint:client(),
+    AccessId :: binary(), Parameters :: oz_endpoint:params()) ->
     ok | {error, Reason :: term()}.
 modify_client_token_details(Client, AccessId, Parameters) ->
     URN = "/openid/client/tokens/" ++ binary_to_list(AccessId),
@@ -62,7 +62,7 @@ modify_client_token_details(Client, AccessId, Parameters) ->
 %% @doc Returns list of providers' token details.
 %% @end
 %%--------------------------------------------------------------------
--spec get_provider_tokens(Client :: gr_endpoint:client()) ->
+-spec get_provider_tokens(Client :: oz_endpoint:client()) ->
     {ok, Tokens :: [#token_details{}]} | {error, Reason :: term()}.
 get_provider_tokens(Client) ->
     URN = "/openid/provider/tokens",
@@ -72,7 +72,7 @@ get_provider_tokens(Client) ->
 %% @doc Revokes provider's token validity.
 %% @end
 %%--------------------------------------------------------------------
--spec revoke_provider_token(Client :: gr_endpoint:client(),
+-spec revoke_provider_token(Client :: oz_endpoint:client(),
     AccessId :: binary()) -> ok | {error, Reason :: term()}.
 revoke_provider_token(Client, AccessId) ->
     URN = "/openid/provider/tokens/" ++ binary_to_list(AccessId),
@@ -80,47 +80,47 @@ revoke_provider_token(Client, AccessId) ->
 
 %%--------------------------------------------------------------------
 %% @doc Modifies public details about provider's token. 
-%% Parameters may contain: token's "gr_endpoint:client()Name".
+%% Parameters may contain: token's "oz_endpoint:client()Name".
 %% @end
 %%--------------------------------------------------------------------
--spec modify_provider_token_details(Client :: gr_endpoint:client(),
-    AccessId :: binary(), Parameters :: gr_endpoint:params()) ->
+-spec modify_provider_token_details(Client :: oz_endpoint:client(),
+    AccessId :: binary(), Parameters :: oz_endpoint:params()) ->
     ok | {error, Reason :: term()}.
 modify_provider_token_details(Client, AccessId, Parameters) ->
     URN = "/openid/provider/tokens/" ++ binary_to_list(AccessId),
     modify_token_details(Client, URN, Parameters).
 
 %%--------------------------------------------------------------------
-%% @doc Returns gr_endpoint:client() authorization code.
+%% @doc Returns oz_endpoint:client() authorization code.
 %% @end
 %%--------------------------------------------------------------------
--spec get_client_authorization_code(Client :: gr_endpoint:client()) ->
+-spec get_client_authorization_code(Client :: oz_endpoint:client()) ->
     {ok, AuthorizationCode :: binary()} | {error, Reason :: term()}.
 get_client_authorization_code(Client) ->
     ?run(fun() ->
         URN = "/openid/client/authorization_code",
         {ok, 200, _ResponseHeaders, ResponseBody} =
-            gr_endpoint:auth_request(Client, URN, get),
+            oz_endpoint:auth_request(Client, URN, get),
         Proplist = json_utils:decode(ResponseBody),
         AuthZCode = proplists:get_value(<<"authorizationCode">>, Proplist),
         {ok, AuthZCode}
     end).
 
 %%--------------------------------------------------------------------
-%% @doc Verifies gr_endpoint:client() identity in Global Registry.
-%% Parameters should contain: "userId" of gr_endpoint:client()
-%% to be verified and associated with gr_endpoint:client() "secret" token.
+%% @doc Verifies oz_endpoint:client() identity in OZ.
+%% Parameters should contain: "userId" of oz_endpoint:client()
+%% to be verified and associated with oz_endpoint:client() "secret" token.
 %% @end
 %%--------------------------------------------------------------------
--spec verify_client(Client :: gr_endpoint:client(),
-    Parameters :: gr_endpoint:params()) ->
+-spec verify_client(Client :: oz_endpoint:client(),
+    Parameters :: oz_endpoint:params()) ->
     {ok, VerifyStatus :: boolean()} | {error, Reason :: term()}.
 verify_client(Client, Parameters) ->
     ?run(fun() ->
         URN = "/openid/client/verify",
         Body = json_utils:encode(Parameters),
         {ok, 200, _ResponseHeaders, ResponseBody} =
-            gr_endpoint:auth_request(Client, URN, post, Body),
+            oz_endpoint:auth_request(Client, URN, post, Body),
         Proplist = json_utils:decode(ResponseBody),
         VerifyStatus = proplists:get_value(<<"verified">>, Proplist),
         {ok, VerifyStatus}
@@ -133,8 +133,8 @@ verify_client(Client, Parameters) ->
 %% (if grant_type=refresh_token).
 %% @end
 %%--------------------------------------------------------------------
--spec get_token_response(Client :: gr_endpoint:client(),
-    Parameters :: gr_endpoint:params()) ->
+-spec get_token_response(Client :: oz_endpoint:client(),
+    Parameters :: oz_endpoint:params()) ->
     {ok, Tokens :: #token_response{}} | {error, Reason :: term()}.
 get_token_response(Client, Parameters) ->
     ?run(fun() ->
@@ -143,10 +143,10 @@ get_token_response(Client, Parameters) ->
             case Client of
                 client ->
                     URN = "/openid/client/tokens",
-                    gr_endpoint:noauth_request(Client, URN, post, Body);
+                    oz_endpoint:noauth_request(Client, URN, post, Body);
                 _ ->
                     URN = "/openid/provider/tokens",
-                    gr_endpoint:auth_request(Client, URN, post, Body)
+                    oz_endpoint:auth_request(Client, URN, post, Body)
             end,
         Proplist = json_utils:decode(ResponseBody),
         IdToken = proplists:get_value(<<"id_token">>, Proplist),
@@ -188,15 +188,15 @@ get_token_response(Client, Parameters) ->
 %%%===================================================================
 
 %%--------------------------------------------------------------------
-%% @doc Returns list of token details for gr_endpoint:client() or provider.
+%% @doc Returns list of token details for oz_endpoint:client() or provider.
 %% @end
 %%--------------------------------------------------------------------
--spec get_tokens(Client :: gr_endpoint:client(), gr_endpoint:urn()) ->
+-spec get_tokens(Client :: oz_endpoint:client(), oz_endpoint:urn()) ->
     {ok, Tokens :: [#token_details{}]} | {error, Reason :: term()}.
 get_tokens(Client, URN) ->
     ?run(fun() ->
         {ok, 200, _ResponseHeaders, ResponseBody} =
-            gr_endpoint:auth_request(Client, URN, get),
+            oz_endpoint:auth_request(Client, URN, get),
         Proplist = json_utils:decode(ResponseBody),
         TokenDetails = proplists:get_value(<<"tokenInfo">>, Proplist),
         Tokens = lists:map(fun(Token) ->
@@ -209,29 +209,29 @@ get_tokens(Client, URN) ->
     end).
 
 %%--------------------------------------------------------------------
-%% @doc Revokes token validity for gr_endpoint:client() or provider.
+%% @doc Revokes token validity for oz_endpoint:client() or provider.
 %% @end
 %%--------------------------------------------------------------------
--spec revoke_token(Client :: gr_endpoint:client(), gr_endpoint:urn()) ->
+-spec revoke_token(Client :: oz_endpoint:client(), oz_endpoint:urn()) ->
     ok | {error, Reason :: term()}.
 revoke_token(Client, URN) ->
     ?run(fun() ->
         {ok, 202, _ResponseHeaders, _ResponseBody} =
-            gr_endpoint:auth_request(Client, URN, delete),
+            oz_endpoint:auth_request(Client, URN, delete),
         ok
     end).
 
 %%--------------------------------------------------------------------
 %% @doc Modifies public details about token. Parameters may contain:
-%% token's "gr_endpoint:client()Name".
+%% token's "oz_endpoint:client()Name".
 %% @end
 %%--------------------------------------------------------------------
--spec modify_token_details(Client :: gr_endpoint:client(), gr_endpoint:urn(),
-    Parameters :: gr_endpoint:params()) -> ok | {error, Reason :: term()}.
+-spec modify_token_details(Client :: oz_endpoint:client(), oz_endpoint:urn(),
+    Parameters :: oz_endpoint:params()) -> ok | {error, Reason :: term()}.
 modify_token_details(Client, URN, Parameters) ->
     ?run(fun() ->
         Body = json_utils:encode(Parameters),
         {ok, 204, _ResponseHeaders, _ResponseBody} =
-            gr_endpoint:auth_request(Client, URN, patch, Body),
+            oz_endpoint:auth_request(Client, URN, patch, Body),
         ok
     end).
