@@ -88,9 +88,13 @@ prepare_test_environment(Config, DescriptionFile, TestModule, LoadModules, Apps)
         % Save start log to file
         utils:cmd(["echo", binary_to_list(<<"'", StartLog/binary, "'">>), ">> prepare_test_environment.log"]),
 
-        case json_parser:parse_json_binary_to_atom_proplist(StartLog) of
-            [] -> error(env_up_failed);
-            EnvDesc  ->
+        case StartLog of
+            <<"">> ->
+                % if env_up.py failed, output will be empty,
+                % because stderr is redirected to prepare_test_environment.log
+                error(env_up_failed);
+            _ ->
+                EnvDesc = json_parser:parse_json_binary_to_atom_proplist(StartLog),
                 try
                     Dns = ?config(dns, EnvDesc),
                     AllNodesWithCookies = lists:flatmap(
@@ -123,6 +127,7 @@ prepare_test_environment(Config, DescriptionFile, TestModule, LoadModules, Apps)
                         clean_environment(EnvDesc),
                         {fail, {init_failed, E11, E12}}
                 end
+
         end
     catch
         E21:E22 ->
