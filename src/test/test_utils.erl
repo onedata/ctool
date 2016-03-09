@@ -52,7 +52,7 @@ enable_datastore_models([H | _] = Nodes, Models) ->
 
     lists:foreach(
         fun(Node) ->
-            ok = rpc:call(Node, gen_server, call, [node_manager, {apply, datastore, initialize_state, [H]}], timer:seconds(5))
+            ok = rpc:call(Node, gen_server, call, [node_manager, {apply, datastore, initialize_state, [H]}], timer:seconds(30))
         end, Nodes).
 
 
