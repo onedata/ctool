@@ -5,15 +5,15 @@
 %%% cited in 'LICENSE.txt'.
 %%% @end
 %%%-------------------------------------------------------------------
-%%% @doc Global Registry definition of group record.
+%%% @doc OZ definition of group record.
 %%% @end
 %%%-------------------------------------------------------------------
 
--ifndef(GR_GROUPS_HRL).
--define(GR_GROUPS_HRL, 1).
+-ifndef(OZ_GROUPS_HRL).
+-define(OZ_GROUPS_HRL, 1).
 
 %% @doc group_details record contains following fields:
-%% * id   - unique group ID assigned by Global Registry
+%% * id   - unique group ID assigned by OZ
 %% * name - group name
 %% @end
 -record(group_details, {

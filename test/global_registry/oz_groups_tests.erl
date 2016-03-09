@@ -5,25 +5,25 @@
 %%% cited in 'LICENSE.txt'.
 %%% @end
 %%%-------------------------------------------------------------------
-%%% @doc This module tests the functionality of gr_groups module.
+%%% @doc This module tests the functionality of oz_groups module.
 %%% It contains unit tests that base on eunit.
 %%% @end
 %%%-------------------------------------------------------------------
 
--module(gr_groups_tests).
+-module(oz_groups_tests).
 
 -ifdef(TEST).
 
--include("global_registry/gr_users.hrl").
--include("global_registry/gr_groups.hrl").
--include("global_registry/gr_spaces.hrl").
+-include("oz/oz_users.hrl").
+-include("oz/oz_groups.hrl").
+-include("oz/oz_spaces.hrl").
 -include_lib("eunit/include/eunit.hrl").
 
 %%%===================================================================
 %%% Tests description
 %%%===================================================================
 
-gr_groups_test_() ->
+oz_groups_test_() ->
     {foreach,
         fun setup/0,
         fun teardown/1,
@@ -52,8 +52,8 @@ gr_groups_test_() ->
 %%%===================================================================
 
 setup() ->
-    meck:new(gr_endpoint),
-    meck:expect(gr_endpoint, auth_request, fun
+    meck:new(oz_endpoint),
+    meck:expect(oz_endpoint, auth_request, fun
         (client, "/groups/groupId", get) ->
             {ok, 200, response_headers, response_body};
         (client, "/groups/groupId", delete) ->
@@ -77,7 +77,7 @@ setup() ->
         (client, "/groups/groupId/users/userId/privileges", get) ->
             {ok, 200, response_headers, response_body}
     end),
-    meck:expect(gr_endpoint, auth_request, fun
+    meck:expect(oz_endpoint, auth_request, fun
         (client, "/groups", post, <<"body">>) ->
             {ok, 201, [{<<"location">>, <<"/groups/groupId">>}], response_body};
         (client, "/groups/groupId", patch, <<"body">>) ->
@@ -92,8 +92,8 @@ setup() ->
 
 
 teardown(_) ->
-    ?assert(meck:validate(gr_endpoint)),
-    ok = meck:unload(gr_endpoint).
+    ?assert(meck:validate(oz_endpoint)),
+    ok = meck:unload(oz_endpoint).
 
 %%%===================================================================
 %%% Tests functions
@@ -103,7 +103,7 @@ should_create() ->
     meck:new(json_utils),
     meck:expect(json_utils, encode, fun(parameters) -> <<"body">> end),
 
-    Answer = gr_groups:create(client, parameters),
+    Answer = oz_groups:create(client, parameters),
     ?assertEqual({ok, <<"groupId">>}, Answer),
 
     ?assert(meck:validate(json_utils)),
@@ -111,7 +111,7 @@ should_create() ->
 
 
 should_remove() ->
-    Answer = gr_groups:remove(client, <<"groupId">>),
+    Answer = oz_groups:remove(client, <<"groupId">>),
     ?assertEqual(ok, Answer).
 
 
@@ -121,7 +121,7 @@ should_get_details() ->
         [{<<"groupId">>, <<"groupId">>}, {<<"name">>, <<"name">>}]
     end),
 
-    Answer = gr_groups:get_details(client, <<"groupId">>),
+    Answer = oz_groups:get_details(client, <<"groupId">>),
     ?assertEqual({ok, #group_details{id = <<"groupId">>,
         name = <<"name">>}}, Answer),
 
@@ -133,7 +133,7 @@ should_modify_details() ->
     meck:new(json_utils),
     meck:expect(json_utils, encode, fun(parameters) -> <<"body">> end),
 
-    Answer = gr_groups:modify_details(client, <<"groupId">>, parameters),
+    Answer = oz_groups:modify_details(client, <<"groupId">>, parameters),
     ?assertEqual(ok, Answer),
 
     ?assert(meck:validate(json_utils)),
@@ -146,7 +146,7 @@ should_get_create_space_token() ->
         [{<<"token">>, <<"token">>}]
     end),
 
-    Answer = gr_groups:get_create_space_token(client, <<"groupId">>),
+    Answer = oz_groups:get_create_space_token(client, <<"groupId">>),
     ?assertEqual({ok, <<"token">>}, Answer),
 
     ?assert(meck:validate(json_utils)),
@@ -159,7 +159,7 @@ should_get_invite_user_token() ->
         [{<<"token">>, <<"token">>}]
     end),
 
-    Answer = gr_groups:get_invite_user_token(client, <<"groupId">>),
+    Answer = oz_groups:get_invite_user_token(client, <<"groupId">>),
     ?assertEqual({ok, <<"token">>}, Answer),
 
     ?assert(meck:validate(json_utils)),
@@ -167,7 +167,7 @@ should_get_invite_user_token() ->
 
 
 should_remove_user() ->
-    Answer = gr_groups:remove_user(client, <<"groupId">>, <<"userId">>),
+    Answer = oz_groups:remove_user(client, <<"groupId">>, <<"userId">>),
     ?assertEqual(ok, Answer).
 
 
@@ -177,7 +177,7 @@ should_get_users() ->
         [{<<"users">>, <<"users">>}]
     end),
 
-    Answer = gr_groups:get_users(client, <<"groupId">>),
+    Answer = oz_groups:get_users(client, <<"groupId">>),
     ?assertEqual({ok, <<"users">>}, Answer),
 
     ?assert(meck:validate(json_utils)),
@@ -190,7 +190,7 @@ should_get_user_details() ->
         [{<<"userId">>, <<"userId">>}, {<<"name">>, <<"name">>}]
     end),
 
-    Answer = gr_groups:get_user_details(client, <<"groupId">>, <<"userId">>),
+    Answer = oz_groups:get_user_details(client, <<"groupId">>, <<"userId">>),
     ?assertEqual({ok, #user_details{id = <<"userId">>,
         name = <<"name">>}}, Answer),
 
@@ -204,7 +204,7 @@ should_get_user_privileges() ->
         [{<<"privileges">>, <<"privileges">>}]
     end),
 
-    Answer = gr_groups:get_user_privileges(client, <<"groupId">>, <<"userId">>),
+    Answer = oz_groups:get_user_privileges(client, <<"groupId">>, <<"userId">>),
     ?assertEqual({ok, <<"privileges">>}, Answer),
 
     ?assert(meck:validate(json_utils)),
@@ -215,7 +215,7 @@ should_set_user_privileges() ->
     meck:new(json_utils),
     meck:expect(json_utils, encode, fun(parameters) -> <<"body">> end),
 
-    Answer = gr_groups:set_user_privileges(client,
+    Answer = oz_groups:set_user_privileges(client,
         <<"groupId">>, <<"userId">>, parameters),
     ?assertEqual(ok, Answer),
 
@@ -227,7 +227,7 @@ should_create_space() ->
     meck:new(json_utils),
     meck:expect(json_utils, encode, fun(parameters) -> <<"body">> end),
 
-    Answer = gr_groups:create_space(client, <<"groupId">>, parameters),
+    Answer = oz_groups:create_space(client, <<"groupId">>, parameters),
     ?assertEqual({ok, <<"spaceId">>}, Answer),
 
     ?assert(meck:validate(json_utils)),
@@ -238,7 +238,7 @@ should_join_space() ->
     meck:new(json_utils),
     meck:expect(json_utils, encode, fun(parameters) -> <<"body">> end),
 
-    Answer = gr_groups:join_space(client, <<"groupId">>, parameters),
+    Answer = oz_groups:join_space(client, <<"groupId">>, parameters),
     ?assertEqual({ok, <<"spaceId">>}, Answer),
 
     ?assert(meck:validate(json_utils)),
@@ -246,7 +246,7 @@ should_join_space() ->
 
 
 should_leave_space() ->
-    Answer = gr_groups:leave_space(client, <<"groupId">>, <<"spaceId">>),
+    Answer = oz_groups:leave_space(client, <<"groupId">>, <<"spaceId">>),
     ?assertEqual(ok, Answer).
 
 
@@ -256,7 +256,7 @@ should_get_spaces() ->
         [{<<"spaces">>, <<"spaces">>}]
     end),
 
-    Answer = gr_groups:get_spaces(client, <<"groupId">>),
+    Answer = oz_groups:get_spaces(client, <<"groupId">>),
     ?assertEqual({ok, <<"spaces">>}, Answer),
 
     ?assert(meck:validate(json_utils)),
@@ -273,7 +273,7 @@ should_get_space_details() ->
         ]
     end),
 
-    Answer = gr_groups:get_space_details(client, <<"groupId">>, <<"spaceId">>),
+    Answer = oz_groups:get_space_details(client, <<"groupId">>, <<"spaceId">>),
     ?assertEqual({ok, #space_details{id = <<"spaceId">>, name = <<"name">>,
         size = [{<<"providerId">>, 123}]}}, Answer),
 

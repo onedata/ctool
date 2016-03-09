@@ -5,24 +5,24 @@
 %%% cited in 'LICENSE.txt'.
 %%% @end
 %%%-------------------------------------------------------------------
-%%% @doc This module tests the functionality of gr_providers module.
+%%% @doc This module tests the functionality of oz_providers module.
 %%% It contains unit tests that base on eunit.
 %%% @end
 %%%-------------------------------------------------------------------
 
--module(gr_providers_tests).
+-module(oz_providers_tests).
 
 -ifdef(TEST).
 
--include("global_registry/gr_spaces.hrl").
--include("global_registry/gr_providers.hrl").
+-include("oz/oz_spaces.hrl").
+-include("oz/oz_providers.hrl").
 -include_lib("eunit/include/eunit.hrl").
 
 %%%===================================================================
 %%% Tests description
 %%%===================================================================
 
-gr_providers_test_() ->
+oz_providers_test_() ->
     {foreach,
         fun setup/0,
         fun teardown/1,
@@ -49,8 +49,8 @@ gr_providers_test_() ->
 %%%===================================================================
 
 setup() ->
-    meck:new(gr_endpoint),
-    meck:expect(gr_endpoint, auth_request, fun
+    meck:new(oz_endpoint),
+    meck:expect(oz_endpoint, auth_request, fun
         (client, "/provider", get) ->
             {ok, 200, response_headers, response_body};
         (client, "/provider", delete) ->
@@ -64,7 +64,7 @@ setup() ->
         (client, "/provider/spaces/spaceId", delete) ->
             {ok, 202, response_headers, response_body}
     end),
-    meck:expect(gr_endpoint, auth_request, fun
+    meck:expect(oz_endpoint, auth_request, fun
         (client, "/provider", patch, <<"body">>) ->
             {ok, 204, response_headers, response_body};
         (client, "/provider/spaces", post, <<"body">>) ->
@@ -73,7 +73,7 @@ setup() ->
             {ok, 201, [{<<"location">>, <<"/provider/spaces/spaceId">>}],
                 response_body}
     end),
-    meck:expect(gr_endpoint, noauth_request, fun
+    meck:expect(oz_endpoint, noauth_request, fun
         (client, "/provider", post, <<"body">>) ->
             {ok, 200, response_headers, response_body};
         (client, "/provider/test/check_my_ports", post, <<"body">>) ->
@@ -84,8 +84,8 @@ setup() ->
 
 
 teardown(_) ->
-    ?assert(meck:validate(gr_endpoint)),
-    ok = meck:unload(gr_endpoint).
+    ?assert(meck:validate(oz_endpoint)),
+    ok = meck:unload(oz_endpoint).
 
 %%%===================================================================
 %%% Tests functions
@@ -102,7 +102,7 @@ should_register() ->
             ]
         end),
 
-    Answer = gr_providers:register(client, parameters),
+    Answer = oz_providers:register(client, parameters),
     ?assertEqual({ok, <<"providerId">>, <<"certificate">>}, Answer),
 
     ?assert(meck:validate(json_utils)),
@@ -110,7 +110,7 @@ should_register() ->
 
 
 should_unregister() ->
-    Answer = gr_providers:unregister(client),
+    Answer = oz_providers:unregister(client),
     ?assertEqual(ok, Answer).
 
 
@@ -126,7 +126,7 @@ should_get_details() ->
             ]
         end),
 
-    Answer = gr_providers:get_details(client),
+    Answer = oz_providers:get_details(client),
     ?assertEqual({ok, #provider_details{
         id = <<"providerId">>,
         urls = <<"urls">>,
@@ -150,7 +150,7 @@ should_get_details_for_given_provider() ->
             ]
         end),
 
-    Answer = gr_providers:get_details(client, <<"providerId">>),
+    Answer = oz_providers:get_details(client, <<"providerId">>),
     ?assertEqual({ok, #provider_details{
         id = <<"providerId">>,
         name = <<"name">>,
@@ -166,7 +166,7 @@ should_modify_details() ->
     meck:new(json_utils),
     meck:expect(json_utils, encode, fun(parameters) -> <<"body">> end),
 
-    Answer = gr_providers:modify_details(client, parameters),
+    Answer = oz_providers:modify_details(client, parameters),
     ?assertEqual(ok, Answer),
 
     ?assert(meck:validate(json_utils)),
@@ -177,7 +177,7 @@ should_check_ip_address() ->
     meck:new(json_utils),
     meck:expect(json_utils, decode, fun(response_body) -> <<"ipAddress">> end),
 
-    Answer = gr_providers:check_ip_address(client),
+    Answer = oz_providers:check_ip_address(client),
     ?assertEqual({ok, <<"ipAddress">>}, Answer),
 
     ?assert(meck:validate(json_utils)),
@@ -194,7 +194,7 @@ should_check_gui_port() ->
         [{<<"https://ipAddress:443/connection_check">>, <<"ok">>}]
     end),
 
-    Answer = gr_providers:check_port(client, <<"ipAddress">>, 443, <<"gui">>),
+    Answer = oz_providers:check_port(client, <<"ipAddress">>, 443, <<"gui">>),
     ?assertEqual(ok, Answer),
 
     ?assert(meck:validate(json_utils)),
@@ -211,7 +211,7 @@ should_check_rest_port() ->
         [{<<"https://ipAddress:8443/rest/latest/connection_check">>, <<"ok">>}]
     end),
 
-    Answer = gr_providers:check_port(client, <<"ipAddress">>, 8443, <<"rest">>),
+    Answer = oz_providers:check_port(client, <<"ipAddress">>, 8443, <<"rest">>),
     ?assertEqual(ok, Answer),
 
     ?assert(meck:validate(json_utils)),
@@ -222,7 +222,7 @@ should_create_space() ->
     meck:new(json_utils),
     meck:expect(json_utils, encode, fun(parameters) -> <<"body">> end),
 
-    Answer = gr_providers:create_space(client, parameters),
+    Answer = oz_providers:create_space(client, parameters),
     ?assertEqual({ok, <<"spaceId">>}, Answer),
 
     ?assert(meck:validate(json_utils)),
@@ -233,7 +233,7 @@ should_support_space() ->
     meck:new(json_utils),
     meck:expect(json_utils, encode, fun(parameters) -> <<"body">> end),
 
-    Answer = gr_providers:support_space(client, parameters),
+    Answer = oz_providers:support_space(client, parameters),
     ?assertEqual({ok, <<"spaceId">>}, Answer),
 
     ?assert(meck:validate(json_utils)),
@@ -241,7 +241,7 @@ should_support_space() ->
 
 
 should_revoke_space_support() ->
-    Answer = gr_providers:revoke_space_support(client, <<"spaceId">>),
+    Answer = oz_providers:revoke_space_support(client, <<"spaceId">>),
     ?assertEqual(ok, Answer).
 
 
@@ -251,7 +251,7 @@ should_get_spaces() ->
         [{<<"spaces">>, <<"spaces">>}]
     end),
 
-    Answer = gr_providers:get_spaces(client),
+    Answer = oz_providers:get_spaces(client),
     ?assertEqual({ok, <<"spaces">>}, Answer),
 
     ?assert(meck:validate(json_utils)),
@@ -268,7 +268,7 @@ should_get_space_details() ->
         ]
     end),
 
-    Answer = gr_providers:get_space_details(client, <<"spaceId">>),
+    Answer = oz_providers:get_space_details(client, <<"spaceId">>),
     ?assertEqual({ok, #space_details{id = <<"spaceId">>,
         name = <<"name">>, size = [{<<"providerId">>, 123}]}}, Answer),
 
