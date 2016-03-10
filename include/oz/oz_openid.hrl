@@ -5,16 +5,16 @@
 %%% cited in 'LICENSE.txt'.
 %%% @end
 %%%-------------------------------------------------------------------
-%%% @doc Global Registry definition of OpenID tokens.
+%%% @doc OZ definition of OpenID tokens.
 %%% @end
 %%%-------------------------------------------------------------------
 
--ifndef(GR_OPENID_HRL).
--define(GR_OPENID_HRL, 1).
+-ifndef(OZ_OPENID_HRL).
+-define(OZ_OPENID_HRL, 1).
 
 %% @doc token_details record contains following fields:
-%% * access_id   - unique access ID authorized by gr_endpoint:client()
-%% * gr_endpoint:client()_name - gr_endpoint:client() name associated with token
+%% * access_id   - unique access ID authorized by oz_endpoint:client()
+%% * oz_endpoint:client()_name - oz_endpoint:client() name associated with token
 %% @end
 -record(token_details, {
     access_id :: binary(),

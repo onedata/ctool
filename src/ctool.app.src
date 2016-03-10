@@ -28,7 +28,7 @@
     {env, [
         % The env below decides if the GR certificate should be verified
         % during REST calls
-        {verify_gr_cert, true},
+        {verify_oz_cert, true},
 
         % ==================================
 

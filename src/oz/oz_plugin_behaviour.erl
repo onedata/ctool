@@ -5,24 +5,24 @@
 %%% cited in 'LICENSE.txt'.
 %%% @end
 %%%-------------------------------------------------------------------
-%%% @doc This behaviour specifies an API for Global Registry plugin -
-%%% a module that provides necessary data to connect to Global Registry.
-%%% Every project using Global Registry REST API gr_endpoint:client() must
+%%% @doc This behaviour specifies an API for OZ plugin -
+%%% a module that provides necessary data to connect to OZ.
+%%% Every project using OZ REST API oz_endpoint:client() must
 %%% implement this behaviour and the implementing module
-%%% must be called gr_plugin.
+%%% must be called oz_plugin.
 %%% @end
 %%%-------------------------------------------------------------------
 
--module(gr_plugin_behaviour).
+-module(oz_plugin_behaviour).
 
 %%%===================================================================
 %%% Callbacks descriptions
 %%%===================================================================
 
 %%--------------------------------------------------------------------
-%% @doc Should return a Global Registry URL.
+%% @doc Should return a OZ URL.
 %%--------------------------------------------------------------------
--callback get_gr_url() -> string().
+-callback get_oz_url() -> string().
 
 %%--------------------------------------------------------------------
 %% @doc Should return a path to file containing provider's private key.
@@ -36,13 +36,13 @@
 
 %%--------------------------------------------------------------------
 %% @doc Should return a path to file containing provider's public
-%% certificate signed by Global Registry.
+%% certificate signed by OZ.
 %% @end
 %%--------------------------------------------------------------------
 -callback get_cert_path() -> file:name_all().
 
 %%--------------------------------------------------------------------
-%% @doc Should return a path to file containing Global Registry
+%% @doc Should return a path to file containing OZ
 %% CA certificate.
 %% @end
 %%--------------------------------------------------------------------

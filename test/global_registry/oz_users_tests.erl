@@ -5,25 +5,25 @@
 %%% cited in 'LICENSE.txt'.
 %%% @end
 %%%-------------------------------------------------------------------
-%%% @doc This module tests the functionality of gr_groups module.
+%%% @doc This module tests the functionality of oz_groups module.
 %%% It contains unit tests that base on eunit.
 %%% @end
 %%%-------------------------------------------------------------------
 
--module(gr_users_tests).
+-module(oz_users_tests).
 
 -ifdef(TEST).
 
--include("global_registry/gr_users.hrl").
--include("global_registry/gr_groups.hrl").
--include("global_registry/gr_spaces.hrl").
+-include("oz/oz_users.hrl").
+-include("oz/oz_groups.hrl").
+-include("oz/oz_spaces.hrl").
 -include_lib("eunit/include/eunit.hrl").
 
 %%%===================================================================
 %%% Tests description
 %%%===================================================================
 
-gr_users_test_() ->
+oz_users_test_() ->
     {foreach,
         fun setup/0,
         fun teardown/1,
@@ -53,8 +53,8 @@ gr_users_test_() ->
 %%%===================================================================
 
 setup() ->
-    meck:new(gr_endpoint),
-    meck:expect(gr_endpoint, auth_request, fun
+    meck:new(oz_endpoint),
+    meck:expect(oz_endpoint, auth_request, fun
         (client, "/user", get) ->
             {ok, 200, response_headers, response_body};
         (client, "/user/merge/token", get) ->
@@ -76,7 +76,7 @@ setup() ->
         (client, "/user/groups/groupId", delete) ->
             {ok, 202, response_headers, response_body}
     end),
-    meck:expect(gr_endpoint, auth_request, fun
+    meck:expect(oz_endpoint, auth_request, fun
         (client, "/user", patch, <<"body">>) ->
             {ok, 204, response_headers, response_body};
         (client, "/user/merge", post, <<"body">>) ->
@@ -98,8 +98,8 @@ setup() ->
 
 
 teardown(_) ->
-    ?assert(meck:validate(gr_endpoint)),
-    ok = meck:unload(gr_endpoint).
+    ?assert(meck:validate(oz_endpoint)),
+    ok = meck:unload(oz_endpoint).
 
 %%%===================================================================
 %%% Tests functions
@@ -111,7 +111,7 @@ should_get_details() ->
             [{<<"userId">>, <<"userId">>}, {<<"name">>, <<"name">>}]
     end),
 
-    Answer = gr_users:get_details(client),
+    Answer = oz_users:get_details(client),
     ?assertEqual({ok, #user_details{id = <<"userId">>,
         name = <<"name">>}}, Answer),
 
@@ -123,7 +123,7 @@ should_modify_details() ->
     meck:new(json_utils),
     meck:expect(json_utils, encode, fun(parameters) -> <<"body">> end),
 
-    Answer = gr_users:modify_details(client, parameters),
+    Answer = oz_users:modify_details(client, parameters),
     ?assertEqual(ok, Answer),
 
     ?assert(meck:validate(json_utils)),
@@ -134,7 +134,7 @@ should_merge_account() ->
     meck:new(json_utils),
     meck:expect(json_utils, encode, fun(parameters) -> <<"body">> end),
 
-    Answer = gr_users:merge_account(client, parameters),
+    Answer = oz_users:merge_account(client, parameters),
     ?assertEqual(ok, Answer),
 
     ?assert(meck:validate(json_utils)),
@@ -147,7 +147,7 @@ should_get_create_space_token() ->
         [{<<"token">>, <<"token">>}]
     end),
 
-    Answer = gr_users:get_create_space_token(client),
+    Answer = oz_users:get_create_space_token(client),
     ?assertEqual({ok, <<"token">>}, Answer),
 
     ?assert(meck:validate(json_utils)),
@@ -160,7 +160,7 @@ should_get_merge_account_token() ->
         [{<<"token">>, <<"token">>}]
     end),
 
-    Answer = gr_users:get_merge_account_token(client),
+    Answer = oz_users:get_merge_account_token(client),
     ?assertEqual({ok, <<"token">>}, Answer),
 
     ?assert(meck:validate(json_utils)),
@@ -171,7 +171,7 @@ should_create_space() ->
     meck:new(json_utils),
     meck:expect(json_utils, encode, fun(parameters) -> <<"body">> end),
 
-    Answer = gr_users:create_space(client, parameters),
+    Answer = oz_users:create_space(client, parameters),
     ?assertEqual({ok, <<"spaceId">>}, Answer),
 
     ?assert(meck:validate(json_utils)),
@@ -182,7 +182,7 @@ should_join_space() ->
     meck:new(json_utils),
     meck:expect(json_utils, encode, fun(parameters) -> <<"body">> end),
 
-    Answer = gr_users:join_space(client, parameters),
+    Answer = oz_users:join_space(client, parameters),
     ?assertEqual({ok, <<"spaceId">>}, Answer),
 
     ?assert(meck:validate(json_utils)),
@@ -190,7 +190,7 @@ should_join_space() ->
 
 
 should_leave_space() ->
-    Answer = gr_users:leave_space(client, <<"spaceId">>),
+    Answer = oz_users:leave_space(client, <<"spaceId">>),
     ?assertEqual(ok, Answer).
 
 
@@ -202,7 +202,7 @@ should_get_spaces() ->
         ]
     end),
 
-    Answer = gr_users:get_spaces(client),
+    Answer = oz_users:get_spaces(client),
     ?assertEqual({ok, #user_spaces{
         ids = <<"spaces">>,
         default = <<"default">>}
@@ -222,7 +222,7 @@ should_get_space_details() ->
             ]
     end),
 
-    Answer = gr_users:get_space_details(client, <<"spaceId">>),
+    Answer = oz_users:get_space_details(client, <<"spaceId">>),
     ?assertEqual({ok, #space_details{id = <<"spaceId">>,
         name = <<"name">>, size = [{<<"providerId">>, 123}]}}, Answer),
 
@@ -234,7 +234,7 @@ should_get_default_space() ->
     meck:new(json_utils),
     meck:expect(json_utils, encode, fun(parameters) -> <<"body">> end),
 
-    Answer = gr_users:set_default_space(client, parameters),
+    Answer = oz_users:set_default_space(client, parameters),
     ?assertEqual(ok, Answer),
 
     ?assert(meck:validate(json_utils)),
@@ -247,7 +247,7 @@ should_set_default_space() ->
             [{<<"spaceId">>, <<"spaceId">>}]
     end),
 
-    Answer = gr_users:get_default_space(client),
+    Answer = oz_users:get_default_space(client),
     ?assertEqual({ok, <<"spaceId">>}, Answer),
 
     ?assert(meck:validate(json_utils)),
@@ -258,7 +258,7 @@ should_create_group() ->
     meck:new(json_utils),
     meck:expect(json_utils, encode, fun(parameters) -> <<"body">> end),
 
-    Answer = gr_users:create_group(client, parameters),
+    Answer = oz_users:create_group(client, parameters),
     ?assertEqual({ok, <<"groupId">>}, Answer),
 
     ?assert(meck:validate(json_utils)),
@@ -269,7 +269,7 @@ should_join_group() ->
     meck:new(json_utils),
     meck:expect(json_utils, encode, fun(parameters) -> <<"body">> end),
 
-    Answer = gr_users:join_group(client, parameters),
+    Answer = oz_users:join_group(client, parameters),
     ?assertEqual({ok, <<"groupId">>}, Answer),
 
     ?assert(meck:validate(json_utils)),
@@ -277,7 +277,7 @@ should_join_group() ->
 
 
 should_leave_group() ->
-    Answer = gr_users:leave_group(client, <<"groupId">>),
+    Answer = oz_users:leave_group(client, <<"groupId">>),
     ?assertEqual(ok, Answer).
 
 
@@ -287,7 +287,7 @@ should_get_groups() ->
         [{<<"groups">>, <<"groups">>}]
     end),
 
-    Answer = gr_users:get_groups(client),
+    Answer = oz_users:get_groups(client),
     ?assertEqual({ok, <<"groups">>}, Answer),
 
     ?assert(meck:validate(json_utils)),
@@ -300,7 +300,7 @@ should_get_group_details() ->
             [{<<"groupId">>, <<"groupId">>}, {<<"name">>, <<"name">>}]
     end),
 
-    Answer = gr_users:get_group_details(client, <<"groupId">>),
+    Answer = oz_users:get_group_details(client, <<"groupId">>),
     ?assertEqual({ok, #group_details{id = <<"groupId">>,
         name = <<"name">>}}, Answer),
 
