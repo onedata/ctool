@@ -19,6 +19,7 @@
 -export([mock_new/2, mock_new/3, mock_expect/4, mock_validate/2, mock_unload/1,
     mock_unload/2, mock_validate_and_unload/2, mock_num_calls/5]).
 -export([get_env/3, set_env/4]).
+-export([enable_datastore_models/2]).
 
 -type mock_opt() :: passthrough | non_strict | unstick | no_link.
 
@@ -27,6 +28,33 @@
 %%%===================================================================
 %%% API
 %%%===================================================================
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Enables given local models in datastore that runs on given nodes.
+%% All given nodes should be form one single provider.
+%% @end
+%%--------------------------------------------------------------------
+-spec enable_datastore_models(Nodes :: [node()], Models :: [model_behaviour:model_type()]) -> ok | no_return().
+enable_datastore_models([H | _] = Nodes, Models) ->
+    lists:foreach(
+        fun(Model) ->
+            {Module, Binary, Filename} = code:get_object_code(Model),
+            {_, []} = rpc:multicall(Nodes, code, load_binary, [Module, Filename, Binary])
+        end, Models),
+
+    catch mock_new(Nodes, [plugins]),
+    ok = mock_expect(Nodes, plugins, apply,
+        fun(datastore_config_plugin, models, []) ->
+            meck:passthrough([datastore_config_plugin, models, []]) ++ Models
+        end),
+
+    lists:foreach(
+        fun(Node) ->
+            ok = rpc:call(Node, gen_server, call, [node_manager, {apply, datastore, initialize_state, [H]}], timer:seconds(30))
+        end, Nodes).
+
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -166,6 +194,7 @@ get_env(Node, Application, Name) ->
     ok | {badrpc, Reason :: term()}.
 set_env(Node, Application, Name, Value) ->
     rpc:call(Node, application, set_env, [Application, Name, Value]).
+
 
 %%%===================================================================
 %%% Internal functions

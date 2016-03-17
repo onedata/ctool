@@ -4,6 +4,11 @@
 CHANGELOG
 ---------
 
+### 3.0.0-alpha2
+
+* VFS-1665 Update macaroons library.
+
+
 ### 2.0.2
 
 * VFS-1571 Treat rebar_git_plugin as normal source file.

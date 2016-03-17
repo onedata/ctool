@@ -27,7 +27,7 @@
     {op_worker, op_worker_nodes},
     {cluster_worker, cluster_worker_nodes},
     {cluster_manager, cluster_manager_nodes},
-    {globalregistry, gr_nodes}
+    {oz_worker, oz_worker_nodes}
 ]).
 
 %%%===================================================================
@@ -75,10 +75,10 @@ prepare_test_environment(Config, DescriptionFile, TestModule, LoadModules, Apps)
         utils:cmd(["echo", "'" ++ DescriptionFile ++ ":'", ">> prepare_test_environment_error.log"]),
 
         StartLogRaw = list_to_binary(utils:cmd([EnvUpScript,
-            %% Function is used durgin OP or GR tests so starts OP or GR - not both
+            %% Function is used durgin OP or OZ tests so starts OP or OZ - not both
             "--bin-cluster-worker", ProjectRoot,
             "--bin-worker", ProjectRoot,
-            "--bin-gr", ProjectRoot,
+            "--bin-oz", ProjectRoot,
             %% additionally AppMock can be started
             "--bin-appmock", AppmockRoot,
             "--bin-cm", CmRoot,
@@ -90,39 +90,46 @@ prepare_test_environment(Config, DescriptionFile, TestModule, LoadModules, Apps)
         % Save start log to file
         utils:cmd(["echo", binary_to_list(<<"'", StartLog/binary, "'">>), ">> prepare_test_environment.log"]),
 
-        EnvDesc = json_parser:parse_json_binary_to_atom_proplist(StartLog),
+        case StartLog of
+            <<"">> ->
+                % if env_up.py failed, output will be empty,
+                % because stderr is redirected to prepare_test_environment.log
+                error(env_up_failed);
+            _ ->
+                EnvDesc = json_parser:parse_json_binary_to_atom_proplist(StartLog),
+                try
+                    Dns = ?config(dns, EnvDesc),
+                    AllNodesWithCookies = lists:flatmap(
+                        fun({AppName, ConfigName}) ->
+                            Nodes = ?config(ConfigName, EnvDesc),
+                            get_cookies(Nodes, AppName, ?COOKIE_KEY, DescriptionFile)
+                        end, Apps
+                    ),
 
-        try
-            Dns = ?config(dns, EnvDesc),
-            AllNodesWithCookies = lists:flatmap(
-                fun({AppName, ConfigName}) ->
-                    Nodes = ?config(ConfigName, EnvDesc),
-                    get_cookies(Nodes, AppName, ?COOKIE_KEY, DescriptionFile)
-                end, Apps
-            ),
+                    set_cookies(AllNodesWithCookies),
+                    os:cmd("echo nameserver " ++ atom_to_list(Dns) ++ " > /etc/resolv.conf"),
 
-            set_cookies(AllNodesWithCookies),
-            os:cmd("echo nameserver " ++ atom_to_list(Dns) ++ " > /etc/resolv.conf"),
-            
-            AllNodes = [N || {N, _C} <- AllNodesWithCookies],
-            ping_nodes(AllNodes),
-            global:sync(),
-            load_modules(AllNodes, [TestModule, test_utils | LoadModules]),
+                    AllNodes = [N || {N, _C} <- AllNodesWithCookies],
+                    ping_nodes(AllNodes),
+                    global:sync(),
+                    load_modules(AllNodes, [TestModule, test_utils | LoadModules]),
 
-            lists:append([
-                ConfigWithPaths,
-                proplists:delete(dns, EnvDesc),
-                rebar_git_plugin:get_git_metadata()
-            ])
-        catch
-            E11:E12 ->
-                ct:print("Preparation of environment failed ~p:~p~n" ++
-                    "For details, check:~n" ++
-                    "    prepare_test_environment_error.log~n" ++
-                    "    prepare_test_environment.log~n" ++
-                    "Stacktrace: ~p", [E11, E12, erlang:get_stacktrace()]),
-                clean_environment(EnvDesc),
-                {fail, {init_failed, E11, E12}}
+                    lists:append([
+                        ConfigWithPaths,
+                        proplists:delete(dns, EnvDesc),
+                        rebar_git_plugin:get_git_metadata()
+                    ])
+                catch
+                    E11:E12 ->
+                        ct:print("Preparation of environment failed ~p:~p~n" ++
+                            "For details, check:~n" ++
+                            "    prepare_test_environment_error.log~n" ++
+                            "    prepare_test_environment.log~n" ++
+                            "Stacktrace: ~p", [E11, E12, erlang:get_stacktrace()]),
+                        clean_environment(EnvDesc),
+                        {fail, {init_failed, E11, E12}}
+                end
+
         end
     catch
         E21:E22 ->
@@ -147,7 +154,7 @@ clean_environment(Config) ->
 %% Afterwards, cleans environment by running 'cleanup.py' script.
 %% @end
 %%--------------------------------------------------------------------
--spec clean_environment(Config :: list(), Apps::[{AppName::atom(), ConfigName::atom()}]) -> ok.
+-spec clean_environment(Config :: list(), Apps :: [{AppName :: atom(), ConfigName :: atom()}]) -> ok.
 clean_environment(Config, Apps) ->
     StopStatus = try
         case cover:modules() of
@@ -159,8 +166,8 @@ clean_environment(Config, Apps) ->
 
                 stop_applications(Config, Apps),
 
-                AllNodes = lists:flatmap(fun({_, ConfigName}) -> 
-                    ?config(ConfigName, Config) 
+                AllNodes = lists:flatmap(fun({_, ConfigName}) ->
+                    ?config(ConfigName, Config)
                 end, Apps),
 
                 lists:foreach(
@@ -184,7 +191,7 @@ clean_environment(Config, Apps) ->
     catch
         E1:E2 ->
             ct:print("Stopping of applications failed failed ~p:~p~n" ++
-                "Stacktrace: ~p", [E1, E2, erlang:get_stacktrace()]),
+            "Stacktrace: ~p", [E1, E2, erlang:get_stacktrace()]),
             E2
     end,
 
@@ -216,11 +223,11 @@ maybe_start_cover() ->
             cover:start(),
 
             ExcludedModules = case application:get_env(covered_excluded_modules) of
-                                  {ok, Mods} when is_list(Dirs) ->
-                                      Mods;
-                                  _ ->
-                                      []
-                              end,
+                {ok, Mods} when is_list(Dirs) ->
+                    Mods;
+                _ ->
+                    []
+            end,
 
             case ExcludedModules of
                 [] ->
@@ -285,12 +292,14 @@ maybe_stop_cover() ->
 %% Stops all started applications
 %% @end
 %%--------------------------------------------------------------------
--spec stop_applications(Config :: list(), Apps::[{AppName::atom(), ConfigName::atom()}]) -> ok.
+-spec stop_applications(Config :: list(), Apps :: [{AppName :: atom(), ConfigName :: atom()}]) -> ok.
 stop_applications(Config, Apps) ->
     lists:foreach(
         fun({AppName, ConfigName}) ->
             Nodes = ?config(ConfigName, Config),
-            lists:foreach(fun(N) -> ok = rpc:call(N, application, stop, [AppName]) end, Nodes)
+            lists:foreach(fun(N) ->
+                ok = rpc:call(N, application, stop, [AppName])
+            end, Nodes)
         end, Apps
     ).
 
@@ -368,18 +377,19 @@ get_cookies([], _AppName, _CookieKey, _DescriptionFile) -> [];
 get_cookies(Nodes, AppName, CookieKey, DescriptionFile) ->
     lists:map(fun(Node) ->
         Key = case AppName of
-                  globalregistry ->
-                      get_json_key(Node, "globalregistry_domains", "globalregistry", CookieKey);
-                  cluster_manager ->
-                      [
-                          get_json_key(Node, "provider_domains", "cluster_manager", CookieKey),
-                          get_json_key(Node, "cluster_domains", "cluster_manager", CookieKey)
-                      ];
-                  op_worker ->
-                      get_json_key(Node, "provider_domains", "op_worker", CookieKey);
-                  cluster_worker ->
-                      get_json_key(Node, "cluster_domains", "cluster_worker", CookieKey)
-              end,
+            oz_worker ->
+                get_json_key(Node, "zone_domains", "oz_worker", CookieKey);
+            cluster_manager ->
+                [
+                    get_json_key(Node, "zone_domains", "cluster_manager", CookieKey),
+                    get_json_key(Node, "provider_domains", "cluster_manager", CookieKey),
+                    get_json_key(Node, "cluster_domains", "cluster_manager", CookieKey)
+                ];
+            op_worker ->
+                get_json_key(Node, "provider_domains", "op_worker", CookieKey);
+            cluster_worker ->
+                get_json_key(Node, "cluster_domains", "cluster_worker", CookieKey)
+        end,
         case AppName of
             cluster_manager ->
                 %% if AppName is cluster_manager, the Key is a list

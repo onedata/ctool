@@ -5,15 +5,15 @@
 %%% cited in 'LICENSE.txt'.
 %%% @end
 %%%-------------------------------------------------------------------
-%%% @doc Global Registry definition of provider record.
+%%% @doc OZ definition of provider record.
 %%% @end
 %%%-------------------------------------------------------------------
 
--ifndef(GR_PROVIDERS_HRL).
--define(GR_PROVIDERS_HRL, 1).
+-ifndef(OZ_PROVIDERS_HRL).
+-define(OZ_PROVIDERS_HRL, 1).
 
 %% provider_details record contains following fields:
-%% * id               - unique provider ID assigned by Global Registry
+%% * id               - unique provider ID assigned by OZ
 %% * urls             - URL addresses of all oneprovider nodes
 %% * redirectionPoint - URL address where oneprovider GUI is available
 -record(provider_details, {
