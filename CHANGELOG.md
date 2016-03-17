@@ -4,6 +4,15 @@
 CHANGELOG
 ---------
 
+### 3.0.0-alpha3
+
+* VFS-1630 Bump initialize timeout
+* VFS-1678 raise error if env_up output is an empty string
+* VFS-1630 Use node_manager to reinitialize datastore
+* VFS-1630 Add enable_datastore_models
+* VFS-1670 test framework update
+
+
 ### 3.0.0-alpha2
 
 * VFS-1665 Update macaroons library.
