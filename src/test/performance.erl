@@ -37,7 +37,7 @@
 -define(STRESS_NO_CLEARING_ENV_VARIABLE, "stress_no_clearing").
 -define(STRESS_TIME_ENV_VARIABLE, "stress_time").
 -define(STRESS_DEFAULT_TIME, timer:hours(3) div 1000).
--define(STRESS_ERRORS_TO_STOP, 100).
+-define(STRESS_ERRORS_TO_STOP, 20).
 -define(STRESS_ETS_NAME, stress_ets).
 -define(STRESS_TIMEOUT_EXTENSION_SECONDS, 600). % extension of ct timeout to let running tests end
 
@@ -178,41 +178,50 @@ stress_test(Config) ->
     ct:timetrap({seconds, Timeout + ?STRESS_TIMEOUT_EXTENSION_SECONDS}), % add 10 minutes to let running tests end
 
     AnsList = lists:foldl(fun(Case, Ans) ->
-        CaseAns = try
-                      NewConfig = try
-                                      apply(Suite, init_per_testcase, [Case, Config])
-                                  catch
-                                      error:undef ->
-                                          Config
-                                  end,
-                      case apply(Suite, Case, [NewConfig]) of
-                          {ok, TmpAns} ->
+        [{{history, Case}, {Rep, FailedReps, LastFails}}] = ets:lookup(?STRESS_ETS_NAME, {history, Case}),
+        case LastFails of
+            permanent_error ->
+                SkipMessage = str_utils:format("Case: ~p, skipped (too many fails)", [Case]),
+                [{error, list_to_binary(SkipMessage)} | Ans];
+            _ ->
+                CaseAns = try
+                              ExtendedConfig =
+                                  [{rep_num, Rep}, {failed_num, FailedReps}, {last_fails, LastFails}] ++ Config,
+                              NewConfig = try
+                                              apply(Suite, init_per_testcase, [Case, ExtendedConfig])
+                                          catch
+                                              error:undef ->
+                                                  ExtendedConfig
+                                          end,
+                              case apply(Suite, Case, [NewConfig]) of
+                                  {ok, TmpAns} ->
 %%                           TmpAns2 = lists:map(fun(Param) ->
 %%                               PName = Param#parameter.name,
 %%                               Param#parameter{name = concat_atoms(Case, PName)}
 %%                           end, TmpAns),
 %%                           [{ok, TmpAns2} | Ans];
-                              [{ok, TmpAns} | Ans];
-                          {error, E} ->
-                              Message = str_utils:format("Case: ~p, error: ~p", [Case, E]),
-                              [{error, Message} | Ans]
-                      end
-                  catch
-                      E1:E2 ->
-                          % only init_per_testcase can throw (case has catch inside)
-                          ct:print("Case: ~p, init_per_testcase error: ~p:~p", [Case, E1, E2]),
-                          Message2 = str_utils:format("Case: ~p, init_per_testcase error: ~p:~p", [Case, E1, E2]),
-                          [{error, Message2} | Ans]
-                  end,
-        try
-            apply(Suite, end_per_testcase, [Case, Config])
-        catch
-            error:undef ->
-                ok;
-            E1_2:E2_2 ->
-                ct:print("Case: ~p, end_per_testcase error: ~p:~p", [Case, E1_2, E2_2])
-        end,
-        CaseAns
+                                      [{ok, TmpAns} | Ans];
+                                  {error, E} ->
+                                      Message = str_utils:format("Case: ~p, error: ~p", [Case, E]),
+                                      [{error, list_to_binary(Message)} | Ans]
+                              end
+                          catch
+                              E1:E2 ->
+                                  % only init_per_testcase can throw (case has catch inside)
+                                  ct:print("Case: ~p, init_per_testcase error: ~p:~p", [Case, E1, E2]),
+                                  Message2 = str_utils:format("Case: ~p, init_per_testcase error: ~p:~p", [Case, E1, E2]),
+                                  [{error, list_to_binary(Message2)} | Ans]
+                          end,
+                try
+                    apply(Suite, end_per_testcase, [Case, Config])
+                catch
+                    error:undef ->
+                        ok;
+                    E1_2:E2_2 ->
+                        ct:print("Case: ~p, end_per_testcase error: ~p:~p", [Case, E1_2, E2_2])
+                end,
+                CaseAns
+        end
     end, [], Cases),
     lists:reverse(AnsList).
 
@@ -583,16 +592,20 @@ exec_test_repeats(SuiteName, CaseName, ConfigName, CaseConfig, Rep, Reps,
                        TestTime = timer:now_diff(Now, StartTime) div 1000000,
                        TimeLeft = TimeLimit - TestTime,
 
-                       ErrorsHistoryOK = lists:foldl(fun(FR, Acc) ->
+                       [{cases, Cases}] = ets:lookup(?STRESS_ETS_NAME, cases),
+                       ZippedFR = lists:zip(FailedReps, Cases),
+                       ErrorsHistoryOK = lists:foldl(fun({FR, Case}, Acc) ->
+                           CheckAns = check_error(Rep, FR),
+                           ets:insert(?STRESS_ETS_NAME, {{history, Case}, {Rep, maps:size(FR), CheckAns}}),
                            case Acc of
-                               error ->
-                                   error;
+                               permanent_error ->
+                                   CheckAns;
                                _ ->
-                                   check_error(Rep, FR)
+                                   Acc
                            end
-                       end, ok, FailedReps),
+                       end, permanent_error, ZippedFR),
 
-                       case (TimeLeft > 0) and (ErrorsHistoryOK =:= ok) of
+                       case (TimeLeft > 0) and (ErrorsHistoryOK =/= permanent_error) of
                            true ->
                                ct:print("SUITE: ~p~nCASE: ~p~nCONFIG: ~p~nREPEAT: ~p, TEST TIME ~p sek, TIME LEFT ~p sek",
                                    [SuiteName, CaseName, ConfigName, Rep, TestTime, TimeLeft]),
@@ -632,18 +645,25 @@ exec_test_repeats(SuiteName, CaseName, ConfigName, CaseConfig, Rep, Reps,
 %% Check if stress test should be stopped because of error.
 %% @end
 %%--------------------------------------------------------------------
--spec check_error(Rep :: integer(), FailedReps :: map()) -> ok | error.
-check_error(Rep, _FailedReps) when Rep < ?STRESS_ERRORS_TO_STOP ->
-    ok;
+-spec check_error(Rep :: integer(), FailedReps :: map()) -> integer() | permanent_error.
 check_error(Rep, FailedReps) ->
     check_error(Rep - 1, Rep, FailedReps).
 
+%%--------------------------------------------------------------------
+%% @private
+%% @doc
+%% Check if stress test should be stopped because of error.
+%% @end
+%%--------------------------------------------------------------------
+-spec check_error(Rep :: integer(), Start :: integer(), FailedReps :: map()) -> integer() | permanent_error.
 check_error(Check, Start, _FailedReps) when Start - ?STRESS_ERRORS_TO_STOP > Check ->
-    error;
+    permanent_error;
+check_error(0, Start, _FailedReps) ->
+    Start - 1;
 check_error(Check, Start, FailedReps) ->
     case maps:is_key(integer_to_binary(Check), FailedReps) of
         false ->
-            ok;
+            Start - Check - 1;
         _ ->
             check_error(Check - 1, Start, FailedReps)
     end.
@@ -913,7 +933,7 @@ get_copyright(TestRoot, SuiteName) ->
     hd(lists:filtermap(fun(#xmlElement{name = copyright, content = [Copyright]}) ->
         {true, list_to_binary(Copyright#xmlText.value)};
         (_) -> false
-   end, Doc#xmlElement.content)).
+    end, Doc#xmlElement.content)).
 
 %%--------------------------------------------------------------------
 %% @private

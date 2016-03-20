@@ -5,35 +5,39 @@
 %%% cited in 'LICENSE.txt'.
 %%% @end
 %%%-------------------------------------------------------------------
-%%% @doc This module tests the functionality of gr_endpoint module.
+%%% @doc This module tests the functionality of oz_endpoint module.
 %%% It contains unit tests that base on eunit.
 %%% @end
 %%%-------------------------------------------------------------------
 
--module(gr_endpoint_tests).
+-module(oz_endpoint_tests).
 
 -ifdef(TEST).
 
 -include_lib("eunit/include/eunit.hrl").
 
 % Root macaroon
--define(MACAROON, <<"macaroon">>).
+-define(MACAROON, macaroon:create("Location", "Key", "Macaroon")).
 % Request header with root macaroon
--define(MACAROON_HEADER,
-    {<<"macaroon">>, <<"macaroon">>}
-).
+macaroon_header() ->
+    {ok, Bin} = macaroon:serialize(?MACAROON),
+    {<<"macaroon">>, Bin}.
 
 % List of disch macaroons
 -define(DISCH_MACAROONS, [
-    <<"disch_macaroon1">>,
-    <<"disch_macaroon2">>,
-    <<"disch_macaroon3">>
+    macaroon:create("Location", "Key1", "Discharge macaroon 1"),
+    macaroon:create("Location", "Key2", "Discharge macaroon 2"),
+    macaroon:create("Location", "Key3", "Discharge macaroon 3")
 ]).
 % Bound disch macaroons joined into one string with spaces for request header.
--define(DISCH_MACAROONS_HEADER,
-    {<<"discharge-macaroons">>,
-        <<"bound_disch_macaroon1 bound_disch_macaroon2 bound_disch_macaroon3">>}
-).
+disch_macaroons_header() ->
+    Macaroon = ?MACAROON,
+    BoundMacaroons = lists:map(fun(DM) ->
+        BDM = macaroon:prepare_for_request(Macaroon, DM),
+        {ok, Bin} = macaroon:serialize(BDM),
+        Bin
+    end, ?DISCH_MACAROONS),
+    {<<"discharge-macaroons">>, str_utils:join_binary(BoundMacaroons, <<" ">>)}.
 
 -define(CONTENT_TYPE_HEADER,
     {<<"content-type">>, <<"application/json">>}
@@ -43,7 +47,7 @@
 %%% Tests description
 %%%===================================================================
 
-gr_endpoint_test_() ->
+oz_endpoint_test_() ->
     {foreach,
         fun setup/0,
         fun teardown/1,
@@ -72,25 +76,14 @@ gr_endpoint_test_() ->
 %%%===================================================================
 
 setup() ->
-    meck:new(gr_plugin, [non_strict]),
-    meck:expect(gr_plugin, get_gr_url, fun() -> "URL/" end),
-    meck:expect(gr_plugin, get_key_path, fun() -> key_path end),
-    meck:expect(gr_plugin, get_cert_path, fun() -> cert_path end),
-
-    meck:new(macaroon),
-    meck:expect(macaroon, deserialize, fun(X) -> {ok, X} end),
-    meck:expect(macaroon, serialize, fun(X) -> {ok, X} end),
-    meck:expect(macaroon, prepare_for_request,
-        fun(_Macaroon, DischMacaroon) ->
-            {ok, <<"bound_", DischMacaroon/binary>>}
-        end).
-
+    meck:new(oz_plugin, [non_strict]),
+    meck:expect(oz_plugin, get_oz_url, fun() -> "URL/" end),
+    meck:expect(oz_plugin, get_key_path, fun() -> key_path end),
+    meck:expect(oz_plugin, get_cert_path, fun() -> cert_path end).
 
 teardown(_) ->
-    ?assert(meck:validate(gr_plugin)),
-    ok = meck:unload(gr_plugin),
-    ?assert(meck:validate(macaroon)),
-    ok = meck:unload(macaroon).
+    ?assert(meck:validate(oz_plugin)),
+    ok = meck:unload(oz_plugin).
 
 %%%===================================================================
 %%% Tests functions
@@ -117,13 +110,13 @@ should_send_provider_request_1() ->
         ) -> ok
     end),
 
-    ?assertEqual(ok, gr_endpoint:auth_request(
+    ?assertEqual(ok, oz_endpoint:auth_request(
         provider, "URN", method)),
-    ?assertEqual(ok, gr_endpoint:noauth_request(
+    ?assertEqual(ok, oz_endpoint:noauth_request(
         provider, "URN", method)),
-    ?assertEqual(ok, gr_endpoint:auth_request(
+    ?assertEqual(ok, oz_endpoint:auth_request(
         {try_user, undefined}, "URN", method)),
-    ?assertEqual(ok, gr_endpoint:noauth_request(
+    ?assertEqual(ok, oz_endpoint:noauth_request(
         {try_user, undefined}, "URN", method)),
 
     ?assert(meck:validate(http_client)),
@@ -151,13 +144,13 @@ should_send_provider_request_2() ->
         ) -> ok
     end),
 
-    ?assertEqual(ok, gr_endpoint:auth_request(
+    ?assertEqual(ok, oz_endpoint:auth_request(
         provider, "URN", method, body)),
-    ?assertEqual(ok, gr_endpoint:noauth_request(
+    ?assertEqual(ok, oz_endpoint:noauth_request(
         provider, "URN", method, body)),
-    ?assertEqual(ok, gr_endpoint:auth_request(
+    ?assertEqual(ok, oz_endpoint:auth_request(
         {try_user, undefined}, "URN", method, body)),
-    ?assertEqual(ok, gr_endpoint:noauth_request(
+    ?assertEqual(ok, oz_endpoint:noauth_request(
         {try_user, undefined}, "URN", method, body)),
 
     ?assert(meck:validate(http_client)),
@@ -186,13 +179,13 @@ should_send_provider_request_3() ->
         ) -> ok
     end),
 
-    ?assertEqual(ok, gr_endpoint:auth_request(
+    ?assertEqual(ok, oz_endpoint:auth_request(
         provider, "URN", method, body, [options])),
-    ?assertEqual(ok, gr_endpoint:noauth_request(
+    ?assertEqual(ok, oz_endpoint:noauth_request(
         provider, "URN", method, body, [options])),
-    ?assertEqual(ok, gr_endpoint:auth_request(
+    ?assertEqual(ok, oz_endpoint:auth_request(
         {try_user, undefined}, "URN", method, body, [options])),
-    ?assertEqual(ok, gr_endpoint:noauth_request(
+    ?assertEqual(ok, oz_endpoint:noauth_request(
         {try_user, undefined}, "URN", method, body, [options])),
 
     ?assert(meck:validate(http_client)),
@@ -221,13 +214,13 @@ should_send_provider_request_4() ->
         ) -> ok
     end),
 
-    ?assertEqual(ok, gr_endpoint:auth_request(
+    ?assertEqual(ok, oz_endpoint:auth_request(
         provider, "URN", method, [headers], body, [options])),
-    ?assertEqual(ok, gr_endpoint:noauth_request(
+    ?assertEqual(ok, oz_endpoint:noauth_request(
         provider, "URN", method, [headers], body, [options])),
-    ?assertEqual(ok, gr_endpoint:auth_request(
+    ?assertEqual(ok, oz_endpoint:auth_request(
         {try_user, undefined}, "URN", method, [headers], body, [options])),
-    ?assertEqual(ok, gr_endpoint:noauth_request(
+    ?assertEqual(ok, oz_endpoint:noauth_request(
         {try_user, undefined}, "URN", method, [headers], body, [options])),
 
     ?assert(meck:validate(http_client)),
@@ -235,33 +228,36 @@ should_send_provider_request_4() ->
 
 
 should_send_user_request_1() ->
+    MacaroonHeader = macaroon_header(),
+    DischMacaroonsHeader = disch_macaroons_header(),
+
     meck:new(http_client),
     meck:expect(http_client, request, fun
         (
             method,
             "URL/URN",
-            [?CONTENT_TYPE_HEADER, ?MACAROON_HEADER, ?DISCH_MACAROONS_HEADER],
+            [?CONTENT_TYPE_HEADER, MH, DMH],
             <<>>,
             []
-        ) -> ok;
+        ) when MH =:= MacaroonHeader, DMH =:= DischMacaroonsHeader -> ok;
         (
             method,
             "URL/URN",
-            [?CONTENT_TYPE_HEADER, ?MACAROON_HEADER, ?DISCH_MACAROONS_HEADER],
+            [?CONTENT_TYPE_HEADER, MH, DMH],
             <<>>,
             [
                 {ssl_options, [{keyfile, key_path}, {certfile, cert_path}]}
             ]
-        ) -> ok
+        ) when MH =:= MacaroonHeader, DMH =:= DischMacaroonsHeader -> ok
     end),
 
-    ?assertEqual(ok, gr_endpoint:auth_request(
+    ?assertEqual(ok, oz_endpoint:auth_request(
         {user, {?MACAROON, ?DISCH_MACAROONS}}, "URN", method)),
-    ?assertEqual(ok, gr_endpoint:noauth_request(
+    ?assertEqual(ok, oz_endpoint:noauth_request(
         {user, {?MACAROON, ?DISCH_MACAROONS}}, "URN", method)),
-    ?assertEqual(ok, gr_endpoint:auth_request(
+    ?assertEqual(ok, oz_endpoint:auth_request(
         {try_user, {?MACAROON, ?DISCH_MACAROONS}}, "URN", method)),
-    ?assertEqual(ok, gr_endpoint:noauth_request(
+    ?assertEqual(ok, oz_endpoint:noauth_request(
         {try_user, {?MACAROON, ?DISCH_MACAROONS}}, "URN", method)),
 
     ?assert(meck:validate(http_client)),
@@ -269,33 +265,36 @@ should_send_user_request_1() ->
 
 
 should_send_user_request_2() ->
+    MacaroonHeader = macaroon_header(),
+    DischMacaroonsHeader = disch_macaroons_header(),
+
     meck:new(http_client),
     meck:expect(http_client, request, fun
         (
             method,
             "URL/URN",
-            [?CONTENT_TYPE_HEADER, ?MACAROON_HEADER, ?DISCH_MACAROONS_HEADER],
+            [?CONTENT_TYPE_HEADER, MH, DMH],
             body,
             []
-        ) -> ok;
+        ) when MH =:= MacaroonHeader, DMH =:= DischMacaroonsHeader -> ok;
         (
             method,
             "URL/URN",
-            [?CONTENT_TYPE_HEADER, ?MACAROON_HEADER, ?DISCH_MACAROONS_HEADER],
+            [?CONTENT_TYPE_HEADER, MH, DMH],
             body,
             [
                 {ssl_options, [{keyfile, key_path}, {certfile, cert_path}]}
             ]
-        ) -> ok
+        ) when MH =:= MacaroonHeader, DMH =:= DischMacaroonsHeader -> ok
     end),
 
-    ?assertEqual(ok, gr_endpoint:auth_request(
+    ?assertEqual(ok, oz_endpoint:auth_request(
         {user, {?MACAROON, ?DISCH_MACAROONS}}, "URN", method, body)),
-    ?assertEqual(ok, gr_endpoint:noauth_request(
+    ?assertEqual(ok, oz_endpoint:noauth_request(
         {user, {?MACAROON, ?DISCH_MACAROONS}}, "URN", method, body)),
-    ?assertEqual(ok, gr_endpoint:auth_request(
+    ?assertEqual(ok, oz_endpoint:auth_request(
         {try_user, {?MACAROON, ?DISCH_MACAROONS}}, "URN", method, body)),
-    ?assertEqual(ok, gr_endpoint:noauth_request(
+    ?assertEqual(ok, oz_endpoint:noauth_request(
         {try_user, {?MACAROON, ?DISCH_MACAROONS}}, "URN", method, body)),
 
     ?assert(meck:validate(http_client)),
@@ -303,34 +302,37 @@ should_send_user_request_2() ->
 
 
 should_send_user_request_3() ->
+    MacaroonHeader = macaroon_header(),
+    DischMacaroonsHeader = disch_macaroons_header(),
+
     meck:new(http_client),
     meck:expect(http_client, request, fun
         (
             mthd,
             "URL/URN",
-            [?CONTENT_TYPE_HEADER, ?MACAROON_HEADER, ?DISCH_MACAROONS_HEADER],
+            [?CONTENT_TYPE_HEADER, MH, DMH],
             body,
             [opts]
-        ) -> ok;
+        ) when MH =:= MacaroonHeader, DMH =:= DischMacaroonsHeader -> ok;
         (
             mthd,
             "URL/URN",
-            [?CONTENT_TYPE_HEADER, ?MACAROON_HEADER, ?DISCH_MACAROONS_HEADER],
+            [?CONTENT_TYPE_HEADER, MH, DMH],
             body,
             [
                 {ssl_options, [{keyfile, key_path}, {certfile, cert_path}]},
                 opts
             ]
-        ) -> ok
+        ) when MH =:= MacaroonHeader, DMH =:= DischMacaroonsHeader -> ok
     end),
 
-    ?assertEqual(ok, gr_endpoint:auth_request(
+    ?assertEqual(ok, oz_endpoint:auth_request(
         {user, {?MACAROON, ?DISCH_MACAROONS}}, "URN", mthd, body, [opts])),
-    ?assertEqual(ok, gr_endpoint:noauth_request(
+    ?assertEqual(ok, oz_endpoint:noauth_request(
         {user, {?MACAROON, ?DISCH_MACAROONS}}, "URN", mthd, body, [opts])),
-    ?assertEqual(ok, gr_endpoint:auth_request(
+    ?assertEqual(ok, oz_endpoint:auth_request(
         {try_user, {?MACAROON, ?DISCH_MACAROONS}}, "URN", mthd, body, [opts])),
-    ?assertEqual(ok, gr_endpoint:noauth_request(
+    ?assertEqual(ok, oz_endpoint:noauth_request(
         {try_user, {?MACAROON, ?DISCH_MACAROONS}}, "URN", mthd, body, [opts])),
 
     ?assert(meck:validate(http_client)),
@@ -338,39 +340,40 @@ should_send_user_request_3() ->
 
 
 should_send_user_request_4() ->
+    MacaroonHeader = macaroon_header(),
+    DischMacaroonsHeader = disch_macaroons_header(),
+
     meck:new(http_client),
     meck:expect(http_client, request, fun
         (
             method,
             "URL/URN",
-            [?CONTENT_TYPE_HEADER, ?MACAROON_HEADER, ?DISCH_MACAROONS_HEADER,
-                headers],
+            [?CONTENT_TYPE_HEADER, MH, DMH, headers],
             body,
             [options]
-        ) -> ok;
+        ) when MH =:= MacaroonHeader, DMH =:= DischMacaroonsHeader -> ok;
         (
             method,
             "URL/URN",
-            [?CONTENT_TYPE_HEADER, ?MACAROON_HEADER, ?DISCH_MACAROONS_HEADER,
-                headers],
+            [?CONTENT_TYPE_HEADER, MH, DMH, headers],
             body,
             [
                 {ssl_options, [{keyfile, key_path}, {certfile, cert_path}]},
                 options
             ]
-        ) -> ok
+        ) when MH =:= MacaroonHeader, DMH =:= DischMacaroonsHeader -> ok
     end),
 
-    ?assertEqual(ok, gr_endpoint:auth_request(
+    ?assertEqual(ok, oz_endpoint:auth_request(
         {user, {?MACAROON, ?DISCH_MACAROONS}}, "URN", method,
         [headers], body, [options])),
-    ?assertEqual(ok, gr_endpoint:noauth_request(
+    ?assertEqual(ok, oz_endpoint:noauth_request(
         {user, {?MACAROON, ?DISCH_MACAROONS}}, "URN", method,
         [headers], body, [options])),
-    ?assertEqual(ok, gr_endpoint:auth_request(
+    ?assertEqual(ok, oz_endpoint:auth_request(
         {try_user, {?MACAROON, ?DISCH_MACAROONS}}, "URN", method,
         [headers], body, [options])),
-    ?assertEqual(ok, gr_endpoint:noauth_request(
+    ?assertEqual(ok, oz_endpoint:noauth_request(
         {try_user, {?MACAROON, ?DISCH_MACAROONS}}, "URN", method,
         [headers], body, [options])),
 

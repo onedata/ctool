@@ -5,15 +5,15 @@
 %%% cited in 'LICENSE.txt'.
 %%% @end
 %%%-------------------------------------------------------------------
-%%% @doc Global Registry definition of Space record.
+%%% @doc OZ definition of Space record.
 %%% @end
 %%%-------------------------------------------------------------------
 
--ifndef(GR_SPACES_HRL).
--define(GR_SPACES_HRL, 1).
+-ifndef(OZ_SPACES_HRL).
+-define(OZ_SPACES_HRL, 1).
 
 %% space_details record contains following fields:
-%% * id   - unique Space ID assigned by Global Registry
+%% * id   - unique Space ID assigned by OZ
 %% * name - Space name
 %% * size - Space size
 -record(space_details, {
