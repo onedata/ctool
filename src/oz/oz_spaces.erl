@@ -373,8 +373,9 @@ get_provider_details(Client, SpaceId, ProviderId) ->
             id = proplists:get_value(<<"providerId">>, Proplist),
             name = proplists:get_value(<<"clientName">>, Proplist),
             urls = proplists:get_value(<<"urls">>, Proplist),
-            redirection_point = proplists:get_value(<<"redirectionPoint">>,
-                Proplist)
+            redirection_point = proplists:get_value(<<"redirectionPoint">>, Proplist),
+            latitude = proplists:get_value(<<"latitude">>, Proplist),
+            longitude = proplists:get_value(<<"longitude">>, Proplist)
         },
         {ok, ProviderDetails}
     end).
