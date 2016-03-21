@@ -85,7 +85,7 @@ prepare_test_environment(Config, DescriptionFile, TestModule, LoadModules, Apps)
             "--logdir", LogsDir,
             DescriptionFile, "2>> prepare_test_environment_error.log"])),
         % Remove logs from env_up output
-        StartLog = list_to_binary(lists:last(string:tokens(binary_to_list(StartLogRaw), "\n"))),
+        StartLog = lists:last(binary:split(StartLogRaw, <<"\n">>, [global, trim])),
 
         % Save start log to file
         utils:cmd(["echo", binary_to_list(<<"'", StartLog/binary, "'">>), ">> prepare_test_environment.log"]),
