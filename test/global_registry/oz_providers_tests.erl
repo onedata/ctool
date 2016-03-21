@@ -161,10 +161,10 @@ should_get_details_for_given_provider() ->
         id = <<"providerId">>,
         name = <<"name">>,
         urls = <<"urls">>,
-        redirection_point = <<"redirectionPoint">>},
+        redirection_point = <<"redirectionPoint">>,
         latitude = <<"latitude">>,
         longitude = <<"longitude">>
-    }, Answer),
+    }}, Answer),
 
     ?assert(meck:validate(json_utils)),
     ok = meck:unload(json_utils).
