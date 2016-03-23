@@ -103,8 +103,9 @@ get_details(Client) ->
             id = proplists:get_value(<<"providerId">>, Proplist),
             name = proplists:get_value(<<"clientName">>, Proplist),
             urls = proplists:get_value(<<"urls">>, Proplist),
-            redirection_point = proplists:get_value(<<"redirectionPoint">>,
-                Proplist)
+            redirection_point = proplists:get_value(<<"redirectionPoint">>, Proplist),
+            latitude = proplists:get_value(<<"latitude">>, Proplist),
+            longitude = proplists:get_value(<<"longitude">>, Proplist)
         },
         {ok, ProviderDetails}
     end).
@@ -125,8 +126,9 @@ get_details(Client, ProviderId) ->
             id = proplists:get_value(<<"providerId">>, Proplist),
             name = proplists:get_value(<<"clientName">>, Proplist),
             urls = proplists:get_value(<<"urls">>, Proplist),
-            redirection_point = proplists:get_value(<<"redirectionPoint">>,
-                Proplist)
+            redirection_point = proplists:get_value(<<"redirectionPoint">>, Proplist),
+            latitude = proplists:get_value(<<"latitude">>, Proplist),
+            longitude = proplists:get_value(<<"longitude">>, Proplist)
         },
         {ok, ProviderDetails}
     end).
@@ -192,11 +194,11 @@ check_port(Client, IpAddress, Port, Type) ->
     ?run(fun() ->
         URN = "/provider/test/check_my_ports",
         Resource = case Type of
-                       <<"gui">> -> <<"/connection_check">>;
-                       <<"rest">> -> <<"/rest/latest/connection_check">>
-                   end,
+            <<"gui">> -> <<"/connection_check">>;
+            <<"rest">> -> <<"/rest/latest/connection_check">>
+        end,
         CheckURL = <<"https://", IpAddress/binary, ":",
-        (integer_to_binary(Port))/binary, Resource/binary>>,
+            (integer_to_binary(Port))/binary, Resource/binary>>,
         Body = json_utils:encode([{Type, CheckURL}]),
         {ok, 200, _ResponseHeaders, ResponseBody} =
             oz_endpoint:noauth_request(Client, URN, post, Body),
