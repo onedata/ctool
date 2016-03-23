@@ -20,7 +20,9 @@
     id :: binary(),
     name :: binary(),
     redirection_point :: binary(),
-    urls :: [URL :: binary()]
+    urls :: [URL :: binary()],
+    latitude :: float(),
+    longitude :: float()
 }).
 
 -endif.
