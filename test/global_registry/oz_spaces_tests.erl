@@ -354,7 +354,9 @@ should_get_provider_details() ->
         {<<"providerId">>, <<"providerId">>},
         {<<"clientName">>, <<"name">>},
         {<<"urls">>, <<"urls">>},
-        {<<"redirectionPoint">>, <<"redirectionPoint">>}
+        {<<"redirectionPoint">>, <<"redirectionPoint">>},
+        {<<"latitude">>, <<"latitude">>},
+        {<<"longitude">>, <<"longitude">>}
     ]
     end),
 
@@ -364,8 +366,10 @@ should_get_provider_details() ->
         id = <<"providerId">>,
         name = <<"name">>,
         urls = <<"urls">>,
-        redirection_point = <<"redirectionPoint">>}
-    }, Answer),
+        redirection_point = <<"redirectionPoint">>,
+        latitude = <<"latitude">>,
+        longitude = <<"longitude">>
+    }}, Answer),
 
     ?assert(meck:validate(json_utils)),
     ok = meck:unload(json_utils).
