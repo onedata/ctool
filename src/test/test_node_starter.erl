@@ -84,7 +84,8 @@ prepare_test_environment(Config, DescriptionFile, TestModule, LoadModules, Apps)
             "--bin-cm", CmRoot,
             "--logdir", LogsDir,
             DescriptionFile, "2>> prepare_test_environment_error.log"])),
-        % Remove logs from env_up output
+        % Some of env_up logs goes to stdout instead of stderr, they need to be
+        % removed for proper parsing of JSON with env_up result
         StartLog = lists:last(binary:split(StartLogRaw, <<"\n">>, [global, trim])),
 
         % Save start log to file

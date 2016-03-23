@@ -17,7 +17,7 @@
     aggregate_over_first_element/1, average/1, random_shuffle/1,
     random_element/1, get_host/1, get_host_as_atom/1, cmd/1, ensure_defined/3]).
 -export([duration/1, adjust_duration/2]).
--export([mkdtemp/0, mkdtemp/3, rmtempdir/1]).
+-export([mkdtemp/0, mkdtemp/3, rmtempdir/1, record_to_map/2, record_to_list/2]).
 
 -type time_unit() :: us | ms | s | min | h.
 
@@ -230,6 +230,24 @@ mkdtemp(Suffix, Prefix, Dir) ->
 %%--------------------------------------------------------------------
 rmtempdir(Dir) ->
     mochitemp:rmtempdir(Dir).
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Converts record to list in format [{field, value}]. Fields can be
+%% obtained by record_info(fields, record_name).
+%% @end
+%%--------------------------------------------------------------------
+-spec record_to_list(Record :: tuple(), Fields :: [atom()]) -> [{Key :: atom(), Value :: term()}].
+record_to_list(Record, Fields) -> lists:zip(Fields, tl(tuple_to_list(Record))).
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Converts record to map with fields names as keys. Fields can be
+%% obtained by record_info(fields, record_name).
+%% @end
+%%--------------------------------------------------------------------
+-spec record_to_map(Record :: tuple(), Fields :: [atom()]) -> map().
+record_to_map(Record, Fields) -> maps:from_list(record_to_list(Record, Fields)).
 
 %%--------------------------------------------------------------------
 %% @private
