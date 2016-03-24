@@ -6,10 +6,9 @@
 %%% @end
 %%%-------------------------------------------------------------------
 %%% @doc
-%%% This module stores utility definitions for use in other modules.
+%%% This header stores utility definitions for use in other modules.
 %%% @end
 %%%-------------------------------------------------------------------
--author("Michal Wrona").
 
 %%--------------------------------------------------------------------
 %% @doc
