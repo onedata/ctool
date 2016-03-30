@@ -74,7 +74,7 @@ prepare_test_environment(Config, DescriptionFile, TestModule, LoadModules, Apps)
         utils:cmd(["echo", "'" ++ DescriptionFile ++ ":'", ">> prepare_test_environment.log"]),
         utils:cmd(["echo", "'" ++ DescriptionFile ++ ":'", ">> prepare_test_environment_error.log"]),
 
-        StartLog = list_to_binary(utils:cmd([EnvUpScript,
+        StartLogRaw = list_to_binary(utils:cmd([EnvUpScript,
             %% Function is used durgin OP or OZ tests so starts OP or OZ - not both
             "--bin-cluster-worker", ProjectRoot,
             "--bin-worker", ProjectRoot,
@@ -84,6 +84,10 @@ prepare_test_environment(Config, DescriptionFile, TestModule, LoadModules, Apps)
             "--bin-cm", CmRoot,
             "--logdir", LogsDir,
             DescriptionFile, "2>> prepare_test_environment_error.log"])),
+        % TODO VFS-1816 remove log filter
+        % Some of env_up logs goes to stdout instead of stderr, they need to be
+        % removed for proper parsing of JSON with env_up result
+        StartLog = lists:last(binary:split(StartLogRaw, <<"\n">>, [global, trim])),
 
         % Save start log to file
         utils:cmd(["echo", binary_to_list(<<"'", StartLog/binary, "'">>), ">> prepare_test_environment.log"]),

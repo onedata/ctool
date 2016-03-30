@@ -17,7 +17,10 @@
 %% * name - username
 -record(user_details, {
     id :: binary(),
-    name :: binary()
+    name :: binary(),
+    connected_accounts :: proplists:proplist(),
+    alias :: string() | integer() | binary(),
+    email_list :: [binary()]
 }).
 
 %% user_spaces record contains following fields:
