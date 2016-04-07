@@ -19,7 +19,7 @@
     id :: binary(),
     name :: binary(),
     connected_accounts :: proplists:proplist(),
-    alias :: string() | integer() | binary(),
+    alias :: binary(),
     email_list :: [binary()]
 }).
 
