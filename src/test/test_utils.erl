@@ -134,7 +134,7 @@ mock_validate(Nodes, Modules) ->
 mock_unload(Nodes) ->
     lists:foreach(fun(Node) ->
         case rpc:call(Node, meck, unload, [], ?TIMEOUT) of
-            _Unloaded -> ok;
+            Unloaded when is_list(Unloaded) -> ok;
             {badrpc, {'EXIT', {{not_mocked, _}, _}}} ->
                 ok
         end
