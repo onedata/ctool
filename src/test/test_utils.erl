@@ -133,13 +133,10 @@ mock_validate(Nodes, Modules) ->
 -spec mock_unload(Nodes :: node() | [node()]) -> ok.
 mock_unload(Nodes) ->
     lists:foreach(fun(Node) ->
-        try rpc:call(Node, meck, unload, [], ?TIMEOUT) of
-            _Unloaded -> ok
-        catch
-            _:{not_mocked, _} ->
-                ok;
-            _:UnloadError ->
-                throw({unable_to_unload_mocks, all, UnloadError})
+        case rpc:call(Node, meck, unload, [], ?TIMEOUT) of
+            _Unloaded -> ok;
+            {badrpc, {'EXIT', {{not_mocked, _}, _}}} ->
+                ok
         end
     end, as_list(Nodes)).
 
@@ -152,13 +149,10 @@ mock_unload(Nodes) ->
     Modules :: module() | [module()]) -> ok.
 mock_unload(Nodes, Modules) ->
     lists:foreach(fun(Node) ->
-        try rpc:call(Node, meck, unload, [as_list(Modules)], ?TIMEOUT) of
-            ok -> ok
-        catch
-            _:{not_mocked, _} ->
-                ok;
-            _:UnloadError ->
-                throw({unable_to_unload_mocks, Modules, UnloadError})
+        case rpc:call(Node, meck, unload, [as_list(Modules)], ?TIMEOUT) of
+            ok -> ok;
+            {badrpc, {'EXIT', {{not_mocked, _}, _}}} ->
+                ok
         end
     end, as_list(Nodes)).
 
