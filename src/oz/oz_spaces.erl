@@ -88,7 +88,8 @@ get_details(Client, SpaceId) ->
         SpaceDetails = #space_details{
             id = proplists:get_value(<<"spaceId">>, Proplist),
             name = proplists:get_value(<<"name">>, Proplist),
-            size = proplists:get_value(<<"size">>, Proplist)
+            providers_supports = proplists:get_value(
+                <<"providersSupports">>, Proplist)
         },
         {ok, SpaceDetails}
     end).
