@@ -86,12 +86,17 @@ mock_new(Nodes, Modules, Options) ->
         lists:foreach(fun(Module) ->
             Ref = make_ref(),
             erlang:spawn_link(Node, fun() ->
-                process_flag(trap_exit, true),
-                meck:new(Module, Options),
-                Parent ! Ref,
-                receive
-                    {'EXIT', Parent, _} -> meck:unload(Module);
-                    {'EXIT', _, normal} -> ok
+                try
+                    process_flag(trap_exit, true),
+                    meck:new(Module, Options),
+                    Parent ! Ref,
+                    receive
+                        {'EXIT', Parent, _} -> meck:unload(Module);
+                        {'EXIT', _, normal} -> ok
+                    end
+                catch
+                    error:{already_started, _} ->
+                        Parent ! Ref
                 end
             end),
             ?assertReceivedEqual(Ref, ?TIMEOUT)
