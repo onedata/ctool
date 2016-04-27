@@ -244,7 +244,8 @@ get_default_space(Client) ->
 %% of Space to make user's default.
 %% @end
 %%--------------------------------------------------------------------
--spec set_default_space(Client :: oz_endpoint:client(), SpaceId :: binary()) ->
+-spec set_default_space(Client :: oz_endpoint:client(),
+    Parameters :: oz_endpoint:params()) ->
     ok | {error, Reason :: term()}.
 set_default_space(Client, Parameters) ->
     ?run(fun() ->
