@@ -5,6 +5,7 @@
 *ctool* provies various functionality in a form of erlang modules. It is usually added to other projects as *rebar* dependency. It may be also build and used separetely - to build it use `make.py` script. 
 
 Most important elements of *ctool* are:
+
 * `logging.hrl` - logging macros that must be used instead of direct [lager](https://github.com/basho/lager) calls as they introduce additional logic layer required to customize logging.
 * `performance.hrl` - macros for performance and stress tests creation
 * `assertions.hrl` - assertions for [ct](http://erlang.org/doc/man/common_test.html) tests (based on assertions provided by [eunit](http://erlang.org/doc/apps/eunit/)).
@@ -26,12 +27,14 @@ Following logging macros are defined:
  * `emergency`
 
 Each may be used in following ways (example with debug macro):
+
  * `?debug(_Message)`
  * `?debug(_Format, _Args)`
  * `?debug_stacktrace(_Message)`
  * `?debug_stacktrace(_Format, _Args)`
 
 There are 2 performance macros:
+
  * `ALL` - to show which test should be started during performance tests,
  * `PERFORMANCE` - to provide additional parameters to test.
 
@@ -63,6 +66,7 @@ sample_test_base(Config) ->
 ```
 
 For example above use [ct_run](https://github.com/onedata/bamboos/blob/develop/docker/ct_run.py) script:
+
  * Use `./ct_run` to execute tests *t1* and *t2*.
  * Use `./ct_run --performance` to execute tests *t2* and *t3*.
 
