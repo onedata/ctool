@@ -4,6 +4,18 @@
 CHANGELOG
 ---------
 
+### 3.0.0-beta3
+
+* VFS-1860 Rename size to providers_supports in space_details.
+* VFS-1813 Redefine alias type
+* VFS-1792 created privileges package
+* VFS-1596 Records utils methods.
+* VFS-1792 privileges moved from oz as they are replicated to oz via subscriptions
+* VFS-1796 latitude & longtitude provider info
+* VFS-1596 Add num_calls meck to test utils.
+* VFS-1596 Additional fields in user_details
+
+
 ### 3.0.0-alpha3
 
 * VFS-1630 Bump initialize timeout

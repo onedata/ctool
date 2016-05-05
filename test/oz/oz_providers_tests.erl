@@ -122,7 +122,9 @@ should_get_details() ->
                 {<<"providerId">>, <<"providerId">>},
                 {<<"clientName">>, <<"name">>},
                 {<<"urls">>, <<"urls">>},
-                {<<"redirectionPoint">>, <<"redirectionPoint">>}
+                {<<"redirectionPoint">>, <<"redirectionPoint">>},
+                {<<"latitude">>, <<"latitude">>},
+                {<<"longitude">>, <<"longitude">>}
             ]
         end),
 
@@ -131,8 +133,10 @@ should_get_details() ->
         id = <<"providerId">>,
         urls = <<"urls">>,
         name = <<"name">>,
-        redirection_point = <<"redirectionPoint">>}
-    }, Answer),
+        redirection_point = <<"redirectionPoint">>,
+        latitude = <<"latitude">>,
+        longitude = <<"longitude">>
+    }}, Answer),
 
     ?assert(meck:validate(json_utils)),
     ok = meck:unload(json_utils).
@@ -146,7 +150,9 @@ should_get_details_for_given_provider() ->
                 {<<"providerId">>, <<"providerId">>},
                 {<<"clientName">>, <<"name">>},
                 {<<"urls">>, <<"urls">>},
-                {<<"redirectionPoint">>, <<"redirectionPoint">>}
+                {<<"redirectionPoint">>, <<"redirectionPoint">>},
+                {<<"latitude">>, <<"latitude">>},
+                {<<"longitude">>, <<"longitude">>}
             ]
         end),
 
@@ -155,8 +161,10 @@ should_get_details_for_given_provider() ->
         id = <<"providerId">>,
         name = <<"name">>,
         urls = <<"urls">>,
-        redirection_point = <<"redirectionPoint">>}
-    }, Answer),
+        redirection_point = <<"redirectionPoint">>,
+        latitude = <<"latitude">>,
+        longitude = <<"longitude">>
+    }}, Answer),
 
     ?assert(meck:validate(json_utils)),
     ok = meck:unload(json_utils).
@@ -264,13 +272,13 @@ should_get_space_details() ->
         [
             {<<"spaceId">>, <<"spaceId">>},
             {<<"name">>, <<"name">>},
-            {<<"size">>, [{<<"providerId">>, 123}]}
+            {<<"providersSupports">>, [{<<"providerId">>, 123}]}
         ]
     end),
 
     Answer = oz_providers:get_space_details(client, <<"spaceId">>),
-    ?assertEqual({ok, #space_details{id = <<"spaceId">>,
-        name = <<"name">>, size = [{<<"providerId">>, 123}]}}, Answer),
+    ?assertEqual({ok, #space_details{id = <<"spaceId">>, name = <<"name">>,
+        providers_supports = [{<<"providerId">>, 123}]}}, Answer),
 
     ?assert(meck:validate(json_utils)),
     ok = meck:unload(json_utils).

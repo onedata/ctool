@@ -217,14 +217,14 @@ should_get_space_details() ->
     meck:expect(json_utils, decode, fun(response_body) ->
             [
                 {<<"spaceId">>, <<"spaceId">>},
-                {<<"name">>, <<"name">>}, {<<"size">>,
-                [{<<"providerId">>, 123}]}
+                {<<"name">>, <<"name">>},
+                {<<"providersSupports">>, [{<<"providerId">>, 123}]}
             ]
     end),
 
     Answer = oz_users:get_space_details(client, <<"spaceId">>),
-    ?assertEqual({ok, #space_details{id = <<"spaceId">>,
-        name = <<"name">>, size = [{<<"providerId">>, 123}]}}, Answer),
+    ?assertEqual({ok, #space_details{id = <<"spaceId">>, name = <<"name">>,
+        providers_supports = [{<<"providerId">>, 123}]}}, Answer),
 
     ?assert(meck:validate(json_utils)),
     ok = meck:unload(json_utils).

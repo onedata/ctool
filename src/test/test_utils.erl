@@ -17,7 +17,7 @@
 
 %% API
 -export([mock_new/2, mock_new/3, mock_expect/4, mock_validate/2, mock_unload/1,
-    mock_unload/2, mock_validate_and_unload/2]).
+    mock_unload/2, mock_validate_and_unload/2, mock_assert_num_calls/5]).
 -export([get_env/3, set_env/4]).
 -export([enable_datastore_models/2]).
 
@@ -86,12 +86,17 @@ mock_new(Nodes, Modules, Options) ->
         lists:foreach(fun(Module) ->
             Ref = make_ref(),
             erlang:spawn_link(Node, fun() ->
-                process_flag(trap_exit, true),
-                meck:new(Module, Options),
-                Parent ! Ref,
-                receive
-                    {'EXIT', Parent, _} -> meck:unload(Module);
-                    {'EXIT', _, normal} -> ok
+                try
+                    process_flag(trap_exit, true),
+                    meck:new(Module, Options),
+                    Parent ! Ref,
+                    receive
+                        {'EXIT', Parent, _} -> meck:unload(Module);
+                        {'EXIT', _, normal} -> ok
+                    end
+                catch
+                    error:{already_started, _} ->
+                        Parent ! Ref
                 end
             end),
             ?assertReceivedEqual(Ref, ?TIMEOUT)
@@ -133,7 +138,11 @@ mock_validate(Nodes, Modules) ->
 -spec mock_unload(Nodes :: node() | [node()]) -> ok.
 mock_unload(Nodes) ->
     lists:foreach(fun(Node) ->
-        ?assertEqual(ok, rpc:call(Node, meck, unload, [], ?TIMEOUT))
+        case rpc:call(Node, meck, unload, [], ?TIMEOUT) of
+            Unloaded when is_list(Unloaded) -> ok;
+            {badrpc, {'EXIT', {{not_mocked, _}, _}}} ->
+                ok
+        end
     end, as_list(Nodes)).
 
 %%--------------------------------------------------------------------
@@ -145,9 +154,11 @@ mock_unload(Nodes) ->
     Modules :: module() | [module()]) -> ok.
 mock_unload(Nodes, Modules) ->
     lists:foreach(fun(Node) ->
-        ?assertEqual(ok, rpc:call(
-            Node, meck, unload, [as_list(Modules)], ?TIMEOUT
-        ))
+        case rpc:call(Node, meck, unload, [as_list(Modules)], ?TIMEOUT) of
+            ok -> ok;
+            {badrpc, {'EXIT', {{not_mocked, _}, _}}} ->
+                ok
+        end
     end, as_list(Nodes)).
 
 %%--------------------------------------------------------------------
@@ -160,6 +171,20 @@ mock_unload(Nodes, Modules) ->
 mock_validate_and_unload(Nodes, Modules) ->
     mock_validate(Nodes, Modules),
     mock_unload(Nodes, Modules).
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Validates number of function calls for given nodes.
+%% @end
+%%--------------------------------------------------------------------
+-spec mock_assert_num_calls(Nodes :: node() | [node()], Module :: module(),
+    FunctionName :: atom(), FunctionArgs :: meck:args_spec(), CallsNumber :: non_neg_integer()) -> ok.
+mock_assert_num_calls(Nodes, Module, FunctionName, FunctionArgs, CallsNumber) ->
+    lists:foreach(fun(Node) ->
+        ?assertEqual(CallsNumber, rpc:call(
+            Node, meck, num_calls, [Module, FunctionName, FunctionArgs], ?TIMEOUT
+        ))
+    end, as_list(Nodes)).
 
 %%--------------------------------------------------------------------
 %% @doc
