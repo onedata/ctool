@@ -26,7 +26,8 @@ space_change_data | space_view_data.
 -type group_privilege() :: group_change_data | group_invite_user |
 group_remove_user | group_join_space | group_create_space |
 group_set_privileges | group_remove | group_leave_space |
-group_view_data | group_create_space_token.
+group_view_data | group_create_space_token |
+group_join_group | group_create_group_token | group_remove_group.
 
 %%%===================================================================
 %%% API
@@ -88,7 +89,9 @@ group_manager() ->
         group_user(),
         ordsets:from_list([
             group_invite_user,
-            group_remove_user
+            group_remove_user,
+            group_create_group_token,
+            group_remove_group
         ])
     ).
 
@@ -108,7 +111,8 @@ group_admin() ->
             group_leave_space,
             group_set_privileges,
             group_change_data,
-            group_remove
+            group_remove,
+            group_join_group
         ])
     ).
 
