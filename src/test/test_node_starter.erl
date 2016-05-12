@@ -163,8 +163,7 @@ clean_environment(Config, Apps) ->
             [] ->
                 stop_applications(Config, Apps);
             _ ->
-                global:register_name(?CLEANING_PROC_NAME, self()),
-                global:sync(),
+                erlang:register(?CLEANING_PROC_NAME, self()),
 
                 stop_applications(Config, Apps),
 
@@ -277,7 +276,13 @@ maybe_stop_cover() ->
             cover:export(CoverFile),
             {ok, FileData} = file:read_file(CoverFile),
             ok = file:delete(CoverFile),
-            true = is_pid(global:send(?CLEANING_PROC_NAME, {app_ended, node(), FileData})),
+            lists:foreach(fun(Node) ->
+                Pid = rpc:call(Node, erlang, whereis, [?CLEANING_PROC_NAME]),
+                case is_pid(Pid) of
+                    true -> Pid ! {app_ended, node(), FileData};
+                    false -> ok
+                end
+            end, nodes(hidden)),
             cover:stop(),
             ok;
         _ ->
@@ -319,7 +324,7 @@ ping_nodes(_Nodes, 0) ->
 ping_nodes(Nodes, Tries) ->
     AllConnected = lists:all(
         fun(Node) ->
-            pong == net_adm:ping(Node)
+            true == net_kernel:hidden_connect_node(Node)
         end, Nodes),
     case AllConnected of
         true -> ok;
