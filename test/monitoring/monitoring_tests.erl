@@ -38,72 +38,97 @@ is_valid_character_test() ->
 
 
 get_single_core_cpu_stats_test() ->
-    SampleFile = create_sample_cpu_stats_file(1),
-    ?assertNotEqual(error, SampleFile),
-    ExpectedCpuStats = [{<<"cpu">>, 100 * 60 / 450}],
-    {ok, Fd} = SampleFile,
-    meck:new(file, [unstick, passthrough]),
-    meck:expect(file, open, fun("/proc/stat", [read]) -> {ok, Fd} end),
-    {ActualCpuStats, _} = monitoring:get_cpu_stats([{<<"core0">>, 0, 0}, {<<"cpu">>, 0, 0}]),
-    ?assert(meck:validate(file)),
-    ?assertEqual(ok, meck:unload(file)),
-    ?assertEqual(ExpectedCpuStats, ActualCpuStats).
+    {setup,
+        fun() ->
+            SampleFile = create_sample_cpu_stats_file(1),
+            ?assertNotEqual(error, SampleFile),
+            ExpectedCpuStats = [{<<"cpu">>, 100 * 60 / 450}],
+            {ok, Fd} = SampleFile,
+            meck:new(file, [unstick, passthrough]),
+            meck:expect(file, open, fun("/proc/stat", [read]) -> {ok, Fd} end),
+            ExpectedCpuStats
+        end,
+        fun(_) ->
+            ?assert(meck:validate(file)),
+            ?assertEqual(ok, meck:unload(file))
+        end,
+        fun get_single_core_cpu_stats/1
+    }.
 
 
 get_multi_core_cpu_stats_test() ->
-    SampleFile = create_sample_cpu_stats_file(4),
-    ?assertNotEqual(error, SampleFile),
-    ExpectedCpuStats = [{<<"cpu">>, 100 * 60 / 450}, {<<"core0">>, 100 * 60 / 450}, {<<"core1">>, 100 * 60 / 450},
-        {<<"core2">>, 100 * 60 / 450}, {<<"core3">>, 100 * 60 / 450}],
-    {ok, Fd} = SampleFile,
-    meck:new(file, [unstick, passthrough]),
-    meck:expect(file, open, fun("/proc/stat", [read]) -> {ok, Fd} end),
-    {ActualCpuStats, _} = monitoring:get_cpu_stats([{<<"core3">>, 0, 0}, {<<"core2">>, 0, 0}, {<<"core1">>, 0, 0},
-        {<<"core0">>, 0, 0}, {<<"cpu">>, 0, 0}]),
-    ?assert(meck:validate(file)),
-    ?assertEqual(ok, meck:unload(file)),
-    ?assertEqual(ExpectedCpuStats, ActualCpuStats).
+    {setup,
+        fun() ->
+            SampleFile = create_sample_cpu_stats_file(4),
+            ?assertNotEqual(error, SampleFile),
+            ExpectedCpuStats = [{<<"cpu">>, 100 * 60 / 450}, {<<"core0">>, 100 * 60 / 450}, {<<"core1">>, 100 * 60 / 450},
+                {<<"core2">>, 100 * 60 / 450}, {<<"core3">>, 100 * 60 / 450}],
+            {ok, Fd} = SampleFile,
+            meck:new(file, [unstick, passthrough]),
+            meck:expect(file, open, fun("/proc/stat", [read]) -> {ok, Fd} end),
+            ExpectedCpuStats
+        end,
+        fun(_) ->
+            ?assert(meck:validate(file)),
+            ?assertEqual(ok, meck:unload(file))
+        end,
+        fun get_multi_core_cpu_stats/1
+    }.
 
 
  get_cpu_stats_error_test() ->
-     meck:new(file, [unstick, passthrough]),
-     meck:expect(file, open, fun("/proc/stat", [read]) -> {error, dupa} end),
-     %% TODO logger:should_log is mocked because it fails because there is no logger_plugin module
-     meck:new(logger, [passthrough]),
-     meck:expect(logger, should_log, fun(_) -> false end),
-     Result = monitoring:get_cpu_stats([{<<"core3">>, 0, 0}, {<<"core2">>, 0, 0}, {<<"core1">>, 0, 0},
-         {<<"core0">>, 0, 0}, {<<"cpu">>, 0, 0}]),
-     ?assertEqual(Result, {[], []}),
-     ?assert(meck:validate(logger)),
-     ?assertEqual(ok, meck:unload(logger)),
-     ?assert(meck:validate(file)),
-     ?assertEqual(ok, meck:unload(file)).
+     {setup,
+         fun() ->
+             meck:new(file, [unstick, passthrough]),
+             meck:expect(file, open, fun("/proc/stat", [read]) -> {error, test_error} end),
+             %% TODO logger:should_log is mocked because it fails because
+             %% TODO there is no logger_plugin module
+             meck:new(logger, [passthrough]),
+             meck:expect(logger, should_log, fun(_) -> false end)
+         end,
+         fun(_) ->
+             ?assert(meck:validate(logger)),
+             ?assertEqual(ok, meck:unload(logger)),
+             ?assert(meck:validate(file)),
+             ?assertEqual(ok, meck:unload(file))
+         end,
+         fun get_cpu_stats_error/0
+     }.
 
 
  get_memory_stats_test() ->
-     SampleFile = create_sample_memory_stats_file(),
-     ?assertNotEqual(error, SampleFile),
-     {ok, Fd, ExpectedMemoryStats} = SampleFile,
-     meck:new(file, [unstick, passthrough]),
-     meck:expect(file, open, fun("/proc/meminfo", [read]) -> {ok, Fd} end),
-     ActualMemoryStats = monitoring:get_memory_stats(),
-     ?assert(meck:validate(file)),
-     ?assertEqual(ok, meck:unload(file)),
-     ?assertEqual(ExpectedMemoryStats, ActualMemoryStats).
+     {setup,
+         fun() ->
+             SampleFile = create_sample_memory_stats_file(),
+             ?assertNotEqual(error, SampleFile),
+             {ok, Fd, ExpectedMemoryStats} = SampleFile,
+             meck:new(file, [unstick, passthrough]),
+             meck:expect(file, open, fun("/proc/meminfo", [read]) -> {ok, Fd} end),
+             ExpectedMemoryStats
+         end,
+         fun(_) ->
+             ?assert(meck:validate(file)),
+             ?assertEqual(ok, meck:unload(file))
+         end,
+         fun get_memory_stats/1
+     }.
 
 
  get_memory_stats_error_test() ->
-     meck:new(file, [unstick, passthrough]),
-     meck:expect(file, open, fun("/proc/meminfo", [read]) -> error end),
-     %% TODO logger:should_log is mocked because it fails because there is no logger_plugin module
-     meck:new(logger, [passthrough]),
-     meck:expect(logger, should_log, fun(_) -> false end),
-     Result = monitoring:get_memory_stats(),
-     ?assertEqual(Result, []),
-     ?assert(meck:validate(file)),
-     ?assertEqual(ok, meck:unload(file)),
-     ?assert(meck:validate(logger)),
-     ?assertEqual(ok, meck:unload(logger)).
+     {setup,
+         fun() ->
+            meck:new(file, [unstick, passthrough]),
+            meck:expect(file, open, fun("/proc/meminfo", [read]) -> error end),
+            %% TODO logger:should_log is mocked because it
+            %% TODO fails because there is no logger_plugin module
+            mock_logger()
+         end,
+         fun(_) ->
+            unmock_logger(),
+            unmock_file()
+         end,
+        fun get_memory_stats_error/0
+     }.
 
 
  calculate_network_stats_test() ->
@@ -119,38 +144,73 @@ get_multi_core_cpu_stats_test() ->
      ?assertEqual(ExpectedNetworkStats, ActualNetworkStats).
 
 
- get_interface_stats_test() ->
-     ExpectedInterfaceStats = 1000,
-     meck:new(file, [unstick, passthrough]),
-     meck:expect(file, open, fun(_, [raw]) -> {ok, fd} end),
-     meck:expect(file, read_line, fun(fd) -> {ok, integer_to_list(ExpectedInterfaceStats) ++ "\n"} end),
-     meck:expect(file, close, fun(fd) -> ok end),
-     ActualInterfaceStats = monitoring:get_interface_stats("eth0", "rx_bytes"),
-     ?assert(meck:validate(file)),
-     ?assertEqual(ok, meck:unload(file)),
-     ?assertEqual(ExpectedInterfaceStats, ActualInterfaceStats).
+get_interface_stats_test() ->
+     {setup,
+         fun() ->
+             ExpectedInterfaceStats = 1000,
+             meck:new(file, [unstick, passthrough]),
+             meck:expect(file, open, fun(_, [raw]) -> {ok, fd} end),
+             meck:expect(file, read_line, fun(fd) ->
+                 {ok, integer_to_list(ExpectedInterfaceStats) ++ "\n"} end),
+             meck:expect(file, close, fun(fd) -> ok end),
+             ExpectedInterfaceStats
+         end,
+         fun(_) -> unmock_file() end,
+         fun get_interface_stats/1
+     }.
 
 
- get_network_stats_error_test() ->
-     meck:new(file, [unstick, passthrough]),
-     meck:expect(file, open, fun(_, [raw]) -> error end),
-     %% TODO logger:should_log is mocked because it fails because there is no logger_plugin module
-     meck:new(logger, [passthrough]),
-     meck:expect(logger, should_log, fun(_) -> false end),
-     Result = monitoring:get_interface_stats("eth0", "rx_bytes"),
-     ?assertEqual(Result, 0),
-     ?assert(meck:validate(file)),
-     ?assertEqual(ok, meck:unload(file)),
-     ?assert(meck:validate(logger)),
-     ?assertEqual(ok, meck:unload(logger)).
+file_open_error_test_() ->
+    {foreach,
+        fun() ->
+            meck:new(file, [unstick, passthrough]),
+            meck:expect(file, open, fun(_, _) -> error end),
+            %% TODO logger:should_log is mocked because it fails because
+            %% TODO there is no logger_plugin module
+            mock_logger()
+        end,
+        fun(_) ->
+            unmock_file(),
+            unmock_logger()
+        end,
+        [
+            {"errors in monitoring collection", fun errors_in_monitoring_collection/0},
+            {"get_network_stats_error", fun get_network_stats_error/0}
+        ]
+    }.
 
+%%%===================================================================
+%%% Tests functions
+%%%===================================================================
 
- errors_in_monitoring_collection_test() ->
-     meck:new(file, [unstick, passthrough]),
-     meck:expect(file, open, fun(_, _) -> error end),
-     %% TODO logger:should_log is mocked because it fails because there is no logger_plugin module
-     meck:new(logger, [passthrough]),
-     meck:expect(logger, should_log, fun(_) -> false end),
+get_single_core_cpu_stats(ExpectedCpuStats) ->
+    {ActualCpuStats, _} = monitoring:get_cpu_stats([{<<"core0">>, 0, 0}, {<<"cpu">>, 0, 0}]),
+    ?assertEqual(ExpectedCpuStats, ActualCpuStats).
+
+get_multi_core_cpu_stats(ExpectedCpuStats) ->
+    {ActualCpuStats, _} = monitoring:get_cpu_stats([
+        {<<"core3">>, 0, 0},{<<"core2">>, 0, 0}, {<<"core1">>, 0, 0},
+        {<<"core0">>, 0, 0}, {<<"cpu">>, 0, 0}]),
+    ?assertEqual(ExpectedCpuStats, ActualCpuStats).
+
+get_cpu_stats_error() ->
+    Result = monitoring:get_cpu_stats([{<<"core3">>, 0, 0}, {<<"core2">>, 0, 0}, {<<"core1">>, 0, 0},
+        {<<"core0">>, 0, 0}, {<<"cpu">>, 0, 0}]),
+    ?assertEqual(Result, {[], []}).
+
+get_memory_stats(ExpectedMemoryStats) ->
+    ActualMemoryStats = monitoring:get_memory_stats(),
+    ?assertEqual(ExpectedMemoryStats, ActualMemoryStats).
+
+get_memory_stats_error() ->
+    Result = monitoring:get_memory_stats(),
+    ?assertEqual(Result, []).
+
+get_interface_stats(ExpectedInterfaceStats) ->
+    ActualInterfaceStats = monitoring:get_interface_stats("eth0", "rx_bytes"),
+    ?assertEqual(ExpectedInterfaceStats, ActualInterfaceStats).
+
+ errors_in_monitoring_collection() ->
      MonState = monitoring:start({127,0,0,1}),
      ?assertEqual(monitoring:cpu_usage(MonState), 0.0),
      ?assertEqual(monitoring:mem_usage(MonState), 0.0),
@@ -159,13 +219,11 @@ get_multi_core_cpu_stats_test() ->
      MonState3 = monitoring:update(MonState2),
      ?assertEqual(monitoring:cpu_usage(MonState3), 0.0),
      ?assertEqual(monitoring:mem_usage(MonState3), 0.0),
-     ?assertEqual(monitoring:net_usage(MonState3), 0.0),
-     ?assert(meck:validate(file)),
-     ?assertEqual(ok, meck:unload(file)),
-     ?assert(meck:validate(logger)),
-     ?assertEqual(ok, meck:unload(logger)).
+     ?assertEqual(monitoring:net_usage(MonState3), 0.0).
 
-
+get_network_stats_error() ->
+    Result = monitoring:get_interface_stats("eth0", "rx_bytes"),
+    ?assertEqual(Result, 0).
 
 
 %% ====================================================================
@@ -215,5 +273,20 @@ create_sample_memory_stats_file() ->
             end;
         _ -> error
     end.
+
+
+mock_logger() ->
+    meck:new(logger, [passthrough]),
+    meck:expect(logger, should_log, fun(_) -> false end).
+
+
+unmock_logger() ->
+    ?assert(meck:validate(logger)),
+    ?assertEqual(ok, meck:unload(logger)).
+
+
+unmock_file() ->
+    ?assert(meck:validate(file)),
+    ?assertEqual(ok, meck:unload(file)).
 
 -endif.
