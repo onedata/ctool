@@ -15,11 +15,11 @@
 %% space_details record contains following fields:
 %% * id   - unique Space ID assigned by OZ
 %% * name - Space name
-%% * size - Space size
+%% * providers_supports - Space support sizes
 -record(space_details, {
     id :: binary(),
     name :: binary(),
-    size :: [{ProviderId :: binary(), Size :: pos_integer()}]
+    providers_supports :: [{ProviderId :: binary(), Size :: non_neg_integer()}]
 }).
 
 -endif.

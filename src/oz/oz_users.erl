@@ -217,7 +217,8 @@ get_space_details(Client, SpaceId) ->
         SpaceDetails = #space_details{
             id = proplists:get_value(<<"spaceId">>, Proplist),
             name = proplists:get_value(<<"name">>, Proplist),
-            size = proplists:get_value(<<"size">>, Proplist)
+            providers_supports = proplists:get_value(<<"providersSupports">>,
+                Proplist)
         },
         {ok, SpaceDetails}
     end).
@@ -243,7 +244,8 @@ get_default_space(Client) ->
 %% of Space to make user's default.
 %% @end
 %%--------------------------------------------------------------------
--spec set_default_space(Client :: oz_endpoint:client(), SpaceId :: binary()) ->
+-spec set_default_space(Client :: oz_endpoint:client(),
+    Parameters :: oz_endpoint:params()) ->
     ok | {error, Reason :: term()}.
 set_default_space(Client, Parameters) ->
     ?run(fun() ->

@@ -140,13 +140,13 @@ should_get_details() ->
         [
             {<<"spaceId">>, <<"spaceId">>},
             {<<"name">>, <<"name">>},
-            {<<"size">>, [{<<"providerId">>, 123}]}
+            {<<"providersSupports">>, [{<<"providerId">>, 123}]}
         ]
     end),
 
     Answer = oz_spaces:get_details(client, <<"spaceId">>),
     ?assertEqual({ok, #space_details{id = <<"spaceId">>, name = <<"name">>,
-        size = [{<<"providerId">>, 123}]}}, Answer),
+        providers_supports = [{<<"providerId">>, 123}]}}, Answer),
 
     ?assert(meck:validate(json_utils)),
     ok = meck:unload(json_utils).

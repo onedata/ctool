@@ -138,7 +138,11 @@ mock_validate(Nodes, Modules) ->
 -spec mock_unload(Nodes :: node() | [node()]) -> ok.
 mock_unload(Nodes) ->
     lists:foreach(fun(Node) ->
-        ?assertEqual(ok, rpc:call(Node, meck, unload, [], ?TIMEOUT))
+        case rpc:call(Node, meck, unload, [], ?TIMEOUT) of
+            Unloaded when is_list(Unloaded) -> ok;
+            {badrpc, {'EXIT', {{not_mocked, _}, _}}} ->
+                ok
+        end
     end, as_list(Nodes)).
 
 %%--------------------------------------------------------------------
@@ -150,9 +154,11 @@ mock_unload(Nodes) ->
     Modules :: module() | [module()]) -> ok.
 mock_unload(Nodes, Modules) ->
     lists:foreach(fun(Node) ->
-        ?assertEqual(ok, rpc:call(
-            Node, meck, unload, [as_list(Modules)], ?TIMEOUT
-        ))
+        case rpc:call(Node, meck, unload, [as_list(Modules)], ?TIMEOUT) of
+            ok -> ok;
+            {badrpc, {'EXIT', {{not_mocked, _}, _}}} ->
+                ok
+        end
     end, as_list(Nodes)).
 
 %%--------------------------------------------------------------------

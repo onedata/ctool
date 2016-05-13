@@ -27,7 +27,7 @@
 -type options() :: http_client:opts().
 -type response() :: {ok, Status :: integer(), ResponseHeaders :: headers(),
     ResponseBody :: body()} | {error, Reason :: term()}.
--type params() :: [{Key :: binary(), Value :: binary()}].
+-type params() :: [{Key :: binary(), Value :: binary() | [binary()]}].
 
 %% OZ oz_endpoint:client()
 % Tuple containing root macaroon and discharge macaroons for user auth.

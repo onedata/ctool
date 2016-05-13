@@ -117,10 +117,17 @@
             Expect = Result -> Result
         after
             Timeout ->
+                Reason = receive
+                    Result -> Result
+                after
+                    0 ->
+                        {value, timeout}
+                end,
+
                 __Args = [{module, ?MODULE},
                     {line, ?LINE},
                     {expected, (??Expect)},
-                    {value, timeout}],
+                    Reason],
                 ct:print("assertReceivedMatch_failed: ~p~n", [__Args]),
                 erlang:error({assertReceivedMatch_failed, __Args})
         end
