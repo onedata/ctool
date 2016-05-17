@@ -311,7 +311,7 @@ set_user_privileges(Client, GroupId, UserId, Parameters) ->
 %% Parameters should contain: list of "privileges" of type group_privilege().
 %% @end
 %%--------------------------------------------------------------------
--spec set_user_privileges(Client :: oz_endpoint:client(), GroupId :: binary(),
+-spec set_nested_privileges(Client :: oz_endpoint:client(), GroupId :: binary(),
     NestedGroupId :: binary(), Parameters :: oz_endpoint:params()) ->
     ok | {error, Reason :: term()}.
 set_nested_privileges(Client, GroupId, NestedGroupId, Parameters) ->
