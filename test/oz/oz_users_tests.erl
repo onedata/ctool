@@ -108,7 +108,7 @@ teardown(_) ->
 should_get_details() ->
     meck:new(json_utils),
     meck:expect(json_utils, decode, fun(response_body) ->
-            [{<<"userId">>, <<"userId">>}, {<<"name">>, <<"name">>}]
+        [{<<"userId">>, <<"userId">>}, {<<"name">>, <<"name">>}]
     end),
 
     Answer = oz_users:get_details(client),
@@ -197,9 +197,9 @@ should_leave_space() ->
 should_get_spaces() ->
     meck:new(json_utils),
     meck:expect(json_utils, decode, fun(response_body) -> [
-            {<<"spaces">>, <<"spaces">>},
-            {<<"default">>, <<"default">>}
-        ]
+        {<<"spaces">>, <<"spaces">>},
+        {<<"default">>, <<"default">>}
+    ]
     end),
 
     Answer = oz_users:get_spaces(client),
@@ -215,11 +215,11 @@ should_get_spaces() ->
 should_get_space_details() ->
     meck:new(json_utils),
     meck:expect(json_utils, decode, fun(response_body) ->
-            [
-                {<<"spaceId">>, <<"spaceId">>},
-                {<<"name">>, <<"name">>},
-                {<<"providersSupports">>, [{<<"providerId">>, 123}]}
-            ]
+        [
+            {<<"spaceId">>, <<"spaceId">>},
+            {<<"name">>, <<"name">>},
+            {<<"providersSupports">>, [{<<"providerId">>, 123}]}
+        ]
     end),
 
     Answer = oz_users:get_space_details(client, <<"spaceId">>),
@@ -244,7 +244,7 @@ should_get_default_space() ->
 should_set_default_space() ->
     meck:new(json_utils),
     meck:expect(json_utils, decode, fun(response_body) ->
-            [{<<"spaceId">>, <<"spaceId">>}]
+        [{<<"spaceId">>, <<"spaceId">>}]
     end),
 
     Answer = oz_users:get_default_space(client),
@@ -296,13 +296,14 @@ should_get_groups() ->
 
 should_get_group_details() ->
     meck:new(json_utils),
-    meck:expect(json_utils, decode, fun(response_body) ->
-            [{<<"groupId">>, <<"groupId">>}, {<<"name">>, <<"name">>}]
-    end),
+    meck:expect(json_utils, decode, fun(response_body) -> [
+        {<<"groupId">>, <<"groupId">>}, {<<"name">>, <<"name">>},
+        {<<"type">>, <<"type">>}
+    ] end),
 
     Answer = oz_users:get_group_details(client, <<"groupId">>),
     ?assertEqual({ok, #group_details{id = <<"groupId">>,
-        name = <<"name">>}}, Answer),
+        name = <<"name">>, type = <<"type">>}}, Answer),
 
     ?assert(meck:validate(json_utils)),
     ok = meck:unload(json_utils).

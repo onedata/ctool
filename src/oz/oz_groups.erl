@@ -76,7 +76,8 @@ get_details(Client, GroupId) ->
         Proplist = json_utils:decode(ResponseBody),
         GroupDetails = #group_details{
             id = proplists:get_value(<<"groupId">>, Proplist),
-            name = proplists:get_value(<<"name">>, Proplist)
+            name = proplists:get_value(<<"name">>, Proplist),
+            type = proplists:get_value(<<"type">>, Proplist)
         },
         {ok, GroupDetails}
     end).
@@ -461,3 +462,12 @@ get_space_details(Client, GroupId, SpaceId) ->
         },
         {ok, SpaceDetails}
     end).
+
+%%src/http/rest_modules/groups_rest_module.erl:149:
+%% The call group_logic:create(UserId::binary(),Name::binary(),Type::binary())
+%% will never return since the success typing is
+%% (binary(),'undefined' | binary(),'organization' | 'role' | 'team' | 'undefined' | 'unit') -> {'ok',binary()}
+%% and the contract is
+%% (UserId::binary(),Name::binary(),Type::user_group:type()) -> {'ok',GroupId::binary()}
+%%src/http/rest_modules/user_rest_module.erl:141:
+%% The call groups_rest_module:accept_resource('groups','post','undefined',Data::any(),Client::any(),Req::any()) will never return since it differs in the 1st and 3rd argument from the success typing arguments: ('group' | 'njoin' | 'npriv' | 'sjoin' | 'spaces' | 'upriv','patch' | 'post' | 'put',binary(),[{atom() | binary(),_}],any(),cowboy_req:req())

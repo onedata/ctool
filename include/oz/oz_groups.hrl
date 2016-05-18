@@ -18,7 +18,8 @@
 %% @end
 -record(group_details, {
     id :: binary(),
-    name :: binary()
+    name :: binary(),
+    type :: 'organization' | 'unit' | 'team' | 'role'
 }).
 
 -endif.
