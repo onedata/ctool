@@ -25,12 +25,6 @@
 -export([create_space/3, join_space/3, leave_space/3, get_spaces/2,
     get_space_details/3]).
 
-%% User privileges with regards to group management.
--type group_privilege() :: group_change_data | group_invite_user |
-group_remove_user | group_join_space | group_create_space |
-group_set_privileges | group_remove | group_leave_space |
-group_view_data | group_create_space_token.
-
 %%%===================================================================
 %%% API
 %%%===================================================================
@@ -240,7 +234,7 @@ get_user_details(Client, GroupId, UserId) ->
 %%--------------------------------------------------------------------
 -spec get_user_privileges(Client :: oz_endpoint:client(), GroupId :: binary(),
     UserId :: binary()) ->
-    {ok, Privileges :: [group_privilege()]} | {error, Reason :: term()}.
+    {ok, Privileges :: [privileges:group_privilege()]} | {error, Reason :: term()}.
 get_user_privileges(Client, GroupId, UserId) ->
     ?run(fun() ->
         URN = "/groups/" ++ binary_to_list(GroupId) ++ "/users/" ++
@@ -258,7 +252,7 @@ get_user_privileges(Client, GroupId, UserId) ->
 %%--------------------------------------------------------------------
 -spec get_effective_user_privileges(Client :: oz_endpoint:client(), GroupId :: binary(),
     UserId :: binary()) ->
-    {ok, Privileges :: [group_privilege()]} | {error, Reason :: term()}.
+    {ok, Privileges :: [privileges:group_privilege()]} | {error, Reason :: term()}.
 get_effective_user_privileges(Client, GroupId, UserId) ->
     ?run(fun() ->
         URN = "/groups/" ++ binary_to_list(GroupId) ++ "/effective_users/" ++
@@ -276,7 +270,7 @@ get_effective_user_privileges(Client, GroupId, UserId) ->
 %%--------------------------------------------------------------------
 -spec get_nested_privileges(Client :: oz_endpoint:client(), GroupId :: binary(),
     NestedGroupId :: binary()) ->
-    {ok, Privileges :: [group_privilege()]} | {error, Reason :: term()}.
+    {ok, Privileges :: [privileges:group_privilege()]} | {error, Reason :: term()}.
 get_nested_privileges(Client, GroupId, NestedGroupId) ->
     ?run(fun() ->
         URN = "/groups/" ++ binary_to_list(GroupId) ++ "/nested/" ++
@@ -290,7 +284,7 @@ get_nested_privileges(Client, GroupId, NestedGroupId) ->
 
 %%--------------------------------------------------------------------
 %% @doc Sets list of privileges for user that belongs to group.
-%% Parameters should contain: list of "privileges" of type group_privilege().
+%% Parameters should contain: list of "privileges" of type privileges:group_privilege().
 %% @end
 %%--------------------------------------------------------------------
 -spec set_user_privileges(Client :: oz_endpoint:client(), GroupId :: binary(),
@@ -308,7 +302,7 @@ set_user_privileges(Client, GroupId, UserId, Parameters) ->
 
 %%--------------------------------------------------------------------
 %% @doc Sets list of privileges for group that belongs to the other group.
-%% Parameters should contain: list of "privileges" of type group_privilege().
+%% Parameters should contain: list of "privileges" of type privileges:group_privilege().
 %% @end
 %%--------------------------------------------------------------------
 -spec set_nested_privileges(Client :: oz_endpoint:client(), GroupId :: binary(),
