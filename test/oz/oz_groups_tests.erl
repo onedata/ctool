@@ -202,11 +202,11 @@ should_get_user_details() ->
 should_get_user_privileges() ->
     meck:new(json_utils),
     meck:expect(json_utils, decode, fun(response_body) ->
-        [{<<"privileges">>, <<"privileges">>}]
+        [{<<"privileges">>, [<<"privilege">>]}]
     end),
 
     Answer = oz_groups:get_user_privileges(client, <<"groupId">>, <<"userId">>),
-    ?assertEqual({ok, <<"privileges">>}, Answer),
+    ?assertEqual({ok, [privilege]}, Answer),
 
     ?assert(meck:validate(json_utils)),
     ok = meck:unload(json_utils).

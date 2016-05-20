@@ -393,7 +393,7 @@ get_privileges(Client, URN) ->
             oz_endpoint:auth_request(Client, URN, get),
         Proplist = json_utils:decode(ResponseBody),
         Privileges = proplists:get_value(<<"privileges">>, Proplist),
-        {ok, Privileges}
+        {ok, lists:map(fun(Binary) -> binary_to_atom(Binary, latin1) end, Privileges)}
     end).
 
 %%--------------------------------------------------------------------

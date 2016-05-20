@@ -245,7 +245,7 @@ get_user_privileges(Client, GroupId, UserId) ->
             oz_endpoint:auth_request(Client, URN, get),
         Proplist = json_utils:decode(ResponseBody),
         Privileges = proplists:get_value(<<"privileges">>, Proplist),
-        {ok, decode_privileges(Privileges)}
+        {ok, lists:map(fun(Binary) -> binary_to_atom(Binary, latin1) end, Privileges)}
     end).
 
 %%--------------------------------------------------------------------
@@ -263,7 +263,7 @@ get_effective_user_privileges(Client, GroupId, UserId) ->
             oz_endpoint:auth_request(Client, URN, get),
         Proplist = json_utils:decode(ResponseBody),
         Privileges = proplists:get_value(<<"privileges">>, Proplist),
-        {ok, decode_privileges(Privileges)}
+        {ok, lists:map(fun(Binary) -> binary_to_atom(Binary, latin1) end, Privileges)}
     end).
 
 %%--------------------------------------------------------------------
@@ -281,7 +281,7 @@ get_nested_privileges(Client, GroupId, NestedGroupId) ->
             oz_endpoint:auth_request(Client, URN, get),
         Proplist = json_utils:decode(ResponseBody),
         Privileges = proplists:get_value(<<"privileges">>, Proplist),
-        {ok, decode_privileges(Privileges)}
+        {ok, lists:map(fun(Binary) -> binary_to_atom(Binary, latin1) end, Privileges)}
     end).
 
 %%--------------------------------------------------------------------
@@ -462,11 +462,3 @@ get_space_details(Client, GroupId, SpaceId) ->
         },
         {ok, SpaceDetails}
     end).
-
-%%--------------------------------------------------------------------
-%% @doc @private Translates list of privilege binaries to privilege atoms.
-%% @end
-%%--------------------------------------------------------------------
--spec decode_privileges(List :: [binary()]) -> [privileges:group_privilege()].
-decode_privileges(List) ->
-    lists:map(fun(Binary) -> binary_to_atom(Binary, latin1) end, List).
