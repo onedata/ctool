@@ -248,7 +248,7 @@ ensure_defined(Value, _, _) ->
 %% Provides process info. Works on local and remote node.
 %% @end
 %%--------------------------------------------------------------------
--spec process_info(Pid :: pid()) -> process_info_result_item() | undefined.
+-spec process_info(Pid :: pid()) -> {atom(), term()} | undefined.
 process_info(Pid) ->
     MyNode = node(),
     case node(Pid) of
@@ -263,8 +263,8 @@ process_info(Pid) ->
 %% Provides process info. Works on local and remote node.
 %% @end
 %%--------------------------------------------------------------------
--spec process_info(Pid :: pid(), Args :: process_info_item() | [process_info_item()]) ->
-    process_info_result_item() | [process_info_result_item()] | [] | undefined.
+-spec process_info(Pid :: pid(), Args :: atom() | [atom]) ->
+    {atom(), term()}  | [{atom(), term()}] | [] | undefined.
 process_info(Pid, Args) ->
     MyNode = node(),
     case node(Pid) of
