@@ -23,7 +23,7 @@
 -export([create_space/2, join_space/2, leave_space/2, get_spaces/1,
     get_space_details/2, get_default_space/1, set_default_space/2]).
 -export([create_group/2, join_group/2, leave_group/2, get_groups/1,
-    get_group_details/2]).
+    get_group_details/2, get_effective_groups/1]).
 
 %%%===================================================================
 %%% API
@@ -325,6 +325,22 @@ get_groups(Client) ->
     end).
 
 %%--------------------------------------------------------------------
+%% @doc Returns list of IDs of groups that user belongs to.
+%% @end
+%%--------------------------------------------------------------------
+-spec get_effective_groups(Client :: oz_endpoint:client()) ->
+    {ok, GroupIds :: [binary()]} | {error, Reason :: term()}.
+get_effective_groups(Client) ->
+    ?run(fun() ->
+        URN = "/user/effective_groups",
+        {ok, 200, _ResponseHeaders, ResponseBody} =
+            oz_endpoint:auth_request(Client, URN, get),
+        Proplist = json_utils:decode(ResponseBody),
+        GroupIds = proplists:get_value(<<"effective_groups">>, Proplist),
+        {ok, GroupIds}
+    end).
+
+%%--------------------------------------------------------------------
 %% @doc Returns public details about group that user belongs to.
 %% @end
 %%--------------------------------------------------------------------
@@ -338,7 +354,8 @@ get_group_details(Client, GroupId) ->
         Proplist = json_utils:decode(ResponseBody),
         GroupDetails = #group_details{
             id = proplists:get_value(<<"groupId">>, Proplist),
-            name = proplists:get_value(<<"name">>, Proplist)
+            name = proplists:get_value(<<"name">>, Proplist),
+            type = proplists:get_value(<<"type">>, Proplist)
         },
         {ok, GroupDetails}
     end).

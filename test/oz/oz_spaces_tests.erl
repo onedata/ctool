@@ -237,11 +237,11 @@ should_get_user_details() ->
 should_get_user_privileges() ->
     meck:new(json_utils),
     meck:expect(json_utils, decode, fun(response_body) ->
-        [{<<"privileges">>, <<"privileges">>}]
+        [{<<"privileges">>, [<<"privilege">>]}]
     end),
 
     Answer = oz_spaces:get_user_privileges(client, <<"spaceId">>, <<"userId">>),
-    ?assertEqual({ok, <<"privileges">>}, Answer),
+    ?assertEqual({ok, [privilege]}, Answer),
 
     ?assert(meck:validate(json_utils)),
     ok = meck:unload(json_utils).
@@ -250,12 +250,12 @@ should_get_user_privileges() ->
 should_get_effective_user_privileges() ->
     meck:new(json_utils),
     meck:expect(json_utils, decode, fun(response_body) ->
-        [{<<"privileges">>, <<"privileges">>}]
+        [{<<"privileges">>, [<<"privilege">>]}]
     end),
 
     Answer = oz_spaces:get_effective_user_privileges(client,
         <<"spaceId">>, <<"userId">>),
-    ?assertEqual({ok, <<"privileges">>}, Answer),
+    ?assertEqual({ok, [privilege]}, Answer),
 
     ?assert(meck:validate(json_utils)),
     ok = meck:unload(json_utils).
@@ -293,13 +293,14 @@ should_get_groups() ->
 
 should_get_group_details() ->
     meck:new(json_utils),
-    meck:expect(json_utils, decode, fun(response_body) ->
-        [{<<"groupId">>, <<"groupId">>}, {<<"name">>, <<"name">>}]
-    end),
+    meck:expect(json_utils, decode, fun(response_body) -> [
+        {<<"groupId">>, <<"groupId">>}, {<<"name">>, <<"name">>},
+        {<<"type">>, <<"type">>}
+    ] end),
 
     Answer = oz_spaces:get_group_details(client, <<"spaceId">>, <<"groupId">>),
     ?assertEqual({ok, #group_details{id = <<"groupId">>,
-        name = <<"name">>}}, Answer),
+        name = <<"name">>, type = <<"type">>}}, Answer),
 
     ?assert(meck:validate(json_utils)),
     ok = meck:unload(json_utils).
@@ -308,12 +309,12 @@ should_get_group_details() ->
 should_get_group_privileges() ->
     meck:new(json_utils),
     meck:expect(json_utils, decode, fun(response_body) ->
-        [{<<"privileges">>, <<"privileges">>}]
+        [{<<"privileges">>, [<<"privilege">>]}]
     end),
 
     Answer = oz_spaces:get_group_privileges(client,
         <<"spaceId">>, <<"groupId">>),
-    ?assertEqual({ok, <<"privileges">>}, Answer),
+    ?assertEqual({ok, [privilege]}, Answer),
 
     ?assert(meck:validate(json_utils)),
     ok = meck:unload(json_utils).
