@@ -15,7 +15,8 @@
 -export([ensure_running/1, pmap/2, pforeach/2,
     record_type/1, access_token_hash/1, trim_spaces/1, ceil/1,
     aggregate_over_first_element/1, average/1, random_shuffle/1,
-    random_element/1, get_host/1, get_host_as_atom/1, cmd/1, ensure_defined/3]).
+    random_element/1, get_host/1, get_host_as_atom/1, cmd/1, ensure_defined/3,
+    process_info/1, process_info/2]).
 -export([duration/1, adjust_duration/2]).
 -export([mkdtemp/0, mkdtemp/3, rmtempdir/1]).
 
@@ -232,7 +233,6 @@ rmtempdir(Dir) ->
     mochitemp:rmtempdir(Dir).
 
 %%--------------------------------------------------------------------
-%% @private
 %% @doc
 %% Ensures value is defined.
 %% @end
@@ -242,6 +242,37 @@ ensure_defined(UndefinedValue, UndefinedValue, DefaultValue) ->
     DefaultValue;
 ensure_defined(Value, _, _) ->
     Value.
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Provides process info. Works on local and remote node.
+%% @end
+%%--------------------------------------------------------------------
+-spec process_info(Pid :: pid()) -> {atom(), term()} | undefined.
+process_info(Pid) ->
+    MyNode = node(),
+    case node(Pid) of
+        MyNode ->
+            erlang:process_info(Pid);
+        OtherNode ->
+            rpc:call(OtherNode, erlang, process_info, [Pid])
+    end.
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Provides process info. Works on local and remote node.
+%% @end
+%%--------------------------------------------------------------------
+-spec process_info(Pid :: pid(), Args :: atom() | [atom]) ->
+    {atom(), term()}  | [{atom(), term()}] | [] | undefined.
+process_info(Pid, Args) ->
+    MyNode = node(),
+    case node(Pid) of
+        MyNode ->
+            erlang:process_info(Pid, Args);
+        OtherNode ->
+            rpc:call(OtherNode, erlang, process_info, [Pid, Args])
+    end.
 
 %%%===================================================================
 %%% Internal functions
