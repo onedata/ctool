@@ -54,7 +54,8 @@
     %   should requests be rerouted to given node.
     nodes_and_frequency = [] :: [{Node :: node(), Frequency :: float()}],
     % List of all nodes (dispatcher needs such knowledge for multicalls)
-    all_nodes = [] :: [node()]
+    all_nodes = [] :: [node()],
+    singleton_modules = [] :: [{Module :: atom(), Node :: node()}]
 }).
 
 
@@ -76,8 +77,8 @@
 
 %% API
 -export([advices_for_dnses/2, choose_nodes_for_dns/1, choose_ns_nodes_for_dns/1, initial_advice_for_dns/1]).
--export([advices_for_dispatchers/2, choose_node_for_dispatcher/2]).
--export([all_nodes_for_dispatcher/1, initial_advice_for_dispatcher/0]).
+-export([advices_for_dispatchers/3, choose_node_for_dispatcher/2]).
+-export([all_nodes_for_dispatcher/2, initial_advice_for_dispatcher/0]).
 
 
 %%%===================================================================
@@ -131,9 +132,10 @@ advices_for_dnses(NodeStates, LBState) ->
 %% based on node states of all nodes. The NodeStates list must not be empty.
 %% @end
 %%--------------------------------------------------------------------
--spec advices_for_dispatchers(NodeStates :: [#node_state{}], LBState :: #load_balancing_state{} | undefined) ->
+-spec advices_for_dispatchers(NodeStates :: [#node_state{}], LBState :: #load_balancing_state{} | undefined,
+    Singletons :: [{Module :: atom(), Node :: node() | undefined}]) ->
     {[{node(), #dispatcher_lb_advice{}}], #load_balancing_state{}}.
-advices_for_dispatchers(NodeStates, LBState) ->
+advices_for_dispatchers(NodeStates, LBState, Singletons) ->
     ExtraLoads = case LBState of
                      undefined ->
                          [];
@@ -183,7 +185,7 @@ advices_for_dispatchers(NodeStates, LBState) ->
                         []
                 end,
             {Node, #dispatcher_lb_advice{should_delegate = ShouldDelegate,
-                nodes_and_frequency = NodesAndFrequency, all_nodes = Nodes}}
+                nodes_and_frequency = NodesAndFrequency, all_nodes = Nodes, singleton_modules = Singletons}}
         end, NodesAndLoads),
     % TODO test if extra load is useful in DNS advices and maybe move it to a helper function
     % Calculate expected extra loads on each node.
@@ -265,16 +267,18 @@ choose_ns_nodes_for_dns(DNSAdvice) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec choose_node_for_dispatcher(DSNAdvice :: #dispatcher_lb_advice{}, WorkerName :: atom()) -> node().
-choose_node_for_dispatcher(Advice, _WorkerName) ->
+choose_node_for_dispatcher(Advice, WorkerName) ->
     #dispatcher_lb_advice{should_delegate = ShouldDelegate,
-        nodes_and_frequency = NodesAndFreq} = Advice,
-    case ShouldDelegate of
-        false ->
+        nodes_and_frequency = NodesAndFreq, singleton_modules = SM} = Advice,
+    case {proplists:get_value(WorkerName, SM), ShouldDelegate} of
+        {undefined, false} ->
             node();
-        true ->
+        {undefined, true} ->
             Index = choose_index(NodesAndFreq),
             {Node, _} = lists:nth(Index, NodesAndFreq),
-            Node
+            Node;
+        {DedicatedNode, _} ->
+            DedicatedNode
     end.
 
 
@@ -284,9 +288,14 @@ choose_node_for_dispatcher(Advice, _WorkerName) ->
 %% starts broadcasting advices.
 %% @end
 %%--------------------------------------------------------------------
--spec all_nodes_for_dispatcher(Advice :: #dispatcher_lb_advice{}) -> [node()].
-all_nodes_for_dispatcher(#dispatcher_lb_advice{all_nodes = AllNodes}) ->
-    AllNodes.
+-spec all_nodes_for_dispatcher(Advice :: #dispatcher_lb_advice{}, WorkerName :: atom()) -> [node()].
+all_nodes_for_dispatcher(#dispatcher_lb_advice{all_nodes = AllNodes, singleton_modules = SM}, WorkerName) ->
+    case proplists:get_value(WorkerName, SM) of
+        undefined ->
+            AllNodes;
+        DedicatedNode ->
+            DedicatedNode
+    end.
 
 
 %%--------------------------------------------------------------------
