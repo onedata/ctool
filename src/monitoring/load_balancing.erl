@@ -294,7 +294,7 @@ all_nodes_for_dispatcher(#dispatcher_lb_advice{all_nodes = AllNodes, singleton_m
         undefined ->
             AllNodes;
         DedicatedNode ->
-            DedicatedNode
+            [DedicatedNode]
     end.
 
 
