@@ -20,17 +20,17 @@
 %%%===================================================================
 
 %%--------------------------------------------------------------------
-%% @doc Should return a OZ URL.
+%% @doc Should return OZ URL.
 %%--------------------------------------------------------------------
 -callback get_oz_url() -> string().
 
 %%--------------------------------------------------------------------
-%% @doc Should return a OZ REST URL.
+%% @doc Should return OZ REST port.
 %%--------------------------------------------------------------------
--callback get_oz_rest_port() -> string().
+-callback get_oz_rest_port() -> integer().
 
 %%--------------------------------------------------------------------
-%% @doc Should return a OZ REST URL.
+%% @doc Should return OZ REST API prefix - for example /api/v3/onezone.
 %%--------------------------------------------------------------------
 -callback get_oz_rest_api_prefix() -> string().
 
