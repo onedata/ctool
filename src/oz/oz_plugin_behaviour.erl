@@ -25,6 +25,11 @@
 -callback get_oz_url() -> string().
 
 %%--------------------------------------------------------------------
+%% @doc Should return a OZ REST URL.
+%%--------------------------------------------------------------------
+-callback get_oz_rest_api_prefix() -> string().
+
+%%--------------------------------------------------------------------
 %% @doc Should return a path to file containing provider's private key.
 %%--------------------------------------------------------------------
 -callback get_key_path() -> file:name_all().

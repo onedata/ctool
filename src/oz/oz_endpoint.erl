@@ -172,7 +172,7 @@ do_noauth_request(URN, Method, Headers, Body, Options) ->
                _ -> Options
            end,
     NewHeaders = [{<<"content-type">>, <<"application/json">>} | Headers],
-    URL = oz_plugin:get_oz_url() ++ URN,
+    URL = oz_plugin:get_oz_url() ++ oz_plugin:get_oz_rest_api_prefix() ++ URN,
     http_client:request(Method, URL, NewHeaders, Body, Opts).
 
 
