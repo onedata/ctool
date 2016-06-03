@@ -209,7 +209,8 @@ prepare_auth_headers({Macaroon, DischargeMacaroons}) ->
 %%--------------------------------------------------------------------
 -spec rest_api_root() -> string().
 rest_api_root() ->
-    string:join([
-        oz_plugin:get_oz_url(), ":", oz_plugin:get_oz_rest_port(),
+    str_utils:format("~s:~B~s", [
+        oz_plugin:get_oz_url(),
+        oz_plugin:get_oz_rest_port(),
         oz_plugin:get_oz_rest_api_prefix()
-    ], "").
+    ]).
