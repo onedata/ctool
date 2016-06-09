@@ -77,7 +77,9 @@ oz_endpoint_test_() ->
 
 setup() ->
     meck:new(oz_plugin, [non_strict]),
-    meck:expect(oz_plugin, get_oz_url, fun() -> "URL/" end),
+    meck:expect(oz_plugin, get_oz_url, fun() -> "URL" end),
+    meck:expect(oz_plugin, get_oz_rest_port, fun() -> 9443 end),
+    meck:expect(oz_plugin, get_oz_rest_api_prefix, fun() -> "/PREFIX" end),
     meck:expect(oz_plugin, get_key_path, fun() -> key_path end),
     meck:expect(oz_plugin, get_cert_path, fun() -> cert_path end).
 
@@ -94,14 +96,14 @@ should_send_provider_request_1() ->
     meck:expect(http_client, request, fun
         (
             method,
-            "URL/URN",
+            "OZ_URL:9443/PREFIX/URN",
             [?CONTENT_TYPE_HEADER],
             <<>>,
             []
         ) -> ok;
         (
             method,
-            "URL/URN",
+            "OZ_URL:9443/PREFIX/URN",
             [?CONTENT_TYPE_HEADER],
             <<>>,
             [
@@ -128,14 +130,14 @@ should_send_provider_request_2() ->
     meck:expect(http_client, request, fun
         (
             method,
-            "URL/URN",
+            "OZ_URL:9443/PREFIX/URN",
             [?CONTENT_TYPE_HEADER],
             body,
             []
         ) -> ok;
         (
             method,
-            "URL/URN",
+            "OZ_URL:9443/PREFIX/URN",
             [?CONTENT_TYPE_HEADER],
             body,
             [
@@ -162,14 +164,14 @@ should_send_provider_request_3() ->
     meck:expect(http_client, request, fun
         (
             method,
-            "URL/URN",
+            "OZ_URL:9443/PREFIX/URN",
             [?CONTENT_TYPE_HEADER],
             body,
             [options]
         ) -> ok;
         (
             method,
-            "URL/URN",
+            "OZ_URL:9443/PREFIX/URN",
             [?CONTENT_TYPE_HEADER],
             body,
             [
@@ -197,14 +199,14 @@ should_send_provider_request_4() ->
     meck:expect(http_client, request, fun
         (
             method,
-            "URL/URN",
+            "OZ_URL:9443/PREFIX/URN",
             [?CONTENT_TYPE_HEADER, headers],
             body,
             [options]
         ) -> ok;
         (
             method,
-            "URL/URN",
+            "OZ_URL:9443/PREFIX/URN",
             [?CONTENT_TYPE_HEADER, headers],
             body,
             [
@@ -235,14 +237,14 @@ should_send_user_request_1() ->
     meck:expect(http_client, request, fun
         (
             method,
-            "URL/URN",
+            "OZ_URL:9443/PREFIX/URN",
             [?CONTENT_TYPE_HEADER, MH, DMH],
             <<>>,
             []
         ) when MH =:= MacaroonHeader, DMH =:= DischMacaroonsHeader -> ok;
         (
             method,
-            "URL/URN",
+            "OZ_URL:9443/PREFIX/URN",
             [?CONTENT_TYPE_HEADER, MH, DMH],
             <<>>,
             [
@@ -272,14 +274,14 @@ should_send_user_request_2() ->
     meck:expect(http_client, request, fun
         (
             method,
-            "URL/URN",
+            "OZ_URL:9443/PREFIX/URN",
             [?CONTENT_TYPE_HEADER, MH, DMH],
             body,
             []
         ) when MH =:= MacaroonHeader, DMH =:= DischMacaroonsHeader -> ok;
         (
             method,
-            "URL/URN",
+            "OZ_URL:9443/PREFIX/URN",
             [?CONTENT_TYPE_HEADER, MH, DMH],
             body,
             [
@@ -309,14 +311,14 @@ should_send_user_request_3() ->
     meck:expect(http_client, request, fun
         (
             mthd,
-            "URL/URN",
+            "OZ_URL:9443/PREFIX/URN",
             [?CONTENT_TYPE_HEADER, MH, DMH],
             body,
             [opts]
         ) when MH =:= MacaroonHeader, DMH =:= DischMacaroonsHeader -> ok;
         (
             mthd,
-            "URL/URN",
+            "OZ_URL:9443/PREFIX/URN",
             [?CONTENT_TYPE_HEADER, MH, DMH],
             body,
             [
@@ -347,14 +349,14 @@ should_send_user_request_4() ->
     meck:expect(http_client, request, fun
         (
             method,
-            "URL/URN",
+            "OZ_URL:9443/PREFIX/URN",
             [?CONTENT_TYPE_HEADER, MH, DMH, headers],
             body,
             [options]
         ) when MH =:= MacaroonHeader, DMH =:= DischMacaroonsHeader -> ok;
         (
             method,
-            "URL/URN",
+            "OZ_URL:9443/PREFIX/URN",
             [?CONTENT_TYPE_HEADER, MH, DMH, headers],
             body,
             [
