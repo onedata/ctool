@@ -25,7 +25,8 @@
 -record(dispatcher_lb_advice, {
     should_delegate = false,
     nodes_and_frequency = [] :: [{Node :: node(), Frequency :: float()}],
-    all_nodes = [] :: [node()]
+    all_nodes = [] :: [node()],
+    singleton_modules = [] :: [{Module :: atom(), Node :: node()}]
 }).
 
 -record(load_balancing_state, {
@@ -118,7 +119,7 @@ dispatcher_advices_test() ->
     },
     NodeStates = [NS1, NS2, NS3, NS4],
     LBState = #load_balancing_state{},
-    {Result, NewLBState} = load_balancing:advices_for_dispatchers(NodeStates, LBState),
+    {Result, NewLBState} = load_balancing:advices_for_dispatchers(NodeStates, LBState, []),
     % Nodes 2 and 4 should be getting extra load (delegated requests)
     % Node 2 should get more delegation as its less loaded
     #load_balancing_state{expected_extra_load = EEL} = NewLBState,
@@ -204,25 +205,31 @@ choose_nodes_for_dispatcher_test() ->
     DispAdviceNoDel = #dispatcher_lb_advice{
         nodes_and_frequency = [],
         should_delegate = false,
-        all_nodes = Nodes
+        all_nodes = Nodes,
+        singleton_modules = [{sm, Node2}]
     },
     lists:foreach(
         fun(_) ->
             Node = load_balancing:choose_node_for_dispatcher(DispAdviceNoDel, dummy_worker),
-            ?assertEqual(Node, node())
+            ?assertEqual(Node, node()),
+            SMNode = load_balancing:choose_node_for_dispatcher(DispAdviceNoDel, sm),
+            ?assertEqual(SMNode, Node2)
         end, lists:seq(1, 50)),
     DispAdviceDel = #dispatcher_lb_advice{
         nodes_and_frequency = [{Node1, 0.3}, {Node3, 0.6}, {Node4, 0.1}],
         should_delegate = true,
-        all_nodes = Nodes
+        all_nodes = Nodes,
+        singleton_modules = [{sm, Node3}]
     },
     lists:foreach(
         fun(_) ->
             Node = load_balancing:choose_node_for_dispatcher(DispAdviceDel, dummy_worker),
-            ?assert(lists:member(Node, [Node1, Node3, Node4]))
+            ?assert(lists:member(Node, [Node1, Node3, Node4])),
+            SMNode = load_balancing:choose_node_for_dispatcher(DispAdviceDel, sm),
+            ?assertEqual(SMNode, Node3)
         end, lists:seq(1, 50)),
-    ?assertEqual(load_balancing:all_nodes_for_dispatcher(DispAdviceNoDel), Nodes),
-    ?assertEqual(load_balancing:all_nodes_for_dispatcher(DispAdviceDel), Nodes),
+    ?assertEqual(load_balancing:all_nodes_for_dispatcher(DispAdviceNoDel, dummy_worker), Nodes),
+    ?assertEqual(load_balancing:all_nodes_for_dispatcher(DispAdviceDel, dummy_worker), Nodes),
     ok.
 
 
@@ -328,7 +335,7 @@ dispatcher_advices_with_errors_in_mon_data_test() ->
     },
     NodeStates = [NS1, NS2, NS3, NS4],
     LBState = #load_balancing_state{},
-    {Result, NewLBState} = load_balancing:advices_for_dispatchers(NodeStates, LBState),
+    {Result, NewLBState} = load_balancing:advices_for_dispatchers(NodeStates, LBState, []),
     % Nodes 2 and 4 should be getting extra load (delegated requests)
     % Node 2 should get more delegation as its less loaded
     #load_balancing_state{expected_extra_load = EEL} = NewLBState,
