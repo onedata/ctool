@@ -205,22 +205,28 @@ choose_nodes_for_dispatcher_test() ->
     DispAdviceNoDel = #dispatcher_lb_advice{
         nodes_and_frequency = [],
         should_delegate = false,
-        all_nodes = Nodes
+        all_nodes = Nodes,
+        singleton_modules = [{sm, Node2}]
     },
     lists:foreach(
         fun(_) ->
             Node = load_balancing:choose_node_for_dispatcher(DispAdviceNoDel, dummy_worker),
-            ?assertEqual(Node, node())
+            ?assertEqual(Node, node()),
+            SMNode = load_balancing:choose_node_for_dispatcher(DispAdviceNoDel, sm),
+            ?assertEqual(SMNode, Node2)
         end, lists:seq(1, 50)),
     DispAdviceDel = #dispatcher_lb_advice{
         nodes_and_frequency = [{Node1, 0.3}, {Node3, 0.6}, {Node4, 0.1}],
         should_delegate = true,
-        all_nodes = Nodes
+        all_nodes = Nodes,
+        singleton_modules = [{sm, Node3}]
     },
     lists:foreach(
         fun(_) ->
             Node = load_balancing:choose_node_for_dispatcher(DispAdviceDel, dummy_worker),
-            ?assert(lists:member(Node, [Node1, Node3, Node4]))
+            ?assert(lists:member(Node, [Node1, Node3, Node4])),
+            SMNode = load_balancing:choose_node_for_dispatcher(DispAdviceDel, sm),
+            ?assertEqual(SMNode, Node3)
         end, lists:seq(1, 50)),
     ?assertEqual(load_balancing:all_nodes_for_dispatcher(DispAdviceNoDel, dummy_worker), Nodes),
     ?assertEqual(load_balancing:all_nodes_for_dispatcher(DispAdviceDel, dummy_worker), Nodes),
