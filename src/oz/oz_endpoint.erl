@@ -16,6 +16,7 @@
 -export([auth_request/3, auth_request/4, auth_request/5, auth_request/6]).
 -export([noauth_request/3, noauth_request/4, noauth_request/5,
     noauth_request/6]).
+-export([rest_api_root/0]).
 
 %% Uniform Resource Name -
 %% for more details see: http://pl.wikipedia.org/wiki/Uniform_Resource_Name
@@ -168,11 +169,11 @@ do_auth_request(URN, Method, Headers, Body, Opts) ->
     Body :: body(), Options :: options()) -> response().
 do_noauth_request(URN, Method, Headers, Body, Options) ->
     Opts = case application:get_env(ctool, verify_oz_cert) of
-               {ok, false} -> [insecure | Options];
-               _ -> Options
-           end,
+        {ok, false} -> [insecure | Options];
+        _ -> Options
+    end,
     NewHeaders = [{<<"content-type">>, <<"application/json">>} | Headers],
-    URL = oz_plugin:get_oz_url() ++ URN,
+    URL = rest_api_root() ++ URN,
     http_client:request(Method, URL, NewHeaders, Body, Opts).
 
 
@@ -197,3 +198,19 @@ prepare_auth_headers({Macaroon, DischargeMacaroons}) ->
         {<<"macaroon">>, SerializedMacaroon},
         {<<"discharge-macaroons">>, BoundMacaroonsValue}
     ].
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Returns root path to OZ REST API, for example:
+%%      https://onedata.org:8443/api/v3/onezone
+%% based on information obtained from oz_plugin.
+%% @end
+%%--------------------------------------------------------------------
+-spec rest_api_root() -> string().
+rest_api_root() ->
+    str_utils:format("~s:~B~s", [
+        oz_plugin:get_oz_url(),
+        oz_plugin:get_oz_rest_port(),
+        oz_plugin:get_oz_rest_api_prefix()
+    ]).
