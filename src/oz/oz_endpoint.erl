@@ -57,7 +57,7 @@
 -spec auth_request(Auth :: auth(), URN :: urn(), Method :: method()) ->
     response().
 auth_request(Auth, URN, Method) ->
-    auth_request(Auth, URN, Method, <<>>).
+    oz_endpoint:auth_request(Auth, URN, Method, <<>>).
 
 %%--------------------------------------------------------------------
 %% @equiv auth_request(Auth, URN, Method, Body, [])
@@ -66,7 +66,7 @@ auth_request(Auth, URN, Method) ->
 -spec auth_request(Auth :: auth(), URN :: urn(), Method :: method(),
     Body :: body()) -> response().
 auth_request(Auth, URN, Method, Body) ->
-    auth_request(Auth, URN, Method, Body, []).
+    oz_endpoint:auth_request(Auth, URN, Method, Body, []).
 
 %%--------------------------------------------------------------------
 %% @equiv auth_request(Auth, URN, Method, [], Body, Options)
@@ -75,7 +75,7 @@ auth_request(Auth, URN, Method, Body) ->
 -spec auth_request(Auth :: auth(), URN :: urn(), Method :: method(),
     Body :: body(), Options :: options()) -> response().
 auth_request(Auth, URN, Method, Body, Options) ->
-    auth_request(Auth, URN, Method, [], Body, Options).
+    oz_endpoint:auth_request(Auth, URN, Method, [], Body, Options).
 
 %%--------------------------------------------------------------------
 %% @doc Sends authenticated request to OZ.
@@ -94,7 +94,7 @@ auth_request(Auth, URN, Method, Headers, Body, Options) ->
 -spec noauth_request(Auth :: auth(), URN :: urn(), Method :: method()) ->
     response().
 noauth_request(Auth, URN, Method) ->
-    noauth_request(Auth, URN, Method, <<>>).
+    oz_endpoint:noauth_request(Auth, URN, Method, <<>>).
 
 %%--------------------------------------------------------------------
 %% @equiv noauth_request(Auth, URN, Method, Body, [])
@@ -103,7 +103,7 @@ noauth_request(Auth, URN, Method) ->
 -spec noauth_request(Auth :: auth(), URN :: urn(), Method :: method(),
     Body :: body()) -> response().
 noauth_request(Auth, URN, Method, Body) ->
-    noauth_request(Auth, URN, Method, Body, []).
+    oz_endpoint:noauth_request(Auth, URN, Method, Body, []).
 
 %%--------------------------------------------------------------------
 %% @equiv noauth_request(Auth, URN, Method, [], Body, Options)
@@ -112,7 +112,7 @@ noauth_request(Auth, URN, Method, Body) ->
 -spec noauth_request(Auth :: auth(), URN :: urn(), Method :: method(),
     Body :: body(), Options :: list()) -> response().
 noauth_request(Auth, URN, Method, Body, Options) ->
-    noauth_request(Auth, URN, Method, [], Body, Options).
+    oz_endpoint:noauth_request(Auth, URN, Method, [], Body, Options).
 
 %%--------------------------------------------------------------------
 %% @doc Sends unauthenticated request to OZ.
