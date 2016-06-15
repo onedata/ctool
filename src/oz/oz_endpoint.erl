@@ -34,111 +34,94 @@
 % Tuple containing root macaroon and discharge macaroons for user auth.
 -type macaroons() :: {Macaroon :: macaroon:macaroon(),
     DischargeMacaroons :: [macaroon:macaroon()]}.
--type client() :: client | provider | {user, macaroons()} |
-{try_user, macaroons()}.
+-type client() :: client | provider | {user, token, macaroons()} |
+% Credentials are in form "Basic base64(user:password)"
+{user, basic, Credentials :: binary()}.
+% Auth is an arbitrary term, which is treated like a black box by ctool.
+% It can carry any information, the only condition is that the project
+% using ctool implements the callback oz_plugin:auth_to_rest_client/1.
+% The callback changes the Auth term() to rest client type that ctool
+% can understand -> see client() type.
+-type auth() :: term().
 
--export_type([client/0, params/0, urn/0]).
+-export_type([auth/0, client/0, params/0, urn/0]).
 
 %%%===================================================================
 %%% API
 %%%===================================================================
 
 %%--------------------------------------------------------------------
-%% @equiv auth_request(Client, URN, Method, [])
+%% @equiv auth_request(Auth, URN, Method, [])
 %% @end
 %%--------------------------------------------------------------------
--spec auth_request(Client :: client(), URN :: urn(), Method :: method()) ->
+-spec auth_request(Auth :: auth(), URN :: urn(), Method :: method()) ->
     response().
-auth_request(Client, URN, Method) ->
-    oz_endpoint:auth_request(Client, URN, Method, <<>>).
+auth_request(Auth, URN, Method) ->
+    oz_endpoint:auth_request(Auth, URN, Method, <<>>).
 
 %%--------------------------------------------------------------------
-%% @equiv auth_request(Client, URN, Method, Body, [])
+%% @equiv auth_request(Auth, URN, Method, Body, [])
 %% @end
 %%--------------------------------------------------------------------
--spec auth_request(Client :: client(), URN :: urn(), Method :: method(),
+-spec auth_request(Auth :: auth(), URN :: urn(), Method :: method(),
     Body :: body()) -> response().
-auth_request(Client, URN, Method, Body) ->
-    oz_endpoint:auth_request(Client, URN, Method, Body, []).
+auth_request(Auth, URN, Method, Body) ->
+    oz_endpoint:auth_request(Auth, URN, Method, Body, []).
 
 %%--------------------------------------------------------------------
-%% @equiv auth_request(Client, URN, Method, [], Body, Options)
+%% @equiv auth_request(Auth, URN, Method, [], Body, Options)
 %% @end
 %%--------------------------------------------------------------------
--spec auth_request(Client :: client(), URN :: urn(), Method :: method(),
+-spec auth_request(Auth :: auth(), URN :: urn(), Method :: method(),
     Body :: body(), Options :: options()) -> response().
-auth_request(Client, URN, Method, Body, Options) ->
-    oz_endpoint:auth_request(Client, URN, Method, [], Body, Options).
+auth_request(Auth, URN, Method, Body, Options) ->
+    oz_endpoint:auth_request(Auth, URN, Method, [], Body, Options).
 
 %%--------------------------------------------------------------------
 %% @doc Sends authenticated request to OZ.
-%% Context depends on oz_endpoint:client() type.
 %% @end
 %%--------------------------------------------------------------------
--spec auth_request(Client :: client(), URN :: urn(), Method :: method(),
+-spec auth_request(Auth :: auth(), URN :: urn(), Method :: method(),
     Headers :: headers(), Body :: body(), Options :: options()) -> response().
-auth_request(client, URN, Method, Headers, Body, Options) ->
-    do_auth_request(URN, Method, Headers, Body, Options);
-
-auth_request(provider, URN, Method, Headers, Body, Options) ->
-    do_auth_request(URN, Method, Headers, Body, Options);
-
-auth_request({Type, undefined}, URN, Method, Headers, Body, Options)
-    when Type =:= user; Type =:= try_user ->
-    do_auth_request(URN, Method, Headers, Body, Options);
-
-auth_request({Type, Macaroons}, URN, Method, Headers, Body, Options)
-    when Type =:= user; Type =:= try_user ->
-    AuthHeaders = prepare_auth_headers(Macaroons),
+auth_request(Auth, URN, Method, Headers, Body, Options) ->
+    AuthHeaders = prepare_auth_headers(Auth),
     do_auth_request(URN, Method, AuthHeaders ++ Headers, Body, Options).
 
 %%--------------------------------------------------------------------
-%% @equiv noauth_request(Client, URN, Method, [])
+%% @equiv noauth_request(Auth, URN, Method, [])
 %% @end
 %%--------------------------------------------------------------------
--spec noauth_request(Client :: client(), URN :: urn(), Method :: method()) ->
+-spec noauth_request(Auth :: auth(), URN :: urn(), Method :: method()) ->
     response().
-noauth_request(Client, URN, Method) ->
-    oz_endpoint:noauth_request(Client, URN, Method, <<>>).
+noauth_request(Auth, URN, Method) ->
+    oz_endpoint:noauth_request(Auth, URN, Method, <<>>).
 
 %%--------------------------------------------------------------------
-%% @equiv noauth_request(Client, URN, Method, Body, [])
+%% @equiv noauth_request(Auth, URN, Method, Body, [])
 %% @end
 %%--------------------------------------------------------------------
--spec noauth_request(Client :: client(), URN :: urn(), Method :: method(),
+-spec noauth_request(Auth :: auth(), URN :: urn(), Method :: method(),
     Body :: body()) -> response().
-noauth_request(Client, URN, Method, Body) ->
-    oz_endpoint:noauth_request(Client, URN, Method, Body, []).
+noauth_request(Auth, URN, Method, Body) ->
+    oz_endpoint:noauth_request(Auth, URN, Method, Body, []).
 
 %%--------------------------------------------------------------------
-%% @equiv noauth_request(Client, URN, Method, [], Body, Options)
+%% @equiv noauth_request(Auth, URN, Method, [], Body, Options)
 %% @end
 %%--------------------------------------------------------------------
--spec noauth_request(Client :: client(), URN :: urn(), Method :: method(),
+-spec noauth_request(Auth :: auth(), URN :: urn(), Method :: method(),
     Body :: body(), Options :: list()) -> response().
-noauth_request(Client, URN, Method, Body, Options) ->
-    oz_endpoint:noauth_request(Client, URN, Method, [], Body, Options).
+noauth_request(Auth, URN, Method, Body, Options) ->
+    oz_endpoint:noauth_request(Auth, URN, Method, [], Body, Options).
 
 %%--------------------------------------------------------------------
 %% @doc Sends unauthenticated request to OZ.
-%% Context depends on oz_endpoint:client() type.
 %% @end
 %%--------------------------------------------------------------------
--spec noauth_request(Client :: client(), URN :: urn(), Method :: method(),
+-spec noauth_request(Auth :: auth(), URN :: urn(), Method :: method(),
     Headers :: headers(), Body :: body(), Options :: options()) -> response().
-noauth_request(client, URN, Method, Headers, Body, Options) ->
-    do_noauth_request(URN, Method, Headers, Body, Options);
-
-noauth_request(provider, URN, Method, Headers, Body, Options) ->
-    do_noauth_request(URN, Method, Headers, Body, Options);
-
-noauth_request({Type, undefined}, URN, Method, Headers, Body, Options)
-    when Type =:= user; Type =:= try_user ->
-    do_noauth_request(URN, Method, Headers, Body, Options);
-
-noauth_request({Type, Macaroons}, URN, Method, Headers, Body, Options)
-    when Type =:= user; Type =:= try_user ->
-    AuthHeaders = prepare_auth_headers(Macaroons),
+noauth_request(Auth, URN, Method, Headers, Body, Options) ->
+    AuthHeaders = prepare_auth_headers(Auth),
     do_noauth_request(URN, Method, AuthHeaders ++ Headers, Body, Options).
 
 
@@ -178,29 +161,6 @@ do_noauth_request(URN, Method, Headers, Body, Options) ->
 
 
 %%--------------------------------------------------------------------
-%% @doc Returns properly formatted headers with macaroons.
-%% @end
-%%--------------------------------------------------------------------
--spec prepare_auth_headers(Macaroons :: macaroons()) ->
-    [{Key :: binary(), Val :: binary()}].
-prepare_auth_headers({Macaroon, DischargeMacaroons}) ->
-    BoundMacaroons = lists:map(
-        fun(DM) ->
-            BDM = macaroon:prepare_for_request(Macaroon, DM),
-            {ok, SerializedBDM} = macaroon:serialize(BDM),
-            SerializedBDM
-        end, DischargeMacaroons),
-    % Bound discharge macaroons are sent in one header,
-    % separated by spaces.
-    {ok, SerializedMacaroon} = macaroon:serialize(Macaroon),
-    BoundMacaroonsValue = str_utils:join_binary(BoundMacaroons, <<" ">>),
-    [
-        {<<"macaroon">>, SerializedMacaroon},
-        {<<"discharge-macaroons">>, BoundMacaroonsValue}
-    ].
-
-
-%%--------------------------------------------------------------------
 %% @doc
 %% Returns root path to OZ REST API, for example:
 %%      https://onedata.org:8443/api/v3/onezone
@@ -214,3 +174,38 @@ rest_api_root() ->
         oz_plugin:get_oz_rest_port(),
         oz_plugin:get_oz_rest_api_prefix()
     ]).
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Returns properly formatted auth headers (i.e. macaroon, basic auth),
+%% depending on type of REST client.
+%% @end
+%%--------------------------------------------------------------------
+-spec prepare_auth_headers(Auth :: auth()) ->
+    [{Key :: binary(), Val :: binary()}].
+prepare_auth_headers(Auth) ->
+    % Check REST client type and return auth headers if needed.
+    case oz_plugin:auth_to_rest_client(Auth) of
+        {user, token, {Macaroon, DischargeMacaroons}} ->
+            BoundMacaroons = lists:map(
+                fun(DM) ->
+                    BDM = macaroon:prepare_for_request(Macaroon, DM),
+                    {ok, SerializedBDM} = macaroon:serialize(BDM),
+                    SerializedBDM
+                end, DischargeMacaroons),
+            % Bound discharge macaroons are sent in one header,
+            % separated by spaces.
+            {ok, SerializedMacaroon} = macaroon:serialize(Macaroon),
+            BoundMacaroonsVal = str_utils:join_binary(BoundMacaroons, <<" ">>),
+            [
+                {<<"macaroon">>, SerializedMacaroon},
+                {<<"discharge-macaroons">>, BoundMacaroonsVal}
+            ];
+        {user, basic, BasicAuthHeader} ->
+            [
+                {<<"Authorization">>, BasicAuthHeader}
+            ];
+        _ ->
+            []
+    end.
