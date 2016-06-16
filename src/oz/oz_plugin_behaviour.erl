@@ -7,7 +7,7 @@
 %%%-------------------------------------------------------------------
 %%% @doc This behaviour specifies an API for OZ plugin -
 %%% a module that provides necessary data to connect to OZ.
-%%% Every project using OZ REST API oz_endpoint:client() must
+%%% Every project using OZ REST API client must
 %%% implement this behaviour and the implementing module
 %%% must be called oz_plugin.
 %%% @end
