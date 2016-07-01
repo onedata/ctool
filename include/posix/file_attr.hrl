@@ -15,7 +15,8 @@
 %% File types
 -define(REGULAR_FILE_TYPE, 'REG').
 -define(DIRECTORY_TYPE, 'DIR').
--define(LINK_TYPE, 'LNK').
+-define(SYMLINK_TYPE, 'LNK').
+-define(PHANTOM_TYPE, 'PHN').
 
 -record(file_attr, {
     uuid :: undefined | binary() | atom() | integer(),
@@ -26,7 +27,7 @@
     atime = 0 :: non_neg_integer(),
     mtime = 0 :: non_neg_integer(),
     ctime = 0 :: non_neg_integer(),
-    type :: ?REGULAR_FILE_TYPE | ?DIRECTORY_TYPE | ?LINK_TYPE,
+    type :: ?REGULAR_FILE_TYPE | ?DIRECTORY_TYPE | ?SYMLINK_TYPE,
     size = 0 :: undefined | non_neg_integer()
 }).
 
