@@ -20,7 +20,7 @@
 -define(MACAROON, macaroon:create("Location", "Key", "Macaroon")).
 % Request header with root macaroon
 macaroon_header() ->
-    {ok, Bin} = macaroon:serialize(?MACAROON),
+    {ok, Bin} = token_utils:serialize64(?MACAROON),
     {<<"macaroon">>, Bin}.
 
 % List of disch macaroons
@@ -34,7 +34,7 @@ disch_macaroons_header() ->
     Macaroon = ?MACAROON,
     BoundMacaroons = lists:map(fun(DM) ->
         BDM = macaroon:prepare_for_request(Macaroon, DM),
-        {ok, Bin} = macaroon:serialize(BDM),
+        {ok, Bin} = token_utils:serialize64(BDM),
         Bin
     end, ?DISCH_MACAROONS),
     {<<"discharge-macaroons">>, str_utils:join_binary(BoundMacaroons, <<" ">>)}.
