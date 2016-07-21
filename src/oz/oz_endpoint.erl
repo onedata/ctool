@@ -191,12 +191,12 @@ prepare_auth_headers(Auth) ->
             BoundMacaroons = lists:map(
                 fun(DM) ->
                     BDM = macaroon:prepare_for_request(Macaroon, DM),
-                    {ok, SerializedBDM} = macaroon:serialize(BDM),
+                    {ok, SerializedBDM} = token_utils:serialize64(BDM),
                     SerializedBDM
                 end, DischargeMacaroons),
             % Bound discharge macaroons are sent in one header,
             % separated by spaces.
-            {ok, SerializedMacaroon} = macaroon:serialize(Macaroon),
+            {ok, SerializedMacaroon} = token_utils:serialize64(Macaroon),
             BoundMacaroonsVal = str_utils:join_binary(BoundMacaroons, <<" ">>),
             [
                 {<<"macaroon">>, SerializedMacaroon},
