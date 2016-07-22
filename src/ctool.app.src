@@ -18,7 +18,7 @@
         kernel,
         stdlib,
         lager,
-        % Web client will start ssl2 and hackney
+        % Web client will start etls and hackney
         web_client,
         cowboy,
         gproc
