@@ -33,7 +33,7 @@
     net_stats = [] :: [{Name :: binary(), Value :: float()}],
     cpu_last = [] :: [{Name :: binary(), WorkJiffies :: integer(), TotalJiffies :: integer()}],
     net_last = [] :: [{rx_b | tx_b | rx_p | tx_p | maxthp, Name :: binary(), Value :: integer()}],
-    erlang_vm_cpu = 0 :: float(),
+    erlang_vm_cpu = 0.0 :: float(),
     erlang_vm_mem = [] :: [{Type :: atom(), Size :: non_neg_integer()}],
     erlang_vm_processes_num = 0 :: non_neg_integer(),
     last_update = 0 :: integer() % Timestamp of the last measurement in seconds since epoch
