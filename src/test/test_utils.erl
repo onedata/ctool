@@ -93,7 +93,7 @@ mock_new(Nodes, Modules, Options) ->
             erlang:spawn_link(Node, fun() ->
                 try
                     process_flag(trap_exit, true),
-                    ?assertMatch(ok, catch meck:new(Module, Options), 5, timer:seconds(1)),
+                    ?assertMatch(ok, catch meck:new(Module, Options), 5),
                     Parent ! Ref,
                     receive
                         {'EXIT', Parent, _} -> meck:unload(Module);
