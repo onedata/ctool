@@ -5,7 +5,7 @@
 %%% cited in 'LICENSE.txt'
 %%% @end
 %%%-------------------------------------------------------------------
-%%% @doc This module allows identity info retrieval from OZ.
+%%% @doc This module manages identity info in OZ.
 %%% @end
 %%%-------------------------------------------------------------------
 
@@ -18,7 +18,7 @@
 -include("logging.hrl").
 
 %% API
--export([get_public_key/2, set_public_key/3]).
+-export([get_public_key/2, set_public_key/3, register_provider/2]).
 
 %%%===================================================================
 %%% API
@@ -29,15 +29,15 @@
 %% This info can be used to verify identity basing on certificate info.
 %% @end
 %%--------------------------------------------------------------------
--spec get_public_key(Auth :: oz_endpoint:auth(), ID :: identity:id()) ->
-    {ok, identity:public_key()} |
+-spec get_public_key(Auth :: oz_endpoint:auth(), ID :: binary()) ->
+    {ok, PublicKey :: term()} |
     {error, Reason :: term()}.
 get_public_key(Auth, ID) ->
     ?run(fun() ->
         EncodedID = binary_to_list(http_utils:url_encode(ID)),
         URN = "/publickey/" ++ EncodedID,
         {ok, 200, _ResponseHeaders, ResponseBody} =
-            oz_endpoint:noauth_request(Auth, URN, get, [], [insecure]),
+            oz_endpoint:noauth_request(Auth, URN, get, []),
         Data = json_utils:decode(ResponseBody),
         EncodedPublicKey = proplists:get_value(<<"publicKey">>, Data),
         PublicKey = binary_to_term(base64:decode(EncodedPublicKey)),
@@ -48,8 +48,8 @@ get_public_key(Auth, ID) ->
 %% @doc Setups identity info (public key) in OZ for given ID.
 %% @end
 %%--------------------------------------------------------------------
--spec set_public_key(Auth :: oz_endpoint:auth(), ID :: identity:id(),
-    PublicKey :: identity:public_key()) ->
+-spec set_public_key(Auth :: oz_endpoint:auth(), ID :: binary(),
+    PublicKey :: term()) ->
     ok | {error, Reason :: term()}.
 set_public_key(Auth, ID, PublicKey) ->
     ?run(fun() ->
@@ -58,7 +58,37 @@ set_public_key(Auth, ID, PublicKey) ->
         Encoded = base64:encode(term_to_binary(PublicKey)),
         Body = json_utils:encode([{<<"publicKey">>, Encoded}]),
         {ok, 204, _ResponseHeaders, _ResponseBody} =
-            oz_endpoint:noauth_request(Auth, URN, post, Body, [insecure]),
+            oz_endpoint:noauth_request(Auth, URN, post, Body),
         ok
+    end).
+
+%%--------------------------------------------------------------------
+%% @doc Registers provider in OZ. Parameters should contain:
+%% "ID" that will be ID of this provider (extracted from identity cert),
+%% "publicKey" extracted from identity cert,
+%% "urls" to cluster nodes
+%% "redirectionPoint" to provider's GUI and "clientName".
+%% @end
+%%--------------------------------------------------------------------
+-spec register_provider(Auth :: oz_endpoint:auth(),
+    Parameters :: oz_endpoint:params()) ->
+    {ok, ProviderID :: binary(), OzID :: binary(), OzPublicKey :: term()} |
+    {error, Reason :: term()}.
+register_provider(Auth, Parameters) ->
+    ?run(fun() ->
+        ID = proplists:get_value(<<"ID">>, Parameters),
+        EncodedID = binary_to_list(http_utils:url_encode(ID)),
+        URN = "/provider_data/" ++ EncodedID,
+
+        Body = json_utils:encode(Parameters),
+        {ok, 200, _ResponseHeaders, ResponseBody} =
+            oz_endpoint:noauth_request(Auth, URN, post, Body),
+        Data = json_utils:decode(ResponseBody),
+
+        ProviderID = proplists:get_value(<<"providerID">>, Data),
+        OzID = proplists:get_value(<<"ozID">>, Data),
+        RawOzPublicKey = proplists:get_value(<<"ozPublicKey">>, Data),
+        OzPublicKey = binary_to_term(base64:decode(RawOzPublicKey)),
+        {ok, ProviderID, OzID, OzPublicKey}
     end).
 
