@@ -46,8 +46,11 @@ enable_datastore_models([H | _] = Nodes, Models) ->
 
     catch mock_new(Nodes, [plugins]),
     ok = mock_expect(Nodes, plugins, apply,
-        fun(datastore_config_plugin, models, []) ->
-            meck:passthrough([datastore_config_plugin, models, []]) ++ Models
+        fun
+            (datastore_config_plugin, models, []) ->
+                meck:passthrough([datastore_config_plugin, models, []]) ++ Models;
+            (A1, A2, A3) ->
+                meck:passthrough([A1, A2, A3])
         end),
 
     lists:foreach(
