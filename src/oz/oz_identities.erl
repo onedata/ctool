@@ -30,18 +30,17 @@
 %% @end
 %%--------------------------------------------------------------------
 -spec get_public_key(Auth :: oz_endpoint:auth(), ID :: binary()) ->
-    {ok, PublicKey :: term()} |
+    {ok, EncodedPublicKey :: binary()} |
     {error, Reason :: term()}.
 get_public_key(Auth, ID) ->
     ?run(fun() ->
         EncodedID = binary_to_list(http_utils:url_encode(ID)),
         URN = "/publickey/" ++ EncodedID,
         {ok, 200, _ResponseHeaders, ResponseBody} =
-            oz_endpoint:noauth_request(Auth, URN, get, []),
+            oz_endpoint:noauth_request(Auth, URN, get, <<>>),
         Data = json_utils:decode(ResponseBody),
         EncodedPublicKey = proplists:get_value(<<"publicKey">>, Data),
-        PublicKey = binary_to_term(base64:decode(EncodedPublicKey)),
-        {ok, PublicKey}
+        {ok, EncodedPublicKey}
     end).
 
 %%--------------------------------------------------------------------
@@ -49,14 +48,13 @@ get_public_key(Auth, ID) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec set_public_key(Auth :: oz_endpoint:auth(), ID :: binary(),
-    PublicKey :: term()) ->
+    EncodedPublicKey :: binary()) ->
     ok | {error, Reason :: term()}.
-set_public_key(Auth, ID, PublicKey) ->
+set_public_key(Auth, ID, EncodedPublicKey) ->
     ?run(fun() ->
         EncodedID = binary_to_list(http_utils:url_encode(ID)),
         URN = "/publickey/" ++ EncodedID,
-        Encoded = base64:encode(term_to_binary(PublicKey)),
-        Body = json_utils:encode([{<<"publicKey">>, Encoded}]),
+        Body = json_utils:encode([{<<"publicKey">>, EncodedPublicKey}]),
         {ok, 204, _ResponseHeaders, _ResponseBody} =
             oz_endpoint:noauth_request(Auth, URN, post, Body),
         ok
@@ -72,8 +70,7 @@ set_public_key(Auth, ID, PublicKey) ->
 %%--------------------------------------------------------------------
 -spec register_provider(Auth :: oz_endpoint:auth(),
     Parameters :: oz_endpoint:params()) ->
-    {ok, ProviderID :: binary(), OzID :: binary(), OzPublicKey :: term()} |
-    {error, Reason :: term()}.
+    ok | {error, Reason :: term()}.
 register_provider(Auth, Parameters) ->
     ?run(fun() ->
         ID = proplists:get_value(<<"ID">>, Parameters),
@@ -81,14 +78,8 @@ register_provider(Auth, Parameters) ->
         URN = "/provider_data/" ++ EncodedID,
 
         Body = json_utils:encode(Parameters),
-        {ok, 200, _ResponseHeaders, ResponseBody} =
+        {ok, 200, _ResponseHeaders, _ResponseBody} =
             oz_endpoint:noauth_request(Auth, URN, post, Body),
-        Data = json_utils:decode(ResponseBody),
-
-        ProviderID = proplists:get_value(<<"providerID">>, Data),
-        OzID = proplists:get_value(<<"ozID">>, Data),
-        RawOzPublicKey = proplists:get_value(<<"ozPublicKey">>, Data),
-        OzPublicKey = binary_to_term(base64:decode(RawOzPublicKey)),
-        {ok, ProviderID, OzID, OzPublicKey}
+        ok
     end).
 
