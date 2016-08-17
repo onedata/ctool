@@ -44,6 +44,7 @@ enable_datastore_models([H | _] = Nodes, Models) ->
             {_, []} = rpc:multicall(Nodes, code, load_binary, [Module, Filename, Binary])
         end, Models),
 
+    mock_unload(Nodes, [plugins]),
     catch mock_new(Nodes, [plugins]),
     ok = mock_expect(Nodes, plugins, apply,
         fun(datastore_config_plugin, models, []) ->
