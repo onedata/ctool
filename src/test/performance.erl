@@ -293,7 +293,7 @@ set_up_stress_test(SuiteName, CasesNames, NoClearingCases) ->
 %% Saves information about tests to be done during stress test.
 %% @end
 %%--------------------------------------------------------------------
--spec save_suite_and_cases(Suite :: atom(), Cases :: list()) -> ok.
+-spec save_suite_and_cases(Suite :: atom(), Cases :: list()) -> list().
 save_suite_and_cases(Suite, Cases) ->
     case Cases of
         [] ->
