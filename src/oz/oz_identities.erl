@@ -78,7 +78,7 @@ register_provider(Auth, Parameters) ->
         URN = "/provider_data/" ++ EncodedID,
 
         Body = json_utils:encode(Parameters),
-        {ok, 200, _ResponseHeaders, _ResponseBody} =
+        {ok, 204, _ResponseHeaders, _ResponseBody} =
             oz_endpoint:noauth_request(Auth, URN, post, Body),
         ok
     end).
