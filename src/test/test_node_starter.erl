@@ -27,7 +27,8 @@
     {op_worker, op_worker_nodes},
     {cluster_worker, cluster_worker_nodes},
     {cluster_manager, cluster_manager_nodes},
-    {oz_worker, oz_worker_nodes}
+    {oz_worker, oz_worker_nodes},
+    {onepanel, onepanel_nodes}
 ]).
 
 %%%===================================================================
@@ -79,6 +80,7 @@ prepare_test_environment(Config, DescriptionFile, TestModule, LoadModules, Apps)
             "--bin-cluster-worker", ProjectRoot,
             "--bin-worker", ProjectRoot,
             "--bin-oz", ProjectRoot,
+            "--bin-onepanel", ProjectRoot,
             %% additionally AppMock can be started
             "--bin-appmock", AppmockRoot,
             "--bin-cm", CmRoot,
@@ -171,22 +173,21 @@ clean_environment(Config, Apps) ->
                     ?config(ConfigName, Config)
                 end, Apps),
 
-                lists:foreach(
-                    fun(_N) ->
-                        receive
-                            {app_ended, CoverNode, FileData} ->
-                                {Mega, Sec, Micro} = os:timestamp(),
-                                CoverFile = atom_to_list(CoverNode) ++
-                                    integer_to_list((Mega * 1000000 + Sec) * 1000000 + Micro) ++
-                                    ".coverdata",
-                                ok = file:write_file(CoverFile, FileData),
-                                cover:import(CoverFile),
-                                file:delete(CoverFile)
-                        after
-                            ?TIMEOUT -> throw(cover_not_received)
-                        end
-                    end, AllNodes
-                ),
+                lists:foreach(fun(_) ->
+                    receive
+                        {app_ended, CoverNode, FileData} ->
+                            {Mega, Sec, Micro} = os:timestamp(),
+                            CoverFile = atom_to_list(CoverNode) ++
+                                integer_to_list(
+                                    (Mega * 1000000 + Sec) * 1000000 + Micro) ++
+                                ".coverdata",
+                            ok = file:write_file(CoverFile, FileData),
+                            cover:import(CoverFile),
+                            file:delete(CoverFile)
+                    after
+                        ?TIMEOUT -> throw(cover_not_received)
+                    end
+                end, AllNodes),
                 ok
         end
     catch
@@ -360,7 +361,7 @@ load_modules(Nodes, Modules) ->
 %%--------------------------------------------------------------------
 %% @private
 %% @doc
-%% Get one key by concatenating many json keys, separated with "/" 
+%% Get one key by concatenating many json keys, separated with "/"
 %% @end
 %%--------------------------------------------------------------------
 -spec get_json_key(Node :: atom(), Domain :: string(), NodeType :: string(),
@@ -395,7 +396,9 @@ get_cookies(Nodes, AppName, CookieKey, DescriptionFile) ->
             op_worker ->
                 get_json_key(Node, "provider_domains", "op_worker", CookieKey);
             cluster_worker ->
-                get_json_key(Node, "cluster_domains", "cluster_worker", CookieKey)
+                get_json_key(Node, "cluster_domains", "cluster_worker", CookieKey);
+            onepanel ->
+                get_json_key(Node, "onepanel_domains", "onepanel", CookieKey)
         end,
         case AppName of
             cluster_manager ->
