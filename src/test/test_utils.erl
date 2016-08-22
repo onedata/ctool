@@ -20,6 +20,7 @@
     mock_unload/2, mock_validate_and_unload/2, mock_assert_num_calls/5]).
 -export([get_env/3, set_env/4]).
 -export([enable_datastore_models/2]).
+-export([get_docker_ip/1]).
 
 -type mock_opt() :: passthrough | non_strict | unstick | no_link.
 
@@ -214,6 +215,20 @@ get_env(Node, Application, Name) ->
     ok | {badrpc, Reason :: term()}.
 set_env(Node, Application, Name, Value) ->
     rpc:call(Node, application, set_env, [Application, Name, Value]).
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Contacts docker daemon to check the IP of given node started as docker.
+%% @end
+%%--------------------------------------------------------------------
+-spec get_docker_ip(Node :: atom()) -> binary().
+get_docker_ip(Node) ->
+    CMD = [
+        "docker inspect",
+        "--format '{{ .NetworkSettings.IPAddress }}'",
+        utils:get_host(Node)
+    ],
+    re:replace(utils:cmd(CMD), "\\s+", "", [global, {return, binary}]).
 
 
 %%%===================================================================
