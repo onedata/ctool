@@ -20,6 +20,7 @@
     mock_unload/2, mock_validate_and_unload/2, mock_assert_num_calls/5]).
 -export([get_env/3, set_env/4]).
 -export([enable_datastore_models/2]).
+-export([get_docker_ip/1]).
 
 -type mock_opt() :: passthrough | non_strict | unstick | no_link.
 
@@ -47,8 +48,11 @@ enable_datastore_models([H | _] = Nodes, Models) ->
     mock_unload(Nodes, [plugins]),
     catch mock_new(Nodes, [plugins]),
     ok = mock_expect(Nodes, plugins, apply,
-        fun(datastore_config_plugin, models, []) ->
-            meck:passthrough([datastore_config_plugin, models, []]) ++ Models
+        fun
+            (datastore_config_plugin, models, []) ->
+                meck:passthrough([datastore_config_plugin, models, []]) ++ Models;
+            (A1, A2, A3) ->
+                meck:passthrough([A1, A2, A3])
         end),
 
     lists:foreach(
@@ -211,6 +215,20 @@ get_env(Node, Application, Name) ->
     ok | {badrpc, Reason :: term()}.
 set_env(Node, Application, Name, Value) ->
     rpc:call(Node, application, set_env, [Application, Name, Value]).
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Contacts docker daemon to check the IP of given node started as docker.
+%% @end
+%%--------------------------------------------------------------------
+-spec get_docker_ip(Node :: atom()) -> binary().
+get_docker_ip(Node) ->
+    CMD = [
+        "docker inspect",
+        "--format '{{ .NetworkSettings.IPAddress }}'",
+        utils:get_host(Node)
+    ],
+    re:replace(utils:cmd(CMD), "\\s+", "", [global, {return, binary}]).
 
 
 %%%===================================================================

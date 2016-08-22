@@ -282,11 +282,9 @@ run_testcase(SuiteName, CaseName, CaseArgs, Data) ->
 set_up_stress_test(SuiteName, CasesNames, NoClearingCases) ->
     case {os:getenv(?STRESS_ENV_VARIABLE), os:getenv(?STRESS_NO_CLEARING_ENV_VARIABLE)} of
         {"true", _} ->
-            save_suite_and_cases(SuiteName, CasesNames),
-            [stress_test];
+            save_suite_and_cases(SuiteName, CasesNames);
         {_, "true"} ->
-            save_suite_and_cases(SuiteName, NoClearingCases),
-            [stress_test]
+            save_suite_and_cases(SuiteName, NoClearingCases)
     end.
 
 %%--------------------------------------------------------------------
@@ -295,31 +293,36 @@ set_up_stress_test(SuiteName, CasesNames, NoClearingCases) ->
 %% Saves information about tests to be done during stress test.
 %% @end
 %%--------------------------------------------------------------------
--spec save_suite_and_cases(Suite :: atom(), Cases :: list()) -> ok.
+-spec save_suite_and_cases(Suite :: atom(), Cases :: list()) -> list().
 save_suite_and_cases(Suite, Cases) ->
-    Pid = self(),
-    case ets:info(?STRESS_ETS_NAME) of
-        undefined ->
-            spawn(fun() ->
-                try
-                    ets:new(?STRESS_ETS_NAME, [set, public, named_table]),
-                    Pid ! ets_created,
-                    receive
-                        kill_ets_owner -> ok
-                    end
-                catch
-                    _:_ -> ok % ct may call all for single suite more than once
-                end
-            end);
+    case Cases of
+        [] ->
+            [];
         _ ->
-            Pid ! ets_created
-    end,
-    receive
-        ets_created ->
-            ets:insert(?STRESS_ETS_NAME, {suite, Suite}),
-            ets:insert(?STRESS_ETS_NAME, {cases, Cases})
-    end,
-    ok.
+            Pid = self(),
+            case ets:info(?STRESS_ETS_NAME) of
+                undefined ->
+                    spawn(fun() ->
+                        try
+                            ets:new(?STRESS_ETS_NAME, [set, public, named_table]),
+                            Pid ! ets_created,
+                            receive
+                                kill_ets_owner -> ok
+                            end
+                        catch
+                            _:_ -> ok % ct may call all for single suite more than once
+                        end
+                    end);
+                _ ->
+                    Pid ! ets_created
+            end,
+            receive
+                ets_created ->
+                    ets:insert(?STRESS_ETS_NAME, {suite, Suite}),
+                    ets:insert(?STRESS_ETS_NAME, {cases, Cases})
+            end,
+            [stress_test]
+    end.
 
 %%--------------------------------------------------------------------
 %% @private
