@@ -18,7 +18,7 @@
 -include("logging.hrl").
 
 %% API
--export([get_public_key/2, set_public_key/3, register_provider/2]).
+-export([get_public_key/2, update_own_public_key/3, register_provider/2]).
 
 %%%===================================================================
 %%% API
@@ -47,10 +47,10 @@ get_public_key(Auth, ID) ->
 %% @doc Setups identity info (public key) in OZ for given ID.
 %% @end
 %%--------------------------------------------------------------------
--spec set_public_key(Auth :: oz_endpoint:auth(), ID :: binary(),
+-spec update_own_public_key(Auth :: oz_endpoint:auth(), ID :: binary(),
     EncodedPublicKey :: binary()) ->
     ok | {error, Reason :: term()}.
-set_public_key(Auth, ID, EncodedPublicKey) ->
+update_own_public_key(Auth, ID, EncodedPublicKey) ->
     ?run(fun() ->
         EncodedID = binary_to_list(http_utils:url_encode(ID)),
         URN = "/publickey/" ++ EncodedID,
@@ -73,7 +73,7 @@ set_public_key(Auth, ID, EncodedPublicKey) ->
     ok | {error, Reason :: term()}.
 register_provider(Auth, Parameters) ->
     ?run(fun() ->
-        ID = proplists:get_value(<<"ID">>, Parameters),
+        ID = proplists:get_value(<<"id">>, Parameters),
         EncodedID = binary_to_list(http_utils:url_encode(ID)),
         URN = "/provider_data/" ++ EncodedID,
 

@@ -59,9 +59,9 @@ teardown(_) ->
 
 should_register() ->
     meck:new(json_utils),
-    meck:expect(json_utils, encode, fun([{<<"ID">>, <<"test">>}]) -> <<"body">> end),
+    meck:expect(json_utils, encode, fun([{<<"id">>, <<"test">>}]) -> <<"body">> end),
 
-    Answer = oz_identities:register_provider(client, [{<<"ID">>, <<"test">>}]),
+    Answer = oz_identities:register_provider(client, [{<<"id">>, <<"test">>}]),
     ?assertEqual(ok, Answer),
 
     ?assert(meck:validate(json_utils)),
@@ -71,7 +71,7 @@ should_set() ->
     meck:new(json_utils),
     meck:expect(json_utils, encode, fun([{<<"publicKey">>, <<"pk">>}]) -> <<"body">> end),
 
-    Answer = oz_identities:set_public_key(client, <<"id">>, <<"pk">>),
+    Answer = oz_identities:update_own_public_key(client, <<"id">>, <<"pk">>),
     ?assertEqual(ok, Answer),
 
     ?assert(meck:validate(json_utils)),
