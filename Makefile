@@ -29,7 +29,7 @@ plt:
 	if [ $$? != 0 ]; then \
 	    dialyzer --build_plt --output_plt ${PLT} --apps kernel stdlib sasl erts \
 	        ssl tools runtime_tools crypto inets xmerl snmp public_key eunit \
-	        common_test test_server syntax_tools compiler ./deps/*/ebin; \
+	        common_test syntax_tools compiler ./deps/*/ebin; \
 	fi; exit 0
 
 
