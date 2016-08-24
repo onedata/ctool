@@ -42,10 +42,12 @@ setup() ->
     meck:expect(oz_endpoint, noauth_request, fun
         (client, "/provider_data/test", post, <<"body">>) ->
             {ok, 204, response_headers, response_body};
-        (client, "/publickey/id", post, <<"body">>) ->
-            {ok, 204, response_headers, response_body};
         (client, "/publickey/id", get, <<>>) ->
             {ok, 200, response_headers, response_body}
+    end),
+    meck:expect(oz_endpoint, auth_request, fun
+        (client, "/publickey/id", patch, <<"body">>) ->
+            {ok, 204, response_headers, response_body}
     end).
 
 
