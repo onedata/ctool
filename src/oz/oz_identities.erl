@@ -62,6 +62,7 @@ update_own_public_key(Auth, ID, EncodedPublicKey) ->
 
 %%--------------------------------------------------------------------
 %% @doc Registers provider in OZ. Parameters should contain:
+%% "id" extracted from identity cert,
 %% "publicKey" extracted from identity cert,
 %% "urls" to cluster nodes,
 %% "redirectionPoint" to provider's GUI.
