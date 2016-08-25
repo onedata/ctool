@@ -20,9 +20,7 @@
         lager,
         % Web client will start etls and hackney
         web_client,
-        cowboy,
-        gproc
-        % n2o, erlydtl and macaroons are not listed here, because we do not want them to start as applications
+        cowboy
     ]},
 
     {env, [
