@@ -12,26 +12,36 @@ import copy
 import json
 import time
 from . import appmock, client, common, zone_worker, cluster_manager, \
-    worker, provider_worker, cluster_worker, docker, dns
+    worker, provider_worker, cluster_worker, docker, dns, storages, panel, \
+    location_service_bootstrap
 
 
 def default(key):
     return {'image': 'onedata/worker',
+            'ceph_image': 'onedata/ceph',
+            's3_image': 'onedata/s3proxy',
+            'swift_image': 'onedata/dockswift',
+            'nfs_image': 'erezhorev/dockerized_nfs_server',
             'bin_am': '{0}/appmock'.format(os.getcwd()),
             'bin_oz': '{0}/oz_worker'.format(os.getcwd()),
             'bin_op_worker': '{0}/op_worker'.format(os.getcwd()),
             'bin_cluster_worker': '{0}/cluster_worker'.format(os.getcwd()),
             'bin_cluster_manager': '{0}/cluster_manager'.format(os.getcwd()),
             'bin_oc': '{0}/oneclient'.format(os.getcwd()),
+            'bin_luma': '{0}/luma'.format(os.getcwd()),
+            'bin_onepanel': '{0}/onepanel'.format(os.getcwd()),
             'logdir': None}[key]
 
 
-def up(config_path, image=default('image'), bin_am=default('bin_am'),
-       bin_oz=default('bin_oz'),
+def up(config_path, image=default('image'), ceph_image=default('ceph_image'),
+       s3_image=default('s3_image'), nfs_image=default('nfs_image'),
+       swift_image=default('swift_image'),
+       bin_am=default('bin_am'), bin_oz=default('bin_oz'),
        bin_cluster_manager=default('bin_cluster_manager'),
        bin_op_worker=default('bin_op_worker'),
        bin_cluster_worker=default('bin_cluster_worker'),
-       bin_oc=default('bin_oc'), logdir=default('logdir')):
+       bin_oc=default('bin_oc'), bin_luma=default('bin_luma'),
+       bin_onepanel=default('bin_onepanel'), logdir=default('logdir')):
     config = common.parse_json_config_file(config_path)
     uid = common.generate_uid()
 
@@ -43,12 +53,18 @@ def up(config_path, image=default('image'), bin_am=default('bin_am'),
         'op_worker_nodes': [],
         'cluster_worker_nodes': [],
         'appmock_nodes': [],
-        'client_nodes': []
+        'client_nodes': [],
+        'onepanel_nodes': []
     }
 
     # Start DNS
     [dns_server], dns_output = dns.maybe_start('auto', uid)
     common.merge(output, dns_output)
+
+    if 'onepanel_domains' in config:
+        op_output = panel.up(image, bin_onepanel, dns_server, uid, config_path,
+                             logdir)
+        common.merge(output, op_output)
 
     # Start appmock instances
     if 'appmock_domains' in config:
@@ -59,15 +75,30 @@ def up(config_path, image=default('image'), bin_am=default('bin_am'),
         # so that dockers that start after can immediately see the domains.
         dns.maybe_restart_with_configuration('auto', uid, output)
 
+    ls_nodes = location_service_bootstrap.up_nodes(image, bin_oz, config, uid, logdir)
+    output['docker_ids'].extend(ls_nodes)
+
     # Start provider cluster instances
     setup_worker(zone_worker, bin_oz, 'zone_domains',
                  bin_cluster_manager, config, config_path, dns_server, image,
                  logdir, output, uid)
 
+    # Start storages
+    storages_dockers, storages_dockers_ids = \
+        storages.start_storages(config, config_path, ceph_image, s3_image,
+                                nfs_image, swift_image, image, uid)
+    output['storages'] = storages_dockers
+
+    # Start python LUMA service
+    luma_config = None
+    if 'provider_domains' in config:
+        luma_config = storages.start_luma(config, storages_dockers, image,
+                                          bin_luma,output, uid)
+
     # Start provider cluster instances
     setup_worker(provider_worker, bin_op_worker, 'provider_domains',
                  bin_cluster_manager, config, config_path, dns_server, image,
-                 logdir, output, uid)
+                 logdir, output, uid, storages_dockers, luma_config)
 
     # Start stock cluster worker instances
     setup_worker(cluster_worker, bin_cluster_worker, 'cluster_domains',
@@ -76,13 +107,17 @@ def up(config_path, image=default('image'), bin_am=default('bin_am'),
 
     # Start oneclient instances
     if 'oneclient' in config:
-        oc_output = client.up(image, bin_oc, dns_server, uid, config_path)
+        oc_output = client.up(image, bin_oc, dns_server, uid, config_path,
+                              logdir, storages_dockers)
         common.merge(output, oc_output)
+
+    # Add storages at the end so they will be deleted after other dockers
+    output['docker_ids'].extend(storages_dockers_ids)
 
     # Setup global environment - providers, users, groups, spaces etc.
     if 'zone_domains' in config and \
-            'provider_domains' in config and \
-            'global_setup' in config:
+                    'provider_domains' in config and \
+                    'global_setup' in config:
         providers_map = {}
         for provider_name in config['provider_domains']:
             providers_map[provider_name] = {
@@ -114,9 +149,9 @@ def up(config_path, image=default('image'), bin_am=default('bin_am'),
         print('')
         # Run env configurator with gathered args
         command = '''epmd -daemon
-./env_configurator.escript \'{0}\'
+./env_configurator.escript \'{0}\' {1} {2}
 echo $?'''
-        command = command.format(json.dumps(env_configurator_input))
+        command = command.format(json.dumps(env_configurator_input), True, True)
         docker_output = docker.run(
             image='onedata/builder',
             interactive=True,
@@ -139,15 +174,15 @@ echo $?'''
         # check of env configuration succeeded
         if command_res_code != '0':
             # Let the command_output be flushed to console
-            time.sleep(2)
+            time.sleep(5)
             sys.exit(1)
-
 
     return output
 
 
 def setup_worker(worker, bin_worker, domains_name, bin_cm, config, config_path,
-                 dns_server, image, logdir, output, uid):
+                 dns_server, image, logdir, output, uid, storages_dockers=None,
+                 luma_config=None):
     if domains_name in config:
         # Start cluster_manager instances
         cluster_manager_output = cluster_manager.up(image, bin_cm, dns_server,
@@ -157,7 +192,9 @@ def setup_worker(worker, bin_worker, domains_name, bin_cm, config, config_path,
 
         # Start op_worker instances
         cluster_worker_output = worker.up(image, bin_worker, dns_server, uid,
-                                          config_path, logdir)
+                                          config_path, logdir,
+                                          storages_dockers=storages_dockers,
+                                          luma_config=luma_config)
         common.merge(output, cluster_worker_output)
         # Make sure OP domains are added to the dns server.
         # Setting first arg to 'auto' will force the restart and this is needed
