@@ -80,12 +80,19 @@ get_details(Auth, SpaceId) ->
         URN = "/spaces/" ++ binary_to_list(SpaceId),
         {ok, 200, _ResponseHeaders, ResponseBody} =
             oz_endpoint:auth_request(Auth, URN, get),
-        Proplist = json_utils:decode(ResponseBody),
+        Props = json_utils:decode(ResponseBody),
+        % Get default values of space_details record
         SpaceDetails = #space_details{
-            id = proplists:get_value(<<"spaceId">>, Proplist),
-            name = proplists:get_value(<<"name">>, Proplist),
+            id = proplists:get_value(<<"spaceId">>, Props),
+            name = proplists:get_value(<<"name">>, Props),
+            type = proplists:get_value(<<"type">>, Props),
+            canonicalName = proplists:get_value(<<"type">>, Props, undefined),
             providers_supports = proplists:get_value(
-                <<"providersSupports">>, Proplist)
+                <<"providersSupports">>, Props, []),
+            public_url = proplists:get_value(<<"type">>, Props, undefined),
+            root_file_id = proplists:get_value(<<"type">>, Props, undefined),
+            parent_space = proplists:get_value(<<"type">>, Props, undefined),
+            shares = proplists:get_value(<<"type">>, Props, [])
         },
         {ok, SpaceDetails}
     end).
