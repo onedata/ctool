@@ -25,7 +25,7 @@
 -export([remove_group/3, get_groups/2, get_group_details/3, get_group_privileges/3,
     set_group_privileges/4]).
 -export([remove_provider/3, get_providers/2, get_provider_details/3]).
--export([create_share/2]).
+-export([create_share/3]).
 
 
 %%%===================================================================
@@ -382,16 +382,15 @@ get_provider_details(Auth, SpaceId, ProviderId) ->
 %% @doc
 %% Creates a new share. Parameters should contain:
 %% #   "name" - of new Share
-%% #   "parent_space" - of new Share
 %% #   "root_file_id" - GUID of root file of new Share
 %% @end
 %%--------------------------------------------------------------------
--spec create_share(Auth :: oz_endpoint:auth(),
+-spec create_share(Auth :: oz_endpoint:auth(), ParentSpaceId :: binary(),
     Parameters :: oz_endpoint:params()) ->
     {ok, ShareId :: binary()} | {error, Reason :: term()}.
-create_share(Auth, Parameters) ->
+create_share(Auth, ParentSpaceId, Parameters) ->
     ?run(fun() ->
-        URN = "/spaces",
+        URN = "/spaces/" ++ binary_to_list(ParentSpaceId) ++ "/shares/",
         Body = json_utils:encode(Parameters ++ [{<<"type">>, <<"share">>}]),
         {ok, 201, ResponseHeaders, _ResponseBody} =
             oz_endpoint:auth_request(Auth, URN, post, Body),
@@ -416,7 +415,8 @@ get_privileges(Auth, URN) ->
             oz_endpoint:auth_request(Auth, URN, get),
         Proplist = json_utils:decode(ResponseBody),
         Privileges = proplists:get_value(<<"privileges">>, Proplist),
-        {ok, lists:map(fun(Binary) -> binary_to_atom(Binary, latin1) end, Privileges)}
+        {ok, lists:map(fun(Binary) ->
+            binary_to_atom(Binary, latin1) end, Privileges)}
     end).
 
 %%--------------------------------------------------------------------
