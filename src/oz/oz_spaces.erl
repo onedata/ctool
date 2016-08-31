@@ -380,7 +380,10 @@ get_provider_details(Auth, SpaceId, ProviderId) ->
 
 %%--------------------------------------------------------------------
 %% @doc
-%% Creates a new share.
+%% Creates a new share. Parameters should contain:
+%% #   "name" - of new Share
+%% #   "parent_space" - of new Share
+%% #   "root_file_id" - GUID of root file of new Share
 %% @end
 %%--------------------------------------------------------------------
 -spec create_share(Auth :: oz_endpoint:auth(),
