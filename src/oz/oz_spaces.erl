@@ -25,6 +25,7 @@
 -export([remove_group/3, get_groups/2, get_group_details/3, get_group_privileges/3,
     set_group_privileges/4]).
 -export([remove_provider/3, get_providers/2, get_provider_details/3]).
+-export([create_share/2]).
 
 
 %%%===================================================================
@@ -375,6 +376,25 @@ get_provider_details(Auth, SpaceId, ProviderId) ->
             longitude = proplists:get_value(<<"longitude">>, Proplist)
         },
         {ok, ProviderDetails}
+    end).
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Creates a new share.
+%% @end
+%%--------------------------------------------------------------------
+-spec create_share(Auth :: oz_endpoint:auth(),
+    Parameters :: oz_endpoint:params()) ->
+    {ok, ShareId :: binary()} | {error, Reason :: term()}.
+create_share(Auth, Parameters) ->
+    ?run(fun() ->
+        URN = "/spaces",
+        Body = json_utils:encode(Parameters ++ [{<<"type">>, <<"share">>}]),
+        {ok, 201, ResponseHeaders, _ResponseBody} =
+            oz_endpoint:auth_request(Auth, URN, post, Body),
+        <<"/spaces/", SpaceId/binary>> =
+            proplists:get_value(<<"location">>, ResponseHeaders),
+        {ok, SpaceId}
     end).
 
 %%%===================================================================

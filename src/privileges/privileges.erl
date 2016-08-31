@@ -51,7 +51,8 @@ space_manager() ->
             space_invite_user,
             space_remove_user,
             space_invite_group,
-            space_remove_group
+            space_remove_group,
+            space_manage_shares
         ])
     ).
 
