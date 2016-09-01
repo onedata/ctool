@@ -18,7 +18,7 @@
 -include("oz/oz_providers.hrl").
 
 %% API
--export([create/2, remove/2, get_details/2, modify_details/3]).
+-export([create/2, remove/2, get_details/2, get_share_details/3, modify_details/3]).
 -export([get_invite_user_token/2, get_invite_group_token/2, get_invite_provider_token/2]).
 -export([remove_user/3, get_users/2, get_user_details/3, get_user_privileges/3,
     get_effective_user_privileges/3, set_user_privileges/4]).
@@ -85,20 +85,38 @@ get_details(Auth, SpaceId) ->
         SpaceDetails = #space_details{
             id = proplists:get_value(<<"spaceId">>, Props),
             name = proplists:get_value(<<"name">>, Props),
-            type = binary_to_atom(proplists:get_value(<<"type">>, Props), utf8),
-            canonicalName = proplists:get_value(
-                <<"canonicalName">>, Props, undefined),
             providers_supports = proplists:get_value(
                 <<"providersSupports">>, Props, []),
+            shares = proplists:get_value(<<"shares">>, Props, [])
+        },
+        {ok, SpaceDetails}
+    end).
+
+%%--------------------------------------------------------------------
+%% @doc Returns public details about Space.
+%% @end
+%%--------------------------------------------------------------------
+-spec get_share_details(Auth :: oz_endpoint:auth(), SpaceId :: binary(), ShareId :: binary()) ->
+    {ok, SpaceDetails :: #share_details{}} | {error, Reason :: term()}.
+get_share_details(Auth, SpaceId, ShareId) ->
+    ?run(fun() ->
+        URN = "/spaces/" ++ binary_to_list(SpaceId) ++ "/shares/" ++
+            binary_to_list(ShareId),
+        {ok, 200, _ResponseHeaders, ResponseBody} =
+            oz_endpoint:auth_request(Auth, URN, get),
+        Props = json_utils:decode(ResponseBody),
+        % Get default values of space_details record
+        ShareDetails = #share_details{
+            id = proplists:get_value(<<"shareId">>, Props),
+            name = proplists:get_value(<<"name">>, Props),
             public_url = proplists:get_value(
                 <<"public_url">>, Props, undefined),
             root_file_id = proplists:get_value(
                 <<"root_file_id">>, Props, undefined),
             parent_space = proplists:get_value(
-                <<"parent_space">>, Props, undefined),
-            shares = proplists:get_value(<<"shares">>, Props, [])
+                <<"parent_space">>, Props, undefined)
         },
-        {ok, SpaceDetails}
+        {ok, ShareDetails}
     end).
 
 %%--------------------------------------------------------------------

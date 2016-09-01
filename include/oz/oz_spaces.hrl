@@ -16,14 +16,15 @@
     % Required fields
     id :: binary(),
     name :: binary(),
-    type = regular :: regular | share,
-    % Optional fields
     canonicalName = undefined :: undefined | binary(),
     providers_supports = [] :: [{ProviderId :: binary(), Size :: non_neg_integer()}],
+    shares = [] :: [binary()]
+}).
+
+-record(share_details, {
     public_url = undefined :: undefined | binary(),
     root_file_id = undefined :: undefined | binary(),
-    parent_space = undefined :: undefined | binary(),
-    shares = [] :: [binary()]
+    parent_space = undefined :: undefined | binary()
 }).
 
 -endif.
