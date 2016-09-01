@@ -422,9 +422,9 @@ create_share(Auth, ParentSpaceId, Parameters) ->
         Body = json_utils:encode(Parameters ++ [{<<"type">>, <<"share">>}]),
         {ok, 201, ResponseHeaders, _ResponseBody} =
             oz_endpoint:auth_request(Auth, URN, post, Body),
-        <<"/spaces/", SpaceId/binary>> =
+        <<"/shares/", ShareId/binary>> =
             proplists:get_value(<<"location">>, ResponseHeaders),
-        {ok, SpaceId}
+        {ok, ShareId}
     end).
 
 %%%===================================================================
