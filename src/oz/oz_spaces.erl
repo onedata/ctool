@@ -85,7 +85,7 @@ get_details(Auth, SpaceId) ->
         SpaceDetails = #space_details{
             id = proplists:get_value(<<"spaceId">>, Props),
             name = proplists:get_value(<<"name">>, Props),
-            type = proplists:get_value(<<"type">>, Props),
+            type = binary_to_atom(proplists:get_value(<<"type">>, Props), utf8),
             canonicalName = proplists:get_value(
                 <<"canonicalName">>, Props, undefined),
             providers_supports = proplists:get_value(
