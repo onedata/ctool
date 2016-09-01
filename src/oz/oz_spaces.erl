@@ -86,13 +86,17 @@ get_details(Auth, SpaceId) ->
             id = proplists:get_value(<<"spaceId">>, Props),
             name = proplists:get_value(<<"name">>, Props),
             type = proplists:get_value(<<"type">>, Props),
-            canonicalName = proplists:get_value(<<"type">>, Props, undefined),
+            canonicalName = proplists:get_value(
+                <<"canonicalName">>, Props, undefined),
             providers_supports = proplists:get_value(
                 <<"providersSupports">>, Props, []),
-            public_url = proplists:get_value(<<"type">>, Props, undefined),
-            root_file_id = proplists:get_value(<<"type">>, Props, undefined),
-            parent_space = proplists:get_value(<<"type">>, Props, undefined),
-            shares = proplists:get_value(<<"type">>, Props, [])
+            public_url = proplists:get_value(
+                <<"public_url">>, Props, undefined),
+            root_file_id = proplists:get_value(
+                <<"root_file_id">>, Props, undefined),
+            parent_space = proplists:get_value(
+                <<"parent_space">>, Props, undefined),
+            shares = proplists:get_value(<<"shares">>, Props, [])
         },
         {ok, SpaceDetails}
     end).
