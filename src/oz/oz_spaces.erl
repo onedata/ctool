@@ -18,7 +18,7 @@
 -include("oz/oz_providers.hrl").
 
 %% API
--export([create/2, remove/2, get_details/2, get_share_details/3, modify_details/3]).
+-export([create/2, remove/2, get_details/2, get_share_details/2, modify_details/3]).
 -export([get_invite_user_token/2, get_invite_group_token/2, get_invite_provider_token/2]).
 -export([remove_user/3, get_users/2, get_user_details/3, get_user_privileges/3,
     get_effective_user_privileges/3, set_user_privileges/4]).
@@ -96,12 +96,11 @@ get_details(Auth, SpaceId) ->
 %% @doc Returns public details about Space.
 %% @end
 %%--------------------------------------------------------------------
--spec get_share_details(Auth :: oz_endpoint:auth(), SpaceId :: binary(), ShareId :: binary()) ->
+-spec get_share_details(Auth :: oz_endpoint:auth(), ShareId :: binary()) ->
     {ok, SpaceDetails :: #share_details{}} | {error, Reason :: term()}.
-get_share_details(Auth, SpaceId, ShareId) ->
+get_share_details(Auth, ShareId) ->
     ?run(fun() ->
-        URN = "/spaces/" ++ binary_to_list(SpaceId) ++ "/shares/" ++
-            binary_to_list(ShareId),
+        URN = "/shares/" ++ binary_to_list(ShareId),
         {ok, 200, _ResponseHeaders, ResponseBody} =
             oz_endpoint:auth_request(Auth, URN, get),
         Props = json_utils:decode(ResponseBody),
