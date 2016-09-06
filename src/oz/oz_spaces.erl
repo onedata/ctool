@@ -408,22 +408,21 @@ get_provider_details(Auth, SpaceId, ProviderId) ->
 
 %%--------------------------------------------------------------------
 %% @doc
-%% Creates a new share. Parameters should contain:
+%% Creates a new share with given ID. Parameters should contain:
 %% #   "name" - of new Share
 %% #   "root_file_id" - GUID of root file of new Share
+%% #   "parent_space" - space where this shares originates from
 %% @end
 %%--------------------------------------------------------------------
--spec create_share(Auth :: oz_endpoint:auth(), ParentSpaceId :: binary(),
+-spec create_share(Auth :: oz_endpoint:auth(), ShareId :: binary(),
     Parameters :: oz_endpoint:params()) ->
     {ok, ShareId :: binary()} | {error, Reason :: term()}.
-create_share(Auth, ParentSpaceId, Parameters) ->
+create_share(Auth, ShareId, Parameters) ->
     ?run(fun() ->
-        URN = "/spaces/" ++ binary_to_list(ParentSpaceId) ++ "/shares/",
-        Body = json_utils:encode(Parameters ++ [{<<"type">>, <<"share">>}]),
+        URN = "/shares/" ++ binary_to_list(ShareId) ,
+        Body = json_utils:encode(Parameters),
         {ok, 201, ResponseHeaders, _ResponseBody} =
-            oz_endpoint:auth_request(Auth, URN, post, Body),
-        <<"/shares/", ShareId/binary>> =
-            proplists:get_value(<<"location">>, ResponseHeaders),
+            oz_endpoint:auth_request(Auth, URN, put, Body),
         {ok, ShareId}
     end).
 
