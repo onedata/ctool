@@ -19,6 +19,7 @@
 -define(CLEANING_PROC_NAME, cleaning_proc).
 -define(TIMEOUT, timer:seconds(60)).
 -define(COOKIE_KEY, "vm.args/setcookie").
+-define(ENV_UP_RETRIES_NUMBER, 5).
 
 %% This is list of all applications that possibly could be started by test_node_starter
 %% Update when adding new application (if you want to use callbacks without specifying apps list)
@@ -67,74 +68,52 @@ prepare_test_environment(Config, DescriptionFile, TestModule, LoadModules, Apps)
         ConfigWithPaths =
             [{ct_test_root, CtTestRoot}, {project_root, ProjectRoot} | Config],
 
-        EnvUpScript = filename:join([ProjectRoot, "bamboos", "docker", "env_up.py"]),
-
         LogsDir = filename:join(PrivDir, atom_to_list(TestModule) ++ "_logs"),
         os:cmd("mkdir -p " ++ LogsDir),
 
         utils:cmd(["echo", "'" ++ DescriptionFile ++ ":'", ">> prepare_test_environment.log"]),
         utils:cmd(["echo", "'" ++ DescriptionFile ++ ":'", ">> prepare_test_environment_error.log"]),
 
-        StartLogRaw = list_to_binary(utils:cmd([EnvUpScript,
-            %% Function is used durgin OP or OZ tests so starts OP or OZ - not both
-            "--bin-cluster-worker", ProjectRoot,
-            "--bin-worker", ProjectRoot,
-            "--bin-oz", ProjectRoot,
-            "--bin-onepanel", ProjectRoot,
-            %% additionally AppMock can be started
-            "--bin-appmock", AppmockRoot,
-            "--bin-cm", CmRoot,
-            "--logdir", LogsDir,
-            DescriptionFile, "2>> prepare_test_environment_error.log"])),
-        % TODO VFS-1816 remove log filter
-        % Some of env_up logs goes to stdout instead of stderr, they need to be
-        % removed for proper parsing of JSON with env_up result
-        StartLog = lists:last(binary:split(StartLogRaw, <<"\n">>, [global, trim])),
+        StartLog = retry_running_env_up_script_until(ProjectRoot, AppmockRoot,
+            CmRoot, LogsDir, DescriptionFile, ?ENV_UP_RETRIES_NUMBER),
 
         % Save start log to file
         utils:cmd(["echo", binary_to_list(<<"'", StartLog/binary, "'">>), ">> prepare_test_environment.log"]),
 
-        case StartLog of
-            <<"">> ->
-                % if env_up.py failed, output will be empty,
-                % because stderr is redirected to prepare_test_environment.log
-                error(env_up_failed);
-            _ ->
-                EnvDesc = json_parser:parse_json_binary_to_atom_proplist(StartLog),
-                try
-                    Dns = ?config(dns, EnvDesc),
-                    AllNodesWithCookies = lists:flatmap(
-                        fun({AppName, ConfigName}) ->
-                            Nodes = ?config(ConfigName, EnvDesc),
-                            get_cookies(Nodes, AppName, ?COOKIE_KEY, DescriptionFile)
-                        end, Apps
-                    ),
+        EnvDesc = json_parser:parse_json_binary_to_atom_proplist(StartLog),
+        try
+            Dns = ?config(dns, EnvDesc),
+            AllNodesWithCookies = lists:flatmap(
+                fun({AppName, ConfigName}) ->
+                    Nodes = ?config(ConfigName, EnvDesc),
+                    get_cookies(Nodes, AppName, ?COOKIE_KEY, DescriptionFile)
+                end, Apps
+            ),
 
-                    set_cookies(AllNodesWithCookies),
-                    os:cmd("echo nameserver " ++ atom_to_list(Dns) ++ " > /etc/resolv.conf"),
+            set_cookies(AllNodesWithCookies),
+            os:cmd("echo nameserver " ++ atom_to_list(Dns) ++ " > /etc/resolv.conf"),
 
-                    AllNodes = [N || {N, _C} <- AllNodesWithCookies],
-                    ping_nodes(AllNodes),
-                    global:sync(),
-                    load_modules(AllNodes, [TestModule, test_utils | LoadModules]),
+            AllNodes = [N || {N, _C} <- AllNodesWithCookies],
+            ping_nodes(AllNodes),
+            global:sync(),
+            load_modules(AllNodes, [TestModule, test_utils | LoadModules]),
 
-                    lists:append([
-                        ConfigWithPaths,
-                        proplists:delete(dns, EnvDesc),
-                        rebar_git_plugin:get_git_metadata()
-                    ])
-                catch
-                    E11:E12 ->
-                        ct:print("Preparation of environment failed ~p:~p~n" ++
-                            "For details, check:~n" ++
-                            "    prepare_test_environment_error.log~n" ++
-                            "    prepare_test_environment.log~n" ++
-                            "Stacktrace: ~p", [E11, E12, erlang:get_stacktrace()]),
-                        clean_environment(EnvDesc),
-                        {fail, {init_failed, E11, E12}}
-                end
-
+            lists:append([
+                ConfigWithPaths,
+                proplists:delete(dns, EnvDesc),
+                rebar_git_plugin:get_git_metadata()
+            ])
+        catch
+            E11:E12 ->
+                ct:print("Preparation of environment failed ~p:~p~n" ++
+                    "For details, check:~n" ++
+                    "    prepare_test_environment_error.log~n" ++
+                    "    prepare_test_environment.log~n" ++
+                    "Stacktrace: ~p", [E11, E12, erlang:get_stacktrace()]),
+                clean_environment(EnvDesc),
+                {fail, {init_failed, E11, E12}}
         end
+
     catch
         E21:E22 ->
             ct:print("Prepare of environment failed ~p:~p~n~p",
@@ -427,3 +406,61 @@ set_cookies(NodesWithCookies) ->
     lists:foreach(fun({N, C}) ->
         erlang:set_cookie(N, C)
     end, NodesWithCookies).
+
+
+%%--------------------------------------------------------------------
+%% @private
+%% @doc
+%% Try to successfully run env_up.py. Retry RetriesNumber of times.
+%% Raises env_up_failed if script fails to start for given number of times.
+%% @end
+%%--------------------------------------------------------------------
+-spec retry_running_env_up_script_until(string(), string(), string(), string(),
+    string(), integer()) -> any().
+retry_running_env_up_script_until(ProjectRoot, AppmockRoot, CmRoot,
+    LogsDir, DescriptionFile, RetriesNumber) ->
+
+    StartLog =run_env_up_script(ProjectRoot, AppmockRoot, CmRoot, LogsDir, DescriptionFile),
+
+    case StartLog of
+        <<"">> ->
+            % if env_up.py failed, output will be empty,
+            % because stderr is redirected to prepare_test_environment.log
+            case RetriesNumber > 0 of
+                true ->
+                    ct:print("Retrying to run env_up.py. Number of retries left: ~p~n", [RetriesNumber]),
+                    retry_running_env_up_script_until(ProjectRoot, AppmockRoot, CmRoot,
+                    LogsDir, DescriptionFile, RetriesNumber - 1);
+                _ -> error(env_up_failed)
+            end;
+        Other -> Other
+    end.
+
+%%--------------------------------------------------------------------
+%% @private
+%% @doc
+%% Run env_up.py script
+%% @end
+%%--------------------------------------------------------------------
+-spec run_env_up_script(string(), string(), string(), string(), string()) -> binary().
+run_env_up_script(ProjectRoot, AppmockRoot, CmRoot, LogsDir, DescriptionFile) ->
+    EnvUpScript = filename:join([ProjectRoot, "bamboos", "docker", "env_up.py"]),
+    StartLogRaw = list_to_binary(utils:cmd([EnvUpScript,
+        %% Function is used during OP or OZ tests so starts OP or OZ - not both
+        "--bin-cluster-worker", ProjectRoot,
+        "--bin-worker", ProjectRoot,
+        "--bin-oz", ProjectRoot,
+        "--bin-onepanel", ProjectRoot,
+        %% additionally AppMock can be started
+        "--bin-appmock", AppmockRoot,
+        "--bin-cm", CmRoot,
+        "--logdir", LogsDir,
+        DescriptionFile, "2>> prepare_test_environment_error.log"])),
+
+    % TODO VFS-1816 remove log filter
+    % Some of env_up logs goes to stdout instead of stderr, they need to be
+    % removed for proper parsing of JSON with env_up result
+    case binary:split(StartLogRaw, <<"\n">>, [global, trim]) of
+        [] -> <<"">>;
+        NotEmptyList -> lists:last(NotEmptyList)
+    end.
