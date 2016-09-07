@@ -21,12 +21,4 @@
     shares = [] :: [binary()]
 }).
 
--record(share_details, {
-    id :: binary(),
-    name :: binary(),
-    public_url = undefined :: undefined | binary(),
-    root_file_id = undefined :: undefined | binary(),
-    parent_space = undefined :: undefined | binary()
-}).
-
 -endif.

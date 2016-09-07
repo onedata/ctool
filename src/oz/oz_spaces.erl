@@ -18,14 +18,13 @@
 -include("oz/oz_providers.hrl").
 
 %% API
--export([create/2, remove/2, get_details/2, get_share_details/2, modify_details/3]).
+-export([create/2, remove/2, get_details/2, modify_details/3]).
 -export([get_invite_user_token/2, get_invite_group_token/2, get_invite_provider_token/2]).
 -export([remove_user/3, get_users/2, get_user_details/3, get_user_privileges/3,
     get_effective_user_privileges/3, set_user_privileges/4]).
 -export([remove_group/3, get_groups/2, get_group_details/3, get_group_privileges/3,
     set_group_privileges/4]).
 -export([remove_provider/3, get_providers/2, get_provider_details/3]).
--export([create_share/3]).
 
 
 %%%===================================================================
@@ -90,32 +89,6 @@ get_details(Auth, SpaceId) ->
             shares = proplists:get_value(<<"shares">>, Props, [])
         },
         {ok, SpaceDetails}
-    end).
-
-%%--------------------------------------------------------------------
-%% @doc Returns public details about Space.
-%% @end
-%%--------------------------------------------------------------------
--spec get_share_details(Auth :: oz_endpoint:auth(), ShareId :: binary()) ->
-    {ok, SpaceDetails :: #share_details{}} | {error, Reason :: term()}.
-get_share_details(Auth, ShareId) ->
-    ?run(fun() ->
-        URN = "/shares/" ++ binary_to_list(ShareId),
-        {ok, 200, _ResponseHeaders, ResponseBody} =
-            oz_endpoint:auth_request(Auth, URN, get),
-        Props = json_utils:decode(ResponseBody),
-        % Get default values of space_details record
-        ShareDetails = #share_details{
-            id = proplists:get_value(<<"shareId">>, Props),
-            name = proplists:get_value(<<"name">>, Props),
-            public_url = proplists:get_value(
-                <<"public_url">>, Props, undefined),
-            root_file_id = proplists:get_value(
-                <<"root_file_id">>, Props, undefined),
-            parent_space = proplists:get_value(
-                <<"parent_space">>, Props, undefined)
-        },
-        {ok, ShareDetails}
     end).
 
 %%--------------------------------------------------------------------
@@ -404,26 +377,6 @@ get_provider_details(Auth, SpaceId, ProviderId) ->
             longitude = proplists:get_value(<<"longitude">>, Proplist)
         },
         {ok, ProviderDetails}
-    end).
-
-%%--------------------------------------------------------------------
-%% @doc
-%% Creates a new share with given ID. Parameters should contain:
-%% #   "name" - of new Share
-%% #   "root_file_id" - GUID of root file of new Share
-%% #   "parent_space" - space where this shares originates from
-%% @end
-%%--------------------------------------------------------------------
--spec create_share(Auth :: oz_endpoint:auth(), ShareId :: binary(),
-    Parameters :: oz_endpoint:params()) ->
-    {ok, ShareId :: binary()} | {error, Reason :: term()}.
-create_share(Auth, ShareId, Parameters) ->
-    ?run(fun() ->
-        URN = "/shares/" ++ binary_to_list(ShareId) ,
-        Body = json_utils:encode(Parameters),
-        {ok, 201, _ResponseHeaders, _ResponseBody} =
-            oz_endpoint:auth_request(Auth, URN, put, Body),
-        {ok, ShareId}
     end).
 
 %%%===================================================================
