@@ -66,7 +66,7 @@ create(Auth, ShareId, SpaceId, Parameters) ->
         URN = "/spaces/" ++ binary_to_list(SpaceId) ++
             "/shares/" ++ binary_to_list(ShareId),
         Body = json_utils:encode(Parameters),
-        {ok, 201, _ResponseHeaders, _ResponseBody} =
+        {ok, 204, _ResponseHeaders, _ResponseBody} =
             oz_endpoint:auth_request(Auth, URN, put, Body),
         {ok, ShareId}
     end).
