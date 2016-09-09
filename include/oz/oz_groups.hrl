@@ -20,7 +20,7 @@
 -record(group_details, {
     id :: binary(),
     name :: binary(),
-    type :: 'organization' | 'unit' | 'team' | 'role'
+    type :: undefined | 'organization' | 'unit' | 'team' | 'role'
 }).
 
 -endif.
