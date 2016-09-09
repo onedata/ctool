@@ -1,14 +1,13 @@
 %%%-------------------------------------------------------------------
-%%% @author Krzysztof Trzepla
-%%% @copyright (C) 2014 ACK CYFRONET AGH
+%%% @author Lukasz Opiola
+%%% @copyright (C) 2016 ACK CYFRONET AGH
 %%% This software is released under the MIT license
 %%% cited in 'LICENSE.txt'
 %%% @end
 %%%-------------------------------------------------------------------
-%%% @doc This module allows for Spaces management in OZ.
+%%% @doc This module allows for Shares management in OZ.
 %%% @end
 %%%-------------------------------------------------------------------
-
 -module(oz_shares).
 
 -include("oz/oz_runner.hrl").
@@ -16,7 +15,7 @@
 
 %% API
 -export([create/4, remove/2]).
--export([get_details/2]).
+-export([get_details/2, modify_details/3]).
 
 
 %%%===================================================================
@@ -60,18 +59,18 @@ remove(Auth, ShareId) ->
 
 
 %%--------------------------------------------------------------------
-%% @doc Returns public details about Space.
+%% @doc Returns public details about Share.
 %% @end
 %%--------------------------------------------------------------------
 -spec get_details(Auth :: oz_endpoint:auth(), ShareId :: binary()) ->
-    {ok, SpaceDetails :: #share_details{}} | {error, Reason :: term()}.
+    {ok, ShareDetails :: #share_details{}} | {error, Reason :: term()}.
 get_details(Auth, ShareId) ->
     ?run(fun() ->
         URN = "/shares/" ++ binary_to_list(ShareId),
         {ok, 200, _ResponseHeaders, ResponseBody} =
             oz_endpoint:auth_request(Auth, URN, get),
         Props = json_utils:decode(ResponseBody),
-        % Get default values of space_details record
+        % Get default values of share_details record
         ShareDetails = #share_details{
             id = proplists:get_value(<<"shareId">>, Props),
             name = proplists:get_value(<<"name">>, Props),
@@ -83,4 +82,21 @@ get_details(Auth, ShareId) ->
                 <<"parent_space">>, Props, undefined)
         },
         {ok, ShareDetails}
+    end).
+
+
+%%--------------------------------------------------------------------
+%% @doc Modifies public details about Share. Parameters may contain:
+%% "name" of Share.
+%% @end
+%%--------------------------------------------------------------------
+-spec modify_details(Auth :: oz_endpoint:auth(), ShareId :: binary(),
+    Parameters :: oz_endpoint:params()) -> ok | {error, Reason :: term()}.
+modify_details(Auth, ShareId, Parameters) ->
+    ?run(fun() ->
+        URN = "/shares/" ++ binary_to_list(ShareId),
+        Body = json_utils:encode(Parameters),
+        {ok, 204, _ResponseHeaders, _ResponseBody} =
+            oz_endpoint:auth_request(Auth, URN, patch, Body),
+        ok
     end).
