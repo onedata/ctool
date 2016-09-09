@@ -22,9 +22,9 @@
 -record(user_details, {
     id :: binary(),
     name :: binary(),
-    connected_accounts :: [proplists:proplist()],
-    alias :: binary(),
-    email_list :: [binary()]
+    connected_accounts :: [proplists:proplist()] | undefined,
+    alias :: binary() | undefined,
+    email_list :: [binary()] | undefined
 }).
 
 %% user_spaces record contains following fields:
