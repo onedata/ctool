@@ -15,7 +15,7 @@
 -include("oz/oz_shares.hrl").
 
 %% API
--export([create/4]).
+-export([create/4, remove/2]).
 -export([get_details/2]).
 
 
@@ -24,10 +24,45 @@
 %%%===================================================================
 
 %%--------------------------------------------------------------------
+%% @doc
+%% Creates a new share with given ID. Parameters should contain:
+%% #   "name" - of new Share
+%% #   "root_file_id" - GUID of root file of new Share
+%% @end
+%%--------------------------------------------------------------------
+-spec create(Auth :: oz_endpoint:auth(), ShareId :: binary(),
+    ParentSpaceId :: binary(), Parameters :: oz_endpoint:params()) ->
+    {ok, ShareId :: binary()} | {error, Reason :: term()}.
+create(Auth, ShareId, ParentSpaceId, Parameters) ->
+    ?run(fun() ->
+        URN = "/spaces/" ++ binary_to_list(ParentSpaceId) ++
+            "/shares/" ++ binary_to_list(ShareId),
+        Body = json_utils:encode(Parameters),
+        {ok, 204, _ResponseHeaders, _ResponseBody} =
+            oz_endpoint:auth_request(Auth, URN, put, Body),
+        {ok, ShareId}
+    end).
+
+
+%%--------------------------------------------------------------------
+%% @doc Removes a Share.
+%% @end
+%%--------------------------------------------------------------------
+-spec remove(Auth :: oz_endpoint:auth(), ShareId :: binary()) ->
+    ok | {error, Reason :: term()}.
+remove(Auth, ShareId) ->
+    ?run(fun() ->
+        URN = "/shares/" ++ binary_to_list(ShareId),
+        {ok, 202, _ResponseHeaders, _ResponseBody} =
+            oz_endpoint:auth_request(Auth, URN, delete),
+        ok
+    end).
+
+
+%%--------------------------------------------------------------------
 %% @doc Returns public details about Space.
 %% @end
 %%--------------------------------------------------------------------
-
 -spec get_details(Auth :: oz_endpoint:auth(), ShareId :: binary()) ->
     {ok, SpaceDetails :: #share_details{}} | {error, Reason :: term()}.
 get_details(Auth, ShareId) ->
@@ -48,25 +83,4 @@ get_details(Auth, ShareId) ->
                 <<"parent_space">>, Props, undefined)
         },
         {ok, ShareDetails}
-    end).
-
-
-%%--------------------------------------------------------------------
-%% @doc
-%% Creates a new share with given ID. Parameters should contain:
-%% #   "name" - of new Share
-%% #   "root_file_id" - GUID of root file of new Share
-%% @end
-%%--------------------------------------------------------------------
--spec create(Auth :: oz_endpoint:auth(), ShareId :: binary(),
-    SpaceId :: binary(), Parameters :: oz_endpoint:params()) ->
-    {ok, ShareId :: binary()} | {error, Reason :: term()}.
-create(Auth, ShareId, SpaceId, Parameters) ->
-    ?run(fun() ->
-        URN = "/spaces/" ++ binary_to_list(SpaceId) ++
-            "/shares/" ++ binary_to_list(ShareId),
-        Body = json_utils:encode(Parameters),
-        {ok, 204, _ResponseHeaders, _ResponseBody} =
-            oz_endpoint:auth_request(Auth, URN, put, Body),
-        {ok, ShareId}
     end).
