@@ -89,7 +89,10 @@ prepare_test_environment(Config, DescriptionFile, TestModule, LoadModules, Apps)
         % TODO VFS-1816 remove log filter
         % Some of env_up logs goes to stdout instead of stderr, they need to be
         % removed for proper parsing of JSON with env_up result
-        StartLog = lists:last(binary:split(StartLogRaw, <<"\n">>, [global, trim])),
+        StartLog = case binary:split(StartLogRaw, <<"\n">>, [global, trim]) of
+            [] -> <<"">>;
+            Res -> lists:last(Res)
+        end,
 
         % Save start log to file
         utils:cmd(["echo", binary_to_list(<<"'", StartLog/binary, "'">>), ">> prepare_test_environment.log"]),
