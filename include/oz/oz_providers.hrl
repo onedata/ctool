@@ -19,10 +19,10 @@
 -record(provider_details, {
     id :: binary(),
     name :: binary(),
-    redirection_point :: binary(),
+    redirection_point :: undefined | binary(),
     urls :: [URL :: binary()],
-    latitude :: float(),
-    longitude :: float()
+    latitude :: undefined | float(),
+    longitude :: undefined | float()
 }).
 
 -endif.

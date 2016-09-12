@@ -34,4 +34,10 @@
 -define(GET_HOSTNAME(FullName), list_to_atom(lists:last(string:tokens(atom_to_list(FullName), "@")))).
 -define(GET_DOMAIN(FullName), list_to_atom(string:join(lists:sublist(string:tokens(atom_to_list(?GET_HOSTNAME(FullName)), "."), 2, 10), "."))).
 
+-ifdef(config).
+-undef(config).
+-endif.
+
+-define(config(Key, Config), proplists:get_value(Key, Config)).
+
 -endif.
