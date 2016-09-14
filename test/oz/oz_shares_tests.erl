@@ -21,7 +21,7 @@
 %%% Tests description
 %%%===================================================================
 
-oz_spaces_test_() ->
+oz_shares_test_() ->
     {foreach,
         fun setup/0,
         fun teardown/1,
@@ -42,12 +42,12 @@ setup() ->
     meck:expect(oz_endpoint, auth_request, fun
         (client, "/shares/shareId", get) ->
             {ok, 200, response_headers, response_body};
-        (client, "/spaces/spaceId", delete) ->
+        (client, "/shares/shareId", delete) ->
             {ok, 202, response_headers, response_body}
     end),
     meck:expect(oz_endpoint, auth_request, fun
         (client, "/spaces/spaceId/shares/shareId", put, <<"body">>) ->
-            {ok, 202, [], response_body};
+            {ok, 204, [], response_body};
         (client, "/shares/shareId", patch, <<"body">>) ->
             {ok, 204, response_headers, response_body}
     end).
@@ -89,10 +89,10 @@ should_get_details() ->
         ]
     end),
 
-    Answer = oz_spaces:get_details(client, <<"shareId">>),
+    Answer = oz_shares:get_details(client, <<"shareId">>),
     ?assertEqual({ok, #share_details{
         id = <<"shareId">>,
-        name = <<"name">>,
+        name = <<"val_name">>,
         parent_space = <<"val_parent_space">>,
         root_file_id = <<"val_root_file_id">>,
         public_url = <<"val_public_url">>

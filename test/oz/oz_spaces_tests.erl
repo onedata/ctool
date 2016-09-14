@@ -33,7 +33,7 @@ oz_spaces_test_() ->
             {"remove", fun should_remove/0},
             {"get details", fun should_get_details/0},
             {"modify details", fun should_modify_details/0},
-            {"get share", fun should_get_shares/0},
+            {"get shares", fun should_get_shares/0},
             {"get invite user token", fun should_get_invite_user_token/0},
             {"get invite group token", fun should_get_invite_group_token/0},
             {"get invite provider token",
@@ -170,11 +170,11 @@ should_get_shares() ->
     meck:new(json_utils),
     meck:expect(json_utils, decode, fun(response_body) ->
         [
-            {<<"share">>, [sh1, sh2, sh3]}
+            {<<"shares">>, [sh1, sh2, sh3]}
         ]
     end),
 
-    Answer = oz_spaces:get_details(client, <<"spaceId">>),
+    Answer = oz_spaces:get_shares(client, <<"spaceId">>),
     ?assertEqual({ok, [sh1, sh2, sh3]}, Answer),
 
     ?assert(meck:validate(json_utils)),
