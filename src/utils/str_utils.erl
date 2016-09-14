@@ -12,7 +12,7 @@
 
 % Conversion
 -export([to_list/1, to_binary/1]).
--export([join_binary/1, join_binary/2, reverse_binary/1]).
+-export([join_binary/1, join_binary/2, reverse_binary/1, binary_starts_with/2]).
 
 % Conversion between unicode and binaries
 -export([unicode_list_to_binary/1, binary_to_unicode_list/1]).
@@ -81,6 +81,18 @@ reverse_binary(Binary) ->
     S = size(Binary) * 8,
     <<X:S/integer-little>> = Binary,
     <<X:S/integer-big>>.
+
+
+%--------------------------------------------------------------------
+%% @doc Predicate that tells whether binary starts with given prefix.
+%%--------------------------------------------------------------------
+-spec binary_starts_with(Binary :: binary(), Prefix :: binary()) -> boolean().
+binary_starts_with(Binary, Prefix) ->
+    Size = byte_size(Prefix),
+    case Binary of
+        <<Prefix:Size/binary, _/binary>> -> true;
+        _ -> false
+    end.
 
 
 %%--------------------------------------------------------------------
