@@ -13,8 +13,8 @@
 -include_lib("common_test/include/ct.hrl").
 
 %% API
--export([prepare_test_environment/5, prepare_test_environment/4, clean_environment/2, clean_environment/1,
-    load_modules/2, maybe_start_cover/0, maybe_stop_cover/0]).
+-export([prepare_test_environment/5, prepare_test_environment/4, clean_environment/1, clean_environment/3,
+    clean_environment/3, load_modules/2, maybe_start_cover/0, maybe_stop_cover/0]).
 
 -define(CLEANING_PROC_NAME, cleaning_proc).
 -define(TIMEOUT, timer:seconds(60)).
@@ -57,6 +57,7 @@ prepare_test_environment(Config, DescriptionFile, TestModule, LoadModules) ->
     TestModule :: module(), LoadModules :: [module()], Apps :: [{AppName :: atom(), ConfigName :: atom()}])
         -> Result :: list() | {fail, tuple()}.
 prepare_test_environment(Config, DescriptionFile, TestModule, LoadModules, Apps) ->
+    ct:print("Env init in SUITE ~p", [TestModule]),
     try
         DataDir = ?config(data_dir, Config),
         PrivDir = ?config(priv_dir, Config),
@@ -110,7 +111,7 @@ prepare_test_environment(Config, DescriptionFile, TestModule, LoadModules, Apps)
                     "    prepare_test_environment_error.log~n" ++
                     "    prepare_test_environment.log~n" ++
                     "Stacktrace: ~p", [E11, E12, erlang:get_stacktrace()]),
-                clean_environment(EnvDesc),
+                clean_environment(EnvDesc, TestModule),
                 {fail, {init_failed, E11, E12}}
         end
 
@@ -129,7 +130,7 @@ prepare_test_environment(Config, DescriptionFile, TestModule, LoadModules, Apps)
 %%--------------------------------------------------------------------
 -spec clean_environment(Config :: list()) -> ok.
 clean_environment(Config) ->
-    clean_environment(Config, ?ALL_POSSIBLE_APPS).
+    clean_environment(Config, no_suite_specified).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -137,8 +138,19 @@ clean_environment(Config) ->
 %% Afterwards, cleans environment by running 'cleanup.py' script.
 %% @end
 %%--------------------------------------------------------------------
--spec clean_environment(Config :: list(), Apps :: [{AppName :: atom(), ConfigName :: atom()}]) -> ok.
-clean_environment(Config, Apps) ->
+-spec clean_environment(Config :: list(), TestModule :: module()) -> ok.
+clean_environment(Config, TestModule) ->
+    clean_environment(Config, TestModule, ?ALL_POSSIBLE_APPS).
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Gathers cover analysis reports if cover is started.
+%% Afterwards, cleans environment by running 'cleanup.py' script.
+%% @end
+%%--------------------------------------------------------------------
+-spec clean_environment(Config :: list(), TestModule :: module(), Apps :: [{AppName :: atom(), ConfigName :: atom()}]) -> ok.
+clean_environment(Config, TestModule, Apps) ->
+    ct:print("Env cleaning in SUITE ~p", [TestModule]),
     StopStatus = try
         case cover:modules() of
             [] ->
