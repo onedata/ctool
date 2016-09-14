@@ -169,9 +169,7 @@ should_modify_details() ->
 should_get_shares() ->
     meck:new(json_utils),
     meck:expect(json_utils, decode, fun(response_body) ->
-        [
-            {<<"shares">>, [sh1, sh2, sh3]}
-        ]
+        [{<<"shares">>, [sh1, sh2, sh3]}]
     end),
 
     Answer = oz_spaces:get_shares(client, <<"spaceId">>),

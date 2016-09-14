@@ -117,7 +117,7 @@ modify_details(Auth, SpaceId, Parameters) ->
     {ok, ShareIds :: [binary()]} | {error, Reason :: term()}.
 get_shares(Auth, SpaceId) ->
     ?run(fun() ->
-        URN = "/spaces/" ++ binary_to_list(SpaceId) ++ "/shares/",
+        URN = "/spaces/" ++ binary_to_list(SpaceId) ++ "/shares",
         {ok, 200, _ResponseHeaders, ResponseBody} =
             oz_endpoint:auth_request(Auth, URN, get),
         Props = json_utils:decode(ResponseBody),
