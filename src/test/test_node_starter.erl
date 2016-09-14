@@ -13,7 +13,7 @@
 -include_lib("common_test/include/ct.hrl").
 
 %% API
--export([prepare_test_environment/5, prepare_test_environment/4, clean_environment/1, clean_environment/3,
+-export([prepare_test_environment/5, prepare_test_environment/4, clean_environment/1, clean_environment/2,
     clean_environment/3, load_modules/2, maybe_start_cover/0, maybe_stop_cover/0]).
 
 -define(CLEANING_PROC_NAME, cleaning_proc).
