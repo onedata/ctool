@@ -19,6 +19,7 @@
 
 %% API
 -export([create/2, remove/2, get_details/2, modify_details/3]).
+-export([get_shares/2]).
 -export([get_invite_user_token/2, get_invite_group_token/2, get_invite_provider_token/2]).
 -export([remove_user/3, get_users/2, get_user_details/3, get_user_privileges/3,
     get_effective_user_privileges/3, set_user_privileges/4]).
@@ -79,12 +80,14 @@ get_details(Auth, SpaceId) ->
         URN = "/spaces/" ++ binary_to_list(SpaceId),
         {ok, 200, _ResponseHeaders, ResponseBody} =
             oz_endpoint:auth_request(Auth, URN, get),
-        Proplist = json_utils:decode(ResponseBody),
+        Props = json_utils:decode(ResponseBody),
+        % Get default values of space_details record
         SpaceDetails = #space_details{
-            id = proplists:get_value(<<"spaceId">>, Proplist),
-            name = proplists:get_value(<<"name">>, Proplist),
+            id = proplists:get_value(<<"spaceId">>, Props),
+            name = proplists:get_value(<<"name">>, Props),
             providers_supports = proplists:get_value(
-                <<"providersSupports">>, Proplist)
+                <<"providersSupports">>, Props, []),
+            shares = proplists:get_value(<<"shares">>, Props, [])
         },
         {ok, SpaceDetails}
     end).
@@ -104,6 +107,24 @@ modify_details(Auth, SpaceId, Parameters) ->
             oz_endpoint:auth_request(Auth, URN, patch, Body),
         ok
     end).
+
+
+%%--------------------------------------------------------------------
+%% @doc Returns share list of a Space.
+%% @end
+%%--------------------------------------------------------------------
+-spec get_shares(Auth :: oz_endpoint:auth(), SpaceId :: binary()) ->
+    {ok, ShareIds :: [binary()]} | {error, Reason :: term()}.
+get_shares(Auth, SpaceId) ->
+    ?run(fun() ->
+        URN = "/spaces/" ++ binary_to_list(SpaceId) ++ "/shares",
+        {ok, 200, _ResponseHeaders, ResponseBody} =
+            oz_endpoint:auth_request(Auth, URN, get),
+        Props = json_utils:decode(ResponseBody),
+        ShareIds = proplists:get_value(<<"shares">>, Props),
+        {ok, ShareIds}
+    end).
+
 
 %%--------------------------------------------------------------------
 %% @doc Returns token that allows user to join Space.
@@ -341,7 +362,7 @@ remove_provider(Auth, SpaceId, ProviderId) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec get_providers(Auth :: oz_endpoint:auth(), SpaceId :: binary()) ->
-    {ok, UserIds :: [binary()]} | {error, Reason :: term()}.
+    {ok, ProviderIds :: [binary()]} | {error, Reason :: term()}.
 get_providers(Auth, SpaceId) ->
     ?run(fun() ->
         URN = "/spaces/" ++ binary_to_list(SpaceId) ++ "/providers",
@@ -393,7 +414,8 @@ get_privileges(Auth, URN) ->
             oz_endpoint:auth_request(Auth, URN, get),
         Proplist = json_utils:decode(ResponseBody),
         Privileges = proplists:get_value(<<"privileges">>, Proplist),
-        {ok, lists:map(fun(Binary) -> binary_to_atom(Binary, latin1) end, Privileges)}
+        {ok, lists:map(fun(Binary) ->
+            binary_to_atom(Binary, latin1) end, Privileges)}
     end).
 
 %%--------------------------------------------------------------------

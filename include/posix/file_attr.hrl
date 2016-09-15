@@ -28,7 +28,8 @@
     mtime = 0 :: non_neg_integer(),
     ctime = 0 :: non_neg_integer(),
     type :: ?REGULAR_FILE_TYPE | ?DIRECTORY_TYPE | ?SYMLINK_TYPE,
-    size = 0 :: undefined | non_neg_integer()
+    size = 0 :: undefined | non_neg_integer(),
+    shares = [] :: [binary()]
 }).
 
 -record(xattr, {
