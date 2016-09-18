@@ -24,7 +24,7 @@
 -type space_privilege() :: space_invite_user | space_remove_user |
 space_invite_group | space_remove_group | space_set_privileges |
 space_remove | space_add_provider | space_remove_provider |
-space_change_data | space_view_data | space_manage_shares.
+space_change_data | space_view_data | space_manage_shares | space_write_files.
 
 %% User privileges with regards to group management.
 -type group_privilege() :: group_change_data | group_invite_user |
@@ -51,7 +51,7 @@ modify_handle | view_handle.
 %%--------------------------------------------------------------------
 -spec space_user() -> [space_privilege()].
 space_user() ->
-    [space_view_data].
+    [space_view_data, space_write_files].
 
 %%--------------------------------------------------------------------
 %% @doc A privilege level of a Space manager.
