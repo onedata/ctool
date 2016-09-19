@@ -37,6 +37,9 @@
 -define(CASE_START(Case), ct:print("Starting CASE ~p", [Case])).
 -define(CASE_STOP(Case), ct:print("Stopping CASE ~p", [Case])).
 
+%% Macro used to generate case name for default init/end_per_testcase
+-define(DEFAULT_CASE(Case), list_to_atom(atom_to_list(Case) ++ "_default")).
+
 %% Utility macros
 -define(CURRENT_HOST, ?GET_HOSTNAME(node())).
 -define(NODE(NodeHost, NodeName), list_to_atom(atom_to_list(NodeName) ++ "@" ++ atom_to_list(NodeHost))).
