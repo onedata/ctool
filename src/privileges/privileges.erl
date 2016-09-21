@@ -34,13 +34,14 @@ group_view_data | group_create_space_token |
 group_join_group | group_invite_group | group_remove_group.
 
 %% User privileges with regards to handle service.
--type handle_service_privilege() :: register_handle_service |
-list_handle_services | delete_handle_service | modify_handle_service |
-view_handle_service.
+-type handle_service_privilege() ::
+%%register_handle_service | list_handle_services | % we may need those privileges for admins in oz_api_privileges
+delete_handle_service | modify_handle_service | view_handle_service |
+register_handle.
 
 %% User privileges with regards to handle.
--type handle_privilege() :: register_handle | list_handles | delete_handle |
-modify_handle | view_handle.
+-type handle_privilege() :: delete_handle | modify_handle |
+view_handle.
 
 %%%===================================================================
 %%% API
@@ -135,7 +136,7 @@ group_admin() ->
 %%--------------------------------------------------------------------
 -spec handle_service_user() -> [handle_service_privilege()].
 handle_service_user() ->
-    [view_handle_service].
+    [view_handle_service, register_handle].
 
 %%--------------------------------------------------------------------
 %% @doc A privilege level of a handle_service administrator. This level contains all
@@ -147,8 +148,8 @@ handle_service_admin() ->
     ordsets:union(
         handle_service_user(),
         ordsets:from_list([
-            register_handle_service,
-            list_handle_services,
+%%            register_handle_service, % we may need those privileges for admins in oz_api_privileges
+%%            list_handle_services,
             delete_handle_service,
             modify_handle_service,
             view_handle_service
@@ -172,7 +173,6 @@ handle_admin() ->
     ordsets:union(
         handle_user(),
         ordsets:from_list([
-            register_handle,
             list_handles,
             delete_handle,
             modify_handle,
