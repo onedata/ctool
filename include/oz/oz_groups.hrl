@@ -20,7 +20,8 @@
 -record(group_details, {
     id :: binary(),
     name :: binary(),
-    type :: undefined | 'organization' | 'unit' | 'team' | 'role'
+    % Public means that only public data could be retrieved.
+    type :: undefined | public | organization | unit | team | role
 }).
 
 -endif.
