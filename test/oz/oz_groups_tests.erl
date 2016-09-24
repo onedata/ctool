@@ -119,12 +119,12 @@ should_get_details() ->
     meck:new(json_utils),
     meck:expect(json_utils, decode, fun(response_body) -> [
         {<<"groupId">>, <<"groupId">>}, {<<"name">>, <<"name">>},
-        {<<"type">>, <<"type">>}
+        {<<"type">>, <<"role">>}
     ] end),
 
     Answer = oz_groups:get_details(client, <<"groupId">>),
     ?assertEqual({ok, #group_details{id = <<"groupId">>,
-        name = <<"name">>, type = <<"type">>}}, Answer),
+        name = <<"name">>, type = role}}, Answer),
 
     ?assert(meck:validate(json_utils)),
     ok = meck:unload(json_utils).

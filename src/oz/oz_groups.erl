@@ -77,7 +77,7 @@ get_details(Auth, GroupId) ->
         GroupDetails = #group_details{
             id = proplists:get_value(<<"groupId">>, Proplist),
             name = proplists:get_value(<<"name">>, Proplist),
-            type = proplists:get_value(<<"type">>, Proplist)
+            type = binary_to_atom(proplists:get_value(<<"type">>, Proplist), utf8)
         },
         {ok, GroupDetails}
     end).
