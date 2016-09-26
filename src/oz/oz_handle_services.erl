@@ -14,7 +14,7 @@
 -include("oz/oz_handle_services.hrl").
 
 %% API
--export([create/2, get_details/2]).
+-export([get_details/2]).
 
 
 %%%===================================================================
