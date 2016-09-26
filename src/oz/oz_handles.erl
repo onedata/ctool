@@ -14,7 +14,7 @@
 -include("oz/oz_handles.hrl").
 
 %% API
--export([create/2, get_details/2]).
+-export([create/2, get_details/2, get_public_details/2]).
 
 
 %%%===================================================================
@@ -62,7 +62,7 @@ get_details(Auth, HandleId) ->
             handle_service_id = proplists:get_value(
                 <<"handle_service_id">>, Props),
             public_handle = proplists:get_value(
-                <<"public_handle">>, Props, undefined),
+                <<"handle">>, Props, undefined),
             resource_type = proplists:get_value(
                 <<"resource_type">>, Props, undefined),
             resource_id = proplists:get_value(
@@ -71,6 +71,29 @@ get_details(Auth, HandleId) ->
                 <<"metadata">>, Props, undefined),
             timestamp = deserialize_timestamp(proplists:get_value(
                 <<"timestamp">>, Props, [0, 0, 0, 0, 0, 0]))
+        },
+        {ok, HandleDetails}
+    end).
+
+
+%%--------------------------------------------------------------------
+%% @doc Returns public details about a handle.
+%% @end
+%%--------------------------------------------------------------------
+-spec get_public_details(Auth :: oz_endpoint:auth(), HandleId :: binary()) ->
+    {ok, HandleDetails :: #handle_details{}} | {error, Reason :: term()}.
+get_public_details(Auth, HandleId) ->
+    ?run(fun() ->
+        URN = "/handles/" ++ binary_to_list(HandleId) ++ "/public",
+        {ok, 200, _ResponseHeaders, ResponseBody} =
+            oz_endpoint:noauth_request(Auth, URN, get),
+        Props = json_utils:decode(ResponseBody),
+        % Get default values of share_details record
+        HandleDetails = #handle_details{
+            public_handle = proplists:get_value(
+                <<"handle">>, Props, undefined),
+            metadata = proplists:get_value(
+                <<"metadata">>, Props, undefined)
         },
         {ok, HandleDetails}
     end).
