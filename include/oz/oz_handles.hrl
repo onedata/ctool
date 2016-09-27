@@ -18,7 +18,7 @@
     resource_type :: binary() | undefined,
     resource_id :: binary() | undefined,
     metadata :: binary() | undefined,
-    timestamp = calendar:datetime()
+    timestamp :: calendar:datetime() | undefined
 }).
 
 -endif.

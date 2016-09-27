@@ -41,7 +41,7 @@ get_details(Auth, HandleServiceId) ->
             proxy_endpoint = proplists:get_value(
                 <<"proxy_endpoint">>, Props, undefined),
             service_properties = proplists:get_value(
-                <<"service_properties">>, Props, undefined)
+                <<"service_properties">>, Props, [])
         },
         {ok, HandleServiceDetails}
     end).
