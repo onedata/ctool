@@ -63,5 +63,5 @@ encode_map(Map) ->
 %%--------------------------------------------------------------------
 -spec decode_map(binary()) -> maps:map().
 decode_map(JSON) ->
-    jiffy:decode(JSON, [return_maps]).
+    try jiffy:decode(JSON, [return_maps]) catch _:_ -> throw(invalid_json) end.
 
