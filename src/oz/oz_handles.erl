@@ -60,13 +60,13 @@ get_details(Auth, HandleId) ->
         % Get default values of share_details record
         HandleDetails = #handle_details{
             handle_service_id = proplists:get_value(
-                <<"handle_service_id">>, Props),
+                <<"handleServiceId">>, Props),
             public_handle = proplists:get_value(
                 <<"handle">>, Props, undefined),
             resource_type = proplists:get_value(
-                <<"resource_type">>, Props, undefined),
+                <<"resourceType">>, Props, undefined),
             resource_id = proplists:get_value(
-                <<"resource_id">>, Props, undefined),
+                <<"resourceId">>, Props, undefined),
             metadata = proplists:get_value(
                 <<"metadata">>, Props, undefined),
             timestamp = deserialize_timestamp(proplists:get_value(
