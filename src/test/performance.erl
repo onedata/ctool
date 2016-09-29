@@ -25,7 +25,7 @@
 -include_lib("ctool/include/logging.hrl").
 -include_lib("common_test/include/ct.hrl").
 
--export([is_standard_test/0, is_stress_test/0, stress_test/1, should_clear/1,
+-export([is_standard_test/0, is_stress_test/0, stress_test/2, should_clear/1,
     all/2, stress_all/3, run_stress_test/3, run_test/4]).
 
 -type proplist() :: [{Key :: atom(), Value :: term()}].
@@ -170,15 +170,14 @@ should_clear(Config) ->
 %% Basic function for stress test.
 %% @end
 %%--------------------------------------------------------------------
--spec stress_test(Config :: list()) -> list() | no_return().
-stress_test(Config) ->
-    [{suite, Suite}] = ets:lookup(?STRESS_ETS_NAME, suite),
-    [{cases, Cases}] = ets:lookup(?STRESS_ETS_NAME, cases),
+-spec stress_test(Config :: list(), Suite :: atom()) -> list() | no_return().
+stress_test(Config, Suite) ->
+    [{{cases, Suite},  Cases}] = ets:lookup(?STRESS_ETS_NAME, {cases, Suite}),
     [{timeout, Timeout}] = ets:lookup(?STRESS_ETS_NAME, timeout),
     ct:timetrap({seconds, Timeout + ?STRESS_TIMEOUT_EXTENSION_SECONDS}), % add 10 minutes to let running tests end
 
     AnsList = lists:foldl(fun(Case, Ans) ->
-        [{{history, Case}, {Rep, FailedReps, LastFails}}] = ets:lookup(?STRESS_ETS_NAME, {history, Case}),
+        [{{history, Suite, Case}, {Rep, FailedReps, LastFails}}] = ets:lookup(?STRESS_ETS_NAME, {history, Suite, Case}),
         case LastFails of
             permanent_error ->
                 SkipMessage = str_utils:format("Case: ~p, skipped (too many fails)", [Case]),
@@ -231,12 +230,11 @@ stress_test(Config) ->
 %% standard or performance.
 %% @end
 %%--------------------------------------------------------------------
--spec get_stress_test_params() -> list().
-get_stress_test_params() ->
+-spec get_stress_test_params(Suite :: atom()) -> list().
+get_stress_test_params(Suite) ->
     case is_stress_test() of
         true ->
-            [{suite, Suite}] = ets:lookup(?STRESS_ETS_NAME, suite),
-            [{cases, Cases}] = ets:lookup(?STRESS_ETS_NAME, cases),
+            [{{cases, Suite}, Cases}] = ets:lookup(?STRESS_ETS_NAME, {cases, Suite}),
 
             lists:foldl(fun(Case, Ans) ->
                 Params = apply(Suite, Case, [get_params]),
@@ -318,8 +316,7 @@ save_suite_and_cases(Suite, Cases) ->
             end,
             receive
                 ets_created ->
-                    ets:insert(?STRESS_ETS_NAME, {suite, Suite}),
-                    ets:insert(?STRESS_ETS_NAME, {cases, Cases})
+                    ets:insert(?STRESS_ETS_NAME, {{cases, Suite}, Cases})
             end,
             [stress_test]
     end.
@@ -416,7 +413,7 @@ exec_perf_config(SuiteName, CaseName, CaseArgs, CaseDescr, Config, DefaultReps,
     ),
     % Inject configuration parameters into common test cases configuration.
     NewCaseArgs = inject_parameters(CaseArgs, ConfigParams),
-    ConfigParamsToJSON = ConfigParams ++ get_stress_test_params(),
+    ConfigParamsToJSON = ConfigParams ++ get_stress_test_params(SuiteName),
 
     ConfigReps = case is_stress_test() of
                      true ->
@@ -436,7 +433,7 @@ exec_perf_config(SuiteName, CaseName, CaseArgs, CaseDescr, Config, DefaultReps,
     {RepsSummary, RepsDetails, FailedReps, SuccessfulReps, RepsAverage} =
         case is_stress_test() of
             true ->
-                [{cases, Cases}] = ets:lookup(?STRESS_ETS_NAME, cases),
+                [{{cases, SuiteName},  Cases}] = ets:lookup(?STRESS_ETS_NAME, {cases, SuiteName}),
                 ToMap = fun(InputList) ->
                     ZippedList = lists:zip(InputList, Cases),
                     lists:foldl(fun({Element, Case}, Acc) ->
@@ -578,7 +575,7 @@ exec_perf_config(SuiteName, CaseName, CaseArgs, CaseDescr, Config, DefaultReps,
     RepsSummary :: [#parameter{}] | [[#parameter{}]], RepsDetails :: [#parameter{}] | [[#parameter{}]],
     FailedReps :: map() | [map()]}.
 exec_test_repeats(SuiteName, CaseName, ConfigName, CaseConfig, {timeout, TimeLimit}) ->
-    [{cases, Cases}] = ets:lookup(?STRESS_ETS_NAME, cases),
+    [{{cases, SuiteName},  Cases}] = ets:lookup(?STRESS_ETS_NAME, {cases, SuiteName}),
     exec_test_repeats(SuiteName, CaseName, ConfigName, CaseConfig, 1, {timeout, os:timestamp(), TimeLimit},
         lists:map(fun(_) -> [] end, Cases), lists:map(fun(_) -> [] end, Cases),
         lists:map(fun(_) -> #{} end, Cases));
@@ -595,11 +592,11 @@ exec_test_repeats(SuiteName, CaseName, ConfigName, CaseConfig, Rep, Reps,
                        TestTime = timer:now_diff(Now, StartTime) div 1000000,
                        TimeLeft = TimeLimit - TestTime,
 
-                       [{cases, Cases}] = ets:lookup(?STRESS_ETS_NAME, cases),
+                       [{{cases, SuiteName},  Cases}] = ets:lookup(?STRESS_ETS_NAME, {cases, SuiteName}),
                        ZippedFR = lists:zip(FailedReps, Cases),
                        ErrorsHistoryOK = lists:foldl(fun({FR, Case}, Acc) ->
                            CheckAns = check_error(Rep, FR),
-                           ets:insert(?STRESS_ETS_NAME, {{history, Case}, {Rep, maps:size(FR), CheckAns}}),
+                           ets:insert(?STRESS_ETS_NAME, {{history, SuiteName, Case}, {Rep, maps:size(FR), CheckAns}}),
                            case Acc of
                                permanent_error ->
                                    CheckAns;
