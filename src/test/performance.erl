@@ -272,8 +272,8 @@ run_testcase(SuiteName, CaseName, CaseArgs, Data) ->
 
 %%--------------------------------------------------------------------
 %% @doc
-%% This function saves suite and cases names for sress test.
-%% @endt
+%% This function saves suite and cases names for stress test.
+%% @end
 %%--------------------------------------------------------------------
 -spec set_up_stress_test(SuiteName :: atom(), CasesNames :: [atom()],
     NoClearing :: [atom()]) -> any().
