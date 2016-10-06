@@ -59,7 +59,7 @@ get_details(Auth, HandleId) ->
         Props = json_utils:decode(ResponseBody),
         % Get default values of share_details record
         HandleDetails = #handle_details{
-            handle_service_id = proplists:get_value(
+            handle_service = proplists:get_value(
                 <<"handleService">>, Props),
             public_handle = proplists:get_value(
                 <<"handle">>, Props, undefined),
