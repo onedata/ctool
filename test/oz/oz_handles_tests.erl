@@ -114,7 +114,7 @@ should_get_public_details() ->
     Answer = oz_handles:get_public_details(client, <<"handleId">>),
     ?assertEqual({ok, #handle_details{
         id = <<"val_handleId">>,
-        handle_service_id = undefined,
+        handle_service = undefined,
         public_handle = <<"val_public_handle">>,
         resource_type = undefined,
         resource_id = undefined,
