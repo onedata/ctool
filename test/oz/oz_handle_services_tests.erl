@@ -62,6 +62,7 @@ should_get_details() ->
 
     Answer = oz_handle_services:get_details(client, <<"handleServiceId">>),
     ?assertEqual({ok, #handle_service_details{
+        id = <<"handleServiceId">>,
         name = <<"val_name">>,
         proxy_endpoint = <<"val_proxy_endpoint">>,
         service_properties = <<"val_service_properties">>

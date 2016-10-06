@@ -13,7 +13,8 @@
 -define(OZ_HANDLES_HRL, 1).
 
 -record(handle_details, {
-    handle_service_id :: binary() | undefined,
+    id :: binary(),
+    handle_service :: binary() | undefined,
     public_handle :: binary() | undefined,
     resource_type :: binary() | undefined,
     resource_id :: binary() | undefined,
