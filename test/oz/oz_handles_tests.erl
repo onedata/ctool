@@ -88,7 +88,7 @@ should_get_details() ->
 
     Answer = oz_handles:get_details(client, <<"handleId">>),
     ?assertEqual({ok, #handle_details{
-        id = <<"val_handleId">>,
+        id = <<"handleId">>,
         handle_service = <<"val_handle_service_id">>,
         public_handle = <<"val_public_handle">>,
         resource_type = <<"val_resource_type">>,
