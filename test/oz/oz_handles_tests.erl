@@ -76,8 +76,8 @@ should_get_details() ->
     meck:new(json_utils),
     meck:expect(json_utils, decode, fun(response_body) ->
         [
-            {<<"handleId">>, <<"val_handleId">>},
-            {<<"handleService">>, <<"val_handle_service_id">>},
+            {<<"handleId">>, <<"handleId">>},
+            {<<"handleServiceId">>, <<"val_handle_service_id">>},
             {<<"handle">>, <<"val_public_handle">>},
             {<<"resourceType">>, <<"val_resource_type">>},
             {<<"resourceId">>, <<"val_resource_id">>},
@@ -105,7 +105,7 @@ should_get_public_details() ->
     meck:new(json_utils),
     meck:expect(json_utils, decode, fun(response_body) ->
         [
-            {<<"handleId">>, <<"val_handleId">>},
+            {<<"handleId">>, <<"handleId">>},
             {<<"handle">>, <<"val_public_handle">>},
             {<<"metadata">>, <<"val_metadata">>}
         ]

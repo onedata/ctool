@@ -84,8 +84,8 @@ should_get_details() ->
             {<<"shareId">>, <<"shareId">>},
             {<<"name">>, <<"val_name">>},
             {<<"publicUrl">>, <<"val_public_url">>},
-            {<<"rootFile">>, <<"val_root_file_id">>},
-            {<<"space">>, <<"val_parent_space">>}
+            {<<"rootFileId">>, <<"val_root_file_id">>},
+            {<<"spaceId">>, <<"val_parent_space">>}
         ]
     end),
 

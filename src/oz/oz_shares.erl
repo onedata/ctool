@@ -26,7 +26,7 @@
 %% @doc
 %% Creates a new share with given ID. Parameters should contain:
 %% #   "name" - of new Share
-%% #   "rootFile" - GUID of root file of new Share
+%% #   "rootFileId" - GUID of root file of new Share
 %% @end
 %%--------------------------------------------------------------------
 -spec create(Auth :: oz_endpoint:auth(), ShareId :: binary(),
@@ -77,9 +77,9 @@ get_details(Auth, ShareId) ->
             public_url = proplists:get_value(
                 <<"publicUrl">>, Props, undefined),
             root_file = proplists:get_value(
-                <<"rootFile">>, Props, undefined),
+                <<"rootFileId">>, Props, undefined),
             space = proplists:get_value(
-                <<"space">>, Props, undefined)
+                <<"spaceId">>, Props, undefined)
         },
         {ok, ShareDetails}
     end).
