@@ -86,4 +86,7 @@
     performance:run_stress_test(?MODULE, Config, StressConfig)
 ).
 
+-define(STRESS_TEST_BASE(Config),
+    performance:stress_test(Config, ?MODULE)).
+
 -endif.
