@@ -30,7 +30,8 @@
     type :: ?REGULAR_FILE_TYPE | ?DIRECTORY_TYPE | ?SYMLINK_TYPE,
     size = 0 :: undefined | non_neg_integer(),
     shares = [] :: [binary()],
-    provider_id :: binary()
+    provider_id :: binary(),
+    owner_id :: binary()
 }).
 
 -record(xattr, {
