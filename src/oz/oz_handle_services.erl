@@ -36,6 +36,7 @@ get_details(Auth, HandleServiceId) ->
         Props = json_utils:decode(ResponseBody),
         % Get default values of share_details record
         HandleServiceDetails = #handle_service_details{
+            id = proplists:get_value(<<"handleServiceId">>, Props),
             name = proplists:get_value(
                 <<"name">>, Props, undefined),
             proxy_endpoint = proplists:get_value(

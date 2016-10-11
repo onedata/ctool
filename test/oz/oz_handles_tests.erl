@@ -76,7 +76,7 @@ should_get_details() ->
     meck:new(json_utils),
     meck:expect(json_utils, decode, fun(response_body) ->
         [
-            {<<"handleId">>, <<"val_handleId">>},
+            {<<"handleId">>, <<"handleId">>},
             {<<"handleServiceId">>, <<"val_handle_service_id">>},
             {<<"handle">>, <<"val_public_handle">>},
             {<<"resourceType">>, <<"val_resource_type">>},
@@ -88,7 +88,8 @@ should_get_details() ->
 
     Answer = oz_handles:get_details(client, <<"handleId">>),
     ?assertEqual({ok, #handle_details{
-        handle_service_id = <<"val_handle_service_id">>,
+        id = <<"handleId">>,
+        handle_service = <<"val_handle_service_id">>,
         public_handle = <<"val_public_handle">>,
         resource_type = <<"val_resource_type">>,
         resource_id = <<"val_resource_id">>,
@@ -104,7 +105,7 @@ should_get_public_details() ->
     meck:new(json_utils),
     meck:expect(json_utils, decode, fun(response_body) ->
         [
-            {<<"handleId">>, <<"val_handleId">>},
+            {<<"handleId">>, <<"handleId">>},
             {<<"handle">>, <<"val_public_handle">>},
             {<<"metadata">>, <<"val_metadata">>}
         ]
@@ -112,7 +113,8 @@ should_get_public_details() ->
 
     Answer = oz_handles:get_public_details(client, <<"handleId">>),
     ?assertEqual({ok, #handle_details{
-        handle_service_id = undefined,
+        id = <<"handleId">>,
+        handle_service = undefined,
         public_handle = <<"val_public_handle">>,
         resource_type = undefined,
         resource_id = undefined,

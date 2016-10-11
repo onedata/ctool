@@ -64,7 +64,7 @@ deserialize(Token) ->
         macaroon:deserialize(to_base64(Token, <<>>))
     catch
         Error ->
-            ?warning("Failed to decode token as base62: ~p", [Error]),
+            ?debug("Failed to decode token as base62: ~p", [Error]),
             macaroon:deserialize(Token)
     end.
 

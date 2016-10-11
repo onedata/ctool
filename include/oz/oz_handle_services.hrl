@@ -13,6 +13,7 @@
 -define(OZ_HANDLE_SERVICES_HRL, 1).
 
 -record(handle_service_details, {
+    id :: binary(),
     name :: binary() | undefined,
     proxy_endpoint :: binary() | undefined,
     service_properties = [] :: [term()]

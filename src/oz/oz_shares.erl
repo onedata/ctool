@@ -30,11 +30,11 @@
 %% @end
 %%--------------------------------------------------------------------
 -spec create(Auth :: oz_endpoint:auth(), ShareId :: binary(),
-    ParentSpaceId :: binary(), Parameters :: oz_endpoint:params()) ->
+    SpaceId :: binary(), Parameters :: oz_endpoint:params()) ->
     {ok, ShareId :: binary()} | {error, Reason :: term()}.
-create(Auth, ShareId, ParentSpaceId, Parameters) ->
+create(Auth, ShareId, SpaceId, Parameters) ->
     ?run(fun() ->
-        URN = "/spaces/" ++ binary_to_list(ParentSpaceId) ++
+        URN = "/spaces/" ++ binary_to_list(SpaceId) ++
             "/shares/" ++ binary_to_list(ShareId),
         Body = json_utils:encode(Parameters),
         {ok, 204, _ResponseHeaders, _ResponseBody} =
@@ -76,10 +76,10 @@ get_details(Auth, ShareId) ->
             name = proplists:get_value(<<"name">>, Props),
             public_url = proplists:get_value(
                 <<"publicUrl">>, Props, undefined),
-            root_file_id = proplists:get_value(
+            root_file = proplists:get_value(
                 <<"rootFileId">>, Props, undefined),
-            parent_space = proplists:get_value(
-                <<"parentSpace">>, Props, undefined)
+            space = proplists:get_value(
+                <<"spaceId">>, Props, undefined)
         },
         {ok, ShareDetails}
     end).

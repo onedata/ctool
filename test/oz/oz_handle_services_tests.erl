@@ -21,7 +21,7 @@
 %%% Tests description
 %%%===================================================================
 
-oz_handles_test_() ->
+oz_handle_services_test_() ->
     {foreach,
         fun setup/0,
         fun teardown/1,
@@ -54,6 +54,7 @@ should_get_details() ->
     meck:new(json_utils),
     meck:expect(json_utils, decode, fun(response_body) ->
         [
+            {<<"handleServiceId">>, <<"handleServiceId">>},
             {<<"name">>, <<"val_name">>},
             {<<"proxyEndpoint">>, <<"val_proxy_endpoint">>},
             {<<"serviceProperties">>, <<"val_service_properties">>}
@@ -62,6 +63,7 @@ should_get_details() ->
 
     Answer = oz_handle_services:get_details(client, <<"handleServiceId">>),
     ?assertEqual({ok, #handle_service_details{
+        id = <<"handleServiceId">>,
         name = <<"val_name">>,
         proxy_endpoint = <<"val_proxy_endpoint">>,
         service_properties = <<"val_service_properties">>

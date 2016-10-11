@@ -85,7 +85,7 @@ should_get_details() ->
             {<<"name">>, <<"val_name">>},
             {<<"publicUrl">>, <<"val_public_url">>},
             {<<"rootFileId">>, <<"val_root_file_id">>},
-            {<<"parentSpace">>, <<"val_parent_space">>}
+            {<<"spaceId">>, <<"val_parent_space">>}
         ]
     end),
 
@@ -93,8 +93,8 @@ should_get_details() ->
     ?assertEqual({ok, #share_details{
         id = <<"shareId">>,
         name = <<"val_name">>,
-        parent_space = <<"val_parent_space">>,
-        root_file_id = <<"val_root_file_id">>,
+        space = <<"val_parent_space">>,
+        root_file = <<"val_root_file_id">>,
         public_url = <<"val_public_url">>
     }}, Answer),
 
