@@ -48,7 +48,7 @@ datetime_to_datestamp(DateTime) ->
 %%% @end
 %%%--------------------------------------------------------------------
 -spec datestamp_to_datetime(undefined | binary()) ->
-    calendar:datetime() | calendar:date() | {error, invalid_date_format}.
+    calendar:datetime() | calendar:date() | undefined | {error, invalid_date_format}.
 datestamp_to_datetime(undefined) -> undefined;
 datestamp_to_datetime(Datestamp) ->
     {ok, Regex} = re:compile(?DATESTAMP_REGEX),
