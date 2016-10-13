@@ -36,7 +36,7 @@
 
 -record(xattr, {
     name :: binary(),
-    value :: binary()
+    value :: term()
 }).
 
 -endif.
