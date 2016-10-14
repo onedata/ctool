@@ -71,8 +71,9 @@ should_create() ->
     ok = meck:unload(json_utils).
 
 
-
 should_get_details() ->
+    Datestamp = <<"2016-01-01T10:00:00Z">>,
+    Datetime = timestamp_utils:datestamp_to_datetime(Datestamp),
     meck:new(json_utils),
     meck:expect(json_utils, decode, fun(response_body) ->
         [
@@ -82,7 +83,7 @@ should_get_details() ->
             {<<"resourceType">>, <<"val_resource_type">>},
             {<<"resourceId">>, <<"val_resource_id">>},
             {<<"metadata">>, <<"val_metadata">>},
-            {<<"timestamp">>, [1,2,3,4,5,6]}
+            {<<"timestamp">>, Datestamp}
         ]
     end),
 
@@ -94,7 +95,7 @@ should_get_details() ->
         resource_type = <<"val_resource_type">>,
         resource_id = <<"val_resource_id">>,
         metadata = <<"val_metadata">>,
-        timestamp = {{1,2,3},{4,5,6}}
+        timestamp = Datetime
     }}, Answer),
 
     ?assert(meck:validate(json_utils)),
