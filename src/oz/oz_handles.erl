@@ -70,8 +70,8 @@ get_details(Auth, HandleId) ->
                 <<"resourceId">>, Props, undefined),
             metadata = proplists:get_value(
                 <<"metadata">>, Props, undefined),
-            timestamp = deserialize_timestamp(proplists:get_value(
-                <<"timestamp">>, Props, [0, 0, 0, 0, 0, 0]))
+            timestamp = timestamp_utils:datestamp_to_datetime(proplists:get_value(
+                <<"timestamp">>, Props, undefined))
         },
         {ok, HandleDetails}
     end).
@@ -99,15 +99,3 @@ get_public_details(Auth, HandleId) ->
         },
         {ok, HandleDetails}
     end).
-
-
-%%-------------------------------------------------------------------
-%% @doc
-%% @private
-%% Translates list of integers that come from OZ into
-%% erlang datetime format.
-%% @end
-%%-------------------------------------------------------------------
--spec deserialize_timestamp([integer()]) -> calendar:datetime().
-deserialize_timestamp([A, B, C, D, E, F]) ->
-    {{A, B, C}, {D, E, F}}.
