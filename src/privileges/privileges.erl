@@ -52,7 +52,7 @@ remove_member_from_space.
     group_privilege/0,
     handle_service_privilege/0,
     handle_privilege/0,
-    oz_privilege/0,
+    oz_privilege/0
 ]).
 
 %%%===================================================================
