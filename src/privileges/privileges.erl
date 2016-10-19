@@ -16,7 +16,7 @@
 -export([handle_service_user/0, handle_service_admin/0,
     handle_service_privileges/0]).
 -export([handle_user/0, handle_admin/0, handle_privileges/0]).
--export([oz_api_viewer/0, oz_api_privileges/0]).
+-export([oz_viewer/0, oz_privileges/0]).
 
 %% User privileges with regards to Space management.
 -type space_privilege() :: space_invite_user | space_remove_user |
@@ -33,7 +33,8 @@ group_join_group | group_invite_group | group_remove_group.
 
 %% User privileges with regards to handle service.
 -type handle_service_privilege() ::
-%%register_handle_service | list_handle_services | % we may need those privileges for admins in oz_api_privileges
+%%register_handle_service | list_handle_services | % we may need those
+%% privileges for admins in oz_privileges
 delete_handle_service | modify_handle_service | view_handle_service |
 register_handle.
 
@@ -42,17 +43,16 @@ register_handle.
 view_handle.
 
 %% User/group privileges to admin OZ API
--type oz_api_privilege() :: view_privileges | set_privileges | list_spaces |
+-type oz_privilege() :: view_privileges | set_privileges | list_spaces |
 list_providers | list_providers_of_space | add_member_to_space |
 remove_member_from_space.
--type oz_api_entity_type() :: od_user | od_group.
 
 -export_type([
     space_privilege/0,
     group_privilege/0,
     handle_service_privilege/0,
     handle_privilege/0,
-    oz_api_privilege/0, oz_api_entity_type/0
+    oz_privilege/0,
 ]).
 
 %%%===================================================================
@@ -178,7 +178,7 @@ handle_service_admin() ->
     ordsets:union(
         handle_service_user(),
         ordsets:from_list([
-%%            register_handle_service, % we may need those privileges for admins in oz_api_privileges
+%%            register_handle_service, % we may need those privileges for admins in oz_privileges
 %%            list_handle_services,
             delete_handle_service,
             modify_handle_service,
@@ -231,8 +231,8 @@ handle_privileges() ->
 %%--------------------------------------------------------------------
 %% @doc All view privileges in OZ API.
 %%--------------------------------------------------------------------
--spec oz_api_viewer() -> [oz_api_privilege()].
-oz_api_viewer() -> [
+-spec oz_viewer() -> [oz_privilege()].
+oz_viewer() -> [
     list_users,
     list_users_of_provider,
     list_groups,
@@ -247,10 +247,10 @@ oz_api_viewer() -> [
 %%--------------------------------------------------------------------
 %% @doc All OZ API privileges.
 %%--------------------------------------------------------------------
--spec oz_api_privileges() -> [oz_api_privilege()].
-oz_api_privileges() ->
+-spec oz_privileges() -> [oz_privilege()].
+oz_privileges() ->
     ordsets:union(
-        oz_api_viewer(),
+        oz_viewer(),
         ordsets:from_list([
             view_privileges,
             set_privileges,
