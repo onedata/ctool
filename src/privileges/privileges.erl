@@ -11,14 +11,12 @@
 -author("Konrad Zemek").
 
 
--export([space_user/0, space_manager/0, space_admin/0]).
--export([group_user/0, group_manager/0, group_admin/0]).
--export([handle_service_user/0, handle_service_admin/0]).
--export([handle_user/0, handle_admin/0]).
--export([space_privileges/0, group_privileges/0, handle_service_privileges/0,
-    handle_privileges/0]).
--export_type([space_privilege/0, group_privilege/0, handle_service_privilege/0,
-    handle_privilege/0]).
+-export([space_user/0, space_manager/0, space_admin/0, space_privileges/0]).
+-export([group_user/0, group_manager/0, group_admin/0, group_privileges/0]).
+-export([handle_service_user/0, handle_service_admin/0,
+    handle_service_privileges/0]).
+-export([handle_user/0, handle_admin/0, handle_privileges/0]).
+-export([oz_api_viewer/0, oz_api_privileges/0]).
 
 %% User privileges with regards to Space management.
 -type space_privilege() :: space_invite_user | space_remove_user |
@@ -42,6 +40,19 @@ register_handle.
 %% User privileges with regards to handle.
 -type handle_privilege() :: delete_handle | modify_handle |
 view_handle.
+
+%% User/group privileges to admin OZ API
+-type oz_api_privilege() :: view_privileges | set_privileges | list_spaces |
+list_providers | list_providers_of_space | add_member_to_space |
+remove_member_from_space.
+
+-export_type([
+    space_privilege/0,
+    group_privilege/0,
+    handle_service_privilege/0,
+    handle_privilege/0,
+    oz_api_privilege/0
+]).
 
 %%%===================================================================
 %%% API
@@ -89,6 +100,15 @@ space_admin() ->
     ).
 
 %%--------------------------------------------------------------------
+%% @doc All atoms representing space privileges.
+%% @equiv space_admin()
+%%--------------------------------------------------------------------
+-spec space_privileges() -> [space_privilege()].
+space_privileges() ->
+    space_admin().
+
+
+%%--------------------------------------------------------------------
 %% @doc A privilege level of a group user.
 %%--------------------------------------------------------------------
 -spec group_user() -> [group_privilege()].
@@ -132,6 +152,15 @@ group_admin() ->
     ).
 
 %%--------------------------------------------------------------------
+%% @doc All atoms representing group privileges.
+%% @equiv group_admin()
+%%--------------------------------------------------------------------
+-spec group_privileges() -> [group_privilege()].
+group_privileges() ->
+    group_admin().
+
+
+%%--------------------------------------------------------------------
 %% @doc A privilege level of a handle_service user.
 %%--------------------------------------------------------------------
 -spec handle_service_user() -> [handle_service_privilege()].
@@ -155,6 +184,15 @@ handle_service_admin() ->
             view_handle_service
         ])
     ).
+
+%%--------------------------------------------------------------------
+%% @doc All atoms representing handle_service privileges.
+%% @equiv handle_service_admin()
+%%--------------------------------------------------------------------
+-spec handle_service_privileges() -> [handle_service_privilege()].
+handle_service_privileges() ->
+    handle_service_admin().
+
 
 %%--------------------------------------------------------------------
 %% @doc A privilege level of a handle user.
@@ -181,33 +219,42 @@ handle_admin() ->
     ).
 
 %%--------------------------------------------------------------------
-%% @doc All atoms representing space privileges.
-%% @equiv space_admin()
-%%--------------------------------------------------------------------
--spec space_privileges() -> [space_privilege()].
-space_privileges() ->
-    space_admin().
-
-%%--------------------------------------------------------------------
-%% @doc All atoms representing group privileges.
-%% @equiv group_admin()
-%%--------------------------------------------------------------------
--spec group_privileges() -> [group_privilege()].
-group_privileges() ->
-    group_admin().
-
-%%--------------------------------------------------------------------
-%% @doc All atoms representing handle_service privileges.
-%% @equiv handle_service_admin()
-%%--------------------------------------------------------------------
--spec handle_service_privileges() -> [handle_service_privilege()].
-handle_service_privileges() ->
-    handle_service_admin().
-
-%%--------------------------------------------------------------------
 %% @doc All atoms representing handle privileges.
 %% @equiv handle_admin()
 %%--------------------------------------------------------------------
 -spec handle_privileges() -> [handle_privilege()].
 handle_privileges() ->
     handle_admin().
+
+
+%%--------------------------------------------------------------------
+%% @doc All view privileges in OZ API.
+%%--------------------------------------------------------------------
+-spec oz_api_viewer() -> [oz_api_privilege()].
+oz_api_viewer() -> [
+    list_users,
+    list_users_of_provider,
+    list_groups,
+    list_groups_of_provider,
+    list_spaces,
+    list_spaces_of_provider,
+    list_providers,
+    list_providers_of_space
+].
+
+
+%%--------------------------------------------------------------------
+%% @doc All OZ API privileges.
+%%--------------------------------------------------------------------
+-spec oz_api_privileges() -> [oz_api_privilege()].
+oz_api_privileges() ->
+    ordsets:union(
+        oz_api_viewer(),
+        ordsets:from_list([
+            view_privileges,
+            set_privileges,
+            add_member_to_space,
+            remove_member_from_space
+        ])
+    ).
+
