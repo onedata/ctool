@@ -45,13 +45,14 @@ view_handle.
 -type oz_api_privilege() :: view_privileges | set_privileges | list_spaces |
 list_providers | list_providers_of_space | add_member_to_space |
 remove_member_from_space.
+-type oz_api_entity_type() :: od_user | od_group.
 
 -export_type([
     space_privilege/0,
     group_privilege/0,
     handle_service_privilege/0,
     handle_privilege/0,
-    oz_api_privilege/0
+    oz_api_privilege/0, oz_api_entity_type/0
 ]).
 
 %%%===================================================================
