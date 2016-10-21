@@ -43,9 +43,12 @@ register_handle.
 view_handle.
 
 %% User/group privileges to admin OZ API
--type oz_privilege() :: view_privileges | set_privileges | list_spaces |
-list_providers | list_providers_of_space | add_member_to_space |
-remove_member_from_space.
+-type oz_privilege() :: view_privileges | set_privileges |
+add_member_to_space | remove_member_from_space |
+list_users | list_users_of_provider |
+list_groups | list_groups_of_provider |
+list_spaces | list_spaces_of_provider |
+list_providers | list_providers_of_space.
 
 -export_type([
     space_privilege/0,
