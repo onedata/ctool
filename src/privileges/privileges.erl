@@ -237,13 +237,16 @@ handle_privileges() ->
 -spec oz_viewer() -> [oz_privilege()].
 oz_viewer() -> [
     list_users,
-    list_users_of_provider,
+
     list_groups,
-    list_groups_of_provider,
+
     list_spaces,
-    list_spaces_of_provider,
+    list_providers_of_space,
+
     list_providers,
-    list_providers_of_space
+    list_users_of_provider,
+    list_groups_of_provider,
+    list_spaces_of_provider
 ].
 
 
@@ -257,6 +260,7 @@ oz_privileges() ->
         ordsets:from_list([
             view_privileges,
             set_privileges,
+
             add_member_to_space,
             remove_member_from_space
         ])
