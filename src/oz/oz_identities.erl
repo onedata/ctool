@@ -37,9 +37,9 @@ get_public_key(Auth, ID) ->
         EncodedID = binary_to_list(http_utils:url_encode(ID)),
         URN = "/publickey/" ++ EncodedID,
         {ok, 200, _ResponseHeaders, ResponseBody} =
-            oz_endpoint:noauth_request(Auth, URN, get, <<>>),
+            oz_endpoint:request(Auth, URN, get, <<>>),
         Data = json_utils:decode(ResponseBody),
-        EncodedPublicKey = proplists:get_value(<<"publicKey">>, Data),
+        EncodedPublicKey = lists_utils:key_get(<<"publicKey">>, Data),
         {ok, EncodedPublicKey}
     end).
 
@@ -56,7 +56,7 @@ update_own_public_key(Auth, ID, EncodedPublicKey) ->
         URN = "/publickey/" ++ EncodedID,
         Body = json_utils:encode([{<<"publicKey">>, EncodedPublicKey}]),
         {ok, 204, _ResponseHeaders, _ResponseBody} =
-            oz_endpoint:auth_request(Auth, URN, patch, Body),
+            oz_endpoint:provider_request(Auth, URN, patch, Body),
         ok
     end).
 
@@ -73,13 +73,13 @@ update_own_public_key(Auth, ID, EncodedPublicKey) ->
     ok | {error, Reason :: term()}.
 register_provider(Auth, Parameters) ->
     ?run(fun() ->
-        ID = proplists:get_value(<<"id">>, Parameters),
+        ID = lists_utils:key_get(<<"id">>, Parameters),
         EncodedID = binary_to_list(http_utils:url_encode(ID)),
         URN = "/provider_data/" ++ EncodedID,
 
         Body = json_utils:encode(Parameters),
         {ok, 204, _ResponseHeaders, _ResponseBody} =
-            oz_endpoint:noauth_request(Auth, URN, post, Body),
+            oz_endpoint:request(Auth, URN, post, Body),
         ok
     end).
 

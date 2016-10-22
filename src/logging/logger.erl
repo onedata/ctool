@@ -77,7 +77,7 @@ set_console_loglevel(Loglevel) when is_atom(Loglevel) ->
         LevelAsAtom = case Loglevel of
                           default ->
                               {ok, Proplist} = application:get_env(lager, handlers),
-                              proplists:get_value(lager_console_backend, Proplist);
+                              lists_utils:key_get(lager_console_backend, Proplist);
                           Atom ->
                               % Makes sure that the atom is recognizable as loglevel
                               loglevel_int_to_atom(loglevel_atom_to_int(Atom))

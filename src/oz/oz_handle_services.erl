@@ -32,16 +32,16 @@ get_details(Auth, HandleServiceId) ->
     ?run(fun() ->
         URN = "/handle_services/" ++ binary_to_list(HandleServiceId),
         {ok, 200, _ResponseHeaders, ResponseBody} =
-            oz_endpoint:auth_request(Auth, URN, get),
+            oz_endpoint:provider_request(Auth, URN, get),
         Props = json_utils:decode(ResponseBody),
         % Get default values of share_details record
         HandleServiceDetails = #handle_service_details{
-            id = proplists:get_value(<<"handleServiceId">>, Props),
-            name = proplists:get_value(
+            id = lists_utils:key_get(<<"handleServiceId">>, Props),
+            name = lists_utils:key_get(
                 <<"name">>, Props, undefined),
-            proxy_endpoint = proplists:get_value(
+            proxy_endpoint = lists_utils:key_get(
                 <<"proxyEndpoint">>, Props, undefined),
-            service_properties = proplists:get_value(
+            service_properties = lists_utils:key_get(
                 <<"serviceProperties">>, Props, [])
         },
         {ok, HandleServiceDetails}

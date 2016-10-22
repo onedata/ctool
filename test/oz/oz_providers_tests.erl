@@ -50,7 +50,7 @@ oz_providers_test_() ->
 
 setup() ->
     meck:new(oz_endpoint),
-    meck:expect(oz_endpoint, auth_request, fun
+    meck:expect(oz_endpoint, provider_request, fun
         (client, "/provider", get) ->
             {ok, 200, response_headers, response_body};
         (client, "/provider", delete) ->
@@ -64,7 +64,7 @@ setup() ->
         (client, "/provider/spaces/spaceId", delete) ->
             {ok, 202, response_headers, response_body}
     end),
-    meck:expect(oz_endpoint, auth_request, fun
+    meck:expect(oz_endpoint, provider_request, fun
         (client, "/provider", patch, <<"body">>) ->
             {ok, 204, response_headers, response_body};
         (client, "/provider/spaces", post, <<"body">>) ->
@@ -73,7 +73,7 @@ setup() ->
             {ok, 201, [{<<"location">>, <<"/provider/spaces/spaceId">>}],
                 response_body}
     end),
-    meck:expect(oz_endpoint, noauth_request, fun
+    meck:expect(oz_endpoint, request, fun
         (client, "/provider", post, <<"body">>) ->
             {ok, 200, response_headers, response_body};
         (client, "/provider/test/check_my_ports", post, <<"body">>) ->

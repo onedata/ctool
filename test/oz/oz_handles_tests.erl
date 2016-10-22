@@ -38,15 +38,15 @@ oz_handles_test_() ->
 
 setup() ->
     meck:new(oz_endpoint),
-    meck:expect(oz_endpoint, auth_request, fun
+    meck:expect(oz_endpoint, provider_request, fun
         (client, "/handles/handleId", get) ->
             {ok, 200, response_headers, response_body}
     end),
-    meck:expect(oz_endpoint, noauth_request, fun
+    meck:expect(oz_endpoint, request, fun
         (client, "/handles/handleId/public", get) ->
             {ok, 200, response_headers, response_body}
     end),
-    meck:expect(oz_endpoint, auth_request, fun
+    meck:expect(oz_endpoint, provider_request, fun
         (client, "/handles", post, <<"body">>) ->
             {ok, 201, [{<<"location">>, <<"/handles/handleId">>}], response_body}
     end).
