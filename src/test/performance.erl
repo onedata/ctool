@@ -623,14 +623,31 @@ exec_test_repeats(SuiteName, CaseName, ConfigName, CaseConfig, Rep, Reps,
             {Rep - 1, RepsSummary, RepsDetails, FailedReps};
         _ ->
             case exec_test_repeat(SuiteName, CaseName, CaseConfig) of
-                List when is_list(List) ->
+                List0 when is_list(List0) ->
+                    {List, Proceed} = case List0 of
+                        [{ok, L2}] ->
+                            case lists:member(stop, L2) of
+                                true ->
+                                    {[{ok, L2 -- [stop]}], false};
+                                _ ->
+                                    {List0, true}
+                            end;
+                        _ ->
+                            {List0, true}
+                    end,
                     List2 = lists:zip(List, lists:zip3(RepsSummary, RepsDetails, FailedReps)),
                     {R1, R2, R3} = lists:foldl(fun({R, {RS, RD, FR}}, {A1, A2, A3}) ->
                         {NewRepsSummary, NewRepsDetails, NewFailedReps} = proccess_repeat_result(R, Rep, RS, RD, FR),
                         {[NewRepsSummary | A1], [NewRepsDetails | A2], [NewFailedReps | A3]}
                     end, {[], [], []}, List2),
-                    exec_test_repeats(SuiteName, CaseName, ConfigName, CaseConfig, Rep + 1,
-                        Reps, lists:reverse(R1), lists:reverse(R2), lists:reverse(R3));
+
+                    case Proceed of
+                        true ->
+                            exec_test_repeats(SuiteName, CaseName, ConfigName, CaseConfig, Rep + 1,
+                                Reps, lists:reverse(R1), lists:reverse(R2), lists:reverse(R3));
+                        _ ->
+                            {Rep, lists:reverse(R1), lists:reverse(R2), lists:reverse(R3)}
+                    end;
                 RepeatResult ->
                     {NewRepsSummary, NewRepsDetails, NewFailedReps} =
                         proccess_repeat_result(RepeatResult, Rep, RepsSummary, RepsDetails, FailedReps),
@@ -733,6 +750,7 @@ exec_test_repeat(SuiteName, CaseName, CaseConfig) ->
                     value = TestTime,
                     unit = "ms"} | lists:filter(fun
                     (#parameter{}) -> true;
+                    (stop) -> true;
                     (_) -> false
                 end, lists:flatten([Result]))]}
         end
