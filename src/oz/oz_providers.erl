@@ -118,7 +118,7 @@ get_details(Auth) ->
     {ok, ProviderDetails :: #provider_details{}} | {error, Reason :: term()}.
 get_details(Auth, ProviderId) ->
     ?run(fun() ->
-        URN = "/provider/" ++ binary_to_list(ProviderId),
+        URN = "/providers/" ++ binary_to_list(ProviderId),
         {ok, 200, _ResponseHeaders, ResponseBody} =
             oz_endpoint:auth_request(Auth, URN, get),
         Proplist = json_utils:decode(ResponseBody),
