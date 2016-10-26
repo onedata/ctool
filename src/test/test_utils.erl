@@ -69,12 +69,7 @@ enable_datastore_models([H | _] = Nodes, Models) ->
 %%--------------------------------------------------------------------
 -spec mock_new(Nodes :: node() | [node()], Modules :: module() | [module()]) -> ok.
 mock_new(Nodes, Modules) ->
-    case performance:is_standard_test() of
-        true ->
-            mock_new(Nodes, Modules, [passthrough]);
-        _ ->
-            mock_new(Nodes, Modules, [passthrough, no_history])
-    end.
+    mock_new(Nodes, Modules, [passthrough, no_history]).
 
 %%--------------------------------------------------------------------
 %% @doc
