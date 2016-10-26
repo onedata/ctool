@@ -262,7 +262,7 @@ create_sample_memory_stats_file() ->
         {ok, WriteFd} ->
             file:write(WriteFd, "MemTotal: " ++ integer_to_list(MemTotal) ++ " kB\n"),
             file:write(WriteFd, "Buffers: 20208 kB\n"),
-            file:write(WriteFd, "MemFree: " ++ integer_to_list(MemFree) ++ " kB\n"),
+            file:write(WriteFd, "MemAvailable: " ++ integer_to_list(MemFree) ++ " kB\n"),
             file:write(WriteFd, "Cached: 218904 kB\n"),
             case file:close(WriteFd) of
                 ok -> case file:open(File, [read]) of
