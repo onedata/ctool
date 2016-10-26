@@ -22,7 +22,7 @@
 -export([enable_datastore_models/2]).
 -export([get_docker_ip/1]).
 
--type mock_opt() :: passthrough | non_strict | unstick | no_link.
+-type mock_opt() :: passthrough | non_strict | unstick | no_link | no_history.
 
 -define(TIMEOUT, timer:seconds(60)).
 
@@ -64,17 +64,12 @@ enable_datastore_models([H | _] = Nodes, Models) ->
 %%--------------------------------------------------------------------
 %% @doc
 %% Mocks module on provided nodes using default options.
-%% @equiv mock_new(Nodes, Modules, [passthrough])
+%% @equiv mock_new(Nodes, Modules, [passthrough, no_history])
 %% @end
 %%--------------------------------------------------------------------
 -spec mock_new(Nodes :: node() | [node()], Modules :: module() | [module()]) -> ok.
 mock_new(Nodes, Modules) ->
-    case performance:is_standard_test() of
-        true ->
-            mock_new(Nodes, Modules, [passthrough]);
-        _ ->
-            mock_new(Nodes, Modules, [passthrough, no_history])
-    end.
+    mock_new(Nodes, Modules, [passthrough, no_history]).
 
 %%--------------------------------------------------------------------
 %% @doc
