@@ -51,12 +51,12 @@ oz_providers_test_() ->
 setup() ->
     meck:new(oz_endpoint),
     meck:expect(oz_endpoint, provider_request, fun
+        (client, "/providers/providerId", get) ->
+            {ok, 200, response_headers, response_body};
         (client, "/provider", get) ->
             {ok, 200, response_headers, response_body};
         (client, "/provider", delete) ->
             {ok, 202, response_headers, response_body};
-        (client, "/provider/providerId", get) ->
-            {ok, 200, response_headers, response_body};
         (client, "/provider/spaces", get) ->
             {ok, 200, response_headers, response_body};
         (client, "/provider/spaces/spaceId", get) ->
