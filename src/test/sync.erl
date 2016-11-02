@@ -24,6 +24,8 @@
 -export([add_includes/1]).
 -export([sync/0]).
 
+-define(DEPS_PATH, filename:join(["_build", "default", "lib"])).
+
 %%%===================================================================
 %%% API
 %%%===================================================================
@@ -41,7 +43,7 @@ start(ProjectSourceDir) ->
     ets_insert(project_dir, str_utils:to_list(ProjectSourceDir)),
     % Resolve all paths to includes
     ProjIncludes = [filename:join(ProjectSourceDir, "include")],
-    Deps = find_all_dirs(filename:join(ProjectSourceDir, "deps")),
+    Deps = find_all_dirs(filename:join(ProjectSourceDir, ?DEPS_PATH)),
     DepsIncludes = lists:map(
         fun(DepPath) ->
             filename:join(DepPath, "include")
@@ -98,8 +100,10 @@ track_dep(DepOrDeps) ->
             Deps = ensure_list_of_strings(DepOrDeps),
             Results = lists:map(
                 fun(Dep) ->
-                    toggle_track_dir(filename:join(["deps", Dep, "src"]),
-                        true)
+                    toggle_track_dir(
+                        filename:join([?DEPS_PATH, Dep, "src"]),
+                        true
+                    )
                 end, Deps),
             lists:all(fun(Res) -> Res end, Results)
     end.
@@ -122,8 +126,10 @@ dont_track_dep(DepOrDeps) ->
             Deps = ensure_list_of_strings(DepOrDeps),
             Results = lists:map(
                 fun(Dep) ->
-                    toggle_track_dir(filename:join(["deps", Dep, "src"]),
-                        false)
+                    toggle_track_dir(
+                        filename:join([?DEPS_PATH, Dep, "src"]),
+                        false
+                    )
                 end, Deps),
             lists:all(fun(Res) -> Res end, Results)
     end.
@@ -318,9 +324,9 @@ toggle_track_dir(Path, Flag) ->
     case filelib:is_dir(filename:join([ProjectDir, Path])) of
         true ->
             NewDirs = case Flag of
-                          true -> DirsWithout ++ [Path];
-                          false -> DirsWithout
-                      end,
+                true -> DirsWithout ++ [Path];
+                false -> DirsWithout
+            end,
             ets_insert(dirs, NewDirs),
             case Flag of
                 true ->
@@ -347,19 +353,19 @@ toggle_track_dir(Path, Flag) ->
 toggle_track_module(PathOrName, Flag) ->
     ProjectDir = ets_lookup(project_dir),
     Path = case filelib:is_file(PathOrName) of
-               true ->
-                   PathOrName;
-               _ ->
-                   case find_all_files(ProjectDir, PathOrName ++ "'.erl'",
-                       true) of
-                       [] ->
-                           error_msg("Cannot track module `~s` - it was not "
-                           "found in the source project dir.", [PathOrName]),
-                           undefined;
-                       [FilePath] ->
-                           FilePath
-                   end
-           end,
+        true ->
+            PathOrName;
+        _ ->
+            case find_all_files(ProjectDir, PathOrName ++ "'.erl'",
+                true) of
+                [] ->
+                    error_msg("Cannot track module `~s` - it was not "
+                    "found in the source project dir.", [PathOrName]),
+                    undefined;
+                [FilePath] ->
+                    FilePath
+            end
+    end,
     case Path of
         undefined ->
             false;
@@ -368,9 +374,9 @@ toggle_track_module(PathOrName, Flag) ->
             Files = ets_lookup(files, []),
             FilesWithout = Files -- [FullPath],
             NewFiles = case Flag of
-                           true -> [FullPath | FilesWithout];
-                           false -> FilesWithout
-                       end,
+                true -> [FullPath | FilesWithout];
+                false -> FilesWithout
+            end,
             ets_insert(files, NewFiles),
             case Flag of
                 true ->

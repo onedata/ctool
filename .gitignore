@@ -6,7 +6,6 @@
 .dialyzer.plt
 .rebar
 
-deps
-ebin
-
 test/eunit_results
+_build
+compile_commands.json

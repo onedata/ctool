@@ -11,7 +11,8 @@
 -module(str_utils).
 
 % Conversion
--export([to_list/1, to_binary/1, join_binary/2, reverse_binary/1]).
+-export([to_list/1, to_binary/1]).
+-export([join_binary/1, join_binary/2, reverse_binary/1, binary_starts_with/2]).
 
 % Conversion between unicode and binaries
 -export([unicode_list_to_binary/1, binary_to_unicode_list/1]).
@@ -48,18 +49,27 @@ to_binary(Term) -> list_to_binary(to_list(Term)).
 
 
 %%--------------------------------------------------------------------
-%% @doc Joins a list of binaries into one binary, using a separator.
+%% @doc Joins a list of binaries into one binary.
 %% @end
 %%--------------------------------------------------------------------
--spec join_binary(Terms :: [binary()], Separator :: binary()) -> binary().
+-spec join_binary(Binaries :: [binary()]) -> binary().
+join_binary(Binaries) ->
+    join_binary(Binaries, <<"">>).
+
+
+%%--------------------------------------------------------------------
+%% @doc Joins a list of binaries into one binary, using given separator.
+%% @end
+%%--------------------------------------------------------------------
+-spec join_binary(Binaries :: [binary()], Separator :: binary()) -> binary().
 join_binary([], _Sep) ->
     <<>>;
 join_binary([Part], _Sep) ->
     Part;
 join_binary([Head | Tail], Sep) ->
     lists:foldl(
-        fun(A, B) ->
-            <<B/binary, Sep/binary, A/binary>>
+        fun(Part, Acc) ->
+            <<Acc/binary, Sep/binary, Part/binary>>
         end, Head, Tail).
 
 
@@ -71,6 +81,18 @@ reverse_binary(Binary) ->
     S = size(Binary) * 8,
     <<X:S/integer-little>> = Binary,
     <<X:S/integer-big>>.
+
+
+%--------------------------------------------------------------------
+%% @doc Predicate that tells whether binary starts with given prefix.
+%%--------------------------------------------------------------------
+-spec binary_starts_with(Binary :: binary(), Prefix :: binary()) -> boolean().
+binary_starts_with(Binary, Prefix) ->
+    Size = byte_size(Prefix),
+    case Binary of
+        <<Prefix:Size/binary, _/binary>> -> true;
+        _ -> false
+    end.
 
 
 %%--------------------------------------------------------------------

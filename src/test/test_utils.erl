@@ -20,8 +20,9 @@
     mock_unload/2, mock_validate_and_unload/2, mock_assert_num_calls/5]).
 -export([get_env/3, set_env/4]).
 -export([enable_datastore_models/2]).
+-export([get_docker_ip/1]).
 
--type mock_opt() :: passthrough | non_strict | unstick | no_link.
+-type mock_opt() :: passthrough | non_strict | unstick | no_link | no_history.
 
 -define(TIMEOUT, timer:seconds(60)).
 
@@ -44,10 +45,14 @@ enable_datastore_models([H | _] = Nodes, Models) ->
             {_, []} = rpc:multicall(Nodes, code, load_binary, [Module, Filename, Binary])
         end, Models),
 
+    mock_unload(Nodes, [plugins]),
     catch mock_new(Nodes, [plugins]),
     ok = mock_expect(Nodes, plugins, apply,
-        fun(datastore_config_plugin, models, []) ->
-            meck:passthrough([datastore_config_plugin, models, []]) ++ Models
+        fun
+            (datastore_config_plugin, models, []) ->
+                meck:passthrough([datastore_config_plugin, models, []]) ++ Models;
+            (A1, A2, A3) ->
+                meck:passthrough([A1, A2, A3])
         end),
 
     lists:foreach(
@@ -59,12 +64,12 @@ enable_datastore_models([H | _] = Nodes, Models) ->
 %%--------------------------------------------------------------------
 %% @doc
 %% Mocks module on provided nodes using default options.
-%% @equiv mock_new(Nodes, Modules, [passthrough])
+%% @equiv mock_new(Nodes, Modules, [passthrough, no_history])
 %% @end
 %%--------------------------------------------------------------------
 -spec mock_new(Nodes :: node() | [node()], Modules :: module() | [module()]) -> ok.
 mock_new(Nodes, Modules) ->
-    mock_new(Nodes, Modules, [passthrough]).
+    mock_new(Nodes, Modules, [passthrough, no_history]).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -88,7 +93,7 @@ mock_new(Nodes, Modules, Options) ->
             erlang:spawn_link(Node, fun() ->
                 try
                     process_flag(trap_exit, true),
-                    meck:new(Module, Options),
+                    ?assertMatch(ok, catch meck:new(Module, Options), 5),
                     Parent ! Ref,
                     receive
                         {'EXIT', Parent, _} -> meck:unload(Module);
@@ -205,6 +210,20 @@ get_env(Node, Application, Name) ->
     ok | {badrpc, Reason :: term()}.
 set_env(Node, Application, Name, Value) ->
     rpc:call(Node, application, set_env, [Application, Name, Value]).
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Contacts docker daemon to check the IP of given node started as docker.
+%% @end
+%%--------------------------------------------------------------------
+-spec get_docker_ip(Node :: atom()) -> binary().
+get_docker_ip(Node) ->
+    CMD = [
+        "docker inspect",
+        "--format '{{ .NetworkSettings.IPAddress }}'",
+        utils:get_host(Node)
+    ],
+    re:replace(utils:cmd(CMD), "\\s+", "", [global, {return, binary}]).
 
 
 %%%===================================================================

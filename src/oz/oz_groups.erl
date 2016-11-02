@@ -20,15 +20,11 @@
 -export([create/2, remove/2, get_details/2, modify_details/3]).
 -export([get_create_space_token/2, get_invite_user_token/2]).
 -export([remove_user/3, get_users/2, get_user_details/3, get_user_privileges/3,
-    set_user_privileges/4]).
+    set_user_privileges/4, get_effective_users/2, get_effective_user_privileges/3]).
+-export([get_nested_privileges/3, set_nested_privileges/4, get_parents/2, get_nested/2,
+    get_invite_group_token/2, join_group/3, leave_group/3]).
 -export([create_space/3, join_space/3, leave_space/3, get_spaces/2,
     get_space_details/3]).
-
-%% User privileges with regards to group management.
--type group_privilege() :: group_change_data | group_invite_user |
-group_remove_user | group_join_space | group_create_space |
-group_set_privileges | group_remove | group_leave_space |
-group_view_data | group_create_space_token.
 
 %%%===================================================================
 %%% API
@@ -39,14 +35,14 @@ group_view_data | group_create_space_token.
 %% of created group. Parameters should contain: "name" of new group.
 %% @end
 %%--------------------------------------------------------------------
--spec create(Client :: oz_endpoint:client(), Params :: oz_endpoint:params()) ->
+-spec create(Auth :: oz_endpoint:auth(), Params :: oz_endpoint:params()) ->
     {ok, SpaceId :: binary()} | {error, Reason :: term()}.
-create(Client, Parameters) ->
+create(Auth, Parameters) ->
     ?run(fun() ->
         URN = "/groups",
         Body = json_utils:encode(Parameters),
         {ok, 201, ResponseHeaders, _ResponseBody} =
-            oz_endpoint:auth_request(Client, URN, post, Body),
+            oz_endpoint:auth_request(Auth, URN, post, Body),
         <<"/groups/", GroupId/binary>> =
             proplists:get_value(<<"location">>, ResponseHeaders),
         {ok, GroupId}
@@ -56,13 +52,13 @@ create(Client, Parameters) ->
 %% @doc Removes group.
 %% @end
 %%--------------------------------------------------------------------
--spec remove(Client :: oz_endpoint:client(), GroupId :: binary()) ->
+-spec remove(Auth :: oz_endpoint:auth(), GroupId :: binary()) ->
     ok | {error, Reason :: term()}.
-remove(Client, GroupId) ->
+remove(Auth, GroupId) ->
     ?run(fun() ->
         URN = "/groups/" ++ binary_to_list(GroupId),
         {ok, 202, _ResponseHeaders, _ResponseBody} =
-            oz_endpoint:auth_request(Client, URN, delete),
+            oz_endpoint:auth_request(Auth, URN, delete),
         ok
     end).
 
@@ -70,17 +66,18 @@ remove(Client, GroupId) ->
 %% @doc Returns public details about group.
 %% @end
 %%--------------------------------------------------------------------
--spec get_details(Client :: oz_endpoint:client(), GroupId :: binary()) ->
+-spec get_details(Auth :: oz_endpoint:auth(), GroupId :: binary()) ->
     {ok, GroupDetails :: #group_details{}} | {error, Reason :: term()}.
-get_details(Client, GroupId) ->
+get_details(Auth, GroupId) ->
     ?run(fun() ->
         URN = "/groups/" ++ binary_to_list(GroupId),
         {ok, 200, _ResponseHeaders, ResponseBody} =
-            oz_endpoint:auth_request(Client, URN, get),
+            oz_endpoint:auth_request(Auth, URN, get),
         Proplist = json_utils:decode(ResponseBody),
         GroupDetails = #group_details{
             id = proplists:get_value(<<"groupId">>, Proplist),
-            name = proplists:get_value(<<"name">>, Proplist)
+            name = proplists:get_value(<<"name">>, Proplist),
+            type = binary_to_atom(proplists:get_value(<<"type">>, Proplist), utf8)
         },
         {ok, GroupDetails}
     end).
@@ -90,14 +87,14 @@ get_details(Client, GroupId) ->
 %% "name" of group.
 %% @end
 %%--------------------------------------------------------------------
--spec modify_details(Client :: oz_endpoint:client(), GroupId :: binary(),
+-spec modify_details(Auth :: oz_endpoint:auth(), GroupId :: binary(),
     Parameters :: oz_endpoint:params()) -> ok | {error, Reason :: term()}.
-modify_details(Client, GroupId, Parameters) ->
+modify_details(Auth, GroupId, Parameters) ->
     ?run(fun() ->
         URN = "/groups/" ++ binary_to_list(GroupId),
         Body = json_utils:encode(Parameters),
         {ok, 204, _ResponseHeaders, _ResponseBody} =
-            oz_endpoint:auth_request(Client, URN, patch, Body),
+            oz_endpoint:auth_request(Auth, URN, patch, Body),
         ok
     end).
 
@@ -105,13 +102,13 @@ modify_details(Client, GroupId, Parameters) ->
 %% @doc Returns token that allows provider to create Space for group.
 %% @end
 %%--------------------------------------------------------------------
--spec get_create_space_token(Client :: oz_endpoint:client(),
+-spec get_create_space_token(Auth :: oz_endpoint:auth(),
     GroupId :: binary()) -> {ok, Token :: binary()} | {error, Reason :: term()}.
-get_create_space_token(Client, GroupId) ->
+get_create_space_token(Auth, GroupId) ->
     ?run(fun() ->
         URN = "/groups/" ++ binary_to_list(GroupId) ++ "/spaces/token",
         {ok, 200, _ResponseHeaders, ResponseBody} =
-            oz_endpoint:auth_request(Client, URN, get),
+            oz_endpoint:auth_request(Auth, URN, get),
         Proplist = json_utils:decode(ResponseBody),
         Token = proplists:get_value(<<"token">>, Proplist),
         {ok, Token}
@@ -121,13 +118,13 @@ get_create_space_token(Client, GroupId) ->
 %% @doc Returns token that allows user to join group.
 %% @end
 %%--------------------------------------------------------------------
--spec get_invite_user_token(Client :: oz_endpoint:client(),
+-spec get_invite_user_token(Auth :: oz_endpoint:auth(),
     GroupId :: binary()) -> {ok, Token :: binary()} | {error, Reason :: term()}.
-get_invite_user_token(Client, GroupId) ->
+get_invite_user_token(Auth, GroupId) ->
     ?run(fun() ->
         URN = "/groups/" ++ binary_to_list(GroupId) ++ "/users/token",
         {ok, 200, _ResponseHeaders, ResponseBody} =
-            oz_endpoint:auth_request(Client, URN, get),
+            oz_endpoint:auth_request(Auth, URN, get),
         Proplist = json_utils:decode(ResponseBody),
         Token = proplists:get_value(<<"token">>, Proplist),
         {ok, Token}
@@ -137,14 +134,14 @@ get_invite_user_token(Client, GroupId) ->
 %% @doc Removes user from group.
 %% @end
 %%--------------------------------------------------------------------
--spec remove_user(Client :: oz_endpoint:client(), GroupId :: binary(),
+-spec remove_user(Auth :: oz_endpoint:auth(), GroupId :: binary(),
     UserId :: binary()) -> ok | {error, Reason :: term()}.
-remove_user(Client, GroupId, UserId) ->
+remove_user(Auth, GroupId, UserId) ->
     ?run(fun() ->
         URN = "/groups/" ++ binary_to_list(GroupId) ++ "/users/" ++
             binary_to_list(UserId),
         {ok, 202, _ResponseHeaders, _ResponseBody} =
-            oz_endpoint:auth_request(Client, URN, delete),
+            oz_endpoint:auth_request(Auth, URN, delete),
         ok
     end).
 
@@ -152,15 +149,63 @@ remove_user(Client, GroupId, UserId) ->
 %% @doc Returns list of IDs of users that belong to group.
 %% @end
 %%--------------------------------------------------------------------
--spec get_users(Client :: oz_endpoint:client(), GroupId :: binary()) ->
+-spec get_users(Auth :: oz_endpoint:auth(), GroupId :: binary()) ->
     {ok, UserIds :: [binary()]} | {error, Reason :: term()}.
-get_users(Client, GroupId) ->
+get_users(Auth, GroupId) ->
     ?run(fun() ->
         URN = "/groups/" ++ binary_to_list(GroupId) ++ "/users",
         {ok, 200, _ResponseHeaders, ResponseBody} =
-            oz_endpoint:auth_request(Client, URN, get),
+            oz_endpoint:auth_request(Auth, URN, get),
         Proplist = json_utils:decode(ResponseBody),
         UserIds = proplists:get_value(<<"users">>, Proplist),
+        {ok, UserIds}
+    end).
+
+%%--------------------------------------------------------------------
+%% @doc Returns list of IDs of users that belong to group.
+%% @end
+%%--------------------------------------------------------------------
+-spec get_effective_users(Auth :: oz_endpoint:auth(), GroupId :: binary()) ->
+    {ok, UserIds :: [binary()]} | {error, Reason :: term()}.
+get_effective_users(Auth, GroupId) ->
+    ?run(fun() ->
+        URN = "/groups/" ++ binary_to_list(GroupId) ++ "/effective_users",
+        {ok, 200, _ResponseHeaders, ResponseBody} =
+            oz_endpoint:auth_request(Auth, URN, get),
+        Proplist = json_utils:decode(ResponseBody),
+        UserIds = proplists:get_value(<<"users">>, Proplist),
+        {ok, UserIds}
+    end).
+
+%%--------------------------------------------------------------------
+%% @doc Returns list of IDs of users that belong to group.
+%% @end
+%%--------------------------------------------------------------------
+-spec get_parents(Auth :: oz_endpoint:auth(), GroupId :: binary()) ->
+    {ok, GroupIds :: [binary()]} | {error, Reason :: term()}.
+get_parents(Auth, GroupId) ->
+    ?run(fun() ->
+        URN = "/groups/" ++ binary_to_list(GroupId) ++ "/parent",
+        {ok, 200, _ResponseHeaders, ResponseBody} =
+            oz_endpoint:auth_request(Auth, URN, get),
+        Proplist = json_utils:decode(ResponseBody),
+        UserIds = proplists:get_value(<<"parent_groups">>, Proplist),
+        {ok, UserIds}
+    end).
+
+%%--------------------------------------------------------------------
+%% @doc Returns list of IDs of users that belong to group.
+%% @end
+%%--------------------------------------------------------------------
+-spec get_nested(Auth :: oz_endpoint:auth(), GroupId :: binary()) ->
+    {ok, GroupIds :: [binary()]} | {error, Reason :: term()}.
+get_nested(Auth, GroupId) ->
+    ?run(fun() ->
+        URN = "/groups/" ++ binary_to_list(GroupId) ++ "/nested",
+        {ok, 200, _ResponseHeaders, ResponseBody} =
+            oz_endpoint:auth_request(Auth, URN, get),
+        Proplist = json_utils:decode(ResponseBody),
+        UserIds = proplists:get_value(<<"nested_groups">>, Proplist),
         {ok, UserIds}
     end).
 
@@ -168,15 +213,15 @@ get_users(Client, GroupId) ->
 %% @doc Returns public details about user that belongs to group.
 %% @end
 %%--------------------------------------------------------------------
--spec get_user_details(Client :: oz_endpoint:client(), GroupId :: binary(),
+-spec get_user_details(Auth :: oz_endpoint:auth(), GroupId :: binary(),
     UserId :: binary()) -> {ok, UserDetails :: #user_details{}} | {error,
     Reason :: term()}.
-get_user_details(Client, GroupId, UserId) ->
+get_user_details(Auth, GroupId, UserId) ->
     ?run(fun() ->
         URN = "/groups/" ++ binary_to_list(GroupId) ++ "/users/" ++
             binary_to_list(UserId),
         {ok, 200, _ResponseHeaders, ResponseBody} =
-            oz_endpoint:auth_request(Client, URN, get),
+            oz_endpoint:auth_request(Auth, URN, get),
         Proplist = json_utils:decode(ResponseBody),
         UserDetails = #user_details{
             id = proplists:get_value(<<"userId">>, Proplist),
@@ -189,35 +234,140 @@ get_user_details(Client, GroupId, UserId) ->
 %% @doc Returns list of privileges of user that belongs to group.
 %% @end
 %%--------------------------------------------------------------------
--spec get_user_privileges(Client :: oz_endpoint:client(), GroupId :: binary(),
+-spec get_user_privileges(Auth :: oz_endpoint:auth(), GroupId :: binary(),
     UserId :: binary()) ->
-    {ok, Privileges :: [group_privilege()]} | {error, Reason :: term()}.
-get_user_privileges(Client, GroupId, UserId) ->
+    {ok, Privileges :: [privileges:group_privilege()]} | {error, Reason :: term()}.
+get_user_privileges(Auth, GroupId, UserId) ->
     ?run(fun() ->
         URN = "/groups/" ++ binary_to_list(GroupId) ++ "/users/" ++
             binary_to_list(UserId) ++ "/privileges",
         {ok, 200, _ResponseHeaders, ResponseBody} =
-            oz_endpoint:auth_request(Client, URN, get),
+            oz_endpoint:auth_request(Auth, URN, get),
         Proplist = json_utils:decode(ResponseBody),
         Privileges = proplists:get_value(<<"privileges">>, Proplist),
-        {ok, Privileges}
+        {ok, lists:map(fun(Binary) -> binary_to_atom(Binary, latin1) end, Privileges)}
+    end).
+
+%%--------------------------------------------------------------------
+%% @doc Returns list of privileges of user that belongs to group.
+%% @end
+%%--------------------------------------------------------------------
+-spec get_effective_user_privileges(Auth :: oz_endpoint:auth(), GroupId :: binary(),
+    UserId :: binary()) ->
+    {ok, Privileges :: [privileges:group_privilege()]} | {error, Reason :: term()}.
+get_effective_user_privileges(Auth, GroupId, UserId) ->
+    ?run(fun() ->
+        URN = "/groups/" ++ binary_to_list(GroupId) ++ "/effective_users/" ++
+            binary_to_list(UserId) ++ "/privileges",
+        {ok, 200, _ResponseHeaders, ResponseBody} =
+            oz_endpoint:auth_request(Auth, URN, get),
+        Proplist = json_utils:decode(ResponseBody),
+        Privileges = proplists:get_value(<<"privileges">>, Proplist),
+        {ok, lists:map(fun(Binary) -> binary_to_atom(Binary, latin1) end, Privileges)}
+    end).
+
+%%--------------------------------------------------------------------
+%% @doc Returns list of privileges of user that belongs to group.
+%% @end
+%%--------------------------------------------------------------------
+-spec get_nested_privileges(Auth :: oz_endpoint:auth(), GroupId :: binary(),
+    NestedGroupId :: binary()) ->
+    {ok, Privileges :: [privileges:group_privilege()]} | {error, Reason :: term()}.
+get_nested_privileges(Auth, GroupId, NestedGroupId) ->
+    ?run(fun() ->
+        URN = "/groups/" ++ binary_to_list(GroupId) ++ "/nested/" ++
+            binary_to_list(NestedGroupId) ++ "/privileges",
+        {ok, 200, _ResponseHeaders, ResponseBody} =
+            oz_endpoint:auth_request(Auth, URN, get),
+        Proplist = json_utils:decode(ResponseBody),
+        Privileges = proplists:get_value(<<"privileges">>, Proplist),
+        {ok, lists:map(fun(Binary) -> binary_to_atom(Binary, latin1) end, Privileges)}
     end).
 
 %%--------------------------------------------------------------------
 %% @doc Sets list of privileges for user that belongs to group.
-%% Parameters should contain: list of "privileges" of type group_privilege().
+%% Parameters should contain: list of "privileges" of type privileges:group_privilege().
 %% @end
 %%--------------------------------------------------------------------
--spec set_user_privileges(Client :: oz_endpoint:client(), GroupId :: binary(),
+-spec set_user_privileges(Auth :: oz_endpoint:auth(), GroupId :: binary(),
     UserId :: binary(), Parameters :: oz_endpoint:params()) ->
     ok | {error, Reason :: term()}.
-set_user_privileges(Client, GroupId, UserId, Parameters) ->
+set_user_privileges(Auth, GroupId, UserId, Parameters) ->
     ?run(fun() ->
         URN = "/groups/" ++ binary_to_list(GroupId) ++ "/users/" ++
             binary_to_list(UserId) ++ "/privileges",
         Body = json_utils:encode(Parameters),
         {ok, 204, _ResponseHeaders, _ResponseBody} =
-            oz_endpoint:auth_request(Client, URN, put, Body),
+            oz_endpoint:auth_request(Auth, URN, put, Body),
+        ok
+    end).
+
+%%--------------------------------------------------------------------
+%% @doc Sets list of privileges for group that belongs to the other group.
+%% Parameters should contain: list of "privileges" of type privileges:group_privilege().
+%% @end
+%%--------------------------------------------------------------------
+-spec set_nested_privileges(Auth :: oz_endpoint:auth(), GroupId :: binary(),
+    NestedGroupId :: binary(), Parameters :: oz_endpoint:params()) ->
+    ok | {error, Reason :: term()}.
+set_nested_privileges(Auth, GroupId, NestedGroupId, Parameters) ->
+    ?run(fun() ->
+        URN = "/groups/" ++ binary_to_list(GroupId) ++ "/nested/" ++
+            binary_to_list(NestedGroupId) ++ "/privileges",
+        Body = json_utils:encode(Parameters),
+        {ok, 204, _ResponseHeaders, _ResponseBody} =
+            oz_endpoint:auth_request(Auth, URN, put, Body),
+        ok
+    end).
+
+%%--------------------------------------------------------------------
+%% @doc Returns token that allows user to join group to another group.
+%% @end
+%%--------------------------------------------------------------------
+-spec get_invite_group_token(Auth :: oz_endpoint:auth(),
+    GroupId :: binary()) -> {ok, Token :: binary()} | {error, Reason :: term()}.
+get_invite_group_token(Auth, GroupId) ->
+    ?run(fun() ->
+        URN = "/groups/" ++ binary_to_list(GroupId) ++ "/nested/token",
+        {ok, 200, _ResponseHeaders, ResponseBody} =
+            oz_endpoint:auth_request(Auth, URN, get),
+        Proplist = json_utils:decode(ResponseBody),
+        Token = proplists:get_value(<<"token">>, Proplist),
+        {ok, Token}
+    end).
+
+%%--------------------------------------------------------------------
+%% @doc Makes group join group associated with token.
+%% Parameters should contain: "token" associated with group.
+%% @end
+%%--------------------------------------------------------------------
+-spec join_group(Auth :: oz_endpoint:auth(), GroupId :: binary(),
+    Parameters :: oz_endpoint:params()) ->
+    {ok, NestedGroupId :: binary()} | {error, Reason :: term()}.
+join_group(Auth, GroupId, Parameters) ->
+    ?run(fun() ->
+        URN = "/groups/" ++ binary_to_list(GroupId) ++ "/nested/join",
+        Body = json_utils:encode(Parameters),
+        {ok, 201, ResponseHeaders, _ResponseBody} =
+            oz_endpoint:auth_request(Auth, URN, post, Body),
+        GroupIdSize = size(GroupId),
+        <<"/groups/", GroupId:GroupIdSize/binary, "/nested/", NestedGroupId/binary>> =
+            proplists:get_value(<<"location">>, ResponseHeaders),
+        {ok, NestedGroupId}
+    end).
+
+%%--------------------------------------------------------------------
+%% @doc Makes group leave group.
+%% @end
+%%--------------------------------------------------------------------
+-spec leave_group(Auth :: oz_endpoint:auth(), ParentGroupId :: binary(),
+    GroupId :: binary()) -> ok | {error, Reason :: term()}.
+leave_group(Auth, ParentGroupId, GroupId) ->
+    ?run(fun() ->
+        URN = "/groups/" ++ binary_to_list(ParentGroupId) ++ "/nested/" ++
+            binary_to_list(GroupId),
+        {ok, 202, _ResponseHeaders, _ResponseBody} =
+            oz_endpoint:auth_request(Auth, URN, delete),
         ok
     end).
 
@@ -226,15 +376,15 @@ set_user_privileges(Client, GroupId, UserId, Parameters) ->
 %% of created Space. Parameters should contain: "name" of new Space.
 %% @end
 %%--------------------------------------------------------------------
--spec create_space(Client :: oz_endpoint:client(), GroupId :: binary(),
+-spec create_space(Auth :: oz_endpoint:auth(), GroupId :: binary(),
     Parameters :: oz_endpoint:params()) ->
     {ok, SpaceId :: binary()} | {error, Reason :: term()}.
-create_space(Client, GroupId, Parameters) ->
+create_space(Auth, GroupId, Parameters) ->
     ?run(fun() ->
         URN = "/groups/" ++ binary_to_list(GroupId) ++ "/spaces",
         Body = json_utils:encode(Parameters),
         {ok, 201, ResponseHeaders, _ResponseBody} =
-            oz_endpoint:auth_request(Client, URN, post, Body),
+            oz_endpoint:auth_request(Auth, URN, post, Body),
         <<"/spaces/", SpaceId/binary>> =
             proplists:get_value(<<"location">>, ResponseHeaders),
         {ok, SpaceId}
@@ -245,15 +395,15 @@ create_space(Client, GroupId, Parameters) ->
 %% Parameters should contain: "token" associated with Space.
 %% @end
 %%--------------------------------------------------------------------
--spec join_space(Client :: oz_endpoint:client(), GroupId :: binary(),
+-spec join_space(Auth :: oz_endpoint:auth(), GroupId :: binary(),
     Parameters :: oz_endpoint:params()) ->
     {ok, SpaceId :: binary()} | {error, Reason :: term()}.
-join_space(Client, GroupId, Parameters) ->
+join_space(Auth, GroupId, Parameters) ->
     ?run(fun() ->
         URN = "/groups/" ++ binary_to_list(GroupId) ++ "/spaces/join",
         Body = json_utils:encode(Parameters),
         {ok, 201, ResponseHeaders, _ResponseBody} =
-            oz_endpoint:auth_request(Client, URN, post, Body),
+            oz_endpoint:auth_request(Auth, URN, post, Body),
         GroupIdSize = size(GroupId),
         <<"/groups/", GroupId:GroupIdSize/binary, "/spaces/", SpaceId/binary>> =
             proplists:get_value(<<"location">>, ResponseHeaders),
@@ -264,14 +414,14 @@ join_space(Client, GroupId, Parameters) ->
 %% @doc Makes group leave Space.
 %% @end
 %%--------------------------------------------------------------------
--spec leave_space(Client :: oz_endpoint:client(), GroupId :: binary(),
+-spec leave_space(Auth :: oz_endpoint:auth(), GroupId :: binary(),
     SpaceId :: binary()) -> ok | {error, Reason :: term()}.
-leave_space(Client, GroupId, SpaceId) ->
+leave_space(Auth, GroupId, SpaceId) ->
     ?run(fun() ->
         URN = "/groups/" ++ binary_to_list(GroupId) ++ "/spaces/" ++
             binary_to_list(SpaceId),
         {ok, 202, _ResponseHeaders, _ResponseBody} =
-            oz_endpoint:auth_request(Client, URN, delete),
+            oz_endpoint:auth_request(Auth, URN, delete),
         ok
     end).
 
@@ -279,13 +429,13 @@ leave_space(Client, GroupId, SpaceId) ->
 %% @doc Returns list of IDs of Spaces that group belongs to.
 %% @end
 %%--------------------------------------------------------------------
--spec get_spaces(Client :: oz_endpoint:client(), GroupId :: binary()) ->
+-spec get_spaces(Auth :: oz_endpoint:auth(), GroupId :: binary()) ->
     {ok, SpaceIds :: [binary()]} | {error, Reason :: term()}.
-get_spaces(Client, GroupId) ->
+get_spaces(Auth, GroupId) ->
     ?run(fun() ->
         URN = "/groups/" ++ binary_to_list(GroupId) ++ "/spaces",
         {ok, 200, _ResponseHeaders, ResponseBody} =
-            oz_endpoint:auth_request(Client, URN, get),
+            oz_endpoint:auth_request(Auth, URN, get),
         Proplist = json_utils:decode(ResponseBody),
         SpaceIds = proplists:get_value(<<"spaces">>, Proplist),
         {ok, SpaceIds}
@@ -295,15 +445,15 @@ get_spaces(Client, GroupId) ->
 %% @doc Returns public details about Space that group belongs to.
 %% @end
 %%--------------------------------------------------------------------
--spec get_space_details(Client :: oz_endpoint:client(), GroupId :: binary(),
+-spec get_space_details(Auth :: oz_endpoint:auth(), GroupId :: binary(),
     SpaceId :: binary()) ->
     {ok, SpaceDetails :: #space_details{}} | {error, Reason :: term()}.
-get_space_details(Client, GroupId, SpaceId) ->
+get_space_details(Auth, GroupId, SpaceId) ->
     ?run(fun() ->
         URN = "/groups/" ++ binary_to_list(GroupId) ++ "/spaces/" ++
             binary_to_list(SpaceId),
         {ok, 200, _ResponseHeaders, ResponseBody} =
-            oz_endpoint:auth_request(Client, URN, get),
+            oz_endpoint:auth_request(Auth, URN, get),
         Proplist = json_utils:decode(ResponseBody),
         SpaceDetails = #space_details{
             id = proplists:get_value(<<"spaceId">>, Proplist),

@@ -33,6 +33,9 @@
     net_stats = [] :: [{Name :: binary(), Value :: float()}],
     cpu_last = [] :: [{Name :: binary(), WorkJiffies :: integer(), TotalJiffies :: integer()}],
     net_last = [] :: [{rx_b | tx_b | rx_p | tx_p | maxthp, Name :: binary(), Value :: integer()}],
+    erlang_vm_cpu = 0.0 :: float(),
+    erlang_vm_mem = [] :: [{Type :: atom(), Size :: non_neg_integer()}],
+    erlang_vm_processes_num = 0 :: non_neg_integer(),
     last_update = 0 :: integer() % Timestamp of the last measurement in seconds since epoch
 }).
 
@@ -49,7 +52,7 @@
 %% API
 -export([start/1, update/1, refresh_ip_address/2]).
 -export([get_node_state/1, get_memory_stats/0]).
--export([cpu_usage/1, mem_usage/1, net_usage/1]).
+-export([cpu_usage/1, mem_usage/1, net_usage/1, erlang_vm_stats/1]).
 
 %%%===================================================================
 %%% API
@@ -102,7 +105,10 @@ update(MonitoringState) ->
         cpu_last = NewCPULast,
         mem_stats = MemStats,
         net_stats = NetStats,
-        net_last = NewNetLast}.
+        net_last = NewNetLast,
+        erlang_vm_cpu = cpu_sup:util(),
+        erlang_vm_mem = erlang:memory(),
+        erlang_vm_processes_num = length(erlang:processes())}.
 
 
 %%--------------------------------------------------------------------
@@ -170,6 +176,16 @@ net_usage(#node_monitoring_state{net_stats = NetStats}) ->
         _ -> NetUsage / MaxThroughput * 100
     end.
 
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Returns info about resources usage by Erlang VM.
+%% @end
+%%--------------------------------------------------------------------
+-spec erlang_vm_stats(MonitoringState :: #node_monitoring_state{}) ->
+    {float(), [{atom(), non_neg_integer()}], non_neg_integer()}.
+erlang_vm_stats(#node_monitoring_state{erlang_vm_cpu = CPU, erlang_vm_mem = Mem, erlang_vm_processes_num = PNum}) ->
+    {CPU, Mem, PNum}.
 
 %%%===================================================================
 %%% Internal functions
@@ -302,7 +318,7 @@ read_memory_stats(Fd, MemFree, MemTotal, Counter) ->
     end,
     case file:read_line(Fd) of
         {ok, "MemTotal:" ++ Line} -> read_memory_stats(Fd, MemFree, GetValue(Line), Counter + 1);
-        {ok, "MemFree:" ++ Line} -> read_memory_stats(Fd, GetValue(Line), MemTotal, Counter + 1);
+        {ok, "MemAvailable:" ++ Line} -> read_memory_stats(Fd, GetValue(Line), MemTotal, Counter + 1);
         eof -> file:close(Fd), [];
         {error, _} -> [];
         _ -> read_memory_stats(Fd, MemFree, MemTotal, Counter)

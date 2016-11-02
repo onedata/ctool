@@ -11,10 +11,9 @@ import json
 import os
 import random
 import string
+from timeouts import *
 
 from . import common, docker, dns, cluster_manager, worker
-
-APPMOCK_WAIT_FOR_NAGIOS_SECONDS = 60 * 2
 
 
 def domain(appmock_instance, uid):
@@ -84,7 +83,9 @@ def _node_up(image, bindir, config, config_path, dns_servers, logdir):
     # file_name must be preserved as it must match the Erlang module name
     sys_config['app_description_file'] = '/tmp/' + app_desc_file_name
 
-    command = '''set -e
+    command = '''mkdir -p /root/bin/node/log/
+bindfs --create-for-user={uid} --create-for-group={gid} /root/bin/node/log /root/bin/node/log
+set -e
 cat <<"EOF" > /tmp/{app_desc_file_name}
 {app_desc_file}
 EOF
@@ -92,13 +93,17 @@ cat <<"EOF" > /tmp/gen_dev_args.json
 {gen_dev_args}
 EOF
 escript bamboos/gen_dev/gen_dev.escript /tmp/gen_dev_args.json
-/root/bin/node/bin/appmock console'''
+/root/bin/node/bin/appmock console
+sleep 5'''  # Add sleep so logs can be chowned
     command = command.format(
+        uid=os.geteuid(),
+        gid=os.getegid(),
         app_desc_file_name=app_desc_file_name,
         app_desc_file=open(app_desc_file_path, 'r').read(),
         gen_dev_args=json.dumps({'appmock': config}))
 
-    volumes = [(bindir, '/root/build', 'ro')]
+    bindir = os.path.abspath(bindir)
+    volumes = ['/root/bin', (bindir, bindir, 'ro')]
 
     if logdir:
         logdir = os.path.join(os.path.abspath(logdir), hostname)
@@ -111,9 +116,10 @@ escript bamboos/gen_dev/gen_dev.escript /tmp/gen_dev_args.json
         detach=True,
         interactive=True,
         tty=True,
-        workdir='/root/build',
+        workdir=bindir,
         volumes=volumes,
         dns_list=dns_servers,
+        privileged=True,
         command=command)
 
     return container, {

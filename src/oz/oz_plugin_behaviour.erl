@@ -7,7 +7,7 @@
 %%%-------------------------------------------------------------------
 %%% @doc This behaviour specifies an API for OZ plugin -
 %%% a module that provides necessary data to connect to OZ.
-%%% Every project using OZ REST API oz_endpoint:client() must
+%%% Every project using OZ REST API client must
 %%% implement this behaviour and the implementing module
 %%% must be called oz_plugin.
 %%% @end
@@ -20,9 +20,19 @@
 %%%===================================================================
 
 %%--------------------------------------------------------------------
-%% @doc Should return a OZ URL.
+%% @doc Should return OZ URL.
 %%--------------------------------------------------------------------
 -callback get_oz_url() -> string().
+
+%%--------------------------------------------------------------------
+%% @doc Should return OZ REST port.
+%%--------------------------------------------------------------------
+-callback get_oz_rest_port() -> integer().
+
+%%--------------------------------------------------------------------
+%% @doc Should return OZ REST API prefix - for example /api/v3/onezone.
+%%--------------------------------------------------------------------
+-callback get_oz_rest_api_prefix() -> string().
 
 %%--------------------------------------------------------------------
 %% @doc Should return a path to file containing provider's private key.

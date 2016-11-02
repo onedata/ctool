@@ -14,6 +14,7 @@
 
 %% API
 -export([encode/1, decode/1]).
+-export([encode_map/1, decode_map/1]).
 
 %%%===================================================================
 %%% API
@@ -45,6 +46,22 @@ decode(<<"">>) -> [];
 decode(JSON) ->
     try mochijson2:decode(JSON, [{format, proplist}]) catch _:_ -> throw(invalid_json) end.
 
-%%%===================================================================
-%%% Internal functions
-%%%===================================================================
+%%--------------------------------------------------------------------
+%% @doc
+%% Convenience function that convert an erlang map to JSON, producing
+%% binary result. The output is in UTF8 encoding.
+%% @end
+%%--------------------------------------------------------------------
+-spec encode_map(maps:map()) -> binary().
+encode_map(Map) ->
+    jiffy:encode(Map).
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Convenience function that convert JSON binary to an erlang map.
+%% @end
+%%--------------------------------------------------------------------
+-spec decode_map(binary()) -> maps:map().
+decode_map(JSON) ->
+    try jiffy:decode(JSON, [return_maps]) catch _:_ -> throw(invalid_json) end.
+

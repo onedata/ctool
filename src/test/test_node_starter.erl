@@ -13,12 +13,13 @@
 -include_lib("common_test/include/ct.hrl").
 
 %% API
--export([prepare_test_environment/5, prepare_test_environment/4, clean_environment/2, clean_environment/1,
-    load_modules/2, maybe_start_cover/0, maybe_stop_cover/0]).
+-export([prepare_test_environment/5, prepare_test_environment/4, clean_environment/1, clean_environment/2,
+    clean_environment/3, load_modules/2, maybe_start_cover/0, maybe_stop_cover/0]).
 
 -define(CLEANING_PROC_NAME, cleaning_proc).
 -define(TIMEOUT, timer:seconds(60)).
 -define(COOKIE_KEY, "vm.args/setcookie").
+-define(ENV_UP_RETRIES_NUMBER, 5).
 
 %% This is list of all applications that possibly could be started by test_node_starter
 %% Update when adding new application (if you want to use callbacks without specifying apps list)
@@ -27,7 +28,8 @@
     {op_worker, op_worker_nodes},
     {cluster_worker, cluster_worker_nodes},
     {cluster_manager, cluster_manager_nodes},
-    {oz_worker, oz_worker_nodes}
+    {oz_worker, oz_worker_nodes},
+    {onepanel, onepanel_nodes}
 ]).
 
 %%%===================================================================
@@ -55,6 +57,7 @@ prepare_test_environment(Config, DescriptionFile, TestModule, LoadModules) ->
     TestModule :: module(), LoadModules :: [module()], Apps :: [{AppName :: atom(), ConfigName :: atom()}])
         -> Result :: list() | {fail, tuple()}.
 prepare_test_environment(Config, DescriptionFile, TestModule, LoadModules, Apps) ->
+    ct:print("Env init in SUITE ~p", [TestModule]),
     try
         DataDir = ?config(data_dir, Config),
         PrivDir = ?config(priv_dir, Config),
@@ -66,73 +69,52 @@ prepare_test_environment(Config, DescriptionFile, TestModule, LoadModules, Apps)
         ConfigWithPaths =
             [{ct_test_root, CtTestRoot}, {project_root, ProjectRoot} | Config],
 
-        EnvUpScript = filename:join([ProjectRoot, "bamboos", "docker", "env_up.py"]),
-
         LogsDir = filename:join(PrivDir, atom_to_list(TestModule) ++ "_logs"),
         os:cmd("mkdir -p " ++ LogsDir),
 
         utils:cmd(["echo", "'" ++ DescriptionFile ++ ":'", ">> prepare_test_environment.log"]),
         utils:cmd(["echo", "'" ++ DescriptionFile ++ ":'", ">> prepare_test_environment_error.log"]),
 
-        StartLogRaw = list_to_binary(utils:cmd([EnvUpScript,
-            %% Function is used durgin OP or OZ tests so starts OP or OZ - not both
-            "--bin-cluster-worker", ProjectRoot,
-            "--bin-worker", ProjectRoot,
-            "--bin-oz", ProjectRoot,
-            %% additionally AppMock can be started
-            "--bin-appmock", AppmockRoot,
-            "--bin-cm", CmRoot,
-            "--logdir", LogsDir,
-            DescriptionFile, "2>> prepare_test_environment_error.log"])),
-        % TODO VFS-1816 remove log filter
-        % Some of env_up logs goes to stdout instead of stderr, they need to be
-        % removed for proper parsing of JSON with env_up result
-        StartLog = lists:last(binary:split(StartLogRaw, <<"\n">>, [global, trim])),
+        StartLog = retry_running_env_up_script_until(ProjectRoot, AppmockRoot,
+            CmRoot, LogsDir, DescriptionFile, ?ENV_UP_RETRIES_NUMBER),
 
         % Save start log to file
         utils:cmd(["echo", binary_to_list(<<"'", StartLog/binary, "'">>), ">> prepare_test_environment.log"]),
 
-        case StartLog of
-            <<"">> ->
-                % if env_up.py failed, output will be empty,
-                % because stderr is redirected to prepare_test_environment.log
-                error(env_up_failed);
-            _ ->
-                EnvDesc = json_parser:parse_json_binary_to_atom_proplist(StartLog),
-                try
-                    Dns = ?config(dns, EnvDesc),
-                    AllNodesWithCookies = lists:flatmap(
-                        fun({AppName, ConfigName}) ->
-                            Nodes = ?config(ConfigName, EnvDesc),
-                            get_cookies(Nodes, AppName, ?COOKIE_KEY, DescriptionFile)
-                        end, Apps
-                    ),
+        EnvDesc = json_parser:parse_json_binary_to_atom_proplist(StartLog),
+        try
+            Dns = ?config(dns, EnvDesc),
+            AllNodesWithCookies = lists:flatmap(
+                fun({AppName, ConfigName}) ->
+                    Nodes = ?config(ConfigName, EnvDesc),
+                    get_cookies(Nodes, AppName, ?COOKIE_KEY, DescriptionFile)
+                end, Apps
+            ),
 
-                    set_cookies(AllNodesWithCookies),
-                    os:cmd("echo nameserver " ++ atom_to_list(Dns) ++ " > /etc/resolv.conf"),
+            set_cookies(AllNodesWithCookies),
+            os:cmd("echo nameserver " ++ atom_to_list(Dns) ++ " > /etc/resolv.conf"),
 
-                    AllNodes = [N || {N, _C} <- AllNodesWithCookies],
-                    ping_nodes(AllNodes),
-                    global:sync(),
-                    load_modules(AllNodes, [TestModule, test_utils | LoadModules]),
+            AllNodes = [N || {N, _C} <- AllNodesWithCookies],
+            ping_nodes(AllNodes),
+            global:sync(),
+            load_modules(AllNodes, [TestModule, test_utils | LoadModules]),
 
-                    lists:append([
-                        ConfigWithPaths,
-                        proplists:delete(dns, EnvDesc),
-                        rebar_git_plugin:get_git_metadata()
-                    ])
-                catch
-                    E11:E12 ->
-                        ct:print("Preparation of environment failed ~p:~p~n" ++
-                            "For details, check:~n" ++
-                            "    prepare_test_environment_error.log~n" ++
-                            "    prepare_test_environment.log~n" ++
-                            "Stacktrace: ~p", [E11, E12, erlang:get_stacktrace()]),
-                        clean_environment(EnvDesc),
-                        {fail, {init_failed, E11, E12}}
-                end
-
+            lists:append([
+                ConfigWithPaths,
+                proplists:delete(dns, EnvDesc),
+                rebar_git_plugin:get_git_metadata()
+            ])
+        catch
+            E11:E12 ->
+                ct:print("Preparation of environment failed ~p:~p~n" ++
+                    "For details, check:~n" ++
+                    "    prepare_test_environment_error.log~n" ++
+                    "    prepare_test_environment.log~n" ++
+                    "Stacktrace: ~p", [E11, E12, erlang:get_stacktrace()]),
+                clean_environment(EnvDesc, TestModule),
+                {fail, {init_failed, E11, E12}}
         end
+
     catch
         E21:E22 ->
             ct:print("Prepare of environment failed ~p:~p~n~p",
@@ -148,7 +130,7 @@ prepare_test_environment(Config, DescriptionFile, TestModule, LoadModules, Apps)
 %%--------------------------------------------------------------------
 -spec clean_environment(Config :: list()) -> ok.
 clean_environment(Config) ->
-    clean_environment(Config, ?ALL_POSSIBLE_APPS).
+    clean_environment(Config, no_suite_specified).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -156,15 +138,25 @@ clean_environment(Config) ->
 %% Afterwards, cleans environment by running 'cleanup.py' script.
 %% @end
 %%--------------------------------------------------------------------
--spec clean_environment(Config :: list(), Apps :: [{AppName :: atom(), ConfigName :: atom()}]) -> ok.
-clean_environment(Config, Apps) ->
+-spec clean_environment(Config :: list(), TestModule :: module()) -> ok.
+clean_environment(Config, TestModule) ->
+    clean_environment(Config, TestModule, ?ALL_POSSIBLE_APPS).
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Gathers cover analysis reports if cover is started.
+%% Afterwards, cleans environment by running 'cleanup.py' script.
+%% @end
+%%--------------------------------------------------------------------
+-spec clean_environment(Config :: list(), TestModule :: module(), Apps :: [{AppName :: atom(), ConfigName :: atom()}]) -> ok.
+clean_environment(Config, TestModule, Apps) ->
+    ct:print("Env cleaning in SUITE ~p", [TestModule]),
     StopStatus = try
         case cover:modules() of
             [] ->
                 stop_applications(Config, Apps);
             _ ->
-                global:register_name(?CLEANING_PROC_NAME, self()),
-                global:sync(),
+                erlang:register(?CLEANING_PROC_NAME, self()),
 
                 stop_applications(Config, Apps),
 
@@ -172,22 +164,21 @@ clean_environment(Config, Apps) ->
                     ?config(ConfigName, Config)
                 end, Apps),
 
-                lists:foreach(
-                    fun(_N) ->
-                        receive
-                            {app_ended, CoverNode, FileData} ->
-                                {Mega, Sec, Micro} = os:timestamp(),
-                                CoverFile = atom_to_list(CoverNode) ++
-                                    integer_to_list((Mega * 1000000 + Sec) * 1000000 + Micro) ++
-                                    ".coverdata",
-                                ok = file:write_file(CoverFile, FileData),
-                                cover:import(CoverFile),
-                                file:delete(CoverFile)
-                        after
-                            ?TIMEOUT -> throw(cover_not_received)
-                        end
-                    end, AllNodes
-                ),
+                lists:foreach(fun(_) ->
+                    receive
+                        {app_ended, CoverNode, FileData} ->
+                            {Mega, Sec, Micro} = os:timestamp(),
+                            CoverFile = atom_to_list(CoverNode) ++
+                                integer_to_list(
+                                    (Mega * 1000000 + Sec) * 1000000 + Micro) ++
+                                ".coverdata",
+                            ok = file:write_file(CoverFile, FileData),
+                            cover:import(CoverFile),
+                            file:delete(CoverFile)
+                    after
+                        ?TIMEOUT -> throw(cover_not_received)
+                    end
+                end, AllNodes),
                 ok
         end
     catch
@@ -277,7 +268,13 @@ maybe_stop_cover() ->
             cover:export(CoverFile),
             {ok, FileData} = file:read_file(CoverFile),
             ok = file:delete(CoverFile),
-            true = is_pid(global:send(?CLEANING_PROC_NAME, {app_ended, node(), FileData})),
+            lists:foreach(fun(Node) ->
+                Pid = rpc:call(Node, erlang, whereis, [?CLEANING_PROC_NAME]),
+                case is_pid(Pid) of
+                    true -> Pid ! {app_ended, node(), FileData};
+                    false -> ok
+                end
+            end, nodes(hidden)),
             cover:stop(),
             ok;
         _ ->
@@ -319,7 +316,7 @@ ping_nodes(_Nodes, 0) ->
 ping_nodes(Nodes, Tries) ->
     AllConnected = lists:all(
         fun(Node) ->
-            pong == net_adm:ping(Node)
+            true == net_kernel:hidden_connect_node(Node)
         end, Nodes),
     case AllConnected of
         true -> ok;
@@ -355,7 +352,7 @@ load_modules(Nodes, Modules) ->
 %%--------------------------------------------------------------------
 %% @private
 %% @doc
-%% Get one key by concatenating many json keys, separated with "/" 
+%% Get one key by concatenating many json keys, separated with "/"
 %% @end
 %%--------------------------------------------------------------------
 -spec get_json_key(Node :: atom(), Domain :: string(), NodeType :: string(),
@@ -390,7 +387,9 @@ get_cookies(Nodes, AppName, CookieKey, DescriptionFile) ->
             op_worker ->
                 get_json_key(Node, "provider_domains", "op_worker", CookieKey);
             cluster_worker ->
-                get_json_key(Node, "cluster_domains", "cluster_worker", CookieKey)
+                get_json_key(Node, "cluster_domains", "cluster_worker", CookieKey);
+            onepanel ->
+                get_json_key(Node, "onepanel_domains", "onepanel", CookieKey)
         end,
         case AppName of
             cluster_manager ->
@@ -419,3 +418,61 @@ set_cookies(NodesWithCookies) ->
     lists:foreach(fun({N, C}) ->
         erlang:set_cookie(N, C)
     end, NodesWithCookies).
+
+
+%%--------------------------------------------------------------------
+%% @private
+%% @doc
+%% Try to successfully run env_up.py. Retry RetriesNumber of times.
+%% Raises env_up_failed if script fails to start for given number of times.
+%% @end
+%%--------------------------------------------------------------------
+-spec retry_running_env_up_script_until(string(), string(), string(), string(),
+    string(), integer()) -> any().
+retry_running_env_up_script_until(ProjectRoot, AppmockRoot, CmRoot,
+    LogsDir, DescriptionFile, RetriesNumber) ->
+
+    StartLog =run_env_up_script(ProjectRoot, AppmockRoot, CmRoot, LogsDir, DescriptionFile),
+
+    case StartLog of
+        <<"">> ->
+            % if env_up.py failed, output will be empty,
+            % because stderr is redirected to prepare_test_environment.log
+            case RetriesNumber > 0 of
+                true ->
+                    ct:print("Retrying to run env_up.py. Number of retries left: ~p~n", [RetriesNumber]),
+                    retry_running_env_up_script_until(ProjectRoot, AppmockRoot, CmRoot,
+                    LogsDir, DescriptionFile, RetriesNumber - 1);
+                _ -> error(env_up_failed)
+            end;
+        Other -> Other
+    end.
+
+%%--------------------------------------------------------------------
+%% @private
+%% @doc
+%% Run env_up.py script
+%% @end
+%%--------------------------------------------------------------------
+-spec run_env_up_script(string(), string(), string(), string(), string()) -> binary().
+run_env_up_script(ProjectRoot, AppmockRoot, CmRoot, LogsDir, DescriptionFile) ->
+    EnvUpScript = filename:join([ProjectRoot, "bamboos", "docker", "env_up.py"]),
+    StartLogRaw = list_to_binary(utils:cmd([EnvUpScript,
+        %% Function is used during OP or OZ tests so starts OP or OZ - not both
+        "--bin-cluster-worker", ProjectRoot,
+        "--bin-worker", ProjectRoot,
+        "--bin-oz", ProjectRoot,
+        "--bin-onepanel", ProjectRoot,
+        %% additionally AppMock can be started
+        "--bin-appmock", AppmockRoot,
+        "--bin-cm", CmRoot,
+        "--logdir", LogsDir,
+        DescriptionFile, "2>> prepare_test_environment_error.log"])),
+
+    % TODO VFS-1816 remove log filter
+    % Some of env_up logs goes to stdout instead of stderr, they need to be
+    % removed for proper parsing of JSON with env_up result
+    case binary:split(StartLogRaw, <<"\n">>, [global, trim]) of
+        [] -> <<"">>;
+        NotEmptyList -> lists:last(NotEmptyList)
+    end.

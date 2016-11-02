@@ -23,7 +23,7 @@
 -export([create_space/2, join_space/2, leave_space/2, get_spaces/1,
     get_space_details/2, get_default_space/1, set_default_space/2]).
 -export([create_group/2, join_group/2, leave_group/2, get_groups/1,
-    get_group_details/2]).
+    get_group_details/2, get_effective_groups/1]).
 
 %%%===================================================================
 %%% API
@@ -48,13 +48,13 @@ authorize(CaveatId) ->
 %% @doc Returns public details about user.
 %% @end
 %%--------------------------------------------------------------------
--spec get_details(Client :: oz_endpoint:client()) ->
+-spec get_details(Auth :: oz_endpoint:auth()) ->
     {ok, UserDetails :: #user_details{}} | {error, Reason :: term()}.
-get_details(Client) ->
+get_details(Auth) ->
     ?run(fun() ->
         URN = "/user",
         {ok, 200, _ResponseHeaders, ResponseBody} =
-            oz_endpoint:auth_request(Client, URN, get),
+            oz_endpoint:auth_request(Auth, URN, get),
         Proplist = json_utils:decode(ResponseBody),
         UserDetails = #user_details{
             id = proplists:get_value(<<"userId">>, Proplist),
@@ -71,14 +71,14 @@ get_details(Client) ->
 %% "name" of user.
 %% @end
 %%--------------------------------------------------------------------
--spec modify_details(Client :: oz_endpoint:client(),
+-spec modify_details(Auth :: oz_endpoint:auth(),
     Parameters :: oz_endpoint:params()) -> ok | {error, Reason :: term()}.
-modify_details(Client, Parameters) ->
+modify_details(Auth, Parameters) ->
     ?run(fun() ->
         URN = "/user",
         Body = json_utils:encode(Parameters),
         {ok, 204, _ResponseHeaders, _ResponseBody} =
-            oz_endpoint:auth_request(Client, URN, patch, Body),
+            oz_endpoint:auth_request(Auth, URN, patch, Body),
         ok
     end).
 
@@ -87,14 +87,14 @@ modify_details(Client, Parameters) ->
 %% Parameters should contain: "token" associated with account to be merged.
 %% @end
 %%--------------------------------------------------------------------
--spec merge_account(Client :: oz_endpoint:client(),
+-spec merge_account(Auth :: oz_endpoint:auth(),
     Parameters :: oz_endpoint:params()) -> ok | {error, Reason :: term()}.
-merge_account(Client, Parameters) ->
+merge_account(Auth, Parameters) ->
     ?run(fun() ->
         URN = "/user/merge",
         Body = json_utils:encode(Parameters),
         {ok, 201, _ResponseHeaders, _ResponseBody} =
-            oz_endpoint:auth_request(Client, URN, post, Body),
+            oz_endpoint:auth_request(Auth, URN, post, Body),
         ok
     end).
 
@@ -102,13 +102,13 @@ merge_account(Client, Parameters) ->
 %% @doc Returns token that allows provider to create Space for user.
 %% @end
 %%--------------------------------------------------------------------
--spec get_create_space_token(Client :: oz_endpoint:client()) ->
+-spec get_create_space_token(Auth :: oz_endpoint:auth()) ->
     {ok, Token :: binary()} | {error, Reason :: term()}.
-get_create_space_token(Client) ->
+get_create_space_token(Auth) ->
     ?run(fun() ->
         URN = "/user/spaces/token",
         {ok, 200, _ResponseHeaders, ResponseBody} =
-            oz_endpoint:auth_request(Client, URN, get),
+            oz_endpoint:auth_request(Auth, URN, get),
         Proplist = json_utils:decode(ResponseBody),
         Token = proplists:get_value(<<"token">>, Proplist),
         {ok, Token}
@@ -118,13 +118,13 @@ get_create_space_token(Client) ->
 %% @doc Returns token that allows user to merge his account with other account.
 %% @end
 %%--------------------------------------------------------------------
--spec get_merge_account_token(Client :: oz_endpoint:client()) ->
+-spec get_merge_account_token(Auth :: oz_endpoint:auth()) ->
     {ok, Token :: binary()} | {error, Reason :: term()}.
-get_merge_account_token(Client) ->
+get_merge_account_token(Auth) ->
     ?run(fun() ->
         URN = "/user/merge/token",
         {ok, 200, _ResponseHeaders, ResponseBody} =
-            oz_endpoint:auth_request(Client, URN, get),
+            oz_endpoint:auth_request(Auth, URN, get),
         Proplist = json_utils:decode(ResponseBody),
         Token = proplists:get_value(<<"token">>, Proplist),
         {ok, Token}
@@ -135,15 +135,15 @@ get_merge_account_token(Client) ->
 %% of created Space. Parameters should contain: "name" of new Space.
 %% @end
 %%--------------------------------------------------------------------
--spec create_space(Client :: oz_endpoint:client(),
+-spec create_space(Auth :: oz_endpoint:auth(),
     Parameters :: oz_endpoint:params()) ->
     {ok, SpaceId :: binary()} | {error, Reason :: term()}.
-create_space(Client, Parameters) ->
+create_space(Auth, Parameters) ->
     ?run(fun() ->
         URN = "/user/spaces",
         Body = json_utils:encode(Parameters),
         {ok, 201, ResponseHeaders, _ResponseBody} =
-            oz_endpoint:auth_request(Client, URN, post, Body),
+            oz_endpoint:auth_request(Auth, URN, post, Body),
         <<"/spaces/", SpaceId/binary>> =
             proplists:get_value(<<"location">>, ResponseHeaders),
         {ok, SpaceId}
@@ -154,15 +154,15 @@ create_space(Client, Parameters) ->
 %% Parameters should contain: "token" associated with Space.
 %% @end
 %%--------------------------------------------------------------------
--spec join_space(Client :: oz_endpoint:client(),
+-spec join_space(Auth :: oz_endpoint:auth(),
     Parameters :: oz_endpoint:params()) ->
     {ok, SpaceId :: binary()} | {error, Reason :: term()}.
-join_space(Client, Parameters) ->
+join_space(Auth, Parameters) ->
     ?run(fun() ->
         URN = "/user/spaces/join",
         Body = json_utils:encode(Parameters),
         {ok, 201, ResponseHeaders, _ResponseBody} =
-            oz_endpoint:auth_request(Client, URN, post, Body),
+            oz_endpoint:auth_request(Auth, URN, post, Body),
         <<"/user/spaces/", SpaceId/binary>> =
             proplists:get_value(<<"location">>, ResponseHeaders),
         {ok, SpaceId}
@@ -172,13 +172,13 @@ join_space(Client, Parameters) ->
 %% @doc Makes user leave Space.
 %% @end
 %%--------------------------------------------------------------------
--spec leave_space(Client :: oz_endpoint:client(), SpaceId :: binary()) ->
+-spec leave_space(Auth :: oz_endpoint:auth(), SpaceId :: binary()) ->
     ok | {error, Reason :: term()}.
-leave_space(Client, SpaceId) ->
+leave_space(Auth, SpaceId) ->
     ?run(fun() ->
         URN = "/user/spaces/" ++ binary_to_list(SpaceId),
         {ok, 202, _ResponseHeaders, _ResponseBody} =
-            oz_endpoint:auth_request(Client, URN, delete),
+            oz_endpoint:auth_request(Auth, URN, delete),
         ok
     end).
 
@@ -186,13 +186,13 @@ leave_space(Client, SpaceId) ->
 %% @doc Returns list of IDs of Spaces that user belongs to.
 %% @end
 %%--------------------------------------------------------------------
--spec get_spaces(Client :: oz_endpoint:client()) ->
+-spec get_spaces(Auth :: oz_endpoint:auth()) ->
     {ok, UserSpaces :: #user_spaces{}} | {error, Reason :: term()}.
-get_spaces(Client) ->
+get_spaces(Auth) ->
     ?run(fun() ->
         URN = "/user/spaces",
         {ok, 200, _ResponseHeaders, ResponseBody} =
-            oz_endpoint:auth_request(Client, URN, get),
+            oz_endpoint:auth_request(Auth, URN, get),
         Proplist = json_utils:decode(ResponseBody),
         UserSpaces = #user_spaces{
             ids = proplists:get_value(<<"spaces">>, Proplist),
@@ -206,13 +206,13 @@ get_spaces(Client) ->
 %% @doc Returns public details about Space that user belongs to.
 %% @end
 %%--------------------------------------------------------------------
--spec get_space_details(Client :: oz_endpoint:client(), SpaceId :: binary()) ->
+-spec get_space_details(Auth :: oz_endpoint:auth(), SpaceId :: binary()) ->
     {ok, SpaceDetails :: #space_details{}} | {error, Reason :: term()}.
-get_space_details(Client, SpaceId) ->
+get_space_details(Auth, SpaceId) ->
     ?run(fun() ->
         URN = "/user/spaces/" ++ binary_to_list(SpaceId),
         {ok, 200, _ResponseHeaders, ResponseBody} =
-            oz_endpoint:auth_request(Client, URN, get),
+            oz_endpoint:auth_request(Auth, URN, get),
         Proplist = json_utils:decode(ResponseBody),
         SpaceDetails = #space_details{
             id = proplists:get_value(<<"spaceId">>, Proplist),
@@ -227,13 +227,13 @@ get_space_details(Client, SpaceId) ->
 %% @doc Returns ID of default user's Space.
 %% @end
 %%--------------------------------------------------------------------
--spec get_default_space(Client :: oz_endpoint:client()) ->
+-spec get_default_space(Auth :: oz_endpoint:auth()) ->
     {ok, DefaultSpaceId :: undefined | binary()} | {error, Reason :: term()}.
-get_default_space(Client) ->
+get_default_space(Auth) ->
     ?run(fun() ->
         URN = "/user/spaces/default",
         {ok, 200, _ResponseHeaders, ResponseBody} =
-            oz_endpoint:auth_request(Client, URN, get),
+            oz_endpoint:auth_request(Auth, URN, get),
         Proplist = json_utils:decode(ResponseBody),
         DefaultSpaceId = proplists:get_value(<<"spaceId">>, Proplist),
         {ok, DefaultSpaceId}
@@ -244,15 +244,15 @@ get_default_space(Client) ->
 %% of Space to make user's default.
 %% @end
 %%--------------------------------------------------------------------
--spec set_default_space(Client :: oz_endpoint:client(),
+-spec set_default_space(Auth :: oz_endpoint:auth(),
     Parameters :: oz_endpoint:params()) ->
     ok | {error, Reason :: term()}.
-set_default_space(Client, Parameters) ->
+set_default_space(Auth, Parameters) ->
     ?run(fun() ->
         URN = "/user/spaces/default",
         Body = json_utils:encode(Parameters),
         {ok, 204, _ResponseHeaders, _ResponseBody} =
-            oz_endpoint:auth_request(Client, URN, put, Body),
+            oz_endpoint:auth_request(Auth, URN, put, Body),
         ok
     end).
 
@@ -261,15 +261,15 @@ set_default_space(Client, Parameters) ->
 %% of created group. Parameters should contain: "name" of new group.
 %% @end
 %%--------------------------------------------------------------------
--spec create_group(Client :: oz_endpoint:client(),
+-spec create_group(Auth :: oz_endpoint:auth(),
     Parameters :: oz_endpoint:params()) ->
     {ok, GroupId :: binary()} | {error, Reason :: term()}.
-create_group(Client, Parameters) ->
+create_group(Auth, Parameters) ->
     ?run(fun() ->
         URN = "/user/groups",
         Body = json_utils:encode(Parameters),
         {ok, 201, ResponseHeaders, _ResponseBody} =
-            oz_endpoint:auth_request(Client, URN, post, Body),
+            oz_endpoint:auth_request(Auth, URN, post, Body),
         <<"/groups/", GroupId/binary>> =
             proplists:get_value(<<"location">>, ResponseHeaders),
         {ok, GroupId}
@@ -280,15 +280,15 @@ create_group(Client, Parameters) ->
 %% Parameters should contain: "token" associated with group.
 %% @end
 %%--------------------------------------------------------------------
--spec join_group(Client :: oz_endpoint:client(),
+-spec join_group(Auth :: oz_endpoint:auth(),
     Parameters :: oz_endpoint:params()) ->
     {ok, GroupId :: binary()} | {error, Reason :: term()}.
-join_group(Client, Parameters) ->
+join_group(Auth, Parameters) ->
     ?run(fun() ->
         URN = "/user/groups/join",
         Body = json_utils:encode(Parameters),
         {ok, 201, ResponseHeaders, _ResponseBody} =
-            oz_endpoint:auth_request(Client, URN, post, Body),
+            oz_endpoint:auth_request(Auth, URN, post, Body),
         <<"/user/groups/", GroupId/binary>> =
             proplists:get_value(<<"location">>, ResponseHeaders),
         {ok, GroupId}
@@ -298,13 +298,13 @@ join_group(Client, Parameters) ->
 %% @doc Makes user leave group.
 %% @end
 %%--------------------------------------------------------------------
--spec leave_group(Client :: oz_endpoint:client(), GroupId :: binary()) ->
+-spec leave_group(Auth :: oz_endpoint:auth(), GroupId :: binary()) ->
     ok | {error, Reason :: term()}.
-leave_group(Client, GroupId) ->
+leave_group(Auth, GroupId) ->
     ?run(fun() ->
         URN = "/user/groups/" ++ binary_to_list(GroupId),
         {ok, 202, _ResponseHeaders, _ResponseBody} =
-            oz_endpoint:auth_request(Client, URN, delete),
+            oz_endpoint:auth_request(Auth, URN, delete),
         ok
     end).
 
@@ -312,15 +312,31 @@ leave_group(Client, GroupId) ->
 %% @doc Returns list of IDs of groups that user belongs to.
 %% @end
 %%--------------------------------------------------------------------
--spec get_groups(Client :: oz_endpoint:client()) ->
+-spec get_groups(Auth :: oz_endpoint:auth()) ->
     {ok, GroupIds :: [binary()]} | {error, Reason :: term()}.
-get_groups(Client) ->
+get_groups(Auth) ->
     ?run(fun() ->
         URN = "/user/groups",
         {ok, 200, _ResponseHeaders, ResponseBody} =
-            oz_endpoint:auth_request(Client, URN, get),
+            oz_endpoint:auth_request(Auth, URN, get),
         Proplist = json_utils:decode(ResponseBody),
         GroupIds = proplists:get_value(<<"groups">>, Proplist),
+        {ok, GroupIds}
+    end).
+
+%%--------------------------------------------------------------------
+%% @doc Returns list of IDs of groups that user belongs to.
+%% @end
+%%--------------------------------------------------------------------
+-spec get_effective_groups(Auth :: oz_endpoint:auth()) ->
+    {ok, GroupIds :: [binary()]} | {error, Reason :: term()}.
+get_effective_groups(Auth) ->
+    ?run(fun() ->
+        URN = "/user/effective_groups",
+        {ok, 200, _ResponseHeaders, ResponseBody} =
+            oz_endpoint:auth_request(Auth, URN, get),
+        Proplist = json_utils:decode(ResponseBody),
+        GroupIds = proplists:get_value(<<"effective_groups">>, Proplist),
         {ok, GroupIds}
     end).
 
@@ -328,17 +344,18 @@ get_groups(Client) ->
 %% @doc Returns public details about group that user belongs to.
 %% @end
 %%--------------------------------------------------------------------
--spec get_group_details(Client :: oz_endpoint:client(), GroupId :: binary()) ->
+-spec get_group_details(Auth :: oz_endpoint:auth(), GroupId :: binary()) ->
     {ok, GroupDetails :: #group_details{}} | {error, Reason :: term()}.
-get_group_details(Client, GroupId) ->
+get_group_details(Auth, GroupId) ->
     ?run(fun() ->
         URN = "/user/groups/" ++ binary_to_list(GroupId),
         {ok, 200, _ResponseHeaders, ResponseBody} =
-            oz_endpoint:auth_request(Client, URN, get),
+            oz_endpoint:auth_request(Auth, URN, get),
         Proplist = json_utils:decode(ResponseBody),
         GroupDetails = #group_details{
             id = proplists:get_value(<<"groupId">>, Proplist),
-            name = proplists:get_value(<<"name">>, Proplist)
+            name = proplists:get_value(<<"name">>, Proplist),
+            type = proplists:get_value(<<"type">>, Proplist)
         },
         {ok, GroupDetails}
     end).

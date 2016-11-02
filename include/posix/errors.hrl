@@ -53,7 +53,7 @@
 -define(ENETRESET, enetreset).
 -define(ENETUNREACH, enetunreach).
 -define(ENFILE, enfile).
--define(ENOATTR, enoattr).
+-define(ENOATTR, ?ENODATA).
 -define(ENOBUFS, enobufs).
 -define(ENODATA, enodata).
 -define(ENODEV, enodev).
