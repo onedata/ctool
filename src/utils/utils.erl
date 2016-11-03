@@ -148,7 +148,7 @@ random_shuffle(List) ->
 -spec get_values(Keys :: list(), List :: proplists:proplist()) -> Values :: list().
 get_values(Keys, List) ->
     lists:map(fun(Key) ->
-        proplists:get_value(Key, List)
+        lists_utils:key_get(Key, List)
     end, Keys).
 
 

@@ -188,7 +188,7 @@ clean_environment(Config, TestModule, Apps) ->
             E2
     end,
 
-    Dockers = proplists:get_value(docker_ids, Config, []),
+    Dockers = lists_utils:key_get(docker_ids, Config, []),
     ProjectRoot = ?config(project_root, Config),
     DockersStr = lists:map(fun atom_to_list/1, Dockers),
     CleanupScript =
