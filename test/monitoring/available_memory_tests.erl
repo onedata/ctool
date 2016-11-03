@@ -9,7 +9,7 @@
 %%% @doc Unit tests for monitoring module.
 %%% @end
 %%%--------------------------------------------------------------------
--module(watermark_low_memory_tests).
+-module(available_memory_tests).
 -author("Lukasz Opiola").
 -author("Krzysztof Trzepla").
 
@@ -18,6 +18,8 @@
 
 
 calculate_test() ->
-    ?assert(is_integer(watermark_low_memory:calculate())).
+    Val = available_memory:calculate(),
+    ?assert(is_integer(Val)),
+    ?assert(Val>0).
 
 -endif.
