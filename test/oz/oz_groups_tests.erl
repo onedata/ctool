@@ -53,7 +53,7 @@ oz_groups_test_() ->
 
 setup() ->
     meck:new(oz_endpoint),
-    meck:expect(oz_endpoint, auth_request, fun
+    meck:expect(oz_endpoint, provider_request, fun
         (client, "/groups/groupId", get) ->
             {ok, 200, response_headers, response_body};
         (client, "/groups/groupId", delete) ->
@@ -77,7 +77,7 @@ setup() ->
         (client, "/groups/groupId/users/userId/privileges", get) ->
             {ok, 200, response_headers, response_body}
     end),
-    meck:expect(oz_endpoint, auth_request, fun
+    meck:expect(oz_endpoint, provider_request, fun
         (client, "/groups", post, <<"body">>) ->
             {ok, 201, [{<<"location">>, <<"/groups/groupId">>}], response_body};
         (client, "/groups/groupId", patch, <<"body">>) ->

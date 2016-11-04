@@ -106,7 +106,7 @@ advices_for_dnses(NodeStates, LBState) ->
             L = load_for_dns(NodeState),
             % TODO test if extra load is useful here in DNS and maybe move it to a helper function
             % Extra load is calculate in advices_for_dispatchers function
-            ExtraLoad = proplists:get_value(NodeState#node_state.node, ExtraLoads, 0.0),
+            ExtraLoad = lists_utils:key_get(NodeState#node_state.node, ExtraLoads, 0.0),
             L * (1.0 - ExtraLoad)
         end, NodeStates),
     MinLoadForDNS = lists:min(LoadsForDNS),
@@ -149,7 +149,7 @@ advices_for_dispatchers(NodeStates, LBState, Singletons) ->
     LoadsForDisp = lists:map(
         fun(NodeState) ->
             L = load_for_dispatcher(NodeState),
-            ExtraLoad = proplists:get_value(NodeState#node_state.node, ExtraLoads, 0.0),
+            ExtraLoad = lists_utils:key_get(NodeState#node_state.node, ExtraLoads, 0.0),
             L * (1.0 - ExtraLoad)
         end, NodeStates),
     AvgLoadForDisp = utils:average(LoadsForDisp),
@@ -215,7 +215,7 @@ advices_for_dispatchers(NodeStates, LBState, Singletons) ->
                                 NodeTo ->
                                     Acc;
                                 _ ->
-                                    Current = proplists:get_value(NodeTo, Acc, 0.0),
+                                    Current = lists_utils:key_get(NodeTo, Acc, 0.0),
                                     [{NodeTo, Current + Freq} | proplists:delete(NodeTo, Acc)]
                             end
                         end, ExtraLoadsAcc, NodesAndFreq)
@@ -254,8 +254,8 @@ choose_ns_nodes_for_dns(DNSAdvice) ->
     #dns_lb_advice{nodes_and_frequency = NodesAndFreq,
         node_choices = NodeChoices} = DNSAdvice,
     NumberOfNodes = length(NodesAndFreq),
-    random:seed(erlang:timestamp()),
-    Index = random:uniform(NumberOfNodes),
+    rand:seed(exsplus),
+    Index = rand:uniform(NumberOfNodes),
     Nodes = lists:sublist(NodeChoices, Index, NumberOfNodes),
     Nodes.
 
@@ -270,7 +270,7 @@ choose_ns_nodes_for_dns(DNSAdvice) ->
 choose_node_for_dispatcher(Advice, WorkerName) ->
     #dispatcher_lb_advice{should_delegate = ShouldDelegate,
         nodes_and_frequency = NodesAndFreq, singleton_modules = SM} = Advice,
-    case {proplists:get_value(WorkerName, SM), ShouldDelegate} of
+    case {lists_utils:key_get(WorkerName, SM), ShouldDelegate} of
         {undefined, false} ->
             node();
         {undefined, true} ->
@@ -290,7 +290,7 @@ choose_node_for_dispatcher(Advice, WorkerName) ->
 %%--------------------------------------------------------------------
 -spec all_nodes_for_dispatcher(Advice :: #dispatcher_lb_advice{}, WorkerName :: atom()) -> [node()].
 all_nodes_for_dispatcher(#dispatcher_lb_advice{all_nodes = AllNodes, singleton_modules = SM}, WorkerName) ->
-    case proplists:get_value(WorkerName, SM) of
+    case lists_utils:key_get(WorkerName, SM) of
         undefined ->
             AllNodes;
         DedicatedNode ->
@@ -334,8 +334,8 @@ initial_advice_for_dispatcher() ->
 %%--------------------------------------------------------------------
 -spec choose_index(NodesAndFrequencies :: [{Node :: term(), Frequency :: float()}]) -> integer().
 choose_index(NodesAndFrequencies) ->
-    random:seed(erlang:timestamp()),
-    choose_index(NodesAndFrequencies, 0, random:uniform()).
+    rand:seed(exsplus),
+    choose_index(NodesAndFrequencies, 0, rand:uniform()).
 
 choose_index([], CurrIndex, _) ->
     CurrIndex;

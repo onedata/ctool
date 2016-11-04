@@ -82,19 +82,24 @@ oz_endpoint_test_() ->
 %%%===================================================================
 
 setup() ->
+    meck:new(logger_plugin, [non_strict]),
+    meck:expect(logger_plugin, gather_metadata, fun() -> [] end),
     meck:new(oz_plugin, [non_strict]),
     meck:expect(oz_plugin, get_oz_url, fun() -> "OZ_URL" end),
     meck:expect(oz_plugin, get_oz_rest_port, fun() -> 9443 end),
     meck:expect(oz_plugin, get_oz_rest_api_prefix, fun() -> "/PREFIX" end),
-    meck:expect(oz_plugin, get_key_path, fun() -> key_path end),
-    meck:expect(oz_plugin, get_cert_path, fun() -> cert_path end),
+    meck:expect(oz_plugin, get_key_file, fun() -> key_file end),
+    meck:expect(oz_plugin, get_cert_file, fun() -> cert_file end),
+    meck:expect(oz_plugin, get_cacerts_dir, fun() -> cacerts_dir end),
     % Function auth_to_rest_client should return REST client based on Auth term.
     % Just return the same - we will use oz_endpoint:client() terms as Auth.
     meck:expect(oz_plugin, auth_to_rest_client, fun(Auth) -> Auth end).
 
 teardown(_) ->
-    ?assert(meck:validate(oz_plugin)),
-    ok = meck:unload(oz_plugin).
+    lists:foreach(fun(Module) ->
+        ?assert(meck:validate(Module)),
+        ok = meck:unload(Module)
+    end, [oz_plugin, logger_plugin]).
 
 %%%===================================================================
 %%% Tests functions
@@ -102,29 +107,23 @@ teardown(_) ->
 
 should_send_provider_request_1() ->
     meck:new(http_client),
-    meck:expect(http_client, request, fun
-        (
-            method,
-            "OZ_URL:9443/PREFIX/URN",
-            [?CONTENT_TYPE_HEADER],
-            <<>>,
-            []
-        ) -> ok;
-        (
-            method,
-            "OZ_URL:9443/PREFIX/URN",
-            [?CONTENT_TYPE_HEADER],
-            <<>>,
-            [
-                {ssl_options, [{keyfile, key_path}, {certfile, cert_path}]}
-            ]
-        ) -> ok
-    end),
+    meck:expect(http_client, request, fun(
+        method,
+        "OZ_URL:9443/PREFIX/URN",
+        [?CONTENT_TYPE_HEADER],
+        <<>>,
+        [{ssl_options, [{keyfile, key_file}, {certfile, cert_file} | _]}]
+    ) -> ok end),
+    ?assertEqual(ok, oz_endpoint:provider_request(provider, "/URN", method)),
 
-    ?assertEqual(ok, oz_endpoint:auth_request(
-        provider, "/URN", method)),
-    ?assertEqual(ok, oz_endpoint:noauth_request(
-        provider, "/URN", method)),
+    meck:expect(http_client, request, fun(
+        method,
+        "OZ_URL:9443/PREFIX/URN",
+        [?CONTENT_TYPE_HEADER],
+        <<>>,
+        _
+    ) -> ok end),
+    ?assertEqual(ok, oz_endpoint:request(provider, "/URN", method)),
 
     ?assert(meck:validate(http_client)),
     ok = meck:unload(http_client).
@@ -132,29 +131,23 @@ should_send_provider_request_1() ->
 
 should_send_provider_request_2() ->
     meck:new(http_client),
-    meck:expect(http_client, request, fun
-        (
-            method,
-            "OZ_URL:9443/PREFIX/URN",
-            [?CONTENT_TYPE_HEADER],
-            body,
-            []
-        ) -> ok;
-        (
-            method,
-            "OZ_URL:9443/PREFIX/URN",
-            [?CONTENT_TYPE_HEADER],
-            body,
-            [
-                {ssl_options, [{keyfile, key_path}, {certfile, cert_path}]}
-            ]
-        ) -> ok
-    end),
+    meck:expect(http_client, request, fun(
+        method,
+        "OZ_URL:9443/PREFIX/URN",
+        [?CONTENT_TYPE_HEADER],
+        body,
+        [{ssl_options, [{keyfile, key_file}, {certfile, cert_file} | _]}]
+    ) -> ok end),
+    ?assertEqual(ok, oz_endpoint:provider_request(provider, "/URN", method, body)),
 
-    ?assertEqual(ok, oz_endpoint:auth_request(
-        provider, "/URN", method, body)),
-    ?assertEqual(ok, oz_endpoint:noauth_request(
-        provider, "/URN", method, body)),
+    meck:expect(http_client, request, fun(
+        method,
+        "OZ_URL:9443/PREFIX/URN",
+        [?CONTENT_TYPE_HEADER],
+        body,
+        _
+    ) -> ok end),
+    ?assertEqual(ok, oz_endpoint:request(provider, "/URN", method, body)),
 
     ?assert(meck:validate(http_client)),
     ok = meck:unload(http_client).
@@ -162,29 +155,27 @@ should_send_provider_request_2() ->
 
 should_send_provider_request_3() ->
     meck:new(http_client),
-    meck:expect(http_client, request, fun
-        (
-            method,
-            "OZ_URL:9443/PREFIX/URN",
-            [?CONTENT_TYPE_HEADER],
-            body,
-            [options]
-        ) -> ok;
-        (
-            method,
-            "OZ_URL:9443/PREFIX/URN",
-            [?CONTENT_TYPE_HEADER],
-            body,
-            [
-                {ssl_options, [{keyfile, key_path}, {certfile, cert_path}]},
-                options
-            ]
-        ) -> ok
-    end),
-
-    ?assertEqual(ok, oz_endpoint:auth_request(
+    meck:expect(http_client, request, fun(
+        method,
+        "OZ_URL:9443/PREFIX/URN",
+        [?CONTENT_TYPE_HEADER],
+        body,
+        [
+            options,
+            {ssl_options, [{keyfile, key_file}, {certfile, cert_file} | _]}
+        ]
+    ) -> ok end),
+    ?assertEqual(ok, oz_endpoint:provider_request(
         provider, "/URN", method, body, [options])),
-    ?assertEqual(ok, oz_endpoint:noauth_request(
+
+    meck:expect(http_client, request, fun(
+        method,
+        "OZ_URL:9443/PREFIX/URN",
+        [?CONTENT_TYPE_HEADER],
+        body,
+        [options | _]
+    ) -> ok end),
+    ?assertEqual(ok, oz_endpoint:request(
         provider, "/URN", method, body, [options])),
 
     ?assert(meck:validate(http_client)),
@@ -193,29 +184,27 @@ should_send_provider_request_3() ->
 
 should_send_provider_request_4() ->
     meck:new(http_client),
-    meck:expect(http_client, request, fun
-        (
-            method,
-            "OZ_URL:9443/PREFIX/URN",
-            [?CONTENT_TYPE_HEADER, headers],
-            body,
-            [options]
-        ) -> ok;
-        (
-            method,
-            "OZ_URL:9443/PREFIX/URN",
-            [?CONTENT_TYPE_HEADER, headers],
-            body,
-            [
-                {ssl_options, [{keyfile, key_path}, {certfile, cert_path}]},
-                options
-            ]
-        ) -> ok
-    end),
-
-    ?assertEqual(ok, oz_endpoint:auth_request(
+    meck:expect(http_client, request, fun(
+        method,
+        "OZ_URL:9443/PREFIX/URN",
+        [headers, ?CONTENT_TYPE_HEADER],
+        body,
+        [
+            options,
+            {ssl_options, [{keyfile, key_file}, {certfile, cert_file} | _]}
+        ]
+    ) -> ok end),
+    ?assertEqual(ok, oz_endpoint:provider_request(
         provider, "/URN", method, [headers], body, [options])),
-    ?assertEqual(ok, oz_endpoint:noauth_request(
+
+    meck:expect(http_client, request, fun(
+        method,
+        "OZ_URL:9443/PREFIX/URN",
+        [headers, ?CONTENT_TYPE_HEADER],
+        body,
+        [options | _]
+    ) -> ok end),
+    ?assertEqual(ok, oz_endpoint:request(
         provider, "/URN", method, [headers], body, [options])),
 
     ?assert(meck:validate(http_client)),
@@ -234,43 +223,40 @@ should_send_user_request_1() ->
             "OZ_URL:9443/PREFIX/URN",
             [?CONTENT_TYPE_HEADER, MH, DMH],
             <<>>,
-            []
+            [{ssl_options, [{keyfile, key_file}, {certfile, cert_file} | _]}]
         ) when MH =:= MacaroonHeader, DMH =:= DischMacaroonsHeader -> ok;
         (
             method,
             "OZ_URL:9443/PREFIX/URN",
             [?CONTENT_TYPE_HEADER, BAH],
             <<>>,
-            []
-        ) when BAH =:= BasicAuthHeader -> ok;
+            [{ssl_options, [{keyfile, key_file}, {certfile, cert_file} | _]}]
+        ) when BAH =:= BasicAuthHeader -> ok
+    end),
+    ?assertEqual(ok, oz_endpoint:provider_request(
+        {user, token, {?MACAROON, ?DISCH_MACAROONS}}, "/URN", method)),
+    ?assertEqual(ok, oz_endpoint:provider_request(
+        {user, basic, ?BASIC_AUTH_HEADER}, "/URN", method)),
+
+    meck:expect(http_client, request, fun
         (
             method,
             "OZ_URL:9443/PREFIX/URN",
             [?CONTENT_TYPE_HEADER, MH, DMH],
             <<>>,
-            [
-                {ssl_options, [{keyfile, key_path}, {certfile, cert_path}]}
-            ]
+            _
         ) when MH =:= MacaroonHeader, DMH =:= DischMacaroonsHeader -> ok;
         (
             method,
             "OZ_URL:9443/PREFIX/URN",
             [?CONTENT_TYPE_HEADER, BAH],
             <<>>,
-            [
-                {ssl_options, [{keyfile, key_path}, {certfile, cert_path}]}
-            ]
+            _
         ) when BAH =:= BasicAuthHeader -> ok
     end),
-
-    ?assertEqual(ok, oz_endpoint:auth_request(
+    ?assertEqual(ok, oz_endpoint:request(
         {user, token, {?MACAROON, ?DISCH_MACAROONS}}, "/URN", method)),
-    ?assertEqual(ok, oz_endpoint:noauth_request(
-        {user, token, {?MACAROON, ?DISCH_MACAROONS}}, "/URN", method)),
-
-    ?assertEqual(ok, oz_endpoint:auth_request(
-        {user, basic, ?BASIC_AUTH_HEADER}, "/URN", method)),
-    ?assertEqual(ok, oz_endpoint:noauth_request(
+    ?assertEqual(ok, oz_endpoint:request(
         {user, basic, ?BASIC_AUTH_HEADER}, "/URN", method)),
 
     ?assert(meck:validate(http_client)),
@@ -289,42 +275,40 @@ should_send_user_request_2() ->
             "OZ_URL:9443/PREFIX/URN",
             [?CONTENT_TYPE_HEADER, MH, DMH],
             body,
-            []
+            [{ssl_options, [{keyfile, key_file}, {certfile, cert_file} | _]}]
         ) when MH =:= MacaroonHeader, DMH =:= DischMacaroonsHeader -> ok;
         (
             method,
             "OZ_URL:9443/PREFIX/URN",
             [?CONTENT_TYPE_HEADER, BAH],
             body,
-            []
-        ) when BAH =:= BasicAuthHeader -> ok;
+            [{ssl_options, [{keyfile, key_file}, {certfile, cert_file} | _]}]
+        ) when BAH =:= BasicAuthHeader -> ok
+    end),
+    ?assertEqual(ok, oz_endpoint:provider_request(
+        {user, token, {?MACAROON, ?DISCH_MACAROONS}}, "/URN", method, body)),
+    ?assertEqual(ok, oz_endpoint:provider_request(
+        {user, basic, ?BASIC_AUTH_HEADER}, "/URN", method, body)),
+
+    meck:expect(http_client, request, fun
         (
             method,
             "OZ_URL:9443/PREFIX/URN",
             [?CONTENT_TYPE_HEADER, MH, DMH],
             body,
-            [
-                {ssl_options, [{keyfile, key_path}, {certfile, cert_path}]}
-            ]
+            _
         ) when MH =:= MacaroonHeader, DMH =:= DischMacaroonsHeader -> ok;
         (
             method,
             "OZ_URL:9443/PREFIX/URN",
             [?CONTENT_TYPE_HEADER, BAH],
             body,
-            [
-                {ssl_options, [{keyfile, key_path}, {certfile, cert_path}]}
-            ]
+            _
         ) when BAH =:= BasicAuthHeader -> ok
     end),
-
-    ?assertEqual(ok, oz_endpoint:auth_request(
+    ?assertEqual(ok, oz_endpoint:request(
         {user, token, {?MACAROON, ?DISCH_MACAROONS}}, "/URN", method, body)),
-    ?assertEqual(ok, oz_endpoint:noauth_request(
-        {user, token, {?MACAROON, ?DISCH_MACAROONS}}, "/URN", method, body)),
-    ?assertEqual(ok, oz_endpoint:auth_request(
-        {user, basic, ?BASIC_AUTH_HEADER}, "/URN", method, body)),
-    ?assertEqual(ok, oz_endpoint:noauth_request(
+    ?assertEqual(ok, oz_endpoint:request(
         {user, basic, ?BASIC_AUTH_HEADER}, "/URN", method, body)),
 
     ?assert(meck:validate(http_client)),
@@ -343,44 +327,46 @@ should_send_user_request_3() ->
             "OZ_URL:9443/PREFIX/URN",
             [?CONTENT_TYPE_HEADER, MH, DMH],
             body,
-            [opts]
+            [
+                opts,
+                {ssl_options, [{keyfile, key_file}, {certfile, cert_file} | _]}
+            ]
         ) when MH =:= MacaroonHeader, DMH =:= DischMacaroonsHeader -> ok;
         (
             mthd,
             "OZ_URL:9443/PREFIX/URN",
             [?CONTENT_TYPE_HEADER, BAH],
             body,
-            [opts]
-        ) when BAH =:= BasicAuthHeader -> ok;
+            [
+                opts,
+                {ssl_options, [{keyfile, key_file}, {certfile, cert_file} | _]}
+            ]
+        ) when BAH =:= BasicAuthHeader -> ok
+    end),
+    ?assertEqual(ok, oz_endpoint:provider_request(
+        {user, token, {?MACAROON, ?DISCH_MACAROONS}}, "/URN", mthd, body, [opts])),
+    ?assertEqual(ok, oz_endpoint:provider_request(
+        {user, basic, ?BASIC_AUTH_HEADER}, "/URN", mthd, body, [opts])),
+
+    meck:expect(http_client, request, fun
         (
             mthd,
             "OZ_URL:9443/PREFIX/URN",
             [?CONTENT_TYPE_HEADER, MH, DMH],
             body,
-            [
-                {ssl_options, [{keyfile, key_path}, {certfile, cert_path}]},
-                opts
-            ]
+            [opts | _]
         ) when MH =:= MacaroonHeader, DMH =:= DischMacaroonsHeader -> ok;
         (
             mthd,
             "OZ_URL:9443/PREFIX/URN",
             [?CONTENT_TYPE_HEADER, BAH],
             body,
-            [
-                {ssl_options, [{keyfile, key_path}, {certfile, cert_path}]},
-                opts
-            ]
+            [opts | _]
         ) when BAH =:= BasicAuthHeader -> ok
     end),
-
-    ?assertEqual(ok, oz_endpoint:auth_request(
+    ?assertEqual(ok, oz_endpoint:request(
         {user, token, {?MACAROON, ?DISCH_MACAROONS}}, "/URN", mthd, body, [opts])),
-    ?assertEqual(ok, oz_endpoint:noauth_request(
-        {user, token, {?MACAROON, ?DISCH_MACAROONS}}, "/URN", mthd, body, [opts])),
-    ?assertEqual(ok, oz_endpoint:auth_request(
-        {user, basic, ?BASIC_AUTH_HEADER}, "/URN", mthd, body, [opts])),
-    ?assertEqual(ok, oz_endpoint:noauth_request(
+    ?assertEqual(ok, oz_endpoint:request(
         {user, basic, ?BASIC_AUTH_HEADER}, "/URN", mthd, body, [opts])),
 
     ?assert(meck:validate(http_client)),
@@ -397,49 +383,52 @@ should_send_user_request_4() ->
         (
             method,
             "OZ_URL:9443/PREFIX/URN",
-            [?CONTENT_TYPE_HEADER, MH, DMH, headers],
-            body,
-            [options]
-        ) when MH =:= MacaroonHeader, DMH =:= DischMacaroonsHeader -> ok;
-        (
-            method,
-            "OZ_URL:9443/PREFIX/URN",
-            [?CONTENT_TYPE_HEADER, BAH, headers],
-            body,
-            [options]
-        ) when BAH =:= BasicAuthHeader -> ok;
-        (
-            method,
-            "OZ_URL:9443/PREFIX/URN",
-            [?CONTENT_TYPE_HEADER, MH, DMH, headers],
+            [headers, ?CONTENT_TYPE_HEADER, MH, DMH],
             body,
             [
-                {ssl_options, [{keyfile, key_path}, {certfile, cert_path}]},
-                options
+                options,
+                {ssl_options, [{keyfile, key_file}, {certfile, cert_file} | _]}
             ]
         ) when MH =:= MacaroonHeader, DMH =:= DischMacaroonsHeader -> ok;
         (
             method,
             "OZ_URL:9443/PREFIX/URN",
-            [?CONTENT_TYPE_HEADER, BAH, headers],
+            [headers, ?CONTENT_TYPE_HEADER, BAH],
             body,
             [
-                {ssl_options, [{keyfile, key_path}, {certfile, cert_path}]},
-                options
+                options,
+                {ssl_options, [{keyfile, key_file}, {certfile, cert_file} | _]}
             ]
         ) when BAH =:= BasicAuthHeader -> ok
     end),
-
-    ?assertEqual(ok, oz_endpoint:auth_request(
+    ?assertEqual(ok, oz_endpoint:provider_request(
         {user, token, {?MACAROON, ?DISCH_MACAROONS}}, "/URN", method,
         [headers], body, [options])),
-    ?assertEqual(ok, oz_endpoint:noauth_request(
-        {user, token, {?MACAROON, ?DISCH_MACAROONS}}, "/URN", method,
-        [headers], body, [options])),
-    ?assertEqual(ok, oz_endpoint:auth_request(
+    ?assertEqual(ok, oz_endpoint:provider_request(
         {user, basic, ?BASIC_AUTH_HEADER}, "/URN", method,
         [headers], body, [options])),
-    ?assertEqual(ok, oz_endpoint:noauth_request(
+
+
+    meck:expect(http_client, request, fun
+        (
+            method,
+            "OZ_URL:9443/PREFIX/URN",
+            [headers, ?CONTENT_TYPE_HEADER, MH, DMH],
+            body,
+            [options | _]
+        ) when MH =:= MacaroonHeader, DMH =:= DischMacaroonsHeader -> ok;
+        (
+            method,
+            "OZ_URL:9443/PREFIX/URN",
+            [headers, ?CONTENT_TYPE_HEADER, BAH],
+            body,
+            [options | _]
+        ) when BAH =:= BasicAuthHeader -> ok
+    end),
+    ?assertEqual(ok, oz_endpoint:request(
+        {user, token, {?MACAROON, ?DISCH_MACAROONS}}, "/URN", method,
+        [headers], body, [options])),
+    ?assertEqual(ok, oz_endpoint:request(
         {user, basic, ?BASIC_AUTH_HEADER}, "/URN", method,
         [headers], body, [options])),
 

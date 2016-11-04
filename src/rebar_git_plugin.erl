@@ -73,7 +73,7 @@ inject_git_metadata(Config, AppFile) ->
     {_, AppName} = apply(rebar_app_utils, app_name, [Config, AppFile]),
     EbinAppFile = filename:join("ebin", erlang:atom_to_list(AppName) ++ ".app"),
     {ok, [{application, AppName, Metadata}]} = file:consult(EbinAppFile),
-    Env = proplists:get_value(env, Metadata, []),
+    Env = lists_utils:key_get(env, Metadata, []),
     GitMetadata = get_git_metadata(),
     NewEnv = Env ++ GitMetadata,
     NewMetadata = lists:keyreplace(env, 1, Metadata, {env, NewEnv}),
