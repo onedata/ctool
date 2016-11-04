@@ -51,14 +51,14 @@ calculate() ->
 -spec count_watermark_low_kb(binary()) -> Pages :: integer().
 count_watermark_low_kb(Data) ->
     {match, Captured} = re:run(Data, "\\s*low\\s*(\\d+)", [{capture, all_but_first, binary}, global]),
-    lists:sum([binary_to_integer(Val) || [Val] <- Captured])  * get_page_size().
+    lists:sum([binary_to_integer(Val) || [Val] <- Captured]) * get_page_size().
 
 %%--------------------------------------------------------------------
 %% @doc
 %% Count pagecache from meminfo and watermark_low data
 %% @end
 %%--------------------------------------------------------------------
--spec count_pagecache(Data ::binary(), WatermarkLowKB :: integer()) -> integer().
+-spec count_pagecache(Data :: binary(), WatermarkLowKB :: integer()) -> integer().
 count_pagecache(Data, WatermarkLow) ->
     {match, [LruActive]} = re:run(Data, "\\s*Active\\(file\\):\\s*(\\d+)", [{capture, all_but_first, binary}]),
     {match, [LruInactive]} = re:run(Data, "\\s*Inactive\\(file\\):\\s*(\\d+)", [{capture, all_but_first, binary}]),
@@ -70,7 +70,7 @@ count_pagecache(Data, WatermarkLow) ->
 %% Get slab_reclaimable from meminfo
 %% @end
 %%--------------------------------------------------------------------
--spec count_slab_reclaimable(Data ::binary()) -> integer().
+-spec count_slab_reclaimable(Data :: binary()) -> integer().
 count_slab_reclaimable(Data) ->
     {match, [SlabReclaimable]} = re:run(Data, "\\s*SReclaimable:\\s*(\\d+)", [{capture, all_but_first, binary}]),
     binary_to_integer(SlabReclaimable).
@@ -80,7 +80,7 @@ count_slab_reclaimable(Data) ->
 %% Get mem_free from meminfo
 %% @end
 %%--------------------------------------------------------------------
--spec count_free(Data ::binary()) -> integer().
+-spec count_free(Data :: binary()) -> integer().
 count_free(Data) ->
     {match, [MemFree]} = re:run(Data, "\\s*MemFree:\\s*(\\d+)", [{capture, all_but_first, binary}]),
     binary_to_integer(MemFree).
@@ -117,17 +117,16 @@ get_zoneinfo() ->
 -spec get_page_size() -> integer().
 get_page_size() ->
     % code taken from memsup:get_memory_usage
-    Val =
-        case os:type() of
-            {unix,darwin} -> 4096;
-            {unix,OSname} when OSname == freebsd; OSname == dragonfly ->
-                list_to_integer(os:cmd("/sbin/sysctl -n vm.stats.vm.v_page_size") -- "\n");
-            {unix, linux} ->
-                try list_to_integer(os:cmd("getconf PAGESIZE") -- "\n")
-                catch
-                    _:_ ->
-                        4096
-                end;
-            _ -> 4096
-        end,
+    Val = case os:type() of
+        {unix, darwin} -> 4096;
+        {unix, OSname} when OSname == freebsd; OSname == dragonfly ->
+            list_to_integer(os:cmd("/sbin/sysctl -n vm.stats.vm.v_page_size") -- "\n");
+        {unix, linux} ->
+            try list_to_integer(os:cmd("getconf PAGESIZE") -- "\n")
+            catch
+                _:_ ->
+                    4096
+            end;
+        _ -> 4096
+    end,
     Val div 1024.
