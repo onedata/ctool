@@ -288,7 +288,7 @@ get_memory_stats() ->
     try
         case file:open(?MEM_STATS_FILE, [read]) of
             {ok, Fd} ->
-                read_memory_stats(Fd, 0, 0, 0);
+                read_memory_stats(Fd, -1, -1, 0);
             Other ->
                 ?error("Cannot open memory stats file: ~p", [Other]),
                 []
@@ -317,11 +317,22 @@ read_memory_stats(Fd, MemFree, MemTotal, Counter) ->
         list_to_integer(Value)
     end,
     case file:read_line(Fd) of
-        {ok, "MemTotal:" ++ Line} -> read_memory_stats(Fd, MemFree, GetValue(Line), Counter + 1);
-        {ok, "MemAvailable:" ++ Line} -> read_memory_stats(Fd, GetValue(Line), MemTotal, Counter + 1);
-        eof -> file:close(Fd), [];
-        {error, _} -> [];
-        _ -> read_memory_stats(Fd, MemFree, MemTotal, Counter)
+        {ok, "MemTotal:" ++ Line} ->
+            read_memory_stats(Fd, MemFree, GetValue(Line), Counter + 1);
+        {ok, "MemAvailable:" ++ Line} ->
+            read_memory_stats(Fd, GetValue(Line), MemTotal, Counter + 1);
+        eof ->
+            case {MemFree, Counter} of
+                {-1, 1} ->
+                    read_memory_stats(Fd, available_memory:calculate(), MemTotal, Counter + 1);
+                _ ->
+                    file:close(Fd),
+                    []
+            end;
+        {error, _} ->
+            [];
+        _ ->
+            read_memory_stats(Fd, MemFree, MemTotal, Counter)
     end.
 
 
