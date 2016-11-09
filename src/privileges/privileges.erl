@@ -1,22 +1,19 @@
 %%%-------------------------------------------------------------------
-%%% @author Konrad Zemek
-%%% @copyright (C): 2014 ACK CYFRONET AGH
+%%% @author Konrad Zemek, Lukasz Opiola
+%%% @copyright (C): 2014-2016 ACK CYFRONET AGH
 %%% This software is released under the MIT license
 %%% cited in 'LICENSE.txt'.
 %%% @end
 %%%-------------------------------------------------------------------
-%%% @doc The module describing user privileges in group and Space.
+%%% @doc
+%%% The module describes privileges of users and groups in the system and
+%%% contains utility functions for manipulating privileges and proplists in
+%%% form {Record, Privileges}.
+%%% @end
 %%%-------------------------------------------------------------------
 -module(privileges).
 -author("Konrad Zemek").
-
-
--export([space_user/0, space_manager/0, space_admin/0, space_privileges/0]).
--export([group_user/0, group_manager/0, group_admin/0, group_privileges/0]).
--export([handle_service_user/0, handle_service_admin/0,
-    handle_service_privileges/0]).
--export([handle_user/0, handle_admin/0, handle_privileges/0]).
--export([oz_viewer/0, oz_privileges/0]).
+-author("Lukasz Opiola").
 
 %% User privileges with regards to Space management.
 -type space_privilege() :: space_invite_user | space_remove_user |
@@ -58,9 +55,39 @@ list_providers | list_providers_of_space.
     oz_privilege/0
 ]).
 
+-export([union/2, proplists_union/1]).
+
+-export([space_user/0, space_manager/0, space_admin/0, space_privileges/0]).
+-export([group_user/0, group_manager/0, group_admin/0, group_privileges/0]).
+-export([handle_service_user/0, handle_service_admin/0,
+    handle_service_privileges/0]).
+-export([handle_user/0, handle_admin/0, handle_privileges/0]).
+-export([oz_viewer/0, oz_privileges/0]).
+
 %%%===================================================================
 %%% API
 %%%===================================================================
+
+union(PrivilegesA, PrivilegesB) ->
+    ordsets:union(
+        ordsets:from_list(PrivilegesA),
+        ordsets:from_list(PrivilegesB)
+    ).
+
+
+proplists_union(PrivilegesProplist) ->
+    PrivilegesMap = lists:foldl(
+        fun({Id, Privs}, AccMap) ->
+            NewPrivs = case maps:get(Id, AccMap, undefined) of
+                undefined ->
+                    ordsets:from_list(Privs);
+                OtherPrivs ->
+                    union(Privs, OtherPrivs)
+            end,
+            maps:put(Id, NewPrivs, AccMap)
+        end, #{}, PrivilegesProplist),
+    ordsets:from_list(maps:to_list(PrivilegesMap)).
+
 
 %%--------------------------------------------------------------------
 %% @doc A privilege level of a Space user.
