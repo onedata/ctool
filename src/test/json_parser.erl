@@ -78,8 +78,8 @@ convert_to_atoms(Other) ->
 -spec get_value_from_key(list(), list() | atom()) -> atom().
 get_value_from_key(_, undefined) -> undefined;
 get_value_from_key([Key], JsonProplist) ->
-    proplists:get_value(list_to_atom(Key), JsonProplist);
+    lists_utils:key_get(list_to_atom(Key), JsonProplist);
 get_value_from_key([Key | Keys], JsonProplist) ->
-    Sublist  = proplists:get_value(list_to_atom(Key), JsonProplist),
+    Sublist  = lists_utils:key_get(list_to_atom(Key), JsonProplist),
     get_value_from_key(Keys, Sublist).
 

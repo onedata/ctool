@@ -42,9 +42,9 @@ create(Auth, Parameters) ->
         URN = "/groups",
         Body = json_utils:encode(Parameters),
         {ok, 201, ResponseHeaders, _ResponseBody} =
-            oz_endpoint:auth_request(Auth, URN, post, Body),
+            oz_endpoint:provider_request(Auth, URN, post, Body),
         <<"/groups/", GroupId/binary>> =
-            proplists:get_value(<<"location">>, ResponseHeaders),
+            lists_utils:key_get(<<"location">>, ResponseHeaders),
         {ok, GroupId}
     end).
 
@@ -58,7 +58,7 @@ remove(Auth, GroupId) ->
     ?run(fun() ->
         URN = "/groups/" ++ binary_to_list(GroupId),
         {ok, 202, _ResponseHeaders, _ResponseBody} =
-            oz_endpoint:auth_request(Auth, URN, delete),
+            oz_endpoint:provider_request(Auth, URN, delete),
         ok
     end).
 
@@ -72,12 +72,12 @@ get_details(Auth, GroupId) ->
     ?run(fun() ->
         URN = "/groups/" ++ binary_to_list(GroupId),
         {ok, 200, _ResponseHeaders, ResponseBody} =
-            oz_endpoint:auth_request(Auth, URN, get),
+            oz_endpoint:provider_request(Auth, URN, get),
         Proplist = json_utils:decode(ResponseBody),
         GroupDetails = #group_details{
-            id = proplists:get_value(<<"groupId">>, Proplist),
-            name = proplists:get_value(<<"name">>, Proplist),
-            type = binary_to_atom(proplists:get_value(<<"type">>, Proplist), utf8)
+            id = lists_utils:key_get(<<"groupId">>, Proplist),
+            name = lists_utils:key_get(<<"name">>, Proplist),
+            type = binary_to_atom(lists_utils:key_get(<<"type">>, Proplist), utf8)
         },
         {ok, GroupDetails}
     end).
@@ -94,7 +94,7 @@ modify_details(Auth, GroupId, Parameters) ->
         URN = "/groups/" ++ binary_to_list(GroupId),
         Body = json_utils:encode(Parameters),
         {ok, 204, _ResponseHeaders, _ResponseBody} =
-            oz_endpoint:auth_request(Auth, URN, patch, Body),
+            oz_endpoint:provider_request(Auth, URN, patch, Body),
         ok
     end).
 
@@ -108,9 +108,9 @@ get_create_space_token(Auth, GroupId) ->
     ?run(fun() ->
         URN = "/groups/" ++ binary_to_list(GroupId) ++ "/spaces/token",
         {ok, 200, _ResponseHeaders, ResponseBody} =
-            oz_endpoint:auth_request(Auth, URN, get),
+            oz_endpoint:provider_request(Auth, URN, get),
         Proplist = json_utils:decode(ResponseBody),
-        Token = proplists:get_value(<<"token">>, Proplist),
+        Token = lists_utils:key_get(<<"token">>, Proplist),
         {ok, Token}
     end).
 
@@ -124,9 +124,9 @@ get_invite_user_token(Auth, GroupId) ->
     ?run(fun() ->
         URN = "/groups/" ++ binary_to_list(GroupId) ++ "/users/token",
         {ok, 200, _ResponseHeaders, ResponseBody} =
-            oz_endpoint:auth_request(Auth, URN, get),
+            oz_endpoint:provider_request(Auth, URN, get),
         Proplist = json_utils:decode(ResponseBody),
-        Token = proplists:get_value(<<"token">>, Proplist),
+        Token = lists_utils:key_get(<<"token">>, Proplist),
         {ok, Token}
     end).
 
@@ -141,7 +141,7 @@ remove_user(Auth, GroupId, UserId) ->
         URN = "/groups/" ++ binary_to_list(GroupId) ++ "/users/" ++
             binary_to_list(UserId),
         {ok, 202, _ResponseHeaders, _ResponseBody} =
-            oz_endpoint:auth_request(Auth, URN, delete),
+            oz_endpoint:provider_request(Auth, URN, delete),
         ok
     end).
 
@@ -155,9 +155,9 @@ get_users(Auth, GroupId) ->
     ?run(fun() ->
         URN = "/groups/" ++ binary_to_list(GroupId) ++ "/users",
         {ok, 200, _ResponseHeaders, ResponseBody} =
-            oz_endpoint:auth_request(Auth, URN, get),
+            oz_endpoint:provider_request(Auth, URN, get),
         Proplist = json_utils:decode(ResponseBody),
-        UserIds = proplists:get_value(<<"users">>, Proplist),
+        UserIds = lists_utils:key_get(<<"users">>, Proplist),
         {ok, UserIds}
     end).
 
@@ -171,9 +171,9 @@ get_effective_users(Auth, GroupId) ->
     ?run(fun() ->
         URN = "/groups/" ++ binary_to_list(GroupId) ++ "/effective_users",
         {ok, 200, _ResponseHeaders, ResponseBody} =
-            oz_endpoint:auth_request(Auth, URN, get),
+            oz_endpoint:provider_request(Auth, URN, get),
         Proplist = json_utils:decode(ResponseBody),
-        UserIds = proplists:get_value(<<"users">>, Proplist),
+        UserIds = lists_utils:key_get(<<"users">>, Proplist),
         {ok, UserIds}
     end).
 
@@ -187,9 +187,9 @@ get_parents(Auth, GroupId) ->
     ?run(fun() ->
         URN = "/groups/" ++ binary_to_list(GroupId) ++ "/parent",
         {ok, 200, _ResponseHeaders, ResponseBody} =
-            oz_endpoint:auth_request(Auth, URN, get),
+            oz_endpoint:provider_request(Auth, URN, get),
         Proplist = json_utils:decode(ResponseBody),
-        UserIds = proplists:get_value(<<"parent_groups">>, Proplist),
+        UserIds = lists_utils:key_get(<<"parent_groups">>, Proplist),
         {ok, UserIds}
     end).
 
@@ -203,9 +203,9 @@ get_nested(Auth, GroupId) ->
     ?run(fun() ->
         URN = "/groups/" ++ binary_to_list(GroupId) ++ "/nested",
         {ok, 200, _ResponseHeaders, ResponseBody} =
-            oz_endpoint:auth_request(Auth, URN, get),
+            oz_endpoint:provider_request(Auth, URN, get),
         Proplist = json_utils:decode(ResponseBody),
-        UserIds = proplists:get_value(<<"nested_groups">>, Proplist),
+        UserIds = lists_utils:key_get(<<"nested_groups">>, Proplist),
         {ok, UserIds}
     end).
 
@@ -221,11 +221,11 @@ get_user_details(Auth, GroupId, UserId) ->
         URN = "/groups/" ++ binary_to_list(GroupId) ++ "/users/" ++
             binary_to_list(UserId),
         {ok, 200, _ResponseHeaders, ResponseBody} =
-            oz_endpoint:auth_request(Auth, URN, get),
+            oz_endpoint:provider_request(Auth, URN, get),
         Proplist = json_utils:decode(ResponseBody),
         UserDetails = #user_details{
-            id = proplists:get_value(<<"userId">>, Proplist),
-            name = proplists:get_value(<<"name">>, Proplist)
+            id = lists_utils:key_get(<<"userId">>, Proplist),
+            name = lists_utils:key_get(<<"name">>, Proplist)
         },
         {ok, UserDetails}
     end).
@@ -242,9 +242,9 @@ get_user_privileges(Auth, GroupId, UserId) ->
         URN = "/groups/" ++ binary_to_list(GroupId) ++ "/users/" ++
             binary_to_list(UserId) ++ "/privileges",
         {ok, 200, _ResponseHeaders, ResponseBody} =
-            oz_endpoint:auth_request(Auth, URN, get),
+            oz_endpoint:provider_request(Auth, URN, get),
         Proplist = json_utils:decode(ResponseBody),
-        Privileges = proplists:get_value(<<"privileges">>, Proplist),
+        Privileges = lists_utils:key_get(<<"privileges">>, Proplist),
         {ok, lists:map(fun(Binary) -> binary_to_atom(Binary, latin1) end, Privileges)}
     end).
 
@@ -260,9 +260,9 @@ get_effective_user_privileges(Auth, GroupId, UserId) ->
         URN = "/groups/" ++ binary_to_list(GroupId) ++ "/effective_users/" ++
             binary_to_list(UserId) ++ "/privileges",
         {ok, 200, _ResponseHeaders, ResponseBody} =
-            oz_endpoint:auth_request(Auth, URN, get),
+            oz_endpoint:provider_request(Auth, URN, get),
         Proplist = json_utils:decode(ResponseBody),
-        Privileges = proplists:get_value(<<"privileges">>, Proplist),
+        Privileges = lists_utils:key_get(<<"privileges">>, Proplist),
         {ok, lists:map(fun(Binary) -> binary_to_atom(Binary, latin1) end, Privileges)}
     end).
 
@@ -278,9 +278,9 @@ get_nested_privileges(Auth, GroupId, NestedGroupId) ->
         URN = "/groups/" ++ binary_to_list(GroupId) ++ "/nested/" ++
             binary_to_list(NestedGroupId) ++ "/privileges",
         {ok, 200, _ResponseHeaders, ResponseBody} =
-            oz_endpoint:auth_request(Auth, URN, get),
+            oz_endpoint:provider_request(Auth, URN, get),
         Proplist = json_utils:decode(ResponseBody),
-        Privileges = proplists:get_value(<<"privileges">>, Proplist),
+        Privileges = lists_utils:key_get(<<"privileges">>, Proplist),
         {ok, lists:map(fun(Binary) -> binary_to_atom(Binary, latin1) end, Privileges)}
     end).
 
@@ -298,7 +298,7 @@ set_user_privileges(Auth, GroupId, UserId, Parameters) ->
             binary_to_list(UserId) ++ "/privileges",
         Body = json_utils:encode(Parameters),
         {ok, 204, _ResponseHeaders, _ResponseBody} =
-            oz_endpoint:auth_request(Auth, URN, put, Body),
+            oz_endpoint:provider_request(Auth, URN, put, Body),
         ok
     end).
 
@@ -316,7 +316,7 @@ set_nested_privileges(Auth, GroupId, NestedGroupId, Parameters) ->
             binary_to_list(NestedGroupId) ++ "/privileges",
         Body = json_utils:encode(Parameters),
         {ok, 204, _ResponseHeaders, _ResponseBody} =
-            oz_endpoint:auth_request(Auth, URN, put, Body),
+            oz_endpoint:provider_request(Auth, URN, put, Body),
         ok
     end).
 
@@ -330,9 +330,9 @@ get_invite_group_token(Auth, GroupId) ->
     ?run(fun() ->
         URN = "/groups/" ++ binary_to_list(GroupId) ++ "/nested/token",
         {ok, 200, _ResponseHeaders, ResponseBody} =
-            oz_endpoint:auth_request(Auth, URN, get),
+            oz_endpoint:provider_request(Auth, URN, get),
         Proplist = json_utils:decode(ResponseBody),
-        Token = proplists:get_value(<<"token">>, Proplist),
+        Token = lists_utils:key_get(<<"token">>, Proplist),
         {ok, Token}
     end).
 
@@ -349,10 +349,10 @@ join_group(Auth, GroupId, Parameters) ->
         URN = "/groups/" ++ binary_to_list(GroupId) ++ "/nested/join",
         Body = json_utils:encode(Parameters),
         {ok, 201, ResponseHeaders, _ResponseBody} =
-            oz_endpoint:auth_request(Auth, URN, post, Body),
+            oz_endpoint:provider_request(Auth, URN, post, Body),
         GroupIdSize = size(GroupId),
         <<"/groups/", GroupId:GroupIdSize/binary, "/nested/", NestedGroupId/binary>> =
-            proplists:get_value(<<"location">>, ResponseHeaders),
+            lists_utils:key_get(<<"location">>, ResponseHeaders),
         {ok, NestedGroupId}
     end).
 
@@ -367,7 +367,7 @@ leave_group(Auth, ParentGroupId, GroupId) ->
         URN = "/groups/" ++ binary_to_list(ParentGroupId) ++ "/nested/" ++
             binary_to_list(GroupId),
         {ok, 202, _ResponseHeaders, _ResponseBody} =
-            oz_endpoint:auth_request(Auth, URN, delete),
+            oz_endpoint:provider_request(Auth, URN, delete),
         ok
     end).
 
@@ -384,9 +384,9 @@ create_space(Auth, GroupId, Parameters) ->
         URN = "/groups/" ++ binary_to_list(GroupId) ++ "/spaces",
         Body = json_utils:encode(Parameters),
         {ok, 201, ResponseHeaders, _ResponseBody} =
-            oz_endpoint:auth_request(Auth, URN, post, Body),
+            oz_endpoint:provider_request(Auth, URN, post, Body),
         <<"/spaces/", SpaceId/binary>> =
-            proplists:get_value(<<"location">>, ResponseHeaders),
+            lists_utils:key_get(<<"location">>, ResponseHeaders),
         {ok, SpaceId}
     end).
 
@@ -403,10 +403,10 @@ join_space(Auth, GroupId, Parameters) ->
         URN = "/groups/" ++ binary_to_list(GroupId) ++ "/spaces/join",
         Body = json_utils:encode(Parameters),
         {ok, 201, ResponseHeaders, _ResponseBody} =
-            oz_endpoint:auth_request(Auth, URN, post, Body),
+            oz_endpoint:provider_request(Auth, URN, post, Body),
         GroupIdSize = size(GroupId),
         <<"/groups/", GroupId:GroupIdSize/binary, "/spaces/", SpaceId/binary>> =
-            proplists:get_value(<<"location">>, ResponseHeaders),
+            lists_utils:key_get(<<"location">>, ResponseHeaders),
         {ok, SpaceId}
     end).
 
@@ -421,7 +421,7 @@ leave_space(Auth, GroupId, SpaceId) ->
         URN = "/groups/" ++ binary_to_list(GroupId) ++ "/spaces/" ++
             binary_to_list(SpaceId),
         {ok, 202, _ResponseHeaders, _ResponseBody} =
-            oz_endpoint:auth_request(Auth, URN, delete),
+            oz_endpoint:provider_request(Auth, URN, delete),
         ok
     end).
 
@@ -435,9 +435,9 @@ get_spaces(Auth, GroupId) ->
     ?run(fun() ->
         URN = "/groups/" ++ binary_to_list(GroupId) ++ "/spaces",
         {ok, 200, _ResponseHeaders, ResponseBody} =
-            oz_endpoint:auth_request(Auth, URN, get),
+            oz_endpoint:provider_request(Auth, URN, get),
         Proplist = json_utils:decode(ResponseBody),
-        SpaceIds = proplists:get_value(<<"spaces">>, Proplist),
+        SpaceIds = lists_utils:key_get(<<"spaces">>, Proplist),
         {ok, SpaceIds}
     end).
 
@@ -453,12 +453,12 @@ get_space_details(Auth, GroupId, SpaceId) ->
         URN = "/groups/" ++ binary_to_list(GroupId) ++ "/spaces/" ++
             binary_to_list(SpaceId),
         {ok, 200, _ResponseHeaders, ResponseBody} =
-            oz_endpoint:auth_request(Auth, URN, get),
+            oz_endpoint:provider_request(Auth, URN, get),
         Proplist = json_utils:decode(ResponseBody),
         SpaceDetails = #space_details{
-            id = proplists:get_value(<<"spaceId">>, Proplist),
-            name = proplists:get_value(<<"name">>, Proplist),
-            providers_supports = proplists:get_value(<<"providersSupports">>, Proplist)
+            id = lists_utils:key_get(<<"spaceId">>, Proplist),
+            name = lists_utils:key_get(<<"name">>, Proplist),
+            providers_supports = lists_utils:key_get(<<"providersSupports">>, Proplist)
         },
         {ok, SpaceDetails}
     end).

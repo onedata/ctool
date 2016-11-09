@@ -35,25 +35,25 @@
 -callback get_oz_rest_api_prefix() -> string().
 
 %%--------------------------------------------------------------------
-%% @doc Should return a path to file containing provider's private key.
+%% @doc Should return a path to file the containing provider's private key.
 %%--------------------------------------------------------------------
--callback get_key_path() -> file:name_all().
+-callback get_key_file() -> file:name_all().
 
 %%--------------------------------------------------------------------
-%% @doc Should return a path to file containing provider's CSR.
+%% @doc Should return a path to the file containing provider's CSR.
 %%--------------------------------------------------------------------
--callback get_csr_path() -> file:name_all().
+-callback get_csr_file() -> file:name_all().
 
 %%--------------------------------------------------------------------
-%% @doc Should return a path to file containing provider's public
+%% @doc Should return a path to the file containing provider's public
 %% certificate signed by OZ.
 %% @end
 %%--------------------------------------------------------------------
--callback get_cert_path() -> file:name_all().
+-callback get_cert_file() -> file:name_all().
 
 %%--------------------------------------------------------------------
-%% @doc Should return a path to file containing OZ
-%% CA certificate.
+%% @doc Should return a path to the directory containing OZ
+%% CA certificates.
 %% @end
 %%--------------------------------------------------------------------
--callback get_cacert_path() -> file:name_all().
+-callback get_cacerts_dir() -> file:name_all().

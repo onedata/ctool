@@ -62,7 +62,7 @@ oz_spaces_test_() ->
 
 setup() ->
     meck:new(oz_endpoint),
-    meck:expect(oz_endpoint, auth_request, fun
+    meck:expect(oz_endpoint, provider_request, fun
         (client, "/spaces/spaceId", get) ->
             {ok, 200, response_headers, response_body};
         (client, "/spaces/spaceId/shares", get) ->
@@ -100,7 +100,7 @@ setup() ->
         (client, "/spaces/spaceId/providers/providerId", delete) ->
             {ok, 202, response_headers, response_body}
     end),
-    meck:expect(oz_endpoint, auth_request, fun
+    meck:expect(oz_endpoint, provider_request, fun
         (client, "/spaces", post, <<"body">>) ->
             {ok, 201, [{<<"location">>, <<"/spaces/spaceId">>}], response_body};
         (client, "/spaces/spaceId", patch, <<"body">>) ->
