@@ -22,6 +22,7 @@
     uuid :: undefined | binary() | atom() | integer(),
     name :: binary(),
     mode :: non_neg_integer(),
+    parent_uuid :: undefined | binary(),
     uid = 0 :: non_neg_integer(),
     gid = 0 :: non_neg_integer(),
     atime = 0 :: non_neg_integer(),
