@@ -102,20 +102,30 @@ mock_new(Nodes, Modules, Options) ->
 mock_action(Action) ->
     Self = self(),
 
-    MM = case whereis(mock_manager) of
-        undefined ->
+    case lists:member(mock_manager, registered()) of
+        false ->
             Pid = erlang:spawn_link(fun() ->
-                process_flag(trap_exit, true),
-                mock_manager()
+                receive
+                    start ->
+                        process_flag(trap_exit, true),
+                        mock_manager();
+                    stop ->
+                        ok
+                end
             end),
-            true = register(mock_manager, Pid),
-            Pid;
-        P ->
-            erlang:link(P),
-            P
+            try
+                register(mock_manager, Pid),
+                Pid ! start
+            catch
+                {error,badarg} ->
+                    Pid ! stop % other proces created mock_manager
+            end;
+        _ ->
+            P = whereis(mock_manager),
+            erlang:link(P)
     end,
 
-    MM ! {Action, Self},
+    mock_manager ! {Action, Self},
     receive
         {mock_manager, Ans} -> Ans
     after
