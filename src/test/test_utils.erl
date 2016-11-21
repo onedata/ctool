@@ -58,7 +58,7 @@ enable_datastore_models([H | _] = Nodes, Models) ->
 
     lists:foreach(
         fun(Node) ->
-            ok = rpc:call(Node, gen_server, call, [node_manager, {apply, datastore, initialize_state, [H]}], timer:seconds(30))
+            ok = rpc:call(Node, gen_server, call, [node_manager, {apply, datastore, initialize_state, [H]}], ?TIMEOUT)
         end, Nodes).
 
 
@@ -89,7 +89,7 @@ mock_new(Nodes, Modules) ->
 mock_new(Nodes, Modules, Options) ->
     lists:foreach(fun(Node) ->
         lists:foreach(fun(Module) ->
-            ?assertMatch(ok, rpc:call(Node, ?MODULE, mock_action, [{new, Module, Options}], ?TIMEOUT))
+            do_action(fun() -> rpc:call(Node, ?MODULE, mock_action, [{new, Module, Options}], ?TIMEOUT) end)
         end, as_list(Modules))
     end, as_list(Nodes)).
 
@@ -125,11 +125,12 @@ mock_action(Action) ->
             erlang:link(P)
     end,
 
-    mock_manager ! {Action, Self},
+    Ref = erlang:make_ref(),
+    mock_manager ! {Action, Self, Ref},
     receive
-        {mock_manager, Ans} -> Ans
+        {mock_manager, Ref, Ans} -> Ans
     after
-        5000 -> timeout
+        ?TIMEOUT -> timeout
     end.
 
 %%--------------------------------------------------------------------
@@ -141,9 +142,7 @@ mock_action(Action) ->
     FunctionName :: atom(), Expectation :: function()) -> ok.
 mock_expect(Nodes, Module, FunctionName, Expectation) ->
     lists:foreach(fun(Node) ->
-        ?assertEqual(ok, rpc:call(
-            Node, meck, expect, [Module, FunctionName, Expectation], ?TIMEOUT
-        ))
+        do_action(fun() -> rpc:call(Node, meck, expect, [Module, FunctionName, Expectation], ?TIMEOUT) end)
     end, as_list(Nodes)).
 
 %%--------------------------------------------------------------------
@@ -155,7 +154,14 @@ mock_expect(Nodes, Module, FunctionName, Expectation) ->
     Modules :: module() | [module()]) -> ok.
 mock_validate(Nodes, Modules) ->
     lists:foreach(fun(Node) ->
-        ?assert(rpc:call(Node, meck, validate, [as_list(Modules)], ?TIMEOUT))
+        do_action(fun() ->
+            case rpc:call(Node, meck, validate, [as_list(Modules)], ?TIMEOUT) of
+                true ->
+                    ok;
+                Other ->
+                    Other
+            end
+        end)
     end, as_list(Nodes)).
 
 
@@ -167,11 +173,13 @@ mock_validate(Nodes, Modules) ->
 -spec mock_unload(Nodes :: node() | [node()]) -> ok.
 mock_unload(Nodes) ->
     lists:foreach(fun(Node) ->
-        case rpc:call(Node, meck, unload, [], ?TIMEOUT) of
-            Unloaded when is_list(Unloaded) -> ok;
-            {badrpc, {'EXIT', {{not_mocked, _}, _}}} ->
-                ok
-        end
+        do_action(fun() ->
+            case rpc:call(Node, meck, unload, [], ?TIMEOUT) of
+                Unloaded when is_list(Unloaded) -> ok;
+                {badrpc, {'EXIT', {{not_mocked, _}, _}}} ->
+                    ok
+            end
+        end)
     end, as_list(Nodes)).
 
 %%--------------------------------------------------------------------
@@ -184,7 +192,7 @@ mock_unload(Nodes) ->
 mock_unload(Nodes, Modules) ->
     lists:foreach(fun(Node) ->
         lists:foreach(fun(Module) ->
-            ?assertMatch(ok, rpc:call(Node, ?MODULE, mock_action, [{unload, Module}], ?TIMEOUT))
+            do_action(fun() -> rpc:call(Node, ?MODULE, mock_action, [{unload, Module}], ?TIMEOUT) end)
         end, as_list(Modules))
     end, as_list(Nodes)).
 
@@ -271,7 +279,7 @@ as_list(Term) -> [Term].
 -spec mock_manager() -> no_return().
 mock_manager() ->
     receive
-        {{new, Module, Options}, Sender} ->
+        {{new, Module, Options}, Sender, Ref} ->
             Ans = try
                 ok = check_and_unload_mock(Module),
                 meck:new(Module, Options)
@@ -279,9 +287,9 @@ mock_manager() ->
                 E1:E2 ->
                     {error, E1, E2}
             end,
-            Sender ! {mock_manager, Ans};
-        {{unload, Module}, Sender} ->
-            Sender ! {mock_manager, check_and_unload_mock(Module)}
+            Sender ! {mock_manager, Ref, Ans};
+        {{unload, Module}, Sender, Ref} ->
+            Sender ! {mock_manager, Ref, check_and_unload_mock(Module)}
     end,
     mock_manager().
 
@@ -315,4 +323,38 @@ check_and_unload_mock(Module, Num) ->
                 _:_ -> ok % will be checked and rerun
             end,
             check_and_unload_mock(Module, Num - 1)
+    end.
+
+%%--------------------------------------------------------------------
+%% @private
+%% @doc
+%% Executes function with retries (fun should end with ok).
+%% @end
+%%--------------------------------------------------------------------
+-spec do_action(Fun :: fun(() -> ok)) -> ok | no_return().
+do_action(Fun) ->
+    do_action(Fun, 10).
+
+%%--------------------------------------------------------------------
+%% @private
+%% @doc
+%% Executes function with retries (fun should end with ok).
+%% @end
+%%--------------------------------------------------------------------
+-spec do_action(Fun :: fun(() -> ok), Num :: integer()) -> ok | no_return().
+do_action(Fun, 0) ->
+    ?assertMatch(ok, Fun());
+do_action(Fun, Num) ->
+    try
+        case Fun() of
+            ok ->
+                ok;
+            Other ->
+                ct:print("Action ~p failed with ans: ~p", [Fun, Other]),
+                do_action(Fun, Num - 1)
+        end
+    catch
+        E1:E2 ->
+            ct:print("Action ~p failed with error: ~p", [Fun, {E1, E2}]),
+            do_action(Fun, Num - 1)
     end.
