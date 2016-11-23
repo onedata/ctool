@@ -6,9 +6,7 @@
 %%% @end
 %%%-------------------------------------------------------------------
 %%% @doc
-%%% The module describes privileges of users and groups in the system and
-%%% contains utility functions for manipulating privileges and proplists in
-%%% form {Record, Privileges}.
+%%% The module describes privileges of users and groups in the system.
 %%% @end
 %%%-------------------------------------------------------------------
 -module(privileges).
