@@ -55,8 +55,6 @@ list_providers | list_providers_of_space.
     oz_privilege/0
 ]).
 
--export([union/2, proplists_union/1]).
-
 -export([space_user/0, space_manager/0, space_admin/0, space_privileges/0]).
 -export([group_user/0, group_manager/0, group_admin/0, group_privileges/0]).
 -export([handle_service_user/0, handle_service_admin/0,
@@ -68,33 +66,12 @@ list_providers | list_providers_of_space.
 %%% API
 %%%===================================================================
 
-union(PrivilegesA, PrivilegesB) ->
-    ordsets:union(
-        ordsets:from_list(PrivilegesA),
-        ordsets:from_list(PrivilegesB)
-    ).
-
-
-proplists_union(PrivilegesProplist) ->
-    PrivilegesMap = lists:foldl(
-        fun({Id, Privs}, AccMap) ->
-            NewPrivs = case maps:get(Id, AccMap, undefined) of
-                undefined ->
-                    ordsets:from_list(Privs);
-                OtherPrivs ->
-                    union(Privs, OtherPrivs)
-            end,
-            maps:put(Id, NewPrivs, AccMap)
-        end, #{}, PrivilegesProplist),
-    ordsets:from_list(maps:to_list(PrivilegesMap)).
-
-
 %%--------------------------------------------------------------------
 %% @doc A privilege level of a Space user.
 %%--------------------------------------------------------------------
 -spec space_user() -> [space_privilege()].
 space_user() ->
-    [space_view_data, space_write_files].
+    ordsets:from_list([space_view_data, space_write_files]).
 
 %%--------------------------------------------------------------------
 %% @doc A privilege level of a Space manager.
@@ -196,7 +173,7 @@ group_privileges() ->
 %%--------------------------------------------------------------------
 -spec handle_service_user() -> [handle_service_privilege()].
 handle_service_user() ->
-    [view_handle_service, register_handle].
+    ordsets:from_list([view_handle_service, register_handle]).
 
 %%--------------------------------------------------------------------
 %% @doc A privilege level of a handle_service administrator. This level contains all
@@ -262,19 +239,20 @@ handle_privileges() ->
 %% @doc All view privileges in OZ API.
 %%--------------------------------------------------------------------
 -spec oz_viewer() -> [oz_privilege()].
-oz_viewer() -> [
-    list_users,
+oz_viewer() ->
+    ordsets:from_list([
+        list_users,
 
-    list_groups,
+        list_groups,
 
-    list_spaces,
-    list_providers_of_space,
+        list_spaces,
+        list_providers_of_space,
 
-    list_providers,
-    list_users_of_provider,
-    list_groups_of_provider,
-    list_spaces_of_provider
-].
+        list_providers,
+        list_users_of_provider,
+        list_groups_of_provider,
+        list_spaces_of_provider
+    ]).
 
 
 %%--------------------------------------------------------------------
