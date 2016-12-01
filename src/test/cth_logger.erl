@@ -42,7 +42,7 @@ init(_Id, _Opts) ->
 %%--------------------------------------------------------------------
 -spec pre_init_per_suite(Suite :: term(), Config :: [term()],
     State :: logger_state()) -> {ok, logger_state()}.
-pre_init_per_suite(Suite, Config, State = #logger_state{}) ->
+pre_init_per_suite(Suite, Config, State) ->
     {Config, State#logger_state{suite = Suite}}.
 
 
@@ -55,7 +55,7 @@ pre_init_per_suite(Suite, Config, State = #logger_state{}) ->
 -spec pre_init_per_testcase(TestCase :: atom(), Config :: [term()],
     State :: logger_state()) -> {[term()], logger_state()}.
 pre_init_per_testcase(TestCase, Config, State = #logger_state{suite = Suite}) ->
-    ct:pal("Testcase: ~p in suite: ~p STARTED", [TestCase, Suite]),
+    ct:pal("Testcase ~p in suite: ~p STARTED", [TestCase, Suite]),
     {Config, State}.
 
 %%--------------------------------------------------------------------
@@ -65,13 +65,19 @@ pre_init_per_testcase(TestCase, Config, State = #logger_state{suite = Suite}) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec post_end_per_testcase(TestCase :: atom(), Config :: [term()],
-    Return :: ok | {error, term()}, State :: logger_state()) ->
-    {ok | {error, term()}, logger_state()}.
+    Return :: ok | {error | skip, term()}, State :: logger_state()) ->
+    {ok | {error | skip, term()}, logger_state()}.
 post_end_per_testcase(TestCase, _Config, ok, State) ->
-    ct:pal("Testcase: ~p in suite: ~p PASSED",
+    ct:pal("Testcase ~p in suite: ~p PASSED",
         [TestCase, State#logger_state.suite]),
     {ok, State};
 post_end_per_testcase(TestCase, _Config, Return = {error, _},
     State = #logger_state{suite = Suite}) ->
-    ct:pal("Testcase: ~p in suite: ~p FAILED", [TestCase, Suite]),
+    ct:pal("Testcase ~p in suite: ~p FAILED", [TestCase, Suite]),
+    {Return, State};
+post_end_per_testcase(TestCase, _Config, Return = {skip, _},
+    State = #logger_state{suite = Suite}) ->
+    ct:pal("Testcase ~p in suite: ~p SKIPPED", [TestCase, Suite]),
+    {Return, State};
+post_end_per_testcase(_TestCase, _Config, Return, State) ->
     {Return, State}.

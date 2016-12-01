@@ -18,24 +18,15 @@
 %% temporary directory for test files
 -define(TEMP_DIR, "/tmp").
 
-%% Returns absolute path to given file in the test data directory
--define(TEST_FILE(Config, X), filename:join(?config(data_dir, Config), X)).
+-define(DEFAULT_ENV_DESCRIPTION, "env_desc.json").
 
-%% Initializes and clears test environment
--define(TEST_INIT(Config, EnvDescription), ?TEST_INIT(Config, EnvDescription, [])).
--define(TEST_INIT(Config, EnvDescription, LoadModules),
-    test_node_starter:prepare_test_environment(Config, EnvDescription, ?MODULE, LoadModules)
-).
--define(TEST_STOP(Config),
-    test_node_starter:clean_environment(Config, ?MODULE)
-).
--define(TEST_STOP(Config, Apps),
-    test_node_starter:clean_environment(Config, ?MODULE, Apps)
+-define(ENV_DESCRIPTION, env_description).
+-define(LOAD_MODULES, load_modules).
+-define(CONFIGURE(EnvDescriptionFile, Config), ?CONFIGURE(EnvDescriptionFile, [], Config)).
+-define(CONFIGURE(EnvDescriptionFile, ModulesToLoad, Config),
+    [{?ENV_DESCRIPTION, EnvDescriptionFile}, {?LOAD_MODULES, ModulesToLoad} | Config]
 ).
 
-%% Logs cases start/stop
--define(CASE_START(Case), ct:print("Starting CASE ~p", [Case])).
--define(CASE_STOP(Case), ct:print("Stopping CASE ~p", [Case])).
 
 %% Macro used to generate case name for default init/end_per_testcase
 -define(DEFAULT_CASE(Case), list_to_atom(atom_to_list(Case) ++ "_default")).
@@ -52,5 +43,6 @@
 -endif.
 
 -define(config(Key, Config), proplists:get_value(Key, Config)).
+-define(config(Key, Config, Default), proplists:get_value(Key, Config, Default)).
 
 -endif.
