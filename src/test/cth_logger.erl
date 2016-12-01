@@ -42,7 +42,7 @@ init(_Id, _Opts) ->
 %%--------------------------------------------------------------------
 -spec pre_init_per_suite(Suite :: term(), Config :: [term()],
     State :: logger_state()) -> {ok, logger_state()}.
-pre_init_per_suite(Suite, Config, State) ->
+pre_init_per_suite(Suite, Config, State = #logger_state{}) ->
     {Config, State#logger_state{suite = Suite}}.
 
 
@@ -65,7 +65,8 @@ pre_init_per_testcase(TestCase, Config, State = #logger_state{suite = Suite}) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec post_end_per_testcase(TestCase :: atom(), Config :: [term()],
-    Return :: ok | {error, term()}, State :: logger_state()) -> {[term()], logger_state()}.
+    Return :: ok | {error, term()}, State :: logger_state()) ->
+    {ok | {error, term()}, logger_state()}.
 post_end_per_testcase(TestCase, _Config, ok, State) ->
     ct:pal("Testcase: ~p in suite: ~p PASSED",
         [TestCase, State#logger_state.suite]),
