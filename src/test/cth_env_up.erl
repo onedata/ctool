@@ -40,7 +40,10 @@ init(_Id, _Opts) ->
 %% By default starts environment described in {test}_SUITE_data/?DEFAULT_ENV_DESCRIPTION.
 %% You can pass custom environment description file by adding
 %% {?ENV_DESCRIPTION, "{your_env_file}.json"} to Config returned by init_per_suite.
-%% "{your_env_file}.json" must be present in {test}_SUITE_data
+%% "{your_env_file}.json" must be present in {test}_SUITE_data.
+%% If you intend to perform some initialization after environment is up,
+%% pass fun(Config) -> ...end under key ?ENV_UP_POSTHOOK to Config.
+%%
 %% @end
 %%--------------------------------------------------------------------
 -spec post_init_per_suite(Suite :: atom(), _Config :: [term()], Return :: [term()],
@@ -49,7 +52,8 @@ post_init_per_suite(Suite, _Config, Return, State) ->
     Config2 = add_env_description_file(Return),
     ct:pal("Environment initialization in ~p", [Suite]),
     NewConfig = test_node_starter:prepare_test_environment(Config2, Suite),
-    {NewConfig, State}.
+    NewConfig2 = maybe_exec_posthook(NewConfig),
+    {NewConfig2, State}.
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -81,3 +85,16 @@ add_env_description_file(Config) ->
         _ -> Config
     end.
 
+
+%%--------------------------------------------------------------------
+%% @private
+%% @doc
+%% Executes posthook passed in Config if it exists.
+%% @end
+%%--------------------------------------------------------------------
+-spec maybe_exec_posthook(Config :: [term()]) -> [term()].
+maybe_exec_posthook(Config) ->
+    case ?config(?ENV_UP_POSTHOOK, Config) of
+        undefined -> Config;
+        Posthook -> Posthook(Config)
+    end.

@@ -26,6 +26,7 @@
 -define(CONFIGURE(EnvDescriptionFile, ModulesToLoad, Config),
     [{?ENV_DESCRIPTION, EnvDescriptionFile}, {?LOAD_MODULES, ModulesToLoad} | Config]
 ).
+-define(ENV_UP_POSTHOOK, env_up_posthook).
 
 
 %% Macro used to generate case name for default init/end_per_testcase
