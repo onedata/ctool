@@ -14,10 +14,8 @@
 %% CTH callback
 %% initialization
 -export([init/2]).
-%% prehooks
--export([pre_end_per_suite/3]).
 %% posthooks
--export([post_init_per_suite/4]).
+-export([post_init_per_suite/4, post_end_per_suite/4]).
 
 -include("test/test_utils.hrl").
 
@@ -55,17 +53,20 @@ post_init_per_suite(Suite, _Config, Return, State) ->
     NewConfig2 = maybe_exec_posthook(NewConfig),
     {NewConfig2, State}.
 
+
 %%--------------------------------------------------------------------
 %% @doc
 %% CTH callback called after end_per_suite.
 %% Cleans environment used in given test suite.
 %% @end
 %%--------------------------------------------------------------------
--spec pre_end_per_suite(Suite :: atom(), Config :: [term()], State :: []) -> {[term()], []}.
-pre_end_per_suite(Suite, Config, State) ->
+-spec post_end_per_suite(Suite :: atom(), Config :: [term()], Return :: term(),
+    State :: []) -> {[term()], []}.
+post_end_per_suite(Suite, Config, Return, State) ->
     ct:pal("Environment cleaning in ~p", [Suite]),
     test_node_starter:clean_environment(Config),
-    {Config, State}.
+    {Return, State}.
+
 
 
 %%%===================================================================

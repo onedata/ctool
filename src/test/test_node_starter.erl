@@ -471,6 +471,15 @@ run_env_up_script(ProjectRoot, AppmockRoot, CmRoot, LogsDir, DescriptionFile) ->
         NotEmptyList -> lists:last(NotEmptyList)
     end.
 
+
+%%--------------------------------------------------------------------
+%% @private
+%% @doc
+%% Returns absolute path to environment description file
+%% @end
+%%--------------------------------------------------------------------
+-spec env_description([term()]) -> file:filename_all().
 env_description(Config) ->
     EnvDescriptionRelativePath = ?config(?ENV_DESCRIPTION, Config),
-    filename:join(?config(data_dir, Config), EnvDescriptionRelativePath).
+    ?TEST_FILE(Config, EnvDescriptionRelativePath).
+
