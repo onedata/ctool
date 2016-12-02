@@ -43,8 +43,8 @@
 %% Sets cookies (read from DescriptionFile) for erlang nodes.
 %% @end
 %%--------------------------------------------------------------------
-%%-spec prepare_test_environment(Config :: list(), DescriptionFile :: string(),
-%%    TestModule :: module(), LoadModules :: [module()]) -> Result :: list() | {fail, tuple()}.
+-spec prepare_test_environment(Config :: list(), TestModule :: module())
+        -> Result :: list() | {fail, tuple()}.
 prepare_test_environment(Config, TestModule) ->
     prepare_test_environment(Config, TestModule, ?ALL_POSSIBLE_APPS).
 
@@ -54,9 +54,8 @@ prepare_test_environment(Config, TestModule) ->
 %% Sets cookies (read from DescriptionFile) for erlang nodes.
 %% @end
 %%--------------------------------------------------------------------
-%%-spec prepare_test_environment(Config :: list(), DescriptionFile :: string(),
-%%    TestModule :: module(), LoadModules :: [module()], Apps :: [{AppName :: atom(), ConfigName :: atom()}])
-%%        -> Result :: list() | {fail, tuple()}.
+-spec prepare_test_environment(Config :: list(), TestModule :: module(),
+    Apps :: [{AppName :: atom(), ConfigName :: atom()}]) -> Result :: list() | {fail, tuple()}.
 prepare_test_environment(Config, TestModule, Apps) ->
     DescriptionFile = env_description(Config),
     LoadModules = ?config(load_modules, Config, []),
@@ -114,7 +113,7 @@ prepare_test_environment(Config, TestModule, Apps) ->
                     "    prepare_test_environment_error.log~n" ++
                     "    prepare_test_environment.log~n" ++
                     "Stacktrace: ~p", [E11, E12, erlang:get_stacktrace()]),
-                clean_environment(EnvDesc, TestModule),
+                clean_environment(EnvDesc),
                 {fail, {init_failed, E11, E12}}
         end
 
@@ -480,6 +479,6 @@ run_env_up_script(ProjectRoot, AppmockRoot, CmRoot, LogsDir, DescriptionFile) ->
 %%--------------------------------------------------------------------
 -spec env_description([term()]) -> file:filename_all().
 env_description(Config) ->
-    EnvDescriptionRelativePath = ?config(?ENV_DESCRIPTION, Config),
+    EnvDescriptionRelativePath = ?config(?ENV_DESCRIPTION, Config, ?DEFAULT_ENV_DESCRIPTION),
     ?TEST_FILE(Config, EnvDescriptionRelativePath).
 

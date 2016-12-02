@@ -47,9 +47,8 @@ init(_Id, _Opts) ->
 -spec post_init_per_suite(Suite :: atom(), _Config :: [term()], Return :: [term()],
     State :: []) -> {[term()], []}.
 post_init_per_suite(Suite, _Config, Return, State) ->
-    Config2 = add_env_description_file(Return),
     ct:pal("Environment initialization in ~p", [Suite]),
-    NewConfig = test_node_starter:prepare_test_environment(Config2, Suite),
+    NewConfig = test_node_starter:prepare_test_environment(Return, Suite),
     NewConfig2 = maybe_exec_posthook(NewConfig),
     {NewConfig2, State}.
 
@@ -72,20 +71,6 @@ post_end_per_suite(Suite, Config, Return, State) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
-
-%%--------------------------------------------------------------------
-%% @private
-%% @doc
-%% Adds default environment description file to Config it it's not defined.
-%% @end
-%%--------------------------------------------------------------------
--spec add_env_description_file(Config :: [term()]) -> [term()].
-add_env_description_file(Config) ->
-    case ?config(?ENV_DESCRIPTION, Config) of
-        undefined -> [{?ENV_DESCRIPTION, ?DEFAULT_ENV_DESCRIPTION} | Config];
-        _ -> Config
-    end.
-
 
 %%--------------------------------------------------------------------
 %% @private
