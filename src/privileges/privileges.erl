@@ -58,7 +58,7 @@ list_providers | list_providers_of_space.
 -export([handle_service_user/0, handle_service_admin/0,
     handle_service_privileges/0]).
 -export([handle_user/0, handle_admin/0, handle_privileges/0]).
--export([oz_viewer/0, oz_privileges/0]).
+-export([oz_viewer/0, oz_admin/0, oz_privileges/0]).
 
 %%%===================================================================
 %%% API
