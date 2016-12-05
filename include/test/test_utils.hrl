@@ -24,6 +24,8 @@
 -define(DEFAULT_ENV_DESCRIPTION, "env_desc.json").
 
 -define(ENV_DESCRIPTION, env_description).
+-define(CTH_ENV_UP, cth_env_up).
+-define(DISABLE, disable).
 -define(LOAD_MODULES, load_modules).
 -define(CONFIGURE(EnvDescriptionFile, Config), ?CONFIGURE(EnvDescriptionFile, [], Config)).
 -define(CONFIGURE(EnvDescriptionFile, ModulesToLoad, Config),

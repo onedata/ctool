@@ -47,10 +47,14 @@ init(_Id, _Opts) ->
 -spec post_init_per_suite(Suite :: atom(), _Config :: [term()], Return :: [term()],
     State :: []) -> {[term()], []}.
 post_init_per_suite(Suite, _Config, Return, State) ->
-    ct:pal("Environment initialization in ~p", [Suite]),
-    NewConfig = test_node_starter:prepare_test_environment(Return, Suite),
-    NewConfig2 = maybe_exec_posthook(NewConfig),
-    {NewConfig2, State}.
+    case ?config(?CTH_ENV_UP, Return) of
+        ?DISABLE -> {Return, State};
+        _ ->
+            ct:pal("Environment initialization in ~p", [Suite]),
+            NewConfig = test_node_starter:prepare_test_environment(Return, Suite),
+            NewConfig2 = maybe_exec_posthook(NewConfig),
+            {NewConfig2, State}
+    end.
 
 
 %%--------------------------------------------------------------------
