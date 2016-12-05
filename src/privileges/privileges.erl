@@ -254,10 +254,10 @@ oz_viewer() ->
 
 
 %%--------------------------------------------------------------------
-%% @doc All OZ API privileges.
+%% @doc Admin privileges in OZ API.
 %%--------------------------------------------------------------------
--spec oz_privileges() -> [oz_privilege()].
-oz_privileges() ->
+-spec oz_admin() -> [oz_privilege()].
+oz_admin() ->
     ordsets:union(
         oz_viewer(),
         ordsets:from_list([
@@ -268,4 +268,12 @@ oz_privileges() ->
             remove_member_from_space
         ])
     ).
+
+
+%%--------------------------------------------------------------------
+%% @doc All OZ API privileges.
+%%--------------------------------------------------------------------
+-spec oz_privileges() -> [oz_privilege()].
+oz_privileges() ->
+    oz_admin().
 
