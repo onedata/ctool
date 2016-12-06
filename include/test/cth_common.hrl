@@ -13,11 +13,12 @@
 -define(CTH_COMMON_HRL, 1).
 
 %% nodes on which mock_manager will be started
--define(CTH_NODES, [
+-define(CTH_MOCK_MANAGER_NODES, [
     op_worker_nodes,
     cluster_worker_nodes,
     oz_worker_nodes,
-    onepanel_nodes
+    onepanel_nodes,
+    all_nodes % this key is used in onepanel
 ]).
 
 

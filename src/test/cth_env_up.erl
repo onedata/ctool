@@ -19,6 +19,8 @@
 
 -include("test/test_utils.hrl").
 
+-record(state, {disabled=false}).
+-type state() :: #state{}.
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -26,9 +28,9 @@
 %% Initializes logger state.
 %% @end
 %%--------------------------------------------------------------------
--spec init(_Id :: term(), _Opts :: term()) -> {ok, [], non_neg_integer()}.
+-spec init(_Id :: term(), _Opts :: term()) -> {ok, state(), non_neg_integer()}.
 init(_Id, _Opts) ->
-    {ok, [], ?CTH_ENV_UP_PRIORITY}.
+    {ok, #state{}, ?CTH_ENV_UP_PRIORITY}.
 
 
 %%--------------------------------------------------------------------
@@ -45,10 +47,11 @@ init(_Id, _Opts) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec post_init_per_suite(Suite :: atom(), _Config :: [term()], Return :: [term()],
-    State :: []) -> {[term()], []}.
+    State :: state()) -> {[term()], state()}.
 post_init_per_suite(Suite, _Config, Return, State) ->
     case ?config(?CTH_ENV_UP, Return) of
-        ?DISABLE -> {Return, State};
+        ?DISABLE ->
+            {Return, State#state{disabled = true}};
         _ ->
             ct:pal("Environment initialization in ~p", [Suite]),
             NewConfig = test_node_starter:prepare_test_environment(Return, Suite),
@@ -64,7 +67,9 @@ post_init_per_suite(Suite, _Config, Return, State) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec post_end_per_suite(Suite :: atom(), Config :: [term()], Return :: term(),
-    State :: []) -> {[term()], []}.
+    State :: state()) -> {[term()], state()}.
+post_end_per_suite(_Suite, _Config, Return, State = #state{disabled = true}) ->
+    {Return, State};
 post_end_per_suite(Suite, Config, Return, State) ->
     ct:pal("Environment cleaning in ~p", [Suite]),
     test_node_starter:clean_environment(Config),

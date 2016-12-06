@@ -39,11 +39,9 @@ init(_Id, _Opts) ->
 -spec post_init_per_suite(Suite :: atom(), _Config :: [term()], Return :: [term()],
     State :: []) -> {[term()], []}.
 post_init_per_suite(_Suite, _Config, Return, State) ->
-    lists:foreach(fun(NodeType) ->
-        lists:foreach(fun(N) ->
-            {ok, _} = rpc:call(N, mock_manager, start_link, [])
-        end, ?config(NodeType, Return, []))
-    end, ?CTH_NODES),
+    lists:foreach(fun(N) ->
+        {ok, _} = rpc:call(N, mock_manager, start_link, [])
+    end, mock_manager_nodes(Return)),
     {Return, State}.
 
 
@@ -56,9 +54,26 @@ post_init_per_suite(_Suite, _Config, Return, State) ->
 -spec post_end_per_suite(Suite :: atom(), Config :: [term()], Return :: term(),
     State :: []) -> {[term()], []}.
 post_end_per_suite(_Suite, Config, Return, State) ->
-    lists:foreach(fun(NodeType) ->
-        lists:foreach(fun(N) ->
-            ok = rpc:call(N, mock_manager, stop, [])
-        end, ?config(NodeType, Config, []))
-    end, ?CTH_NODES),
+    lists:foreach(fun(N) ->
+        ok = rpc:call(N, mock_manager, stop, [])
+    end, mock_manager_nodes(Config)),
     {Return, State}.
+
+
+%%%===================================================================
+%%% Internal functions
+%%%===================================================================
+%%--------------------------------------------------------------------
+%% @doc
+%% @private
+%% Returns list of nodes on which mock_manager will be started.
+%% Removes duplicates as sometimes one node is in Config under multiple
+%% keys.
+%% @end
+%%--------------------------------------------------------------------
+-spec mock_manager_nodes([term()]) -> [node()].
+mock_manager_nodes(Config) ->
+    AllNodes = lists:flatmap(fun(NodeType) ->
+        ?config(NodeType, Config, [])
+    end, ?CTH_MOCK_MANAGER_NODES),
+    lists:usort(AllNodes). %remove duplicates

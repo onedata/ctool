@@ -41,7 +41,7 @@
 -spec(start_link() ->
     {ok, Pid :: pid()} | ignore | {error, Reason :: term()}).
 start_link() ->
-    gen_server2:start_link({local, ?MOCK_MANAGER_NAME}, ?MODULE, [], []).
+    gen_server:start_link({local, ?MOCK_MANAGER_NAME}, ?MODULE, [], []).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -51,13 +51,13 @@ start_link() ->
 
 -spec new(module(), Options :: [mock_opt()]) -> any().
 new(Module, Options) ->
-    gen_server2:call(?MOCK_MANAGER_NAME, {new, Module, Options}, ?TIMEOUT).
+    gen_server:call(?MOCK_MANAGER_NAME, {new, Module, Options}, ?TIMEOUT).
 
 unload(Module) ->
-    gen_server2:call(?MOCK_MANAGER_NAME, {unload, Module}, ?TIMEOUT).
+    gen_server:call(?MOCK_MANAGER_NAME, {unload, Module}, ?TIMEOUT).
 
 stop() ->
-    gen_server2:cast(?MOCK_MANAGER_NAME, stop).
+    gen_server:cast(?MOCK_MANAGER_NAME, stop).
 
 %%%===================================================================
 %%% gen_server callbacks
