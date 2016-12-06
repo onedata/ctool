@@ -75,7 +75,7 @@ list_providers | list_providers_of_space.
 %% always sorted.
 %% @end
 %%--------------------------------------------------------------------
--spec from_list(PrivilegesList) -> privileges(atom()).
+-spec from_list(PrivilegesList :: [atom()]) -> privileges(atom()).
 from_list(PrivilegesList) ->
     ordsets:from_list(PrivilegesList).
 
@@ -85,7 +85,7 @@ from_list(PrivilegesList) ->
 %% always sorted.
 %% @end
 %%--------------------------------------------------------------------
--spec union(PrivilegesA, PrivilegesB) -> privileges(atom()).
+-spec union(PrivsA :: [atom()], PrivsB :: [atom()]) -> privileges(atom()).
 union(PrivilegesA, PrivilegesB) ->
     ordsets:union(from_list(PrivilegesA), from_list(PrivilegesB)).
 
@@ -95,7 +95,7 @@ union(PrivilegesA, PrivilegesB) ->
 %% always sorted.
 %% @end
 %%--------------------------------------------------------------------
--spec union(PrivilegesA, PrivilegesB) -> privileges(atom()).
+-spec subtract(PrivsA :: [atom()], PrivsB :: [atom()]) -> privileges(atom()).
 subtract(PrivilegesA, PrivilegesB) ->
     ordsets:subtract(from_list(PrivilegesA), from_list(PrivilegesB)).
 
