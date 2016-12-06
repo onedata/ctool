@@ -26,9 +26,9 @@
 %% Initializes logger state.
 %% @end
 %%--------------------------------------------------------------------
--spec init(_Id :: term(), _Opts :: term()) -> {ok, []}.
+-spec init(_Id :: term(), _Opts :: term()) -> {ok, [], non_neg_integer()}.
 init(_Id, _Opts) ->
-    {ok, []}.
+    {ok, [], ?CTH_ENV_UP_PRIORITY}.
 
 
 %%--------------------------------------------------------------------

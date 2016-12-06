@@ -14,6 +14,7 @@
 -include_lib("assertions.hrl").
 -include_lib("common_test/include/ct.hrl").
 -include_lib("eunit/include/eunit.hrl").
+-include("cth_common.hrl").
 
 %% temporary directory for test files
 -define(TEMP_DIR, "/tmp").

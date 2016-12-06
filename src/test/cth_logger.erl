@@ -10,6 +10,8 @@
 -module(cth_logger).
 -author("Jakub Kudzia").
 
+-include("test/test_utils.hrl").
+
 %% API
 %% CTH callbacks
 
@@ -20,8 +22,9 @@
 %% posthooks
 -export([post_end_per_testcase/4]).
 
--record(logger_state, {suite}).
+-record(logger_state, {suite, disable=false}).
 -type logger_state() :: #logger_state{}.
+
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -29,9 +32,9 @@
 %% Initializes logger state.
 %% @end
 %%--------------------------------------------------------------------
--spec init(_Id :: term(), _Opts :: term()) -> {ok, logger_state()}.
+-spec init(_Id :: term(), _Opts :: term()) -> {ok, logger_state(), non_neg_integer()}.
 init(_Id, _Opts) ->
-    {ok, #logger_state{}}.
+    {ok, #logger_state{disable=_Opts}, ?CTH_LOGGER_PRIORITY}.
 
 
 %%--------------------------------------------------------------------
