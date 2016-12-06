@@ -23,15 +23,16 @@
 
 -define(DEFAULT_ENV_DESCRIPTION, "env_desc.json").
 
+-define(MOCK_MANAGER_NAME, mock_manager).
+
+%% keys that can be added to Config to pass arguments to CT hooks
 -define(ENV_DESCRIPTION, env_description).
 -define(CTH_ENV_UP, cth_env_up).
--define(DISABLE, disable).
 -define(LOAD_MODULES, load_modules).
--define(CONFIGURE(EnvDescriptionFile, Config), ?CONFIGURE(EnvDescriptionFile, [], Config)).
--define(CONFIGURE(EnvDescriptionFile, ModulesToLoad, Config),
-    [{?ENV_DESCRIPTION, EnvDescriptionFile}, {?LOAD_MODULES, ModulesToLoad} | Config]
-).
 -define(ENV_UP_POSTHOOK, env_up_posthook).
+
+%% values that can be added to Config to pass arguments to CT hooks
+-define(DISABLE, disable). % used to disable cth_env_up
 
 
 %% Macro used to generate case name for default init/end_per_testcase
@@ -50,5 +51,9 @@
 
 -define(config(Key, Config), proplists:get_value(Key, Config)).
 -define(config(Key, Config, Default), proplists:get_value(Key, Config, Default)).
+
+%% Types used in tests
+-type mock_opt() :: passthrough | non_strict | unstick | no_link | no_history.
+
 
 -endif.
