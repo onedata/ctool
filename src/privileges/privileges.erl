@@ -260,6 +260,8 @@ oz_viewer() ->
         list_users,
 
         list_groups,
+        list_users_of_group,
+        list_groups_of_group,
 
         list_spaces,
         list_providers_of_space,
@@ -279,6 +281,9 @@ oz_admin() ->
     union(oz_viewer(), [
         view_privileges,
         set_privileges,
+
+        add_member_to_group,
+        remove_member_from_group,
 
         add_member_to_space,
         remove_member_from_space
