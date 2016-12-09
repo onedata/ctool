@@ -48,14 +48,25 @@ start_link() ->
 %% Mocks given Module.
 %% @end
 %%--------------------------------------------------------------------
-
 -spec new(module(), Options :: [mock_opt()]) -> any().
 new(Module, Options) ->
     gen_server:call(?MOCK_MANAGER_NAME, {new, Module, Options}, ?TIMEOUT).
 
+%%--------------------------------------------------------------------
+%% @doc
+%% Unload mocked module.
+%% @end
+%%--------------------------------------------------------------------
+-spec unload(module()) -> any().
 unload(Module) ->
     gen_server:call(?MOCK_MANAGER_NAME, {unload, Module}, ?TIMEOUT).
 
+%%--------------------------------------------------------------------
+%% @doc
+%% Stops mock_manager.
+%% @end
+%%--------------------------------------------------------------------
+-spec stop() -> ok.
 stop() ->
     gen_server:cast(?MOCK_MANAGER_NAME, stop).
 
@@ -94,16 +105,16 @@ handle_call({new, Module, Options} = _Request, _From, State) ->
         ok = check_and_unload_mock(Module),
         ok = meck:new(Module, Options)
     catch
-        ErrorType:ErrorPattern ->
-            {error, ErrorType, ErrorPattern}
+        Type:Reason ->
+            {error, Type, Reason}
     end,
     {reply, Reply, State};
 handle_call({unload, Module} = _Request, _From, State) ->
     Reply = try
         ok = check_and_unload_mock(Module)
     catch
-        ErrorType:ErrorPattern ->
-            {error, ErrorType, ErrorPattern}
+        Type:Reason ->
+            {error, Type, Reason}
     end,
     {reply, Reply, State}.
 

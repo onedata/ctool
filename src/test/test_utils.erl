@@ -21,7 +21,6 @@
 -export([get_env/3, set_env/4]).
 -export([enable_datastore_models/2]).
 -export([get_docker_ip/1]).
-%%-export([mock_action/1]).
 
 -define(TIMEOUT, timer:seconds(60)).
 

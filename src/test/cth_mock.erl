@@ -4,7 +4,7 @@
 %%% This software is released under the MIT license
 %%% cited in 'LICENSE.txt'.
 %%% @doc
-%%% WRITEME
+%%% CT hook responsible for starting mock_manager on each tested node.
 %%% @end
 %%%-------------------------------------------------------------------
 -module(cth_mock).

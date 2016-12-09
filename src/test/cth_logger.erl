@@ -22,7 +22,7 @@
 %% posthooks
 -export([post_end_per_testcase/4]).
 
--record(logger_state, {suite, disable=false}).
+-record(logger_state, {suite}).
 -type logger_state() :: #logger_state{}.
 
 
@@ -34,7 +34,7 @@
 %%--------------------------------------------------------------------
 -spec init(_Id :: term(), _Opts :: term()) -> {ok, logger_state(), non_neg_integer()}.
 init(_Id, _Opts) ->
-    {ok, #logger_state{disable=_Opts}, ?CTH_LOGGER_PRIORITY}.
+    {ok, #logger_state{}, ?CTH_LOGGER_PRIORITY}.
 
 
 %%--------------------------------------------------------------------
@@ -82,5 +82,7 @@ post_end_per_testcase(TestCase, _Config, Return = {skip, _},
     State = #logger_state{suite = Suite}) ->
     ct:pal("Testcase ~p in suite: ~p SKIPPED", [TestCase, Suite]),
     {Return, State};
-post_end_per_testcase(_TestCase, _Config, Return, State) ->
+post_end_per_testcase(TestCase, _Config, Return,
+    State = #logger_state{suite = Suite}) ->
+    ct:pal("Testcase ~p in suite: ~p RETURNED: ~p", [TestCase, Suite, Return]),
     {Return, State}.
