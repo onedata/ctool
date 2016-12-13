@@ -21,9 +21,6 @@
 -export([get_env/3, set_env/4]).
 -export([enable_datastore_models/2]).
 -export([get_docker_ip/1]).
--export([mock_action/1]).
-
--type mock_opt() :: passthrough | non_strict | unstick | no_link | no_history.
 
 -define(TIMEOUT, timer:seconds(60)).
 
@@ -89,49 +86,11 @@ mock_new(Nodes, Modules) ->
 mock_new(Nodes, Modules, Options) ->
     lists:foreach(fun(Node) ->
         lists:foreach(fun(Module) ->
-            do_action(fun() -> rpc:call(Node, ?MODULE, mock_action, [{new, Module, Options}], ?TIMEOUT) end)
+            do_action(fun() ->
+                rpc:call(Node, mock_manager, new, [Module, Options])
+            end)
         end, as_list(Modules))
     end, as_list(Nodes)).
-
-%%--------------------------------------------------------------------
-%% @doc
-%% Executes mock action via mock_manager
-%% @end
-%%--------------------------------------------------------------------
--spec mock_action(Action :: {new, module(), [mock_opt()]} | {unload, module()}) -> ok | timeout.
-mock_action(Action) ->
-    Self = self(),
-
-    case lists:member(mock_manager, registered()) of
-        false ->
-            Pid = erlang:spawn_link(fun() ->
-                receive
-                    start ->
-                        process_flag(trap_exit, true),
-                        mock_manager();
-                    stop ->
-                        ok
-                end
-            end),
-            try
-                register(mock_manager, Pid),
-                Pid ! start
-            catch
-                {error,badarg} ->
-                    Pid ! stop % other proces created mock_manager
-            end;
-        _ ->
-            P = whereis(mock_manager),
-            erlang:link(P)
-    end,
-
-    Ref = erlang:make_ref(),
-    mock_manager ! {Action, Self, Ref},
-    receive
-        {mock_manager, Ref, Ans} -> Ans
-    after
-        ?TIMEOUT -> timeout
-    end.
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -142,7 +101,9 @@ mock_action(Action) ->
     FunctionName :: atom(), Expectation :: function()) -> ok.
 mock_expect(Nodes, Module, FunctionName, Expectation) ->
     lists:foreach(fun(Node) ->
-        do_action(fun() -> rpc:call(Node, meck, expect, [Module, FunctionName, Expectation], ?TIMEOUT) end)
+        do_action(fun() ->
+            rpc:call(Node, meck, expect, [Module, FunctionName, Expectation], ?TIMEOUT)
+        end)
     end, as_list(Nodes)).
 
 %%--------------------------------------------------------------------
@@ -192,7 +153,7 @@ mock_unload(Nodes) ->
 mock_unload(Nodes, Modules) ->
     lists:foreach(fun(Node) ->
         lists:foreach(fun(Module) ->
-            do_action(fun() -> rpc:call(Node, ?MODULE, mock_action, [{unload, Module}], ?TIMEOUT) end)
+            do_action(fun() -> rpc:call(Node, mock_manager, unload, [Module]) end)
         end, as_list(Modules))
     end, as_list(Nodes)).
 
@@ -270,60 +231,6 @@ get_docker_ip(Node) ->
 as_list(Term) when is_list(Term) -> Term;
 as_list(Term) -> [Term].
 
-%%--------------------------------------------------------------------
-%% @private
-%% @doc
-%% Function of mock_manager - process that coordinate mocking on node
-%% @end
-%%--------------------------------------------------------------------
--spec mock_manager() -> no_return().
-mock_manager() ->
-    receive
-        {{new, Module, Options}, Sender, Ref} ->
-            Ans = try
-                ok = check_and_unload_mock(Module),
-                meck:new(Module, Options)
-            catch
-                E1:E2 ->
-                    {error, E1, E2}
-            end,
-            Sender ! {mock_manager, Ref, Ans};
-        {{unload, Module}, Sender, Ref} ->
-            Sender ! {mock_manager, Ref, check_and_unload_mock(Module)}
-    end,
-    mock_manager().
-
-%%--------------------------------------------------------------------
-%% @private
-%% @doc
-%% Unloads modules' mock and checks unload.
-%% @end
-%%--------------------------------------------------------------------
--spec check_and_unload_mock(Module :: module()) -> ok | unload_failed.
-check_and_unload_mock(Module) ->
-    check_and_unload_mock(Module, 100).
-
-%%--------------------------------------------------------------------
-%% @private
-%% @doc
-%% Unloads modules' mock and checks unload.
-%% @end
-%%--------------------------------------------------------------------
--spec check_and_unload_mock(Module :: module(), Num :: integer()) -> ok | unload_failed.
-check_and_unload_mock(_Module, 0) ->
-    unload_failed;
-check_and_unload_mock(Module, Num) ->
-    case whereis(meck_util:proc_name(Module)) of
-        undefined ->
-            ok;
-        _ ->
-            try
-                meck:unload(Module)
-            catch
-                _:_ -> ok % will be checked and rerun
-            end,
-            check_and_unload_mock(Module, Num - 1)
-    end.
 
 %%--------------------------------------------------------------------
 %% @private

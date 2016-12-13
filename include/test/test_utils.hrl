@@ -14,6 +14,7 @@
 -include_lib("assertions.hrl").
 -include_lib("common_test/include/ct.hrl").
 -include_lib("eunit/include/eunit.hrl").
+-include("cth_common.hrl").
 
 %% temporary directory for test files
 -define(TEMP_DIR, "/tmp").
@@ -21,21 +22,19 @@
 %% Returns absolute path to given file in the test data directory
 -define(TEST_FILE(Config, X), filename:join(?config(data_dir, Config), X)).
 
-%% Initializes and clears test environment
--define(TEST_INIT(Config, EnvDescription), ?TEST_INIT(Config, EnvDescription, [])).
--define(TEST_INIT(Config, EnvDescription, LoadModules),
-    test_node_starter:prepare_test_environment(Config, EnvDescription, ?MODULE, LoadModules)
-).
--define(TEST_STOP(Config),
-    test_node_starter:clean_environment(Config, ?MODULE)
-).
--define(TEST_STOP(Config, Apps),
-    test_node_starter:clean_environment(Config, ?MODULE, Apps)
-).
+-define(DEFAULT_ENV_DESCRIPTION, "env_desc.json").
 
-%% Logs cases start/stop
--define(CASE_START(Case), ct:print("Starting CASE ~p", [Case])).
--define(CASE_STOP(Case), ct:print("Stopping CASE ~p", [Case])).
+-define(MOCK_MANAGER_NAME, mock_manager).
+
+%% keys that can be added to Config to pass arguments to CT hooks
+-define(ENV_DESCRIPTION, env_description).
+-define(CTH_ENV_UP, cth_env_up).
+-define(LOAD_MODULES, load_modules).
+-define(ENV_UP_POSTHOOK, env_up_posthook).
+
+%% values that can be added to Config to pass arguments to CT hooks
+-define(DISABLE, disable). % used to disable cth_env_up
+
 
 %% Macro used to generate case name for default init/end_per_testcase
 -define(DEFAULT_CASE(Case), list_to_atom(atom_to_list(Case) ++ "_default")).
@@ -52,5 +51,10 @@
 -endif.
 
 -define(config(Key, Config), proplists:get_value(Key, Config)).
+-define(config(Key, Config, Default), proplists:get_value(Key, Config, Default)).
+
+%% Types used in tests
+-type mock_opt() :: passthrough | non_strict | unstick | no_link | no_history.
+
 
 -endif.
