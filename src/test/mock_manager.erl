@@ -14,7 +14,7 @@
 -behaviour(gen_server).
 
 %% API
--export([start_link/0, new/2, unload/1, stop/0]).
+-export([start/0, new/2, unload/1, stop/0]).
 
 -include("test/test_utils.hrl").
 
@@ -38,10 +38,9 @@
 %% Starts mock manager
 %% @end
 %%--------------------------------------------------------------------
--spec(start_link() ->
-    {ok, Pid :: pid()} | ignore | {error, Reason :: term()}).
-start_link() ->
-    gen_server:start_link({local, ?MOCK_MANAGER_NAME}, ?MODULE, [], []).
+-spec(start() -> {ok, Pid :: pid()} | ignore | {error, Reason :: term()}).
+start() ->
+    gen_server:start({local, ?MOCK_MANAGER_NAME}, ?MODULE, [], []).
 
 %%--------------------------------------------------------------------
 %% @doc

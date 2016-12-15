@@ -40,7 +40,7 @@ init(_Id, _Opts) ->
     State :: []) -> {[term()], []}.
 post_init_per_suite(_Suite, _Config, Return, State) ->
     lists:foreach(fun(N) ->
-        {ok, _} = rpc:call(N, mock_manager, start_link, [])
+        {ok, _} = rpc:call(N, mock_manager, start, [])
     end, mock_manager_nodes(Return)),
     {Return, State}.
 
@@ -76,4 +76,4 @@ mock_manager_nodes(Config) ->
     AllNodes = lists:flatmap(fun(NodeType) ->
         ?config(NodeType, Config, [])
     end, ?CTH_MOCK_MANAGER_NODES),
-    lists:usort(AllNodes). %remove duplicates
+    [node() | lists:usort(AllNodes)]. %remove duplicates and add testmaster node
