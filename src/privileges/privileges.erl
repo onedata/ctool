@@ -40,13 +40,12 @@ register_handle.
 view_handle.
 
 %% User/group privileges to admin OZ API
--type oz_privilege() :: view_privileges | set_privileges |
-add_member_to_group | remove_member_from_group |
-add_member_to_space | remove_member_from_space |
-list_users | list_users_of_provider |
-list_groups | list_groups_of_provider |
-list_spaces | list_spaces_of_provider |
-list_providers | list_providers_of_space.
+-type oz_privilege() :: list_users | list_groups | list_users_of_group |
+list_groups_of_group | list_spaces | list_providers_of_space | list_providers |
+list_users_of_provider | list_groups_of_provider | list_spaces_of_provider |
+view_privileges | set_privileges | add_member_to_group |
+remove_member_from_group | add_member_to_space | remove_member_from_space |
+remove_provider.
 
 -export_type([
     privileges/1,
@@ -287,7 +286,9 @@ oz_admin() ->
         remove_member_from_group,
 
         add_member_to_space,
-        remove_member_from_space
+        remove_member_from_space,
+
+        remove_provider
     ]).
 
 
@@ -298,4 +299,5 @@ oz_admin() ->
 -spec oz_privileges() -> privileges(oz_privilege()).
 oz_privileges() ->
     oz_admin().
+
 
