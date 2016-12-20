@@ -69,5 +69,5 @@
  {<<"ssl_verify_hostname">>,{pkg,<<"ssl_verify_hostname">>,<<"1.0.5">>},2},
  {<<"web_client">>,
   {git,"ssh://git@git.plgrid.pl:7999/vfs/web-client.git",
-       {ref,"6e885bba61da9f483bf8936dd4b1d891356f5e74"}},
+       {ref,"d581ec00203caa46f89073b4d2e7fe8c668da0ab"}},
   0}].
