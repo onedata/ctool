@@ -55,8 +55,7 @@ post_init_per_suite(Suite, _Config, Return, State) ->
         _ ->
             ct:pal("Environment initialization in ~p", [Suite]),
             NewConfig = test_node_starter:prepare_test_environment(Return, Suite),
-            NewConfig2 = maybe_exec_posthook(NewConfig),
-            {NewConfig2, State}
+            {NewConfig, State}
     end.
 
 
@@ -75,21 +74,3 @@ post_end_per_suite(Suite, Config, Return, State) ->
     test_node_starter:clean_environment(Config),
     {Return, State}.
 
-
-
-%%%===================================================================
-%%% Internal functions
-%%%===================================================================
-
-%%--------------------------------------------------------------------
-%% @private
-%% @doc
-%% Executes posthook passed in Config if it exists.
-%% @end
-%%--------------------------------------------------------------------
--spec maybe_exec_posthook(Config :: [term()]) -> [term()].
-maybe_exec_posthook(Config) ->
-    case ?config(?ENV_UP_POSTHOOK, Config) of
-        undefined -> Config;
-        Posthook -> Posthook(Config)
-    end.

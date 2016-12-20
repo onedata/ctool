@@ -27,5 +27,6 @@
 -define(CTH_LOGGER_PRIORITY, 0).
 -define(CTH_ENV_UP_PRIORITY, 1).
 -define(CTH_MOCK_PRIORITY, 2).
+-define(CTH_POSTHOOK_PRIORITY, 3).
 
 -endif.
