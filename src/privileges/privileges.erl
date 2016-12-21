@@ -237,8 +237,7 @@ handle_admin() ->
     union(handle_user(), [
         list_handles,
         delete_handle,
-        modify_handle,
-        view_handle
+        modify_handle
     ]).
 
 %%--------------------------------------------------------------------
