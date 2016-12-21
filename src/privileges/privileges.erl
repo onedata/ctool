@@ -208,8 +208,7 @@ handle_service_admin() ->
 %%        register_handle_service, % we may need those privileges for admins in oz_privileges
 %%        list_handle_services,
         delete_handle_service,
-        modify_handle_service,
-        view_handle_service
+        modify_handle_service
     ]).
 
 %%--------------------------------------------------------------------
