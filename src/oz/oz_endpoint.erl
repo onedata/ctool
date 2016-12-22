@@ -14,7 +14,7 @@
 -include("logging.hrl").
 
 %% API
--export([get_rest_api_root/0, get_oz_cacerts/0, load_oz_cacerts/0]).
+-export([get_rest_api_root/0, get_oz_cacerts/0]).
 -export([provider_request/3, provider_request/4, provider_request/5,
     provider_request/6]).
 -export([request/3, request/4, request/5, request/6]).
@@ -41,8 +41,6 @@
 
 -export_type([auth/0, client/0, params/0, urn/0]).
 
--define(OZ_ENDPOINT_CACHE, oz_endpoint_cache).
-
 %%%===================================================================
 %%% API
 %%%===================================================================
@@ -62,32 +60,24 @@ get_rest_api_root() ->
     ]).
 
 %%--------------------------------------------------------------------
-%% @doc Returns cached OZ CA certificates or loads them from filesystem.
+%% @doc Returns cached OZ CA certificates or loads them from a directory given
+%% by a oz_plugin:get_cacerts_dir/0 callback and stores them in the cache.
 %% @end
 %%--------------------------------------------------------------------
 -spec get_oz_cacerts() -> CaCerts :: [binary()].
 get_oz_cacerts() ->
-    try
-        ets:lookup_element(?OZ_ENDPOINT_CACHE, cacerts, 2)
-    catch
-        _:_ -> load_oz_cacerts()
-    end.
-
-%%--------------------------------------------------------------------
-%% @doc Loads, caches and returns OZ CA certificates read from files
-%% located in directory given by oz_plugin:get_cacerts_dir/0 callback.
-%% @end
-%%--------------------------------------------------------------------
--spec load_oz_cacerts() -> CaCerts :: [binary()].
-load_oz_cacerts() ->
-    CaCertDir = oz_plugin:get_cacerts_dir(),
-    case file_utils:read_files({dir, CaCertDir}) of
-        {ok, CaCerts} ->
-            cache_oz_cacerts(CaCerts),
-            CaCerts;
-        {error, Reason} ->
-            ?error("Cannot load OZ CA certificates due to: ~p", [Reason]),
-            []
+    case application:get_env(ctool, oz_cacerts) of
+        {ok, CaCerts} -> CaCerts;
+        undefined ->
+            CaCertDir = oz_plugin:get_cacerts_dir(),
+            case file_utils:read_files({dir, CaCertDir}) of
+                {ok, CaCerts} ->
+                    application:set_env(ctool, oz_cacerts, CaCerts),
+                    CaCerts;
+                {error, Reason} ->
+                    ?error("Cannot load OZ CA certificates due to: ~p", [Reason]),
+                    []
+            end
     end.
 
 %%--------------------------------------------------------------------
@@ -185,21 +175,6 @@ request(Auth, URN, Method, Headers, Body, Opts) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
-
-%%--------------------------------------------------------------------
-%% @private @doc Caches OZ CA certificates.
-%% @end
-%%--------------------------------------------------------------------
--spec cache_oz_cacerts(CaCerts :: [binary()]) -> ok.
-cache_oz_cacerts(CaCerts) ->
-    try
-        ets:new(?OZ_ENDPOINT_CACHE, [set, public, named_table]),
-        ets:insert(?OZ_ENDPOINT_CACHE, {cacerts, CaCerts})
-    catch
-        _:Reason ->
-            ?warning("Cannot cache OZ CA certificates due to: ~p", [Reason])
-    end,
-    ok.
 
 %%--------------------------------------------------------------------
 %% @private @doc Returns properly formatted auth headers 
