@@ -10,8 +10,8 @@
 %%% @end
 %%%-------------------------------------------------------------------
 
--ifndef(TOKENS_HRL).
--define(TOKENS_HRL, 1).
+-ifndef(PRIVILEGES_HRL).
+-define(PRIVILEGES_HRL, 1).
 
 % Group privileges of members (users or groups)
 -define(GROUP_VIEW, group_view).
