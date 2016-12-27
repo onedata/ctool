@@ -259,8 +259,8 @@ oz_viewer() ->
         ?OZ_SPACES_LIST_PROVIDERS,
 
         ?OZ_PROVIDERS_LIST, ?OZ_PROVIDERS_LIST_USERS, ?OZ_PROVIDERS_LIST_GROUPS,
-        ?OZ_PROVIDERS_LIST_SPACES,
-        ]).
+        ?OZ_PROVIDERS_LIST_SPACES
+    ]).
 
 
 %%--------------------------------------------------------------------
