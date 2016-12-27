@@ -162,8 +162,8 @@ space_manager() ->
     union(space_user(), [
         ?SPACE_INVITE_USER, ?SPACE_REMOVE_USER,
         ?SPACE_INVITE_GROUP, ?SPACE_REMOVE_GROUP,
-        ?SPACE_MANAGE_SHARES,
-        ]).
+        ?SPACE_MANAGE_SHARES
+    ]).
 
 %%--------------------------------------------------------------------
 %% @doc A privilege level of a Space administrator. This level contains all
