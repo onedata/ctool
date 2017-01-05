@@ -69,14 +69,14 @@
 -define(OZ_GROUPS_LIST, oz_groups_list).
 -define(OZ_GROUPS_LIST_USERS, oz_groups_list_users).
 -define(OZ_GROUPS_LIST_GROUPS, oz_groups_list_groups).
--define(OZ_GROUPS_ADD_MEMBERS, oz_groups_add_memebers).
+-define(OZ_GROUPS_ADD_MEMBERS, oz_groups_add_members).
 -define(OZ_GROUPS_REMOVE_MEMBERS, oz_groups_remove_members).
 
 -define(OZ_SPACES_LIST, oz_spaces_list).
 -define(OZ_SPACES_LIST_USERS, oz_spaces_list_users).
 -define(OZ_SPACES_LIST_GROUPS, oz_spaces_list_groups).
 -define(OZ_SPACES_LIST_PROVIDERS, oz_spaces_list_providers).
--define(OZ_SPACES_ADD_MEMBERS, oz_spaces_add_memebers).
+-define(OZ_SPACES_ADD_MEMBERS, oz_spaces_add_members).
 -define(OZ_SPACES_REMOVE_MEMBERS, oz_spaces_remove_members).
 
 -define(OZ_PROVIDERS_LIST, oz_providers_list).
