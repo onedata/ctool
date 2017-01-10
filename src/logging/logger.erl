@@ -49,9 +49,9 @@ dispatch_log(LoglevelAsInt, Metadata, Format, Args, IncludeStacktrace) ->
 set_loglevel(Loglevel) when is_atom(Loglevel) ->
     try
         LevelAsInt = case Loglevel of
-                         default -> get_default_loglevel();
-                         Atom -> loglevel_atom_to_int(Atom)
-                     end,
+            default -> get_default_loglevel();
+            Atom -> loglevel_atom_to_int(Atom)
+        end,
         set_loglevel(LevelAsInt)
     catch _:_ ->
         {error, badarg}
@@ -75,13 +75,13 @@ set_console_loglevel(Loglevel) when is_integer(Loglevel) andalso (Loglevel >= 0)
 set_console_loglevel(Loglevel) when is_atom(Loglevel) ->
     try
         LevelAsAtom = case Loglevel of
-                          default ->
-                              {ok, Proplist} = application:get_env(lager, handlers),
-                              lists_utils:key_get(lager_console_backend, Proplist);
-                          Atom ->
-                              % Makes sure that the atom is recognizable as loglevel
-                              loglevel_int_to_atom(loglevel_atom_to_int(Atom))
-                      end,
+            default ->
+                {ok, Proplist} = application:get_env(lager, handlers),
+                lists_utils:key_get(lager_console_backend, Proplist);
+            Atom ->
+                % Makes sure that the atom is recognizable as loglevel
+                loglevel_int_to_atom(loglevel_atom_to_int(Atom))
+        end,
         gen_event:call(lager_event, lager_console_backend, {set_loglevel, LevelAsAtom}),
         ok
     catch _:_ ->
@@ -178,12 +178,21 @@ parse_process_info({_, {Module, Function, Arity}}) ->
 
 %%--------------------------------------------------------------------
 %% Internal functions
+%%--------------------------------------------------------------------
 
-% Computes a log message string, possibly including stacktrace
+%%--------------------------------------------------------------------
+%% @private @doc Computes a log message string, possibly including stacktrace.
+%% @end
+%%--------------------------------------------------------------------
+-spec compute_message(string(), list(), boolean()) -> string().
 compute_message(Format, Args, IncludeStackTrace) ->
-    {F, A} = case (IncludeStackTrace and get_include_stacktrace()) of
-                 false -> {Format, Args};
-                 true ->
-                     {Format ++ "~nStacktrace: ~p", Args ++ [erlang:get_stacktrace()]}
-             end,
-    lists:flatten(io_lib:format(F, A)).
+    {Format2, Args2} = case (IncludeStackTrace and get_include_stacktrace()) of
+        false ->
+            {Format, Args};
+        true ->
+            {
+                    Format ++ "~nStacktrace:~s",
+                    Args ++ [lager:pr_stacktrace(erlang:get_stacktrace())]
+            }
+    end,
+    lists:flatten(io_lib:format(Format2, Args2)).
