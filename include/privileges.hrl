@@ -23,6 +23,7 @@
 -define(GROUP_REMOVE_USER, group_remove_user).
 
 -define(GROUP_JOIN_GROUP, group_join_group).
+-define(GROUP_LEAVE_GROUP, group_leave_group).
 -define(GROUP_INVITE_GROUP, group_invite_group).
 -define(GROUP_REMOVE_GROUP, group_remove_group).
 
