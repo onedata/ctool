@@ -31,6 +31,9 @@
 -define(GROUP_JOIN_SPACE, group_join_space).
 -define(GROUP_LEAVE_SPACE, group_leave_space).
 
+-define(GROUP_LEAVE_HANDLE_SERVICE, group_leave_handle_service).
+-define(GROUP_LEAVE_HANDLE, group_leave_handle).
+
 % Space privileges of members (users or groups)
 -define(SPACE_VIEW, space_view).
 -define(SPACE_UPDATE, space_update).
