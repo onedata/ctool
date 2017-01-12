@@ -83,11 +83,17 @@
 -define(OZ_SPACES_ADD_MEMBERS, oz_spaces_add_members).
 -define(OZ_SPACES_REMOVE_MEMBERS, oz_spaces_remove_members).
 
+-define(OZ_SHARES_LIST, oz_shares_list).
+
 -define(OZ_PROVIDERS_LIST, oz_providers_list).
 -define(OZ_PROVIDERS_LIST_USERS, oz_providers_list_users).
 -define(OZ_PROVIDERS_LIST_GROUPS, oz_providers_list_groups).
 -define(OZ_PROVIDERS_LIST_SPACES, oz_providers_list_spaces).
 -define(OZ_PROVIDERS_DELETE, oz_providers_delete).
+
+-define(OZ_HANDLES_LIST, oz_shares_list).
+
+-define(OZ_HANDLE_SERVICES_LIST, oz_handle_services_list).
 
 
 -endif.

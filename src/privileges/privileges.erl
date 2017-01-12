@@ -21,8 +21,10 @@
 -type group_privilege() :: ?GROUP_VIEW | ?GROUP_UPDATE | ?GROUP_DELETE |
 ?GROUP_SET_PRIVILEGES |
 ?GROUP_INVITE_USER | ?GROUP_REMOVE_USER |
-?GROUP_JOIN_GROUP | ?GROUP_INVITE_GROUP | ?GROUP_REMOVE_GROUP |
-?GROUP_CREATE_SPACE | ?GROUP_JOIN_SPACE | ?GROUP_LEAVE_SPACE.
+?GROUP_JOIN_GROUP | ?GROUP_LEAVE_GROUP |
+?GROUP_INVITE_GROUP | ?GROUP_REMOVE_GROUP |
+?GROUP_CREATE_SPACE | ?GROUP_JOIN_SPACE | ?GROUP_LEAVE_SPACE |
+?GROUP_LEAVE_HANDLE_SERVICE | ?GROUP_LEAVE_HANDLE.
 
 
 % Group privileges of members (users or groups)
@@ -43,8 +45,7 @@
 ?HANDLE_SERVICE_REGISTER_HANDLE | ?HANDLE_SERVICE_LIST_HANDLES.
 
 %% User privileges with regards to handle.
--type handle_privilege() :: ?HANDLE_VIEW | ?HANDLE_UPDATE |
-?HANDLE_DELETE.
+-type handle_privilege() :: ?HANDLE_VIEW | ?HANDLE_UPDATE | ?HANDLE_DELETE.
 
 %% User/group privileges to admin OZ API
 -type oz_privilege() :: ?OZ_VIEW_PRIVILEGES | ?OZ_SET_PRIVILEGES |
@@ -53,8 +54,11 @@
 ?OZ_GROUPS_ADD_MEMBERS | ?OZ_GROUPS_REMOVE_MEMBERS |
 ?OZ_SPACES_LIST | ?OZ_SPACES_LIST_USERS | ?OZ_SPACES_LIST_GROUPS |
 ?OZ_SPACES_LIST_PROVIDERS | ?OZ_SPACES_ADD_MEMBERS | ?OZ_SPACES_REMOVE_MEMBERS |
+?OZ_SHARES_LIST |
 ?OZ_PROVIDERS_LIST | ?OZ_PROVIDERS_LIST_USERS | ?OZ_PROVIDERS_LIST_GROUPS |
-?OZ_PROVIDERS_LIST_SPACES | ?OZ_PROVIDERS_DELETE.
+?OZ_PROVIDERS_LIST_SPACES | ?OZ_PROVIDERS_DELETE |
+?OZ_HANDLES_LIST |
+?OZ_HANDLE_SERVICES_LIST.
 
 -export_type([
     privileges/1,
@@ -68,8 +72,8 @@
 % Privileges manipulation
 -export([from_list/1, union/2, subtract/2]).
 % Privileges in the system
--export([space_user/0, space_manager/0, space_admin/0, space_privileges/0]).
 -export([group_user/0, group_manager/0, group_admin/0, group_privileges/0]).
+-export([space_user/0, space_manager/0, space_admin/0, space_privileges/0]).
 -export([handle_service_user/0, handle_service_admin/0,
     handle_service_privileges/0]).
 -export([handle_user/0, handle_admin/0, handle_privileges/0]).
@@ -123,7 +127,8 @@ group_user() ->
 group_manager() ->
     union(group_user(), [
         ?GROUP_INVITE_USER, ?GROUP_REMOVE_USER,
-        ?GROUP_JOIN_GROUP, ?GROUP_INVITE_GROUP, ?GROUP_REMOVE_GROUP
+        ?GROUP_JOIN_GROUP, ?GROUP_LEAVE_GROUP,
+        ?GROUP_INVITE_GROUP, ?GROUP_REMOVE_GROUP
     ]).
 
 %%--------------------------------------------------------------------
@@ -135,7 +140,8 @@ group_manager() ->
 group_admin() ->
     union(group_manager(), [
         ?GROUP_UPDATE, ?GROUP_DELETE, ?GROUP_SET_PRIVILEGES,
-        ?GROUP_CREATE_SPACE, ?GROUP_JOIN_SPACE, ?GROUP_LEAVE_SPACE
+        ?GROUP_CREATE_SPACE, ?GROUP_JOIN_SPACE, ?GROUP_LEAVE_SPACE,
+        ?GROUP_LEAVE_HANDLE_SERVICE, ?GROUP_LEAVE_HANDLE
     ]).
 
 %%--------------------------------------------------------------------
@@ -258,8 +264,14 @@ oz_viewer() ->
         ?OZ_SPACES_LIST, ?OZ_SPACES_LIST_USERS, ?OZ_SPACES_LIST_GROUPS,
         ?OZ_SPACES_LIST_PROVIDERS,
 
+        ?OZ_SHARES_LIST,
+
         ?OZ_PROVIDERS_LIST, ?OZ_PROVIDERS_LIST_USERS, ?OZ_PROVIDERS_LIST_GROUPS,
-        ?OZ_PROVIDERS_LIST_SPACES
+        ?OZ_PROVIDERS_LIST_SPACES,
+
+        ?OZ_HANDLES_LIST,
+
+        ?OZ_HANDLE_SERVICES_LIST
     ]).
 
 
