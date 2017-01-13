@@ -10,11 +10,12 @@
 -author("Tomasz Lichon").
 
 -include("test/assertions.hrl").
--include_lib("common_test/include/ct.hrl").
+-include("test/test_utils.hrl").
 
 %% API
--export([prepare_test_environment/5, prepare_test_environment/4, clean_environment/1, clean_environment/2,
-    clean_environment/3, load_modules/2, maybe_start_cover/0, maybe_stop_cover/0]).
+-export([prepare_test_environment/3, prepare_test_environment/2,
+    clean_environment/1, clean_environment/2, load_modules/2,
+    maybe_start_cover/0, maybe_stop_cover/0]).
 
 -define(CLEANING_PROC_NAME, cleaning_proc).
 -define(TIMEOUT, timer:seconds(60)).
@@ -42,10 +43,10 @@
 %% Sets cookies (read from DescriptionFile) for erlang nodes.
 %% @end
 %%--------------------------------------------------------------------
--spec prepare_test_environment(Config :: list(), DescriptionFile :: string(),
-    TestModule :: module(), LoadModules :: [module()]) -> Result :: list() | {fail, tuple()}.
-prepare_test_environment(Config, DescriptionFile, TestModule, LoadModules) ->
-    prepare_test_environment(Config, DescriptionFile, TestModule, LoadModules, ?ALL_POSSIBLE_APPS).
+-spec prepare_test_environment(Config :: list(), TestModule :: module())
+        -> Result :: list() | {fail, tuple()}.
+prepare_test_environment(Config, TestModule) ->
+    prepare_test_environment(Config, TestModule, ?ALL_POSSIBLE_APPS).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -53,11 +54,12 @@ prepare_test_environment(Config, DescriptionFile, TestModule, LoadModules) ->
 %% Sets cookies (read from DescriptionFile) for erlang nodes.
 %% @end
 %%--------------------------------------------------------------------
--spec prepare_test_environment(Config :: list(), DescriptionFile :: string(),
-    TestModule :: module(), LoadModules :: [module()], Apps :: [{AppName :: atom(), ConfigName :: atom()}])
-        -> Result :: list() | {fail, tuple()}.
-prepare_test_environment(Config, DescriptionFile, TestModule, LoadModules, Apps) ->
-    ct:print("Env init in SUITE ~p", [TestModule]),
+-spec prepare_test_environment(Config :: list(), TestModule :: module(),
+    Apps :: [{AppName :: atom(), ConfigName :: atom()}]) -> Result :: list() | {fail, tuple()}.
+prepare_test_environment(Config, TestModule, Apps) ->
+    DescriptionFile = env_description(Config),
+    LoadModules = ?config(load_modules, Config, []),
+
     try
         DataDir = ?config(data_dir, Config),
         PrivDir = ?config(priv_dir, Config),
@@ -111,7 +113,7 @@ prepare_test_environment(Config, DescriptionFile, TestModule, LoadModules, Apps)
                     "    prepare_test_environment_error.log~n" ++
                     "    prepare_test_environment.log~n" ++
                     "Stacktrace: ~p", [E11, E12, erlang:get_stacktrace()]),
-                clean_environment(EnvDesc, TestModule),
+                clean_environment(EnvDesc),
                 {fail, {init_failed, E11, E12}}
         end
 
@@ -130,7 +132,8 @@ prepare_test_environment(Config, DescriptionFile, TestModule, LoadModules, Apps)
 %%--------------------------------------------------------------------
 -spec clean_environment(Config :: list()) -> ok.
 clean_environment(Config) ->
-    clean_environment(Config, no_suite_specified).
+    clean_environment(Config, ?ALL_POSSIBLE_APPS).
+
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -138,19 +141,8 @@ clean_environment(Config) ->
 %% Afterwards, cleans environment by running 'cleanup.py' script.
 %% @end
 %%--------------------------------------------------------------------
--spec clean_environment(Config :: list(), TestModule :: module()) -> ok.
-clean_environment(Config, TestModule) ->
-    clean_environment(Config, TestModule, ?ALL_POSSIBLE_APPS).
-
-%%--------------------------------------------------------------------
-%% @doc
-%% Gathers cover analysis reports if cover is started.
-%% Afterwards, cleans environment by running 'cleanup.py' script.
-%% @end
-%%--------------------------------------------------------------------
--spec clean_environment(Config :: list(), TestModule :: module(), Apps :: [{AppName :: atom(), ConfigName :: atom()}]) -> ok.
-clean_environment(Config, TestModule, Apps) ->
-    ct:print("Env cleaning in SUITE ~p", [TestModule]),
+-spec clean_environment(Config :: list(), Apps :: [{AppName :: atom(), ConfigName :: atom()}]) -> ok.
+clean_environment(Config, Apps) ->
     StopStatus = try
         case cover:modules() of
             [] ->
@@ -441,6 +433,7 @@ retry_running_env_up_script_until(ProjectRoot, AppmockRoot, CmRoot,
             case RetriesNumber > 0 of
                 true ->
                     ct:print("Retrying to run env_up.py. Number of retries left: ~p~n", [RetriesNumber]),
+                    timer:sleep(timer:seconds(1)),
                     retry_running_env_up_script_until(ProjectRoot, AppmockRoot, CmRoot,
                     LogsDir, DescriptionFile, RetriesNumber - 1);
                 _ -> error(env_up_failed)
@@ -476,3 +469,16 @@ run_env_up_script(ProjectRoot, AppmockRoot, CmRoot, LogsDir, DescriptionFile) ->
         [] -> <<"">>;
         NotEmptyList -> lists:last(NotEmptyList)
     end.
+
+
+%%--------------------------------------------------------------------
+%% @private
+%% @doc
+%% Returns absolute path to environment description file
+%% @end
+%%--------------------------------------------------------------------
+-spec env_description([term()]) -> file:filename_all().
+env_description(Config) ->
+    EnvDescriptionRelativePath = ?config(?ENV_DESCRIPTION, Config, ?DEFAULT_ENV_DESCRIPTION),
+    ?TEST_FILE(Config, EnvDescriptionRelativePath).
+

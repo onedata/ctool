@@ -147,9 +147,6 @@ run_stress_test(SuiteName, CaseArgs, Data) ->
     DefaultSuccessRate = lists_utils:key_get(success_rate, Data, 100),
     Ans = exec_perf_configs(SuiteName, stress_test, CaseArgs, CaseDescr,
         Configs, 1, DefaultSuccessRate, DefaultParams),
-    EtsOwner = ets:info(?STRESS_ETS_NAME, owner),
-    ets:delete(?STRESS_ETS_NAME),
-    EtsOwner ! kill_ets_owner,
     Ans.
 
 %%--------------------------------------------------------------------

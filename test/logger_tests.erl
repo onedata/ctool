@@ -93,13 +93,13 @@ lager_interfacing_test_() ->
                             (emergency, _, "emergency message") -> ok
                         end),
 
-                    logger:set_include_stacktrace(true),
+                    logger:set_include_stacktrace(false),
                     logger:dispatch_log(0, [], "debug ~s", ["message"], false),
                     logger:dispatch_log(1, [], "info message", [], false),
-                    logger:dispatch_log(3, [], "warning message", [], true),
+                    logger:dispatch_log(3, [], "warning message", [], false),
                     logger:dispatch_log(4, [], "error ~s", ["message"], false),
                     logger:set_include_stacktrace(false),
-                    logger:dispatch_log(7, [], "emergency ~s", ["message"], true),
+                    logger:dispatch_log(7, [], "emergency ~s", ["message"], false),
                     ?debug("debug message"),
                     ?debug("debug ~s", ["message"]),
                     ?info("info message"),
