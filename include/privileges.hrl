@@ -29,7 +29,8 @@
 -define(GROUP_REMOVE_USER, group_remove_user).
 
 -define(GROUP_JOIN_GROUP, group_join_group).
--define(GROUP_LEAVE_GROUP, group_leave_group).
+% TODO VFS-2918
+%%-define(GROUP_LEAVE_GROUP, group_leave_group).
 -define(GROUP_INVITE_GROUP, group_invite_group).
 -define(GROUP_REMOVE_GROUP, group_remove_group).
 
@@ -37,8 +38,10 @@
 -define(GROUP_JOIN_SPACE, group_join_space).
 -define(GROUP_LEAVE_SPACE, group_leave_space).
 
--define(GROUP_LEAVE_HANDLE_SERVICE, group_leave_handle_service).
--define(GROUP_LEAVE_HANDLE, group_leave_handle).
+% TODO VFS-2918
+%%-define(GROUP_LEAVE_HANDLE_SERVICE, group_leave_handle_service).
+% TODO VFS-2918
+%%-define(GROUP_LEAVE_HANDLE, group_leave_handle).
 
 % Space privileges of members (users or groups)
 % TODO VFS-2918
