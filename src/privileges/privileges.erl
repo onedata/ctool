@@ -129,7 +129,8 @@ group_user() ->
 group_manager() ->
     union(group_user(), [
         ?GROUP_INVITE_USER, ?GROUP_REMOVE_USER,
-        ?GROUP_JOIN_GROUP, ?GROUP_LEAVE_GROUP,
+        % TODO VFS-2918
+        ?GROUP_JOIN_GROUP, %?GROUP_LEAVE_GROUP,
         ?GROUP_INVITE_GROUP, ?GROUP_REMOVE_GROUP
     ]).
 
@@ -142,8 +143,9 @@ group_manager() ->
 group_admin() ->
     union(group_manager(), [
         ?GROUP_UPDATE, ?GROUP_DELETE, ?GROUP_SET_PRIVILEGES,
-        ?GROUP_CREATE_SPACE, ?GROUP_JOIN_SPACE, ?GROUP_LEAVE_SPACE,
-        ?GROUP_LEAVE_HANDLE_SERVICE, ?GROUP_LEAVE_HANDLE
+        ?GROUP_CREATE_SPACE, ?GROUP_JOIN_SPACE, ?GROUP_LEAVE_SPACE%,
+        % TODO VFS-2918
+        %?GROUP_LEAVE_HANDLE_SERVICE, ?GROUP_LEAVE_HANDLE
     ]).
 
 %%--------------------------------------------------------------------
