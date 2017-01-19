@@ -89,7 +89,7 @@
 -type user_id() :: binary().
 -type group_id() :: binary().
 
--record(accesscontrolentity, {
+-record(access_control_entity, {
     acetype :: ?allow_mask | ?deny_mask | ?audit_mask,
     aceflags = ?no_flags_mask :: ?no_flags_mask | ?identifier_group_mask,
     identifier :: user_id() | group_id(),
