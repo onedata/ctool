@@ -81,7 +81,7 @@ get_oz_cacerts() ->
     end.
 
 %%--------------------------------------------------------------------
-%% @doc @equiv provider_request(Auth, URN, Method, [])
+%% @doc @equiv provider_request(Auth, URN, Method, <<>>)
 %% @end
 %%--------------------------------------------------------------------
 -spec provider_request(Auth :: auth(), URN :: urn(), Method :: method()) ->
@@ -99,13 +99,13 @@ provider_request(Auth, URN, Method, Body) ->
     ?MODULE:provider_request(Auth, URN, Method, Body, []).
 
 %%--------------------------------------------------------------------
-%% @doc @equiv provider_request(Auth, URN, Method, [], Body, Opts)
+%% @doc @equiv provider_request(Auth, URN, Method, #{}, Body, Opts)
 %% @end
 %%--------------------------------------------------------------------
 -spec provider_request(Auth :: auth(), URN :: urn(), Method :: method(),
     Body :: body(), Opts :: opts()) -> Response :: response().
 provider_request(Auth, URN, Method, Body, Opts) ->
-    ?MODULE:provider_request(Auth, URN, Method, [], Body, Opts).
+    ?MODULE:provider_request(Auth, URN, Method, #{}, Body, Opts).
 
 %%--------------------------------------------------------------------
 %% @doc Sends request to onezone with provider certificate.
@@ -124,7 +124,7 @@ provider_request(Auth, URN, Method, Headers, Body, Opts) ->
     ?MODULE:request(Auth, URN, Method, Headers, Body, Opts2).
 
 %%--------------------------------------------------------------------
-%% @doc @equiv request(Auth, URN, Method, [])
+%% @doc @equiv request(Auth, URN, Method, <<>>)
 %% @end
 %%--------------------------------------------------------------------
 -spec request(Auth :: auth(), URN :: urn(), Method :: method()) ->
@@ -142,13 +142,13 @@ request(Auth, URN, Method, Body) ->
     ?MODULE:request(Auth, URN, Method, Body, []).
 
 %%--------------------------------------------------------------------
-%% @doc @equiv request(Auth, URN, Method, [], Body, Opts)
+%% @doc @equiv request(Auth, URN, Method, #{}, Body, Opts)
 %% @end
 %%--------------------------------------------------------------------
 -spec request(Auth :: auth(), URN :: urn(), Method :: method(),
     Body :: body(), Opts :: opts()) -> Response :: response().
 request(Auth, URN, Method, Body, Opts) ->
-    ?MODULE:request(Auth, URN, Method, [], Body, Opts).
+    ?MODULE:request(Auth, URN, Method, #{}, Body, Opts).
 
 %%--------------------------------------------------------------------
 %% @doc Sends unauthenticated request to OZ.

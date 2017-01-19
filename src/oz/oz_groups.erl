@@ -39,13 +39,17 @@
     {ok, SpaceId :: binary()} | {error, Reason :: term()}.
 create(Auth, Parameters) ->
     ?run(fun() ->
-        URN = "/groups",
-        Body = json_utils:encode(Parameters),
-        {ok, 201, ResponseHeaders, _ResponseBody} =
-            oz_endpoint:provider_request(Auth, URN, post, Body),
-        <<"/groups/", GroupId/binary>> =
-            maps:get(<<"location">>, ResponseHeaders),
-        {ok, GroupId}
+        try
+            URN = "/groups",
+            Body = json_utils:encode(Parameters),
+            {ok, 201, ResponseHeaders, _ResponseBody} =
+                oz_endpoint:provider_request(Auth, URN, post, Body),
+            <<"/groups/", GroupId/binary>> =
+                maps:get(<<"location">>, ResponseHeaders),
+            {ok, GroupId}
+        catch T:M ->
+            io:format(user, "~p", [{T, M, erlang:get_stacktrace()}])
+        end
     end).
 
 %%--------------------------------------------------------------------

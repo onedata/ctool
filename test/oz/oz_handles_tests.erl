@@ -48,7 +48,7 @@ setup() ->
     end),
     meck:expect(oz_endpoint, provider_request, fun
         (client, "/handles", post, <<"body">>) ->
-            {ok, 201, [{<<"location">>, <<"/handles/handleId">>}], response_body}
+            {ok, 201, #{<<"location">> => <<"/handles/handleId">>}, response_body}
     end).
 
 

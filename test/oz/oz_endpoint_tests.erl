@@ -43,6 +43,10 @@ disch_macaroons_header() ->
     #{<<"content-type">> => <<"application/json">>}
 ).
 
+-define(CONTENT_TYPE_HEADER_MATCH,
+    #{<<"content-type">> := <<"application/json">>}
+).
+
 % Request header with HTTP basic auth
 -define(BASIC_AUTH_HEADER, <<"Basic ", (base64:encode(<<"user:password">>))/binary>>).
 basic_auth_header() ->
@@ -110,7 +114,7 @@ should_send_provider_request_1() ->
     meck:expect(http_client, request, fun(
         method,
         "OZ_URL:9443/PREFIX/URN",
-        ?CONTENT_TYPE_HEADER,
+        ?CONTENT_TYPE_HEADER_MATCH,
         <<>>,
         [{ssl_options, [{keyfile, key_file}, {certfile, cert_file} | _]}]
     ) -> ok end),
@@ -119,7 +123,7 @@ should_send_provider_request_1() ->
     meck:expect(http_client, request, fun(
         method,
         "OZ_URL:9443/PREFIX/URN",
-        ?CONTENT_TYPE_HEADER,
+        ?CONTENT_TYPE_HEADER_MATCH,
         <<>>,
         _
     ) -> ok end),
@@ -134,7 +138,7 @@ should_send_provider_request_2() ->
     meck:expect(http_client, request, fun(
         method,
         "OZ_URL:9443/PREFIX/URN",
-        ?CONTENT_TYPE_HEADER,
+        ?CONTENT_TYPE_HEADER_MATCH,
         body,
         [{ssl_options, [{keyfile, key_file}, {certfile, cert_file} | _]}]
     ) -> ok end),
@@ -143,7 +147,7 @@ should_send_provider_request_2() ->
     meck:expect(http_client, request, fun(
         method,
         "OZ_URL:9443/PREFIX/URN",
-        ?CONTENT_TYPE_HEADER,
+        ?CONTENT_TYPE_HEADER_MATCH,
         body,
         _
     ) -> ok end),
@@ -158,7 +162,7 @@ should_send_provider_request_3() ->
     meck:expect(http_client, request, fun(
         method,
         "OZ_URL:9443/PREFIX/URN",
-        ?CONTENT_TYPE_HEADER,
+        ?CONTENT_TYPE_HEADER_MATCH,
         body,
         [
             options,
@@ -171,7 +175,7 @@ should_send_provider_request_3() ->
     meck:expect(http_client, request, fun(
         method,
         "OZ_URL:9443/PREFIX/URN",
-        ?CONTENT_TYPE_HEADER,
+        ?CONTENT_TYPE_HEADER_MATCH,
         body,
         [options | _]
     ) -> ok end),
@@ -183,27 +187,35 @@ should_send_provider_request_3() ->
 
 
 should_send_provider_request_4() ->
+    ExpectedHeaders = merge_headers([
+        ?CONTENT_TYPE_HEADER, #{<<"header">> => <<"abcdef">>}
+    ]),
+
     meck:new(http_client),
     meck:expect(http_client, request, fun(
         method,
         "OZ_URL:9443/PREFIX/URN",
-        ?CONTENT_TYPE_HEADER#{<<"header">> => <<"abcdef">>},
+        Headers,
         body,
         [
             options,
             {ssl_options, [{keyfile, key_file}, {certfile, cert_file} | _]}
         ]
-    ) -> ok end),
+    ) -> case Headers of
+        ExpectedHeaders -> ok
+    end end),
     ?assertEqual(ok, oz_endpoint:provider_request(
         provider, "/URN", method, #{<<"header">> => <<"abcdef">>}, body, [options])),
 
     meck:expect(http_client, request, fun(
         method,
         "OZ_URL:9443/PREFIX/URN",
-        ?CONTENT_TYPE_HEADER#{<<"header">> => <<"abcdef">>},
+        Headers,
         body,
         [options | _]
-    ) -> ok end),
+    ) -> case Headers of
+        ExpectedHeaders -> ok
+    end end),
     ?assertEqual(ok, oz_endpoint:request(
         provider, "/URN", method, #{<<"header">> => <<"abcdef">>}, body, [options])),
 
@@ -418,7 +430,7 @@ should_send_user_request_4() ->
             Headers,
             body,
             [options | _]
-        )  ->
+        ) ->
             case Headers of
                 ExpectedMacaroonHeaders -> ok;
                 ExpectedBasicAuthHeaders -> ok
