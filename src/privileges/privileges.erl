@@ -211,8 +211,6 @@ handle_service_user() ->
 -spec handle_service_admin() -> privileges(handle_service_privilege()).
 handle_service_admin() ->
     union(handle_service_user(), [
-%%        register_handle_service, % we may need those privileges for admins in oz_privileges
-%%        list_handle_services,
         ?HANDLE_SERVICE_UPDATE,
         ?HANDLE_SERVICE_DELETE,
         ?HANDLE_SERVICE_LIST_HANDLES
