@@ -181,11 +181,9 @@ clean_environment(Config, Apps) ->
     end,
 
     Dockers = lists_utils:key_get(docker_ids, Config, []),
-    ProjectRoot = ?config(project_root, Config),
     DockersStr = lists:map(fun atom_to_list/1, Dockers),
-    CleanupScript =
-        filename:join([ProjectRoot, "bamboos", "docker", "cleanup.py"]),
-    utils:cmd([CleanupScript | DockersStr]),
+    ProjectRoot = ?config(project_root, Config),
+    remove_dockers(ProjectRoot, DockersStr),
 
     case StopStatus of
         ok ->
@@ -402,7 +400,7 @@ get_cookies(Nodes, AppName, CookieKey, DescriptionFile) ->
 %%--------------------------------------------------------------------
 %% @private
 %% @doc
-%% Set cookies for each Node in NodesWithCookies list
+%% Set cookies for each Node in NodesWithCookies list.
 %% @end
 %%--------------------------------------------------------------------
 -spec set_cookies([{node(), atom()}]) -> ok.
@@ -424,10 +422,19 @@ set_cookies(NodesWithCookies) ->
 retry_running_env_up_script_until(ProjectRoot, AppmockRoot, CmRoot,
     LogsDir, DescriptionFile, RetriesNumber) ->
 
-    StartLog =run_env_up_script(ProjectRoot, AppmockRoot, CmRoot, LogsDir, DescriptionFile),
+    StartLog = run_env_up_script(ProjectRoot, AppmockRoot, CmRoot, LogsDir, DescriptionFile),
 
     case StartLog of
         <<"">> ->
+            Ids = string:tokens(string:strip(os:cmd(
+                "docker ps -aq"
+            ), right, $\n), "\n"),
+            MasterId = string:strip(os:cmd(
+                "docker ps -a | grep testmaster | awk '{print $1}'"
+            ), right, $\n),
+            remove_dockers(ProjectRoot, lists:delete(MasterId, Ids)),
+
+
             % if env_up.py failed, output will be empty,
             % because stderr is redirected to prepare_test_environment.log
             case RetriesNumber > 0 of
@@ -435,7 +442,7 @@ retry_running_env_up_script_until(ProjectRoot, AppmockRoot, CmRoot,
                     ct:print("Retrying to run env_up.py. Number of retries left: ~p~n", [RetriesNumber]),
                     timer:sleep(timer:seconds(1)),
                     retry_running_env_up_script_until(ProjectRoot, AppmockRoot, CmRoot,
-                    LogsDir, DescriptionFile, RetriesNumber - 1);
+                        LogsDir, DescriptionFile, RetriesNumber - 1);
                 _ -> error(env_up_failed)
             end;
         Other -> Other
@@ -470,7 +477,6 @@ run_env_up_script(ProjectRoot, AppmockRoot, CmRoot, LogsDir, DescriptionFile) ->
         NotEmptyList -> lists:last(NotEmptyList)
     end.
 
-
 %%--------------------------------------------------------------------
 %% @private
 %% @doc
@@ -482,3 +488,14 @@ env_description(Config) ->
     EnvDescriptionRelativePath = ?config(?ENV_DESCRIPTION, Config, ?DEFAULT_ENV_DESCRIPTION),
     ?TEST_FILE(Config, EnvDescriptionRelativePath).
 
+%%--------------------------------------------------------------------
+%% @private
+%% @doc
+%% Removes docker containers.
+%% @end
+%%--------------------------------------------------------------------
+-spec remove_dockers(string(), list(string())) -> string().
+remove_dockers(ProjectRoot, DockerIds) ->
+    CleanupScript =
+        filename:join([ProjectRoot, "bamboos", "docker", "cleanup.py"]),
+    utils:cmd([CleanupScript | DockerIds]).
