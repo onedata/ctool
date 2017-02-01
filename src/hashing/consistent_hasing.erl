@@ -16,7 +16,7 @@
 -include("global_definitions.hrl").
 
 %% API
--export([init/1, clear/0, get_chash_ring/0, set_chash_ring/1, get_node/1,
+-export([init/1, cleanup/0, get_chash_ring/0, set_chash_ring/1, get_node/1,
     get_all_nodes/0]).
 
 %%%===================================================================
@@ -47,8 +47,8 @@ init(Nodes) ->
 %% Removes chash ring.
 %% @end
 %%--------------------------------------------------------------------
--spec clear() -> ok.
-clear() ->
+-spec cleanup() -> ok.
+cleanup() ->
     application:unset_env(?CLUSTER_MANAGER, chash).
 
 %%--------------------------------------------------------------------

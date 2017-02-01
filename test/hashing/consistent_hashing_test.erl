@@ -28,7 +28,7 @@ helpers_test_() ->
         ]}.
 
 start() ->
-    consistent_hasing:clear().
+    consistent_hasing:cleanup().
 
 stop(_) ->
     ok.
