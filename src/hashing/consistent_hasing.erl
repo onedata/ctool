@@ -90,8 +90,8 @@ get_node(Label) ->
 get_all_nodes() ->
     {ok, CHash} = application:get_env(?CLUSTER_MANAGER, chash),
     NodesWithIndices = chash:nodes(CHash),
-    UniqueNodesWithIndices = lists:sublist(NodesWithIndices, length(NodesWithIndices)-1),
-    [Node || {_, Node} <- UniqueNodesWithIndices].
+    Nodes = [Node || {_, Node} <- NodesWithIndices],
+    lists:usort(Nodes).
 
 %%%===================================================================
 %%% Internal functions
