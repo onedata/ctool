@@ -68,9 +68,9 @@ setup() ->
         (client, "/provider", patch, <<"body">>) ->
             {ok, 204, response_headers, response_body};
         (client, "/provider/spaces", post, <<"body">>) ->
-            {ok, 201, [{<<"location">>, <<"/spaces/spaceId">>}], response_body};
+            {ok, 201, #{<<"location">> => <<"/spaces/spaceId">>}, response_body};
         (client, "/provider/spaces/support", post, <<"body">>) ->
-            {ok, 201, [{<<"location">>, <<"/provider/spaces/spaceId">>}],
+            {ok, 201, #{<<"location">> => <<"/provider/spaces/spaceId">>},
                 response_body}
     end),
     meck:expect(oz_endpoint, request, fun

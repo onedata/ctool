@@ -81,7 +81,7 @@ get_oz_cacerts() ->
     end.
 
 %%--------------------------------------------------------------------
-%% @doc @equiv provider_request(Auth, URN, Method, [])
+%% @doc @equiv provider_request(Auth, URN, Method, <<>>)
 %% @end
 %%--------------------------------------------------------------------
 -spec provider_request(Auth :: auth(), URN :: urn(), Method :: method()) ->
@@ -99,13 +99,13 @@ provider_request(Auth, URN, Method, Body) ->
     ?MODULE:provider_request(Auth, URN, Method, Body, []).
 
 %%--------------------------------------------------------------------
-%% @doc @equiv provider_request(Auth, URN, Method, [], Body, Opts)
+%% @doc @equiv provider_request(Auth, URN, Method, #{}, Body, Opts)
 %% @end
 %%--------------------------------------------------------------------
 -spec provider_request(Auth :: auth(), URN :: urn(), Method :: method(),
     Body :: body(), Opts :: opts()) -> Response :: response().
 provider_request(Auth, URN, Method, Body, Opts) ->
-    ?MODULE:provider_request(Auth, URN, Method, [], Body, Opts).
+    ?MODULE:provider_request(Auth, URN, Method, #{}, Body, Opts).
 
 %%--------------------------------------------------------------------
 %% @doc Sends request to onezone with provider certificate.
@@ -124,7 +124,7 @@ provider_request(Auth, URN, Method, Headers, Body, Opts) ->
     ?MODULE:request(Auth, URN, Method, Headers, Body, Opts2).
 
 %%--------------------------------------------------------------------
-%% @doc @equiv request(Auth, URN, Method, [])
+%% @doc @equiv request(Auth, URN, Method, <<>>)
 %% @end
 %%--------------------------------------------------------------------
 -spec request(Auth :: auth(), URN :: urn(), Method :: method()) ->
@@ -142,13 +142,13 @@ request(Auth, URN, Method, Body) ->
     ?MODULE:request(Auth, URN, Method, Body, []).
 
 %%--------------------------------------------------------------------
-%% @doc @equiv request(Auth, URN, Method, [], Body, Opts)
+%% @doc @equiv request(Auth, URN, Method, #{}, Body, Opts)
 %% @end
 %%--------------------------------------------------------------------
 -spec request(Auth :: auth(), URN :: urn(), Method :: method(),
     Body :: body(), Opts :: opts()) -> Response :: response().
 request(Auth, URN, Method, Body, Opts) ->
-    ?MODULE:request(Auth, URN, Method, [], Body, Opts).
+    ?MODULE:request(Auth, URN, Method, #{}, Body, Opts).
 
 %%--------------------------------------------------------------------
 %% @doc Sends unauthenticated request to OZ.
@@ -167,7 +167,7 @@ request(Auth, URN, Method, Headers, Body, Opts) ->
             SSLOpts2 = lists_utils:key_store(cacerts, CaCerts2, SSLOpts),
             lists_utils:key_store(ssl_options, SSLOpts2, Opts)
     end,
-    Headers2 = lists_utils:key_store(<<"content-type">>, <<"application/json">>, Headers),
+    Headers2 = Headers#{<<"content-type">> => <<"application/json">>},
     Headers3 = prepare_auth_headers(Auth, Headers2),
     URL = get_rest_api_root() ++ URN,
     http_client:request(Method, URL, Headers3, Body, Opts2).
@@ -182,7 +182,7 @@ request(Auth, URN, Method, Headers, Body, Opts) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec prepare_auth_headers(Auth :: auth(), Headers :: headers()) ->
-    [{Key :: binary(), Val :: binary()}].
+    headers().
 prepare_auth_headers(Auth, Headers) ->
     % Check REST client type and return auth headers if needed.
     case oz_plugin:auth_to_rest_client(Auth) of
@@ -197,12 +197,12 @@ prepare_auth_headers(Auth, Headers) ->
             % separated by spaces.
             {ok, SerializedMacaroon} = token_utils:serialize62(Macaroon),
             BoundMacaroonsVal = str_utils:join_binary(BoundMacaroons, <<" ">>),
-            lists_utils:key_store([
-                {<<"macaroon">>, SerializedMacaroon},
-                {<<"discharge-macaroons">>, BoundMacaroonsVal}
-            ], Headers);
+            Headers#{
+                <<"macaroon">> => SerializedMacaroon,
+                <<"discharge-macaroons">> => BoundMacaroonsVal
+            };
         {user, basic, BasicAuthHeader} ->
-            lists_utils:key_store(<<"Authorization">>, BasicAuthHeader, Headers);
+            Headers#{<<"Authorization">> => BasicAuthHeader};
         _ ->
             Headers
     end.

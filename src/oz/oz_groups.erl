@@ -44,7 +44,7 @@ create(Auth, Parameters) ->
         {ok, 201, ResponseHeaders, _ResponseBody} =
             oz_endpoint:provider_request(Auth, URN, post, Body),
         <<"/groups/", GroupId/binary>> =
-            lists_utils:key_get(<<"location">>, ResponseHeaders),
+            maps:get(<<"location">>, ResponseHeaders),
         {ok, GroupId}
     end).
 
@@ -245,7 +245,8 @@ get_user_privileges(Auth, GroupId, UserId) ->
             oz_endpoint:provider_request(Auth, URN, get),
         Proplist = json_utils:decode(ResponseBody),
         Privileges = lists_utils:key_get(<<"privileges">>, Proplist),
-        {ok, lists:map(fun(Binary) -> binary_to_atom(Binary, latin1) end, Privileges)}
+        {ok, lists:map(fun(Binary) ->
+            binary_to_atom(Binary, latin1) end, Privileges)}
     end).
 
 %%--------------------------------------------------------------------
@@ -263,7 +264,8 @@ get_effective_user_privileges(Auth, GroupId, UserId) ->
             oz_endpoint:provider_request(Auth, URN, get),
         Proplist = json_utils:decode(ResponseBody),
         Privileges = lists_utils:key_get(<<"privileges">>, Proplist),
-        {ok, lists:map(fun(Binary) -> binary_to_atom(Binary, latin1) end, Privileges)}
+        {ok, lists:map(fun(Binary) ->
+            binary_to_atom(Binary, latin1) end, Privileges)}
     end).
 
 %%--------------------------------------------------------------------
@@ -281,7 +283,8 @@ get_nested_privileges(Auth, GroupId, NestedGroupId) ->
             oz_endpoint:provider_request(Auth, URN, get),
         Proplist = json_utils:decode(ResponseBody),
         Privileges = lists_utils:key_get(<<"privileges">>, Proplist),
-        {ok, lists:map(fun(Binary) -> binary_to_atom(Binary, latin1) end, Privileges)}
+        {ok, lists:map(fun(Binary) ->
+            binary_to_atom(Binary, latin1) end, Privileges)}
     end).
 
 %%--------------------------------------------------------------------
@@ -352,7 +355,7 @@ join_group(Auth, GroupId, Parameters) ->
             oz_endpoint:provider_request(Auth, URN, post, Body),
         GroupIdSize = size(GroupId),
         <<"/groups/", GroupId:GroupIdSize/binary, "/nested/", NestedGroupId/binary>> =
-            lists_utils:key_get(<<"location">>, ResponseHeaders),
+            maps:get(<<"location">>, ResponseHeaders),
         {ok, NestedGroupId}
     end).
 
@@ -386,7 +389,7 @@ create_space(Auth, GroupId, Parameters) ->
         {ok, 201, ResponseHeaders, _ResponseBody} =
             oz_endpoint:provider_request(Auth, URN, post, Body),
         <<"/spaces/", SpaceId/binary>> =
-            lists_utils:key_get(<<"location">>, ResponseHeaders),
+            maps:get(<<"location">>, ResponseHeaders),
         {ok, SpaceId}
     end).
 
@@ -406,7 +409,7 @@ join_space(Auth, GroupId, Parameters) ->
             oz_endpoint:provider_request(Auth, URN, post, Body),
         GroupIdSize = size(GroupId),
         <<"/groups/", GroupId:GroupIdSize/binary, "/spaces/", SpaceId/binary>> =
-            lists_utils:key_get(<<"location">>, ResponseHeaders),
+            maps:get(<<"location">>, ResponseHeaders),
         {ok, SpaceId}
     end).
 

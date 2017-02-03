@@ -51,7 +51,7 @@ create(Auth, Parameters) ->
         {ok, 201, ResponseHeaders, _ResponseBody} =
             oz_endpoint:provider_request(Auth, URN, post, Body),
         <<"/spaces/", SpaceId/binary>> =
-            lists_utils:key_get(<<"location">>, ResponseHeaders),
+            maps:get(<<"location">>, ResponseHeaders),
         {ok, SpaceId}
     end).
 
