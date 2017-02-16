@@ -30,14 +30,14 @@
 %%--------------------------------------------------------------------
 -spec init([node()]) -> ok.
 init(Nodes) ->
-    case application:get_env(?CLUSTER_MANAGER, chash) of
+    case application:get_env(ctool, chash) of
         undefined ->
             [Node0 | _] = Nodes,
             InitialCHash = chash:fresh(length(Nodes), Node0),
             CHash = lists:foldl(fun({I, Node}, CHashAcc) ->
                 chash:update(get_nth_index(I, CHashAcc), Node, CHashAcc)
             end, InitialCHash, lists:zip(lists:seq(1, length(Nodes)), Nodes)),
-            application:set_env(?CLUSTER_MANAGER, chash, CHash);
+            application:set_env(ctool, chash, CHash);
         {ok, _Val} ->
             ok
     end.
@@ -49,16 +49,16 @@ init(Nodes) ->
 %%--------------------------------------------------------------------
 -spec cleanup() -> ok.
 cleanup() ->
-    application:unset_env(?CLUSTER_MANAGER, chash).
+    application:unset_env(ctool, chash).
 
 %%--------------------------------------------------------------------
 %% @doc
 %% Returns consistent hasing ring.
 %% @end
 %%--------------------------------------------------------------------
--spec get_chash_ring() -> chash:chash().
+-spec get_chash_ring() -> chash:chash() | undefined.
 get_chash_ring() ->
-    application:get_env(?CLUSTER_MANAGER, chash, undefined).
+    application:get_env(ctool, chash, undefined).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -67,7 +67,7 @@ get_chash_ring() ->
 %%--------------------------------------------------------------------
 -spec set_chash_ring(chash:chash()) -> ok.
 set_chash_ring(CHash) ->
-    application:set_env(?CLUSTER_MANAGER, chash, CHash).
+    application:set_env(ctool, chash, CHash).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -76,7 +76,7 @@ set_chash_ring(CHash) ->
 %%--------------------------------------------------------------------
 -spec get_node(term()) -> node().
 get_node(Label) ->
-    {ok, CHash} = application:get_env(?CLUSTER_MANAGER, chash),
+    {ok, CHash} = application:get_env(ctool, chash),
     Index = chash:key_of(Label),
     [{_, BestNode}] = chash:successors(Index, CHash, 1),
     BestNode.
@@ -88,7 +88,7 @@ get_node(Label) ->
 %%--------------------------------------------------------------------
 -spec get_all_nodes() -> [node()].
 get_all_nodes() ->
-    {ok, CHash} = application:get_env(?CLUSTER_MANAGER, chash),
+    {ok, CHash} = application:get_env(ctool, chash),
     NodesWithIndices = chash:nodes(CHash),
     Nodes = [Node || {_, Node} <- NodesWithIndices],
     lists:usort(Nodes).
