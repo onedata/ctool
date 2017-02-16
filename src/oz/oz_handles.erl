@@ -40,7 +40,7 @@ create(Auth, Parameters) ->
         {ok, 201, ResponseHeaders, _ResponseBody} =
             oz_endpoint:provider_request(Auth, URN, post, Body),
         <<"/handles/", HandleId/binary>> =
-            lists_utils:key_get(<<"location">>, ResponseHeaders),
+            maps:get(<<"location">>, ResponseHeaders),
         {ok, HandleId}
     end).
 
