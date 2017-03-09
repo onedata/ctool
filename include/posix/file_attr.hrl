@@ -19,7 +19,7 @@
 -define(PHANTOM_TYPE, 'PHN').
 
 -record(file_attr, {
-    uuid :: undefined | binary() | atom() | integer(),
+    guid :: undefined | binary() | atom() | integer(),
     name :: binary(),
     mode :: non_neg_integer(),
     parent_uuid :: undefined | binary(),

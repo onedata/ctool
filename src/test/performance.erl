@@ -19,7 +19,6 @@
 
 % this file is built by parent project so include_lib must be used
 -include_lib("xmerl/include/xmerl.hrl").
--include_lib("annotations/include/types.hrl").
 -include_lib("ctool/include/test/assertions.hrl").
 -include_lib("ctool/include/test/performance.hrl").
 -include_lib("ctool/include/logging.hrl").
