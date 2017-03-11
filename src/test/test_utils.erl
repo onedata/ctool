@@ -55,7 +55,8 @@ enable_datastore_models([H | _] = Nodes, Models) ->
 
     lists:foreach(
         fun(Node) ->
-            ok = gen_server:call({node_manager, Node}, {apply, datastore, initialize_state, [H]}, ?TIMEOUT)
+            ok = gen_server:call({node_manager, Node}, {apply, datastore, initialize_state, [H]}, ?TIMEOUT),
+            ok = gen_server:call({node_manager, Node}, {apply, datastore, cluster_initialized, []}, ?TIMEOUT)
         end, Nodes).
 
 
