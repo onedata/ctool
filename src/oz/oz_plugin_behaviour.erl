@@ -57,3 +57,15 @@
 %% @end
 %%--------------------------------------------------------------------
 -callback get_cacerts_dir() -> file:name_all().
+
+%%--------------------------------------------------------------------
+%% @doc
+%% This callback is used to convert Auth term, which is transparent to ctool,
+%% into one of possible authorization methods. Thanks to this, the code
+%% using OZ API can always use its specific Auth terms and they are converted
+%% when request is done.
+%% @end
+%%--------------------------------------------------------------------
+-callback auth_to_rest_client(Auth :: term()) -> {user, token, binary()} |
+{user, macaroon, {Macaroon :: binary(), DischargeMacaroons :: [binary()]}} |
+{user, basic, binary()} | provider.
