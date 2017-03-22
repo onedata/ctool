@@ -16,28 +16,47 @@
 
 -include_lib("eunit/include/eunit.hrl").
 
+
+token() ->
+    <<"DUMMY-TOKEN">>.
+
+
+token_header() ->
+    #{<<"X-Auth-Token">> => token()}.
+
+
 % Root macaroon
--define(MACAROON, macaroon:create("Location", "Key", "Macaroon")).
+macaroon() ->
+    M = macaroon:create("Location", "Key", "Macaroon"),
+    {ok, Bin} = token_utils:serialize62(M),
+    Bin.
+
 % Request header with root macaroon
 macaroon_header() ->
-    {ok, Bin} = token_utils:serialize62(?MACAROON),
-    #{<<"macaroon">> => Bin}.
+    #{<<"Macaroon">> => macaroon()}.
+
 
 % List of disch macaroons
--define(DISCH_MACAROONS, [
-    macaroon:create("Location", "Key1", "Discharge macaroon 1"),
-    macaroon:create("Location", "Key2", "Discharge macaroon 2"),
-    macaroon:create("Location", "Key3", "Discharge macaroon 3")
-]).
+disch_macaroons() ->
+    M1 = macaroon:create("Location", "Key1", "Discharge macaroon 1"),
+    M2 = macaroon:create("Location", "Key2", "Discharge macaroon 2"),
+    M3 = macaroon:create("Location", "Key3", "Discharge macaroon 3"),
+    {ok, Bin1} = token_utils:serialize62(M1),
+    {ok, Bin2} = token_utils:serialize62(M2),
+    {ok, Bin3} = token_utils:serialize62(M3),
+    [Bin1, Bin2, Bin3].
+
 % Bound disch macaroons joined into one string with spaces for request header.
 disch_macaroons_header() ->
-    Macaroon = ?MACAROON,
-    BoundMacaroons = lists:map(fun(DM) ->
+    MacaroonBin = macaroon(),
+    {ok, Macaroon} = token_utils:deserialize(MacaroonBin),
+    BoundMacaroons = lists:map(fun(DMBin) ->
+        {ok, DM} = token_utils:deserialize(DMBin),
         BDM = macaroon:prepare_for_request(Macaroon, DM),
         {ok, Bin} = token_utils:serialize62(BDM),
         Bin
-    end, ?DISCH_MACAROONS),
-    #{<<"discharge-macaroons">> => str_utils:join_binary(BoundMacaroons, <<" ">>)}.
+    end, disch_macaroons()),
+    #{<<"Discharge-Macaroons">> => str_utils:join_binary(BoundMacaroons, <<" ">>)}.
 
 -define(CONTENT_TYPE_HEADER,
     #{<<"content-type">> => <<"application/json">>}
@@ -224,10 +243,14 @@ should_send_provider_request_4() ->
 
 
 should_send_user_request_1() ->
+    TokenHeader = token_header(),
     MacaroonHeader = macaroon_header(),
     DischMacaroonsHeader = disch_macaroons_header(),
     BasicAuthHeader = basic_auth_header(),
 
+    ExpectedTokenHeaders = merge_headers([
+        ?CONTENT_TYPE_HEADER, TokenHeader
+    ]),
     ExpectedMacaroonHeaders = merge_headers([
         ?CONTENT_TYPE_HEADER, MacaroonHeader, DischMacaroonsHeader
     ]),
@@ -245,12 +268,15 @@ should_send_user_request_1() ->
             [{ssl_options, [{keyfile, key_file}, {certfile, cert_file} | _]}]
         ) ->
             case Headers of
+                ExpectedTokenHeaders -> ok;
                 ExpectedMacaroonHeaders -> ok;
                 ExpectedBasicAuthHeaders -> ok
             end
     end),
     ?assertEqual(ok, oz_endpoint:provider_request(
-        {user, token, {?MACAROON, ?DISCH_MACAROONS}}, "/URN", method)),
+        {user, token, token()}, "/URN", method)),
+    ?assertEqual(ok, oz_endpoint:provider_request(
+        {user, macaroon, {macaroon(), disch_macaroons()}}, "/URN", method)),
     ?assertEqual(ok, oz_endpoint:provider_request(
         {user, basic, ?BASIC_AUTH_HEADER}, "/URN", method)),
 
@@ -263,12 +289,15 @@ should_send_user_request_1() ->
             _
         ) ->
             case Headers of
+                ExpectedTokenHeaders -> ok;
                 ExpectedMacaroonHeaders -> ok;
                 ExpectedBasicAuthHeaders -> ok
             end
     end),
     ?assertEqual(ok, oz_endpoint:request(
-        {user, token, {?MACAROON, ?DISCH_MACAROONS}}, "/URN", method)),
+        {user, token, token()}, "/URN", method)),
+    ?assertEqual(ok, oz_endpoint:request(
+        {user, macaroon, {macaroon(), disch_macaroons()}}, "/URN", method)),
     ?assertEqual(ok, oz_endpoint:request(
         {user, basic, ?BASIC_AUTH_HEADER}, "/URN", method)),
 
@@ -277,10 +306,14 @@ should_send_user_request_1() ->
 
 
 should_send_user_request_2() ->
+    TokenHeader = token_header(),
     MacaroonHeader = macaroon_header(),
     DischMacaroonsHeader = disch_macaroons_header(),
     BasicAuthHeader = basic_auth_header(),
 
+    ExpectedTokenHeaders = merge_headers([
+        ?CONTENT_TYPE_HEADER, TokenHeader
+    ]),
     ExpectedMacaroonHeaders = merge_headers([
         ?CONTENT_TYPE_HEADER, MacaroonHeader, DischMacaroonsHeader
     ]),
@@ -298,12 +331,15 @@ should_send_user_request_2() ->
             [{ssl_options, [{keyfile, key_file}, {certfile, cert_file} | _]}]
         ) ->
             case Headers of
+                ExpectedTokenHeaders -> ok;
                 ExpectedMacaroonHeaders -> ok;
                 ExpectedBasicAuthHeaders -> ok
             end
     end),
     ?assertEqual(ok, oz_endpoint:provider_request(
-        {user, token, {?MACAROON, ?DISCH_MACAROONS}}, "/URN", method, body)),
+        {user, token, token()}, "/URN", method, body)),
+    ?assertEqual(ok, oz_endpoint:provider_request(
+        {user, macaroon, {macaroon(), disch_macaroons()}}, "/URN", method, body)),
     ?assertEqual(ok, oz_endpoint:provider_request(
         {user, basic, ?BASIC_AUTH_HEADER}, "/URN", method, body)),
 
@@ -316,12 +352,15 @@ should_send_user_request_2() ->
             _
         ) ->
             case Headers of
+                ExpectedTokenHeaders -> ok;
                 ExpectedMacaroonHeaders -> ok;
                 ExpectedBasicAuthHeaders -> ok
             end
     end),
     ?assertEqual(ok, oz_endpoint:request(
-        {user, token, {?MACAROON, ?DISCH_MACAROONS}}, "/URN", method, body)),
+        {user, token, token()}, "/URN", method, body)),
+    ?assertEqual(ok, oz_endpoint:request(
+        {user, macaroon, {macaroon(), disch_macaroons()}}, "/URN", method, body)),
     ?assertEqual(ok, oz_endpoint:request(
         {user, basic, ?BASIC_AUTH_HEADER}, "/URN", method, body)),
 
@@ -330,10 +369,14 @@ should_send_user_request_2() ->
 
 
 should_send_user_request_3() ->
+    TokenHeader = token_header(),
     MacaroonHeader = macaroon_header(),
     DischMacaroonsHeader = disch_macaroons_header(),
     BasicAuthHeader = basic_auth_header(),
 
+    ExpectedTokenHeaders = merge_headers([
+        ?CONTENT_TYPE_HEADER, TokenHeader
+    ]),
     ExpectedMacaroonHeaders = merge_headers([
         ?CONTENT_TYPE_HEADER, MacaroonHeader, DischMacaroonsHeader
     ]),
@@ -354,12 +397,15 @@ should_send_user_request_3() ->
             ]
         ) ->
             case Headers of
+                ExpectedTokenHeaders -> ok;
                 ExpectedMacaroonHeaders -> ok;
                 ExpectedBasicAuthHeaders -> ok
             end
     end),
     ?assertEqual(ok, oz_endpoint:provider_request(
-        {user, token, {?MACAROON, ?DISCH_MACAROONS}}, "/URN", mthd, body, [opts])),
+        {user, token, token()}, "/URN", mthd, body, [opts])),
+    ?assertEqual(ok, oz_endpoint:provider_request(
+        {user, macaroon, {macaroon(), disch_macaroons()}}, "/URN", mthd, body, [opts])),
     ?assertEqual(ok, oz_endpoint:provider_request(
         {user, basic, ?BASIC_AUTH_HEADER}, "/URN", mthd, body, [opts])),
 
@@ -372,12 +418,15 @@ should_send_user_request_3() ->
             [opts | _]
         ) ->
             case Headers of
+                ExpectedTokenHeaders -> ok;
                 ExpectedMacaroonHeaders -> ok;
                 ExpectedBasicAuthHeaders -> ok
             end
     end),
     ?assertEqual(ok, oz_endpoint:request(
-        {user, token, {?MACAROON, ?DISCH_MACAROONS}}, "/URN", mthd, body, [opts])),
+        {user, token, token()}, "/URN", mthd, body, [opts])),
+    ?assertEqual(ok, oz_endpoint:request(
+        {user, macaroon, {macaroon(), disch_macaroons()}}, "/URN", mthd, body, [opts])),
     ?assertEqual(ok, oz_endpoint:request(
         {user, basic, ?BASIC_AUTH_HEADER}, "/URN", mthd, body, [opts])),
 
@@ -386,10 +435,14 @@ should_send_user_request_3() ->
 
 
 should_send_user_request_4() ->
+    TokenHeader = token_header(),
     MacaroonHeader = macaroon_header(),
     DischMacaroonsHeader = disch_macaroons_header(),
     BasicAuthHeader = basic_auth_header(),
 
+    ExpectedTokenHeaders = merge_headers([
+        #{<<"hdr">> => <<"abcdf">>}, ?CONTENT_TYPE_HEADER, TokenHeader
+    ]),
     ExpectedMacaroonHeaders = merge_headers([
         #{<<"hdr">> => <<"abcdf">>}, ?CONTENT_TYPE_HEADER,
         MacaroonHeader, DischMacaroonsHeader
@@ -411,12 +464,16 @@ should_send_user_request_4() ->
             ]
         ) ->
             case Headers of
+                ExpectedTokenHeaders -> ok;
                 ExpectedMacaroonHeaders -> ok;
                 ExpectedBasicAuthHeaders -> ok
             end
     end),
     ?assertEqual(ok, oz_endpoint:provider_request(
-        {user, token, {?MACAROON, ?DISCH_MACAROONS}}, "/URN", method,
+        {user, token, token()}, "/URN", method,
+        #{<<"hdr">> => <<"abcdf">>}, body, [options])),
+    ?assertEqual(ok, oz_endpoint:provider_request(
+        {user, macaroon, {macaroon(), disch_macaroons()}}, "/URN", method,
         #{<<"hdr">> => <<"abcdf">>}, body, [options])),
     ?assertEqual(ok, oz_endpoint:provider_request(
         {user, basic, ?BASIC_AUTH_HEADER}, "/URN", method,
@@ -432,12 +489,16 @@ should_send_user_request_4() ->
             [options | _]
         ) ->
             case Headers of
+                ExpectedTokenHeaders -> ok;
                 ExpectedMacaroonHeaders -> ok;
                 ExpectedBasicAuthHeaders -> ok
             end
     end),
     ?assertEqual(ok, oz_endpoint:request(
-        {user, token, {?MACAROON, ?DISCH_MACAROONS}}, "/URN", method,
+        {user, token, token()}, "/URN", method,
+        #{<<"hdr">> => <<"abcdf">>}, body, [options])),
+    ?assertEqual(ok, oz_endpoint:request(
+        {user, macaroon, {macaroon(), disch_macaroons()}}, "/URN", method,
         #{<<"hdr">> => <<"abcdf">>}, body, [options])),
     ?assertEqual(ok, oz_endpoint:request(
         {user, basic, ?BASIC_AUTH_HEADER}, "/URN", method,
