@@ -186,20 +186,23 @@ request(Auth, URN, Method, Headers, Body, Opts) ->
 prepare_auth_headers(Auth, Headers) ->
     % Check REST client type and return auth headers if needed.
     case oz_plugin:auth_to_rest_client(Auth) of
-        {user, token, {Macaroon, DischargeMacaroons}} ->
+        {user, token, Token} ->
+            Headers#{<<"X-Auth-Token">> => Token};
+        {user, macaroon, {MacaroonBin, DischargeMacaroonsBin}} ->
+            {ok, Macaroon} = token_utils:deserialize(MacaroonBin),
             BoundMacaroons = lists:map(
-                fun(DM) ->
+                fun(DischargeMacaroonBin) ->
+                    {ok, DM} = token_utils:deserialize(DischargeMacaroonBin),
                     BDM = macaroon:prepare_for_request(Macaroon, DM),
                     {ok, SerializedBDM} = token_utils:serialize62(BDM),
                     SerializedBDM
-                end, DischargeMacaroons),
+                end, DischargeMacaroonsBin),
             % Bound discharge macaroons are sent in one header,
             % separated by spaces.
-            {ok, SerializedMacaroon} = token_utils:serialize62(Macaroon),
             BoundMacaroonsVal = str_utils:join_binary(BoundMacaroons, <<" ">>),
             Headers#{
-                <<"macaroon">> => SerializedMacaroon,
-                <<"discharge-macaroons">> => BoundMacaroonsVal
+                <<"Macaroon">> => MacaroonBin,
+                <<"Discharge-Macaroons">> => BoundMacaroonsVal
             };
         {user, basic, BasicAuthHeader} ->
             Headers#{<<"Authorization">> => BasicAuthHeader};
