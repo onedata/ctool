@@ -21,7 +21,8 @@
         gen_smtp,
         % Web client will start etls and hackney
         web_client,
-        cowboy
+        cowboy,
+        worker_pool
     ]},
 
     {env, [

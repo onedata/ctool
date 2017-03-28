@@ -66,4 +66,8 @@
  {<<"web_client">>,
   {git,"ssh://git@git.plgrid.pl:7999/vfs/web-client.git",
        {ref,"d1ebf99ad747f154ba13ec5fa61c55e9615aa447"}},
+  0},
+ {<<"worker_pool">>,
+  {git,"https://github.com/inaka/worker_pool.git",
+       {ref,"facfc7b2c2320cba576a2dcdd12c85c583017bec"}},
   0}].
