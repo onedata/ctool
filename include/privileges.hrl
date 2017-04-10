@@ -151,7 +151,7 @@
 -define(OZ_HANDLE_SERVICES_CREATE, oz_handle_services_create).
 -define(OZ_HANDLE_SERVICES_LIST, oz_handle_services_list).
 
--define(OZ_HANDLES_LIST, oz_shares_list).
+-define(OZ_HANDLES_LIST, oz_handles_list).
 
 
 -endif.
