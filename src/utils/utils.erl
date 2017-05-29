@@ -19,6 +19,7 @@
     process_info/1, process_info/2]).
 -export([duration/1, adjust_duration/2]).
 -export([mkdtemp/0, mkdtemp/3, rmtempdir/1]).
+-export([to_binary/1]).
 
 -type time_unit() :: us | ms | s | min | h.
 
@@ -287,6 +288,17 @@ process_info(Pid, Args) ->
         OtherNode ->
             rpc:call(OtherNode, erlang, process_info, [Pid, Args])
     end.
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Encodes given given term as binary.
+%% @end
+%%--------------------------------------------------------------------
+-spec to_binary(term()) -> binary().
+to_binary(Term) when is_binary(Term) ->
+    Term;
+to_binary(Term) ->
+    base64:encode(term_to_binary(Term)).
 
 %%%===================================================================
 %%% Internal functions
