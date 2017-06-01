@@ -1,4 +1,3 @@
-{"1.1.0",
 [{<<"base64url">>,
   {git,"https://github.com/dvv/base64url.git",
        {ref,"f2c64ed8b9bebc536fad37ad97243452b674b837"}},
@@ -95,12 +94,4 @@
  {<<"worker_pool">>,
   {git,"https://github.com/inaka/worker_pool.git",
        {ref,"b26ea6443f5e9909a516c4c8d50dac99ec2b1872"}},
-  0}]}.
-[
-{pkg_hash,[
- {<<"certifi">>, <<"389D4B126A47895FE96D65FCF8681F4D09ECA1153DC2243ED6BABAD0AAC1E763">>},
- {<<"etls">>, <<"141972C23274F4135E6354DC973114AE6CCCD60788BB3C793E3672040A7915EC">>},
- {<<"idna">>, <<"397E3D001C002319DA75759B0A81156BF11849C71D565162436D50020CB7265E">>},
- {<<"mimerl">>, <<"B9813E0FA1019420DA8C8001748D7C34791FD49464CB28762BC22638B1FF6198">>},
- {<<"ssl_verify_hostname">>, <<"2E73E068CD6393526F9FA6D399353D7C9477D6886BA005F323B592D389FB47BE">>}]}
-].
+  0}].
