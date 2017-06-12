@@ -19,7 +19,7 @@
         stdlib,
         lager,
         gen_smtp,
-        % Web client will start etls and hackney
+        % Web client will start ssl and hackney
         web_client,
         cowboy,
         worker_pool
