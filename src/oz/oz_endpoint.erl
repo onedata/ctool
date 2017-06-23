@@ -64,14 +64,15 @@ get_rest_api_root() ->
 %% by a oz_plugin:get_cacerts_dir/0 callback and stores them in the cache.
 %% @end
 %%--------------------------------------------------------------------
--spec get_oz_cacerts() -> CaCerts :: [binary()].
+-spec get_oz_cacerts() -> CaCerts :: [public_key:der_encoded()].
 get_oz_cacerts() ->
     case application:get_env(ctool, oz_cacerts) of
         {ok, CaCerts} -> CaCerts;
         undefined ->
             CaCertDir = oz_plugin:get_cacerts_dir(),
             case file_utils:read_files({dir, CaCertDir}) of
-                {ok, CaCerts} ->
+                {ok, CaCertsPems} ->
+                    CaCerts = lists:map(fun cert_decoder:pem_to_der/1, CaCertsPems),
                     application:set_env(ctool, oz_cacerts, CaCerts),
                     CaCerts;
                 {error, Reason} ->
