@@ -29,7 +29,7 @@
     call/2, call/3, call/4,
     cast/2, cast/3,
     stats/0, stats/1
-]).
+    , default_strategy/0]).
 
 
 %%--------------------------------------------------------------------
@@ -115,7 +115,7 @@ call(PoolName, Call, Strategy, Timeout) ->
 %%--------------------------------------------------------------------
 -spec cast(name(), request()) -> response().
 cast(PoolName, Call) ->
-    wpool:call(PoolName, Call).
+    wpool:cast(PoolName, Call).
 
 
 %%--------------------------------------------------------------------
@@ -126,7 +126,7 @@ cast(PoolName, Call) ->
 %%--------------------------------------------------------------------
 -spec cast(name(), request(), strategy()) -> response().
 cast(PoolName, Call, Strategy) ->
-    wpool:call(PoolName, Call, Strategy).
+    wpool:cast(PoolName, Call, Strategy).
 
 
 %%--------------------------------------------------------------------
@@ -148,3 +148,14 @@ stats() ->
 -spec stats(name()) -> stats().
 stats(PoolName) ->
     wpool:stats(PoolName).
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Default strategy
+%% @equiv wpool:default_strategy()
+%% @end
+%%--------------------------------------------------------------------
+-spec default_strategy() -> strategy().
+default_strategy() ->
+    wpool:default_strategy().
+
