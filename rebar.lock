@@ -23,7 +23,6 @@
   {git,"https://github.com/kzemek/enacl_p.git",
        {ref,"ea22638b684a79eba831d2df54666905bd451b15"}},
   1},
- {<<"etls">>,{pkg,<<"etls">>,<<"1.1.2">>},0},
  {<<"exometer_core">>,
   {git,"https://github.com/Feuerlabs/exometer_core.git",
        {ref,"09c2a9361c0295c977e441ef89382db964a64460"}},
@@ -93,5 +92,5 @@
   0},
  {<<"worker_pool">>,
   {git,"https://github.com/inaka/worker_pool.git",
-       {ref,"b26ea6443f5e9909a516c4c8d50dac99ec2b1872"}},
+       {ref,"edff5aead77231377d09eb59c055bf7c8c236aef"}},
   0}].
