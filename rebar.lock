@@ -91,6 +91,6 @@
        {ref,"b2018870eab6d3734831774e0c324e616a39fd2f"}},
   0},
  {<<"worker_pool">>,
-  {git,"https://github.com/jakud/worker_pool",
-       {ref,"d195bc59219e218fadb898ef2943671a54303c9a"}},
+  {git,"https://github.com/inaka/worker_pool",
+       {ref,"ae5aa2e5819f7cce3aa3fbc50d39743de3515cdc"}},
   0}].
