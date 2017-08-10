@@ -238,6 +238,7 @@ dec_double({B, P}) ->
 -spec enc_byte_array(iolist(), non_neg_integer()) -> xdr().
 enc_byte_array(Data, N) ->
     Len = io_list_len(Data),
+    io:format("Len: ~p~n", [Len]),
     if
         Len == N -> true;
         true -> exit({xdr, limit})
@@ -269,7 +270,7 @@ dec_byte_array({B, P}, N) ->
 enc_string(Data) when is_list(Data) ->
     enc_string(list_to_binary(Data));
 enc_string(Data) when is_binary(Data) ->
-    Len = io_list_len(Data),
+    Len = byte_size(Data),
     list_to_binary([enc_unsigned_int(Len), Data, enc_align(Len)]).
 
 %%-------------------------------------------------------------------
@@ -289,7 +290,7 @@ dec_string({B, P}) ->
 %% Encodes array of variable length
 %% @end
 %%-------------------------------------------------------------------
--spec enc_byte_varray(binary(), non_neg_integer()) -> xdr().
+-spec enc_byte_varray(iolist(), max | non_neg_integer()) -> [xdr()].
 enc_byte_varray(Data, Max) when is_integer(Max) ->
     Len = io_list_len(Data),
     if
@@ -347,21 +348,43 @@ enc_ieee(X, Base, Bias) when X > 0 ->
 enc_ieee(_X, _, _) ->
     {0, 0, 0}.
 
-
+%%-------------------------------------------------------------------
+%% @private
+%% @doc
+%% Scales float number.
+%% @end
+%%-------------------------------------------------------------------
 scale_float(E, M) when E >= 0 -> (1 bsl E) * M;
 scale_float(E, M) -> 1 / (1 bsl -E) * M.
 
-
+%%-------------------------------------------------------------------
+%% @private
+%% @doc
+%% Unscales float number.
+%% @end
+%%-------------------------------------------------------------------
 -spec unscale_float(float()) -> {number(), number()}.
 unscale_float(X) when X == 1.0 -> {0, 0};
 unscale_float(X) when X > 1.0 -> exp_down(X, 0);
 unscale_float(X) when X < 1.0 -> exp_up(X, 0);
 unscale_float(X) -> {0, X}.
 
+%%-------------------------------------------------------------------
+%% @private
+%% @doc
+%% Scales exponent down.
+%% @end
+%%-------------------------------------------------------------------
 -spec exp_down(float(), integer()) -> {number(), number()}.
 exp_down(X, E) when X >= 2 -> exp_down(X / 2, E + 1);
 exp_down(X, E) -> {E, X}.
 
+%%-------------------------------------------------------------------
+%% @private
+%% @doc
+%% Scales exponent up.
+%% @end
+%%-------------------------------------------------------------------
 -spec exp_up(float(), integer()) -> {number(), number()}.
 exp_up(X, E) when X < 1 -> exp_up(X * 2, E - 1);
 exp_up(X, E) -> {E, X}.
@@ -392,6 +415,7 @@ align(Len) ->
 %% @equiv io_list_len(L, 0)
 %% @end
 %%-------------------------------------------------------------------
+-spec io_list_len(iolist()) -> non_neg_integer().
 io_list_len(L) -> io_list_len(L, 0).
 
 %%-------------------------------------------------------------------
