@@ -70,7 +70,7 @@ start_pool(PoolName, Options) ->
 %% @equiv wpool:stop_pool(PoolName).
 %% @end
 %%--------------------------------------------------------------------
--spec stop_pool(name()) -> ok.
+-spec stop_pool(name()) -> true.
 stop_pool(PoolName) ->
     wpool:stop_pool(PoolName).
 

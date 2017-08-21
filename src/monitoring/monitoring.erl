@@ -68,7 +68,7 @@
 start(IPAddr) ->
     _InitialRecord = update(#node_monitoring_state{
         ip_addr = IPAddr,
-        last_update = erlang:system_time(milli_seconds)}).
+        last_update = utils:system_time_milli_seconds()}).
 
 
 %%--------------------------------------------------------------------
@@ -93,7 +93,7 @@ update(MonitoringState) ->
         last_update = LastUpdate,
         cpu_last = CPULast,
         net_last = NetLast} = MonitoringState,
-    Now = erlang:system_time(milli_seconds),
+    Now = utils:system_time_milli_seconds(),
     % Time difference is in seconds, float is required for better accuracy
     TimeDiff = (Now - LastUpdate) / 1000,
     {CPUStats, NewCPULast} = get_cpu_stats(CPULast),
