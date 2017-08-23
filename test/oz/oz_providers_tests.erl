@@ -124,8 +124,7 @@ should_get_details() ->
             [
                 {<<"providerId">>, <<"providerId">>},
                 {<<"clientName">>, <<"name">>},
-                {<<"urls">>, <<"urls">>},
-                {<<"redirectionPoint">>, <<"redirectionPoint">>},
+                {<<"domain">>, <<"domain">>},
                 {<<"latitude">>, <<"latitude">>},
                 {<<"longitude">>, <<"longitude">>}
             ]
@@ -134,9 +133,8 @@ should_get_details() ->
     Answer = oz_providers:get_details(client),
     ?assertEqual({ok, #provider_details{
         id = <<"providerId">>,
-        urls = <<"urls">>,
         name = <<"name">>,
-        redirection_point = <<"redirectionPoint">>,
+        domain = <<"domain">>,
         latitude = <<"latitude">>,
         longitude = <<"longitude">>
     }}, Answer),
@@ -152,8 +150,7 @@ should_get_details_for_given_provider() ->
             [
                 {<<"providerId">>, <<"providerId">>},
                 {<<"clientName">>, <<"name">>},
-                {<<"urls">>, <<"urls">>},
-                {<<"redirectionPoint">>, <<"redirectionPoint">>},
+                {<<"domain">>, <<"domain">>},
                 {<<"latitude">>, <<"latitude">>},
                 {<<"longitude">>, <<"longitude">>}
             ]
@@ -163,8 +160,7 @@ should_get_details_for_given_provider() ->
     ?assertEqual({ok, #provider_details{
         id = <<"providerId">>,
         name = <<"name">>,
-        urls = <<"urls">>,
-        redirection_point = <<"redirectionPoint">>,
+        domain = <<"domain">>,
         latitude = <<"latitude">>,
         longitude = <<"longitude">>
     }}, Answer),
