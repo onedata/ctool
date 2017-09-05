@@ -198,13 +198,17 @@ get_env(Node, Application, Name) ->
 
 %%--------------------------------------------------------------------
 %% @doc
-%% Sets the value of the environment variable 'Name' for 'Application'.
+%% Sets the value of the environment variable 'Name' for 'Application'
+%% on given node(s).
 %% @end
 %%--------------------------------------------------------------------
--spec set_env(Node :: node(), Application :: atom(), Name :: atom(), Value :: term()) ->
-    ok | {badrpc, Reason :: term()}.
-set_env(Node, Application, Name, Value) ->
-    rpc:call(Node, application, set_env, [Application, Name, Value]).
+-spec set_env(Nodes :: node() | [node()], Application :: atom(),
+    Name :: atom(), Value :: term()) -> ok.
+set_env(Nodes, Application, Name, Value) ->
+    {Results, []} = rpc:multicall(as_list(Nodes), application, set_env,
+        [Application, Name, Value]),
+    true = lists:all(fun(X) -> X == ok end, Results),
+    ok.
 
 %%--------------------------------------------------------------------
 %% @doc
