@@ -93,6 +93,7 @@
     acetype :: ?allow_mask | ?deny_mask | ?audit_mask,
     aceflags = ?no_flags_mask :: ?no_flags_mask | ?identifier_group_mask,
     identifier :: user_id() | group_id(),
+    name :: undefined | binary(),
     acemask :: non_neg_integer()
 }).
 
