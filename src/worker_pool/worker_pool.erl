@@ -25,11 +25,12 @@
 
 %% API
 -export([
-    start_pool/1, start_pool/2, stop_pool/1,
+    start_pool/1, start_pool/2, start_sup_pool/2, stop_pool/1,
     call/2, call/3, call/4,
     cast/2, cast/3,
-    stats/0, stats/1
-    , default_strategy/0]).
+    stats/0, stats/1,
+    default_strategy/0
+]).
 
 
 %%--------------------------------------------------------------------
@@ -63,6 +64,27 @@ start_pool(PoolName) ->
     {ok, pid()} | {error, {already_started, pid()} | term()}.
 start_pool(PoolName, Options) ->
     wpool:start_pool(PoolName, Options).
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Starts a pool of N wpool_processes supervised by wpool_sup.
+%% All options are described on
+%% http://inaka.github.io/worker_pool/worker_pool/wpool.html
+%% The most important are:
+%%      *  {workers, integer() >= 1} - specify no. of workers
+%%      *  {worker_type, gen_fsm | gen_server} - specify type of worker
+%%      *  {worker, {Module :: atom(), InitArg :: term()}}
+%%          - specify worker's module
+%%          - by default it's wpool_worker/wpool_worker_fsn
+%%      *  {workers, integer() >= 1} - specify no. of workers
+%%      *  {workers, integer() >= 1} - specify no. of workers
+%% @equiv wpool:start_pool(PoolName, Options).
+%% @end
+%%--------------------------------------------------------------------
+-spec start_sup_pool(name(), [option()]) ->
+    {ok, pid()} | {error, {already_started, pid()} | term()}.
+start_sup_pool(PoolName, Options) ->
+    wpool:start_sup_pool(PoolName, Options).
 
 %%--------------------------------------------------------------------
 %% @doc
