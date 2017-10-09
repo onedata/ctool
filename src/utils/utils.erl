@@ -21,6 +21,7 @@
     system_time_milli_seconds/0]).
 -export([mkdtemp/0, mkdtemp/3, rmtempdir/1]).
 -export([to_binary/1]).
+-export([save_file_on_hosts/3, save_file/2]).
 
 -type time_unit() :: us | ms | s | min | h.
 
@@ -315,6 +316,46 @@ to_binary(Term) when is_binary(Term) ->
     Term;
 to_binary(Term) ->
     base64:encode(term_to_binary(Term)).
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Saves given file on given hosts.
+%% @end
+%%--------------------------------------------------------------------
+-spec save_file_on_hosts(Hosts :: [atom()], Path :: file:name_all(), Content :: binary()) ->
+    ok | [{node(), Reason :: term()}].
+save_file_on_hosts(Hosts, Path, Content) ->
+    Res = lists:foldl(
+        fun(Host, Acc) ->
+            case rpc:call(Host, ?MODULE, save_file, [Path, Content]) of
+                ok ->
+                    Acc;
+                {error, Reason} ->
+                    [{Host, Reason} | Acc]
+            end
+        end, [], Hosts),
+    case Res of
+        [] -> ok;
+        Other -> Other
+    end.
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Saves given file under given path.
+%% @end
+%%--------------------------------------------------------------------
+-spec save_file(Path :: file:name_all(), Content :: binary()) -> ok | {error, term()}.
+save_file(Path, Content) ->
+    try
+        file:make_dir(filename:dirname(Path)),
+        ok = file:write_file(Path, Content),
+        ok
+    catch
+        _:Reason ->
+            {error, Reason}
+    end.
 
 %%%===================================================================
 %%% Internal functions

@@ -14,7 +14,7 @@
 -include("logging.hrl").
 
 %% API
--export([get_rest_api_root/0, get_oz_cacerts/0]).
+-export([get_api_root/1, get_oz_cacerts/0, reset_oz_cacerts/0]).
 -export([provider_request/3, provider_request/4, provider_request/5,
     provider_request/6]).
 -export([request/3, request/4, request/5, request/6]).
@@ -23,7 +23,7 @@
 -type method() :: http_client:method().
 -type headers() :: http_client:headers().
 -type body() :: http_client:body().
--type opts() :: http_client:opts().
+-type opts() :: http_client:opts() | [{rest_endpoint, boolean()}].
 -type response() :: http_client:response().
 -type params() :: [{Key :: binary(), Value :: binary() | [binary()]}].
 -type client() :: client | provider | {user, token, macaroons()} |
@@ -46,18 +46,26 @@
 %%%===================================================================
 
 %%--------------------------------------------------------------------
-%% @doc Returns root path to OZ REST API, for example:
-%% 'https://onedata.org:8443/api/v3/onezone' based on information obtained
-%% from oz_plugin.
+%% @doc Returns root path to OZ API, for example:
+%% GUI: 'https://onedata.org'
+%% REST: 'https://onedata.org:8443/api/v3/onezone'
+%% based on information obtained from oz_plugin.
 %% @end
 %%--------------------------------------------------------------------
--spec get_rest_api_root() -> string().
-get_rest_api_root() ->
-    str_utils:format("~s:~B~s", [
-        oz_plugin:get_oz_url(),
-        oz_plugin:get_oz_rest_port(),
-        oz_plugin:get_oz_rest_api_prefix()
-    ]).
+-spec get_api_root(opts()) -> string().
+get_api_root(Opts) ->
+    case proplists:get_value(rest_endpoint, Opts, true) of
+        true ->
+            str_utils:format("~s:~B~s", [
+                oz_plugin:get_oz_url(),
+                oz_plugin:get_oz_rest_port(),
+                oz_plugin:get_oz_rest_api_prefix()
+            ]);
+        false ->
+            str_utils:format("~s", [
+                oz_plugin:get_oz_url()
+            ])
+    end.
 
 %%--------------------------------------------------------------------
 %% @doc Returns cached OZ CA certificates or loads them from a directory given
@@ -80,6 +88,14 @@ get_oz_cacerts() ->
                     []
             end
     end.
+
+%%--------------------------------------------------------------------
+%% @doc Clears OZ CA certificates cache.
+%% @end
+%%--------------------------------------------------------------------
+-spec reset_oz_cacerts() -> ok.
+reset_oz_cacerts() ->
+    application:unset_env(ctool, oz_cacerts).
 
 %%--------------------------------------------------------------------
 %% @doc @equiv provider_request(Auth, URN, Method, <<>>)
@@ -170,7 +186,7 @@ request(Auth, URN, Method, Headers, Body, Opts) ->
     end,
     Headers2 = Headers#{<<"content-type">> => <<"application/json">>},
     Headers3 = prepare_auth_headers(Auth, Headers2),
-    URL = get_rest_api_root() ++ URN,
+    URL = get_api_root(Opts) ++ URN,
     http_client:request(Method, URL, Headers3, Body, Opts2).
 
 %%%===================================================================

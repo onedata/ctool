@@ -20,7 +20,7 @@
 -export([register/2, register_with_uuid/2, unregister/1]).
 -export([get_details/1, get_details/2, modify_details/2]).
 -export([get_token_issuer/2]).
--export([check_ip_address/1, check_port/4]).
+-export([check_ip_address/1, check_port/4, get_oz_cacert/1]).
 -export([create_space/2, support_space/2, revoke_space_support/2, get_spaces/1,
     get_space_details/2]).
 
@@ -178,7 +178,7 @@ check_ip_address(Auth) ->
     ?run(fun() ->
         URN = "/provider/test/check_my_ip",
         {ok, 200, _ResponseHeaders, ResponseBody} =
-            oz_endpoint:request(Auth, URN, get, <<>>),
+            oz_endpoint:request(Auth, URN, get, <<>>, [insecure]),
         IpAddress = json_utils:decode(ResponseBody),
         {ok, IpAddress}
     end).
@@ -205,6 +205,20 @@ check_port(Auth, IpAddress, Port, Type) ->
         Proplist = json_utils:decode(ResponseBody),
         <<"ok">> = lists_utils:key_get(CheckURL, Proplist),
         ok
+    end).
+
+%%--------------------------------------------------------------------
+%% @doc Returns onezone public CA certificate.
+%% @end
+%%--------------------------------------------------------------------
+-spec get_oz_cacert(Auth :: oz_endpoint:auth()) ->
+    {ok, CaCert :: binary()} | {error, Reason :: term()}.
+get_oz_cacert(Auth) ->
+    ?run(fun() ->
+        URN = "/public-ca",
+        {ok, 200, _ResponseHeaders, ResponseBody} =
+            oz_endpoint:request(Auth, URN, get, <<>>, [{rest_endpoint, false}]),
+        {ok, ResponseBody}
     end).
 
 %%--------------------------------------------------------------------
