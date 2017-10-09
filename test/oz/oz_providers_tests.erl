@@ -36,6 +36,7 @@ oz_providers_test_() ->
             {"check ip address", fun should_check_ip_address/0},
             {"check GUI port", fun should_check_gui_port/0},
             {"check REST port", fun should_check_rest_port/0},
+            {"get public CA", fun should_return_oz_cacert/0},
             {"create space", fun should_create_space/0},
             {"support space", fun should_support_space/0},
             {"revoke space support", fun should_revoke_space_support/0},
@@ -77,8 +78,12 @@ setup() ->
         (client, "/provider", post, <<"body">>) ->
             {ok, 200, response_headers, response_body};
         (client, "/provider/test/check_my_ports", post, <<"body">>) ->
-            {ok, 200, response_headers, response_body};
-        (client, "/provider/test/check_my_ip", get, <<>>) ->
+            {ok, 200, response_headers, response_body}
+    end),
+    meck:expect(oz_endpoint, request, fun
+        (client, "/public-ca", get, <<>>, _Opts) ->
+            {ok, 200, response_headers, <<"cacert">>};
+        (client, "/provider/test/check_my_ip", get, <<>>, [insecure]) ->
             {ok, 200, response_headers, response_body}
     end).
 
@@ -225,6 +230,9 @@ should_check_rest_port() ->
     ?assert(meck:validate(json_utils)),
     ok = meck:unload(json_utils).
 
+should_return_oz_cacert() ->
+    Answer = oz_providers:get_oz_cacert(client),
+    ?assertEqual({ok, <<"cacert">>}, Answer).
 
 should_create_space() ->
     meck:new(json_utils),
