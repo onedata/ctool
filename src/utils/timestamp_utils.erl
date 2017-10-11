@@ -7,13 +7,14 @@
 %%%--------------------------------------------------------------------
 %%% @doc
 %%% Module with timestamp converting functions.
+%%% TODO use iso8601 module in all functions
 %%% @end
 %%%--------------------------------------------------------------------
 -module(timestamp_utils).
 -author("Tomasz Lichon").
 
 %% API
--export([datetime_to_datestamp/1, datestamp_to_datetime/1]).
+-export([datetime_to_datestamp/1, datestamp_to_datetime/1, epoch_to_iso8601/1]).
 
 %% Macro with regex matching allowed datestamps
 %%  * YYYY-MM-DDThh:mm:ssZ
@@ -24,6 +25,15 @@
 %%%===================================================================
 %%% API
 %%%===================================================================
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Convert unix epoch to iso8601 format.
+%% @end
+%%--------------------------------------------------------------------
+-spec epoch_to_iso8601(Epoch :: non_neg_integer()) -> binary().
+epoch_to_iso8601(Epoch) ->
+    iso8601:format({Epoch div 1000000, Epoch rem 1000000, 0}).
 
 %%%--------------------------------------------------------------------
 %%% @doc
