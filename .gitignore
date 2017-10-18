@@ -4,7 +4,9 @@
 *.beam
 .eunit
 .dialyzer.plt
+ebin
 .rebar
+.rebar3
 
 test/eunit_results
 _build

@@ -108,6 +108,7 @@ setup() ->
     meck:new(logger_plugin, [non_strict]),
     meck:expect(logger_plugin, gather_metadata, fun() -> [] end),
     meck:new(oz_plugin, [non_strict]),
+    meck:new(cert_utils, []),
     meck:expect(oz_plugin, get_oz_url, fun() -> "OZ_URL" end),
     meck:expect(oz_plugin, get_oz_rest_port, fun() -> 9443 end),
     meck:expect(oz_plugin, get_oz_rest_api_prefix, fun() -> "/PREFIX" end),
@@ -116,13 +117,14 @@ setup() ->
     meck:expect(oz_plugin, get_cacerts_dir, fun() -> cacerts_dir end),
     % Function auth_to_rest_client should return REST client based on Auth term.
     % Just return the same - we will use oz_endpoint:client() terms as Auth.
-    meck:expect(oz_plugin, auth_to_rest_client, fun(Auth) -> Auth end).
+    meck:expect(oz_plugin, auth_to_rest_client, fun(Auth) -> Auth end),
+    meck:expect(cert_utils, load_ders_in_dir, fun(_) -> [] end).
 
 teardown(_) ->
     lists:foreach(fun(Module) ->
         ?assert(meck:validate(Module)),
         ok = meck:unload(Module)
-    end, [oz_plugin, logger_plugin]).
+    end, [oz_plugin, logger_plugin, cert_utils]).
 
 %%%===================================================================
 %%% Tests functions
@@ -135,7 +137,7 @@ should_send_provider_request_1() ->
         "OZ_URL:9443/PREFIX/URN",
         ?CONTENT_TYPE_HEADER_MATCH,
         <<>>,
-        [{ssl_options, [{keyfile, key_file}, {certfile, cert_file} | _]}]
+        [{ssl_options, [{cacerts, _}, {keyfile, key_file}, {certfile, cert_file} | _]}]
     ) -> ok end),
     ?assertEqual(ok, oz_endpoint:provider_request(provider, "/URN", method)),
 
@@ -159,7 +161,7 @@ should_send_provider_request_2() ->
         "OZ_URL:9443/PREFIX/URN",
         ?CONTENT_TYPE_HEADER_MATCH,
         body,
-        [{ssl_options, [{keyfile, key_file}, {certfile, cert_file} | _]}]
+        [{ssl_options, [{cacerts, _}, {keyfile, key_file}, {certfile, cert_file} | _]}]
     ) -> ok end),
     ?assertEqual(ok, oz_endpoint:provider_request(provider, "/URN", method, body)),
 
@@ -185,7 +187,7 @@ should_send_provider_request_3() ->
         body,
         [
             options,
-            {ssl_options, [{keyfile, key_file}, {certfile, cert_file} | _]}
+            {ssl_options, [{cacerts, _}, {keyfile, key_file}, {certfile, cert_file} | _]}
         ]
     ) -> ok end),
     ?assertEqual(ok, oz_endpoint:provider_request(
@@ -218,7 +220,7 @@ should_send_provider_request_4() ->
         body,
         [
             options,
-            {ssl_options, [{keyfile, key_file}, {certfile, cert_file} | _]}
+            {ssl_options, [{cacerts, _}, {keyfile, key_file}, {certfile, cert_file} | _]}
         ]
     ) -> case Headers of
         ExpectedHeaders -> ok
@@ -265,7 +267,7 @@ should_send_user_request_1() ->
             "OZ_URL:9443/PREFIX/URN",
             Headers,
             <<>>,
-            [{ssl_options, [{keyfile, key_file}, {certfile, cert_file} | _]}]
+            [{ssl_options, [{cacerts, _}, {keyfile, key_file}, {certfile, cert_file} | _]}]
         ) ->
             case Headers of
                 ExpectedTokenHeaders -> ok;
@@ -328,7 +330,7 @@ should_send_user_request_2() ->
             "OZ_URL:9443/PREFIX/URN",
             Headers,
             body,
-            [{ssl_options, [{keyfile, key_file}, {certfile, cert_file} | _]}]
+            [{ssl_options, [{cacerts, _}, {keyfile, key_file}, {certfile, cert_file} | _]}]
         ) ->
             case Headers of
                 ExpectedTokenHeaders -> ok;
@@ -393,7 +395,7 @@ should_send_user_request_3() ->
             body,
             [
                 opts,
-                {ssl_options, [{keyfile, key_file}, {certfile, cert_file} | _]}
+                {ssl_options, [{cacerts, _}, {keyfile, key_file}, {certfile, cert_file} | _]}
             ]
         ) ->
             case Headers of
@@ -460,7 +462,7 @@ should_send_user_request_4() ->
             body,
             [
                 options,
-                {ssl_options, [{keyfile, key_file}, {certfile, cert_file} | _]}
+                {ssl_options, [{cacerts, _}, {keyfile, key_file}, {certfile, cert_file} | _]}
             ]
         ) ->
             case Headers of

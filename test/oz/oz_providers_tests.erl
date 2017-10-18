@@ -75,15 +75,13 @@ setup() ->
                 response_body}
     end),
     meck:expect(oz_endpoint, request, fun
-        (client, "/provider", post, <<"body">>) ->
+        (client, "/provider", post, <<"body">>, [{endpoint, rest_no_auth}]) ->
             {ok, 200, response_headers, response_body};
-        (client, "/provider/test/check_my_ports", post, <<"body">>) ->
-            {ok, 200, response_headers, response_body}
-    end),
-    meck:expect(oz_endpoint, request, fun
-        (client, "/public-ca", get, <<>>, _Opts) ->
+        (client, "/public-ca", get, <<>>, [{endpoint, gui}]) ->
             {ok, 200, response_headers, <<"cacert">>};
-        (client, "/provider/test/check_my_ip", get, <<>>, [insecure]) ->
+        (client, "/provider/test/check_my_ip", get, <<>>, [{endpoint, rest_no_auth}]) ->
+            {ok, 200, response_headers, response_body};
+        (client, "/provider/test/check_my_ports", post, <<"body">>, [{endpoint, rest_no_auth}]) ->
             {ok, 200, response_headers, response_body}
     end).
 

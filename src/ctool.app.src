@@ -26,13 +26,10 @@
     ]},
 
     {env, [
-        % The env below decides if the GR certificate should be verified
-        % during REST calls
-        {verify_oz_cert, true},
+        %% ===================================================================
+        %% LOGGING
+        %% ===================================================================
 
-        % ==================================
-
-        % LOGGING:
         % Current loglevel in the application. Logs with lower importance will be completely discarded
         % Available loglevels are 0-7, respectively: debug, info, notice, warning, error, critical, alert, emergency
         {current_loglevel, 1},
