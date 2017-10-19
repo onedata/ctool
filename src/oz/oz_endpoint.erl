@@ -23,7 +23,7 @@
 -type method() :: http_client:method().
 -type headers() :: http_client:headers().
 -type body() :: http_client:body().
--type opts() :: http_client:opts() | [{rest_endpoint, boolean()}].
+-type opts() :: http_client:opts() | [{endpoint, rest | rest_no_auth | gui}].
 -type response() :: http_client:response().
 -type params() :: [{Key :: binary(), Value :: binary() | [binary()]}].
 -type client() :: client | provider | {user, token, macaroons()} |
@@ -54,14 +54,22 @@
 %%--------------------------------------------------------------------
 -spec get_api_root(opts()) -> string().
 get_api_root(Opts) ->
-    case proplists:get_value(rest_endpoint, Opts, true) of
-        true ->
+    case proplists:get_value(endpoint, Opts, rest) of
+        rest ->
+            % Regular REST endpoint with authorization by provider certs
             str_utils:format("~s:~B~s", [
                 oz_plugin:get_oz_url(),
                 oz_plugin:get_oz_rest_port(),
                 oz_plugin:get_oz_rest_api_prefix()
             ]);
-        false ->
+        rest_no_auth ->
+            % REST endpoint without authorization on standard 443 HTTPS port
+            str_utils:format("~s~s", [
+                oz_plugin:get_oz_url(),
+                oz_plugin:get_oz_rest_api_prefix()
+            ]);
+        gui ->
+            % Endpoint on standard 443 HTTPS port
             str_utils:format("~s", [
                 oz_plugin:get_oz_url()
             ])
@@ -75,18 +83,12 @@ get_api_root(Opts) ->
 -spec get_oz_cacerts() -> CaCerts :: [public_key:der_encoded()].
 get_oz_cacerts() ->
     case application:get_env(ctool, oz_cacerts) of
-        {ok, CaCerts} -> CaCerts;
+        {ok, CaCerts} ->
+            CaCerts;
         undefined ->
-            CaCertDir = oz_plugin:get_cacerts_dir(),
-            case file_utils:read_files({dir, CaCertDir}) of
-                {ok, CaCertsPems} ->
-                    CaCerts = lists:map(fun cert_decoder:pem_to_der/1, CaCertsPems),
-                    application:set_env(ctool, oz_cacerts, CaCerts),
-                    CaCerts;
-                {error, Reason} ->
-                    ?error("Cannot load OZ CA certificates due to: ~p", [Reason]),
-                    []
-            end
+            CaCerts = cert_utils:load_ders_in_dir(oz_plugin:get_cacerts_dir()),
+            application:set_env(ctool, oz_cacerts, CaCerts),
+            CaCerts
     end.
 
 %%--------------------------------------------------------------------
@@ -174,16 +176,10 @@ request(Auth, URN, Method, Body, Opts) ->
 -spec request(Auth :: auth(), URN :: urn(), Method :: method(),
     Headers :: headers(), Body :: body(), Opts :: opts()) -> Response :: response().
 request(Auth, URN, Method, Headers, Body, Opts) ->
-    Opts2 = case application:get_env(ctool, verify_oz_cert) of
-        {ok, false} ->
-            [insecure | Opts];
-        _ ->
-            SSLOpts = lists_utils:key_get(ssl_options, Opts, []),
-            CaCerts = lists_utils:key_get(cacerts, SSLOpts, []),
-            CaCerts2 = CaCerts ++ get_oz_cacerts(),
-            SSLOpts2 = lists_utils:key_store(cacerts, CaCerts2, SSLOpts),
-            lists_utils:key_store(ssl_options, SSLOpts2, Opts)
-    end,
+    SSLOpts = lists_utils:key_get(ssl_options, Opts, []),
+    Opts2 = lists_utils:key_store(ssl_options, [
+        {cacerts, get_oz_cacerts()} | SSLOpts
+    ], Opts),
     Headers2 = Headers#{<<"content-type">> => <<"application/json">>},
     Headers3 = prepare_auth_headers(Auth, Headers2),
     URL = get_api_root(Opts) ++ URN,

@@ -42,8 +42,9 @@ register(Auth, Parameters) ->
     ?run(fun() ->
         URN = "/provider",
         Body = json_utils:encode(Parameters),
-        {ok, 200, _ResponseHeaders, ResponseBody} =
-            oz_endpoint:request(Auth, URN, post, Body),
+        {ok, 200, _ResponseHeaders, ResponseBody} = oz_endpoint:request(
+            Auth, URN, post, Body, [{endpoint, rest_no_auth}]
+        ),
         Proplist = json_utils:decode(ResponseBody),
         ProviderId = lists_utils:key_get(<<"providerId">>, Proplist),
         Cert = lists_utils:key_get(<<"certificate">>, Proplist),
@@ -65,8 +66,9 @@ register_with_uuid(Auth, Parameters) ->
     ?run(fun() ->
         URN = "/provider_dev",
         Body = json_utils:encode(Parameters),
-        {ok, 200, _ResponseHeaders, ResponseBody} =
-            oz_endpoint:request(Auth, URN, post, Body),
+        {ok, 200, _ResponseHeaders, ResponseBody} = oz_endpoint:request(
+            Auth, URN, post, Body, [{endpoint, rest_no_auth}]
+        ),
         Proplist = json_utils:decode(ResponseBody),
         ProviderId = lists_utils:key_get(<<"providerId">>, Proplist),
         Cert = lists_utils:key_get(<<"certificate">>, Proplist),
@@ -178,7 +180,7 @@ check_ip_address(Auth) ->
     ?run(fun() ->
         URN = "/provider/test/check_my_ip",
         {ok, 200, _ResponseHeaders, ResponseBody} =
-            oz_endpoint:request(Auth, URN, get, <<>>, [insecure]),
+            oz_endpoint:request(Auth, URN, get, <<>>, [{endpoint, rest_no_auth}]),
         IpAddress = json_utils:decode(ResponseBody),
         {ok, IpAddress}
     end).
@@ -201,7 +203,7 @@ check_port(Auth, IpAddress, Port, Type) ->
             (integer_to_binary(Port))/binary, Resource/binary>>,
         Body = json_utils:encode([{Type, CheckURL}]),
         {ok, 200, _ResponseHeaders, ResponseBody} =
-            oz_endpoint:request(Auth, URN, post, Body),
+            oz_endpoint:request(Auth, URN, post, Body, [{endpoint, rest_no_auth}]),
         Proplist = json_utils:decode(ResponseBody),
         <<"ok">> = lists_utils:key_get(CheckURL, Proplist),
         ok
@@ -217,7 +219,7 @@ get_oz_cacert(Auth) ->
     ?run(fun() ->
         URN = "/public-ca",
         {ok, 200, _ResponseHeaders, ResponseBody} =
-            oz_endpoint:request(Auth, URN, get, <<>>, [{rest_endpoint, false}]),
+            oz_endpoint:request(Auth, URN, get, <<>>, [{endpoint, gui}]),
         {ok, ResponseBody}
     end).
 
