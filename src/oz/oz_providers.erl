@@ -44,13 +44,21 @@ register(Auth, Parameters) ->
     ?run(fun() ->
         URN = "/provider",
         Body = json_utils:encode(Parameters),
-        {ok, 200, _ResponseHeaders, ResponseBody} = oz_endpoint:request(
+
+        case oz_endpoint:request(
             Auth, URN, post, Body, [{endpoint, rest_no_auth}]
-        ),
-        Proplist = json_utils:decode(ResponseBody),
-        ProviderId = lists_utils:key_get(<<"providerId">>, Proplist),
-        Cert = lists_utils:key_get(<<"certificate">>, Proplist),
-        {ok, ProviderId, Cert}
+        ) of
+            {ok, 200, _ResponseHeaders, ResponseBody} ->
+                Proplist = json_utils:decode(ResponseBody),
+                ProviderId = lists_utils:key_get(<<"providerId">>, Proplist),
+                Cert = lists_utils:key_get(<<"certificate">>, Proplist),
+                {ok, ProviderId, Cert};
+
+            {ok, 400, _ResponseHeaders, ResponseBody} ->
+                #{<<"error">> := <<"Bad value: provided identifier ",
+                "(\"subdomain\") is already occupied">>} = json_utils:decode_map(ResponseBody),
+                {error, subdomain_reserved}
+        end
     end).
 
 %%--------------------------------------------------------------------
