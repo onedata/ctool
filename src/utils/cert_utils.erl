@@ -14,8 +14,8 @@
 -author("Lukasz Opiola").
 
 %% API
--export([load_der/1, load_ders_in_dir/1]).
--export([pem_to_der/1]).
+-export([load_ders/1, load_ders_in_dir/1]).
+-export([pem_to_ders/1]).
 -export([create_key/1]).
 -export([create_csr/3]).
 -export([create_signed_webcert/5]).
@@ -26,38 +26,42 @@
 
 %%--------------------------------------------------------------------
 %% @doc
-%% Reads the certificate file under given path and returns the contents in
-%% DER format.
+%% Reads a file in pem format and returns a list of DER encoded certificates
+%% that it contains (the file can contain multiple certificates).
 %% @end
 %%--------------------------------------------------------------------
--spec load_der(file:filename_all()) -> public_key:der_encoded().
-load_der(Path) ->
+-spec load_ders(file:filename_all()) -> public_key:der_encoded().
+load_ders(Path) ->
     {ok, CertPem} = file:read_file(Path),
-    pem_to_der(CertPem).
+    pem_to_ders(CertPem).
 
 
 %%--------------------------------------------------------------------
 %% @doc
-%% Reads all certificate files in given directory and returns their contents in
-%% DER format.
+%% Reads all files in given directory and returns a list of DER encoded
+%% certificates contained in them (each file can contain multiple certificates).
 %% @end
 %%--------------------------------------------------------------------
 -spec load_ders_in_dir(file:filename_all()) -> [public_key:der_encoded()].
 load_ders_in_dir(DirPath) ->
     {ok, CertPems} = file_utils:read_files({dir, DirPath}),
-    lists:map(fun pem_to_der/1, CertPems).
+    lists:flatmap(fun pem_to_ders/1, CertPems).
 
 
 %%--------------------------------------------------------------------
 %% @doc
-%% Converts certificate from pem to der format.
+%% Converts data in pem format to a list of DER encoded certificates.
 %% @end
 %%--------------------------------------------------------------------
--spec pem_to_der(file:filename_all()) -> public_key:der_encoded().
-pem_to_der(CertPem) ->
+-spec pem_to_ders(file:filename_all()) -> [public_key:der_encoded()].
+pem_to_ders(CertPem) ->
     PemEntries = public_key:pem_decode(CertPem),
-    {'Certificate', CertDer, _} = lists:keyfind('Certificate', 1, PemEntries),
-    CertDer.
+    lists:filtermap(fun(Entry) ->
+        case Entry of
+            {'Certificate', CertDer, _} -> {true, CertDer};
+            _ -> false
+        end
+    end, PemEntries).
 
 
 %%--------------------------------------------------------------------
