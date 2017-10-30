@@ -64,7 +64,7 @@
 %% that will be used throughout the monitoring process.
 %% @end
 %%--------------------------------------------------------------------
--spec start(IPAddr :: {byte(), byte(), byte(), byte()}) -> #node_monitoring_state{}.
+-spec start(IPAddr :: inet:ip4_address()) -> #node_monitoring_state{}.
 start(IPAddr) ->
     _InitialRecord = update(#node_monitoring_state{
         ip_addr = IPAddr,
@@ -76,7 +76,7 @@ start(IPAddr) ->
 %% Refreshes IP address stored in node_monitoring_state record.
 %% @end
 %%--------------------------------------------------------------------
--spec refresh_ip_address(IPAddr :: {byte(), byte(), byte(), byte()}, #node_monitoring_state{}) ->
+-spec refresh_ip_address(IPAddr :: inet:ip4_address(), #node_monitoring_state{}) ->
     #node_monitoring_state{}.
 refresh_ip_address(IPAddr, MonState) ->
     MonState#node_monitoring_state{ip_addr = IPAddr}.
