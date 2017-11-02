@@ -7,14 +7,15 @@
 %%%--------------------------------------------------------------------
 %%% @doc
 %%% Module with timestamp converting functions.
-%%% TODO use iso8601 module in all functions
+%%% TODO use iso8601 module in all functions in this module VFS-3825
 %%% @end
 %%%--------------------------------------------------------------------
 -module(timestamp_utils).
 -author("Tomasz Lichon").
 
 %% API
--export([datetime_to_datestamp/1, datestamp_to_datetime/1, epoch_to_iso8601/1, datetime_to_epoch/1, iso8601_to_epoch/1]).
+-export([datetime_to_datestamp/1, datestamp_to_datetime/1, epoch_to_iso8601/1,
+    datetime_to_epoch/1, iso8601_to_epoch/1]).
 
 %% Macro with regex matching allowed datestamps
 %%  * YYYY-MM-DDThh:mm:ssZ
