@@ -7,23 +7,56 @@
 %%%--------------------------------------------------------------------
 %%% @doc
 %%% Module with timestamp converting functions.
+%%% TODO use iso8601 module in all functions in this module VFS-3825
 %%% @end
 %%%--------------------------------------------------------------------
 -module(timestamp_utils).
 -author("Tomasz Lichon").
 
 %% API
--export([datetime_to_datestamp/1, datestamp_to_datetime/1]).
+-export([datetime_to_datestamp/1, datestamp_to_datetime/1, epoch_to_iso8601/1,
+    datetime_to_epoch/1, iso8601_to_epoch/1]).
 
 %% Macro with regex matching allowed datestamps
 %%  * YYYY-MM-DDThh:mm:ssZ
 %%  * YYYY-MM-DD
 -define(DATESTAMP_REGEX,
-    "(\\d{4})-(\\d{2})-(\\d{2})(?:$|(?:T(\\d{2}):(\\d{2}):(\\d{2})Z){1})").
+    "(\\d{4})-(\\d{2})-(\\d{2})(?:$|(?:T(\\d{2}):(\\d{2}):(\\d{2})(?:.\\d{3})?Z){1})").
+
+%% calendar:datetime_to_gregorian_seconds({{1970,1,1},{0,0,0}}).
+-define(UNIX_EPOCH, 62167219200).
 
 %%%===================================================================
 %%% API
 %%%===================================================================
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Convert unix epoch to iso8601 format.
+%% @end
+%%--------------------------------------------------------------------
+-spec epoch_to_iso8601(Epoch :: non_neg_integer()) -> binary().
+epoch_to_iso8601(Epoch) ->
+    iso8601:format({Epoch div 1000000, Epoch rem 1000000, 0}).
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Convert iso8601 format to unix epoch time.
+%% @end
+%%--------------------------------------------------------------------
+-spec iso8601_to_epoch(binary()) -> non_neg_integer().
+iso8601_to_epoch(Iso8601) ->
+    DateTime = datestamp_to_datetime(Iso8601),
+    datetime_to_epoch(DateTime).
+
+%%-------------------------------------------------------------------
+%% @doc
+%% Converts erlang datetime to unix epoch time.
+%% @end
+%%-------------------------------------------------------------------
+-spec datetime_to_epoch(calendar:datetime()) -> non_neg_integer().
+datetime_to_epoch({{_,_,_},{_,_,_}} = DateTime) ->
+    calendar:datetime_to_gregorian_seconds(DateTime) - ?UNIX_EPOCH.
 
 %%%--------------------------------------------------------------------
 %%% @doc
