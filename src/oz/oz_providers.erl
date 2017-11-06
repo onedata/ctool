@@ -104,8 +104,8 @@ get_details(Auth) ->
             name = lists_utils:key_get(<<"clientName">>, Proplist),
             urls = lists_utils:key_get(<<"urls">>, Proplist),
             redirection_point = lists_utils:key_get(<<"redirectionPoint">>, Proplist),
-            latitude = lists_utils:key_get(<<"latitude">>, Proplist),
-            longitude = lists_utils:key_get(<<"longitude">>, Proplist)
+            latitude = lists_utils:key_get(<<"latitude">>, Proplist, 0.0),
+            longitude = lists_utils:key_get(<<"longitude">>, Proplist, 0.0)
         },
         {ok, ProviderDetails}
     end).
@@ -127,8 +127,8 @@ get_details(Auth, ProviderId) ->
             name = lists_utils:key_get(<<"clientName">>, Proplist),
             urls = lists_utils:key_get(<<"urls">>, Proplist),
             redirection_point = lists_utils:key_get(<<"redirectionPoint">>, Proplist),
-            latitude = lists_utils:key_get(<<"latitude">>, Proplist),
-            longitude = lists_utils:key_get(<<"longitude">>, Proplist)
+            latitude = lists_utils:key_get(<<"latitude">>, Proplist, 0.0),
+            longitude = lists_utils:key_get(<<"longitude">>, Proplist, 0.0)
         },
         {ok, ProviderDetails}
     end).

@@ -21,8 +21,8 @@
     name :: binary(),
     redirection_point :: undefined | binary(),
     urls :: [URL :: binary()],
-    latitude :: undefined | float(),
-    longitude :: undefined | float()
+    latitude = 0.0 :: float(),
+    longitude = 0.0 :: float()
 }).
 
 -endif.
