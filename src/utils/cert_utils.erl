@@ -110,7 +110,7 @@ create_csr(KeyPath, OutputPath, CommonName) ->
     CertPath :: file:filename_all(), Hostname :: string() | binary(),
     CaKeyPath :: file:filename_all(), CaCertPath :: file:filename_all()) -> ok.
 create_signed_webcert(KeyPath, CertPath, Hostname, CaKeyPath, CaCertPath) ->
-    {Root, ConfigFile} = create_temp_ca_dir(),
+    {Root, ConfigFile} = create_temp_ca_dir(Hostname),
     CsrPath = filename:join(Root, "temp.csr"),
     create_key(KeyPath),
     create_csr(KeyPath, CsrPath, Hostname),
@@ -136,15 +136,15 @@ create_signed_webcert(KeyPath, CertPath, Hostname, CaKeyPath, CaCertPath) ->
 %% cert.
 %% @end
 %%--------------------------------------------------------------------
--spec create_temp_ca_dir() ->
+-spec create_temp_ca_dir(Hostname :: string() | binary()) ->
     {Root :: file:filename_all(), ConfigFile :: file:filename_all()}.
-create_temp_ca_dir() ->
+create_temp_ca_dir(Hostname) ->
     Root = utils:mkdtemp(),
     ConfigFile = filename:join(Root, "openssl.cfg"),
     IndexFile = filename:join(Root, "index.txt"),
     SerialFile = filename:join(Root, "serial"),
     RandomSerial = httpd_util:integer_to_hexlist(999999999 + rand:uniform(999999999)),
-    file:write_file(ConfigFile, openssl_cnf(Root)),
+    file:write_file(ConfigFile, openssl_cnf(Root, Hostname)),
     file:write_file(IndexFile, <<"">>),
     file:write_file(SerialFile, RandomSerial),
     {Root, ConfigFile}.
@@ -167,8 +167,8 @@ shell_cmd(Tokens) ->
 %% Contents of openssl.cfg file that will be used during signing by CA.
 %% @end
 %%--------------------------------------------------------------------
--spec openssl_cnf(file:filename_all()) -> string().
-openssl_cnf(Home) -> "
+-spec openssl_cnf(file:filename_all(), Hostname :: string() | binary()) -> string().
+openssl_cnf(Home, Hostname) -> "
 HOME                   = " ++ Home ++ "
 default_ca             = ca
 
@@ -184,7 +184,7 @@ RANDFILE               = $dir/.rand
 x509_extensions        = server_cert
 default_days           = 3650
 default_crl_days       = 30
-default_md             = sha1
+default_md             = sha256
 preserve               = no
 policy                 = policy_anything
 
@@ -204,4 +204,8 @@ nsComment              = 'OpenSSL Generated Server Certificate'
 subjectKeyIdentifier   = hash
 authorityKeyIdentifier = keyid,issuer:always
 extendedKeyUsage       = serverAuth
-keyUsage               = digitalSignature, keyEncipherment".
+keyUsage               = digitalSignature, keyEncipherment
+subjectAltName         = @alt_names
+
+[ alt_names ]
+DNS.1                  = " ++ str_utils:to_list(Hostname).
