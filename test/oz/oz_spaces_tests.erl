@@ -370,8 +370,7 @@ should_get_provider_details() ->
     meck:expect(json_utils, decode, fun(response_body) -> [
         {<<"providerId">>, <<"providerId">>},
         {<<"clientName">>, <<"name">>},
-        {<<"urls">>, <<"urls">>},
-        {<<"redirectionPoint">>, <<"redirectionPoint">>},
+        {<<"domain">>, <<"domain">>},
         {<<"latitude">>, <<"latitude">>},
         {<<"longitude">>, <<"longitude">>}
     ]
@@ -382,8 +381,7 @@ should_get_provider_details() ->
     ?assertEqual({ok, #provider_details{
         id = <<"providerId">>,
         name = <<"name">>,
-        urls = <<"urls">>,
-        redirection_point = <<"redirectionPoint">>,
+        domain = <<"domain">>,
         latitude = <<"latitude">>,
         longitude = <<"longitude">>
     }}, Answer),

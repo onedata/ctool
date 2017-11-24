@@ -390,8 +390,7 @@ get_provider_details(Auth, SpaceId, ProviderId) ->
         ProviderDetails = #provider_details{
             id = lists_utils:key_get(<<"providerId">>, Proplist),
             name = lists_utils:key_get(<<"clientName">>, Proplist),
-            urls = lists_utils:key_get(<<"urls">>, Proplist),
-            redirection_point = lists_utils:key_get(<<"redirectionPoint">>, Proplist),
+            domain = lists_utils:key_get(<<"domain">>, Proplist),
             latitude = lists_utils:key_get(<<"latitude">>, Proplist),
             longitude = lists_utils:key_get(<<"longitude">>, Proplist)
         },

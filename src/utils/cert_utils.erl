@@ -30,7 +30,7 @@
 %% that it contains (the file can contain multiple certificates).
 %% @end
 %%--------------------------------------------------------------------
--spec load_ders(file:filename_all()) -> public_key:der_encoded().
+-spec load_ders(file:filename_all()) -> [public_key:der_encoded()].
 load_ders(Path) ->
     {ok, CertPem} = file:read_file(Path),
     pem_to_ders(CertPem).

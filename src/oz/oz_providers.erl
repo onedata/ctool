@@ -30,8 +30,10 @@
 
 %%--------------------------------------------------------------------
 %% @doc Registers provider in OZ. Parameters should contain:
-%% "csr" that will be signed by OZ, "urls" to cluster nodes
-%% "redirectionPoint" to provider's GUI and "clientName".
+%% "name", "csr" that will be signed by OZ and "subdomainDelegation".
+%% Depending on "subdomainDelegation" parameters should contain
+%% "domain" (if delegation is "false")
+%% or "subdomain" and "ipList" (if delegation is "true")
 %% @end
 %%--------------------------------------------------------------------
 -spec register(Auth :: oz_endpoint:auth(),
@@ -42,20 +44,30 @@ register(Auth, Parameters) ->
     ?run(fun() ->
         URN = "/provider",
         Body = json_utils:encode(Parameters),
-        {ok, 200, _ResponseHeaders, ResponseBody} = oz_endpoint:request(
+
+        case oz_endpoint:request(
             Auth, URN, post, Body, [{endpoint, rest_no_auth}]
-        ),
-        Proplist = json_utils:decode(ResponseBody),
-        ProviderId = lists_utils:key_get(<<"providerId">>, Proplist),
-        Cert = lists_utils:key_get(<<"certificate">>, Proplist),
-        {ok, ProviderId, Cert}
+        ) of
+            {ok, 200, _ResponseHeaders, ResponseBody} ->
+                Proplist = json_utils:decode(ResponseBody),
+                ProviderId = lists_utils:key_get(<<"providerId">>, Proplist),
+                Cert = lists_utils:key_get(<<"certificate">>, Proplist),
+                {ok, ProviderId, Cert};
+
+            {ok, 400, _ResponseHeaders, ResponseBody} ->
+                #{<<"error">> := <<"Bad value: provided identifier ",
+                "(\"subdomain\") is already occupied">>} = json_utils:decode_map(ResponseBody),
+                {error, subdomain_reserved}
+        end
     end).
 
 %%--------------------------------------------------------------------
 %% @doc Registers provider in OZ with given UUI.
 %% This is used mainly for tests. Parameters should contain:
-%% "csr" that will be signed by OZ, "urls" to cluster nodes
-%% "redirectionPoint" to provider's GUI, "clientName" and "uuid".
+%% "name", "uuid", "csr" that will be signed by OZ and "subdomainDelegation".
+%% Depending on "subdomainDelegation" parameters should contain
+%% "domain" (if delegation is "false")
+%% or "subdomain" and "ipList" (if delegation is "true")
 %% @end
 %%--------------------------------------------------------------------
 -spec register_with_uuid(Auth :: oz_endpoint:auth(),
@@ -104,8 +116,7 @@ get_details(Auth) ->
         ProviderDetails = #provider_details{
             id = lists_utils:key_get(<<"providerId">>, Proplist),
             name = lists_utils:key_get(<<"clientName">>, Proplist),
-            urls = lists_utils:key_get(<<"urls">>, Proplist),
-            redirection_point = lists_utils:key_get(<<"redirectionPoint">>, Proplist),
+            domain = lists_utils:key_get(<<"domain">>, Proplist),
             latitude = lists_utils:key_get(<<"latitude">>, Proplist),
             longitude = lists_utils:key_get(<<"longitude">>, Proplist)
         },
@@ -127,8 +138,7 @@ get_details(Auth, ProviderId) ->
         ProviderDetails = #provider_details{
             id = lists_utils:key_get(<<"providerId">>, Proplist),
             name = lists_utils:key_get(<<"clientName">>, Proplist),
-            urls = lists_utils:key_get(<<"urls">>, Proplist),
-            redirection_point = lists_utils:key_get(<<"redirectionPoint">>, Proplist),
+            domain = lists_utils:key_get(<<"domain">>, Proplist),
             latitude = lists_utils:key_get(<<"latitude">>, Proplist),
             longitude = lists_utils:key_get(<<"longitude">>, Proplist)
         },
@@ -137,7 +147,7 @@ get_details(Auth, ProviderId) ->
 
 %%--------------------------------------------------------------------
 %% @doc Modifies public details about provider. Parameters may contain:
-%% "urls" to cluster nodes and "redirectionPoint" to provider's GUI.
+%% and "domain" of provider.
 %% @end
 %%--------------------------------------------------------------------
 -spec modify_details(Auth :: oz_endpoint:auth(),
