@@ -20,7 +20,7 @@
 -export([register/2, register_with_uuid/2, unregister/1]).
 -export([get_details/1, get_details/2, modify_details/2]).
 -export([get_token_issuer/2]).
--export([check_ip_address/1, check_port/4]).
+-export([check_ip_address/1, get_zone_time/1, check_port/4]).
 -export([create_space/2, support_space/2, revoke_space_support/2, get_spaces/1,
     get_space_details/2]).
 
@@ -181,6 +181,23 @@ check_ip_address(Auth) ->
             oz_endpoint:request(Auth, URN, get, <<>>),
         IpAddress = json_utils:decode(ResponseBody),
         {ok, IpAddress}
+    end).
+
+%%--------------------------------------------------------------------
+%% @doc Returns ip address that is visible for OZ.
+%% @end
+%%--------------------------------------------------------------------
+-spec get_zone_time(Auth :: oz_endpoint:auth()) ->
+    {ok, IpAddress :: binary()} | {error, Reason :: term()}.
+get_zone_time(Auth) ->
+    ?run(fun() ->
+        URN = "/provider/test/get_current_time",
+        {ok, 200, _ResponseHeaders, ResponseBody} =
+            oz_endpoint:request(Auth, URN, get, <<>>),
+        Proplist = json_utils:decode(ResponseBody),
+        Timestamp = proplists:get_value(<<"timeMillis">>, Proplist),
+        true = Timestamp /= undefined,
+        {ok, Timestamp}
     end).
 
 %%--------------------------------------------------------------------
