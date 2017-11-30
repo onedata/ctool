@@ -67,7 +67,7 @@ cluster_time_seconds() ->
 %%--------------------------------------------------------------------
 -spec cluster_time_milli_seconds() -> non_neg_integer().
 cluster_time_milli_seconds() ->
-    remote_timestamp(cluster_time, fun() ->
+    remote_timestamp(cluster_time_bias, fun() ->
         gen_server2:call({global, ?CLUSTER_MANAGER}, get_current_time)
     end).
 
@@ -93,7 +93,7 @@ zone_time_seconds() ->
 %%--------------------------------------------------------------------
 -spec zone_time_milli_seconds() -> non_neg_integer().
 zone_time_milli_seconds() ->
-    remote_timestamp(zone_time, fun() ->
+    remote_timestamp(zone_time_bias, fun() ->
         {ok, Timestamp} = oz_providers:get_zone_time(provider),
         Timestamp
     end).
@@ -114,13 +114,13 @@ zone_time_milli_seconds() ->
 %% Cache key is used to allow different caches for different remote servers.
 %% @end
 %%--------------------------------------------------------------------
--spec remote_timestamp(CacheKey :: term(), RemoteTimestampFun :: fun()) ->
+-spec remote_timestamp(CacheKey :: atom(), RemoteTimestampFun :: fun()) ->
     non_neg_integer().
 remote_timestamp(CacheKey, RemoteTimestampFun) ->
     Now = system_time_milli_seconds(),
     % If possible, use cached bias (clocks difference between this node and
     % remote server where timestamp is measured).
-    case application:get_env(ctool, {bias, CacheKey}) of
+    case application:get_env(ctool, CacheKey) of
         {ok, {Bias, CacheExpiration}} when Now < CacheExpiration ->
             Now + Bias;
         _ ->
@@ -139,7 +139,7 @@ remote_timestamp(CacheKey, RemoteTimestampFun) ->
                     ok;
                 false ->
                     application:set_env(
-                        ctool, {bias, CacheKey},
+                        ctool, CacheKey,
                         {Bias, After + ?REMOTE_TIMESTAMP_CACHE_TTL}
                     )
             end,

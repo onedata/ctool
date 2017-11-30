@@ -18,7 +18,7 @@
 
 %% API
 -export([authorize/1]).
--export([get_details/1, modify_details/2, merge_account/2]).
+-export([get_details/1, get_public_details/2, modify_details/2, merge_account/2]).
 -export([get_create_space_token/1, get_merge_account_token/1]).
 -export([create_space/2, join_space/2, leave_space/2, get_spaces/1,
     get_space_details/2, get_default_space/1, set_default_space/2]).
@@ -45,7 +45,7 @@ authorize(CaveatId) ->
     end).
 
 %%--------------------------------------------------------------------
-%% @doc Returns public details about user.
+%% @doc Returns details about current user.
 %% @end
 %%--------------------------------------------------------------------
 -spec get_details(Auth :: oz_endpoint:auth()) ->
@@ -60,6 +60,28 @@ get_details(Auth) ->
             id = lists_utils:key_get(<<"userId">>, Proplist),
             name = lists_utils:key_get(<<"name">>, Proplist),
             connected_accounts = lists_utils:key_get(<<"linkedAccounts">>, Proplist),
+            alias = lists_utils:key_get(<<"alias">>, Proplist),
+            email_list = lists_utils:key_get(<<"emailList">>, Proplist)
+        },
+        {ok, UserDetails}
+    end).
+
+%%--------------------------------------------------------------------
+%% @doc Returns public details about user.
+%% @end
+%%--------------------------------------------------------------------
+-spec get_public_details(Auth :: oz_endpoint:auth(), UserId :: binary()) ->
+    {ok, UserDetails :: #user_details{}} | {error, Reason :: term()}.
+get_public_details(Auth, UserId) ->
+    ?run(fun() ->
+        URN = "/users/" ++ binary_to_list(UserId),
+        {ok, 200, _ResponseHeaders, ResponseBody} =
+            oz_endpoint:provider_request(Auth, URN, get),
+        Proplist = json_utils:decode(ResponseBody),
+        UserDetails = #user_details{
+            id = lists_utils:key_get(<<"userId">>, Proplist),
+            name = lists_utils:key_get(<<"name">>, Proplist),
+            connected_accounts = lists_utils:key_get(<<"connectedAccounts">>, Proplist),
             alias = lists_utils:key_get(<<"alias">>, Proplist),
             email_list = lists_utils:key_get(<<"emailList">>, Proplist)
         },
