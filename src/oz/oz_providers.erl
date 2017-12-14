@@ -117,8 +117,8 @@ get_details(Auth) ->
             id = lists_utils:key_get(<<"providerId">>, Proplist),
             name = lists_utils:key_get(<<"clientName">>, Proplist),
             domain = lists_utils:key_get(<<"domain">>, Proplist),
-            latitude = lists_utils:key_get(<<"latitude">>, Proplist),
-            longitude = lists_utils:key_get(<<"longitude">>, Proplist)
+            latitude = lists_utils:key_get(<<"latitude">>, Proplist, 0.0),
+            longitude = lists_utils:key_get(<<"longitude">>, Proplist, 0.0)
         },
         {ok, ProviderDetails}
     end).
@@ -139,8 +139,8 @@ get_details(Auth, ProviderId) ->
             id = lists_utils:key_get(<<"providerId">>, Proplist),
             name = lists_utils:key_get(<<"clientName">>, Proplist),
             domain = lists_utils:key_get(<<"domain">>, Proplist),
-            latitude = lists_utils:key_get(<<"latitude">>, Proplist),
-            longitude = lists_utils:key_get(<<"longitude">>, Proplist)
+            latitude = lists_utils:key_get(<<"latitude">>, Proplist, 0.0),
+            longitude = lists_utils:key_get(<<"longitude">>, Proplist, 0.0)
         },
         {ok, ProviderDetails}
     end).
