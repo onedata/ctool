@@ -80,7 +80,13 @@ cluster_time_seconds() ->
 -spec cluster_time_milli_seconds() -> non_neg_integer().
 cluster_time_milli_seconds() ->
     remote_timestamp(cluster_time_bias, fun() ->
-        gen_server2:call({global, ?CLUSTER_MANAGER}, get_current_time)
+        try
+            {ok, gen_server2:call({global, ?CLUSTER_MANAGER}, get_current_time)}
+        catch
+            exit:{Reason, _} ->
+                ?warning("Cannot get cluster time due to: ~p", [Reason]),
+                error
+        end
     end).
 
 
@@ -106,8 +112,13 @@ zone_time_seconds() ->
 -spec zone_time_milli_seconds() -> non_neg_integer().
 zone_time_milli_seconds() ->
     remote_timestamp(zone_time_bias, fun() ->
-        {ok, Timestamp} = oz_providers:get_zone_time(provider),
-        Timestamp
+        case oz_providers:get_zone_time(provider) of
+            {ok, Timestamp} ->
+                {ok, Timestamp};
+            {error, Reason} ->
+                ?warning("Cannot get zone time due to: ~p", [Reason]),
+                error
+        end
     end).
 
 
@@ -138,7 +149,7 @@ iso8601_to_epoch(Iso8601) ->
 %% @end
 %%-------------------------------------------------------------------
 -spec datetime_to_epoch(calendar:datetime()) -> non_neg_integer().
-datetime_to_epoch({{_,_,_},{_,_,_}} = DateTime) ->
+datetime_to_epoch({{_, _, _}, {_, _, _}} = DateTime) ->
     calendar:datetime_to_gregorian_seconds(DateTime) - ?UNIX_EPOCH.
 
 
@@ -195,9 +206,12 @@ datestamp_to_datetime(Datestamp) ->
 %% API calls. The time is returned in seconds, and in most cases it has one
 %% second accuracy.
 %% Cache key is used to allow different caches for different remote servers.
+%% Any errors should be logged inside the RemoteTimestampFun fun and 'error'
+%% should be returned.
 %% @end
 %%--------------------------------------------------------------------
--spec remote_timestamp(CacheKey :: atom(), RemoteTimestampFun :: fun()) ->
+-spec remote_timestamp(CacheKey :: atom(),
+    RemoteTimestampFun :: fun(() -> {ok, non_neg_integer()} | error)) ->
     non_neg_integer().
 remote_timestamp(CacheKey, RemoteTimestampFun) ->
     Now = system_time_milli_seconds(),
@@ -207,24 +221,30 @@ remote_timestamp(CacheKey, RemoteTimestampFun) ->
         {ok, {Bias, CacheExpiration}} when Now < CacheExpiration ->
             Now + Bias;
         _ ->
-            RemoteTimestamp = RemoteTimestampFun(),
-            After = system_time_milli_seconds(),
-            % Request to the remote server can take some time, so we need to
-            % slightly adjust the result. Estimate local time when measurement
-            % on the remote server was done - roughly in about the middle of the
-            % time taken by the request. Given that the request should take less
-            % then a second in total, we get 1 second accuracy.
-            EstimatedMeasurementTime = (Now + After) div 2,
-            Bias = RemoteTimestamp - EstimatedMeasurementTime,
-            % Cache measured bias if the latency was not too big.
-            case After - Now > ?MAX_LATENCY_TO_CACHE_REMOTE_TIMESTAMP of
-                true ->
-                    ok;
-                false ->
-                    application:set_env(
-                        ctool, CacheKey,
-                        {Bias, After + ?REMOTE_TIMESTAMP_CACHE_TTL}
-                    )
-            end,
-            After + Bias
+            case RemoteTimestampFun() of
+                error ->
+                    % Just return the current system time, any errors should
+                    % be logged inside the RemoteTimestampFun.
+                    system_time_milli_seconds();
+                {ok, RemoteTimestamp} ->
+                    After = system_time_milli_seconds(),
+                    % Request to the remote server can take some time, so we need to
+                    % slightly adjust the result. Estimate local time when measurement
+                    % on the remote server was done - roughly in about the middle of the
+                    % time taken by the request. Given that the request should take less
+                    % then a second in total, we get 1 second accuracy.
+                    EstimatedMeasurementTime = (Now + After) div 2,
+                    Bias = RemoteTimestamp - EstimatedMeasurementTime,
+                    % Cache measured bias if the latency was not too big.
+                    case After - Now > ?MAX_LATENCY_TO_CACHE_REMOTE_TIMESTAMP of
+                        true ->
+                            ok;
+                        false ->
+                            application:set_env(
+                                ctool, CacheKey,
+                                {Bias, After + ?REMOTE_TIMESTAMP_CACHE_TTL}
+                            )
+                    end,
+                    After + Bias
+            end
     end.
