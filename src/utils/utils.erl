@@ -17,8 +17,7 @@
     aggregate_over_first_element/1, average/1, random_shuffle/1, get_values/2,
     random_element/1, get_host/1, get_host_as_atom/1, cmd/1, ensure_defined/3,
     process_info/1, process_info/2]).
--export([duration/1, adjust_duration/2, system_time_seconds/0,
-    system_time_milli_seconds/0]).
+-export([duration/1, adjust_duration/2]).
 -export([mkdtemp/0, mkdtemp/3, rmtempdir/1]).
 -export([to_binary/1]).
 -export([save_file_on_hosts/3, save_file/2]).
@@ -222,22 +221,6 @@ adjust_duration(Duration, Unit) ->
         true -> adjust_duration(Duration / Factor, NextUnit);
         _ -> {Duration, atom_to_list(Unit)}
     end.
-
-%%--------------------------------------------------------------------
-%% @equiv erlang:system_time(seconds).
-%% @end
-%%--------------------------------------------------------------------
--spec system_time_seconds() -> integer().
-system_time_seconds() ->
-    erlang:system_time(seconds).
-
-%%--------------------------------------------------------------------
-%% @equiv erlang:system_time(milli_seconds).
-%% @end
-%%---------------------------------------------\-----------------------
--spec system_time_milli_seconds() -> integer().
-system_time_milli_seconds() ->
-    erlang:system_time(milli_seconds).
 
 %%--------------------------------------------------------------------
 %% @doc

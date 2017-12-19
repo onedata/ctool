@@ -19,8 +19,8 @@
     id :: binary(),
     name :: binary(),
     domain :: undefined | binary(),
-    latitude :: undefined | float(),
-    longitude :: undefined | float()
+    latitude = 0.0 :: float(),
+    longitude = 0.0 :: float()
 }).
 
 -endif.

@@ -70,7 +70,7 @@ get_details(Auth, HandleId) ->
                 <<"resourceId">>, Props, undefined),
             metadata = lists_utils:key_get(
                 <<"metadata">>, Props, undefined),
-            timestamp = timestamp_utils:datestamp_to_datetime(lists_utils:key_get(
+            timestamp = time_utils:datestamp_to_datetime(lists_utils:key_get(
                 <<"timestamp">>, Props, undefined))
         },
         {ok, HandleDetails}

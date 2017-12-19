@@ -45,7 +45,7 @@ authorize(CaveatId) ->
     end).
 
 %%--------------------------------------------------------------------
-%% @doc Returns public details about user.
+%% @doc Returns details about current user.
 %% @end
 %%--------------------------------------------------------------------
 -spec get_details(Auth :: oz_endpoint:auth()) ->
