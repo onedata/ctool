@@ -56,7 +56,7 @@ update_own_public_key(Auth, ID, EncodedPublicKey) ->
         URN = "/publickey/" ++ EncodedID,
         Body = json_utils:encode([{<<"publicKey">>, EncodedPublicKey}]),
         {ok, 204, _ResponseHeaders, _ResponseBody} =
-            oz_endpoint:provider_request(Auth, URN, patch, Body),
+            oz_endpoint:request(Auth, URN, patch, Body),
         ok
     end).
 

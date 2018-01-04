@@ -54,7 +54,7 @@ oz_users_test_() ->
 
 setup() ->
     meck:new(oz_endpoint),
-    meck:expect(oz_endpoint, provider_request, fun
+    meck:expect(oz_endpoint, request, fun
         (client, "/user", get) ->
             {ok, 200, response_headers, response_body};
         (client, "/user/merge/token", get) ->
@@ -76,7 +76,7 @@ setup() ->
         (client, "/user/groups/groupId", delete) ->
             {ok, 202, response_headers, response_body}
     end),
-    meck:expect(oz_endpoint, provider_request, fun
+    meck:expect(oz_endpoint, request, fun
         (client, "/user", patch, <<"body">>) ->
             {ok, 204, response_headers, response_body};
         (client, "/user/merge", post, <<"body">>) ->

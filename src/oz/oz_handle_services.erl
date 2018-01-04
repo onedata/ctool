@@ -32,7 +32,7 @@ get_details(Auth, HandleServiceId) ->
     ?run(fun() ->
         URN = "/handle_services/" ++ binary_to_list(HandleServiceId),
         {ok, 200, _ResponseHeaders, ResponseBody} =
-            oz_endpoint:provider_request(Auth, URN, get),
+            oz_endpoint:request(Auth, URN, get),
         Props = json_utils:decode(ResponseBody),
         % Get default values of share_details record
         HandleServiceDetails = #handle_service_details{

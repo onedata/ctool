@@ -36,7 +36,6 @@ oz_providers_test_() ->
             {"check ip address", fun should_check_ip_address/0},
             {"check GUI port", fun should_check_gui_port/0},
             {"check REST port", fun should_check_rest_port/0},
-            {"get public CA", fun should_return_oz_cacert/0},
             {"create space", fun should_create_space/0},
             {"support space", fun should_support_space/0},
             {"revoke space support", fun should_revoke_space_support/0},
@@ -51,7 +50,7 @@ oz_providers_test_() ->
 
 setup() ->
     meck:new(oz_endpoint),
-    meck:expect(oz_endpoint, provider_request, fun
+    meck:expect(oz_endpoint, request, fun
         (client, "/providers/providerId", get) ->
             {ok, 200, response_headers, response_body};
         (client, "/provider", get) ->
@@ -65,7 +64,7 @@ setup() ->
         (client, "/provider/spaces/spaceId", delete) ->
             {ok, 202, response_headers, response_body}
     end),
-    meck:expect(oz_endpoint, provider_request, fun
+    meck:expect(oz_endpoint, request, fun
         (client, "/provider", patch, <<"body">>) ->
             {ok, 204, response_headers, response_body};
         (client, "/provider/spaces", post, <<"body">>) ->
@@ -75,13 +74,11 @@ setup() ->
                 response_body}
     end),
     meck:expect(oz_endpoint, request, fun
-        (client, "/provider", post, <<"body">>, [{endpoint, rest_no_auth}]) ->
+        (client, "/providers", post, <<"body">>, [{endpoint, rest_no_auth}]) ->
             {ok, 200, response_headers, response_body};
-        (client, "/public-ca", get, <<>>, [{endpoint, gui}]) ->
-            {ok, 200, response_headers, <<"cacert">>};
-        (client, "/provider/test/check_my_ip", get, <<>>, [{endpoint, rest_no_auth}]) ->
+        (client, "/provider/public/check_my_ip", get, <<>>, [{endpoint, rest_no_auth}]) ->
             {ok, 200, response_headers, response_body};
-        (client, "/provider/test/check_my_ports", post, <<"body">>, [{endpoint, rest_no_auth}]) ->
+        (client, "/provider/public/check_my_ports", post, <<"body">>, [{endpoint, rest_no_auth}]) ->
             {ok, 200, response_headers, response_body}
     end).
 
@@ -101,12 +98,12 @@ should_register() ->
         fun(response_body) ->
             [
                 {<<"providerId">>, <<"providerId">>},
-                {<<"certificate">>, <<"certificate">>}
+                {<<"macaroon">>, <<"macaroon">>}
             ]
         end),
 
     Answer = oz_providers:register(client, parameters),
-    ?assertEqual({ok, <<"providerId">>, <<"certificate">>}, Answer),
+    ?assertEqual({ok, <<"providerId">>, <<"macaroon">>}, Answer),
 
     ?assert(meck:validate(json_utils)),
     ok = meck:unload(json_utils).
@@ -223,10 +220,6 @@ should_check_rest_port() ->
 
     ?assert(meck:validate(json_utils)),
     ok = meck:unload(json_utils).
-
-should_return_oz_cacert() ->
-    Answer = oz_providers:get_oz_cacert(client),
-    ?assertEqual({ok, <<"cacert">>}, Answer).
 
 should_create_space() ->
     meck:new(json_utils),

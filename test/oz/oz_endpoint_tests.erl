@@ -28,7 +28,7 @@ token_header() ->
 % Root macaroon
 macaroon() ->
     M = macaroon:create("Location", "Key", "Macaroon"),
-    {ok, Bin} = token_utils:serialize62(M),
+    {ok, Bin} = onedata_macaroons:serialize(M),
     Bin.
 
 % Request header with root macaroon
@@ -41,19 +41,19 @@ disch_macaroons() ->
     M1 = macaroon:create("Location", "Key1", "Discharge macaroon 1"),
     M2 = macaroon:create("Location", "Key2", "Discharge macaroon 2"),
     M3 = macaroon:create("Location", "Key3", "Discharge macaroon 3"),
-    {ok, Bin1} = token_utils:serialize62(M1),
-    {ok, Bin2} = token_utils:serialize62(M2),
-    {ok, Bin3} = token_utils:serialize62(M3),
+    {ok, Bin1} = onedata_macaroons:serialize(M1),
+    {ok, Bin2} = onedata_macaroons:serialize(M2),
+    {ok, Bin3} = onedata_macaroons:serialize(M3),
     [Bin1, Bin2, Bin3].
 
 % Bound disch macaroons joined into one string with spaces for request header.
 disch_macaroons_header() ->
     MacaroonBin = macaroon(),
-    {ok, Macaroon} = token_utils:deserialize(MacaroonBin),
+    {ok, Macaroon} = onedata_macaroons:deserialize(MacaroonBin),
     BoundMacaroons = lists:map(fun(DMBin) ->
-        {ok, DM} = token_utils:deserialize(DMBin),
+        {ok, DM} = onedata_macaroons:deserialize(DMBin),
         BDM = macaroon:prepare_for_request(Macaroon, DM),
-        {ok, Bin} = token_utils:serialize62(BDM),
+        {ok, Bin} = onedata_macaroons:serialize(BDM),
         Bin
     end, disch_macaroons()),
     #{<<"Discharge-Macaroons">> => str_utils:join_binary(BoundMacaroons, <<" ">>)}.
@@ -81,22 +81,14 @@ oz_endpoint_test_() ->
         fun setup/0,
         fun teardown/1,
         [
-            {"provider request (URN, method)",
-                fun should_send_provider_request_1/0},
-            {"provider request (URN, method, body)",
-                fun should_send_provider_request_2/0},
-            {"provider request (URN, method, body, options)",
-                fun should_send_provider_request_3/0},
-            {"provider request (URN, method, headers, body, options)",
-                fun should_send_provider_request_4/0},
             {"user request (URN, method)",
-                fun should_send_user_request_1/0},
+                fun should_send_request_1/0},
             {"user request (URN, method, body)",
-                fun should_send_user_request_2/0},
+                fun should_send_request_2/0},
             {"user request (URN, method, body, options)",
-                fun should_send_user_request_3/0},
+                fun should_send_request_3/0},
             {"user request (URN, method, headers, body, options)",
-                fun should_send_user_request_4/0}
+                fun should_send_request_4/0}
         ]
     }.
 
@@ -112,8 +104,6 @@ setup() ->
     meck:expect(oz_plugin, get_oz_url, fun() -> "OZ_URL" end),
     meck:expect(oz_plugin, get_oz_rest_port, fun() -> 9443 end),
     meck:expect(oz_plugin, get_oz_rest_api_prefix, fun() -> "/PREFIX" end),
-    meck:expect(oz_plugin, get_key_file, fun() -> key_file end),
-    meck:expect(oz_plugin, get_cert_file, fun() -> cert_file end),
     meck:expect(oz_plugin, get_cacerts_dir, fun() -> cacerts_dir end),
     % Function auth_to_rest_client should return REST client based on Auth term.
     % Just return the same - we will use oz_endpoint:client() terms as Auth.
@@ -130,121 +120,7 @@ teardown(_) ->
 %%% Tests functions
 %%%===================================================================
 
-should_send_provider_request_1() ->
-    meck:new(http_client),
-    meck:expect(http_client, request, fun(
-        method,
-        "OZ_URL:9443/PREFIX/URN",
-        ?CONTENT_TYPE_HEADER_MATCH,
-        <<>>,
-        [{ssl_options, [{cacerts, _}, {keyfile, key_file}, {certfile, cert_file} | _]}]
-    ) -> ok end),
-    ?assertEqual(ok, oz_endpoint:provider_request(provider, "/URN", method)),
-
-    meck:expect(http_client, request, fun(
-        method,
-        "OZ_URL:9443/PREFIX/URN",
-        ?CONTENT_TYPE_HEADER_MATCH,
-        <<>>,
-        _
-    ) -> ok end),
-    ?assertEqual(ok, oz_endpoint:request(provider, "/URN", method)),
-
-    ?assert(meck:validate(http_client)),
-    ok = meck:unload(http_client).
-
-
-should_send_provider_request_2() ->
-    meck:new(http_client),
-    meck:expect(http_client, request, fun(
-        method,
-        "OZ_URL:9443/PREFIX/URN",
-        ?CONTENT_TYPE_HEADER_MATCH,
-        body,
-        [{ssl_options, [{cacerts, _}, {keyfile, key_file}, {certfile, cert_file} | _]}]
-    ) -> ok end),
-    ?assertEqual(ok, oz_endpoint:provider_request(provider, "/URN", method, body)),
-
-    meck:expect(http_client, request, fun(
-        method,
-        "OZ_URL:9443/PREFIX/URN",
-        ?CONTENT_TYPE_HEADER_MATCH,
-        body,
-        _
-    ) -> ok end),
-    ?assertEqual(ok, oz_endpoint:request(provider, "/URN", method, body)),
-
-    ?assert(meck:validate(http_client)),
-    ok = meck:unload(http_client).
-
-
-should_send_provider_request_3() ->
-    meck:new(http_client),
-    meck:expect(http_client, request, fun(
-        method,
-        "OZ_URL:9443/PREFIX/URN",
-        ?CONTENT_TYPE_HEADER_MATCH,
-        body,
-        [
-            options,
-            {ssl_options, [{cacerts, _}, {keyfile, key_file}, {certfile, cert_file} | _]}
-        ]
-    ) -> ok end),
-    ?assertEqual(ok, oz_endpoint:provider_request(
-        provider, "/URN", method, body, [options])),
-
-    meck:expect(http_client, request, fun(
-        method,
-        "OZ_URL:9443/PREFIX/URN",
-        ?CONTENT_TYPE_HEADER_MATCH,
-        body,
-        [options | _]
-    ) -> ok end),
-    ?assertEqual(ok, oz_endpoint:request(
-        provider, "/URN", method, body, [options])),
-
-    ?assert(meck:validate(http_client)),
-    ok = meck:unload(http_client).
-
-
-should_send_provider_request_4() ->
-    ExpectedHeaders = merge_headers([
-        ?CONTENT_TYPE_HEADER, #{<<"header">> => <<"abcdef">>}
-    ]),
-
-    meck:new(http_client),
-    meck:expect(http_client, request, fun(
-        method,
-        "OZ_URL:9443/PREFIX/URN",
-        Headers,
-        body,
-        [
-            options,
-            {ssl_options, [{cacerts, _}, {keyfile, key_file}, {certfile, cert_file} | _]}
-        ]
-    ) -> case Headers of
-        ExpectedHeaders -> ok
-    end end),
-    ?assertEqual(ok, oz_endpoint:provider_request(
-        provider, "/URN", method, #{<<"header">> => <<"abcdef">>}, body, [options])),
-
-    meck:expect(http_client, request, fun(
-        method,
-        "OZ_URL:9443/PREFIX/URN",
-        Headers,
-        body,
-        [options | _]
-    ) -> case Headers of
-        ExpectedHeaders -> ok
-    end end),
-    ?assertEqual(ok, oz_endpoint:request(
-        provider, "/URN", method, #{<<"header">> => <<"abcdef">>}, body, [options])),
-
-    ?assert(meck:validate(http_client)),
-    ok = meck:unload(http_client).
-
-
-should_send_user_request_1() ->
+should_send_request_1() ->
     TokenHeader = token_header(),
     MacaroonHeader = macaroon_header(),
     DischMacaroonsHeader = disch_macaroons_header(),
@@ -259,6 +135,12 @@ should_send_user_request_1() ->
     ExpectedBasicAuthHeaders = merge_headers([
         ?CONTENT_TYPE_HEADER, BasicAuthHeader
     ]),
+    ExpectedProviderMacaroonHeaders = merge_headers([
+        ?CONTENT_TYPE_HEADER, MacaroonHeader
+    ]),
+    ExpectedProviderMacaroonHeaders = merge_headers([
+        ?CONTENT_TYPE_HEADER, MacaroonHeader
+    ]),
 
     meck:new(http_client),
     meck:expect(http_client, request, fun
@@ -267,20 +149,23 @@ should_send_user_request_1() ->
             "OZ_URL:9443/PREFIX/URN",
             Headers,
             <<>>,
-            [{ssl_options, [{cacerts, _}, {keyfile, key_file}, {certfile, cert_file} | _]}]
+            [{ssl_options, [{cacerts, _} | _]}]
         ) ->
             case Headers of
                 ExpectedTokenHeaders -> ok;
                 ExpectedMacaroonHeaders -> ok;
-                ExpectedBasicAuthHeaders -> ok
+                ExpectedBasicAuthHeaders -> ok;
+                ExpectedProviderMacaroonHeaders -> ok
             end
     end),
-    ?assertEqual(ok, oz_endpoint:provider_request(
+    ?assertEqual(ok, oz_endpoint:request(
         {user, token, token()}, "/URN", method)),
-    ?assertEqual(ok, oz_endpoint:provider_request(
+    ?assertEqual(ok, oz_endpoint:request(
         {user, macaroon, {macaroon(), disch_macaroons()}}, "/URN", method)),
-    ?assertEqual(ok, oz_endpoint:provider_request(
+    ?assertEqual(ok, oz_endpoint:request(
         {user, basic, ?BASIC_AUTH_HEADER}, "/URN", method)),
+    ?assertEqual(ok, oz_endpoint:request(
+        {provider, macaroon()}, "/URN", method)),
 
     meck:expect(http_client, request, fun
         (
@@ -293,7 +178,8 @@ should_send_user_request_1() ->
             case Headers of
                 ExpectedTokenHeaders -> ok;
                 ExpectedMacaroonHeaders -> ok;
-                ExpectedBasicAuthHeaders -> ok
+                ExpectedBasicAuthHeaders -> ok;
+                ExpectedProviderMacaroonHeaders -> ok
             end
     end),
     ?assertEqual(ok, oz_endpoint:request(
@@ -307,7 +193,7 @@ should_send_user_request_1() ->
     ok = meck:unload(http_client).
 
 
-should_send_user_request_2() ->
+should_send_request_2() ->
     TokenHeader = token_header(),
     MacaroonHeader = macaroon_header(),
     DischMacaroonsHeader = disch_macaroons_header(),
@@ -322,6 +208,9 @@ should_send_user_request_2() ->
     ExpectedBasicAuthHeaders = merge_headers([
         ?CONTENT_TYPE_HEADER, BasicAuthHeader
     ]),
+    ExpectedProviderMacaroonHeaders = merge_headers([
+        ?CONTENT_TYPE_HEADER, MacaroonHeader
+    ]),
 
     meck:new(http_client),
     meck:expect(http_client, request, fun
@@ -330,19 +219,20 @@ should_send_user_request_2() ->
             "OZ_URL:9443/PREFIX/URN",
             Headers,
             body,
-            [{ssl_options, [{cacerts, _}, {keyfile, key_file}, {certfile, cert_file} | _]}]
+            [{ssl_options, [{cacerts, _} | _]}]
         ) ->
             case Headers of
                 ExpectedTokenHeaders -> ok;
                 ExpectedMacaroonHeaders -> ok;
-                ExpectedBasicAuthHeaders -> ok
+                ExpectedBasicAuthHeaders -> ok;
+                ExpectedProviderMacaroonHeaders -> ok
             end
     end),
-    ?assertEqual(ok, oz_endpoint:provider_request(
+    ?assertEqual(ok, oz_endpoint:request(
         {user, token, token()}, "/URN", method, body)),
-    ?assertEqual(ok, oz_endpoint:provider_request(
+    ?assertEqual(ok, oz_endpoint:request(
         {user, macaroon, {macaroon(), disch_macaroons()}}, "/URN", method, body)),
-    ?assertEqual(ok, oz_endpoint:provider_request(
+    ?assertEqual(ok, oz_endpoint:request(
         {user, basic, ?BASIC_AUTH_HEADER}, "/URN", method, body)),
 
     meck:expect(http_client, request, fun
@@ -356,7 +246,8 @@ should_send_user_request_2() ->
             case Headers of
                 ExpectedTokenHeaders -> ok;
                 ExpectedMacaroonHeaders -> ok;
-                ExpectedBasicAuthHeaders -> ok
+                ExpectedBasicAuthHeaders -> ok;
+                ExpectedProviderMacaroonHeaders -> ok
             end
     end),
     ?assertEqual(ok, oz_endpoint:request(
@@ -370,7 +261,7 @@ should_send_user_request_2() ->
     ok = meck:unload(http_client).
 
 
-should_send_user_request_3() ->
+should_send_request_3() ->
     TokenHeader = token_header(),
     MacaroonHeader = macaroon_header(),
     DischMacaroonsHeader = disch_macaroons_header(),
@@ -384,6 +275,9 @@ should_send_user_request_3() ->
     ]),
     ExpectedBasicAuthHeaders = merge_headers([
         ?CONTENT_TYPE_HEADER, BasicAuthHeader
+    ]),
+    ExpectedProviderMacaroonHeaders = merge_headers([
+        ?CONTENT_TYPE_HEADER, MacaroonHeader
     ]),
 
     meck:new(http_client),
@@ -395,20 +289,21 @@ should_send_user_request_3() ->
             body,
             [
                 opts,
-                {ssl_options, [{cacerts, _}, {keyfile, key_file}, {certfile, cert_file} | _]}
+                {ssl_options, [{cacerts, _} | _]}
             ]
         ) ->
             case Headers of
                 ExpectedTokenHeaders -> ok;
                 ExpectedMacaroonHeaders -> ok;
-                ExpectedBasicAuthHeaders -> ok
+                ExpectedBasicAuthHeaders -> ok;
+                ExpectedProviderMacaroonHeaders -> ok
             end
     end),
-    ?assertEqual(ok, oz_endpoint:provider_request(
+    ?assertEqual(ok, oz_endpoint:request(
         {user, token, token()}, "/URN", mthd, body, [opts])),
-    ?assertEqual(ok, oz_endpoint:provider_request(
+    ?assertEqual(ok, oz_endpoint:request(
         {user, macaroon, {macaroon(), disch_macaroons()}}, "/URN", mthd, body, [opts])),
-    ?assertEqual(ok, oz_endpoint:provider_request(
+    ?assertEqual(ok, oz_endpoint:request(
         {user, basic, ?BASIC_AUTH_HEADER}, "/URN", mthd, body, [opts])),
 
     meck:expect(http_client, request, fun
@@ -422,7 +317,8 @@ should_send_user_request_3() ->
             case Headers of
                 ExpectedTokenHeaders -> ok;
                 ExpectedMacaroonHeaders -> ok;
-                ExpectedBasicAuthHeaders -> ok
+                ExpectedBasicAuthHeaders -> ok;
+                ExpectedProviderMacaroonHeaders -> ok
             end
     end),
     ?assertEqual(ok, oz_endpoint:request(
@@ -436,7 +332,7 @@ should_send_user_request_3() ->
     ok = meck:unload(http_client).
 
 
-should_send_user_request_4() ->
+should_send_request_4() ->
     TokenHeader = token_header(),
     MacaroonHeader = macaroon_header(),
     DischMacaroonsHeader = disch_macaroons_header(),
@@ -452,6 +348,9 @@ should_send_user_request_4() ->
     ExpectedBasicAuthHeaders = merge_headers([
         #{<<"hdr">> => <<"abcdf">>}, ?CONTENT_TYPE_HEADER, BasicAuthHeader
     ]),
+    ExpectedProviderMacaroonHeaders = merge_headers([
+        #{<<"hdr">> => <<"abcdf">>}, ?CONTENT_TYPE_HEADER, MacaroonHeader
+    ]),
 
     meck:new(http_client),
     meck:expect(http_client, request, fun
@@ -462,22 +361,23 @@ should_send_user_request_4() ->
             body,
             [
                 options,
-                {ssl_options, [{cacerts, _}, {keyfile, key_file}, {certfile, cert_file} | _]}
+                {ssl_options, [{cacerts, _} | _]}
             ]
         ) ->
             case Headers of
                 ExpectedTokenHeaders -> ok;
                 ExpectedMacaroonHeaders -> ok;
-                ExpectedBasicAuthHeaders -> ok
+                ExpectedBasicAuthHeaders -> ok;
+                ExpectedProviderMacaroonHeaders -> ok
             end
     end),
-    ?assertEqual(ok, oz_endpoint:provider_request(
+    ?assertEqual(ok, oz_endpoint:request(
         {user, token, token()}, "/URN", method,
         #{<<"hdr">> => <<"abcdf">>}, body, [options])),
-    ?assertEqual(ok, oz_endpoint:provider_request(
+    ?assertEqual(ok, oz_endpoint:request(
         {user, macaroon, {macaroon(), disch_macaroons()}}, "/URN", method,
         #{<<"hdr">> => <<"abcdf">>}, body, [options])),
-    ?assertEqual(ok, oz_endpoint:provider_request(
+    ?assertEqual(ok, oz_endpoint:request(
         {user, basic, ?BASIC_AUTH_HEADER}, "/URN", method,
         #{<<"hdr">> => <<"abcdf">>}, body, [options])),
 
@@ -493,7 +393,8 @@ should_send_user_request_4() ->
             case Headers of
                 ExpectedTokenHeaders -> ok;
                 ExpectedMacaroonHeaders -> ok;
-                ExpectedBasicAuthHeaders -> ok
+                ExpectedBasicAuthHeaders -> ok;
+                ExpectedProviderMacaroonHeaders -> ok
             end
     end),
     ?assertEqual(ok, oz_endpoint:request(

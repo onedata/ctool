@@ -36,7 +36,7 @@ oz_handle_services_test_() ->
 
 setup() ->
     meck:new(oz_endpoint),
-    meck:expect(oz_endpoint, provider_request, fun
+    meck:expect(oz_endpoint, request, fun
         (client, "/handle_services/handleServiceId", get) ->
             {ok, 200, response_headers, response_body}
     end).

@@ -14,9 +14,7 @@
 -include("logging.hrl").
 
 %% API
--export([get_api_root/1, get_oz_cacerts/0, reset_oz_cacerts/0]).
--export([provider_request/3, provider_request/4, provider_request/5,
-    provider_request/6]).
+-export([get_api_root/1, get_cacerts/0, reset_cacerts/0]).
 -export([request/3, request/4, request/5, request/6]).
 
 -type urn() :: string().
@@ -76,71 +74,28 @@ get_api_root(Opts) ->
     end.
 
 %%--------------------------------------------------------------------
-%% @doc Returns cached OZ CA certificates or loads them from a directory given
+%% @doc Returns cached CA certificates or loads them from a directory given
 %% by a oz_plugin:get_cacerts_dir/0 callback and stores them in the cache.
 %% @end
 %%--------------------------------------------------------------------
--spec get_oz_cacerts() -> CaCerts :: [public_key:der_encoded()].
-get_oz_cacerts() ->
-    case application:get_env(ctool, oz_cacerts) of
+-spec get_cacerts() -> CaCerts :: [public_key:der_encoded()].
+get_cacerts() ->
+    case application:get_env(ctool, cacerts) of
         {ok, CaCerts} ->
             CaCerts;
         undefined ->
             CaCerts = cert_utils:load_ders_in_dir(oz_plugin:get_cacerts_dir()),
-            application:set_env(ctool, oz_cacerts, CaCerts),
+            application:set_env(ctool, cacerts, CaCerts),
             CaCerts
     end.
 
 %%--------------------------------------------------------------------
-%% @doc Clears OZ CA certificates cache.
+%% @doc Clears CA certificates cache.
 %% @end
 %%--------------------------------------------------------------------
--spec reset_oz_cacerts() -> ok.
-reset_oz_cacerts() ->
-    application:unset_env(ctool, oz_cacerts).
-
-%%--------------------------------------------------------------------
-%% @doc @equiv provider_request(Auth, URN, Method, <<>>)
-%% @end
-%%--------------------------------------------------------------------
--spec provider_request(Auth :: auth(), URN :: urn(), Method :: method()) ->
-    Response :: response().
-provider_request(Auth, URN, Method) ->
-    ?MODULE:provider_request(Auth, URN, Method, <<>>).
-
-%%--------------------------------------------------------------------
-%% @doc @equiv provider_request(Auth, URN, Method, Body, [])
-%% @end
-%%--------------------------------------------------------------------
--spec provider_request(Auth :: auth(), URN :: urn(), Method :: method(),
-    Body :: body()) -> Response :: response().
-provider_request(Auth, URN, Method, Body) ->
-    ?MODULE:provider_request(Auth, URN, Method, Body, []).
-
-%%--------------------------------------------------------------------
-%% @doc @equiv provider_request(Auth, URN, Method, #{}, Body, Opts)
-%% @end
-%%--------------------------------------------------------------------
--spec provider_request(Auth :: auth(), URN :: urn(), Method :: method(),
-    Body :: body(), Opts :: opts()) -> Response :: response().
-provider_request(Auth, URN, Method, Body, Opts) ->
-    ?MODULE:provider_request(Auth, URN, Method, #{}, Body, Opts).
-
-%%--------------------------------------------------------------------
-%% @doc Sends request to onezone with provider certificate.
-%% @end
-%%--------------------------------------------------------------------
--spec provider_request(Auth :: auth(), URN :: urn(), Method :: method(),
-    Headers :: headers(), Body :: body(), Opts :: opts()) -> Response :: response().
-provider_request(Auth, URN, Method, Headers, Body, Opts) ->
-    KeyFile = oz_plugin:get_key_file(),
-    CertFile = oz_plugin:get_cert_file(),
-    SSLOpts = lists_utils:key_get(ssl_options, Opts, []),
-    SSLOpts2 = lists_utils:key_store([
-        {keyfile, KeyFile}, {certfile, CertFile}
-    ], SSLOpts),
-    Opts2 = lists_utils:key_store(ssl_options, SSLOpts2, Opts),
-    ?MODULE:request(Auth, URN, Method, Headers, Body, Opts2).
+-spec reset_cacerts() -> ok.
+reset_cacerts() ->
+    application:unset_env(ctool, cacerts).
 
 %%--------------------------------------------------------------------
 %% @doc @equiv request(Auth, URN, Method, <<>>)
@@ -178,7 +133,7 @@ request(Auth, URN, Method, Body, Opts) ->
 request(Auth, URN, Method, Headers, Body, Opts) ->
     SSLOpts = lists_utils:key_get(ssl_options, Opts, []),
     Opts2 = lists_utils:key_store(ssl_options, [
-        {cacerts, get_oz_cacerts()} | SSLOpts
+        {cacerts, get_cacerts()} | SSLOpts
     ], Opts),
     Headers2 = Headers#{<<"content-type">> => <<"application/json">>},
     Headers3 = prepare_auth_headers(Auth, Headers2),
@@ -202,12 +157,12 @@ prepare_auth_headers(Auth, Headers) ->
         {user, token, Token} ->
             Headers#{<<"X-Auth-Token">> => Token};
         {user, macaroon, {MacaroonBin, DischargeMacaroonsBin}} ->
-            {ok, Macaroon} = token_utils:deserialize(MacaroonBin),
+            {ok, Macaroon} = onedata_macaroons:deserialize(MacaroonBin),
             BoundMacaroons = lists:map(
                 fun(DischargeMacaroonBin) ->
-                    {ok, DM} = token_utils:deserialize(DischargeMacaroonBin),
+                    {ok, DM} = onedata_macaroons:deserialize(DischargeMacaroonBin),
                     BDM = macaroon:prepare_for_request(Macaroon, DM),
-                    {ok, SerializedBDM} = token_utils:serialize62(BDM),
+                    {ok, SerializedBDM} = onedata_macaroons:serialize(BDM),
                     SerializedBDM
                 end, DischargeMacaroonsBin),
             % Bound discharge macaroons are sent in one header,
@@ -219,6 +174,8 @@ prepare_auth_headers(Auth, Headers) ->
             };
         {user, basic, BasicAuthHeader} ->
             Headers#{<<"Authorization">> => BasicAuthHeader};
-        _ ->
+        {provider, Macaroon} ->
+            Headers#{<<"Macaroon">> => Macaroon};
+        none ->
             Headers
     end.
