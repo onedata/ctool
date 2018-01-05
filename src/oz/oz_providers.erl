@@ -183,14 +183,14 @@ get_token_issuer(Auth, Token) ->
     end).
 
 %%--------------------------------------------------------------------
-%% @doc Returns ip address that is visible for OZ.
+%% @doc Returns current clock time of Onezone, in milliseconds.
 %% @end
 %%--------------------------------------------------------------------
 -spec get_zone_time(Auth :: oz_endpoint:auth()) ->
     {ok, IpAddress :: binary()} | {error, Reason :: term()}.
 get_zone_time(Auth) ->
     ?run(fun() ->
-        URN = "/provider/test/get_current_time",
+        URN = "/provider/public/get_current_time",
         {ok, 200, _ResponseHeaders, ResponseBody} =
             oz_endpoint:request(Auth, URN, get, <<>>),
         Proplist = json_utils:decode(ResponseBody),

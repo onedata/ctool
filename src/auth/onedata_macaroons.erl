@@ -7,7 +7,7 @@
 %%%-------------------------------------------------------------------
 %%% @doc
 %%% This module offers common macaroon manipulation API with predefined caveats
-%%% recognizable by OneZone.
+%%% recognizable by Onezone.
 %%% @end
 %%%-------------------------------------------------------------------
 -module(onedata_macaroons).
