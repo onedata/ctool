@@ -39,13 +39,13 @@ oz_shares_test_() ->
 
 setup() ->
     meck:new(oz_endpoint),
-    meck:expect(oz_endpoint, provider_request, fun
+    meck:expect(oz_endpoint, request, fun
         (client, "/shares/shareId", get) ->
             {ok, 200, response_headers, response_body};
         (client, "/shares/shareId", delete) ->
             {ok, 202, response_headers, response_body}
     end),
-    meck:expect(oz_endpoint, provider_request, fun
+    meck:expect(oz_endpoint, request, fun
         (client, "/spaces/spaceId/shares/shareId", put, <<"body">>) ->
             {ok, 204, [], response_body};
         (client, "/shares/shareId", patch, <<"body">>) ->

@@ -38,7 +38,7 @@ create(Auth, Parameters) ->
         URN = "/handles",
         Body = json_utils:encode(Parameters),
         {ok, 201, ResponseHeaders, _ResponseBody} =
-            oz_endpoint:provider_request(Auth, URN, post, Body),
+            oz_endpoint:request(Auth, URN, post, Body),
         <<"/handles/", HandleId/binary>> =
             maps:get(<<"location">>, ResponseHeaders),
         {ok, HandleId}
@@ -55,7 +55,7 @@ get_details(Auth, HandleId) ->
     ?run(fun() ->
         URN = "/handles/" ++ binary_to_list(HandleId),
         {ok, 200, _ResponseHeaders, ResponseBody} =
-            oz_endpoint:provider_request(Auth, URN, get),
+            oz_endpoint:request(Auth, URN, get),
         Props = json_utils:decode(ResponseBody),
         % Get default values of share_details record
         HandleDetails = #handle_details{

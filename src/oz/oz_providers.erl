@@ -11,6 +11,7 @@
 
 -module(oz_providers).
 
+-include("logging.hrl").
 -include("oz/oz_runner.hrl").
 -include("oz/oz_spaces.hrl").
 -include("oz/oz_providers.hrl").
@@ -20,7 +21,8 @@
 -export([register/2, register_with_uuid/2, unregister/1]).
 -export([get_details/1, get_details/2, modify_details/2]).
 -export([get_token_issuer/2]).
--export([check_ip_address/1, get_zone_time/1, check_port/4, get_oz_cacert/1]).
+-export([get_zone_time/1]).
+-export([check_ip_address/1, check_port/4]).
 -export([create_space/2, support_space/2, revoke_space_support/2, get_spaces/1,
     get_space_details/2]).
 
@@ -38,11 +40,11 @@
 %%--------------------------------------------------------------------
 -spec register(Auth :: oz_endpoint:auth(),
     Parameters :: oz_endpoint:params()) ->
-    {ok, ProviderId :: binary(), Cert :: binary()} |
+    {ok, ProviderId :: binary(), Macaroon :: binary()} |
     {error, Reason :: term()}.
 register(Auth, Parameters) ->
     ?run(fun() ->
-        URN = "/provider",
+        URN = "/providers",
         Body = json_utils:encode(Parameters),
 
         case oz_endpoint:request(
@@ -51,12 +53,12 @@ register(Auth, Parameters) ->
             {ok, 200, _ResponseHeaders, ResponseBody} ->
                 Proplist = json_utils:decode(ResponseBody),
                 ProviderId = lists_utils:key_get(<<"providerId">>, Proplist),
-                Cert = lists_utils:key_get(<<"certificate">>, Proplist),
-                {ok, ProviderId, Cert};
+                Macaroon = lists_utils:key_get(<<"macaroon">>, Proplist),
+                {ok, ProviderId, Macaroon};
 
             {ok, 400, _ResponseHeaders, ResponseBody} ->
                 #{<<"error">> := <<"Bad value: provided identifier ",
-                "(\"subdomain\") is already occupied">>} = json_utils:decode_map(ResponseBody),
+                    "(\"subdomain\") is already occupied">>} = json_utils:decode_map(ResponseBody),
                 {error, subdomain_reserved}
         end
     end).
@@ -72,19 +74,19 @@ register(Auth, Parameters) ->
 %%--------------------------------------------------------------------
 -spec register_with_uuid(Auth :: oz_endpoint:auth(),
     Parameters :: oz_endpoint:params()) ->
-    {ok, ProviderId :: binary(), Cert :: binary()} |
+    {ok, ProviderId :: binary(), Macaroon :: binary()} |
     {error, Reason :: term()}.
 register_with_uuid(Auth, Parameters) ->
     ?run(fun() ->
-        URN = "/provider_dev",
+        URN = "/providers/dev",
         Body = json_utils:encode(Parameters),
         {ok, 200, _ResponseHeaders, ResponseBody} = oz_endpoint:request(
             Auth, URN, post, Body, [{endpoint, rest_no_auth}]
         ),
         Proplist = json_utils:decode(ResponseBody),
         ProviderId = lists_utils:key_get(<<"providerId">>, Proplist),
-        Cert = lists_utils:key_get(<<"certificate">>, Proplist),
-        {ok, ProviderId, Cert}
+        Macaroon = lists_utils:key_get(<<"macaroon">>, Proplist),
+        {ok, ProviderId, Macaroon}
     end).
 
 %%--------------------------------------------------------------------
@@ -97,7 +99,7 @@ unregister(Auth) ->
     ?run(fun() ->
         URN = "/provider",
         {ok, 202, _ResponseHeaders, _ResponseBody} =
-            oz_endpoint:provider_request(Auth, URN, delete),
+            oz_endpoint:request(Auth, URN, delete),
         ok
     end).
 
@@ -111,7 +113,7 @@ get_details(Auth) ->
     ?run(fun() ->
         URN = "/provider",
         {ok, 200, _ResponseHeaders, ResponseBody} =
-            oz_endpoint:provider_request(Auth, URN, get),
+            oz_endpoint:request(Auth, URN, get),
         Proplist = json_utils:decode(ResponseBody),
         ProviderDetails = #provider_details{
             id = lists_utils:key_get(<<"providerId">>, Proplist),
@@ -133,7 +135,7 @@ get_details(Auth, ProviderId) ->
     ?run(fun() ->
         URN = "/providers/" ++ binary_to_list(ProviderId),
         {ok, 200, _ResponseHeaders, ResponseBody} =
-            oz_endpoint:provider_request(Auth, URN, get),
+            oz_endpoint:request(Auth, URN, get),
         Proplist = json_utils:decode(ResponseBody),
         ProviderDetails = #provider_details{
             id = lists_utils:key_get(<<"providerId">>, Proplist),
@@ -157,7 +159,7 @@ modify_details(Auth, Parameters) ->
         URN = "/provider",
         Body = json_utils:encode(Parameters),
         {ok, 204, _ResponseHeaders, _ResponseBody} =
-            oz_endpoint:provider_request(Auth, URN, patch, Body),
+            oz_endpoint:request(Auth, URN, patch, Body),
         ok
     end).
 
@@ -171,13 +173,30 @@ get_token_issuer(Auth, Token) ->
     ?run(fun() ->
         URN = "/provider/token/" ++ binary_to_list(Token),
         {ok, 200, _ResponseHeaders, ResponseBody} =
-            oz_endpoint:provider_request(Auth, URN, get),
+            oz_endpoint:request(Auth, URN, get),
         Proplist = json_utils:decode(ResponseBody),
         TokenIssuer = #token_issuer{
             client_type = lists_utils:key_get(<<"clientType">>, Proplist),
             client_id = lists_utils:key_get(<<"clientId">>, Proplist)
         },
         {ok, TokenIssuer}
+    end).
+
+%%--------------------------------------------------------------------
+%% @doc Returns current clock time of Onezone, in milliseconds.
+%% @end
+%%--------------------------------------------------------------------
+-spec get_zone_time(Auth :: oz_endpoint:auth()) ->
+    {ok, IpAddress :: binary()} | {error, Reason :: term()}.
+get_zone_time(Auth) ->
+    ?run(fun() ->
+        URN = "/provider/public/get_current_time",
+        {ok, 200, _ResponseHeaders, ResponseBody} =
+            oz_endpoint:request(Auth, URN, get, <<>>),
+        Proplist = json_utils:decode(ResponseBody),
+        Timestamp = proplists:get_value(<<"timeMillis">>, Proplist),
+        true = Timestamp /= undefined,
+        {ok, Timestamp}
     end).
 
 %%--------------------------------------------------------------------
@@ -188,28 +207,11 @@ get_token_issuer(Auth, Token) ->
     {ok, IpAddress :: binary()} | {error, Reason :: term()}.
 check_ip_address(Auth) ->
     ?run(fun() ->
-        URN = "/provider/test/check_my_ip",
+        URN = "/provider/public/check_my_ip",
         {ok, 200, _ResponseHeaders, ResponseBody} =
             oz_endpoint:request(Auth, URN, get, <<>>, [{endpoint, rest_no_auth}]),
         IpAddress = json_utils:decode(ResponseBody),
         {ok, IpAddress}
-    end).
-
-%%--------------------------------------------------------------------
-%% @doc Returns ip address that is visible for OZ.
-%% @end
-%%--------------------------------------------------------------------
--spec get_zone_time(Auth :: oz_endpoint:auth()) ->
-    {ok, IpAddress :: binary()} | {error, Reason :: term()}.
-get_zone_time(Auth) ->
-    ?run(fun() ->
-        URN = "/provider/test/get_current_time",
-        {ok, 200, _ResponseHeaders, ResponseBody} =
-            oz_endpoint:request(Auth, URN, get, <<>>),
-        Proplist = json_utils:decode(ResponseBody),
-        Timestamp = proplists:get_value(<<"timeMillis">>, Proplist),
-        true = Timestamp /= undefined,
-        {ok, Timestamp}
     end).
 
 %%--------------------------------------------------------------------
@@ -221,7 +223,7 @@ get_zone_time(Auth) ->
     ok | {error, Reason :: term()}.
 check_port(Auth, IpAddress, Port, Type) ->
     ?run(fun() ->
-        URN = "/provider/test/check_my_ports",
+        URN = "/provider/public/check_my_ports",
         Resource = case Type of
             <<"gui">> -> <<"/connection_check">>;
             <<"rest">> -> <<"/rest/latest/connection_check">>
@@ -234,20 +236,6 @@ check_port(Auth, IpAddress, Port, Type) ->
         Proplist = json_utils:decode(ResponseBody),
         <<"ok">> = lists_utils:key_get(CheckURL, Proplist),
         ok
-    end).
-
-%%--------------------------------------------------------------------
-%% @doc Returns onezone public CA certificate.
-%% @end
-%%--------------------------------------------------------------------
--spec get_oz_cacert(Auth :: oz_endpoint:auth()) ->
-    {ok, CaCert :: binary()} | {error, Reason :: term()}.
-get_oz_cacert(Auth) ->
-    ?run(fun() ->
-        URN = "/public-ca",
-        {ok, 200, _ResponseHeaders, ResponseBody} =
-            oz_endpoint:request(Auth, URN, get, <<>>, [{endpoint, gui}]),
-        {ok, ResponseBody}
     end).
 
 %%--------------------------------------------------------------------
@@ -266,7 +254,7 @@ create_space(Auth, Parameters) ->
         URN = "/provider/spaces",
         Body = json_utils:encode(Parameters),
         {ok, 201, ResponseHeaders, _ResponseBody} =
-            oz_endpoint:provider_request(Auth, URN, post, Body),
+            oz_endpoint:request(Auth, URN, post, Body),
         <<"/spaces/", SpaceId/binary>> =
             maps:get(<<"location">>, ResponseHeaders),
         {ok, SpaceId}
@@ -286,7 +274,7 @@ support_space(Auth, Parameters) ->
         URN = "/provider/spaces/support",
         Body = json_utils:encode(Parameters),
         {ok, 201, ResponseHeaders, _ResponseBody} =
-            oz_endpoint:provider_request(Auth, URN, post, Body),
+            oz_endpoint:request(Auth, URN, post, Body),
         <<"/provider/spaces/", SpaceId/binary>> =
             maps:get(<<"location">>, ResponseHeaders),
         {ok, SpaceId}
@@ -302,7 +290,7 @@ revoke_space_support(Auth, SpaceId) ->
     ?run(fun() ->
         URN = "/provider/spaces/" ++ binary_to_list(SpaceId),
         {ok, 202, _ResponseHeaders, _ResponseBody} =
-            oz_endpoint:provider_request(Auth, URN, delete),
+            oz_endpoint:request(Auth, URN, delete),
         ok
     end).
 
@@ -316,7 +304,7 @@ get_spaces(Auth) ->
     ?run(fun() ->
         URN = "/provider/spaces",
         {ok, 200, _ResponseHeaders, ResponseBody} =
-            oz_endpoint:provider_request(Auth, URN, get),
+            oz_endpoint:request(Auth, URN, get),
         Proplist = json_utils:decode(ResponseBody),
         SpaceIds = lists_utils:key_get(<<"spaces">>, Proplist),
         {ok, SpaceIds}
@@ -332,7 +320,7 @@ get_space_details(Auth, SpaceId) ->
     ?run(fun() ->
         URN = "/provider/spaces/" ++ binary_to_list(SpaceId),
         {ok, 200, _ResponseHeaders, ResponseBody} =
-            oz_endpoint:provider_request(Auth, URN, get),
+            oz_endpoint:request(Auth, URN, get),
         Proplist = json_utils:decode(ResponseBody),
         SpaceDetails = #space_details{
             id = lists_utils:key_get(<<"spaceId">>, Proplist),

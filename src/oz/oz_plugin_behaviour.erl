@@ -35,23 +35,6 @@
 -callback get_oz_rest_api_prefix() -> string().
 
 %%--------------------------------------------------------------------
-%% @doc Should return a path to file the containing provider's private key.
-%%--------------------------------------------------------------------
--callback get_key_file() -> file:name_all().
-
-%%--------------------------------------------------------------------
-%% @doc Should return a path to the file containing provider's CSR.
-%%--------------------------------------------------------------------
--callback get_csr_file() -> file:name_all().
-
-%%--------------------------------------------------------------------
-%% @doc Should return a path to the file containing provider's public
-%% certificate signed by OZ.
-%% @end
-%%--------------------------------------------------------------------
--callback get_cert_file() -> file:name_all().
-
-%%--------------------------------------------------------------------
 %% @doc Should return a path to the directory containing OZ
 %% CA certificates.
 %% @end
@@ -68,4 +51,4 @@
 %%--------------------------------------------------------------------
 -callback auth_to_rest_client(Auth :: term()) -> {user, token, binary()} |
 {user, macaroon, {Macaroon :: binary(), DischargeMacaroons :: [binary()]}} |
-{user, basic, binary()} | provider.
+{user, basic, binary()} | {provider, Macaroon :: binary()} | none.

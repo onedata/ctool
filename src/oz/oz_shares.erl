@@ -38,7 +38,7 @@ create(Auth, ShareId, SpaceId, Parameters) ->
             "/shares/" ++ binary_to_list(ShareId),
         Body = json_utils:encode(Parameters),
         {ok, 204, _ResponseHeaders, _ResponseBody} =
-            oz_endpoint:provider_request(Auth, URN, put, Body),
+            oz_endpoint:request(Auth, URN, put, Body),
         {ok, ShareId}
     end).
 
@@ -53,7 +53,7 @@ remove(Auth, ShareId) ->
     ?run(fun() ->
         URN = "/shares/" ++ binary_to_list(ShareId),
         {ok, 202, _ResponseHeaders, _ResponseBody} =
-            oz_endpoint:provider_request(Auth, URN, delete),
+            oz_endpoint:request(Auth, URN, delete),
         ok
     end).
 
@@ -68,7 +68,7 @@ get_details(Auth, ShareId) ->
     ?run(fun() ->
         URN = "/shares/" ++ binary_to_list(ShareId),
         {ok, 200, _ResponseHeaders, ResponseBody} =
-            oz_endpoint:provider_request(Auth, URN, get),
+            oz_endpoint:request(Auth, URN, get),
         Props = json_utils:decode(ResponseBody),
         % Get default values of share_details record
         ShareDetails = #share_details{
@@ -97,6 +97,6 @@ modify_details(Auth, ShareId, Parameters) ->
         URN = "/shares/" ++ binary_to_list(ShareId),
         Body = json_utils:encode(Parameters),
         {ok, 204, _ResponseHeaders, _ResponseBody} =
-            oz_endpoint:provider_request(Auth, URN, patch, Body),
+            oz_endpoint:request(Auth, URN, patch, Body),
         ok
     end).
