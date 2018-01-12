@@ -98,7 +98,7 @@ register_with_uuid(Auth, Parameters) ->
 unregister(Auth) ->
     ?run(fun() ->
         URN = "/provider",
-        {ok, 202, _ResponseHeaders, _ResponseBody} =
+        {ok, 204, _ResponseHeaders, _ResponseBody} =
             oz_endpoint:request(Auth, URN, delete),
         ok
     end).
