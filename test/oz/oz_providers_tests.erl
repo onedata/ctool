@@ -56,7 +56,7 @@ setup() ->
         (client, "/provider", get) ->
             {ok, 200, response_headers, response_body};
         (client, "/provider", delete) ->
-            {ok, 202, response_headers, response_body};
+            {ok, 204, response_headers, response_body};
         (client, "/provider/spaces", get) ->
             {ok, 200, response_headers, response_body};
         (client, "/provider/spaces/spaceId", get) ->
