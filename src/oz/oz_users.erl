@@ -145,7 +145,7 @@ create_space(Auth, Parameters) ->
         {ok, 201, ResponseHeaders, _ResponseBody} =
             oz_endpoint:request(Auth, URN, post, Body),
         <<"/spaces/", SpaceId/binary>> =
-            maps:get(<<"location">>, ResponseHeaders),
+            maps:get(<<"Location">>, ResponseHeaders),
         {ok, SpaceId}
     end).
 
@@ -164,7 +164,7 @@ join_space(Auth, Parameters) ->
         {ok, 201, ResponseHeaders, _ResponseBody} =
             oz_endpoint:request(Auth, URN, post, Body),
         <<"/user/spaces/", SpaceId/binary>> =
-            maps:get(<<"location">>, ResponseHeaders),
+            maps:get(<<"Location">>, ResponseHeaders),
         {ok, SpaceId}
     end).
 
@@ -271,7 +271,7 @@ create_group(Auth, Parameters) ->
         {ok, 201, ResponseHeaders, _ResponseBody} =
             oz_endpoint:request(Auth, URN, post, Body),
         <<"/groups/", GroupId/binary>> =
-            maps:get(<<"location">>, ResponseHeaders),
+            maps:get(<<"Location">>, ResponseHeaders),
         {ok, GroupId}
     end).
 
@@ -290,7 +290,7 @@ join_group(Auth, Parameters) ->
         {ok, 201, ResponseHeaders, _ResponseBody} =
             oz_endpoint:request(Auth, URN, post, Body),
         <<"/user/groups/", GroupId/binary>> =
-            maps:get(<<"location">>, ResponseHeaders),
+            maps:get(<<"Location">>, ResponseHeaders),
         {ok, GroupId}
     end).
 

@@ -256,7 +256,7 @@ create_space(Auth, Parameters) ->
         {ok, 201, ResponseHeaders, _ResponseBody} =
             oz_endpoint:request(Auth, URN, post, Body),
         <<"/spaces/", SpaceId/binary>> =
-            maps:get(<<"location">>, ResponseHeaders),
+            maps:get(<<"Location">>, ResponseHeaders),
         {ok, SpaceId}
     end).
 
@@ -276,7 +276,7 @@ support_space(Auth, Parameters) ->
         {ok, 201, ResponseHeaders, _ResponseBody} =
             oz_endpoint:request(Auth, URN, post, Body),
         <<"/provider/spaces/", SpaceId/binary>> =
-            maps:get(<<"location">>, ResponseHeaders),
+            maps:get(<<"Location">>, ResponseHeaders),
         {ok, SpaceId}
     end).
 

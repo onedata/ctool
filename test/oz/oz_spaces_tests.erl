@@ -102,7 +102,7 @@ setup() ->
     end),
     meck:expect(oz_endpoint, request, fun
         (client, "/spaces", post, <<"body">>) ->
-            {ok, 201, #{<<"location">> => <<"/spaces/spaceId">>}, response_body};
+            {ok, 201, #{<<"Location">> => <<"/spaces/spaceId">>}, response_body};
         (client, "/spaces/spaceId", patch, <<"body">>) ->
             {ok, 204, response_headers, response_body};
         (client, "/spaces/spaceId/users/userId/privileges", put, <<"body">>) ->
