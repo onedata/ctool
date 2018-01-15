@@ -255,8 +255,7 @@ create_space(Auth, Parameters) ->
         Body = json_utils:encode(Parameters),
         {ok, 201, ResponseHeaders, _ResponseBody} =
             oz_endpoint:request(Auth, URN, post, Body),
-        <<"/spaces/", SpaceId/binary>> =
-            maps:get(<<"Location">>, ResponseHeaders),
+        SpaceId = http_utils:last_url_part(maps:get(<<"Location">>, ResponseHeaders)),
         {ok, SpaceId}
     end).
 
@@ -275,8 +274,7 @@ support_space(Auth, Parameters) ->
         Body = json_utils:encode(Parameters),
         {ok, 201, ResponseHeaders, _ResponseBody} =
             oz_endpoint:request(Auth, URN, post, Body),
-        <<"/provider/spaces/", SpaceId/binary>> =
-            maps:get(<<"Location">>, ResponseHeaders),
+        SpaceId = http_utils:last_url_part(maps:get(<<"Location">>, ResponseHeaders)),
         {ok, SpaceId}
     end).
 
@@ -289,7 +287,7 @@ support_space(Auth, Parameters) ->
 revoke_space_support(Auth, SpaceId) ->
     ?run(fun() ->
         URN = "/provider/spaces/" ++ binary_to_list(SpaceId),
-        {ok, 202, _ResponseHeaders, _ResponseBody} =
+        {ok, 204, _ResponseHeaders, _ResponseBody} =
             oz_endpoint:request(Auth, URN, delete),
         ok
     end).

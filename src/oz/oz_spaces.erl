@@ -50,8 +50,7 @@ create(Auth, Parameters) ->
         Body = json_utils:encode(Parameters),
         {ok, 201, ResponseHeaders, _ResponseBody} =
             oz_endpoint:request(Auth, URN, post, Body),
-        <<"/spaces/", SpaceId/binary>> =
-            maps:get(<<"Location">>, ResponseHeaders),
+        SpaceId = http_utils:last_url_part(maps:get(<<"Location">>, ResponseHeaders)),
         {ok, SpaceId}
     end).
 
@@ -64,7 +63,7 @@ create(Auth, Parameters) ->
 remove(Auth, SpaceId) ->
     ?run(fun() ->
         URN = "/spaces/" ++ binary_to_list(SpaceId),
-        {ok, 202, _ResponseHeaders, _ResponseBody} =
+        {ok, 204, _ResponseHeaders, _ResponseBody} =
             oz_endpoint:request(Auth, URN, delete),
         ok
     end).
@@ -184,7 +183,7 @@ remove_user(Auth, SpaceId, UserId) ->
     ?run(fun() ->
         URN = "/spaces/" ++ binary_to_list(SpaceId) ++ "/users/" ++
             binary_to_list(UserId),
-        {ok, 202, _ResponseHeaders, _ResponseBody} =
+        {ok, 204, _ResponseHeaders, _ResponseBody} =
             oz_endpoint:request(Auth, URN, delete),
         ok
     end).
@@ -273,7 +272,7 @@ remove_group(Auth, SpaceId, GroupId) ->
     ?run(fun() ->
         URN = "/spaces/" ++ binary_to_list(SpaceId) ++ "/groups/" ++
             binary_to_list(GroupId),
-        {ok, 202, _ResponseHeaders, _ResponseBody} =
+        {ok, 204, _ResponseHeaders, _ResponseBody} =
             oz_endpoint:request(Auth, URN, delete),
         ok
     end).
@@ -352,7 +351,7 @@ remove_provider(Auth, SpaceId, ProviderId) ->
     ?run(fun() ->
         URN = "/spaces/" ++ binary_to_list(SpaceId) ++ "/providers/" ++
             binary_to_list(ProviderId),
-        {ok, 202, _ResponseHeaders, _ResponseBody} =
+        {ok, 204, _ResponseHeaders, _ResponseBody} =
             oz_endpoint:request(Auth, URN, delete),
         ok
     end).

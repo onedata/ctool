@@ -62,15 +62,15 @@ setup() ->
         (client, "/provider/spaces/spaceId", get) ->
             {ok, 200, response_headers, response_body};
         (client, "/provider/spaces/spaceId", delete) ->
-            {ok, 202, response_headers, response_body}
+            {ok, 204, response_headers, response_body}
     end),
     meck:expect(oz_endpoint, request, fun
         (client, "/provider", patch, <<"body">>) ->
             {ok, 204, response_headers, response_body};
         (client, "/provider/spaces", post, <<"body">>) ->
-            {ok, 201, #{<<"Location">> => <<"/spaces/spaceId">>}, response_body};
+            {ok, 201, #{<<"Location">> => <<"https://onedata.org/api/v3/onezone/spaces/spaceId">>}, response_body};
         (client, "/provider/spaces/support", post, <<"body">>) ->
-            {ok, 201, #{<<"Location">> => <<"/provider/spaces/spaceId">>},
+            {ok, 201, #{<<"Location">> => <<"https://onedata.org/api/v3/onezone/provider/spaces/spaceId">>},
                 response_body}
     end),
     meck:expect(oz_endpoint, request, fun

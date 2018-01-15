@@ -43,7 +43,7 @@ setup() ->
         (client, "/shares/shareId", get) ->
             {ok, 200, response_headers, response_body};
         (client, "/shares/shareId", delete) ->
-            {ok, 202, response_headers, response_body}
+            {ok, 204, response_headers, response_body}
     end),
     meck:expect(oz_endpoint, request, fun
         (client, "/spaces/spaceId/shares/shareId", put, <<"body">>) ->
