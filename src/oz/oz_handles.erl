@@ -39,8 +39,7 @@ create(Auth, Parameters) ->
         Body = json_utils:encode(Parameters),
         {ok, 201, ResponseHeaders, _ResponseBody} =
             oz_endpoint:request(Auth, URN, post, Body),
-        <<"/handles/", HandleId/binary>> =
-            maps:get(<<"Location">>, ResponseHeaders),
+        HandleId = http_utils:last_url_part(maps:get(<<"Location">>, ResponseHeaders)),
         {ok, HandleId}
     end).
 

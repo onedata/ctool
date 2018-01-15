@@ -57,7 +57,7 @@ setup() ->
         (client, "/groups/groupId", get) ->
             {ok, 200, response_headers, response_body};
         (client, "/groups/groupId", delete) ->
-            {ok, 202, response_headers, response_body};
+            {ok, 204, response_headers, response_body};
         (client, "/groups/groupId/spaces", get) ->
             {ok, 200, response_headers, response_body};
         (client, "/groups/groupId/spaces/spaceId", get) ->
@@ -65,7 +65,7 @@ setup() ->
         (client, "/groups/groupId/spaces/token", get) ->
             {ok, 200, response_headers, response_body};
         (client, "/groups/groupId/spaces/spaceId", delete) ->
-            {ok, 202, response_headers, response_body};
+            {ok, 204, response_headers, response_body};
         (client, "/groups/groupId/users", get) ->
             {ok, 200, response_headers, response_body};
         (client, "/groups/groupId/users/token", get) ->
@@ -73,19 +73,19 @@ setup() ->
         (client, "/groups/groupId/users/userId", get) ->
             {ok, 200, response_headers, response_body};
         (client, "/groups/groupId/users/userId", delete) ->
-            {ok, 202, response_headers, response_body};
+            {ok, 204, response_headers, response_body};
         (client, "/groups/groupId/users/userId/privileges", get) ->
             {ok, 200, response_headers, response_body}
     end),
     meck:expect(oz_endpoint, request, fun
         (client, "/groups", post, <<"body">>) ->
-            {ok, 201, #{<<"Location">> => <<"/groups/groupId">>}, response_body};
+            {ok, 201, #{<<"Location">> => <<"https://onedata.org/api/v3/onezone/groups/groupId">>}, response_body};
         (client, "/groups/groupId", patch, <<"body">>) ->
             {ok, 204, response_headers, response_body};
         (client, "/groups/groupId/spaces", post, <<"body">>) ->
-            {ok, 201, #{<<"Location">> => <<"/spaces/spaceId">>}, response_body};
+            {ok, 201, #{<<"Location">> => <<"https://onedata.org/api/v3/onezone/spaces/spaceId">>}, response_body};
         (client, "/groups/groupId/spaces/join", post, <<"body">>) ->
-            {ok, 201, #{<<"Location">> => <<"/groups/groupId/spaces/spaceId">>}, response_body};
+            {ok, 201, #{<<"Location">> => <<"https://onedata.org/api/v3/onezone/groups/groupId/spaces/spaceId">>}, response_body};
         (client, "/groups/groupId/users/userId/privileges", put, <<"body">>) ->
             {ok, 204, response_headers, response_body}
     end).

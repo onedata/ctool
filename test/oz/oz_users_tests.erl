@@ -68,13 +68,13 @@ setup() ->
         (client, "/user/spaces/spaceId", get) ->
             {ok, 200, response_headers, response_body};
         (client, "/user/spaces/spaceId", delete) ->
-            {ok, 202, response_headers, response_body};
+            {ok, 204, response_headers, response_body};
         (client, "/user/groups", get) ->
             {ok, 200, response_headers, response_body};
         (client, "/user/groups/groupId", get) ->
             {ok, 200, response_headers, response_body};
         (client, "/user/groups/groupId", delete) ->
-            {ok, 202, response_headers, response_body}
+            {ok, 204, response_headers, response_body}
     end),
     meck:expect(oz_endpoint, request, fun
         (client, "/user", patch, <<"body">>) ->
@@ -82,17 +82,17 @@ setup() ->
         (client, "/user/merge", post, <<"body">>) ->
             {ok, 201, response_headers, response_body};
         (client, "/user/spaces", post, <<"body">>) ->
-            {ok, 201, #{<<"Location">> => <<"/spaces/spaceId">>},
+            {ok, 201, #{<<"Location">> => <<"https://onedata.org/api/v3/onezone/spaces/spaceId">>},
                 response_body};
         (client, "/user/spaces/default", put, <<"body">>) ->
             {ok, 204, response_headers, response_body};
         (client, "/user/spaces/join", post, <<"body">>) ->
-            {ok, 201, #{<<"Location">> => <<"/user/spaces/spaceId">>},
+            {ok, 201, #{<<"Location">> => <<"https://onedata.org/api/v3/onezone/user/spaces/spaceId">>},
                 response_body};
         (client, "/user/groups", post, <<"body">>) ->
-            {ok, 201, #{<<"Location">> => <<"/groups/groupId">>}, response_body};
+            {ok, 201, #{<<"Location">> => <<"https://onedata.org/api/v3/onezone/groups/groupId">>}, response_body};
         (client, "/user/groups/join", post, <<"body">>) ->
-            {ok, 201, #{<<"Location">> => <<"/user/groups/groupId">>},
+            {ok, 201, #{<<"Location">> => <<"https://onedata.org/api/v3/onezone/user/groups/groupId">>},
                 response_body}
     end).
 

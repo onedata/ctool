@@ -68,7 +68,7 @@ setup() ->
         (client, "/spaces/spaceId/shares", get) ->
             {ok, 200, response_headers, response_body};
         (client, "/spaces/spaceId", delete) ->
-            {ok, 202, response_headers, response_body};
+            {ok, 204, response_headers, response_body};
         (client, "/spaces/spaceId/users", get) ->
             {ok, 200, response_headers, response_body};
         (client, "/spaces/spaceId/users/token", get) ->
@@ -76,7 +76,7 @@ setup() ->
         (client, "/spaces/spaceId/users/userId", get) ->
             {ok, 200, response_headers, response_body};
         (client, "/spaces/spaceId/users/userId", delete) ->
-            {ok, 202, response_headers, response_body};
+            {ok, 204, response_headers, response_body};
         (client, "/spaces/spaceId/users/userId/privileges", get) ->
             {ok, 200, response_headers, response_body};
         (client, "/spaces/spaceId/users/userId/privileges?effective", get) ->
@@ -88,7 +88,7 @@ setup() ->
         (client, "/spaces/spaceId/groups/groupId", get) ->
             {ok, 200, response_headers, response_body};
         (client, "/spaces/spaceId/groups/groupId", delete) ->
-            {ok, 202, response_headers, response_body};
+            {ok, 204, response_headers, response_body};
         (client, "/spaces/spaceId/groups/groupId/privileges", get) ->
             {ok, 200, response_headers, response_body};
         (client, "/spaces/spaceId/providers", get) ->
@@ -98,11 +98,11 @@ setup() ->
         (client, "/spaces/spaceId/providers/providerId", get) ->
             {ok, 200, response_headers, response_body};
         (client, "/spaces/spaceId/providers/providerId", delete) ->
-            {ok, 202, response_headers, response_body}
+            {ok, 204, response_headers, response_body}
     end),
     meck:expect(oz_endpoint, request, fun
         (client, "/spaces", post, <<"body">>) ->
-            {ok, 201, #{<<"Location">> => <<"/spaces/spaceId">>}, response_body};
+            {ok, 201, #{<<"Location">> => <<"https://onedata.org/api/v3/onezone/spaces/spaceId">>}, response_body};
         (client, "/spaces/spaceId", patch, <<"body">>) ->
             {ok, 204, response_headers, response_body};
         (client, "/spaces/spaceId/users/userId/privileges", put, <<"body">>) ->

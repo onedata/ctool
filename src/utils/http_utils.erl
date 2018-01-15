@@ -19,6 +19,7 @@
 
 % URL encoding/decoding
 -export([url_encode/1, url_decode/1]).
+-export([last_url_part/1]).
 
 % Safe escaping
 -export([js_escape/1, html_encode/1]).
@@ -50,6 +51,16 @@ url_encode(Data) ->
 -spec url_decode(Data :: binary() | string()) -> binary().
 url_decode(Data) ->
     hackney_url:urldecode(Data).
+
+
+%%--------------------------------------------------------------------
+%% @doc Splits an URL on '/' and returns the last element.
+%% @end
+%%--------------------------------------------------------------------
+-spec last_url_part(URL :: binary()) -> binary().
+last_url_part(URL) ->
+    lists:last(binary:split(URL, <<"/">>, [global, trim_all])).
+
 
 %%--------------------------------------------------------------------
 %% @doc Escapes all javascript - sensitive characters.
@@ -145,9 +156,9 @@ proplist_to_url_params(List) ->
                         {url_encode(Key), url_encode(Value)}
                 end,
             Suffix = case Acc of
-                         <<"">> -> <<"">>;
-                         _ -> <<Acc/binary, "&">>
-                     end,
+                <<"">> -> <<"">>;
+                _ -> <<Acc/binary, "&">>
+            end,
             <<Suffix/binary, KeyEncoded/binary, "=", ValueEncoded/binary>>
         end, <<"">>, List).
 

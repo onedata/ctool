@@ -43,8 +43,7 @@ create(Auth, Parameters) ->
         Body = json_utils:encode(Parameters),
         {ok, 201, ResponseHeaders, _ResponseBody} =
             oz_endpoint:request(Auth, URN, post, Body),
-        <<"/groups/", GroupId/binary>> =
-            maps:get(<<"Location">>, ResponseHeaders),
+        GroupId = http_utils:last_url_part(maps:get(<<"Location">>, ResponseHeaders)),
         {ok, GroupId}
     end).
 
@@ -57,7 +56,7 @@ create(Auth, Parameters) ->
 remove(Auth, GroupId) ->
     ?run(fun() ->
         URN = "/groups/" ++ binary_to_list(GroupId),
-        {ok, 202, _ResponseHeaders, _ResponseBody} =
+        {ok, 204, _ResponseHeaders, _ResponseBody} =
             oz_endpoint:request(Auth, URN, delete),
         ok
     end).
@@ -140,7 +139,7 @@ remove_user(Auth, GroupId, UserId) ->
     ?run(fun() ->
         URN = "/groups/" ++ binary_to_list(GroupId) ++ "/users/" ++
             binary_to_list(UserId),
-        {ok, 202, _ResponseHeaders, _ResponseBody} =
+        {ok, 204, _ResponseHeaders, _ResponseBody} =
             oz_endpoint:request(Auth, URN, delete),
         ok
     end).
@@ -353,9 +352,7 @@ join_group(Auth, GroupId, Parameters) ->
         Body = json_utils:encode(Parameters),
         {ok, 201, ResponseHeaders, _ResponseBody} =
             oz_endpoint:request(Auth, URN, post, Body),
-        GroupIdSize = size(GroupId),
-        <<"/groups/", GroupId:GroupIdSize/binary, "/nested/", NestedGroupId/binary>> =
-            maps:get(<<"Location">>, ResponseHeaders),
+        NestedGroupId = http_utils:last_url_part(maps:get(<<"Location">>, ResponseHeaders)),
         {ok, NestedGroupId}
     end).
 
@@ -369,7 +366,7 @@ leave_group(Auth, ParentGroupId, GroupId) ->
     ?run(fun() ->
         URN = "/groups/" ++ binary_to_list(ParentGroupId) ++ "/nested/" ++
             binary_to_list(GroupId),
-        {ok, 202, _ResponseHeaders, _ResponseBody} =
+        {ok, 204, _ResponseHeaders, _ResponseBody} =
             oz_endpoint:request(Auth, URN, delete),
         ok
     end).
@@ -388,8 +385,7 @@ create_space(Auth, GroupId, Parameters) ->
         Body = json_utils:encode(Parameters),
         {ok, 201, ResponseHeaders, _ResponseBody} =
             oz_endpoint:request(Auth, URN, post, Body),
-        <<"/spaces/", SpaceId/binary>> =
-            maps:get(<<"Location">>, ResponseHeaders),
+        SpaceId = http_utils:last_url_part(maps:get(<<"Location">>, ResponseHeaders)),
         {ok, SpaceId}
     end).
 
@@ -407,9 +403,7 @@ join_space(Auth, GroupId, Parameters) ->
         Body = json_utils:encode(Parameters),
         {ok, 201, ResponseHeaders, _ResponseBody} =
             oz_endpoint:request(Auth, URN, post, Body),
-        GroupIdSize = size(GroupId),
-        <<"/groups/", GroupId:GroupIdSize/binary, "/spaces/", SpaceId/binary>> =
-            maps:get(<<"Location">>, ResponseHeaders),
+        SpaceId = http_utils:last_url_part(maps:get(<<"Location">>, ResponseHeaders)),
         {ok, SpaceId}
     end).
 
@@ -423,7 +417,7 @@ leave_space(Auth, GroupId, SpaceId) ->
     ?run(fun() ->
         URN = "/groups/" ++ binary_to_list(GroupId) ++ "/spaces/" ++
             binary_to_list(SpaceId),
-        {ok, 202, _ResponseHeaders, _ResponseBody} =
+        {ok, 204, _ResponseHeaders, _ResponseBody} =
             oz_endpoint:request(Auth, URN, delete),
         ok
     end).

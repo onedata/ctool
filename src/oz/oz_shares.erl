@@ -52,7 +52,7 @@ create(Auth, ShareId, SpaceId, Parameters) ->
 remove(Auth, ShareId) ->
     ?run(fun() ->
         URN = "/shares/" ++ binary_to_list(ShareId),
-        {ok, 202, _ResponseHeaders, _ResponseBody} =
+        {ok, 204, _ResponseHeaders, _ResponseBody} =
             oz_endpoint:request(Auth, URN, delete),
         ok
     end).

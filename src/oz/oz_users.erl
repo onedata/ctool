@@ -144,8 +144,7 @@ create_space(Auth, Parameters) ->
         Body = json_utils:encode(Parameters),
         {ok, 201, ResponseHeaders, _ResponseBody} =
             oz_endpoint:request(Auth, URN, post, Body),
-        <<"/spaces/", SpaceId/binary>> =
-            maps:get(<<"Location">>, ResponseHeaders),
+        SpaceId = http_utils:last_url_part(maps:get(<<"Location">>, ResponseHeaders)),
         {ok, SpaceId}
     end).
 
@@ -163,8 +162,7 @@ join_space(Auth, Parameters) ->
         Body = json_utils:encode(Parameters),
         {ok, 201, ResponseHeaders, _ResponseBody} =
             oz_endpoint:request(Auth, URN, post, Body),
-        <<"/user/spaces/", SpaceId/binary>> =
-            maps:get(<<"Location">>, ResponseHeaders),
+        SpaceId = http_utils:last_url_part(maps:get(<<"Location">>, ResponseHeaders)),
         {ok, SpaceId}
     end).
 
@@ -177,7 +175,7 @@ join_space(Auth, Parameters) ->
 leave_space(Auth, SpaceId) ->
     ?run(fun() ->
         URN = "/user/spaces/" ++ binary_to_list(SpaceId),
-        {ok, 202, _ResponseHeaders, _ResponseBody} =
+        {ok, 204, _ResponseHeaders, _ResponseBody} =
             oz_endpoint:request(Auth, URN, delete),
         ok
     end).
@@ -270,8 +268,7 @@ create_group(Auth, Parameters) ->
         Body = json_utils:encode(Parameters),
         {ok, 201, ResponseHeaders, _ResponseBody} =
             oz_endpoint:request(Auth, URN, post, Body),
-        <<"/groups/", GroupId/binary>> =
-            maps:get(<<"Location">>, ResponseHeaders),
+        GroupId = http_utils:last_url_part(maps:get(<<"Location">>, ResponseHeaders)),
         {ok, GroupId}
     end).
 
@@ -289,8 +286,7 @@ join_group(Auth, Parameters) ->
         Body = json_utils:encode(Parameters),
         {ok, 201, ResponseHeaders, _ResponseBody} =
             oz_endpoint:request(Auth, URN, post, Body),
-        <<"/user/groups/", GroupId/binary>> =
-            maps:get(<<"Location">>, ResponseHeaders),
+        GroupId = http_utils:last_url_part(maps:get(<<"Location">>, ResponseHeaders)),
         {ok, GroupId}
     end).
 
@@ -303,7 +299,7 @@ join_group(Auth, Parameters) ->
 leave_group(Auth, GroupId) ->
     ?run(fun() ->
         URN = "/user/groups/" ++ binary_to_list(GroupId),
-        {ok, 202, _ResponseHeaders, _ResponseBody} =
+        {ok, 204, _ResponseHeaders, _ResponseBody} =
             oz_endpoint:request(Auth, URN, delete),
         ok
     end).
