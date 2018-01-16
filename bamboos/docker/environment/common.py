@@ -18,6 +18,7 @@ from . import docker
 from timeouts import *
 import tempfile
 import stat
+import pytest
 
 try:
     import xml.etree.cElementTree as eTree
@@ -25,6 +26,12 @@ except ImportError:
     import xml.etree.ElementTree as eTree
 
 requests.packages.urllib3.disable_warnings()
+
+# How often (in seconds) and how many retries should be performed waiting for OP
+# instances to connect to their zones.
+OZ_CONNECTIVITY_CHECK_INTERVAL = 5
+OZ_CONNECTIVITY_CHECK_TIMEOUT = 10
+OZ_CONNECTIVITY_CHECK_RETRIES = 25
 
 HOST_STORAGE_PATH = "/tmp/onedata"
 
@@ -42,15 +49,22 @@ def nagios_up(ip, port=None, protocol='https'):
         return False
 
 
-def wait_until(condition, containers, timeout):
+def wait_until(condition, containers, timeout, docker_host=None):
     deadline = time.time() + timeout
+
+    def ready():
+        if docker_host:
+            return condition(container, docker_host)
+        else:
+            return condition(container)
+
     for container in containers:
-        while not condition(container):
+        while not ready():
             if time.time() > deadline:
                 message = 'Timeout while waiting for condition {0} ' \
                           'of container {1}'
                 message = message.format(condition.__name__, container)
-                raise ValueError(message)
+                pytest.skip(message)
 
             time.sleep(1)
 
@@ -232,14 +246,14 @@ def create_groups(container, groups):
             assert 0 is docker.exec_(container, command, interactive=True)
 
 
-def volume_for_storage(storage):
+def volume_for_storage(storage, readonly=False):
     """Returns tuple (path_on_host, path_on_docker, read_write_mode)
     for a given storage
     """
-    return storage_host_path(storage), storage, 'rw'
+    return storage_host_path(), storage, 'ro' if readonly else 'rw'
 
 
-def storage_host_path(storage):
+def storage_host_path():
     """Returns path to temporary directory for storage on host
     """
     if not os.path.exists(HOST_STORAGE_PATH):
@@ -266,4 +280,28 @@ mkdir -p {mount_point}
 mount -t nfs -o proto=tcp,port=2049,nolock {host}:/exports {mount_point}
 '''.format(host=storages_dockers['nfs'][storage['name']]['ip'], mount_point=storage['name'])
     return mount_command
+
+
+def ensure_provider_oz_connectivity(host):
+    """Returns True when given OP instance is connected to its OZ or False
+    when certain amount of retries fail.
+    """
+    for _ in range(0, OZ_CONNECTIVITY_CHECK_RETRIES):
+        if _check_provider_oz_connectivity(host):
+            return True
+        time.sleep(OZ_CONNECTIVITY_CHECK_INTERVAL)
+    return False
+
+
+def _check_provider_oz_connectivity(host):
+    url = 'https://{0}/nagios/oz_connectivity'.format(host)
+    try:
+        r = requests.get(url, verify=False, timeout=OZ_CONNECTIVITY_CHECK_TIMEOUT)
+        if r.status_code != requests.codes.ok:
+            return False
+
+        body_json = json.loads(r.text)
+        return body_json['status'] == 'ok'
+    except requests.exceptions.RequestException as e:
+        return False
 
