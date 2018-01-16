@@ -101,8 +101,6 @@
         Hostname = os:cmd("hostname -f") -- "\n",
         list_to_atom(lists:concat(["env_configurator_", os:getpid(), "@", Hostname]))
     end).
-% Password for keyfiles created for providers
--define(DEFAULT_KEY_FILE_PASSWD, "").
 
 
 %% API
@@ -250,7 +248,7 @@ bin_to_atom(Bin) ->
     Provider :: binary()) -> ok.
 register_in_onezone(Workers, Cookie, Provider) ->
     {ok, Provider} = call_node(hd(Workers), Cookie, oneprovider,
-        register_in_oz_dev, [Workers, ?DEFAULT_KEY_FILE_PASSWD, Provider]),
+        register_in_oz_dev, [Workers, Provider]),
     ok.
 
 
@@ -269,8 +267,8 @@ create_space_storage_mapping(Worker, Cookie, Spaces, ProviderDomain) ->
                 ok;
             ProviderSupportInfo ->
                 StorageName = proplists:get_value(<<"storage">>, ProviderSupportInfo),
-                {ok, Storage} = call_node(Worker, Cookie, storage, get_by_name, [StorageName]),
-                StorageId = call_node(Worker, Cookie, storage, id, [Storage]),
+                {ok, Storage} = call_node(Worker, Cookie, storage, select, [StorageName]),
+                StorageId = call_node(Worker, Cookie, storage, get_id, [Storage]),
                 {ok, _} = call_node(Worker, Cookie, space_storage, add, [SpaceId, StorageId])
         end
     end, Spaces).
