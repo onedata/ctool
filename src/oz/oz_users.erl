@@ -215,8 +215,7 @@ get_space_details(Auth, SpaceId) ->
         SpaceDetails = #space_details{
             id = lists_utils:key_get(<<"spaceId">>, Proplist),
             name = lists_utils:key_get(<<"name">>, Proplist),
-            providers_supports = lists_utils:key_get(<<"providersSupports">>,
-                Proplist)
+            providers_supports = lists_utils:key_get(<<"providers">>, Proplist)
         },
         {ok, SpaceDetails}
     end).

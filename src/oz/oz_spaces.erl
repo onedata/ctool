@@ -85,7 +85,7 @@ get_details(Auth, SpaceId) ->
             id = lists_utils:key_get(<<"spaceId">>, Props),
             name = lists_utils:key_get(<<"name">>, Props),
             providers_supports = lists_utils:key_get(
-                <<"providersSupports">>, Props, []),
+                <<"providers">>, Props, []),
             shares = lists_utils:key_get(<<"shares">>, Props, [])
         },
         {ok, SpaceDetails}

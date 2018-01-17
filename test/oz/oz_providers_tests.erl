@@ -267,7 +267,7 @@ should_get_space_details() ->
         [
             {<<"spaceId">>, <<"spaceId">>},
             {<<"name">>, <<"name">>},
-            {<<"providersSupports">>, [{<<"providerId">>, 123}]}
+            {<<"providers">>, [{<<"providerId">>, 123}]}
         ]
     end),
 
