@@ -388,7 +388,7 @@ get_provider_details(Auth, SpaceId, ProviderId) ->
         Proplist = json_utils:decode(ResponseBody),
         ProviderDetails = #provider_details{
             id = lists_utils:key_get(<<"providerId">>, Proplist),
-            name = lists_utils:key_get(<<"clientName">>, Proplist),
+            name = lists_utils:key_get(<<"name">>, Proplist),
             domain = lists_utils:key_get(<<"domain">>, Proplist),
             latitude = lists_utils:key_get(<<"latitude">>, Proplist),
             longitude = lists_utils:key_get(<<"longitude">>, Proplist)
