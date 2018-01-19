@@ -91,6 +91,10 @@
 -define(ERROR_BAD_VALUE_BAD_TOKEN_TYPE(__Key), {error, {bad_token_type, __Key}}).
 -define(ERROR_BAD_VALUE_IDENTIFIER(__Key), {error, {bad_identifier, __Key}}).
 -define(ERROR_BAD_VALUE_LOGIN, {error, bad_login}).
+
+% Errors caused by illegal state
+-define(ERROR_SUBDOMAIN_DELEGATION_DISABLED, {error, subdomain_delegation_disabled}).
+
 % Errors connected with relations between entities
 -define(ERROR_RELATION_DOES_NOT_EXIST(__ChType, __ChId, __ParType, __ParId),
     {error, {relation_does_not_exist, __ChType, __ChId, __ParType, __ParId}}
