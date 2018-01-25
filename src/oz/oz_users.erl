@@ -59,8 +59,8 @@ get_details(Auth) ->
         UserDetails = #user_details{
             id = lists_utils:key_get(<<"userId">>, Proplist),
             name = lists_utils:key_get(<<"name">>, Proplist),
-            connected_accounts = lists_utils:key_get(<<"linkedAccounts">>, Proplist),
-            alias = lists_utils:key_get(<<"alias">>, Proplist),
+            linked_accounts = lists_utils:key_get(<<"linkedAccounts">>, Proplist),
+            login = lists_utils:key_get(<<"login">>, Proplist),
             email_list = lists_utils:key_get(<<"emailList">>, Proplist)
         },
         {ok, UserDetails}
