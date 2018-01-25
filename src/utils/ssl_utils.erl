@@ -1,27 +1,29 @@
 %%%--------------------------------------------------------------------
-%%% @author Krzysztof Trzepla
-%%% @copyright (C) 2016 ACK CYFRONET AGH
+%%% @author Lukasz Opiola
+%%% @copyright (C) 2018 ACK CYFRONET AGH
 %%% This software is released under the MIT license
 %%% cited in 'LICENSE.txt'.
 %%% @end
 %%%--------------------------------------------------------------------
-%%% @doc This module contains utility SSL functions.
+%%% @doc
+%%% This module contains utility SSL functions.
 %%% @end
 %%%--------------------------------------------------------------------
 -module(ssl_utils).
--author("Krzysztof Trzepla").
+-author("Lukasz Opiola").
 
 %% API
--export([weak_ciphers/0]).
+-export([safe_ciphers/0]).
 
 %%%===================================================================
 %%% API functions
 %%%===================================================================
 
 %%--------------------------------------------------------------------
-%% @doc Returns list of weak ciphers.
+%% @doc
+%% Returns the list of safe ciphers (without TLS RSA Encryption).
 %% @end
 %%--------------------------------------------------------------------
--spec weak_ciphers() -> list().
-weak_ciphers() ->
-    [{dhe_rsa, des_cbc, sha}, {rsa, des_cbc, sha}].
+-spec safe_ciphers() -> list().
+safe_ciphers() ->
+    [Suite || Suite <- ssl:cipher_suites(), element(1, Suite) =/= rsa].
