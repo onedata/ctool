@@ -59,8 +59,8 @@ teardown(_) ->
 %%%===================================================================
 
 should_create() ->
-    meck:new(json_utils),
-    meck:expect(json_utils, encode, fun(parameters) -> <<"body">> end),
+    meck:new(json_utils, [passthrough]),
+    meck:expect(json_utils, encode_deprecated, fun(parameters) -> <<"body">> end),
 
     Answer = oz_handles:create(client, parameters),
     ?assertEqual({ok, <<"handleId">>}, Answer),
@@ -72,8 +72,8 @@ should_create() ->
 should_get_details() ->
     Datestamp = <<"2016-01-01T10:00:00Z">>,
     Datetime = time_utils:datestamp_to_datetime(Datestamp),
-    meck:new(json_utils),
-    meck:expect(json_utils, decode, fun(response_body) ->
+    meck:new(json_utils, [passthrough]),
+    meck:expect(json_utils, decode_deprecated, fun(response_body) ->
         [
             {<<"handleId">>, <<"handleId">>},
             {<<"handleServiceId">>, <<"val_handle_service_id">>},
@@ -101,8 +101,8 @@ should_get_details() ->
 
 
 should_get_public_details() ->
-    meck:new(json_utils),
-    meck:expect(json_utils, decode, fun(response_body) ->
+    meck:new(json_utils, [passthrough]),
+    meck:expect(json_utils, decode_deprecated, fun(response_body) ->
         [
             {<<"handleId">>, <<"handleId">>},
             {<<"handle">>, <<"val_public_handle">>},

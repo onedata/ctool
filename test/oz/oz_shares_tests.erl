@@ -62,8 +62,8 @@ teardown(_) ->
 %%%===================================================================
 
 should_create() ->
-    meck:new(json_utils),
-    meck:expect(json_utils, encode, fun(parameters) -> <<"body">> end),
+    meck:new(json_utils, [passthrough]),
+    meck:expect(json_utils, encode_deprecated, fun(parameters) -> <<"body">> end),
 
     Answer = oz_shares:create(client, <<"shareId">>, <<"spaceId">>, parameters),
     ?assertEqual({ok, <<"shareId">>}, Answer),
@@ -78,8 +78,8 @@ should_remove() ->
 
 
 should_get_details() ->
-    meck:new(json_utils),
-    meck:expect(json_utils, decode, fun(response_body) ->
+    meck:new(json_utils, [passthrough]),
+    meck:expect(json_utils, decode_deprecated, fun(response_body) ->
         [
             {<<"shareId">>, <<"shareId">>},
             {<<"name">>, <<"val_name">>},
@@ -103,8 +103,8 @@ should_get_details() ->
 
 
 should_modify_details() ->
-    meck:new(json_utils),
-    meck:expect(json_utils, encode, fun(parameters) -> <<"body">> end),
+    meck:new(json_utils, [passthrough]),
+    meck:expect(json_utils, encode_deprecated, fun(parameters) -> <<"body">> end),
 
     Answer = oz_shares:modify_details(client, <<"shareId">>, parameters),
     ?assertEqual(ok, Answer),

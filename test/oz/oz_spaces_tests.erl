@@ -122,8 +122,8 @@ teardown(_) ->
 %%%===================================================================
 
 should_create() ->
-    meck:new(json_utils),
-    meck:expect(json_utils, encode, fun(parameters) -> <<"body">> end),
+    meck:new(json_utils, [passthrough]),
+    meck:expect(json_utils, encode_deprecated, fun(parameters) -> <<"body">> end),
 
     Answer = oz_spaces:create(client, parameters),
     ?assertEqual({ok, <<"spaceId">>}, Answer),
@@ -138,8 +138,8 @@ should_remove() ->
 
 
 should_get_details() ->
-    meck:new(json_utils),
-    meck:expect(json_utils, decode, fun(response_body) ->
+    meck:new(json_utils, [passthrough]),
+    meck:expect(json_utils, decode_deprecated, fun(response_body) ->
         [
             {<<"spaceId">>, <<"spaceId">>},
             {<<"name">>, <<"name">>},
@@ -156,8 +156,8 @@ should_get_details() ->
 
 
 should_modify_details() ->
-    meck:new(json_utils),
-    meck:expect(json_utils, encode, fun(parameters) -> <<"body">> end),
+    meck:new(json_utils, [passthrough]),
+    meck:expect(json_utils, encode_deprecated, fun(parameters) -> <<"body">> end),
 
     Answer = oz_spaces:modify_details(client, <<"spaceId">>, parameters),
     ?assertEqual(ok, Answer),
@@ -167,8 +167,8 @@ should_modify_details() ->
 
 
 should_get_shares() ->
-    meck:new(json_utils),
-    meck:expect(json_utils, decode, fun(response_body) ->
+    meck:new(json_utils, [passthrough]),
+    meck:expect(json_utils, decode_deprecated, fun(response_body) ->
         [{<<"shares">>, [sh1, sh2, sh3]}]
     end),
 
@@ -180,8 +180,8 @@ should_get_shares() ->
 
 
 should_get_invite_user_token() ->
-    meck:new(json_utils),
-    meck:expect(json_utils, decode, fun(response_body) ->
+    meck:new(json_utils, [passthrough]),
+    meck:expect(json_utils, decode_deprecated, fun(response_body) ->
         [{<<"token">>, <<"token">>}]
     end),
 
@@ -193,8 +193,8 @@ should_get_invite_user_token() ->
 
 
 should_get_invite_group_token() ->
-    meck:new(json_utils),
-    meck:expect(json_utils, decode, fun(response_body) ->
+    meck:new(json_utils, [passthrough]),
+    meck:expect(json_utils, decode_deprecated, fun(response_body) ->
         [{<<"token">>, <<"token">>}]
     end),
 
@@ -206,8 +206,8 @@ should_get_invite_group_token() ->
 
 
 should_get_invite_provider_token() ->
-    meck:new(json_utils),
-    meck:expect(json_utils, decode, fun(response_body) ->
+    meck:new(json_utils, [passthrough]),
+    meck:expect(json_utils, decode_deprecated, fun(response_body) ->
         [{<<"token">>, <<"token">>}]
     end),
 
@@ -224,8 +224,8 @@ should_remove_user() ->
 
 
 should_get_users() ->
-    meck:new(json_utils),
-    meck:expect(json_utils, decode, fun(response_body) ->
+    meck:new(json_utils, [passthrough]),
+    meck:expect(json_utils, decode_deprecated, fun(response_body) ->
         [{<<"users">>, <<"users">>}]
     end),
 
@@ -237,8 +237,8 @@ should_get_users() ->
 
 
 should_get_user_details() ->
-    meck:new(json_utils),
-    meck:expect(json_utils, decode, fun(response_body) ->
+    meck:new(json_utils, [passthrough]),
+    meck:expect(json_utils, decode_deprecated, fun(response_body) ->
         [{<<"userId">>, <<"userId">>}, {<<"name">>, <<"name">>}]
     end),
 
@@ -251,8 +251,8 @@ should_get_user_details() ->
 
 
 should_get_user_privileges() ->
-    meck:new(json_utils),
-    meck:expect(json_utils, decode, fun(response_body) ->
+    meck:new(json_utils, [passthrough]),
+    meck:expect(json_utils, decode_deprecated, fun(response_body) ->
         [{<<"privileges">>, [<<"privilege">>]}]
     end),
 
@@ -264,8 +264,8 @@ should_get_user_privileges() ->
 
 
 should_get_effective_user_privileges() ->
-    meck:new(json_utils),
-    meck:expect(json_utils, decode, fun(response_body) ->
+    meck:new(json_utils, [passthrough]),
+    meck:expect(json_utils, decode_deprecated, fun(response_body) ->
         [{<<"privileges">>, [<<"privilege">>]}]
     end),
 
@@ -278,8 +278,8 @@ should_get_effective_user_privileges() ->
 
 
 should_set_user_privileges() ->
-    meck:new(json_utils),
-    meck:expect(json_utils, encode, fun(parameters) -> <<"body">> end),
+    meck:new(json_utils, [passthrough]),
+    meck:expect(json_utils, encode_deprecated, fun(parameters) -> <<"body">> end),
 
     Answer = oz_spaces:set_user_privileges(client,
         <<"spaceId">>, <<"userId">>, parameters),
@@ -295,8 +295,8 @@ should_remove_group() ->
 
 
 should_get_groups() ->
-    meck:new(json_utils),
-    meck:expect(json_utils, decode, fun(response_body) ->
+    meck:new(json_utils, [passthrough]),
+    meck:expect(json_utils, decode_deprecated, fun(response_body) ->
         [{<<"groups">>, <<"groups">>}]
     end),
 
@@ -308,8 +308,8 @@ should_get_groups() ->
 
 
 should_get_group_details() ->
-    meck:new(json_utils),
-    meck:expect(json_utils, decode, fun(response_body) -> [
+    meck:new(json_utils, [passthrough]),
+    meck:expect(json_utils, decode_deprecated, fun(response_body) -> [
         {<<"groupId">>, <<"groupId">>}, {<<"name">>, <<"name">>},
         {<<"type">>, <<"type">>}
     ] end),
@@ -323,8 +323,8 @@ should_get_group_details() ->
 
 
 should_get_group_privileges() ->
-    meck:new(json_utils),
-    meck:expect(json_utils, decode, fun(response_body) ->
+    meck:new(json_utils, [passthrough]),
+    meck:expect(json_utils, decode_deprecated, fun(response_body) ->
         [{<<"privileges">>, [<<"privilege">>]}]
     end),
 
@@ -336,8 +336,8 @@ should_get_group_privileges() ->
     ok = meck:unload(json_utils).
 
 should_set_group_privileges() ->
-    meck:new(json_utils),
-    meck:expect(json_utils, encode, fun(parameters) -> <<"body">> end),
+    meck:new(json_utils, [passthrough]),
+    meck:expect(json_utils, encode_deprecated, fun(parameters) -> <<"body">> end),
 
     Answer = oz_spaces:set_group_privileges(client, <<"spaceId">>,
         <<"groupId">>, parameters),
@@ -353,8 +353,8 @@ should_remove_provider() ->
 
 
 should_get_providers() ->
-    meck:new(json_utils),
-    meck:expect(json_utils, decode, fun(response_body) ->
+    meck:new(json_utils, [passthrough]),
+    meck:expect(json_utils, decode_deprecated, fun(response_body) ->
         [{<<"providers">>, <<"providers">>}]
     end),
 
@@ -366,8 +366,8 @@ should_get_providers() ->
 
 
 should_get_provider_details() ->
-    meck:new(json_utils),
-    meck:expect(json_utils, decode, fun(response_body) -> [
+    meck:new(json_utils, [passthrough]),
+    meck:expect(json_utils, decode_deprecated, fun(response_body) -> [
         {<<"providerId">>, <<"providerId">>},
         {<<"name">>, <<"name">>},
         {<<"domain">>, <<"domain">>},

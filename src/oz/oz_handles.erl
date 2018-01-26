@@ -36,7 +36,7 @@
 create(Auth, Parameters) ->
     ?run(fun() ->
         URN = "/handles",
-        Body = json_utils:encode(Parameters),
+        Body = json_utils:encode_deprecated(Parameters),
         {ok, 201, ResponseHeaders, _ResponseBody} =
             oz_endpoint:request(Auth, URN, post, Body),
         HandleId = http_utils:last_url_part(maps:get(<<"Location">>, ResponseHeaders)),
@@ -55,7 +55,7 @@ get_details(Auth, HandleId) ->
         URN = "/handles/" ++ binary_to_list(HandleId),
         {ok, 200, _ResponseHeaders, ResponseBody} =
             oz_endpoint:request(Auth, URN, get),
-        Props = json_utils:decode(ResponseBody),
+        Props = json_utils:decode_deprecated(ResponseBody),
         % Get default values of share_details record
         HandleDetails = #handle_details{
             id = lists_utils:key_get(<<"handleId">>, Props),
@@ -87,7 +87,7 @@ get_public_details(Auth, HandleId) ->
         URN = "/handles/" ++ binary_to_list(HandleId) ++ "/public",
         {ok, 200, _ResponseHeaders, ResponseBody} =
             oz_endpoint:request(Auth, URN, get),
-        Props = json_utils:decode(ResponseBody),
+        Props = json_utils:decode_deprecated(ResponseBody),
         % Get default values of share_details record
         HandleDetails = #handle_details{
             id = lists_utils:key_get(<<"handleId">>, Props),

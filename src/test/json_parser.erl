@@ -29,7 +29,7 @@
 %%--------------------------------------------------------------------
 -spec parse_json_binary_to_atom_proplist(JsonBinary :: binary()) -> list() | no_return().
 parse_json_binary_to_atom_proplist(JsonBinary) ->
-    Json = json_utils:decode(JsonBinary),
+    Json = json_utils:decode_deprecated(JsonBinary),
     convert_to_atoms(Json).
 
 %%--------------------------------------------------------------------

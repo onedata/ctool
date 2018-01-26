@@ -73,7 +73,7 @@ get_error_details({error, Reason}) ->
 
 get_error_details({ok, Status, _ResponseHeaders, ResponseBody}) ->
     try
-        Proplist = json_utils:decode(ResponseBody),
+        Proplist = json_utils:decode_deprecated(ResponseBody),
         Error = lists_utils:key_get(<<"error">>, Proplist, <<"">>),
         ErrorDescription = lists_utils:key_get(<<"error_description">>,
             Proplist, <<"">>),

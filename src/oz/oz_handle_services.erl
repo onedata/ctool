@@ -33,7 +33,7 @@ get_details(Auth, HandleServiceId) ->
         URN = "/handle_services/" ++ binary_to_list(HandleServiceId),
         {ok, 200, _ResponseHeaders, ResponseBody} =
             oz_endpoint:request(Auth, URN, get),
-        Props = json_utils:decode(ResponseBody),
+        Props = json_utils:decode_deprecated(ResponseBody),
         % Get default values of share_details record
         HandleServiceDetails = #handle_service_details{
             id = lists_utils:key_get(<<"handleServiceId">>, Props),
