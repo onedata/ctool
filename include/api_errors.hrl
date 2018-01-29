@@ -71,6 +71,7 @@
 -define(ERROR_BAD_VALUE_LIST_OF_IPV4_ADDRESSES(__Key), {error, {bad_value_list_of_ipv4_addresses, __Key}}).
 -define(ERROR_BAD_VALUE_DOMAIN(__Key), {error, {bad_value_domain, __Key}}).
 -define(ERROR_BAD_VALUE_SUBDOMAIN, {error, bad_value_subdomain}).
+-define(ERROR_BAD_VALUE_EMAIL, {error, bad_value_email}).
 -define(ERROR_BAD_VALUE_TOO_LOW(__Key, __Threshold),
     {error, {value_too_low, __Key, {min, __Threshold}}}
 ).
