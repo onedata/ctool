@@ -20,9 +20,7 @@
         lager,
         gen_smtp,
         % Web client will start ssl and hackney
-        web_client,
-        cowboy,
-        worker_pool
+        web_client
     ]},
 
     {env, [
