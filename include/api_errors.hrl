@@ -71,6 +71,7 @@
 -define(ERROR_BAD_VALUE_LIST_OF_IPV4_ADDRESSES(__Key), {error, {bad_value_list_of_ipv4_addresses, __Key}}).
 -define(ERROR_BAD_VALUE_DOMAIN(__Key), {error, {bad_value_domain, __Key}}).
 -define(ERROR_BAD_VALUE_SUBDOMAIN, {error, bad_value_subdomain}).
+-define(ERROR_BAD_VALUE_EMAIL, {error, bad_value_email}).
 -define(ERROR_BAD_VALUE_TOO_LOW(__Key, __Threshold),
     {error, {value_too_low, __Key, {min, __Threshold}}}
 ).
@@ -91,6 +92,10 @@
 -define(ERROR_BAD_VALUE_BAD_TOKEN_TYPE(__Key), {error, {bad_token_type, __Key}}).
 -define(ERROR_BAD_VALUE_IDENTIFIER(__Key), {error, {bad_identifier, __Key}}).
 -define(ERROR_BAD_VALUE_LOGIN, {error, bad_login}).
+
+% Errors caused by illegal state
+-define(ERROR_SUBDOMAIN_DELEGATION_DISABLED, {error, subdomain_delegation_disabled}).
+
 % Errors connected with relations between entities
 -define(ERROR_RELATION_DOES_NOT_EXIST(__ChType, __ChId, __ParType, __ParId),
     {error, {relation_does_not_exist, __ChType, __ChId, __ParType, __ParId}}

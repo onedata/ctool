@@ -244,6 +244,7 @@ mkdtemp(Suffix, Prefix, Dir) ->
 %% Removes a temporary dir.
 %% @end
 %%--------------------------------------------------------------------
+-spec rmtempdir(Dir :: string()) -> ok.
 rmtempdir(Dir) ->
     mochitemp:rmtempdir(Dir).
 
