@@ -59,8 +59,8 @@ get_details(Auth) ->
         UserDetails = #user_details{
             id = lists_utils:key_get(<<"userId">>, Proplist),
             name = lists_utils:key_get(<<"name">>, Proplist),
-            connected_accounts = lists_utils:key_get(<<"linkedAccounts">>, Proplist),
-            alias = lists_utils:key_get(<<"alias">>, Proplist),
+            linked_accounts = lists_utils:key_get(<<"linkedAccounts">>, Proplist),
+            login = lists_utils:key_get(<<"login">>, Proplist),
             email_list = lists_utils:key_get(<<"emailList">>, Proplist)
         },
         {ok, UserDetails}
@@ -215,8 +215,7 @@ get_space_details(Auth, SpaceId) ->
         SpaceDetails = #space_details{
             id = lists_utils:key_get(<<"spaceId">>, Proplist),
             name = lists_utils:key_get(<<"name">>, Proplist),
-            providers_supports = lists_utils:key_get(<<"providersSupports">>,
-                Proplist)
+            providers_supports = lists_utils:key_get(<<"providers">>, Proplist)
         },
         {ok, SpaceDetails}
     end).

@@ -117,7 +117,7 @@ get_details(Auth) ->
         Proplist = json_utils:decode(ResponseBody),
         ProviderDetails = #provider_details{
             id = lists_utils:key_get(<<"providerId">>, Proplist),
-            name = lists_utils:key_get(<<"clientName">>, Proplist),
+            name = lists_utils:key_get(<<"name">>, Proplist),
             domain = lists_utils:key_get(<<"domain">>, Proplist),
             latitude = lists_utils:key_get(<<"latitude">>, Proplist, 0.0),
             longitude = lists_utils:key_get(<<"longitude">>, Proplist, 0.0)
@@ -139,7 +139,7 @@ get_details(Auth, ProviderId) ->
         Proplist = json_utils:decode(ResponseBody),
         ProviderDetails = #provider_details{
             id = lists_utils:key_get(<<"providerId">>, Proplist),
-            name = lists_utils:key_get(<<"clientName">>, Proplist),
+            name = lists_utils:key_get(<<"name">>, Proplist),
             domain = lists_utils:key_get(<<"domain">>, Proplist),
             latitude = lists_utils:key_get(<<"latitude">>, Proplist, 0.0),
             longitude = lists_utils:key_get(<<"longitude">>, Proplist, 0.0)
@@ -324,7 +324,7 @@ get_space_details(Auth, SpaceId) ->
             id = lists_utils:key_get(<<"spaceId">>, Proplist),
             name = lists_utils:key_get(<<"name">>, Proplist),
             providers_supports = lists_utils:key_get(
-                <<"providersSupports">>, Proplist)
+                <<"providers">>, Proplist)
         },
         {ok, SpaceDetails}
     end).

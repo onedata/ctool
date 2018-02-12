@@ -143,7 +143,7 @@ should_get_details() ->
         [
             {<<"spaceId">>, <<"spaceId">>},
             {<<"name">>, <<"name">>},
-            {<<"providersSupports">>, [{<<"providerId">>, 123}]}
+            {<<"providers">>, [{<<"providerId">>, 123}]}
         ]
     end),
 
@@ -369,7 +369,7 @@ should_get_provider_details() ->
     meck:new(json_utils),
     meck:expect(json_utils, decode, fun(response_body) -> [
         {<<"providerId">>, <<"providerId">>},
-        {<<"clientName">>, <<"name">>},
+        {<<"name">>, <<"name">>},
         {<<"domain">>, <<"domain">>},
         {<<"latitude">>, <<"latitude">>},
         {<<"longitude">>, <<"longitude">>}

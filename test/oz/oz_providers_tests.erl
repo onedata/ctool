@@ -120,7 +120,7 @@ should_get_details() ->
         fun(response_body) ->
             [
                 {<<"providerId">>, <<"providerId">>},
-                {<<"clientName">>, <<"name">>},
+                {<<"name">>, <<"name">>},
                 {<<"domain">>, <<"domain">>},
                 {<<"latitude">>, <<"latitude">>},
                 {<<"longitude">>, <<"longitude">>}
@@ -146,7 +146,7 @@ should_get_details_for_given_provider() ->
         fun(response_body) ->
             [
                 {<<"providerId">>, <<"providerId">>},
-                {<<"clientName">>, <<"name">>},
+                {<<"name">>, <<"name">>},
                 {<<"domain">>, <<"domain">>},
                 {<<"latitude">>, <<"latitude">>},
                 {<<"longitude">>, <<"longitude">>}
@@ -267,7 +267,7 @@ should_get_space_details() ->
         [
             {<<"spaceId">>, <<"spaceId">>},
             {<<"name">>, <<"name">>},
-            {<<"providersSupports">>, [{<<"providerId">>, 123}]}
+            {<<"providers">>, [{<<"providerId">>, 123}]}
         ]
     end),
 
