@@ -25,7 +25,7 @@ empty_macaroon_test() ->
         onedata_macaroons:verify(M, <<"secret">>, [], [])
     ),
     ?assertEqual(
-        ?ERROR_BAD_MACAROON,
+        ?ERROR_MACAROON_INVALID,
         onedata_macaroons:verify(M, <<"bad-secret">>, [], [])
     ).
 
@@ -49,7 +49,7 @@ macaroon_with_time_caveat_test() ->
     ?assertEqual(?ERROR_MACAROON_TTL_TO_LONG(20), onedata_macaroons:verify(M, <<"secret">>, [], [
         ?TIME_CAVEAT(0, 20)
     ])),
-    ?assertEqual(?ERROR_BAD_MACAROON, onedata_macaroons:verify(M, <<"bad-secret">>, [], [
+    ?assertEqual(?ERROR_MACAROON_INVALID, onedata_macaroons:verify(M, <<"bad-secret">>, [], [
         ?TIME_CAVEAT(0, 100)
     ])).
 
@@ -82,14 +82,14 @@ macaroon_with_none_authorization_caveat_test() ->
     ?assertEqual(ok, onedata_macaroons:verify(M, <<"secret">>, [], [
         ?AUTHORIZATION_NONE_CAVEAT
     ])),
-    ?assertEqual(?ERROR_BAD_MACAROON, onedata_macaroons:verify(M, <<"secret">>, [], [])).
+    ?assertEqual(?ERROR_MACAROON_INVALID, onedata_macaroons:verify(M, <<"secret">>, [], [])).
 
 
 macaroon_with_time_and_authorization_caveat_test() ->
     M = onedata_macaroons:create(?LOCATION, <<"secret">>, <<"identifier">>, [
         ?TIME_CAVEAT(0, 100), ?AUTHORIZATION_NONE_CAVEAT
     ]),
-    ?assertEqual(?ERROR_BAD_MACAROON, onedata_macaroons:verify(M, <<"secret">>, [], [
+    ?assertEqual(?ERROR_MACAROON_INVALID, onedata_macaroons:verify(M, <<"secret">>, [], [
         ?TIME_CAVEAT(0, 100)
     ])),
     ?assertEqual(ok, onedata_macaroons:verify(M, <<"secret">>, [], [
@@ -101,7 +101,7 @@ macaroon_with_time_and_authorization_caveat_test() ->
     ?assertEqual(?ERROR_MACAROON_TTL_TO_LONG(20), onedata_macaroons:verify(M, <<"secret">>, [], [
         ?TIME_CAVEAT(0, 20), ?AUTHORIZATION_NONE_CAVEAT
     ])),
-    ?assertEqual(?ERROR_BAD_MACAROON, onedata_macaroons:verify(M, <<"bad-secret">>, [], [
+    ?assertEqual(?ERROR_MACAROON_INVALID, onedata_macaroons:verify(M, <<"bad-secret">>, [], [
         ?TIME_CAVEAT(0, 100), ?AUTHORIZATION_NONE_CAVEAT
     ])).
 
@@ -119,7 +119,7 @@ add_caveats_test() ->
 
     M1 = onedata_macaroons:add_caveat(M0, ?TIME_CAVEAT(0, 100)),
     % Now we need to add caveats verifiers or verification will fail
-    ?assertEqual(?ERROR_BAD_MACAROON, onedata_macaroons:verify(M1, <<"secret">>, [], [])),
+    ?assertEqual(?ERROR_MACAROON_INVALID, onedata_macaroons:verify(M1, <<"secret">>, [], [])),
     ?assertEqual(ok, onedata_macaroons:verify(M1, <<"secret">>, [], [
         ?TIME_CAVEAT(0, 100)
     ])),
@@ -128,8 +128,8 @@ add_caveats_test() ->
     ])),
 
     M2 = onedata_macaroons:add_caveat(M0, ?AUTHORIZATION_NONE_CAVEAT),
-    ?assertEqual(?ERROR_BAD_MACAROON, onedata_macaroons:verify(M2, <<"secret">>, [], [])),
-    ?assertEqual(?ERROR_BAD_MACAROON, onedata_macaroons:verify(M2, <<"secret">>, [], [
+    ?assertEqual(?ERROR_MACAROON_INVALID, onedata_macaroons:verify(M2, <<"secret">>, [], [])),
+    ?assertEqual(?ERROR_MACAROON_INVALID, onedata_macaroons:verify(M2, <<"secret">>, [], [
         ?TIME_CAVEAT(0, 100)
     ])),
     ?assertEqual(ok, onedata_macaroons:verify(M2, <<"secret">>, [], [
@@ -171,4 +171,6 @@ serialize_and_deserialize_test() ->
     ]),
     {ok, Serialized} = onedata_macaroons:serialize(M),
     ?assert(is_binary(Serialized)),
-    ?assertEqual({ok, M}, onedata_macaroons:deserialize(Serialized)).
+    ?assertEqual({ok, M}, onedata_macaroons:deserialize(Serialized)),
+    ?assertEqual(?ERROR_BAD_MACAROON, onedata_macaroons:serialize({a, b, c, d})),
+    ?assertEqual(?ERROR_BAD_MACAROON, onedata_macaroons:deserialize(<<"adsfasdfvhua89rwfg08asdf">>)).

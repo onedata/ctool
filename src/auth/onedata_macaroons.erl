@@ -59,10 +59,10 @@ verify(Macaroon, Secret, DischargeMacaroons, Caveats) ->
     Verifier = create_verifier(Caveats),
     try macaroon_verifier:verify(Verifier, Macaroon, Secret, DischargeMacaroons) of
         ok -> ok;
-        _ -> ?ERROR_BAD_MACAROON
+        _ -> ?ERROR_MACAROON_INVALID
     catch
         throw:{error, _} = Error -> Error;
-        _:_ -> ?ERROR_BAD_MACAROON
+        _:_ -> ?ERROR_MACAROON_INVALID
     end.
 
 
@@ -83,29 +83,30 @@ add_caveat(Macaroon, Caveat) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec serialize(Macaroon :: macaroon:macaroon()) ->
-    {ok, binary()} | {error, {too_long, term()}}.
+    {ok, binary()} | {error, term()}.
 serialize(M) ->
-    case macaroon:serialize(M) of
-        {ok, Token64} ->
-            {ok, base64_to_62(Token64)};
-        Error ->
-            Error
+    try macaroon:serialize(M) of
+        {ok, Token64} -> {ok, base64_to_62(Token64)};
+        _ -> ?ERROR_BAD_MACAROON
+    catch
+        _:_ -> ?ERROR_BAD_MACAROON
     end.
+
 
 %%--------------------------------------------------------------------
 %% @doc
 %% Deserializes a macaroon from portable binary to its internal format.
 %% @end
 %%--------------------------------------------------------------------
--spec deserialize(Token :: binary()) ->
+-spec deserialize(Macaroon :: binary()) ->
     {ok, macaroon:macaroon()} | {error, term()}.
-deserialize(Token) ->
-    try
-        macaroon:deserialize(base62_to_64(Token))
+deserialize(Macaroon) ->
+    try macaroon:deserialize(base62_to_64(Macaroon)) of
+        {ok, M} -> {ok, M};
+        _ -> ?ERROR_BAD_MACAROON
     catch
         _:_ -> ?ERROR_BAD_MACAROON
     end.
-
 
 %%%===================================================================
 %%% Internal functions
