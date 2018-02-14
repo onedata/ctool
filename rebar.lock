@@ -88,7 +88,7 @@
  {<<"ssl_verify_hostname">>,{pkg,<<"ssl_verify_hostname">>,<<"1.0.5">>},2},
  {<<"web_client">>,
   {git,"ssh://git@git.plgrid.pl:7999/vfs/web-client.git",
-       {ref,"a762ec947e2e7f2f7899c4627bac79d526aeb02e"}},
+       {ref,"7370b5576332f3bea86f6155f0c79f098270747f"}},
   0},
  {<<"worker_pool">>,
   {git,"https://github.com/inaka/worker_pool",
