@@ -24,6 +24,8 @@
 
 -type time_unit() :: us | ms | s | min | h.
 
+-define(TIMEOUT, 60000).
+
 %%%===================================================================
 %%% API
 %%%===================================================================
@@ -45,7 +47,7 @@ ensure_running(Application) ->
 %% A  parallel version of lists:map/2. See {@link lists:map/2}
 %% @end
 %%--------------------------------------------------------------------
--spec pmap(Fun :: fun((X :: A) -> B), L :: [A]) -> [B].
+-spec pmap(Fun :: fun((X :: A) -> B), L :: [A]) -> [B] | error.
 pmap(Fun, L) ->
     Self = self(),
     Ref = erlang:make_ref(),
@@ -59,14 +61,14 @@ pmap(Fun, L) ->
 %% A parallel version of lists:foreach/2. See {@link lists:foreach/2}
 %% @end
 %%--------------------------------------------------------------------
--spec pforeach(Fun :: fun((X :: A) -> any()), L :: [A]) -> ok.
+-spec pforeach(Fun :: fun((X :: A) -> any()), L :: [A]) -> ok | error.
 pforeach(Fun, L) ->
     Self = self(),
     Ref = erlang:make_ref(),
-    lists:foreach(fun(X) ->
+    Pids = lists:map(fun(X) ->
         spawn(fun() -> pforeach_f(Self, Ref, Fun, X) end)
     end, L),
-    pforeach_gather(length(L), Ref).
+    pforeach_gather(Pids, Ref).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -374,11 +376,26 @@ pmap_f(Parent, Ref, Fun, X) -> Parent ! {self(), Ref, (catch Fun(X))}.
 %% Gathers the results of pmap.
 %% @end
 %%--------------------------------------------------------------------
--spec pmap_gather(PIDs :: [pid()], Ref :: reference(), Acc :: list()) -> list().
+-spec pmap_gather(PIDs :: [pid()], Ref :: reference(), Acc :: list()) ->
+    list() | error.
 pmap_gather([], _Ref, Acc) -> lists:reverse(Acc);
-pmap_gather([PID | T], Ref, Acc) ->
+pmap_gather([PID | T] = Pids, Ref, Acc) ->
     receive
         {PID, Ref, Result} -> pmap_gather(T, Ref, [Result | Acc])
+    after
+        ?TIMEOUT ->
+            IsAnyAlive = lists:foldl(fun
+                (_, true) ->
+                    true;
+                (Pid, _Acc) ->
+                    erlang:is_process_alive(Pid)
+            end, false, Pids),
+            case IsAnyAlive of
+                true ->
+                    pmap_gather(Pids, Ref, Acc);
+                false ->
+                    error
+            end
     end.
 
 %%--------------------------------------------------------------------
@@ -387,8 +404,9 @@ pmap_gather([PID | T], Ref, Acc) ->
 %% Runs a function on X and signals parent that it's done.
 %% @end
 %%--------------------------------------------------------------------
--spec pforeach_f(Parent :: pid(), Ref :: reference(), Fun :: fun((E :: A) -> any()), X :: A) -> reference().
-pforeach_f(Parent, Ref, Fun, X) -> catch Fun(X), Parent ! Ref.
+-spec pforeach_f(Parent :: pid(), Ref :: reference(),
+    Fun :: fun((E :: A) -> any()), X :: A) -> {reference(),pid()}.
+pforeach_f(Parent, Ref, Fun, X) -> catch Fun(X), Parent ! {Ref, self()}.
 
 %%--------------------------------------------------------------------
 %% @private
@@ -396,10 +414,24 @@ pforeach_f(Parent, Ref, Fun, X) -> catch Fun(X), Parent ! Ref.
 %% Joins pforeach processes.
 %% @end
 %%--------------------------------------------------------------------
--spec pforeach_gather(N :: non_neg_integer(), Ref :: reference()) -> ok.
-pforeach_gather(0, _Ref) -> ok;
-pforeach_gather(N, Ref) ->
+-spec pforeach_gather([pid()], Ref :: reference()) -> ok | error.
+pforeach_gather([], _Ref) -> ok;
+pforeach_gather(Pids, Ref) ->
     receive
-        Ref -> pforeach_gather(N - 1, Ref)
+        {Ref, Pid} -> pforeach_gather(Pids -- [Pid], Ref)
+    after
+        ?TIMEOUT ->
+            IsAnyAlive = lists:foldl(fun
+                (_, true) ->
+                    true;
+                (Pid, _Acc) ->
+                    erlang:is_process_alive(Pid)
+            end, false, Pids),
+            case IsAnyAlive of
+                true ->
+                    pforeach_gather(Pids, Ref);
+                false ->
+                    error
+            end
     end.
 
