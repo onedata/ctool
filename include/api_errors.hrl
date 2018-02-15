@@ -38,11 +38,17 @@
 -define(ERROR_UNAUTHORIZED, {error, unauthorized}).
 -define(ERROR_FORBIDDEN, {error, forbidden}).
 
-% Errors connected with bad data
--define(ERROR_MALFORMED_DATA, {error, malformed_data}).
+% Errors connected with macaroons
+% Bad macaroon - provided term is not a macaroon
 -define(ERROR_BAD_MACAROON, {error, bad_macaroon}).
+% Macaroon invalid - provided term is a macaroon, but it is not valid (caveats
+% could not be verified).
+-define(ERROR_MACAROON_INVALID, {error, macaroon_invalid}).
 -define(ERROR_MACAROON_EXPIRED, {error, macaroon_expired}).
 -define(ERROR_MACAROON_TTL_TO_LONG(__MaxTtl), {error, {macaroon_ttl_too_long, __MaxTtl}}).
+
+% Errors connected with bad data
+-define(ERROR_MALFORMED_DATA, {error, malformed_data}).
 -define(ERROR_BAD_BASIC_CREDENTIALS, {error, bad_basic_credentials}).
 -define(ERROR_BAD_EXTERNAL_ACCESS_TOKEN(__OAuthProviderId),
     {error, {bad_external_access_token, __OAuthProviderId}}
