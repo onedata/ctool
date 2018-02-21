@@ -27,7 +27,6 @@
 
 % Record holding all monitoring info and required measurement history.
 -record(node_monitoring_state, {
-    ip_addr = {127, 0, 0, 1} :: {byte(), byte(), byte(), byte()},
     cpu_stats = [] :: [{Name :: binary(), Value :: float()}],
     mem_stats = [] :: [{Name :: binary(), Value :: float()}],
     net_stats = [] :: [{Name :: binary(), Value :: float()}],
@@ -50,7 +49,7 @@
 -define(NET_DUPLEX_FILE(_Interface), "/sys/class/net/" ++ _Interface ++ "/duplex").
 
 %% API
--export([start/1, update/1, refresh_ip_address/2]).
+-export([start/0, update/1]).
 -export([get_node_state/1, get_memory_stats/0]).
 -export([cpu_usage/1, mem_usage/1, net_usage/1, erlang_vm_stats/1]).
 
@@ -64,22 +63,10 @@
 %% that will be used throughout the monitoring process.
 %% @end
 %%--------------------------------------------------------------------
--spec start(IPAddr :: inet:ip4_address()) -> #node_monitoring_state{}.
-start(IPAddr) ->
+-spec start() -> #node_monitoring_state{}.
+start() ->
     _InitialRecord = update(#node_monitoring_state{
-        ip_addr = IPAddr,
         last_update = time_utils:system_time_millis()}).
-
-
-%%--------------------------------------------------------------------
-%% @doc
-%% Refreshes IP address stored in node_monitoring_state record.
-%% @end
-%%--------------------------------------------------------------------
--spec refresh_ip_address(IPAddr :: inet:ip4_address(), #node_monitoring_state{}) ->
-    #node_monitoring_state{}.
-refresh_ip_address(IPAddr, MonState) ->
-    MonState#node_monitoring_state{ip_addr = IPAddr}.
 
 
 %%--------------------------------------------------------------------
@@ -118,11 +105,11 @@ update(MonitoringState) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec get_node_state(MonitoringState :: #node_monitoring_state{}) -> #node_state{}.
-get_node_state(#node_monitoring_state{ip_addr = IPAddr} = MonitoringState) ->
+get_node_state(MonitoringState) ->
     CPUUsage = cpu_usage(MonitoringState),
     MemUsage = mem_usage(MonitoringState),
     NetUsage = net_usage(MonitoringState),
-    #node_state{ip_addr = IPAddr, cpu_usage = CPUUsage, mem_usage = MemUsage, net_usage = NetUsage}.
+    #node_state{cpu_usage = CPUUsage, mem_usage = MemUsage, net_usage = NetUsage}.
 
 
 %%--------------------------------------------------------------------
