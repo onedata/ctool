@@ -29,8 +29,8 @@
 -define(UNIX_EPOCH, 62167219200).
 
 %% API
--export([system_time_seconds/0, system_time_milli_seconds/0]).
--export([cluster_time_seconds/0, cluster_time_milli_seconds/0]).
+-export([system_time_seconds/0, system_time_millis/0]).
+-export([cluster_time_seconds/0, cluster_time_millis/0]).
 -export([remote_timestamp/2]).
 -export([datetime_to_datestamp/1, datestamp_to_datetime/1, epoch_to_iso8601/1,
     datetime_to_epoch/1, iso8601_to_epoch/1]).
@@ -53,8 +53,8 @@ system_time_seconds() ->
 %% @equiv erlang:system_time(milli_seconds).
 %% @end
 %%---------------------------------------------\-----------------------
--spec system_time_milli_seconds() -> non_neg_integer().
-system_time_milli_seconds() ->
+-spec system_time_millis() -> non_neg_integer().
+system_time_millis() ->
     erlang:system_time(milli_seconds).
 
 
@@ -65,7 +65,7 @@ system_time_milli_seconds() ->
 %%--------------------------------------------------------------------
 -spec cluster_time_seconds() -> non_neg_integer().
 cluster_time_seconds() ->
-    cluster_time_milli_seconds() div 1000.
+    cluster_time_millis() div 1000.
 
 
 %%--------------------------------------------------------------------
@@ -77,8 +77,8 @@ cluster_time_seconds() ->
 %% other.
 %% @end
 %%--------------------------------------------------------------------
--spec cluster_time_milli_seconds() -> non_neg_integer().
-cluster_time_milli_seconds() ->
+-spec cluster_time_millis() -> non_neg_integer() | no_return().
+cluster_time_millis() ->
     remote_timestamp(cluster_time_bias, fun() ->
         try
             {ok, gen_server2:call({global, ?CLUSTER_MANAGER}, get_current_time)}
@@ -103,9 +103,9 @@ cluster_time_milli_seconds() ->
 %% @end
 %%--------------------------------------------------------------------
 -spec remote_timestamp(CacheKey :: atom(), RemoteTimestampFun :: fun()) ->
-    non_neg_integer().
+    non_neg_integer() | no_return().
 remote_timestamp(CacheKey, RemoteTimestampFun) ->
-    Now = system_time_milli_seconds(),
+    Now = system_time_millis(),
     % If possible, use cached bias (clocks difference between this node and
     % remote server where timestamp is measured).
     case application:get_env(ctool, CacheKey) of
@@ -114,11 +114,9 @@ remote_timestamp(CacheKey, RemoteTimestampFun) ->
         _ ->
             case RemoteTimestampFun() of
                 error ->
-                    % Just return the current system time, any errors should
-                    % be logged inside the RemoteTimestampFun.
-                    system_time_milli_seconds();
+                    throw({error, remote_timestamp_failed});
                 {ok, RemoteTimestamp} ->
-                    After = system_time_milli_seconds(),
+                    After = system_time_millis(),
                     % Request to the remote server can take some time, so we need to
                     % slightly adjust the result. Estimate local time when measurement
                     % on the remote server was done - roughly in about the middle of the
