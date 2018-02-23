@@ -68,7 +68,7 @@
 start(IPAddr) ->
     _InitialRecord = update(#node_monitoring_state{
         ip_addr = IPAddr,
-        last_update = time_utils:system_time_milli_seconds()}).
+        last_update = time_utils:system_time_millis()}).
 
 
 %%--------------------------------------------------------------------
@@ -93,7 +93,7 @@ update(MonitoringState) ->
         last_update = LastUpdate,
         cpu_last = CPULast,
         net_last = NetLast} = MonitoringState,
-    Now = time_utils:system_time_milli_seconds(),
+    Now = time_utils:system_time_millis(),
     % Time difference is in seconds, float is required for better accuracy
     TimeDiff = (Now - LastUpdate) / 1000,
     {CPUStats, NewCPULast} = get_cpu_stats(CPULast),
