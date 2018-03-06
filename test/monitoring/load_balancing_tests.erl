@@ -32,34 +32,26 @@
 
 dispatcher_advices_test() ->
     Node1 = node1,
-    IP1 = {200, 0, 0, 1},
     NS1 = #node_state{
         node = Node1,
-        ip_addr = IP1,
         cpu_usage = 80.0,
         mem_usage = 80.0
     },
     Node2 = node2,
-    IP2 = {200, 0, 0, 2},
     NS2 = #node_state{
         node = Node2,
-        ip_addr = IP2,
         cpu_usage = 20.0,
         mem_usage = 20.0
     },
     Node3 = node3,
-    IP3 = {200, 0, 0, 3},
     NS3 = #node_state{
         node = Node3,
-        ip_addr = IP3,
         cpu_usage = 60.0,
         mem_usage = 60.0
     },
     Node4 = node4,
-    IP4 = {200, 0, 0, 4},
     NS4 = #node_state{
         node = Node4,
-        ip_addr = IP4,
         cpu_usage = 40.0,
         mem_usage = 40.0
     },
@@ -151,34 +143,26 @@ choose_index_test() ->
 
 dispatcher_advices_with_errors_in_mon_data_test() ->
     Node1 = node1,
-    IP1 = {200, 0, 0, 1},
     NS1 = #node_state{
         node = Node1,
-        ip_addr = IP1,
         cpu_usage = 0.0,
         mem_usage = 0.0
     },
     Node2 = node2,
-    IP2 = {200, 0, 0, 2},
     NS2 = #node_state{
         node = Node2,
-        ip_addr = IP2,
         cpu_usage = 0.0,
         mem_usage = 0.0
     },
     Node3 = node3,
-    IP3 = {200, 0, 0, 3},
     NS3 = #node_state{
         node = Node3,
-        ip_addr = IP3,
         cpu_usage = 0.0,
         mem_usage = 0.0
     },
     Node4 = node4,
-    IP4 = {200, 0, 0, 4},
     NS4 = #node_state{
         node = Node4,
-        ip_addr = IP4,
         cpu_usage = 0.0,
         mem_usage = 0.0
     },
