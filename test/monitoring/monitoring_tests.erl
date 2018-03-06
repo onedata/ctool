@@ -211,7 +211,7 @@ get_interface_stats(ExpectedInterfaceStats) ->
     ?assertEqual(ExpectedInterfaceStats, ActualInterfaceStats).
 
  errors_in_monitoring_collection() ->
-     MonState = monitoring:start({127,0,0,1}),
+     MonState = monitoring:start(),
      ?assertEqual(monitoring:cpu_usage(MonState), 0.0),
      ?assertEqual(monitoring:mem_usage(MonState), 0.0),
      ?assertEqual(monitoring:net_usage(MonState), 0.0),
