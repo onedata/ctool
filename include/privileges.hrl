@@ -91,6 +91,7 @@
 -define(OZ_PROVIDERS_LIST_USERS, oz_providers_list_users).
 -define(OZ_PROVIDERS_LIST_GROUPS, oz_providers_list_groups).
 -define(OZ_PROVIDERS_LIST_SPACES, oz_providers_list_spaces).
+-define(OZ_PROVIDERS_INVITE, oz_providers_invite).
 -define(OZ_PROVIDERS_DELETE, oz_providers_delete).
 
 -define(OZ_HANDLE_SERVICES_CREATE, oz_handle_services_create).
