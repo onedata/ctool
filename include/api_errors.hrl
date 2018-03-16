@@ -112,6 +112,7 @@
 -define(ERROR_CANNOT_DELETE_ENTITY(__EntityType, __EntityId),
     {error, {cannot_delete_entity, __EntityType, __EntityId}}
 ).
+-define(ERROR_CANNOT_JOIN_GROUP_TO_ITSELF, {error, cannot_join_group_to_itself}).
 
 
 -endif.
