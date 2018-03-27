@@ -12,8 +12,9 @@ import argparse
 import os
 import platform
 import sys
+import time
 
-from environment.common import HOST_STORAGE_PATH
+from environment.common import HOST_STORAGE_PATH, remove_dockers_and_volumes
 from environment import docker
 import glob
 import xml.etree.ElementTree as ElementTree
@@ -55,7 +56,7 @@ parser = argparse.ArgumentParser(
 parser.add_argument(
     '--image', '-i',
     action='store',
-    default='onedata/worker',
+    default='onedata/worker:v57',
     help='Docker image to use as a test master.',
     dest='image')
 
@@ -100,7 +101,14 @@ parser.add_argument(
     action='store',
     help="Name of docker container where tests will be running",
     dest='docker_name',
-    default='test_run_docker'
+    default='test_run_docker_{}'.format(int(time.time()))
+)    
+
+parser.add_argument(
+    '--no-etc-passwd',
+    action='store_true',
+    help="Do not mount /etc/passwd to container, warning: some tests may not work",
+    dest='no_etc_passwd'
 )    
 
 [args, pass_args] = parser.parse_known_args()
@@ -155,15 +163,21 @@ command = command.format(
 # 128MB or more required for chrome tests to run with xvfb
 run_params = ['--shm-size=128m']
 
+remove_dockers_and_volumes()
+
+reflect=[(script_dir, 'rw'),
+         ('/var/run/docker.sock', 'rw'),
+         (HOST_STORAGE_PATH, 'rw')]
+
+if not args.no_etc_passwd:
+    reflect.extend([('/etc/passwd', 'ro')])
+         
 ret = docker.run(tty=True,
                  rm=True,
                  interactive=True,
                  name=args.docker_name,
                  workdir=script_dir,
-                 reflect=[(script_dir, 'rw'),
-                          ('/var/run/docker.sock', 'rw'),
-                          ('/etc/passwd', 'ro'),
-                          (HOST_STORAGE_PATH, 'rw')],
+                 reflect = reflect,
                  volumes=[(os.path.join(os.path.expanduser('~'),
                                         '.docker'), '/tmp/.docker', 'rw')],
                  image=args.image,
