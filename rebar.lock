@@ -42,7 +42,7 @@
   0},
  {<<"meck">>,
   {git,"https://github.com/eproxus/meck.git",
-       {ref,"70d6a33ce7407029dc59e22a5b3c1c61c1348b23"}},
+       {ref,"36b208e2d4d7d09ef7ef7f7aa7979da79fa97ef3"}},
   0},
  {<<"metrics">>,{pkg,<<"metrics">>,<<"1.0.1">>},2},
  {<<"mimerl">>,{pkg,<<"mimerl">>,<<"1.0.2">>},2},
@@ -57,5 +57,5 @@
  {<<"ssl_verify_fun">>,{pkg,<<"ssl_verify_fun">>,<<"1.1.1">>},2},
  {<<"web_client">>,
   {git,"ssh://git@git.plgrid.pl:7999/vfs/web-client.git",
-       {ref,"6b46972aed5bf4a170fb3dd40a50444e9533fac8"}},
+       {ref,"95f8bdbad170b6539ecbfb8d1861df138a7ba836"}},
   0}].

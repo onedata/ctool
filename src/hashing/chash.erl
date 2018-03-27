@@ -100,7 +100,7 @@ lookup(IndexAsInt, CHash) ->
     X.
 
 sha(Bin) ->
-    crypto:sha(Bin).
+    crypto:hash(sha, Bin).
 
 %% @doc Given any term used to name an object, produce that object's key
 %%      into the ring.  Two names with the same SHA-1 hash value are
