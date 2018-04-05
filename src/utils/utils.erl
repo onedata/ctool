@@ -48,6 +48,8 @@ ensure_running(Application) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec pmap(Fun :: fun((X :: A) -> B), L :: [A]) -> [B] | error.
+pmap(Fun, [X]) ->
+    [catch Fun(X)];
 pmap(Fun, L) ->
     Self = self(),
     Ref = erlang:make_ref(),
@@ -62,6 +64,9 @@ pmap(Fun, L) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec pforeach(Fun :: fun((X :: A) -> any()), L :: [A]) -> ok | error.
+pforeach(Fun, [X]) ->
+    catch Fun(X),
+    ok;
 pforeach(Fun, L) ->
     Self = self(),
     Ref = erlang:make_ref(),
