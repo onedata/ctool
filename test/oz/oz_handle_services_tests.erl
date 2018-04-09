@@ -51,8 +51,8 @@ teardown(_) ->
 %%%===================================================================
 
 should_get_details() ->
-    meck:new(json_utils),
-    meck:expect(json_utils, decode, fun(response_body) ->
+    meck:new(json_utils, [passthrough]),
+    meck:expect(json_utils, decode_deprecated, fun(response_body) ->
         [
             {<<"handleServiceId">>, <<"handleServiceId">>},
             {<<"name">>, <<"val_name">>},

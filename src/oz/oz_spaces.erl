@@ -47,7 +47,7 @@
 create(Auth, Parameters) ->
     ?run(fun() ->
         URN = "/spaces",
-        Body = json_utils:encode(Parameters),
+        Body = json_utils:encode_deprecated(Parameters),
         {ok, 201, ResponseHeaders, _ResponseBody} =
             oz_endpoint:request(Auth, URN, post, Body),
         SpaceId = http_utils:last_url_part(maps:get(<<"Location">>, ResponseHeaders)),
@@ -79,7 +79,7 @@ get_details(Auth, SpaceId) ->
         URN = "/spaces/" ++ binary_to_list(SpaceId),
         {ok, 200, _ResponseHeaders, ResponseBody} =
             oz_endpoint:request(Auth, URN, get),
-        Props = json_utils:decode(ResponseBody),
+        Props = json_utils:decode_deprecated(ResponseBody),
         % Get default values of space_details record
         SpaceDetails = #space_details{
             id = lists_utils:key_get(<<"spaceId">>, Props),
@@ -101,7 +101,7 @@ get_details(Auth, SpaceId) ->
 modify_details(Auth, SpaceId, Parameters) ->
     ?run(fun() ->
         URN = "/spaces/" ++ binary_to_list(SpaceId),
-        Body = json_utils:encode(Parameters),
+        Body = json_utils:encode_deprecated(Parameters),
         {ok, 204, _ResponseHeaders, _ResponseBody} =
             oz_endpoint:request(Auth, URN, patch, Body),
         ok
@@ -119,7 +119,7 @@ get_shares(Auth, SpaceId) ->
         URN = "/spaces/" ++ binary_to_list(SpaceId) ++ "/shares",
         {ok, 200, _ResponseHeaders, ResponseBody} =
             oz_endpoint:request(Auth, URN, get),
-        Props = json_utils:decode(ResponseBody),
+        Props = json_utils:decode_deprecated(ResponseBody),
         ShareIds = lists_utils:key_get(<<"shares">>, Props),
         {ok, ShareIds}
     end).
@@ -136,7 +136,7 @@ get_invite_user_token(Auth, SpaceId) ->
         URN = "/spaces/" ++ binary_to_list(SpaceId) ++ "/users/token",
         {ok, 200, _ResponseHeaders, ResponseBody} =
             oz_endpoint:request(Auth, URN, get),
-        Proplist = json_utils:decode(ResponseBody),
+        Proplist = json_utils:decode_deprecated(ResponseBody),
         Token = lists_utils:key_get(<<"token">>, Proplist),
         {ok, Token}
     end).
@@ -152,7 +152,7 @@ get_invite_group_token(Auth, SpaceId) ->
         URN = "/spaces/" ++ binary_to_list(SpaceId) ++ "/groups/token",
         {ok, 200, _ResponseHeaders, ResponseBody} =
             oz_endpoint:request(Auth, URN, get),
-        Proplist = json_utils:decode(ResponseBody),
+        Proplist = json_utils:decode_deprecated(ResponseBody),
         Token = lists_utils:key_get(<<"token">>, Proplist),
         {ok, Token}
     end).
@@ -168,7 +168,7 @@ get_invite_provider_token(Auth, SpaceId) ->
         URN = "/spaces/" ++ binary_to_list(SpaceId) ++ "/providers/token",
         {ok, 200, _ResponseHeaders, ResponseBody} =
             oz_endpoint:request(Auth, URN, get),
-        Proplist = json_utils:decode(ResponseBody),
+        Proplist = json_utils:decode_deprecated(ResponseBody),
         Token = lists_utils:key_get(<<"token">>, Proplist),
         {ok, Token}
     end).
@@ -199,7 +199,7 @@ get_users(Auth, SpaceId) ->
         URN = "/spaces/" ++ binary_to_list(SpaceId) ++ "/users",
         {ok, 200, _ResponseHeaders, ResponseBody} =
             oz_endpoint:request(Auth, URN, get),
-        Proplist = json_utils:decode(ResponseBody),
+        Proplist = json_utils:decode_deprecated(ResponseBody),
         UserIds = lists_utils:key_get(<<"users">>, Proplist),
         {ok, UserIds}
     end).
@@ -217,7 +217,7 @@ get_user_details(Auth, SpaceId, UserId) ->
             binary_to_list(UserId),
         {ok, 200, _ResponseHeaders, ResponseBody} =
             oz_endpoint:request(Auth, URN, get),
-        Proplist = json_utils:decode(ResponseBody),
+        Proplist = json_utils:decode_deprecated(ResponseBody),
         UserDetails = #user_details{
             id = lists_utils:key_get(<<"userId">>, Proplist),
             name = lists_utils:key_get(<<"name">>, Proplist)
@@ -288,7 +288,7 @@ get_groups(Auth, SpaceId) ->
         URN = "/spaces/" ++ binary_to_list(SpaceId) ++ "/groups",
         {ok, 200, _ResponseHeaders, ResponseBody} =
             oz_endpoint:request(Auth, URN, get),
-        Proplist = json_utils:decode(ResponseBody),
+        Proplist = json_utils:decode_deprecated(ResponseBody),
         GroupIds = lists_utils:key_get(<<"groups">>, Proplist),
         {ok, GroupIds}
     end).
@@ -306,7 +306,7 @@ get_group_details(Auth, SpaceId, GroupId) ->
             binary_to_list(GroupId),
         {ok, 200, _ResponseHeaders, ResponseBody} =
             oz_endpoint:request(Auth, URN, get),
-        Proplist = json_utils:decode(ResponseBody),
+        Proplist = json_utils:decode_deprecated(ResponseBody),
         GroupDetails = #group_details{
             id = lists_utils:key_get(<<"groupId">>, Proplist),
             name = lists_utils:key_get(<<"name">>, Proplist),
@@ -367,7 +367,7 @@ get_providers(Auth, SpaceId) ->
         URN = "/spaces/" ++ binary_to_list(SpaceId) ++ "/providers",
         {ok, 200, _ResponseHeaders, ResponseBody} =
             oz_endpoint:request(Auth, URN, get),
-        Proplist = json_utils:decode(ResponseBody),
+        Proplist = json_utils:decode_deprecated(ResponseBody),
         ProviderIds = lists_utils:key_get(<<"providers">>, Proplist),
         {ok, ProviderIds}
     end).
@@ -385,7 +385,7 @@ get_provider_details(Auth, SpaceId, ProviderId) ->
             binary_to_list(ProviderId),
         {ok, 200, _ResponseHeaders, ResponseBody} =
             oz_endpoint:request(Auth, URN, get),
-        Proplist = json_utils:decode(ResponseBody),
+        Proplist = json_utils:decode_deprecated(ResponseBody),
         ProviderDetails = #provider_details{
             id = lists_utils:key_get(<<"providerId">>, Proplist),
             name = lists_utils:key_get(<<"name">>, Proplist),
@@ -410,7 +410,7 @@ get_privileges(Auth, URN) ->
     ?run(fun() ->
         {ok, 200, _ResponseHeaders, ResponseBody} =
             oz_endpoint:request(Auth, URN, get),
-        Proplist = json_utils:decode(ResponseBody),
+        Proplist = json_utils:decode_deprecated(ResponseBody),
         Privileges = lists_utils:key_get(<<"privileges">>, Proplist),
         {ok, lists:map(fun(Binary) ->
             binary_to_atom(Binary, latin1) end, Privileges)}
@@ -425,7 +425,7 @@ get_privileges(Auth, URN) ->
     ok | {error, Reason :: term()}.
 set_privileges(Auth, URN, Parameters) ->
     ?run(fun() ->
-        Body = json_utils:encode(Parameters),
+        Body = json_utils:encode_deprecated(Parameters),
         {ok, 204, _ResponseHeaders, _ResponseBody} =
             oz_endpoint:request(Auth, URN, put, Body),
         ok

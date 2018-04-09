@@ -92,9 +92,9 @@ teardown(_) ->
 %%%===================================================================
 
 should_register() ->
-    meck:new(json_utils),
-    meck:expect(json_utils, encode, fun(parameters) -> <<"body">> end),
-    meck:expect(json_utils, decode,
+    meck:new(json_utils, [passthrough]),
+    meck:expect(json_utils, encode_deprecated, fun(parameters) -> <<"body">> end),
+    meck:expect(json_utils, decode_deprecated,
         fun(response_body) ->
             [
                 {<<"providerId">>, <<"providerId">>},
@@ -115,8 +115,8 @@ should_unregister() ->
 
 
 should_get_details() ->
-    meck:new(json_utils),
-    meck:expect(json_utils, decode,
+    meck:new(json_utils, [passthrough]),
+    meck:expect(json_utils, decode_deprecated,
         fun(response_body) ->
             [
                 {<<"providerId">>, <<"providerId">>},
@@ -141,8 +141,8 @@ should_get_details() ->
 
 
 should_get_details_for_given_provider() ->
-    meck:new(json_utils),
-    meck:expect(json_utils, decode,
+    meck:new(json_utils, [passthrough]),
+    meck:expect(json_utils, decode_deprecated,
         fun(response_body) ->
             [
                 {<<"providerId">>, <<"providerId">>},
@@ -167,8 +167,8 @@ should_get_details_for_given_provider() ->
 
 
 should_modify_details() ->
-    meck:new(json_utils),
-    meck:expect(json_utils, encode, fun(parameters) -> <<"body">> end),
+    meck:new(json_utils, [passthrough]),
+    meck:expect(json_utils, encode_deprecated, fun(parameters) -> <<"body">> end),
 
     Answer = oz_providers:modify_details(client, parameters),
     ?assertEqual(ok, Answer),
@@ -178,8 +178,8 @@ should_modify_details() ->
 
 
 should_check_ip_address() ->
-    meck:new(json_utils),
-    meck:expect(json_utils, decode, fun(response_body) -> <<"ipAddress">> end),
+    meck:new(json_utils, [passthrough]),
+    meck:expect(json_utils, decode_deprecated, fun(response_body) -> <<"ipAddress">> end),
 
     Answer = oz_providers:check_ip_address(client),
     ?assertEqual({ok, <<"ipAddress">>}, Answer),
@@ -189,12 +189,12 @@ should_check_ip_address() ->
 
 
 should_check_gui_port() ->
-    meck:new(json_utils),
-    meck:expect(json_utils, encode, fun
+    meck:new(json_utils, [passthrough]),
+    meck:expect(json_utils, encode_deprecated, fun
         ([{<<"gui">>, <<"https://ipAddress:443/connection_check">>}]) ->
             <<"body">>
     end),
-    meck:expect(json_utils, decode, fun(response_body) ->
+    meck:expect(json_utils, decode_deprecated, fun(response_body) ->
         [{<<"https://ipAddress:443/connection_check">>, <<"ok">>}]
     end),
 
@@ -207,11 +207,11 @@ should_check_gui_port() ->
 
 should_check_rest_port() ->
     meck:new(json_utils),
-    meck:expect(json_utils, encode, fun([{<<"rest">>,
+    meck:expect(json_utils, encode_deprecated, fun([{<<"rest">>,
         <<"https://ipAddress:8443/rest/latest/connection_check">>}]) ->
         <<"body">>
     end),
-    meck:expect(json_utils, decode, fun(response_body) ->
+    meck:expect(json_utils, decode_deprecated, fun(response_body) ->
         [{<<"https://ipAddress:8443/rest/latest/connection_check">>, <<"ok">>}]
     end),
 
@@ -222,8 +222,8 @@ should_check_rest_port() ->
     ok = meck:unload(json_utils).
 
 should_create_space() ->
-    meck:new(json_utils),
-    meck:expect(json_utils, encode, fun(parameters) -> <<"body">> end),
+    meck:new(json_utils, [passthrough]),
+    meck:expect(json_utils, encode_deprecated, fun(parameters) -> <<"body">> end),
 
     Answer = oz_providers:create_space(client, parameters),
     ?assertEqual({ok, <<"spaceId">>}, Answer),
@@ -233,8 +233,8 @@ should_create_space() ->
 
 
 should_support_space() ->
-    meck:new(json_utils),
-    meck:expect(json_utils, encode, fun(parameters) -> <<"body">> end),
+    meck:new(json_utils, [passthrough]),
+    meck:expect(json_utils, encode_deprecated, fun(parameters) -> <<"body">> end),
 
     Answer = oz_providers:support_space(client, parameters),
     ?assertEqual({ok, <<"spaceId">>}, Answer),
@@ -249,8 +249,8 @@ should_revoke_space_support() ->
 
 
 should_get_spaces() ->
-    meck:new(json_utils),
-    meck:expect(json_utils, decode, fun(response_body) ->
+    meck:new(json_utils, [passthrough]),
+    meck:expect(json_utils, decode_deprecated, fun(response_body) ->
         [{<<"spaces">>, <<"spaces">>}]
     end),
 
@@ -262,8 +262,8 @@ should_get_spaces() ->
 
 
 should_get_space_details() ->
-    meck:new(json_utils),
-    meck:expect(json_utils, decode, fun(response_body) ->
+    meck:new(json_utils, [passthrough]),
+    meck:expect(json_utils, decode_deprecated, fun(response_body) ->
         [
             {<<"spaceId">>, <<"spaceId">>},
             {<<"name">>, <<"name">>},

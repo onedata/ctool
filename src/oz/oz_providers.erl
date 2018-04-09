@@ -45,20 +45,20 @@
 register(Auth, Parameters) ->
     ?run(fun() ->
         URN = "/providers",
-        Body = json_utils:encode(Parameters),
+        Body = json_utils:encode_deprecated(Parameters),
 
         case oz_endpoint:request(
             Auth, URN, post, Body, [{endpoint, rest_no_auth}]
         ) of
             {ok, 200, _ResponseHeaders, ResponseBody} ->
-                Proplist = json_utils:decode(ResponseBody),
+                Proplist = json_utils:decode_deprecated(ResponseBody),
                 ProviderId = lists_utils:key_get(<<"providerId">>, Proplist),
                 Macaroon = lists_utils:key_get(<<"macaroon">>, Proplist),
                 {ok, ProviderId, Macaroon};
 
             {ok, 400, _ResponseHeaders, ResponseBody} ->
                 #{<<"error">> := <<"Bad value: provided identifier ",
-                    "(\"subdomain\") is already occupied">>} = json_utils:decode_map(ResponseBody),
+                    "(\"subdomain\") is already occupied">>} = json_utils:decode(ResponseBody),
                 {error, subdomain_reserved}
         end
     end).
@@ -79,11 +79,11 @@ register(Auth, Parameters) ->
 register_with_uuid(Auth, Parameters) ->
     ?run(fun() ->
         URN = "/providers/dev",
-        Body = json_utils:encode(Parameters),
+        Body = json_utils:encode_deprecated(Parameters),
         {ok, 200, _ResponseHeaders, ResponseBody} = oz_endpoint:request(
             Auth, URN, post, Body, [{endpoint, rest_no_auth}]
         ),
-        Proplist = json_utils:decode(ResponseBody),
+        Proplist = json_utils:decode_deprecated(ResponseBody),
         ProviderId = lists_utils:key_get(<<"providerId">>, Proplist),
         Macaroon = lists_utils:key_get(<<"macaroon">>, Proplist),
         {ok, ProviderId, Macaroon}
@@ -114,7 +114,7 @@ get_details(Auth) ->
         URN = "/provider",
         {ok, 200, _ResponseHeaders, ResponseBody} =
             oz_endpoint:request(Auth, URN, get),
-        Proplist = json_utils:decode(ResponseBody),
+        Proplist = json_utils:decode_deprecated(ResponseBody),
         ProviderDetails = #provider_details{
             id = lists_utils:key_get(<<"providerId">>, Proplist),
             name = lists_utils:key_get(<<"name">>, Proplist),
@@ -136,7 +136,7 @@ get_details(Auth, ProviderId) ->
         URN = "/providers/" ++ binary_to_list(ProviderId),
         {ok, 200, _ResponseHeaders, ResponseBody} =
             oz_endpoint:request(Auth, URN, get),
-        Proplist = json_utils:decode(ResponseBody),
+        Proplist = json_utils:decode_deprecated(ResponseBody),
         ProviderDetails = #provider_details{
             id = lists_utils:key_get(<<"providerId">>, Proplist),
             name = lists_utils:key_get(<<"name">>, Proplist),
@@ -157,7 +157,7 @@ get_details(Auth, ProviderId) ->
 modify_details(Auth, Parameters) ->
     ?run(fun() ->
         URN = "/provider",
-        Body = json_utils:encode(Parameters),
+        Body = json_utils:encode_deprecated(Parameters),
         {ok, 204, _ResponseHeaders, _ResponseBody} =
             oz_endpoint:request(Auth, URN, patch, Body),
         ok
@@ -174,7 +174,7 @@ get_token_issuer(Auth, Token) ->
         URN = "/provider/token/" ++ binary_to_list(Token),
         {ok, 200, _ResponseHeaders, ResponseBody} =
             oz_endpoint:request(Auth, URN, get),
-        Proplist = json_utils:decode(ResponseBody),
+        Proplist = json_utils:decode_deprecated(ResponseBody),
         TokenIssuer = #token_issuer{
             client_type = lists_utils:key_get(<<"clientType">>, Proplist),
             client_id = lists_utils:key_get(<<"clientId">>, Proplist)
@@ -193,7 +193,7 @@ get_zone_time(Auth) ->
         URN = "/provider/public/get_current_time",
         {ok, 200, _ResponseHeaders, ResponseBody} =
             oz_endpoint:request(Auth, URN, get, <<>>),
-        Proplist = json_utils:decode(ResponseBody),
+        Proplist = json_utils:decode_deprecated(ResponseBody),
         Timestamp = proplists:get_value(<<"timeMillis">>, Proplist),
         true = Timestamp /= undefined,
         {ok, Timestamp}
@@ -210,7 +210,7 @@ check_ip_address(Auth) ->
         URN = "/provider/public/check_my_ip",
         {ok, 200, _ResponseHeaders, ResponseBody} =
             oz_endpoint:request(Auth, URN, get, <<>>, [{endpoint, rest_no_auth}]),
-        IpAddress = json_utils:decode(ResponseBody),
+        IpAddress = json_utils:decode_deprecated(ResponseBody),
         {ok, IpAddress}
     end).
 
@@ -230,10 +230,10 @@ check_port(Auth, IpAddress, Port, Type) ->
         end,
         CheckURL = <<"https://", IpAddress/binary, ":",
             (integer_to_binary(Port))/binary, Resource/binary>>,
-        Body = json_utils:encode([{Type, CheckURL}]),
+        Body = json_utils:encode_deprecated([{Type, CheckURL}]),
         {ok, 200, _ResponseHeaders, ResponseBody} =
             oz_endpoint:request(Auth, URN, post, Body, [{endpoint, rest_no_auth}]),
-        Proplist = json_utils:decode(ResponseBody),
+        Proplist = json_utils:decode_deprecated(ResponseBody),
         <<"ok">> = lists_utils:key_get(CheckURL, Proplist),
         ok
     end).
@@ -252,7 +252,7 @@ check_port(Auth, IpAddress, Port, Type) ->
 create_space(Auth, Parameters) ->
     ?run(fun() ->
         URN = "/provider/spaces",
-        Body = json_utils:encode(Parameters),
+        Body = json_utils:encode_deprecated(Parameters),
         {ok, 201, ResponseHeaders, _ResponseBody} =
             oz_endpoint:request(Auth, URN, post, Body),
         SpaceId = http_utils:last_url_part(maps:get(<<"Location">>, ResponseHeaders)),
@@ -271,7 +271,7 @@ create_space(Auth, Parameters) ->
 support_space(Auth, Parameters) ->
     ?run(fun() ->
         URN = "/provider/spaces/support",
-        Body = json_utils:encode(Parameters),
+        Body = json_utils:encode_deprecated(Parameters),
         {ok, 201, ResponseHeaders, _ResponseBody} =
             oz_endpoint:request(Auth, URN, post, Body),
         SpaceId = http_utils:last_url_part(maps:get(<<"Location">>, ResponseHeaders)),
@@ -303,7 +303,7 @@ get_spaces(Auth) ->
         URN = "/provider/spaces",
         {ok, 200, _ResponseHeaders, ResponseBody} =
             oz_endpoint:request(Auth, URN, get),
-        Proplist = json_utils:decode(ResponseBody),
+        Proplist = json_utils:decode_deprecated(ResponseBody),
         SpaceIds = lists_utils:key_get(<<"spaces">>, Proplist),
         {ok, SpaceIds}
     end).
@@ -319,7 +319,7 @@ get_space_details(Auth, SpaceId) ->
         URN = "/provider/spaces/" ++ binary_to_list(SpaceId),
         {ok, 200, _ResponseHeaders, ResponseBody} =
             oz_endpoint:request(Auth, URN, get),
-        Proplist = json_utils:decode(ResponseBody),
+        Proplist = json_utils:decode_deprecated(ResponseBody),
         SpaceDetails = #space_details{
             id = lists_utils:key_get(<<"spaceId">>, Proplist),
             name = lists_utils:key_get(<<"name">>, Proplist),
