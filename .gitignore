@@ -11,3 +11,6 @@ ebin
 test/eunit_results
 _build
 compile_commands.json
+
+test_distributed/logs
+test_distributed/cover_tmp.spec

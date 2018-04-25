@@ -15,12 +15,15 @@
     {vsn, "3.0.0-beta3"},
     {registered, []},
     {applications, [
+        crypto,
+        asn1,
+        public_key,
+        ssl,
+        hackney,
         kernel,
         stdlib,
         lager,
-        gen_smtp,
-        % Web client will start ssl and hackney
-        web_client
+        gen_smtp
     ]},
 
     {env, [
