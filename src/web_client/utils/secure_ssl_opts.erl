@@ -33,7 +33,7 @@
 %%--------------------------------------------------------------------
 -spec expand(http_client:url(), http_client:ssl_opts()) -> ssl:ssl_opts().
 expand(Url, SslOpts) ->
-    ForceInsecure = application:get_env(web_client, force_insecure_connections, false),
+    ForceInsecure = application:get_env(ctool, force_insecure_connections, false),
     SecureFlag = proplists:get_value(secure, SslOpts, true),
     NewOpts = case ForceInsecure orelse SecureFlag =:= false of
         true ->
