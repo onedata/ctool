@@ -86,7 +86,7 @@ patch | purge. %% RFC-5789
 %    false -> will NOT PERFORM ANY validation
 -type secure_flag() :: true | false | only_verify_peercert.
 
-% SSL options that can be passed to web_client
+% SSL options that can be passed to http_client
 -type ssl_opt() :: {secure, secure_flag()} |
 % Indicates to what hostname the client is connecting when in case it is
 % different then the one in URL. If specified, server's web certificate will be
