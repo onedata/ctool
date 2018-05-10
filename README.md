@@ -2,7 +2,7 @@
 *ctool* is library application that contains utlity functions for logging, monitoring and testing.
 
 # User Guide
-*ctool* provies various functionality in a form of erlang modules. It is usually added to other projects as *rebar* dependency. It may be also build and used separetely - to build it use `make.py` script. 
+*ctool* provies various functionality in a form of erlang modules. It is usually added to other projects as *rebar* dependency. It may be also build and used separetely - to build it first initialize submodules: `make submodules` and then use `make.py` script. 
 
 Most important elements of *ctool* are:
 

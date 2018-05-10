@@ -21,6 +21,15 @@ distclean:
 	@./rebar3 clean --all
 
 ##
+## Submodules
+##
+
+submodules:
+	git submodule sync --recursive ${submodule}
+	git submodule update --init --recursive ${submodule}
+
+
+##
 ## Dialyzer targets local
 ##
 
