@@ -175,7 +175,7 @@ clean_environment(Config, Apps) ->
         end
     catch
         E1:E2 ->
-            ct:print("Stopping of applications failed failed ~p:~p~n" ++
+            ct:print("Environment cleanup failed - ~p:~p~n" ++
             "Stacktrace: ~p", [E1, E2, erlang:get_stacktrace()]),
             E2
     end,
@@ -194,7 +194,7 @@ clean_environment(Config, Apps) ->
 
 %%--------------------------------------------------------------------
 %% @doc
-%% Starts cover server if needed (if apropriate env is set).
+%% Starts cover server if needed (if appropriate env is set).
 %% @end
 %%--------------------------------------------------------------------
 -spec maybe_start_cover() -> ok.
@@ -286,8 +286,17 @@ stop_applications(Config, Apps) ->
     lists:foreach(
         fun({AppName, ConfigName}) ->
             Nodes = ?config(ConfigName, Config),
-            lists:foreach(fun(N) ->
-                ok = rpc:call(N, application, stop, [AppName])
+            lists:foreach(fun(Node) ->
+                try
+                    ok = rpc:call(Node, application, stop, [AppName])
+                catch
+                    Type:Reason ->
+                        ct:print(
+                            "WARNING: Stopping application ~p on node ~p failed - ~p:~p~n"
+                            "Stacktrace: ~p", [
+                                AppName, Node, Type, Reason, erlang:get_stacktrace()
+                            ])
+                end
             end, Nodes)
         end, Apps
     ).
