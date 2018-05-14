@@ -47,7 +47,7 @@ ensure_running(Application) ->
 %% A  parallel version of lists:map/2. See {@link lists:map/2}
 %% @end
 %%--------------------------------------------------------------------
--spec pmap(Fun :: fun((X :: A) -> B), L :: [A]) -> [B] | error.
+-spec pmap(Fun :: fun((X :: A) -> B), L :: [A]) -> [B].
 pmap(Fun, [X]) ->
     [catch Fun(X)];
 pmap(Fun, L) ->
@@ -382,7 +382,7 @@ pmap_f(Parent, Ref, Fun, X) -> Parent ! {self(), Ref, (catch Fun(X))}.
 %% @end
 %%--------------------------------------------------------------------
 -spec pmap_gather(PIDs :: [pid()], Ref :: reference(), Acc :: list()) ->
-    list() | error.
+    list().
 pmap_gather([], _Ref, Acc) -> lists:reverse(Acc);
 pmap_gather([PID | T] = Pids, Ref, Acc) ->
     receive
@@ -399,7 +399,8 @@ pmap_gather([PID | T] = Pids, Ref, Acc) ->
                 true ->
                     pmap_gather(Pids, Ref, Acc);
                 false ->
-                    error
+                    Errors = lists:map(fun(_) -> {error, slave_error} end, Pids),
+                    lists:reverse(Acc) ++ Errors
             end
     end.
 
