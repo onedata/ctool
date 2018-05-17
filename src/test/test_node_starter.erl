@@ -156,7 +156,7 @@ clean_environment(Config, Apps) ->
                     ?config(ConfigName, Config)
                 end, Apps),
 
-                lists:foreach(fun(_) ->
+                lists:foreach(fun(Node) ->
                     receive
                         {app_ended, CoverNode, FileData} ->
                             {Mega, Sec, Micro} = os:timestamp(),
@@ -168,14 +168,18 @@ clean_environment(Config, Apps) ->
                             cover:import(CoverFile),
                             file:delete(CoverFile)
                     after
-                        ?TIMEOUT -> throw(cover_not_received)
+                        ?TIMEOUT ->
+                            ct:print(
+                                "WARNING: Could not collect cover data from node: ~p", [
+                                    Node
+                                ])
                     end
                 end, AllNodes),
                 ok
         end
     catch
         E1:E2 ->
-            ct:print("Stopping of applications failed failed ~p:~p~n" ++
+            ct:print("Environment cleanup failed - ~p:~p~n" ++
             "Stacktrace: ~p", [E1, E2, erlang:get_stacktrace()]),
             E2
     end,
@@ -194,7 +198,7 @@ clean_environment(Config, Apps) ->
 
 %%--------------------------------------------------------------------
 %% @doc
-%% Starts cover server if needed (if apropriate env is set).
+%% Starts cover server if needed (if appropriate env is set).
 %% @end
 %%--------------------------------------------------------------------
 -spec maybe_start_cover() -> ok.
@@ -234,7 +238,8 @@ maybe_start_cover() ->
                                 end
                             end, AllBeams -- ExcludedModulesFiles)
                         catch
-                            _:_ -> ok % a dir may not exist (it is added for other project)
+                            _:_ ->
+                                ok % a dir may not exist (it is added for other project)
                         end
                     end, Dirs)
             end,
@@ -286,8 +291,17 @@ stop_applications(Config, Apps) ->
     lists:foreach(
         fun({AppName, ConfigName}) ->
             Nodes = ?config(ConfigName, Config),
-            lists:foreach(fun(N) ->
-                ok = rpc:call(N, application, stop, [AppName])
+            lists:foreach(fun(Node) ->
+                try
+                    ok = rpc:call(Node, application, stop, [AppName])
+                catch
+                    Type:Reason ->
+                        ct:print(
+                            "WARNING: Stopping application ~p on node ~p failed - ~p:~p~n"
+                            "Stacktrace: ~p", [
+                                AppName, Node, Type, Reason, erlang:get_stacktrace()
+                            ])
+                end
             end, Nodes)
         end, Apps
     ).

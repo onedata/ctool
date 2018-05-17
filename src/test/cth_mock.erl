@@ -54,8 +54,17 @@ post_init_per_suite(_Suite, _Config, Return, State) ->
 -spec post_end_per_suite(Suite :: atom(), Config :: [term()], Return :: term(),
     State :: []) -> {[term()], []}.
 post_end_per_suite(_Suite, Config, Return, State) ->
-    lists:foreach(fun(N) ->
-        ok = rpc:call(N, mock_manager, stop, [])
+    lists:foreach(fun(Node) ->
+        try
+            ok = rpc:call(Node, mock_manager, stop, [])
+        catch
+            Type:Reason ->
+                ct:print(
+                    "WARNING: Stopping mock manager on node ~p failed - ~p:~p~n"
+                    "Stacktrace: ~p", [
+                        Node, Type, Reason, erlang:get_stacktrace()
+                    ])
+        end
     end, mock_manager_nodes(Config)),
     {Return, State}.
 
