@@ -56,7 +56,7 @@ post_init_per_suite(_Suite, _Config, Return, State) ->
 post_end_per_suite(_Suite, Config, Return, State) ->
     lists:foreach(fun(Node) ->
         try
-        ok = rpc:call(Node, mock_manager, stop, [])
+            ok = rpc:call(Node, mock_manager, stop, [])
         catch
             Type:Reason ->
                 ct:print(

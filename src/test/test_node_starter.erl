@@ -156,7 +156,7 @@ clean_environment(Config, Apps) ->
                     ?config(ConfigName, Config)
                 end, Apps),
 
-                lists:foreach(fun(_) ->
+                lists:foreach(fun(Node) ->
                     receive
                         {app_ended, CoverNode, FileData} ->
                             {Mega, Sec, Micro} = os:timestamp(),
@@ -168,7 +168,11 @@ clean_environment(Config, Apps) ->
                             cover:import(CoverFile),
                             file:delete(CoverFile)
                     after
-                        ?TIMEOUT -> throw(cover_not_received)
+                        ?TIMEOUT ->
+                            ct:print(
+                                "WARNING: Could not collect cover data from node: ~p", [
+                                    Node
+                                ])
                     end
                 end, AllNodes),
                 ok
@@ -234,7 +238,8 @@ maybe_start_cover() ->
                                 end
                             end, AllBeams -- ExcludedModulesFiles)
                         catch
-                            _:_ -> ok % a dir may not exist (it is added for other project)
+                            _:_ ->
+                                ok % a dir may not exist (it is added for other project)
                         end
                     end, Dirs)
             end,
