@@ -98,6 +98,8 @@
 -define(ERROR_BAD_VALUE_BAD_TOKEN_TYPE(__Key), {error, {bad_token_type, __Key}}).
 -define(ERROR_BAD_VALUE_IDENTIFIER(__Key), {error, {bad_identifier, __Key}}).
 -define(ERROR_BAD_VALUE_LOGIN, {error, bad_login}).
+-define(ERROR_BAD_VALUE_USER_NAME, {error, bad_user_name}).
+-define(ERROR_BAD_VALUE_NAME, {error, bad_name}).
 
 % Errors caused by illegal state
 -define(ERROR_SUBDOMAIN_DELEGATION_DISABLED, {error, subdomain_delegation_disabled}).
