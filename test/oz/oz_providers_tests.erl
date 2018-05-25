@@ -34,7 +34,7 @@ oz_providers_test_() ->
                 fun should_get_details_for_given_provider/0},
             {"modify details", fun should_modify_details/0},
             {"check ip address", fun should_check_ip_address/0},
-            {"check GUI port", fun should_check_gui_port/0},
+            {"check GUI port", fun should_check_https_server_port/0},
             {"check REST port", fun should_check_rest_port/0},
             {"create space", fun should_create_space/0},
             {"support space", fun should_support_space/0},
@@ -188,7 +188,7 @@ should_check_ip_address() ->
     ok = meck:unload(json_utils).
 
 
-should_check_gui_port() ->
+should_check_https_server_port() ->
     meck:new(json_utils, [passthrough]),
     meck:expect(json_utils, encode_deprecated, fun
         ([{<<"gui">>, <<"https://ipAddress:443/connection_check">>}]) ->
