@@ -11,7 +11,7 @@
 
 -module(logger).
 
--export([should_log/1, dispatch_log/5, parse_process_info/1]).
+-export([should_log/1, dispatch_log/5, parse_process_info/1, log_with_rotation/4]).
 -export([set_loglevel/1, set_console_loglevel/1, set_include_stacktrace/1]).
 -export([get_current_loglevel/0, get_default_loglevel/0, get_console_loglevel/0, get_include_stacktrace/0]).
 -export([loglevel_int_to_atom/1, loglevel_atom_to_int/1]).
@@ -175,6 +175,34 @@ loglevel_atom_to_int(emergency) -> 7.
 -spec parse_process_info(ProcessInfo :: tuple()) -> [tuple()].
 parse_process_info({_, {Module, Function, Arity}}) ->
     [{module, Module}, {function, Function}, {arity, Arity}].
+
+
+%%--------------------------------------------------------------------
+%% @doc Logs given message to LogFile.
+%% If size of LogFile exceeds MaxSize, its name will be appended with
+%% suffix ".1". Previous suffixed LogFile will be deleted, if it exists.
+%% @end
+%%--------------------------------------------------------------------
+-spec log_with_rotation(LogFile :: string(),
+    Format :: io:format(), Args :: [term()], MaxSize :: non_neg_integer()) -> ok.
+log_with_rotation(LogFile, Format, Args, MaxSize) ->
+    Now = os:timestamp(),
+    {Date, Time} = lager_util:format_time(lager_util:maybe_utc(
+        lager_util:localtime_ms(Now))),
+
+    case filelib:file_size(LogFile) > MaxSize of
+        true ->
+            LogFile2 = LogFile ++ ".1",
+            file:delete(LogFile2),
+            file:rename(LogFile, LogFile2),
+            ok;
+        _ ->
+            ok
+    end,
+
+    file:write_file(LogFile,
+        io_lib:format("~n~s, ~s: " ++ Format, [Date, Time | Args]), [append]),
+    ok.
 
 %%--------------------------------------------------------------------
 %% Internal functions
