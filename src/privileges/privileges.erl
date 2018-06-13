@@ -21,12 +21,10 @@
 -type group_privilege() :: ?GROUP_VIEW | ?GROUP_UPDATE | ?GROUP_DELETE |
 ?GROUP_SET_PRIVILEGES |
 ?GROUP_INVITE_USER | ?GROUP_REMOVE_USER |
-% TODO VFS-2918
-?GROUP_JOIN_GROUP | %?GROUP_LEAVE_GROUP |
-?GROUP_INVITE_GROUP | ?GROUP_REMOVE_GROUP |
-?GROUP_CREATE_SPACE | ?GROUP_JOIN_SPACE | ?GROUP_LEAVE_SPACE. %|
-% TODO VFS-2918
-%?GROUP_LEAVE_HANDLE_SERVICE | ?GROUP_LEAVE_HANDLE.
+?GROUP_CREATE_PARENT | ?GROUP_JOIN_PARENT | ?GROUP_LEAVE_PARENT |
+?GROUP_CREATE_CHILD | ?GROUP_INVITE_CHILD | ?GROUP_REMOVE_CHILD |
+?GROUP_CREATE_SPACE | ?GROUP_JOIN_SPACE | ?GROUP_LEAVE_SPACE |
+?GROUP_LEAVE_HANDLE_SERVICE | ?GROUP_LEAVE_HANDLE.
 
 
 % Group privileges of members (users or groups)
@@ -129,9 +127,8 @@ group_user() ->
 group_manager() ->
     union(group_user(), [
         ?GROUP_INVITE_USER, ?GROUP_REMOVE_USER,
-        % TODO VFS-2918
-        ?GROUP_JOIN_GROUP, %?GROUP_LEAVE_GROUP,
-        ?GROUP_INVITE_GROUP, ?GROUP_REMOVE_GROUP
+        ?GROUP_CREATE_PARENT, ?GROUP_JOIN_PARENT, ?GROUP_LEAVE_PARENT,
+        ?GROUP_CREATE_CHILD, ?GROUP_INVITE_CHILD, ?GROUP_REMOVE_CHILD
     ]).
 
 %%--------------------------------------------------------------------
@@ -143,9 +140,9 @@ group_manager() ->
 group_admin() ->
     union(group_manager(), [
         ?GROUP_UPDATE, ?GROUP_DELETE, ?GROUP_SET_PRIVILEGES,
-        ?GROUP_CREATE_SPACE, ?GROUP_JOIN_SPACE, ?GROUP_LEAVE_SPACE%,
-        % TODO VFS-2918
-        %?GROUP_LEAVE_HANDLE_SERVICE, ?GROUP_LEAVE_HANDLE
+        ?GROUP_CREATE_SPACE, ?GROUP_JOIN_SPACE, ?GROUP_LEAVE_SPACE,
+        ?GROUP_CREATE_HANDLE_SERVICE, ?GROUP_LEAVE_HANDLE_SERVICE,
+        ?GROUP_CREATE_HANDLE, ?GROUP_LEAVE_HANDLE
     ]).
 
 %%--------------------------------------------------------------------
@@ -162,7 +159,7 @@ group_privileges() ->
 %%--------------------------------------------------------------------
 -spec space_user() -> privileges(space_privilege()).
 space_user() ->
-    from_list([?SPACE_VIEW, ?SPACE_WRITE_DATA]).
+    from_list([?SPACE_VIEW, ?SPACE_WRITE_DATA, ?SPACE_VIEW_TRANSFERS]).
 
 %%--------------------------------------------------------------------
 %% @doc A privilege level of a Space manager.
@@ -172,7 +169,7 @@ space_manager() ->
     union(space_user(), [
         ?SPACE_INVITE_USER, ?SPACE_REMOVE_USER,
         ?SPACE_INVITE_GROUP, ?SPACE_REMOVE_GROUP,
-        ?SPACE_MANAGE_SHARES
+        ?SPACE_MANAGE_SHARES, ?SPACE_SCHEDULE_TRANSFERS
     ]).
 
 %%--------------------------------------------------------------------
@@ -184,7 +181,8 @@ space_manager() ->
 space_admin() ->
     union(space_manager(), [
         ?SPACE_UPDATE, ?SPACE_DELETE, ?SPACE_SET_PRIVILEGES,
-        ?SPACE_INVITE_PROVIDER, ?SPACE_REMOVE_PROVIDER
+        ?SPACE_INVITE_PROVIDER, ?SPACE_REMOVE_PROVIDER,
+        ?SPACE_CANCEL_TRANSFERS
     ]).
 
 %%--------------------------------------------------------------------
