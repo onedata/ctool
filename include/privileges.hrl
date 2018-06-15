@@ -22,27 +22,35 @@
 -define(GROUP_INVITE_USER, group_invite_user).
 -define(GROUP_REMOVE_USER, group_remove_user).
 
--define(GROUP_JOIN_GROUP, group_join_group).
--define(GROUP_LEAVE_GROUP, group_leave_group).
--define(GROUP_INVITE_GROUP, group_invite_group).
--define(GROUP_REMOVE_GROUP, group_remove_group).
+-define(GROUP_CREATE_CHILD, group_create_child).
+-define(GROUP_INVITE_CHILD, group_invite_child).
+-define(GROUP_REMOVE_CHILD, group_remove_child).
+
+-define(GROUP_CREATE_PARENT, group_create_parent).
+-define(GROUP_JOIN_PARENT, group_join_parent).
+-define(GROUP_LEAVE_PARENT, group_leave_parent).
 
 -define(GROUP_CREATE_SPACE, group_create_space).
 -define(GROUP_JOIN_SPACE, group_join_space).
 -define(GROUP_LEAVE_SPACE, group_leave_space).
 
-% TODO VFS-3351
-%%-define(GROUP_LEAVE_HANDLE_SERVICE, group_leave_handle_service).
-% TODO VFS-3351
-%%-define(GROUP_LEAVE_HANDLE, group_leave_handle).
+-define(GROUP_CREATE_HANDLE_SERVICE, group_create_handle_service).
+-define(GROUP_LEAVE_HANDLE_SERVICE, group_leave_handle_service).
+
+-define(GROUP_CREATE_HANDLE, group_create_handle).
+-define(GROUP_LEAVE_HANDLE, group_leave_handle).
 
 % Space privileges of members (users or groups)
 -define(SPACE_VIEW, space_view).
 -define(SPACE_UPDATE, space_update).
 -define(SPACE_DELETE, space_delete).
 -define(SPACE_SET_PRIVILEGES, space_set_privileges).
+
 -define(SPACE_WRITE_DATA, space_write_data).
 -define(SPACE_MANAGE_SHARES, space_manage_shares).
+-define(SPACE_VIEW_TRANSFERS, space_view_transfers).
+-define(SPACE_SCHEDULE_TRANSFERS, space_schedule_transfers).
+-define(SPACE_CANCEL_TRANSFERS, space_cancel_transfers).
 
 -define(SPACE_INVITE_USER, space_invite_user).
 -define(SPACE_REMOVE_USER, space_remove_user).
