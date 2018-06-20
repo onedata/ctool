@@ -20,6 +20,9 @@
 % String formatting
 -export([format/2, format_bin/2]).
 
+-export([to_hex/1, rand_hex/1]).
+
+
 %%%===================================================================
 %%% API
 %%%===================================================================
@@ -133,3 +136,27 @@ format(Format, Args) ->
 -spec format_bin(Format :: string(), Args :: [term()]) -> binary().
 format_bin(Format, Args) ->
     to_binary(format(Format, Args)).
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Converts binary string to a binary hex string.
+%% @end
+%%--------------------------------------------------------------------
+-spec to_hex(binary()) -> binary().
+to_hex(Digest) ->
+    Hex = {$0, $1, $2, $3, $4, $5, $6, $7, $8, $9, $a, $b, $c, $d, $e, $f},
+    <<
+        <<(element(B bsr 4 + 1, Hex)), (element(B band 16#0F + 1, Hex))>> ||
+        <<B:8>> <= Digest
+    >>.
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Generates random binary hex string of given size.
+%% @end
+%%--------------------------------------------------------------------
+-spec rand_hex(non_neg_integer()) -> binary().
+rand_hex(Size) ->
+    to_hex(crypto:strong_rand_bytes(Size)).
