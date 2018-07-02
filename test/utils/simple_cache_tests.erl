@@ -1,5 +1,5 @@
 %%%-------------------------------------------------------------------
-%%% @author Micha; Stanisz
+%%% @author Michal Stanisz
 %%% @copyright (C) 2018 ACK CYFRONET AGH
 %%% This software is released under the MIT license
 %%% cited in 'LICENSE.txt'.
@@ -11,80 +11,144 @@
 -module(simple_cache_tests).
 -author("Michal Stanisz").
 
+-ifdef(TEST).
 -include_lib("eunit/include/eunit.hrl").
 
 -define(APP_NAME, simple_cache).
 -define(NAME, name).
+-define(NAME_TUPLE, {name, key}).
 -define(VALUE, value).
 -define(TTL, 8).
 -define(FUN_FALSE, fun() -> {false, ?VALUE} end).
 -define(FUN_TRUE(TTL), fun() -> {true, ?VALUE, TTL} end).
 
-put_with_ttl_test() ->
-    meck:new(time_utils, [passthrough]),
-    meck:expect(time_utils, system_time_millis, fun() -> 0 end),
+%%%===================================================================
+%%% Tests functions
+%%%===================================================================
+
+
+simple_cache_test_() ->
+    {foreach,
+        fun setup/0,
+        fun teardown/1,
+        [
+            {"with_ttl", fun with_ttl/0},
+            {"infinity", fun infinity/0},
+            {"expired", fun expired/0},
+            {"clear", fun clear/0},
+            {"get_non_existing", fun get_non_existing/0},
+            {"default_without_put", fun default_without_put/0},
+            {"default_with_put_ttl", fun default_with_put_ttl/0},
+            {"default_with_put_infinity", fun default_with_put_infinity/0},
+            
+            {"map_with_ttl", fun map_with_ttl/0},
+            {"map_infinity", fun map_infinity/0},
+            {"map_expired", fun map_expired/0},
+            {"map_clear", fun map_clear/0},
+            {"map_get_non_existing", fun map_get_non_existing/0},
+            {"map_default_without_put", fun map_default_without_put/0},
+            {"map_default_with_put_ttl", fun map_default_with_put_ttl/0},
+            {"map_default_with_put_infinity", fun map_default_with_put_infinity/0}
+        ]
+    }.
+
+with_ttl() ->
     ok = simple_cache:put(?NAME, ?VALUE, ?TTL),
-    {ok, {Value, ?TTL}} = application:get_env(?APP_NAME, ?NAME),
-    ?assertEqual(?VALUE, Value),
-    ok = meck:unload(time_utils).
+    ?assertEqual({ok, ?VALUE}, simple_cache:get(?NAME)).
 
-put_infinite_test() ->
+infinity() ->
     ok = simple_cache:put(?NAME, ?VALUE),
-    {ok, {Value, infinity}} = application:get_env(?APP_NAME, ?NAME),
-    ?assertEqual(?VALUE, Value).
+    ?assertEqual({ok, ?VALUE}, simple_cache:get(?NAME)),
+    simulate_time_passing(?TTL),
+    ?assertEqual({ok, ?VALUE}, simple_cache:get(?NAME)).
 
-get_exists_ttl_test() ->
-    meck:new(time_utils, [passthrough]),
-    meck:expect(time_utils, system_time_millis, fun() -> 0 end),
+expired() ->
     simple_cache:put(?NAME, ?VALUE, ?TTL),
-    {ok, Value} = simple_cache:get(?NAME),
-    ?assertEqual(?VALUE, Value),
-    ok = meck:unload(time_utils).
+    simulate_time_passing(?TTL),
+    ?assertEqual({error, not_found}, simple_cache:get(?NAME)).
 
-get_exists_infinite_test() ->
-    meck:new(time_utils, [passthrough]),
-    meck:expect(time_utils, system_time_millis, fun() -> ?TTL end),
-    simple_cache:put(?NAME, ?VALUE),
-    {ok, Value} = simple_cache:get(?NAME),
-    ?assertEqual(?VALUE, Value),
-    ok = meck:unload(time_utils).
-
-get_invalid_expired_test() ->
-    meck:new(time_utils, [passthrough]),
-    meck:expect(time_utils, system_time_millis, fun() -> 0 end),
-    simple_cache:put(?NAME, ?VALUE, ?TTL),
-    meck:expect(time_utils, system_time_millis, fun() -> ?TTL end),
-    {error, Value} = simple_cache:get(?NAME),
-    ?assertEqual(not_found, Value),
-    ok = meck:unload(time_utils).
-    
-clear_test() ->
+clear() ->
     simple_cache:put(?NAME, ?VALUE),
     simple_cache:clear(?NAME),
-    ?assertEqual(undefined, application:get_env(?APP_NAME, ?NAME)).
+    ?assertEqual({error, not_found}, simple_cache:get(?NAME)).
 
-get_invalid_non_exists_test() ->
-    {error, Value} = simple_cache:get(?NAME),
-    ?assertEqual(not_found, Value).
-
-get_default_without_put_test() ->
-    {ok, Value} = simple_cache:get(?NAME, ?FUN_FALSE),
-    ?assertEqual(?VALUE, Value),
-    ?assertEqual(undefined, application:get_env(?APP_NAME, ?NAME)).
+default_without_put() ->
+    ?assertEqual({ok, ?VALUE}, simple_cache:get(?NAME, ?FUN_FALSE)),
+    ?assertEqual({error, not_found}, simple_cache:get(?NAME)).
     
-get_default_with_put_ttl_test() ->
-    meck:new(time_utils, [passthrough]),
-    meck:expect(time_utils, system_time_millis, fun() -> 0 end),
-    {ok, Value} = simple_cache:get(?NAME, ?FUN_TRUE(?TTL)),
-    ?assertEqual(?VALUE, Value),
-    {ok, {CachedValue, TTL}} = application:get_env(?APP_NAME, ?NAME),
-    ?assertEqual(?VALUE, CachedValue),
-    ?assertEqual(?TTL, TTL),
-    ok = meck:unload(time_utils).
+default_with_put_ttl() ->
+    ?assertEqual({ok, ?VALUE}, simple_cache:get(?NAME, ?FUN_TRUE(?TTL))),
+    ?assertEqual({ok, ?VALUE}, simple_cache:get(?NAME)),
+    simulate_time_passing(?TTL),
+    ?assertEqual({error, not_found}, simple_cache:get(?NAME)).
 
-get_default_with_put_infinity_test() ->
-    {ok, Value} = simple_cache:get(?NAME, ?FUN_TRUE(infinity)),
-    ?assertEqual(?VALUE, Value),
-    {ok, {CachedValue, TTL}} = application:get_env(?APP_NAME, ?NAME),
-    ?assertEqual(?VALUE, CachedValue),
-    ?assertEqual(infinity, TTL).
+default_with_put_infinity() ->
+    ?assertEqual({ok, ?VALUE}, simple_cache:get(?NAME, ?FUN_TRUE(infinity))),
+    ?assertEqual({ok, ?VALUE}, simple_cache:get(?NAME)),
+    simulate_time_passing(?TTL),
+    ?assertEqual({ok, ?VALUE}, simple_cache:get(?NAME)).
+
+get_non_existing() ->
+    ?assertEqual({error, not_found}, simple_cache:get(?NAME)).
+    
+
+map_with_ttl() ->
+    ok = simple_cache:put(?NAME_TUPLE, ?VALUE, ?TTL),
+    ?assertEqual({ok, ?VALUE}, simple_cache:get(?NAME_TUPLE)).
+
+map_infinity() ->
+    ok = simple_cache:put(?NAME_TUPLE, ?VALUE),
+    ?assertEqual({ok, ?VALUE}, simple_cache:get(?NAME_TUPLE)),
+    simulate_time_passing(?TTL),
+    ?assertEqual({ok, ?VALUE}, simple_cache:get(?NAME_TUPLE)).
+
+map_expired() ->
+    simple_cache:put(?NAME_TUPLE, ?VALUE, ?TTL),
+    simulate_time_passing(?TTL),
+    ?assertEqual({error, not_found}, simple_cache:get(?NAME_TUPLE)).
+
+map_clear() ->
+    simple_cache:put(?NAME_TUPLE, ?VALUE),
+    simple_cache:clear(?NAME_TUPLE),
+    ?assertEqual({error, not_found}, simple_cache:get(?NAME_TUPLE)).
+
+map_default_without_put() ->
+    ?assertEqual({ok, ?VALUE}, simple_cache:get(?NAME_TUPLE, ?FUN_FALSE)),
+    ?assertEqual({error, not_found}, simple_cache:get(?NAME_TUPLE)).
+
+map_default_with_put_ttl() ->
+    ?assertEqual({ok, ?VALUE}, simple_cache:get(?NAME_TUPLE, ?FUN_TRUE(?TTL))),
+    ?assertEqual({ok, ?VALUE}, simple_cache:get(?NAME_TUPLE)),
+    simulate_time_passing(?TTL),
+    ?assertEqual({error, not_found}, simple_cache:get(?NAME_TUPLE)).
+
+map_default_with_put_infinity() ->
+    ?assertEqual({ok, ?VALUE}, simple_cache:get(?NAME_TUPLE, ?FUN_TRUE(infinity))),
+    ?assertEqual({ok, ?VALUE}, simple_cache:get(?NAME_TUPLE)),
+    simulate_time_passing(?TTL),
+    ?assertEqual({ok, ?VALUE}, simple_cache:get(?NAME_TUPLE)).
+
+map_get_non_existing() ->
+    ?assertEqual({error, not_found}, simple_cache:get(?NAME_TUPLE)).
+
+
+setup() ->
+    meck:new(time_utils, [non_strict]),
+    meck:expect(time_utils, system_time_millis, fun timestamp_mock/0).
+
+teardown(_) ->
+    ?assert(meck:validate([time_utils])),
+    meck:unload(),
+    application:unset_env(?APP_NAME, ?NAME).
+    
+ timestamp_mock() ->
+    case get(mocked_time) of
+        undefined -> 1500000000; % starting timestamp
+        Val -> Val
+    end.
+
+simulate_time_passing(Milliseconds) ->
+    put(mocked_time, timestamp_mock() + Milliseconds).   
+
+
+-endif.

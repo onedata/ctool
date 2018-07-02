@@ -26,16 +26,22 @@
 %% If cache exists and is not expired returns cached value. 
 %% @end
 %%--------------------------------------------------------------------
--spec get(Name :: atom()) -> {ok, term()} | {error, not_found}.
+-spec get(Name :: {atom(), term()} | atom()) -> {ok, term()} | {error, not_found}.
+get({Name, MapKey}) ->
+    case ?MODULE:get(Name) of
+        {ok, Map} -> 
+            case maps:find(MapKey, Map) of
+                error -> {error, not_found};
+                {ok, Value} -> {ok, Value}
+            end;
+        {error, not_found} -> {error, not_found}
+    end;
 get(Name) ->
     Now = time_utils:system_time_millis(),
     case application:get_env(?APP_NAME, Name) of
-        {ok, {Value, infinity}} ->
-            {ok, Value};
-        {ok, {Value, Timestamp}} when Timestamp > Now ->
-            {ok, Value};
-        _ ->
-            {error, not_found}
+        {ok, {Value, infinity}} -> {ok, Value};
+        {ok, {Value, ValidUntil}} when ValidUntil > Now -> {ok, Value};
+        _ -> {error, not_found}
     end.
 
 %%--------------------------------------------------------------------
@@ -45,10 +51,10 @@ get(Name) ->
 %% not exist or is expired. 
 %% This function should return a tuple {true, Value} or {true, Value, TTL} 
 %% if Value is to be stored in cache otherwise it should return {false, Value}.
-%% {true, Value} is equivalent of {true, Value, infinity}.
+%% {true, Value} is equivalent to {true, Value, infinity}.
 %% @end
 %%--------------------------------------------------------------------
--spec get(Name :: atom(), DefaultValue :: fun(() -> 
+-spec get(Name :: {atom(), term()} | atom(), DefaultValue :: fun(() -> 
     {true, Value :: term()} | 
     {true, Value :: term(), TTL :: integer()} | 
     {false, Value :: term()})
@@ -74,10 +80,10 @@ get(Name, DefaultValue) ->
 
 %%--------------------------------------------------------------------
 %% @doc
-%% @equiv set_cached_value(AppName, Name, Value, infinite).
+%% @equiv set_cached_value(Name, Value, infinity).
 %% @end
 %%--------------------------------------------------------------------
--spec put(Name :: atom(), Value :: term()) -> term().
+-spec put(Name :: {atom(), term()} | atom(), Value :: term()) -> term().
 put(Name, Value) ->
     put(Name, Value, infinity).
 
@@ -86,13 +92,18 @@ put(Name, Value) ->
 %% Stores value in cache for given time in milliseconds or infinitely.
 %% @end
 %%--------------------------------------------------------------------
--spec put(Name :: atom(), Value :: term(), TTL :: non_neg_integer() | infinity) -> term().
+-spec put(Name :: {atom(), term()} | atom(), Value :: term(), 
+    TTL :: non_neg_integer() | infinity) -> term().
+put({Name, MapKey}, Value, TTL) ->
+    NewMap = case ?MODULE:get(Name) of
+        {ok, Map} -> maps:put(MapKey, Value, Map);
+        {error, not_found} -> #{MapKey => Value}
+    end,
+    put(Name, NewMap, TTL);
 put(Name, Value, TTL) ->
     ValidUntil = case TTL of
-        infinity ->
-            infinity;
-        _ ->
-            time_utils:system_time_millis() + TTL
+        infinity -> infinity;
+        _ -> time_utils:system_time_millis() + TTL
     end,
     application:set_env(?APP_NAME, Name, {Value, ValidUntil}).
 
@@ -101,6 +112,13 @@ put(Name, Value, TTL) ->
 %% Invalidates cache.
 %% @end
 %%--------------------------------------------------------------------
--spec clear(Name :: atom()) -> ok.
+-spec clear(Name :: {atom(), term()} | atom()) -> ok.
+clear({Name, MapKey}) ->
+    case application:get_env(?APP_NAME, Name) of
+        {ok, {Map, TTL}} -> 
+            application:set_env(?APP_NAME, Name, {maps:remove(MapKey, Map), TTL});
+        _ -> 
+            ok
+    end;
 clear(Name) ->
     application:unset_env(?APP_NAME, Name).
