@@ -115,6 +115,6 @@
     {error, {cannot_delete_entity, __EntityType, __EntityId}}
 ).
 -define(ERROR_CANNOT_JOIN_GROUP_TO_ITSELF, {error, cannot_join_group_to_itself}).
-
+-define(ERROR_PROTECTED_GROUP, {error, protected_group}).
 
 -endif.
