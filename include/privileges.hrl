@@ -23,16 +23,13 @@
 -define(GROUP_INVITE_USER, group_invite_user).
 -define(GROUP_REMOVE_USER, group_remove_user).
 
--define(GROUP_CREATE_CHILD, group_create_child).
--define(GROUP_INVITE_CHILD, group_invite_child).
+-define(GROUP_ADD_CHILD, group_add_child).
 -define(GROUP_REMOVE_CHILD, group_remove_child).
 
--define(GROUP_CREATE_PARENT, group_create_parent).
--define(GROUP_JOIN_PARENT, group_join_parent).
+-define(GROUP_ADD_PARENT, group_add_parent).
 -define(GROUP_LEAVE_PARENT, group_leave_parent).
 
--define(GROUP_CREATE_SPACE, group_create_space).
--define(GROUP_JOIN_SPACE, group_join_space).
+-define(GROUP_ADD_SPACE, group_add_space).
 -define(GROUP_LEAVE_SPACE, group_leave_space).
 
 -define(GROUP_CREATE_HANDLE_SERVICE, group_create_handle_service).
@@ -57,7 +54,7 @@
 -define(SPACE_INVITE_USER, space_invite_user).
 -define(SPACE_REMOVE_USER, space_remove_user).
 
--define(SPACE_INVITE_GROUP, space_invite_group).
+-define(SPACE_ADD_GROUP, space_add_group).
 -define(SPACE_REMOVE_GROUP, space_remove_group).
 
 -define(SPACE_INVITE_PROVIDER, space_invite_provider).
