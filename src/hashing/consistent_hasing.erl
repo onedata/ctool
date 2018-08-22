@@ -29,6 +29,8 @@
 %% @end
 %%--------------------------------------------------------------------
 -spec init([node()]) -> ok.
+init([Node]) ->
+    application:set_env(ctool, chash, Node);
 init(Nodes) ->
     case application:get_env(ctool, chash) of
         undefined ->
@@ -77,9 +79,13 @@ set_chash_ring(CHash) ->
 -spec get_node(term()) -> node().
 get_node(Label) ->
     {ok, CHash} = application:get_env(ctool, chash),
-    Index = chash:key_of(Label),
-    [{_, BestNode}] = chash:successors(Index, CHash, 1),
-    BestNode.
+    case is_atom(CHash) of
+        true -> CHash;
+        _ ->
+            Index = chash:key_of(Label),
+            [{_, BestNode}] = chash:successors(Index, CHash, 1),
+            BestNode
+    end.
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -89,9 +95,13 @@ get_node(Label) ->
 -spec get_all_nodes() -> [node()].
 get_all_nodes() ->
     {ok, CHash} = application:get_env(ctool, chash),
-    NodesWithIndices = chash:nodes(CHash),
-    Nodes = [Node || {_, Node} <- NodesWithIndices],
-    lists:usort(Nodes).
+    case is_atom(CHash) of
+        true -> [CHash];
+        _ ->
+            NodesWithIndices = chash:nodes(CHash),
+            Nodes = [Node || {_, Node} <- NodesWithIndices],
+            lists:usort(Nodes)
+    end.
 
 %%%===================================================================
 %%% Internal functions
