@@ -19,6 +19,9 @@
 -export([init/1, cleanup/0, get_chash_ring/0, set_chash_ring/1, get_node/1,
     get_all_nodes/0]).
 
+-define(SINGLE_NODE_CHASH(Node), Node).
+-define(IS_SINGLE_NODE_CHASH(CHash), is_atom(CHash)).
+
 %%%===================================================================
 %%% API
 %%%===================================================================
@@ -29,6 +32,8 @@
 %% @end
 %%--------------------------------------------------------------------
 -spec init([node()]) -> ok.
+init([Node]) ->
+    application:set_env(ctool, chash, ?SINGLE_NODE_CHASH(Node));
 init(Nodes) ->
     case application:get_env(ctool, chash) of
         undefined ->
@@ -77,9 +82,13 @@ set_chash_ring(CHash) ->
 -spec get_node(term()) -> node().
 get_node(Label) ->
     {ok, CHash} = application:get_env(ctool, chash),
-    Index = chash:key_of(Label),
-    [{_, BestNode}] = chash:successors(Index, CHash, 1),
-    BestNode.
+    case ?IS_SINGLE_NODE_CHASH(CHash) of
+        true -> CHash;
+        _ ->
+            Index = chash:key_of(Label),
+            [{_, BestNode}] = chash:successors(Index, CHash, 1),
+            BestNode
+    end.
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -89,9 +98,13 @@ get_node(Label) ->
 -spec get_all_nodes() -> [node()].
 get_all_nodes() ->
     {ok, CHash} = application:get_env(ctool, chash),
-    NodesWithIndices = chash:nodes(CHash),
-    Nodes = [Node || {_, Node} <- NodesWithIndices],
-    lists:usort(Nodes).
+    case ?IS_SINGLE_NODE_CHASH(CHash) of
+        true -> [CHash];
+        _ ->
+            NodesWithIndices = chash:nodes(CHash),
+            Nodes = [Node || {_, Node} <- NodesWithIndices],
+            lists:usort(Nodes)
+    end.
 
 %%%===================================================================
 %%% Internal functions
