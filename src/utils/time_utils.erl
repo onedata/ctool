@@ -108,10 +108,10 @@ remote_timestamp(CacheKey, RemoteTimestampFun) ->
     Now = system_time_millis(),
     % If possible, use cached bias (clocks difference between this node and
     % remote server where timestamp is measured).
-    case application:get_env(ctool, CacheKey) of
-        {ok, {Bias, CacheExpiration}} when Now < CacheExpiration ->
+    case simple_cache:get(CacheKey) of
+        {ok, Bias} ->
             Now + Bias;
-        _ ->
+        {error, not_found} ->
             case RemoteTimestampFun() of
                 error ->
                     throw({error, remote_timestamp_failed});
@@ -129,10 +129,7 @@ remote_timestamp(CacheKey, RemoteTimestampFun) ->
                         true ->
                             ok;
                         false ->
-                            application:set_env(
-                                ctool, CacheKey,
-                                {Bias, After + ?REMOTE_TIMESTAMP_CACHE_TTL}
-                            )
+                            simple_cache:put(CacheKey, Bias, ?REMOTE_TIMESTAMP_CACHE_TTL)
                     end,
                     After + Bias
             end

@@ -10,7 +10,7 @@
 %%% terms (usually UUIDs) to nodes in the ring.
 %%% @end
 %%%--------------------------------------------------------------------
--module(consistent_hasing).
+-module(consistent_hashing).
 -author("Tomasz Lichon").
 
 -include("global_definitions.hrl").
@@ -58,7 +58,7 @@ cleanup() ->
 
 %%--------------------------------------------------------------------
 %% @doc
-%% Returns consistent hasing ring.
+%% Returns consistent hashing ring.
 %% @end
 %%--------------------------------------------------------------------
 -spec get_chash_ring() -> chash:chash() | undefined.
