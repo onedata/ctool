@@ -14,35 +14,30 @@
 %% API
 -export([get/1, get/2, put/2, put/3, clear/1]).
 
+-define(APP_NAME, simple_cache).
+
+-type key() :: atom() | {atom(), term()}.
+-type ttl() :: non_neg_integer() | infinity.
+-type value() :: term().
+
 
 %%%===================================================================
 %%% API
 %%%===================================================================
-
--define(APP_NAME, simple_cache).
 
 %%--------------------------------------------------------------------
 %% @doc
 %% If cache exists and is not expired returns cached value. 
 %% @end
 %%--------------------------------------------------------------------
--spec get(Name :: {atom(), term()} | atom()) -> {ok, term()} | {error, not_found}.
-get({Name, MapKey}) ->
-    case ?MODULE:get(Name) of
-        {ok, Map} -> 
-            case maps:find(MapKey, Map) of
-                error -> {error, not_found};
-                {ok, Value} -> {ok, Value}
-            end;
-        {error, not_found} -> {error, not_found}
-    end;
-get(Name) ->
-    Now = time_utils:system_time_millis(),
-    case application:get_env(?APP_NAME, Name) of
-        {ok, {Value, infinity}} -> {ok, Value};
-        {ok, {Value, ValidUntil}} when ValidUntil > Now -> {ok, Value};
+-spec get(key()) -> {ok, value()} | {error, not_found}.
+get({Key, ChildKey}) ->
+    case maps:find(map, application:get_env(?APP_NAME, Key, #{})) of
+        {ok, Map} -> check_validity(maps:find(ChildKey, Map));
         _ -> {error, not_found}
-    end.
+    end;
+get(Key) ->
+    check_validity(maps:find(single_value, application:get_env(?APP_NAME, Key, #{}))).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -54,13 +49,12 @@ get(Name) ->
 %% {true, Value} is equivalent to {true, Value, infinity}.
 %% @end
 %%--------------------------------------------------------------------
--spec get(Name :: {atom(), term()} | atom(), DefaultValue :: fun(() -> 
-    {true, Value :: term()} | 
-    {true, Value :: term(), TTL :: integer()} | 
-    {false, Value :: term()})
-) -> {ok, term()}.
-get(Name, DefaultValue) ->
-    case ?MODULE:get(Name) of
+-spec get(key(), fun(() -> 
+    {true, value()} | 
+    {true, value(), ttl()} | 
+    {false, value()})) -> {ok, value()}.
+get(Key, DefaultValue) ->
+    case ?MODULE:get(Key) of
         {ok, Value} ->
             {ok, Value};
         {error, not_found} ->
@@ -68,10 +62,10 @@ get(Name, DefaultValue) ->
                 {false, Value} ->
                     {ok, Value};
                 {true, Value, TTL} ->
-                    put(Name, Value, TTL),
+                    ?MODULE:put(Key, Value, TTL),
                     {ok, Value};
                 {true, Value} ->
-                    ?MODULE:put(Name, Value, infinity),
+                    ?MODULE:put(Key, Value, infinity),
                     {ok, Value};
                 Error ->
                     Error
@@ -83,42 +77,74 @@ get(Name, DefaultValue) ->
 %% @equiv set_cached_value(Name, Value, infinity).
 %% @end
 %%--------------------------------------------------------------------
--spec put(Name :: {atom(), term()} | atom(), Value :: term()) -> term().
-put(Name, Value) ->
-    put(Name, Value, infinity).
+-spec put(key(), value()) -> ok.
+put(Key, Value) ->
+    put(Key, Value, infinity).
 
 %%--------------------------------------------------------------------
 %% @doc
 %% Stores value in cache for given time in milliseconds or infinitely.
 %% @end
 %%--------------------------------------------------------------------
--spec put(Name :: {atom(), term()} | atom(), Value :: term(), 
-    TTL :: non_neg_integer() | infinity) -> term().
-put({Name, MapKey}, Value, TTL) ->
-    NewMap = case ?MODULE:get(Name) of
-        {ok, Map} -> maps:put(MapKey, Value, Map);
-        {error, not_found} -> #{MapKey => Value}
-    end,
-    put(Name, NewMap, TTL);
-put(Name, Value, TTL) ->
+-spec put(key(), value(), ttl()) -> ok.
+put(Key, Value, TTL) ->
     ValidUntil = case TTL of
         infinity -> infinity;
         _ -> time_utils:system_time_millis() + TTL
     end,
-    application:set_env(?APP_NAME, Name, {Value, ValidUntil}).
+    do_put(Key, Value, ValidUntil).
+
 
 %%--------------------------------------------------------------------
 %% @doc
 %% Invalidates cache.
 %% @end
 %%--------------------------------------------------------------------
--spec clear(Name :: {atom(), term()} | atom()) -> ok.
-clear({Name, MapKey}) ->
-    case application:get_env(?APP_NAME, Name) of
-        {ok, {Map, TTL}} -> 
-            application:set_env(?APP_NAME, Name, {maps:remove(MapKey, Map), TTL});
+-spec clear(key()) -> ok.
+clear({Key, ChildKey}) ->
+    case application:get_env(?APP_NAME, Key) of
+        {ok, CacheMap} -> 
+            case maps:find(map, CacheMap) of
+                {ok, Map} -> application:set_env(?APP_NAME, Key, maps:put(map, maps:remove(ChildKey, Map), CacheMap));
+                _ -> ok
+            end;
         _ -> 
             ok
     end;
-clear(Name) ->
-    application:unset_env(?APP_NAME, Name).
+clear(Key) ->
+    case application:get_env(?APP_NAME, Key) of
+        {ok, CacheMap} ->
+            application:set_env(?APP_NAME, Key, maps:remove(single_value, CacheMap));
+        _ ->
+            ok
+    end.
+
+
+%%%===================================================================
+%%% Internal functions
+%%%===================================================================
+%%--------------------------------------------------------------------
+%% @private
+%% @doc
+%% Returns cached value if given record is valid.
+%% @end
+%%--------------------------------------------------------------------
+-spec check_validity({ok, {value(), ttl()}} | error) -> {ok, value()} | {error, not_found}.
+check_validity(Record) ->
+    Now = time_utils:system_time_millis(),
+    case Record of
+        {ok, {Value, infinity}} -> {ok, Value};
+        {ok, {Value, ValidUntil}} when ValidUntil > Now -> {ok, Value};
+        _ -> {error, not_found}
+    end.
+
+-spec do_put(Key :: key(), Value :: value(), ValidUntil :: ttl()) -> ok.
+do_put({Key, ChildKey}, Value, ValidUntil) ->
+    CacheMap = application:get_env(?APP_NAME, Key, #{}),
+    Map = maps:get(map, CacheMap, #{}),
+    NewCacheMap = maps:put(map, maps:put(ChildKey, {Value, ValidUntil}, Map), CacheMap),
+    application:set_env(?APP_NAME, Key, NewCacheMap);
+do_put(Key, Value, ValidUntil) ->
+    CacheMap = application:get_env(?APP_NAME, Key, #{}),
+    NewCacheMap = maps:put(single_value, {Value, ValidUntil}, CacheMap),
+    application:set_env(?APP_NAME, Key, NewCacheMap).
