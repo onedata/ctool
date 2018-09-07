@@ -85,12 +85,12 @@ lager_interfacing_test_() ->
                     meck:expect(logger_plugin, gather_metadata, fun() ->
                         [] end),
                     meck:expect(lager, log,
-                        fun(debug, _, "debug message") -> ok;
-                            (info, _, "info message") -> ok;
-                            (warning, _, "warning message" ++ _Stacktrace) ->
+                        fun(debug, _, _, ["debug message"]) -> ok;
+                            (info, _, _, ["info message"]) -> ok;
+                            (warning, _, _, ["warning message" ++ _Stacktrace]) ->
                                 ok;
-                            (error, _, "error message") -> ok;
-                            (emergency, _, "emergency message") -> ok
+                            (error, _, _, ["error message"]) -> ok;
+                            (emergency, _, _, ["emergency message"]) -> ok
                         end),
 
                     logger:set_include_stacktrace(false),
