@@ -199,7 +199,7 @@ space_manager() ->
     union(space_user(), [
         ?SPACE_INVITE_USER, ?SPACE_REMOVE_USER,
         ?SPACE_ADD_GROUP, ?SPACE_REMOVE_GROUP,
-        ?SPACE_MANAGE_SHARES, ?SPACE_SCHEDULE_TRANSFERS
+        ?SPACE_MANAGE_SHARES, ?SPACE_SCHEDULE_REPLICATION
     ]).
 
 %%--------------------------------------------------------------------
@@ -213,7 +213,8 @@ space_admin() ->
         ?SPACE_UPDATE, ?SPACE_DELETE, 
         ?SPACE_VIEW_PRIVILEGES, ?SPACE_SET_PRIVILEGES,
         ?SPACE_INVITE_PROVIDER, ?SPACE_REMOVE_PROVIDER,
-        ?SPACE_CANCEL_TRANSFERS
+        ?SPACE_CANCEL_REPLICATION,
+        ?SPACE_SCHEDULE_EVICTION, ?SPACE_CANCEL_EVICTION
     ]).
 
 %%--------------------------------------------------------------------

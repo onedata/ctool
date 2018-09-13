@@ -48,8 +48,10 @@
 -define(SPACE_WRITE_DATA, space_write_data).
 -define(SPACE_MANAGE_SHARES, space_manage_shares).
 -define(SPACE_VIEW_TRANSFERS, space_view_transfers).
--define(SPACE_SCHEDULE_TRANSFERS, space_schedule_transfers).
--define(SPACE_CANCEL_TRANSFERS, space_cancel_transfers).
+-define(SPACE_SCHEDULE_REPLICATION, space_schedule_replication).
+-define(SPACE_CANCEL_REPLICATION, space_cancel_replication).
+-define(SPACE_SCHEDULE_EVICTION, space_schedule_eviction).
+-define(SPACE_CANCEL_EVICTION, space_cancel_eviction).
 
 -define(SPACE_INVITE_USER, space_invite_user).
 -define(SPACE_REMOVE_USER, space_remove_user).
