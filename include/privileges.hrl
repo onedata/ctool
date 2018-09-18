@@ -23,11 +23,11 @@
 -define(GROUP_INVITE_USER, group_invite_user).
 -define(GROUP_REMOVE_USER, group_remove_user).
 
--define(GROUP_ADD_CHILD, group_add_child).
--define(GROUP_REMOVE_CHILD, group_remove_child).
-
 -define(GROUP_ADD_PARENT, group_add_parent).
 -define(GROUP_LEAVE_PARENT, group_leave_parent).
+
+-define(GROUP_ADD_CHILD, group_add_child).
+-define(GROUP_REMOVE_CHILD, group_remove_child).
 
 -define(GROUP_ADD_SPACE, group_add_space).
 -define(GROUP_LEAVE_SPACE, group_leave_space).
@@ -45,8 +45,13 @@
 -define(SPACE_VIEW_PRIVILEGES, space_view_privileges).
 -define(SPACE_SET_PRIVILEGES, space_set_privileges).
 
+-define(SPACE_READ_DATA, space_read_data).
 -define(SPACE_WRITE_DATA, space_write_data).
 -define(SPACE_MANAGE_SHARES, space_manage_shares).
+-define(SPACE_MANAGE_INDEXES, space_manage_indexes).
+-define(SPACE_QUERY_INDEXES, space_query_indexes).
+-define(SPACE_VIEW_STATISTICS, space_view_statistics).
+
 -define(SPACE_VIEW_TRANSFERS, space_view_transfers).
 -define(SPACE_SCHEDULE_REPLICATION, space_schedule_replication).
 -define(SPACE_CANCEL_REPLICATION, space_cancel_replication).

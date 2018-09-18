@@ -18,23 +18,40 @@
 -type privileges(Type) :: ordsets:ordset(Type).
 
 %% User privileges with regards to group management.
--type group_privilege() :: ?GROUP_VIEW | ?GROUP_UPDATE | ?GROUP_DELETE |
-?GROUP_VIEW_PRIVILEGES | ?GROUP_SET_PRIVILEGES | 
+-type group_privilege() ::
+?GROUP_VIEW | ?GROUP_UPDATE | ?GROUP_DELETE |
+?GROUP_VIEW_PRIVILEGES | ?GROUP_SET_PRIVILEGES |
+
 ?GROUP_INVITE_USER | ?GROUP_REMOVE_USER |
+
 ?GROUP_ADD_PARENT | ?GROUP_LEAVE_PARENT |
+
 ?GROUP_ADD_CHILD | ?GROUP_REMOVE_CHILD |
+
 ?GROUP_ADD_SPACE | ?GROUP_LEAVE_SPACE |
-?GROUP_LEAVE_HANDLE_SERVICE | ?GROUP_LEAVE_HANDLE.
 
+?GROUP_CREATE_HANDLE_SERVICE | ?GROUP_LEAVE_HANDLE_SERVICE |
 
-% Group privileges of members (users or groups)
+?GROUP_CREATE_HANDLE | ?GROUP_LEAVE_HANDLE.
 
 %% User privileges with regards to Space management.
--type space_privilege() :: ?SPACE_VIEW | ?SPACE_UPDATE | ?SPACE_DELETE |
+-type space_privilege() ::
+?SPACE_VIEW | ?SPACE_UPDATE | ?SPACE_DELETE |
 ?SPACE_VIEW_PRIVILEGES | ?SPACE_SET_PRIVILEGES |
-?SPACE_WRITE_DATA | ?SPACE_MANAGE_SHARES |
+
+?SPACE_READ_DATA | ?SPACE_WRITE_DATA |
+?SPACE_MANAGE_SHARES |
+?SPACE_MANAGE_INDEXES | ?SPACE_QUERY_INDEXES |
+?SPACE_VIEW_STATISTICS |
+
+?SPACE_VIEW_TRANSFERS |
+?SPACE_SCHEDULE_REPLICATION | ?SPACE_CANCEL_REPLICATION |
+?SPACE_SCHEDULE_EVICTION | ?SPACE_CANCEL_EVICTION |
+
 ?SPACE_INVITE_USER | ?SPACE_REMOVE_USER |
+
 ?SPACE_ADD_GROUP | ?SPACE_REMOVE_GROUP |
+
 ?SPACE_INVITE_PROVIDER | ?SPACE_REMOVE_PROVIDER.
 
 %% User privileges with regards to handle service.
@@ -189,7 +206,11 @@ group_privileges() ->
 %%--------------------------------------------------------------------
 -spec space_user() -> privileges(space_privilege()).
 space_user() ->
-    from_list([?SPACE_VIEW, ?SPACE_WRITE_DATA, ?SPACE_VIEW_TRANSFERS]).
+    from_list([
+        ?SPACE_VIEW,
+        ?SPACE_READ_DATA, ?SPACE_WRITE_DATA,
+        ?SPACE_VIEW_TRANSFERS
+    ]).
 
 %%--------------------------------------------------------------------
 %% @doc A privilege level of a Space manager.
@@ -199,7 +220,10 @@ space_manager() ->
     union(space_user(), [
         ?SPACE_INVITE_USER, ?SPACE_REMOVE_USER,
         ?SPACE_ADD_GROUP, ?SPACE_REMOVE_GROUP,
-        ?SPACE_MANAGE_SHARES, ?SPACE_SCHEDULE_REPLICATION
+        ?SPACE_MANAGE_SHARES,
+        ?SPACE_QUERY_INDEXES,
+        ?SPACE_VIEW_STATISTICS,
+        ?SPACE_SCHEDULE_REPLICATION
     ]).
 
 %%--------------------------------------------------------------------
@@ -213,6 +237,7 @@ space_admin() ->
         ?SPACE_UPDATE, ?SPACE_DELETE, 
         ?SPACE_VIEW_PRIVILEGES, ?SPACE_SET_PRIVILEGES,
         ?SPACE_INVITE_PROVIDER, ?SPACE_REMOVE_PROVIDER,
+        ?SPACE_MANAGE_INDEXES,
         ?SPACE_CANCEL_REPLICATION,
         ?SPACE_SCHEDULE_EVICTION, ?SPACE_CANCEL_EVICTION
     ]).
