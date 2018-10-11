@@ -13,9 +13,13 @@
 %%%-------------------------------------------------------------------
 -module(http_utils).
 
--define(mail_validation_regexp,
+-define(EMAIL_VALIDATION_REGEXP,
     <<"^[a-z0-9!#$%&'*+\\/=?^_`{|}~-]+(?:\\.[a-z0-9!#$%&'*+\\/=?^_`{|}~-]+)*@(?"
-    ":[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$">>).
+    ":[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$">>
+).
+
+% According to RFC 5321
+-define(EMAIL_MAX_LENGTH, 254).
 
 % URL encoding/decoding
 -export([url_encode/1, url_decode/1]).
@@ -46,7 +50,7 @@ url_encode(Data) ->
 
 
 %%--------------------------------------------------------------------
-%% @doc Performs URL-uncoded string decoding
+%% @doc Performs URL-encoded string decoding
 %% @end
 %%--------------------------------------------------------------------
 -spec url_decode(Data :: binary() | string()) -> binary().
@@ -139,7 +143,7 @@ base64url_decode(Data) ->
 
 %%--------------------------------------------------------------------
 %% @doc
-%% Converts key-value pairs to a single x-www-urlencoded binary. Cna be used for
+%% Converts key-value pairs to a single x-www-urlencoded binary. Can be used for
 %% GET (url) or POST (request body). Performs url encoding on both keys and values.
 %% @end
 %%--------------------------------------------------------------------
@@ -190,8 +194,8 @@ fully_qualified_url(Binary) ->
 %%--------------------------------------------------------------------
 -spec validate_email(binary()) -> boolean().
 validate_email(Email) ->
-    case re:run(Email, ?mail_validation_regexp) of
-        {match, _} -> true;
+    case re:run(Email, ?EMAIL_VALIDATION_REGEXP, [{capture, none}]) of
+        match -> byte_size(Email) =< ?EMAIL_MAX_LENGTH;
         _ -> false
     end.
 
@@ -203,13 +207,10 @@ validate_email(Email) ->
 %%--------------------------------------------------------------------
 -spec normalize_email(binary()) -> binary().
 normalize_email(Email) ->
-    case binary:split(Email, [<<"@">>], [global]) of
-        [Account, Domain] ->
-            case Domain of
-                <<"gmail.com">> ->
-                    <<(binary:replace(Account, <<".">>, <<"">>, [global]))/binary, "@", Domain/binary>>;
-                _ -> Email
-            end;
+    case binary:split(Email, <<"@">>, [global]) of
+        [Account, <<"gmail.com">>] ->
+            NoDots = binary:replace(Account, <<".">>, <<"">>, [global]),
+            <<NoDots/binary, "@gmail.com">>;
         _ ->
             Email
     end.
