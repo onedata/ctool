@@ -121,10 +121,13 @@ ceil(N) -> trunc(N + 1).
 -spec aggregate_over_first_element(List :: [{K, V}]) -> [{K, [V]}].
 aggregate_over_first_element(List) ->
     lists:reverse(
-        lists:foldl(fun({Key, Value}, []) -> [{Key, [Value]}];
+        lists:foldl(fun
+            ({Key, Value}, []) ->
+                [{Key, [Value]}];
             ({Key, Value}, [{Key, AccValues} | Tail]) ->
                 [{Key, [Value | AccValues]} | Tail];
-            ({Key, Value}, Acc) -> [{Key, [Value]} | Acc]
+            ({Key, Value}, Acc) ->
+                [{Key, [Value]} | Acc]
         end, [], lists:keysort(1, List))).
 
 %%--------------------------------------------------------------------
@@ -143,10 +146,7 @@ average(List) ->
 %%--------------------------------------------------------------------
 -spec random_shuffle(List :: list()) -> NewList :: list().
 random_shuffle(List) ->
-    From = 0,
-    To = length(List) + 1,
-    [X || {_, X} <- lists:sort([{crypto:rand_uniform(From, To), N} || N <- List])].
-
+    [X || {_, X} <- lists:sort([{rand:uniform(), N} || N <- List])].
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -168,8 +168,7 @@ get_values(Keys, List) ->
 %%--------------------------------------------------------------------
 -spec random_element([term()]) -> term().
 random_element(List) ->
-    RandomIndex = crypto:rand_uniform(1, length(List) + 1),
-    lists:nth(RandomIndex, List).
+    lists:nth(rand:uniform(length(List)), List).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -234,7 +233,7 @@ adjust_duration(Duration, Unit) ->
 %% Creates a temporary dir (with any name) and returns its path.
 %% @end
 %%--------------------------------------------------------------------
--spec mkdtemp() ->    DirPath :: list().
+-spec mkdtemp() -> DirPath :: list().
 mkdtemp() ->
     mochitemp:mkdtemp().
 
@@ -260,7 +259,7 @@ rmtempdir(Dir) ->
 %% Ensures value is defined.
 %% @end
 %%--------------------------------------------------------------------
--spec ensure_defined(Value :: term(), UndefinedValue :: term(), DefaultValue :: term()) ->term().
+-spec ensure_defined(Value :: term(), UndefinedValue :: term(), DefaultValue :: term()) -> term().
 ensure_defined(UndefinedValue, UndefinedValue, DefaultValue) ->
     DefaultValue;
 ensure_defined(Value, _, _) ->
@@ -411,7 +410,7 @@ pmap_gather([PID | T] = Pids, Ref, Acc) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec pforeach_f(Parent :: pid(), Ref :: reference(),
-    Fun :: fun((E :: A) -> any()), X :: A) -> {reference(),pid()}.
+    Fun :: fun((E :: A) -> any()), X :: A) -> {reference(), pid()}.
 pforeach_f(Parent, Ref, Fun, X) -> catch Fun(X), Parent ! {Ref, self()}.
 
 %%--------------------------------------------------------------------
