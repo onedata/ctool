@@ -12,6 +12,7 @@
 -module(oz_endpoint).
 
 -include("logging.hrl").
+-include("global_definitions.hrl").
 
 %% API
 -export([get_api_root/1, get_cacerts/0, reset_cacerts/0]).
@@ -80,12 +81,12 @@ get_api_root(Opts) ->
 %%--------------------------------------------------------------------
 -spec get_cacerts() -> CaCerts :: [public_key:der_encoded()].
 get_cacerts() ->
-    case application:get_env(ctool, cacerts) of
+    case application:get_env(?CTOOL_APP_NAME, cacerts) of
         {ok, CaCerts} ->
             CaCerts;
         undefined ->
             CaCerts = cert_utils:load_ders_in_dir(oz_plugin:get_cacerts_dir()),
-            application:set_env(ctool, cacerts, CaCerts),
+            application:set_env(?CTOOL_APP_NAME, cacerts, CaCerts),
             CaCerts
     end.
 
@@ -95,7 +96,7 @@ get_cacerts() ->
 %%--------------------------------------------------------------------
 -spec reset_cacerts() -> ok.
 reset_cacerts() ->
-    application:unset_env(ctool, cacerts).
+    application:unset_env(?CTOOL_APP_NAME, cacerts).
 
 %%--------------------------------------------------------------------
 %% @doc @equiv request(Auth, URN, Method, <<>>)
