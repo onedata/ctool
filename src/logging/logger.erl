@@ -11,6 +11,8 @@
 
 -module(logger).
 
+-include("global_definitions.hrl").
+
 -export([should_log/1, dispatch_log/5, parse_process_info/1, log_with_rotation/4]).
 -export([set_loglevel/1, set_console_loglevel/1, set_include_stacktrace/1]).
 -export([get_current_loglevel/0, get_default_loglevel/0, get_console_loglevel/0, get_include_stacktrace/0]).
@@ -22,7 +24,7 @@
 %%--------------------------------------------------------------------
 -spec should_log(LoglevelAsInt :: integer()) -> boolean().
 should_log(LevelAsInt) ->
-    case application:get_env(ctool, current_loglevel) of
+    case application:get_env(?CTOOL_APP_NAME, current_loglevel) of
         {ok, Int} when LevelAsInt >= Int -> true;
         _ -> false
     end.
@@ -58,7 +60,7 @@ set_loglevel(Loglevel) when is_atom(Loglevel) ->
     end;
 
 set_loglevel(Loglevel) when is_integer(Loglevel) andalso (Loglevel >= 0) andalso (Loglevel =< 7) ->
-    application:set_env(ctool, current_loglevel, Loglevel);
+    application:set_env(?CTOOL_APP_NAME, current_loglevel, Loglevel);
 
 set_loglevel(_) ->
     {error, badarg}.
@@ -97,7 +99,7 @@ set_console_loglevel(_) ->
 %%--------------------------------------------------------------------
 -spec set_include_stacktrace(boolean()) -> ok | {error, badarg}.
 set_include_stacktrace(Flag) when is_boolean(Flag) ->
-    application:set_env(ctool, include_stacktrace, Flag);
+    application:set_env(?CTOOL_APP_NAME, include_stacktrace, Flag);
 
 set_include_stacktrace(_) ->
     {error, badarg}.
@@ -108,7 +110,7 @@ set_include_stacktrace(_) ->
 %%--------------------------------------------------------------------
 -spec get_current_loglevel() -> integer().
 get_current_loglevel() ->
-    {ok, Int} = application:get_env(ctool, current_loglevel),
+    {ok, Int} = application:get_env(?CTOOL_APP_NAME, current_loglevel),
     Int.
 
 %%--------------------------------------------------------------------
@@ -117,7 +119,7 @@ get_current_loglevel() ->
 %%--------------------------------------------------------------------
 -spec get_default_loglevel() -> integer().
 get_default_loglevel() ->
-    {ok, Int} = application:get_env(ctool, default_loglevel),
+    {ok, Int} = application:get_env(?CTOOL_APP_NAME, default_loglevel),
     Int.
 
 %%--------------------------------------------------------------------
@@ -137,7 +139,7 @@ get_console_loglevel() ->
 %%--------------------------------------------------------------------
 -spec get_include_stacktrace() -> boolean().
 get_include_stacktrace() ->
-    {ok, Boolean} = application:get_env(ctool, include_stacktrace),
+    {ok, Boolean} = application:get_env(?CTOOL_APP_NAME, include_stacktrace),
     Boolean.
 
 %%--------------------------------------------------------------------

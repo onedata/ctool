@@ -13,12 +13,13 @@
 -ifdef(TEST).
 -include_lib("eunit/include/eunit.hrl").
 -include("logging.hrl").
+-include("global_definitions.hrl").
 
 main_test_() ->
     {setup,
         fun() ->
-            application:set_env(ctool, current_loglevel, 2),
-            application:set_env(ctool, default_loglevel, 0)
+            application:set_env(?CTOOL_APP_NAME, current_loglevel, 2),
+            application:set_env(?CTOOL_APP_NAME, default_loglevel, 0)
         end,
         fun(_) ->
             ok
@@ -71,7 +72,7 @@ main_test_() ->
 lager_interfacing_test_() ->
     {setup,
         fun() ->
-            application:set_env(ctool, current_loglevel, 0),
+            application:set_env(?CTOOL_APP_NAME, current_loglevel, 0),
             meck:new(logger_plugin, [non_strict]),
             meck:new(lager)
         end,
