@@ -111,10 +111,10 @@
 -define(ERROR_RELATION_ALREADY_EXISTS(__ChType, __ChId, __ParType, __ParId),
     {error, {relation_already_exists, __ChType, __ChId, __ParType, __ParId}}
 ).
+-define(ERROR_CANNOT_ADD_RELATION_TO_SELF, {error, cannot_add_relation_to_self}).
 -define(ERROR_CANNOT_DELETE_ENTITY(__EntityType, __EntityId),
     {error, {cannot_delete_entity, __EntityType, __EntityId}}
 ).
--define(ERROR_CANNOT_JOIN_GROUP_TO_ITSELF, {error, cannot_join_group_to_itself}).
 -define(ERROR_PROTECTED_GROUP, {error, protected_group}).
 
 -endif.
