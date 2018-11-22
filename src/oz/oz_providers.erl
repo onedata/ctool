@@ -40,7 +40,7 @@
 %%--------------------------------------------------------------------
 -spec register(Auth :: oz_endpoint:auth(),
     Parameters :: oz_endpoint:params()) ->
-    {ok, ProviderId :: binary(), Macaroon :: binary()} |
+    {ok, maps:map()} |
     {error, Reason :: term()}.
 register(Auth, Parameters) ->
     ?run(fun() ->
@@ -51,10 +51,7 @@ register(Auth, Parameters) ->
             Auth, URN, post, Body, [{endpoint, rest_no_auth}]
         ) of
             {ok, 200, _ResponseHeaders, ResponseBody} ->
-                Proplist = json_utils:decode_deprecated(ResponseBody),
-                ProviderId = lists_utils:key_get(<<"providerId">>, Proplist),
-                Macaroon = lists_utils:key_get(<<"macaroon">>, Proplist),
-                {ok, ProviderId, Macaroon};
+                {ok, json_utils:decode(ResponseBody)};
 
             {ok, 400, _ResponseHeaders, ResponseBody} ->
                 #{<<"error">> := ErrorDesc} = json_utils:decode(ResponseBody),
@@ -74,7 +71,7 @@ register(Auth, Parameters) ->
 %%--------------------------------------------------------------------
 -spec register_with_uuid(Auth :: oz_endpoint:auth(),
     Parameters :: oz_endpoint:params()) ->
-    {ok, ProviderId :: binary(), Macaroon :: binary()} |
+    {ok, maps:map()} |
     {error, Reason :: term()}.
 register_with_uuid(Auth, Parameters) ->
     ?run(fun() ->
@@ -83,10 +80,7 @@ register_with_uuid(Auth, Parameters) ->
         {ok, 200, _ResponseHeaders, ResponseBody} = oz_endpoint:request(
             Auth, URN, post, Body, [{endpoint, rest_no_auth}]
         ),
-        Proplist = json_utils:decode_deprecated(ResponseBody),
-        ProviderId = lists_utils:key_get(<<"providerId">>, Proplist),
-        Macaroon = lists_utils:key_get(<<"macaroon">>, Proplist),
-        {ok, ProviderId, Macaroon}
+        {ok, json_utils:decode(ResponseBody)}
     end).
 
 %%--------------------------------------------------------------------
