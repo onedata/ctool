@@ -134,7 +134,16 @@ caveat_to_binary(?TIME_CAVEAT(Timestamp, MaxTtl)) ->
     <<"time < ", Expiration/binary>>;
 
 caveat_to_binary(?AUTHORIZATION_NONE_CAVEAT) ->
-    <<"authorization = none">>.
+    <<"authorization = none">>;
+
+caveat_to_binary(?SESSION_ID_CAVEAT(SessionId)) ->
+    <<"session_id = ", SessionId/binary>>;
+
+caveat_to_binary(?SERVICE_TYPE_CAVEAT(ServiceType)) ->
+    <<"service_type = ", (atom_to_binary(ServiceType, utf8))/binary>>;
+
+caveat_to_binary(?SERVICE_ID_CAVEAT(ServiceId)) ->
+    <<"service_id = ", ServiceId/binary>>.
 
 
 -spec verifier(caveat()) -> binary() | macaroon_verifier:predicate().
@@ -160,8 +169,14 @@ verifier(?TIME_CAVEAT(Timestamp, MaxTtl)) ->
             false
     end;
 
-verifier(?AUTHORIZATION_NONE_CAVEAT) ->
-    <<"authorization = none">>.
+verifier(?SESSION_ID_CAVEAT(VerifyFun)) ->
+    fun(<<"session_id = ", SessionId/binary>>) ->
+        VerifyFun(SessionId)
+    end;
+
+% The rest of the caveats are exact - 1:1 with the binary form.
+verifier(ExactCaveat) ->
+    caveat_to_binary(ExactCaveat).
 
 
 -spec base64_to_62(binary()) -> binary().
