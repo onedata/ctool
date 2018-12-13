@@ -17,12 +17,14 @@
 
 %% API
 -export([mock_new/2, mock_new/3, mock_expect/4, mock_validate/2, mock_unload/1,
-    mock_unload/2, mock_validate_and_unload/2, mock_assert_num_calls/5]).
+    mock_unload/2, mock_validate_and_unload/2, mock_assert_num_calls/5,
+    mock_assert_num_calls/6]).
 -export([get_env/3, set_env/4]).
 -export([enable_datastore_models/2]).
 -export([get_docker_ip/1]).
 
 -define(TIMEOUT, timer:seconds(60)).
+-define(ATTEMPTS, 10).
 
 %%%===================================================================
 %%% API
@@ -174,16 +176,32 @@ mock_validate_and_unload(Nodes, Modules) ->
 
 %%--------------------------------------------------------------------
 %% @doc
+%% @equiv mock_assert_num_calls(Nodes, Module, FunctionName, FunctionArgs, CallsNumber, ?ATTEMPTS).
+%% @end
+%%--------------------------------------------------------------------
+-spec mock_assert_num_calls(Nodes :: node() | [node()], Module :: module(),
+    FunctionName :: atom(), FunctionArgs :: meck:args_spec(),
+    CallsNumber :: non_neg_integer()) -> ok.
+mock_assert_num_calls(Nodes, Module, FunctionName, FunctionArgs, CallsNumber) ->
+    mock_assert_num_calls(Nodes, Module, FunctionName, FunctionArgs, CallsNumber,
+        ?ATTEMPTS
+    ).
+
+%%--------------------------------------------------------------------
+%% @doc
 %% Validates number of function calls for given nodes.
 %% @end
 %%--------------------------------------------------------------------
 -spec mock_assert_num_calls(Nodes :: node() | [node()], Module :: module(),
-    FunctionName :: atom(), FunctionArgs :: meck:args_spec(), CallsNumber :: non_neg_integer()) -> ok.
-mock_assert_num_calls(Nodes, Module, FunctionName, FunctionArgs, CallsNumber) ->
+    FunctionName :: atom(), FunctionArgs :: meck:args_spec(),
+    CallsNumber :: non_neg_integer(), Attempts :: non_neg_integer()) -> ok.
+mock_assert_num_calls(Nodes, Module, FunctionName, FunctionArgs, CallsNumber,
+    Attempts
+) ->
     lists:foreach(fun(Node) ->
         ?assertEqual(CallsNumber, rpc:call(
             Node, meck, num_calls, [Module, FunctionName, FunctionArgs], ?TIMEOUT
-        ))
+        ), Attempts)
     end, as_list(Nodes)).
 
 %%--------------------------------------------------------------------
