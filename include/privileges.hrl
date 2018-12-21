@@ -32,6 +32,9 @@
 -define(GROUP_ADD_SPACE, group_add_space).
 -define(GROUP_LEAVE_SPACE, group_leave_space).
 
+-define(GROUP_ADD_CLUSTER, group_add_cluster).
+-define(GROUP_LEAVE_CLUSTER, group_leave_cluster).
+
 -define(GROUP_CREATE_HANDLE_SERVICE, group_create_handle_service).
 -define(GROUP_LEAVE_HANDLE_SERVICE, group_leave_handle_service).
 
@@ -78,6 +81,19 @@
 -define(HANDLE_VIEW, handle_view).
 -define(HANDLE_UPDATE, handle_update).
 -define(HANDLE_DELETE, handle_delete).
+
+% Cluster privileges of members (users or groups)
+-define(CLUSTER_VIEW, cluster_view).
+-define(CLUSTER_UPDATE, cluster_update).
+-define(CLUSTER_DELETE, cluster_delete).
+-define(CLUSTER_VIEW_PRIVILEGES, cluster_view_privileges).
+-define(CLUSTER_SET_PRIVILEGES, cluster_set_privileges).
+
+-define(CLUSTER_INVITE_USER, cluster_invite_user).
+-define(CLUSTER_REMOVE_USER, cluster_remove_user).
+
+-define(CLUSTER_ADD_GROUP, cluster_add_group).
+-define(CLUSTER_REMOVE_GROUP, cluster_remove_group).
 
 % OZ privileges to administrate privileges of users or groups in onezone
 -define(OZ_VIEW_PRIVILEGES, oz_view_privileges).
@@ -154,6 +170,17 @@
 -define(OZ_HANDLES_LIST_RELATIONSHIPS, oz_handles_list_relationships).
 -define(OZ_HANDLES_ADD_RELATIONSHIPS, oz_handles_add_relationships).
 -define(OZ_HANDLES_REMOVE_RELATIONSHIPS, oz_handles_remove_relationships).
+
+%% Privileges to administrate clusters in OZ
+-define(OZ_CLUSTERS_LIST, oz_cluster_list).
+-define(OZ_CLUSTERS_VIEW, oz_cluster_view).
+-define(OZ_CLUSTERS_UPDATE, oz_cluster_update).
+-define(OZ_CLUSTERS_DELETE, oz_cluster_delete).
+-define(OZ_CLUSTERS_VIEW_PRIVILEGES, oz_cluster_view_privileges).
+-define(OZ_CLUSTERS_SET_PRIVILEGES, oz_cluster_set_privileges).
+-define(OZ_CLUSTERS_LIST_RELATIONSHIPS, oz_cluster_list_relationships).
+-define(OZ_CLUSTERS_ADD_RELATIONSHIPS, oz_cluster_add_relationships).
+-define(OZ_CLUSTERS_REMOVE_RELATIONSHIPS, oz_cluster_remove_relationships).
 
 
 -endif.
