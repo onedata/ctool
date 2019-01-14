@@ -61,7 +61,7 @@
 ).
 -define(ERROR_BAD_DATA(__Key), {error, {bad_data, __Key}}).
 -define(ERROR_BAD_VALUE_EMPTY(__Key), {error, {empty_value, __Key}}).
--define(ERROR_BAD_VALUE_ATOM(__Key), {error, {bad_value_atom, __Key}}).
+-define(ERROR_BAD_VALUE_ATOM(__Key, __Value), {error, {bad_value_atom, __Key, __Value}}).
 -define(ERROR_BAD_VALUE_BOOLEAN(__Key), {error, {bad_value_boolean, __Key}}).
 -define(ERROR_BAD_VALUE_LIST_OF_ATOMS(__Key),
     {error, {bad_value_list_of_atoms, __Key}}
