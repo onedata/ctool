@@ -1,6 +1,6 @@
 %%%-------------------------------------------------------------------
 %%% @author Lukasz Opiola
-%%% @copyright (C): 2016 ACK CYFRONET AGH
+%%% @copyright (C) 2016 ACK CYFRONET AGH
 %%% This software is released under the MIT license
 %%% cited in 'LICENSE.txt'.
 %%% @end
@@ -20,14 +20,14 @@
 -define(GROUP_VIEW_PRIVILEGES, group_view_privileges).
 -define(GROUP_SET_PRIVILEGES, group_set_privileges).
 
--define(GROUP_INVITE_USER, group_invite_user).
--define(GROUP_REMOVE_USER, group_remove_user).
-
 -define(GROUP_ADD_PARENT, group_add_parent).
 -define(GROUP_LEAVE_PARENT, group_leave_parent).
 
 -define(GROUP_ADD_CHILD, group_add_child).
 -define(GROUP_REMOVE_CHILD, group_remove_child).
+
+-define(GROUP_ADD_USER, group_add_user).
+-define(GROUP_REMOVE_USER, group_remove_user).
 
 -define(GROUP_ADD_SPACE, group_add_space).
 -define(GROUP_LEAVE_SPACE, group_leave_space).
@@ -61,13 +61,13 @@
 -define(SPACE_SCHEDULE_EVICTION, space_schedule_eviction).
 -define(SPACE_CANCEL_EVICTION, space_cancel_eviction).
 
--define(SPACE_INVITE_USER, space_invite_user).
+-define(SPACE_ADD_USER, space_add_user).
 -define(SPACE_REMOVE_USER, space_remove_user).
 
 -define(SPACE_ADD_GROUP, space_add_group).
 -define(SPACE_REMOVE_GROUP, space_remove_group).
 
--define(SPACE_INVITE_PROVIDER, space_invite_provider).
+-define(SPACE_ADD_PROVIDER, space_add_provider).
 -define(SPACE_REMOVE_PROVIDER, space_remove_provider).
 
 % Handle service privileges of members (users or groups)
@@ -89,7 +89,7 @@
 -define(CLUSTER_VIEW_PRIVILEGES, cluster_view_privileges).
 -define(CLUSTER_SET_PRIVILEGES, cluster_set_privileges).
 
--define(CLUSTER_INVITE_USER, cluster_invite_user).
+-define(CLUSTER_ADD_USER, cluster_add_user).
 -define(CLUSTER_REMOVE_USER, cluster_remove_user).
 
 -define(CLUSTER_ADD_GROUP, cluster_add_group).

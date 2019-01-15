@@ -1,6 +1,6 @@
 %%%-------------------------------------------------------------------
 %%% @author Konrad Zemek, Lukasz Opiola
-%%% @copyright (C): 2014-2016 ACK CYFRONET AGH
+%%% @copyright (C) 2014-2016 ACK CYFRONET AGH
 %%% This software is released under the MIT license
 %%% cited in 'LICENSE.txt'.
 %%% @end
@@ -22,11 +22,11 @@
 ?GROUP_VIEW | ?GROUP_UPDATE | ?GROUP_DELETE |
 ?GROUP_VIEW_PRIVILEGES | ?GROUP_SET_PRIVILEGES |
 
-?GROUP_INVITE_USER | ?GROUP_REMOVE_USER |
-
 ?GROUP_ADD_PARENT | ?GROUP_LEAVE_PARENT |
 
 ?GROUP_ADD_CHILD | ?GROUP_REMOVE_CHILD |
+
+?GROUP_ADD_USER | ?GROUP_REMOVE_USER |
 
 ?GROUP_ADD_SPACE | ?GROUP_LEAVE_SPACE |
 
@@ -50,11 +50,11 @@
 ?SPACE_SCHEDULE_REPLICATION | ?SPACE_CANCEL_REPLICATION |
 ?SPACE_SCHEDULE_EVICTION | ?SPACE_CANCEL_EVICTION |
 
-?SPACE_INVITE_USER | ?SPACE_REMOVE_USER |
+?SPACE_ADD_USER | ?SPACE_REMOVE_USER |
 
 ?SPACE_ADD_GROUP | ?SPACE_REMOVE_GROUP |
 
-?SPACE_INVITE_PROVIDER | ?SPACE_REMOVE_PROVIDER.
+?SPACE_ADD_PROVIDER | ?SPACE_REMOVE_PROVIDER.
 
 %% User privileges with regards to handle service.
 -type handle_service_privilege() ::
@@ -71,7 +71,7 @@
 ?CLUSTER_VIEW | ?CLUSTER_UPDATE | ?CLUSTER_DELETE |
 ?CLUSTER_VIEW_PRIVILEGES | ?CLUSTER_SET_PRIVILEGES |
 
-?CLUSTER_INVITE_USER | ?CLUSTER_REMOVE_USER |
+?CLUSTER_ADD_USER | ?CLUSTER_REMOVE_USER |
 
 ?CLUSTER_ADD_GROUP | ?CLUSTER_REMOVE_GROUP.
 
@@ -191,7 +191,7 @@ group_user() ->
 group_manager() ->
     union(group_user(), [
         ?GROUP_VIEW_PRIVILEGES,
-        ?GROUP_INVITE_USER, ?GROUP_REMOVE_USER,
+        ?GROUP_ADD_USER, ?GROUP_REMOVE_USER,
         ?GROUP_ADD_PARENT, ?GROUP_LEAVE_PARENT,
         ?GROUP_ADD_CHILD, ?GROUP_REMOVE_CHILD
     ]).
@@ -239,7 +239,7 @@ space_user() ->
 space_manager() ->
     union(space_user(), [
         ?SPACE_VIEW_PRIVILEGES,
-        ?SPACE_INVITE_USER, ?SPACE_REMOVE_USER,
+        ?SPACE_ADD_USER, ?SPACE_REMOVE_USER,
         ?SPACE_ADD_GROUP, ?SPACE_REMOVE_GROUP,
         ?SPACE_MANAGE_SHARES,
         ?SPACE_QUERY_INDEXES,
@@ -257,7 +257,7 @@ space_admin() ->
     union(space_manager(), [
         ?SPACE_UPDATE, ?SPACE_DELETE,
         ?SPACE_SET_PRIVILEGES,
-        ?SPACE_INVITE_PROVIDER, ?SPACE_REMOVE_PROVIDER,
+        ?SPACE_ADD_PROVIDER, ?SPACE_REMOVE_PROVIDER,
         ?SPACE_MANAGE_INDEXES,
         ?SPACE_CANCEL_REPLICATION,
         ?SPACE_SCHEDULE_EVICTION, ?SPACE_CANCEL_EVICTION
@@ -344,7 +344,7 @@ cluster_user() ->
 -spec cluster_manager() -> privileges(cluster_privilege()).
 cluster_manager() ->
     union(cluster_user(), [
-        ?CLUSTER_INVITE_USER, ?CLUSTER_REMOVE_USER,
+        ?CLUSTER_ADD_USER, ?CLUSTER_REMOVE_USER,
         ?CLUSTER_ADD_GROUP, ?CLUSTER_REMOVE_GROUP
     ]).
 
