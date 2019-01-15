@@ -175,7 +175,6 @@
 -define(OZ_CLUSTERS_LIST, oz_cluster_list).
 -define(OZ_CLUSTERS_VIEW, oz_cluster_view).
 -define(OZ_CLUSTERS_UPDATE, oz_cluster_update).
--define(OZ_CLUSTERS_DELETE, oz_cluster_delete).
 -define(OZ_CLUSTERS_VIEW_PRIVILEGES, oz_cluster_view_privileges).
 -define(OZ_CLUSTERS_SET_PRIVILEGES, oz_cluster_set_privileges).
 -define(OZ_CLUSTERS_LIST_RELATIONSHIPS, oz_cluster_list_relationships).
