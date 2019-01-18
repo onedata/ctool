@@ -27,4 +27,10 @@
 %% Name of the application.
 -define(CTOOL_APP_NAME, ctool).
 
+% Names of the services in Onedata
+-define(ONEZONE, onezone).
+-define(ONEPROVIDER, oneprovider).
+-define(OZ_PANEL, oz_panel).
+-define(OP_PANEL, op_panel).
+
 -endif.

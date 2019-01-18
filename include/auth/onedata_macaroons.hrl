@@ -23,7 +23,7 @@
 % - verifier fun during macaroon verification: fun(SessionId) -> boolean()
 -define(SESSION_ID_CAVEAT(SessionIdOrVerifyFun), {session_id, SessionIdOrVerifyFun}).
 
--define(SERVICE_TYPE_CAVEAT(SessionType), {service_type, SessionType}).
+-define(SERVICE_TYPE_CAVEAT(ServiceType), {service_type, ServiceType}).
 
 -define(SERVICE_ID_CAVEAT(ServiceId), {service_id, ServiceId}).
 
