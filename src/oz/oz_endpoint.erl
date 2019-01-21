@@ -155,6 +155,7 @@ request(Auth, URN, Method, Headers, Body, Opts) ->
 prepare_auth_headers(Auth, Headers) ->
     % Check REST client type and return auth headers if needed.
     case oz_plugin:auth_to_rest_client(Auth) of
+        {headers, Map} -> maps:merge(Headers, Map);
         {user, token, Token} ->
             Headers#{<<"X-Auth-Token">> => Token};
         {user, macaroon, {MacaroonBin, DischargeMacaroonsBin}} ->

@@ -50,5 +50,6 @@
 %% @end
 %%--------------------------------------------------------------------
 -callback auth_to_rest_client(Auth :: term()) -> {user, token, binary()} |
+{headers, #{Header :: binary() => Value :: binary()}} |
 {user, macaroon, {Macaroon :: binary(), DischargeMacaroons :: [binary()]}} |
 {user, basic, binary()} | {provider, Macaroon :: binary()} | none.
