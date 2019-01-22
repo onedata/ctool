@@ -60,7 +60,7 @@ get_details(Auth) ->
             id = lists_utils:key_get(<<"userId">>, Proplist),
             name = lists_utils:key_get(<<"name">>, Proplist),
             linked_accounts = lists_utils:key_get(<<"linkedAccounts">>, Proplist),
-            login = lists_utils:key_get(<<"login">>, Proplist),
+            alias = lists_utils:key_get(<<"alias">>, Proplist),
             email_list = lists_utils:key_get(<<"emailList">>, Proplist)
         },
         {ok, UserDetails}
