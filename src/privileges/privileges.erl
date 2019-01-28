@@ -32,7 +32,9 @@
 
 ?GROUP_CREATE_HANDLE_SERVICE | ?GROUP_LEAVE_HANDLE_SERVICE |
 
-?GROUP_CREATE_HANDLE | ?GROUP_LEAVE_HANDLE.
+?GROUP_CREATE_HANDLE | ?GROUP_LEAVE_HANDLE |
+
+?GROUP_ADD_HARVESTER | ?GROUP_REMOVE_HARVESTER.
 
 %% User privileges with regards to Space management.
 -type space_privilege() ::
@@ -52,7 +54,9 @@
 
 ?SPACE_ADD_GROUP | ?SPACE_REMOVE_GROUP |
 
-?SPACE_INVITE_PROVIDER | ?SPACE_REMOVE_PROVIDER.
+?SPACE_INVITE_PROVIDER | ?SPACE_REMOVE_PROVIDER |
+
+?SPACE_ADD_HARVESTER | ?SPACE_REMOVE_HARVESTER.
 
 %% User privileges with regards to handle service.
 -type handle_service_privilege() ::
@@ -64,46 +68,63 @@
 %% User privileges with regards to handle.
 -type handle_privilege() :: ?HANDLE_VIEW | ?HANDLE_UPDATE | ?HANDLE_DELETE.
 
--type oz_privilege() :: 
+%% User privileges with regards to harvester.
+-type harvester_privilege() ::
+?HARVESTER_VIEW | ?HARVESTER_UPDATE | ?HARVESTER_DELETE |
+?HARVESTER_VIEW_PRIVILEGES | ?HARVESTER_SET_PRIVILEGES |
+
+?HARVESTER_ADD_USER | ?HARVESTER_REMOVE_USER |
+
+?HARVESTER_ADD_GROUP | ?HARVESTER_REMOVE_GROUP |
+
+?HARVESTER_ADD_SPACE | ?HARVESTER_REMOVE_SPACE.
+
+-type oz_privilege() ::
 ?OZ_VIEW_PRIVILEGES | ?OZ_SET_PRIVILEGES |
 
 %% Privileges to administrate users in OZ
-?OZ_USERS_LIST | ?OZ_USERS_VIEW | 
+?OZ_USERS_LIST | ?OZ_USERS_VIEW |
 ?OZ_USERS_UPDATE | ?OZ_USERS_DELETE |
 ?OZ_USERS_LIST_RELATIONSHIPS | ?OZ_USERS_ADD_RELATIONSHIPS | ?OZ_USERS_REMOVE_RELATIONSHIPS |
 
 %% Privileges to administrate groups in OZ
-?OZ_GROUPS_LIST | ?OZ_GROUPS_VIEW | 
-?OZ_GROUPS_CREATE | ?OZ_GROUPS_UPDATE | ?OZ_GROUPS_DELETE | 
-?OZ_GROUPS_VIEW_PRIVILEGES | ?OZ_GROUPS_SET_PRIVILEGES | 
+?OZ_GROUPS_LIST | ?OZ_GROUPS_VIEW |
+?OZ_GROUPS_CREATE | ?OZ_GROUPS_UPDATE | ?OZ_GROUPS_DELETE |
+?OZ_GROUPS_VIEW_PRIVILEGES | ?OZ_GROUPS_SET_PRIVILEGES |
 ?OZ_GROUPS_LIST_RELATIONSHIPS | ?OZ_GROUPS_ADD_RELATIONSHIPS | ?OZ_GROUPS_REMOVE_RELATIONSHIPS |
 
 %% Privileges to administrate spaces in OZ
-?OZ_SPACES_LIST | ?OZ_SPACES_VIEW | 
-?OZ_SPACES_CREATE | ?OZ_SPACES_UPDATE | ?OZ_SPACES_DELETE | 
-?OZ_SPACES_VIEW_PRIVILEGES | ?OZ_SPACES_SET_PRIVILEGES | 
+?OZ_SPACES_LIST | ?OZ_SPACES_VIEW |
+?OZ_SPACES_CREATE | ?OZ_SPACES_UPDATE | ?OZ_SPACES_DELETE |
+?OZ_SPACES_VIEW_PRIVILEGES | ?OZ_SPACES_SET_PRIVILEGES |
 ?OZ_SPACES_LIST_RELATIONSHIPS | ?OZ_SPACES_ADD_RELATIONSHIPS | ?OZ_SPACES_REMOVE_RELATIONSHIPS |
 
 %% Privileges to administrate shares in OZ
-?OZ_SHARES_LIST | ?OZ_SHARES_VIEW | 
+?OZ_SHARES_LIST | ?OZ_SHARES_VIEW |
 ?OZ_SHARES_CREATE | ?OZ_SHARES_UPDATE | ?OZ_SHARES_DELETE |
 
 %% Privileges to administrate providers in OZ
-?OZ_PROVIDERS_LIST | ?OZ_PROVIDERS_VIEW | 
-?OZ_PROVIDERS_UPDATE | ?OZ_PROVIDERS_DELETE | 
+?OZ_PROVIDERS_LIST | ?OZ_PROVIDERS_VIEW |
+?OZ_PROVIDERS_UPDATE | ?OZ_PROVIDERS_DELETE |
 ?OZ_PROVIDERS_LIST_RELATIONSHIPS | ?OZ_PROVIDERS_INVITE |
 
 %% Privileges to administrate handle services in OZ
-?OZ_HANDLE_SERVICES_LIST | ?OZ_HANDLE_SERVICES_VIEW | 
+?OZ_HANDLE_SERVICES_LIST | ?OZ_HANDLE_SERVICES_VIEW |
 ?OZ_HANDLE_SERVICES_CREATE | ?OZ_HANDLE_SERVICES_UPDATE | ?OZ_HANDLE_SERVICES_DELETE |
 ?OZ_HANDLE_SERVICES_VIEW_PRIVILEGES | ?OZ_HANDLE_SERVICES_SET_PRIVILEGES |
 ?OZ_HANDLE_SERVICES_LIST_RELATIONSHIPS | ?OZ_HANDLE_SERVICES_ADD_RELATIONSHIPS | ?OZ_HANDLE_SERVICES_REMOVE_RELATIONSHIPS |
 
 %% Privileges to administrate handles in OZ
-?OZ_HANDLES_LIST | ?OZ_HANDLES_VIEW | 
-?OZ_HANDLES_CREATE | ?OZ_HANDLES_UPDATE | ?OZ_HANDLES_DELETE | 
+?OZ_HANDLES_LIST | ?OZ_HANDLES_VIEW |
+?OZ_HANDLES_CREATE | ?OZ_HANDLES_UPDATE | ?OZ_HANDLES_DELETE |
 ?OZ_HANDLES_VIEW_PRIVILEGES | ?OZ_HANDLES_SET_PRIVILEGES |
-?OZ_HANDLES_LIST_RELATIONSHIPS | ?OZ_HANDLES_ADD_RELATIONSHIPS | ?OZ_HANDLES_REMOVE_RELATIONSHIPS.
+?OZ_HANDLES_LIST_RELATIONSHIPS | ?OZ_HANDLES_ADD_RELATIONSHIPS | ?OZ_HANDLES_REMOVE_RELATIONSHIPS |
+
+%% Privileges to administrate harvesters in OZ
+?OZ_HARVESTERS_LIST | ?OZ_HARVESTERS_VIEW |
+?OZ_HARVESTERS_CREATE | ?OZ_HARVESTERS_UPDATE | ?OZ_HARVESTERS_DELETE |
+?OZ_HARVESTERS_VIEW_PRIVILEGES | ?OZ_HARVESTERS_SET_PRIVILEGES |
+?OZ_HARVESTERS_LIST_RELATIONSHIPS | ?OZ_HARVESTERS_ADD_RELATIONSHIPS | ?OZ_HARVESTERS_REMOVE_RELATIONSHIPS.
 
 
 -export_type([
@@ -112,6 +133,7 @@
     group_privilege/0,
     handle_service_privilege/0,
     handle_privilege/0,
+    harvester_privilege/0,
     oz_privilege/0
 ]).
 
@@ -123,6 +145,7 @@
 -export([handle_service_user/0, handle_service_admin/0,
     handle_service_privileges/0]).
 -export([handle_user/0, handle_admin/0, handle_privileges/0]).
+-export([harvester_user/0, harvester_admin/0, harvester_privileges/0]).
 -export([oz_viewer/0, oz_admin/0, oz_privileges/0]).
 
 %%%===================================================================
@@ -174,7 +197,8 @@ group_manager() ->
     union(group_user(), [
         ?GROUP_INVITE_USER, ?GROUP_REMOVE_USER,
         ?GROUP_ADD_PARENT, ?GROUP_LEAVE_PARENT,
-        ?GROUP_ADD_CHILD, ?GROUP_REMOVE_CHILD
+        ?GROUP_ADD_CHILD, ?GROUP_REMOVE_CHILD,
+        ?GROUP_ADD_HARVESTER, ?GROUP_REMOVE_HARVESTER
     ]).
 
 %%--------------------------------------------------------------------
@@ -185,7 +209,7 @@ group_manager() ->
 -spec group_admin() -> privileges(group_privilege()).
 group_admin() ->
     union(group_manager(), [
-        ?GROUP_UPDATE, ?GROUP_DELETE, 
+        ?GROUP_UPDATE, ?GROUP_DELETE,
         ?GROUP_VIEW_PRIVILEGES, ?GROUP_SET_PRIVILEGES,
         ?GROUP_ADD_SPACE, ?GROUP_LEAVE_SPACE,
         ?GROUP_CREATE_HANDLE_SERVICE, ?GROUP_LEAVE_HANDLE_SERVICE,
@@ -220,6 +244,7 @@ space_manager() ->
     union(space_user(), [
         ?SPACE_INVITE_USER, ?SPACE_REMOVE_USER,
         ?SPACE_ADD_GROUP, ?SPACE_REMOVE_GROUP,
+        ?SPACE_ADD_HARVESTER, ?SPACE_REMOVE_HARVESTER,
         ?SPACE_MANAGE_SHARES,
         ?SPACE_QUERY_INDEXES,
         ?SPACE_VIEW_STATISTICS,
@@ -309,6 +334,43 @@ handle_privileges() ->
 
 
 %%--------------------------------------------------------------------
+%% @doc A privilege level of a harvester user.
+%%--------------------------------------------------------------------
+-spec harvester_user() -> privileges(harvester_privilege()).
+harvester_user() ->
+    [?HARVESTER_VIEW].
+
+%%--------------------------------------------------------------------
+%% @doc A privilege level of a harvester manager.
+%%--------------------------------------------------------------------
+-spec harvester_manager() -> privileges(harvester_privilege()).
+harvester_manager() ->
+    union(harvester_user(), [
+        ?HARVESTER_ADD_USER, ?HARVESTER_REMOVE_USER,
+        ?HARVESTER_ADD_GROUP, ?HARVESTER_REMOVE_GROUP,
+        ?HARVESTER_ADD_SPACE, ?HARVESTER_REMOVE_SPACE
+    ]).
+
+%%--------------------------------------------------------------------
+%% @doc A privilege level of a Harvester administrator. This level contains all
+%% atoms representing harvester privileges.
+%% @end
+%%--------------------------------------------------------------------
+-spec harvester_admin() -> privileges(harvester_privilege()).
+harvester_admin() ->
+    union(harvester_manager(), [
+        ?HARVESTER_UPDATE, ?HARVESTER_DELETE,
+        ?HARVESTER_VIEW_PRIVILEGES, ?HARVESTER_SET_PRIVILEGES
+    ]).
+
+%%--------------------------------------------------------------------
+%% @doc All atoms representing harvester privileges.
+%%--------------------------------------------------------------------
+-spec harvester_privileges() -> privileges(harvester_privilege()).
+harvester_privileges() ->
+    harvester_admin().
+
+%%--------------------------------------------------------------------
 %% @doc All view privileges in OZ API.
 %%--------------------------------------------------------------------
 -spec oz_viewer() -> privileges(oz_privilege()).
@@ -326,7 +388,9 @@ oz_viewer() ->
 
         ?OZ_HANDLE_SERVICES_LIST, ?OZ_HANDLE_SERVICES_VIEW, ?OZ_HANDLE_SERVICES_LIST_RELATIONSHIPS,
 
-        ?OZ_HANDLES_LIST, ?OZ_HANDLES_VIEW, ?OZ_HANDLES_LIST_RELATIONSHIPS
+        ?OZ_HANDLES_LIST, ?OZ_HANDLES_VIEW, ?OZ_HANDLES_LIST_RELATIONSHIPS,
+
+        ?OZ_HARVESTERS_LIST, ?OZ_HARVESTERS_VIEW, ?OZ_HARVESTERS_LIST_RELATIONSHIPS
     ]).
 
 
@@ -338,16 +402,16 @@ oz_admin() ->
     union(oz_viewer(), [
         ?OZ_VIEW_PRIVILEGES, ?OZ_SET_PRIVILEGES,
 
-        ?OZ_USERS_UPDATE, ?OZ_USERS_DELETE, 
+        ?OZ_USERS_UPDATE, ?OZ_USERS_DELETE,
         ?OZ_USERS_ADD_RELATIONSHIPS, ?OZ_USERS_REMOVE_RELATIONSHIPS,
 
-        ?OZ_GROUPS_CREATE, ?OZ_GROUPS_UPDATE, ?OZ_GROUPS_DELETE, 
+        ?OZ_GROUPS_CREATE, ?OZ_GROUPS_UPDATE, ?OZ_GROUPS_DELETE,
         ?OZ_GROUPS_VIEW_PRIVILEGES, ?OZ_GROUPS_SET_PRIVILEGES,
-        ?OZ_GROUPS_ADD_RELATIONSHIPS, ?OZ_GROUPS_REMOVE_RELATIONSHIPS, 
+        ?OZ_GROUPS_ADD_RELATIONSHIPS, ?OZ_GROUPS_REMOVE_RELATIONSHIPS,
 
-        ?OZ_SPACES_CREATE, ?OZ_SPACES_UPDATE, ?OZ_SPACES_DELETE, 
+        ?OZ_SPACES_CREATE, ?OZ_SPACES_UPDATE, ?OZ_SPACES_DELETE,
         ?OZ_SPACES_VIEW_PRIVILEGES, ?OZ_SPACES_SET_PRIVILEGES,
-        ?OZ_SPACES_ADD_RELATIONSHIPS, ?OZ_SPACES_REMOVE_RELATIONSHIPS,  
+        ?OZ_SPACES_ADD_RELATIONSHIPS, ?OZ_SPACES_REMOVE_RELATIONSHIPS,
 
         ?OZ_SHARES_CREATE, ?OZ_SHARES_UPDATE, ?OZ_SHARES_DELETE,
 
@@ -359,7 +423,11 @@ oz_admin() ->
 
         ?OZ_HANDLES_CREATE, ?OZ_HANDLES_UPDATE, ?OZ_HANDLES_DELETE,
         ?OZ_HANDLES_VIEW_PRIVILEGES, ?OZ_HANDLES_SET_PRIVILEGES,
-        ?OZ_HANDLES_ADD_RELATIONSHIPS, ?OZ_HANDLES_REMOVE_RELATIONSHIPS
+        ?OZ_HANDLES_ADD_RELATIONSHIPS, ?OZ_HANDLES_REMOVE_RELATIONSHIPS,
+
+        ?OZ_HARVESTERS_CREATE, ?OZ_HARVESTERS_UPDATE, ?OZ_HARVESTERS_DELETE,
+        ?OZ_HARVESTERS_VIEW_PRIVILEGES, ?OZ_HARVESTERS_SET_PRIVILEGES,
+        ?OZ_HARVESTERS_ADD_RELATIONSHIPS, ?OZ_HARVESTERS_REMOVE_RELATIONSHIPS
     ]).
 
 
