@@ -16,6 +16,7 @@
 -include("oz/oz_spaces.hrl").
 -include("oz/oz_providers.hrl").
 -include("oz/oz_openid.hrl").
+-include("api_errors.hrl").
 
 %% API
 -export([register/2, register_with_uuid/2, unregister/1]).
@@ -56,7 +57,7 @@ register(Auth, Parameters) ->
             {ok, 400, _ResponseHeaders, ResponseBody} ->
                 #{<<"error">> := ErrorDesc} = json_utils:decode(ResponseBody),
                 #{<<"id">> := <<"badValueIdentifierOccupied">>} = ErrorDesc,
-                {error, subdomain_reserved}
+                ?ERROR_BAD_VALUE_IDENTIFIER_OCCUPIED(<<"subdomain">>)
         end
     end).
 
