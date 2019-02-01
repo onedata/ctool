@@ -194,23 +194,23 @@ session_id_caveat_test() ->
 
 service_type_caveat_test() ->
     MOz = onedata_macaroons:create(?LOCATION, <<"secret">>, <<"identifier">>, [
-        ?SERVICE_TYPE_CAVEAT(onezone)
+        ?CLUSTER_TYPE_CAVEAT(onezone)
     ]),
     ?assertEqual(?ERROR_MACAROON_INVALID, onedata_macaroons:verify(MOz, <<"secret">>, [], [
-        ?SERVICE_TYPE_CAVEAT(oneprovider)
+        ?CLUSTER_TYPE_CAVEAT(oneprovider)
     ])),
     ?assertEqual(ok, onedata_macaroons:verify(MOz, <<"secret">>, [], [
-        ?SERVICE_TYPE_CAVEAT(onezone)
+        ?CLUSTER_TYPE_CAVEAT(onezone)
     ])),
 
     MOp = onedata_macaroons:create(?LOCATION, <<"secret">>, <<"identifier">>, [
-        ?SERVICE_TYPE_CAVEAT(oneprovider)
+        ?CLUSTER_TYPE_CAVEAT(oneprovider)
     ]),
     ?assertEqual(?ERROR_MACAROON_INVALID, onedata_macaroons:verify(MOp, <<"secret">>, [], [
-        ?SERVICE_TYPE_CAVEAT(onezone)
+        ?CLUSTER_TYPE_CAVEAT(onezone)
     ])),
     ?assertEqual(ok, onedata_macaroons:verify(MOp, <<"secret">>, [], [
-        ?SERVICE_TYPE_CAVEAT(oneprovider)
+        ?CLUSTER_TYPE_CAVEAT(oneprovider)
     ])).
 
 
@@ -232,12 +232,12 @@ gui_macaroon_test() ->
     ServiceId = <<"ServiceId">>,
     M = onedata_macaroons:create(?LOCATION, <<"secret">>, <<"identifier">>, [
         ?SESSION_ID_CAVEAT(CaveatSessionId),
-        ?SERVICE_TYPE_CAVEAT(oneprovider),
+        ?CLUSTER_TYPE_CAVEAT(oneprovider),
         ?SERVICE_ID_CAVEAT(ServiceId)
     ]),
 
     ?assertEqual(?ERROR_MACAROON_INVALID, onedata_macaroons:verify(M, <<"secret">>, [], [
-        ?SERVICE_TYPE_CAVEAT(oneprovider),
+        ?CLUSTER_TYPE_CAVEAT(oneprovider),
         ?SERVICE_ID_CAVEAT(ServiceId)
     ])),
     ?assertEqual(?ERROR_MACAROON_INVALID, onedata_macaroons:verify(M, <<"secret">>, [], [
@@ -246,11 +246,11 @@ gui_macaroon_test() ->
     ])),
     ?assertEqual(?ERROR_MACAROON_INVALID, onedata_macaroons:verify(M, <<"secret">>, [], [
         ?SESSION_ID_CAVEAT(CaveatSessionId),
-        ?SERVICE_TYPE_CAVEAT(oneprovider)
+        ?CLUSTER_TYPE_CAVEAT(oneprovider)
     ])),
 
     ?assertEqual(ok, onedata_macaroons:verify(M, <<"secret">>, [], [
         ?SESSION_ID_CAVEAT(fun(SessionId) -> SessionId == CaveatSessionId end),
-        ?SERVICE_TYPE_CAVEAT(oneprovider),
+        ?CLUSTER_TYPE_CAVEAT(oneprovider),
         ?SERVICE_ID_CAVEAT(ServiceId)
     ])).

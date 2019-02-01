@@ -139,8 +139,8 @@ caveat_to_binary(?AUTHORIZATION_NONE_CAVEAT) ->
 caveat_to_binary(?SESSION_ID_CAVEAT(SessionId)) ->
     <<"session_id = ", SessionId/binary>>;
 
-caveat_to_binary(?SERVICE_TYPE_CAVEAT(ServiceType)) ->
-    <<"service_type = ", (atom_to_binary(ServiceType, utf8))/binary>>;
+caveat_to_binary(?CLUSTER_TYPE_CAVEAT(ServiceType)) ->
+    <<"cluster_type = ", (atom_to_binary(ServiceType, utf8))/binary>>;
 
 caveat_to_binary(?SERVICE_ID_CAVEAT(ServiceId)) ->
     <<"service_id = ", ServiceId/binary>>.
