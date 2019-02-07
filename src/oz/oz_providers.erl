@@ -41,7 +41,7 @@
 %%--------------------------------------------------------------------
 -spec register(Auth :: oz_endpoint:auth(),
     Parameters :: oz_endpoint:params()) ->
-    {ok, maps:map()} |
+    {ok, map()} |
     {error, Reason :: term()}.
 register(Auth, Parameters) ->
     ?run(fun() ->
@@ -72,7 +72,7 @@ register(Auth, Parameters) ->
 %%--------------------------------------------------------------------
 -spec register_with_uuid(Auth :: oz_endpoint:auth(),
     Parameters :: oz_endpoint:params()) ->
-    {ok, maps:map()} |
+    {ok, map()} |
     {error, Reason :: term()}.
 register_with_uuid(Auth, Parameters) ->
     ?run(fun() ->

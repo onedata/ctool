@@ -103,7 +103,7 @@ decode_deprecated(JSON) ->
 %% Converts a nested map to a proplist.
 %% @end
 %%--------------------------------------------------------------------
--spec map_to_list(maps:map()) -> proplists:proplist().
+-spec map_to_list(map()) -> proplists:proplist().
 map_to_list({Key, Value}) ->
         {Key, map_to_list(Value)};
 
@@ -122,7 +122,7 @@ map_to_list(Value) ->
 %% Converts a nested proplist to a map.
 %% @end
 %%--------------------------------------------------------------------
--spec list_to_map(proplists:proplist()) -> maps:map().
+-spec list_to_map(proplists:proplist()) -> map().
 list_to_map({Key, []}) ->
         {Key, []};
 
