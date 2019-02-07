@@ -24,7 +24,7 @@
 -type body() :: http_client:body().
 -type opts() :: http_client:opts() | [{endpoint, rest | rest_no_auth | gui}].
 -type response() :: http_client:response().
--type params() :: [{Key :: binary(), Value :: binary() | [binary()]}].
+-type params() :: [{Key :: binary(), Value :: binary() | [binary()]}] | map().
 -type client() :: client | provider | {user, token, macaroons()} |
 %% Credentials are in form "Basic base64(user:password)"
 {user, basic, Credentials :: binary()}.
