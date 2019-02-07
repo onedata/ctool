@@ -44,6 +44,11 @@ patch | purge. %% RFC-5789
 -type headers() :: #{Key :: binary() => Value :: binary()}.
 % Request / response body
 -type body() :: string() | binary().
+-type request_body() ::
+    body() |
+    {form, proplists:proplist()} |
+    {multipart, proplists:proplist()} |
+    {file, Path :: string()}.
 % Response code
 -type code() :: integer().
 % Request options
@@ -125,8 +130,8 @@ binary() |
 % Performs the request, but instead the body return the ref for streaming.
 -export([request_return_stream/5]).
 
--export_type([method/0, url/0, headers/0, body/0, code/0, opts/0, response/0,
-    secure_flag/0, opt/0, ssl_opt/0, proxy_opt/0, hackney_opts/0]).
+-export_type([method/0, url/0, headers/0, body/0, request_body/0, code/0, opts/0,
+    response/0, secure_flag/0, opt/0, ssl_opt/0, proxy_opt/0, hackney_opts/0]).
 
 
 %%%===================================================================
@@ -158,7 +163,7 @@ get(URL, Headers) ->
 %% Performs a HTTP GET request.
 %% @end
 %%--------------------------------------------------------------------
--spec get(URL :: url(), Headers :: headers(), Body :: body()) ->
+-spec get(URL :: url(), Headers :: headers(), Body :: request_body()) ->
     Response :: response().
 get(URL, Headers, Body) ->
     request(get, URL, Headers, Body, []).
@@ -169,7 +174,7 @@ get(URL, Headers, Body) ->
 %% Performs a HTTP GET request.
 %% @end
 %%--------------------------------------------------------------------
--spec get(URL :: url(), Headers :: headers(), Body :: body(),
+-spec get(URL :: url(), Headers :: headers(), Body :: request_body(),
     Opts :: opts()) -> Response :: response().
 get(URL, Headers, Body, Opts) ->
     request(get, URL, Headers, Body, Opts).
@@ -200,7 +205,7 @@ post(URL, Headers) ->
 %% Performs a HTTP POST request.
 %% @end
 %%--------------------------------------------------------------------
--spec post(URL :: url(), Headers :: headers(), Body :: body()) ->
+-spec post(URL :: url(), Headers :: headers(), Body :: request_body()) ->
     Response :: response().
 post(URL, Headers, Body) ->
     request(post, URL, Headers, Body, []).
@@ -211,7 +216,7 @@ post(URL, Headers, Body) ->
 %% Performs a HTTP POST request.
 %% @end
 %%--------------------------------------------------------------------
--spec post(URL :: url(), Headers :: headers(), Body :: body(), Opts :: opts()) ->
+-spec post(URL :: url(), Headers :: headers(), Body :: request_body(), Opts :: opts()) ->
     Response :: response().
 post(URL, Headers, Body, Opts) ->
     request(post, URL, Headers, Body, Opts).
@@ -242,7 +247,7 @@ put(URL, Headers) ->
 %% Performs a HTTP PUT request.
 %% @end
 %%--------------------------------------------------------------------
--spec put(URL :: url(), Headers :: headers(), Body :: body()) ->
+-spec put(URL :: url(), Headers :: headers(), Body :: request_body()) ->
     Response :: response().
 put(URL, Headers, Body) ->
     request(put, URL, Headers, Body, []).
@@ -253,7 +258,7 @@ put(URL, Headers, Body) ->
 %% Performs a HTTP PUT request.
 %% @end
 %%--------------------------------------------------------------------
--spec put(URL :: url(), Headers :: headers(), Body :: body(), Opts :: opts()) ->
+-spec put(URL :: url(), Headers :: headers(), Body :: request_body(), Opts :: opts()) ->
     Response :: response().
 put(URL, Headers, Body, Opts) ->
     request(put, URL, Headers, Body, Opts).
@@ -284,7 +289,7 @@ patch(URL, Headers) ->
 %% Performs a HTTP PATCH request.
 %% @end
 %%--------------------------------------------------------------------
--spec patch(URL :: url(), Headers :: headers(), Body :: body()) ->
+-spec patch(URL :: url(), Headers :: headers(), Body :: request_body()) ->
     Response :: response().
 patch(URL, Headers, Body) ->
     request(patch, URL, Headers, Body, []).
@@ -295,7 +300,7 @@ patch(URL, Headers, Body) ->
 %% Performs a HTTP PATCH request.
 %% @end
 %%--------------------------------------------------------------------
--spec patch(URL :: url(), Headers :: headers(), Body :: body(), Opts :: opts()) ->
+-spec patch(URL :: url(), Headers :: headers(), Body :: request_body(), Opts :: opts()) ->
     Response :: response().
 patch(URL, Headers, Body, Opts) ->
     request(patch, URL, Headers, Body, Opts).
@@ -326,7 +331,7 @@ delete(URL, Headers) ->
 %% Performs a HTTP DELETE request.
 %% @end
 %%--------------------------------------------------------------------
--spec delete(URL :: url(), Headers :: headers(), Body :: body()) ->
+-spec delete(URL :: url(), Headers :: headers(), Body :: request_body()) ->
     Response :: response().
 delete(URL, Headers, Body) ->
     request(delete, URL, Headers, Body, []).
@@ -337,7 +342,7 @@ delete(URL, Headers, Body) ->
 %% Performs a HTTP DELETE request.
 %% @end
 %%--------------------------------------------------------------------
--spec delete(URL :: url(), Headers :: headers(), Body :: body(), Opts :: opts()) ->
+-spec delete(URL :: url(), Headers :: headers(), Body :: request_body(), Opts :: opts()) ->
     Response :: response().
 delete(URL, Headers, Body, Opts) ->
     request(delete, URL, Headers, Body, Opts).
@@ -380,7 +385,7 @@ request(Method, URL, Headers) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec request(Method :: method(), URL :: url(), Headers :: headers(),
-    Body :: body()) -> Response :: response().
+    Body :: request_body()) -> Response :: response().
 request(Method, URL, Headers, Body) ->
     request(Method, URL, Headers, Body, []).
 
@@ -391,7 +396,7 @@ request(Method, URL, Headers, Body) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec request(Method :: method(), URL :: url(), Headers :: headers(),
-    Body :: body(), Opts :: opts()) -> Response :: response().
+    Body :: request_body(), Opts :: opts()) -> Response :: response().
 request(Method, URL, Headers, Body, Opts) ->
     % If max_body is specified in opts, accept the option, else use 'undefined'
     % which will cause the function to return all the body regardless of
@@ -409,7 +414,7 @@ request(Method, URL, Headers, Body, Opts) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec request_return_stream(Method :: method(), URL :: url(),
-    Headers :: headers(), Body :: body(), Opts :: opts()) ->
+    Headers :: headers(), Body :: request_body(), Opts :: opts()) ->
     {ok, StrmRef :: term()} | {error, term()}.
 request_return_stream(Method, URL, Headers, Body, Opts) ->
     do_request(Method, URL, Headers, Body, [async | Opts]).
@@ -426,7 +431,7 @@ request_return_stream(Method, URL, Headers, Body, Opts) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec do_request(Method :: method(), URL :: url(),
-    Headers :: headers(), Body :: body(), Opts :: hackney_opts()) ->
+    Headers :: headers(), Body :: request_body(), Opts :: hackney_opts()) ->
     Response :: response() | {ok, StreamRef :: term()}.
 do_request(Method, URL, Headers, Body, Opts) ->
     HeadersProplist = maps:to_list(Headers),
