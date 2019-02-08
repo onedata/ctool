@@ -48,20 +48,20 @@ expand(Url, SslOpts) ->
                 {cacerts, CaCerts},
                 {partial_chain, fun(Certs) -> partial_chain(CaCerts, Certs) end}
             ],
+            % If provided, use hostname specified in opt for validation,
+            % otherwise use the hostname parsed from URL.
+            HostnameBin = case proplists:get_value(hostname, SslOpts) of
+                undefined -> maps:get(host, url_utils:parse(Url));
+                Val -> Val
+            end,
+            Hostname = binary_to_list(HostnameBin),
             VerifyFun = case SecureFlag of
                 true ->
-                    % If provided, use hostname specified in opt for validation,
-                    % otherwise use the hostname parsed from URL.
-                    HostBin = case proplists:get_value(hostname, SslOpts) of
-                        undefined -> maps:get(host, url_utils:parse(Url));
-                        Val -> Val
-                    end,
-                    Host = binary_to_list(HostBin),
-                    {fun ssl_verify_hostname:verify_fun/3, [{check_hostname, Host}]};
+                    {fun ssl_verify_hostname:verify_fun/3, [{check_hostname, Hostname}]};
                 only_verify_peercert ->
                     {fun peercert_only_verify_fun/3, []}
             end,
-            [{verify_fun, VerifyFun} | CommonOpts]
+            [{verify_fun, VerifyFun}, {server_name_indication, Hostname} | CommonOpts]
     end,
     NewOpts ++ proplists:delete(cacerts,
         proplists:delete(secure,
