@@ -117,4 +117,6 @@
 ).
 -define(ERROR_PROTECTED_GROUP, {error, protected_group}).
 
+-define(ERROR_TEMPORARY_FAILURE, {error, temporary_failure}).
+
 -endif.
