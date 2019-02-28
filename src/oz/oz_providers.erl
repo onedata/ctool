@@ -57,8 +57,8 @@ register(Auth, Parameters) ->
                 {ok, ProviderId, Macaroon};
 
             {ok, 400, _ResponseHeaders, ResponseBody} ->
-                #{<<"error">> := <<"Bad value: provided identifier ",
-                    "(\"subdomain\") is already occupied">>} = json_utils:decode(ResponseBody),
+                #{<<"error">> := ErrorDesc} = json_utils:decode(ResponseBody),
+                #{<<"id">> := <<"badValueIdentifierOccupied">>} = ErrorDesc,
                 {error, subdomain_reserved}
         end
     end).
