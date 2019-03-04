@@ -12,7 +12,7 @@
 -author("Krzysztof Trzepla").
 
 %% API
--export([read_files/1]).
+-export([read_files/1, recursive_del/1]).
 
 %%%===================================================================
 %%% API functions
@@ -51,3 +51,19 @@ read_files({files, FilePaths}) ->
         (_, {error, Reason}) ->
             {error, Reason}
     end, {ok, []}, FilePaths).
+
+
+%%--------------------------------------------------------------------
+%% @doc Removes file or directory at given path,
+%% even if the directory is nonempty.
+%% @end
+%%--------------------------------------------------------------------
+-spec recursive_del(Path :: file:name_all()) -> ok | no_return().
+recursive_del(Path) ->
+    case {filelib:is_file(Path), filelib:is_dir(Path)} of
+        {false, _} -> ok;
+        {true, false} -> ok = file:delete(Path);
+        {true, true} ->
+            % contrary to the name, can work on any directory
+            ok = mochitemp:rmtempdir(Path)
+    end.
