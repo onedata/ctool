@@ -110,6 +110,7 @@ serialize(M) ->
 %%--------------------------------------------------------------------
 -spec deserialize(Macaroon :: binary()) ->
     {ok, macaroon:macaroon()} | {error, term()}.
+deserialize(<<>>) -> ?ERROR_BAD_MACAROON;
 deserialize(Macaroon) ->
     try macaroon:deserialize(base62_to_64(Macaroon)) of
         {ok, M} -> {ok, M};
