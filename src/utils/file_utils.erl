@@ -72,7 +72,8 @@ recursive_del(Path) ->
 %%--------------------------------------------------------------------
 %% @doc Moves a file or directory.
 %% Full target path (including filename) must be specified,
-%% as in file:rename/2.
+%% as in file:rename/2. Improves on file:rename by allowing
+%% cross-filesystem moves.
 %% Source must exist, otherwise enoent is returned.
 %% Target must not exist, otherwise eexist is returned.
 %% @end
@@ -83,7 +84,7 @@ recursive_del(Path) ->
 move(From, To) ->
     case {filelib:is_file(From), filelib:is_file(To)} of
         {true, false} ->
-            Cmd = str_utils:format("mv -T -n '~s' '~s'", [From, To]),
+            Cmd = str_utils:format("mv -T '~s' '~s'", [From, To]),
             case os:cmd(Cmd) of
                 "" -> ok;
                 Error -> {error, Error}

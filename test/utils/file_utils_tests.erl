@@ -30,12 +30,15 @@ onepanel_env_test_() ->
             fun remove_file_test/1,
             fun remove_nonexistent_test/1,
             fun remove_empty_dir_test/1,
-            fun remove_nonexistent_test/1
+            fun remove_nonexistent_test/1,
+            fun rename_directory_test/1,
+            fun rename_file_test/1,
+            fun rename_fails_when_target_exists_test/1
         ]
     }.
 
 %%%===================================================================
-%%% Test functions
+%%% Test functions and instantiators
 %%%===================================================================
 
 remove_file_test(Config) ->
@@ -90,6 +93,65 @@ remove_nonempty_dir_test(Config) ->
     ?_assertEqual(false, filelib:is_dir(Dir)).
 
 
+rename_directory_test(Config) ->
+    Old = path(Config, "olddir"),
+    New = path(Config, "newdir"),
+
+    Prepare = fun() ->
+        reset_dir(Config),
+        file:make_dir(Old),
+        ok = touch(filename:join(Old, "file"))
+    end,
+
+    % ensure trailing slash does not change results
+    Cases = [
+        {Old, New},
+        {Old ++ "/", New},
+        {Old, New ++ "/"},
+        {Old ++ "/", New ++ "/"}
+    ],
+
+    {foreach, Prepare,
+        [fun() ->
+            ?assertEqual(ok, file_utils:move(From, To)),
+
+            ?assertNot(filelib:is_dir(Old)),
+            ?assert(filelib:is_dir(New)),
+            ?assert(filelib:is_file(filename:join(New, "file")))
+        end || {From, To} <- Cases]
+    }.
+
+
+rename_file_test(Config) ->
+    Old = path(Config, "oldfile"),
+    New = path(Config, "newfile"),
+
+    {setup,
+        fun() -> ok = touch(Old) end,
+        fun() ->
+            ?assertEqual(ok, file_utils:move(Old, New)),
+
+            ?assertNot(filelib:is_file(Old)),
+            ?assert(filelib:is_file(New))
+        end
+    }.
+
+
+rename_fails_when_target_exists_test(Config) ->
+    From = path(Config, "olddir"),
+    To = path(Config, "newdir"),
+    Setup = fun() ->
+        file:make_dir(From),
+        file:make_dir(To)
+    end,
+    {setup, Setup, fun() ->
+        ?assertEqual({error, eexist}, file_utils:move(From, To)),
+
+        ?assert(filelib:is_dir(From)),
+        ?assert(filelib:is_dir(To))
+    end}.
+
+
 %%%===================================================================
 %%% Test fixtures
 %%%===================================================================
@@ -100,6 +162,10 @@ start() ->
 
 stop(#{cwd := Workdir}) ->
     mochitemp:rmtempdir(Workdir).
+
+reset_dir(#{cwd := Workdir}) ->
+    mochitemp:rmtempdir(Workdir),
+    file:make_dir(Workdir).
 
 
 %%%===================================================================
