@@ -12,7 +12,7 @@
 -author("Krzysztof Trzepla").
 
 %% API
--export([read_files/1, recursive_del/1]).
+-export([read_files/1, recursive_del/1, move/2]).
 
 %%%===================================================================
 %%% API functions
@@ -66,4 +66,28 @@ recursive_del(Path) ->
         {true, true} ->
             % contrary to the name, can work on any directory
             ok = mochitemp:rmtempdir(Path)
+    end.
+
+
+%%--------------------------------------------------------------------
+%% @doc Moves a file or directory.
+%% Full target path (including filename) must be specified,
+%% as in file:rename/2.
+%% Source must exist, otherwise enoent is returned.
+%% Target must not exist, otherwise eexist is returned.
+%% @end
+%%--------------------------------------------------------------------
+-spec move(From :: Filename, To :: Filename) -> ok | {error, Reason} when
+    Filename :: binary() | string() | atom(),
+    Reason :: enoent | eexist | string().
+move(From, To) ->
+    case {filelib:is_file(From), filelib:is_file(To)} of
+        {true, false} ->
+            Cmd = str_utils:format("mv -T -n '~s' '~s'", [From, To]),
+            case os:cmd(Cmd) of
+                "" -> ok;
+                Error -> {error, Error}
+            end;
+        {false, _} -> {error, enoent};
+        {_, true} -> {error, eexist}
     end.
