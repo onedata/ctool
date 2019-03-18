@@ -15,14 +15,15 @@
 -include("auth/onedata_macaroons.hrl").
 -include("api_errors.hrl").
 -include("global_definitions.hrl").
--include_lib("ctool/include/logging.hrl").
+-include("onedata.hrl").
+-include("logging.hrl").
 
 -type location() :: Domain :: binary().
 
 -type time_caveat() :: {time, CurrentTimestamp :: non_neg_integer(), MaxTtl :: non_neg_integer() | infinity}.
 -type authorization_none_caveat() :: authorization_none.
 -type session_id_caveat() :: {session_id, SessionId :: binary() | fun((SessionId :: binary()) -> boolean())}.
--type cluster_type_caveat() :: {cluster_type, ?ONEPROVIDER | ?ONEZONE}.
+-type cluster_type_caveat() :: {cluster_type, onedata:cluster_type()}.
 -type service_id_caveat() :: {service_id, ServiceId :: binary()}.
 %% @formatter:off
 -type caveat() :: time_caveat() |

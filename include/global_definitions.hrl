@@ -27,18 +27,4 @@
 %% Name of the application.
 -define(CTOOL_APP_NAME, ctool).
 
-%% Types of clusters in Onedata - every cluster is made up of services
--define(ONEZONE, onezone).
--define(ONEPROVIDER, oneprovider).
-
-%% Services in Onedata
--define(OZ_WORKER, oz_worker).
--define(OZ_PANEL, oz_panel).
--define(OP_WORKER, op_worker).
--define(OP_PANEL, op_panel).
-
-%% Types of services
--define(WORKER_SERVICE, worker).
--define(ONEPANEL_SERVICE, onepanel).
-
 -endif.
