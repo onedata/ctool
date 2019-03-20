@@ -54,10 +54,17 @@ register(Auth, Parameters) ->
             {ok, 200, _ResponseHeaders, ResponseBody} ->
                 {ok, json_utils:decode(ResponseBody)};
 
-            {ok, 400, _ResponseHeaders, ResponseBody} ->
-                #{<<"error">> := ErrorDesc} = json_utils:decode(ResponseBody),
-                #{<<"id">> := <<"badValueIdentifierOccupied">>} = ErrorDesc,
-                ?ERROR_BAD_VALUE_IDENTIFIER_OCCUPIED(<<"subdomain">>)
+            {ok, 400, _ResponseHeaders, ErrorBody} ->
+                #{<<"error">> := Error} = json_utils:decode(ErrorBody),
+
+                case Error of
+                    #{<<"id">> := <<"badValueIdentifierOccupied">>,
+                        <<"details">> := #{<<"key">> := Key}} ->
+                        ?ERROR_BAD_VALUE_IDENTIFIER_OCCUPIED(Key);
+                    #{<<"id">> := <<"badValueToken">>,
+                        <<"details">> := #{<<"key">> := Key}} ->
+                        ?ERROR_BAD_VALUE_TOKEN(Key)
+                end
         end
     end).
 
