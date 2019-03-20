@@ -36,18 +36,21 @@
 service_shortname(?OZ_WORKER) -> <<"ozw">>;
 service_shortname(?OZ_PANEL) -> <<"ozp">>;
 service_shortname(?OP_WORKER) -> <<"opw">>;
-service_shortname(?OP_PANEL) -> <<"opp">>.
+service_shortname(?OP_PANEL) -> <<"opp">>;
+service_shortname(_) -> error(badarg).
 
 
 -spec service_from_shortname(binary()) -> service().
 service_from_shortname(<<"ozw">>) -> ?OZ_WORKER;
 service_from_shortname(<<"ozp">>) -> ?OZ_PANEL;
 service_from_shortname(<<"opw">>) -> ?OP_WORKER;
-service_from_shortname(<<"opp">>) -> ?OP_PANEL.
+service_from_shortname(<<"opp">>) -> ?OP_PANEL;
+service_from_shortname(_) -> error(badarg).
 
 
 -spec service_by_type(cluster_type(), service_type()) -> service().
 service_by_type(?ONEZONE, ?WORKER) -> ?OZ_WORKER;
 service_by_type(?ONEZONE, ?ONEPANEL) -> ?OZ_PANEL;
 service_by_type(?ONEPROVIDER, ?WORKER) -> ?OP_WORKER;
-service_by_type(?ONEPROVIDER, ?ONEPANEL) -> ?OP_PANEL.
+service_by_type(?ONEPROVIDER, ?ONEPANEL) -> ?OP_PANEL;
+service_by_type(_, _) -> error(badarg).
