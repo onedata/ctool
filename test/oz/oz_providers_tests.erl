@@ -98,16 +98,14 @@ should_register() ->
         fun(response_body) ->
             #{
                 <<"providerId">> => <<"providerId">>,
-                <<"macaroon">> => <<"macaroon">>,
-                <<"adminUserId">> => <<"adminUserId">>
+                <<"macaroon">> => <<"macaroon">>
             }
         end),
 
     Answer = oz_providers:register(client, parameters),
     ?assertEqual({ok, #{
         <<"providerId">> => <<"providerId">>,
-        <<"macaroon">> => <<"macaroon">>,
-        <<"adminUserId">> => <<"adminUserId">>
+        <<"macaroon">> => <<"macaroon">>
     }}, Answer),
 
     ?assert(meck:validate(json_utils)),
