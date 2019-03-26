@@ -116,5 +116,7 @@
 ).
 -define(ERROR_CANNOT_JOIN_GROUP_TO_ITSELF, {error, cannot_join_group_to_itself}).
 
+% Clproto connection errors
+-define(ERROR_NO_CONNECTION_TO_PEER_PROVIDER, {error, no_connection_to_peer_provider}).
 
 -endif.
