@@ -71,7 +71,8 @@
 
 -type authorization() :: undefined |
     {cookie, {Name :: binary(), Value :: binary()}} |
-    {macaroon, Value :: binary()}.
+    {macaroon, Value :: binary()} |
+    {urlToken, Value :: binary()}.
 -export_type([authorization/0]).
 
 -export([new/9,
