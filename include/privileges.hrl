@@ -172,14 +172,14 @@
 -define(OZ_HANDLES_REMOVE_RELATIONSHIPS, oz_handles_remove_relationships).
 
 %% Privileges to administrate clusters in OZ
--define(OZ_CLUSTERS_LIST, oz_cluster_list).
--define(OZ_CLUSTERS_VIEW, oz_cluster_view).
--define(OZ_CLUSTERS_UPDATE, oz_cluster_update).
--define(OZ_CLUSTERS_VIEW_PRIVILEGES, oz_cluster_view_privileges).
--define(OZ_CLUSTERS_SET_PRIVILEGES, oz_cluster_set_privileges).
--define(OZ_CLUSTERS_LIST_RELATIONSHIPS, oz_cluster_list_relationships).
--define(OZ_CLUSTERS_ADD_RELATIONSHIPS, oz_cluster_add_relationships).
--define(OZ_CLUSTERS_REMOVE_RELATIONSHIPS, oz_cluster_remove_relationships).
+-define(OZ_CLUSTERS_LIST, oz_clusters_list).
+-define(OZ_CLUSTERS_VIEW, oz_clusters_view).
+-define(OZ_CLUSTERS_UPDATE, oz_clusters_update).
+-define(OZ_CLUSTERS_VIEW_PRIVILEGES, oz_clusters_view_privileges).
+-define(OZ_CLUSTERS_SET_PRIVILEGES, oz_clusters_set_privileges).
+-define(OZ_CLUSTERS_LIST_RELATIONSHIPS, oz_clusters_list_relationships).
+-define(OZ_CLUSTERS_ADD_RELATIONSHIPS, oz_clusters_add_relationships).
+-define(OZ_CLUSTERS_REMOVE_RELATIONSHIPS, oz_clusters_remove_relationships).
 
 
 -endif.
