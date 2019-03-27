@@ -182,13 +182,13 @@ session_id_caveat_test() ->
         ?SESSION_ID_CAVEAT(CaveatSessionId)
     ]),
     ?assertEqual(?ERROR_MACAROON_INVALID, onedata_macaroons:verify(M, <<"secret">>, [], [
-        ?SESSION_ID_CAVEAT(fun(_SessionId) -> false end)
+        ?SESSION_ID_VERIFIER(fun(_SessionId) -> false end)
     ])),
     ?assertEqual(ok, onedata_macaroons:verify(M, <<"secret">>, [], [
-        ?SESSION_ID_CAVEAT(fun(SessionId) -> SessionId == CaveatSessionId end)
+        ?SESSION_ID_VERIFIER(fun(SessionId) -> SessionId == CaveatSessionId end)
     ])),
     ?assertEqual(ok, onedata_macaroons:verify(M, <<"secret">>, [], [
-        ?SESSION_ID_CAVEAT(fun(_SessionId) -> true end)
+        ?SESSION_ID_VERIFIER(fun(_SessionId) -> true end)
     ])).
 
 
@@ -241,16 +241,16 @@ gui_macaroon_test() ->
         ?SERVICE_ID_CAVEAT(ServiceId)
     ])),
     ?assertEqual(?ERROR_MACAROON_INVALID, onedata_macaroons:verify(M, <<"secret">>, [], [
-        ?SESSION_ID_CAVEAT(CaveatSessionId),
+        ?SESSION_ID_VERIFIER(CaveatSessionId),
         ?SERVICE_ID_CAVEAT(ServiceId)
     ])),
     ?assertEqual(?ERROR_MACAROON_INVALID, onedata_macaroons:verify(M, <<"secret">>, [], [
-        ?SESSION_ID_CAVEAT(CaveatSessionId),
+        ?SESSION_ID_VERIFIER(CaveatSessionId),
         ?CLUSTER_TYPE_CAVEAT(oneprovider)
     ])),
 
     ?assertEqual(ok, onedata_macaroons:verify(M, <<"secret">>, [], [
-        ?SESSION_ID_CAVEAT(fun(SessionId) -> SessionId == CaveatSessionId end),
+        ?SESSION_ID_VERIFIER(fun(SessionId) -> SessionId == CaveatSessionId end),
         ?CLUSTER_TYPE_CAVEAT(oneprovider),
         ?SERVICE_ID_CAVEAT(ServiceId)
     ])).

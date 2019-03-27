@@ -22,15 +22,22 @@
 
 -type time_caveat() :: {time, CurrentTimestamp :: non_neg_integer(), MaxTtl :: non_neg_integer() | infinity}.
 -type authorization_none_caveat() :: authorization_none.
--type session_id_caveat() :: {session_id, SessionId :: binary() | fun((SessionId :: binary()) -> boolean())}.
+-type session_id_caveat() :: {session_id_caveat, SessionId :: binary()}.
+-type session_id_verifier() :: {session_id_verifier, fun((SessionId :: binary()) -> boolean())}.
 -type cluster_type_caveat() :: {cluster_type, onedata:cluster_type()}.
 -type service_id_caveat() :: {service_id, ServiceId :: binary()}.
 %% @formatter:off
--type caveat() :: time_caveat() |
-                  authorization_none_caveat() |
-                  session_id_caveat() |
-                  cluster_type_caveat() |
-                  service_id_caveat().
+-type caveat() ::          time_caveat() |
+                           authorization_none_caveat() |
+                           session_id_caveat() |
+                           cluster_type_caveat() |
+                           service_id_caveat().
+
+-type caveat_verifier() :: time_caveat() |
+                           authorization_none_caveat() |
+                           session_id_verifier() |
+                           cluster_type_caveat() |
+                           service_id_caveat().
 %% @formatter:on
 
 -export_type([location/0, caveat/0]).
@@ -60,14 +67,15 @@ create(Location, Secret, Identifier, Caveats) ->
 %%--------------------------------------------------------------------
 %% @doc
 %% Verifies a macaroon.
-%% Available caveats are specified as macros in auth/onedata_macaroons.hrl.
+%% Available verifiers are specified as macros in auth/onedata_macaroons.hrl.
+%% Some verifiers use the same macros as caveats.
 %% @end
 %%--------------------------------------------------------------------
 -spec verify(macaroon:macaroon(), Secret :: binary(),
-    DischargeMacaroons :: [macaroon:macaroon()], [caveat()]) ->
+    DischargeMacaroons :: [macaroon:macaroon()], [caveat_verifier()]) ->
     ok | {error, term()}.
-verify(Macaroon, Secret, DischargeMacaroons, Caveats) ->
-    Verifier = create_verifier(Caveats),
+verify(Macaroon, Secret, DischargeMacaroons, CaveatVerifiers) ->
+    Verifier = build_verifier(CaveatVerifiers),
     try macaroon_verifier:verify(Verifier, Macaroon, Secret, DischargeMacaroons) of
         ok -> ok;
         _ -> ?ERROR_MACAROON_INVALID
@@ -124,17 +132,17 @@ deserialize(Macaroon) ->
 %%% Internal functions
 %%%===================================================================
 
--spec create_verifier([caveat()]) -> macaroon_verifier:verifier().
-create_verifier(Caveats) ->
+-spec build_verifier([caveat_verifier()]) -> macaroon_verifier:verifier().
+build_verifier(CaveatVerifiers) ->
     Verifier = macaroon_verifier:create(),
-    lists:foldl(fun(Caveat, VerifierAcc) ->
-        case verifier(Caveat) of
+    lists:foldl(fun(CaveatVerifier, VerifierAcc) ->
+        case build_caveat_verifier(CaveatVerifier) of
             Bin when is_binary(Bin) ->
                 macaroon_verifier:satisfy_exact(VerifierAcc, Bin);
             Fun when is_function(Fun) ->
                 macaroon_verifier:satisfy_general(VerifierAcc, Fun)
         end
-    end, Verifier, Caveats).
+    end, Verifier, CaveatVerifiers).
 
 
 -spec caveat_to_binary(caveat()) -> binary().
@@ -158,8 +166,8 @@ caveat_to_binary(?SERVICE_ID_CAVEAT(ServiceId)) ->
     <<"service_id = ", ServiceId/binary>>.
 
 
--spec verifier(caveat()) -> binary() | macaroon_verifier:predicate().
-verifier(?TIME_CAVEAT(Timestamp, MaxTtl)) ->
+-spec build_caveat_verifier(caveat_verifier()) -> binary() | macaroon_verifier:predicate().
+build_caveat_verifier(?TIME_CAVEAT(Timestamp, MaxTtl)) ->
     fun
         (<<"time < infinity">>) ->
             case MaxTtl of
@@ -181,13 +189,13 @@ verifier(?TIME_CAVEAT(Timestamp, MaxTtl)) ->
             false
     end;
 
-verifier(?SESSION_ID_CAVEAT(VerifyFun)) ->
+build_caveat_verifier(?SESSION_ID_VERIFIER(VerifyFun)) ->
     fun(<<"session_id = ", SessionId/binary>>) ->
         VerifyFun(SessionId)
     end;
 
 % The rest of the caveats are exact - 1:1 with the binary form.
-verifier(ExactCaveat) ->
+build_caveat_verifier(ExactCaveat) ->
     caveat_to_binary(ExactCaveat).
 
 
