@@ -14,6 +14,7 @@
 
 -include_lib("eunit/include/eunit.hrl").
 -include("auth/onedata_macaroons.hrl").
+-include("onedata.hrl").
 -include_lib("api_errors.hrl").
 
 -define(LOCATION, <<"dummy-location">>).
@@ -192,65 +193,65 @@ session_id_caveat_test() ->
     ])).
 
 
-service_type_caveat_test() ->
+cluster_type_caveat_test() ->
     MOz = onedata_macaroons:create(?LOCATION, <<"secret">>, <<"identifier">>, [
-        ?CLUSTER_TYPE_CAVEAT(onezone)
+        ?CLUSTER_TYPE_CAVEAT(?ONEZONE)
     ]),
     ?assertEqual(?ERROR_MACAROON_INVALID, onedata_macaroons:verify(MOz, <<"secret">>, [], [
-        ?CLUSTER_TYPE_CAVEAT(oneprovider)
+        ?CLUSTER_TYPE_CAVEAT(?ONEPROVIDER)
     ])),
     ?assertEqual(ok, onedata_macaroons:verify(MOz, <<"secret">>, [], [
-        ?CLUSTER_TYPE_CAVEAT(onezone)
+        ?CLUSTER_TYPE_CAVEAT(?ONEZONE)
     ])),
 
     MOp = onedata_macaroons:create(?LOCATION, <<"secret">>, <<"identifier">>, [
-        ?CLUSTER_TYPE_CAVEAT(oneprovider)
+        ?CLUSTER_TYPE_CAVEAT(?ONEPROVIDER)
     ]),
     ?assertEqual(?ERROR_MACAROON_INVALID, onedata_macaroons:verify(MOp, <<"secret">>, [], [
-        ?CLUSTER_TYPE_CAVEAT(onezone)
+        ?CLUSTER_TYPE_CAVEAT(?ONEZONE)
     ])),
     ?assertEqual(ok, onedata_macaroons:verify(MOp, <<"secret">>, [], [
-        ?CLUSTER_TYPE_CAVEAT(oneprovider)
+        ?CLUSTER_TYPE_CAVEAT(?ONEPROVIDER)
     ])).
 
 
-service_id_caveat_test() ->
-    ServiceId = <<"ServiceId">>,
+cluster_id_caveat_test() ->
+    ClusterId = <<"ClusterId">>,
     M = onedata_macaroons:create(?LOCATION, <<"secret">>, <<"identifier">>, [
-        ?SERVICE_ID_CAVEAT(ServiceId)
+        ?CLUSTER_ID_CAVEAT(ClusterId)
     ]),
     ?assertEqual(?ERROR_MACAROON_INVALID, onedata_macaroons:verify(M, <<"secret">>, [], [
-        ?SERVICE_ID_CAVEAT(<<"badServiceId">>)
+        ?CLUSTER_ID_CAVEAT(<<"badClusterId">>)
     ])),
     ?assertEqual(ok, onedata_macaroons:verify(M, <<"secret">>, [], [
-        ?SERVICE_ID_CAVEAT(ServiceId)
+        ?CLUSTER_ID_CAVEAT(ClusterId)
     ])).
 
 
 gui_macaroon_test() ->
     CaveatSessionId = <<"sessId">>,
-    ServiceId = <<"ServiceId">>,
+    ClusterId = <<"ClusterId">>,
     M = onedata_macaroons:create(?LOCATION, <<"secret">>, <<"identifier">>, [
         ?SESSION_ID_CAVEAT(CaveatSessionId),
-        ?CLUSTER_TYPE_CAVEAT(oneprovider),
-        ?SERVICE_ID_CAVEAT(ServiceId)
+        ?CLUSTER_TYPE_CAVEAT(?ONEPROVIDER),
+        ?CLUSTER_ID_CAVEAT(ClusterId)
     ]),
 
     ?assertEqual(?ERROR_MACAROON_INVALID, onedata_macaroons:verify(M, <<"secret">>, [], [
-        ?CLUSTER_TYPE_CAVEAT(oneprovider),
-        ?SERVICE_ID_CAVEAT(ServiceId)
+        ?CLUSTER_TYPE_CAVEAT(?ONEPROVIDER),
+        ?CLUSTER_ID_CAVEAT(ClusterId)
     ])),
     ?assertEqual(?ERROR_MACAROON_INVALID, onedata_macaroons:verify(M, <<"secret">>, [], [
         ?SESSION_ID_VERIFIER(CaveatSessionId),
-        ?SERVICE_ID_CAVEAT(ServiceId)
+        ?CLUSTER_ID_CAVEAT(ClusterId)
     ])),
     ?assertEqual(?ERROR_MACAROON_INVALID, onedata_macaroons:verify(M, <<"secret">>, [], [
         ?SESSION_ID_VERIFIER(CaveatSessionId),
-        ?CLUSTER_TYPE_CAVEAT(oneprovider)
+        ?CLUSTER_TYPE_CAVEAT(?ONEPROVIDER)
     ])),
 
     ?assertEqual(ok, onedata_macaroons:verify(M, <<"secret">>, [], [
         ?SESSION_ID_VERIFIER(fun(SessionId) -> SessionId == CaveatSessionId end),
-        ?CLUSTER_TYPE_CAVEAT(oneprovider),
-        ?SERVICE_ID_CAVEAT(ServiceId)
+        ?CLUSTER_TYPE_CAVEAT(?ONEPROVIDER),
+        ?CLUSTER_ID_CAVEAT(ClusterId)
     ])).
