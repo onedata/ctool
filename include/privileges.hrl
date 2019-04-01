@@ -1,6 +1,6 @@
 %%%-------------------------------------------------------------------
 %%% @author Lukasz Opiola
-%%% @copyright (C): 2016 ACK CYFRONET AGH
+%%% @copyright (C) 2016 ACK CYFRONET AGH
 %%% This software is released under the MIT license
 %%% cited in 'LICENSE.txt'.
 %%% @end
@@ -20,17 +20,20 @@
 -define(GROUP_VIEW_PRIVILEGES, group_view_privileges).
 -define(GROUP_SET_PRIVILEGES, group_set_privileges).
 
--define(GROUP_INVITE_USER, group_invite_user).
--define(GROUP_REMOVE_USER, group_remove_user).
-
 -define(GROUP_ADD_PARENT, group_add_parent).
 -define(GROUP_LEAVE_PARENT, group_leave_parent).
 
 -define(GROUP_ADD_CHILD, group_add_child).
 -define(GROUP_REMOVE_CHILD, group_remove_child).
 
+-define(GROUP_ADD_USER, group_add_user).
+-define(GROUP_REMOVE_USER, group_remove_user).
+
 -define(GROUP_ADD_SPACE, group_add_space).
 -define(GROUP_LEAVE_SPACE, group_leave_space).
+
+-define(GROUP_ADD_CLUSTER, group_add_cluster).
+-define(GROUP_LEAVE_CLUSTER, group_leave_cluster).
 
 -define(GROUP_CREATE_HANDLE_SERVICE, group_create_handle_service).
 -define(GROUP_LEAVE_HANDLE_SERVICE, group_leave_handle_service).
@@ -61,13 +64,13 @@
 -define(SPACE_SCHEDULE_EVICTION, space_schedule_eviction).
 -define(SPACE_CANCEL_EVICTION, space_cancel_eviction).
 
--define(SPACE_INVITE_USER, space_invite_user).
+-define(SPACE_ADD_USER, space_add_user).
 -define(SPACE_REMOVE_USER, space_remove_user).
 
 -define(SPACE_ADD_GROUP, space_add_group).
 -define(SPACE_REMOVE_GROUP, space_remove_group).
 
--define(SPACE_INVITE_PROVIDER, space_invite_provider).
+-define(SPACE_ADD_PROVIDER, space_add_provider).
 -define(SPACE_REMOVE_PROVIDER, space_remove_provider).
 
 -define(SPACE_ADD_HARVESTER, space_add_harvester).
@@ -100,6 +103,19 @@
 
 -define(HARVESTER_ADD_SPACE, harvester_add_space).
 -define(HARVESTER_REMOVE_SPACE, harvester_remove_space).
+
+% Cluster privileges of members (users or groups)
+-define(CLUSTER_VIEW, cluster_view).
+-define(CLUSTER_UPDATE, cluster_update).
+-define(CLUSTER_DELETE, cluster_delete).
+-define(CLUSTER_VIEW_PRIVILEGES, cluster_view_privileges).
+-define(CLUSTER_SET_PRIVILEGES, cluster_set_privileges).
+
+-define(CLUSTER_ADD_USER, cluster_add_user).
+-define(CLUSTER_REMOVE_USER, cluster_remove_user).
+
+-define(CLUSTER_ADD_GROUP, cluster_add_group).
+-define(CLUSTER_REMOVE_GROUP, cluster_remove_group).
 
 % OZ privileges to administrate privileges of users or groups in onezone
 -define(OZ_VIEW_PRIVILEGES, oz_view_privileges).
@@ -188,5 +204,16 @@
 -define(OZ_HARVESTERS_LIST_RELATIONSHIPS, oz_harvesters_list_relationships).
 -define(OZ_HARVESTERS_ADD_RELATIONSHIPS, oz_harvesters_add_relationships).
 -define(OZ_HARVESTERS_REMOVE_RELATIONSHIPS, oz_harvesters_remove_relationships).
+
+%% Privileges to administrate clusters in OZ
+-define(OZ_CLUSTERS_LIST, oz_clusters_list).
+-define(OZ_CLUSTERS_VIEW, oz_clusters_view).
+-define(OZ_CLUSTERS_UPDATE, oz_clusters_update).
+-define(OZ_CLUSTERS_VIEW_PRIVILEGES, oz_clusters_view_privileges).
+-define(OZ_CLUSTERS_SET_PRIVILEGES, oz_clusters_set_privileges).
+-define(OZ_CLUSTERS_LIST_RELATIONSHIPS, oz_clusters_list_relationships).
+-define(OZ_CLUSTERS_ADD_RELATIONSHIPS, oz_clusters_add_relationships).
+-define(OZ_CLUSTERS_REMOVE_RELATIONSHIPS, oz_clusters_remove_relationships).
+
 
 -endif.

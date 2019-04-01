@@ -50,8 +50,8 @@
 % Errors connected with bad data
 -define(ERROR_MALFORMED_DATA, {error, malformed_data}).
 -define(ERROR_BAD_BASIC_CREDENTIALS, {error, bad_basic_credentials}).
--define(ERROR_BAD_EXTERNAL_ACCESS_TOKEN(__OAuthProviderId),
-    {error, {bad_external_access_token, __OAuthProviderId}}
+-define(ERROR_BAD_IDP_ACCESS_TOKEN(__OAuthProviderId),
+    {error, {bad_idp_access_token, __OAuthProviderId}}
 ).
 -define(ERROR_MISSING_REQUIRED_VALUE(__Key),
     {error, {missing_required_value, __Key}}
@@ -102,6 +102,7 @@
 -define(ERROR_BAD_VALUE_NAME, {error, bad_name}).
 
 % Errors caused by illegal state
+-define(ERROR_SUBDOMAIN_DELEGATION_NOT_SUPPORTED, {error, subdomain_delegation_not_supported}).
 -define(ERROR_SUBDOMAIN_DELEGATION_DISABLED, {error, subdomain_delegation_disabled}).
 
 % Errors connected with relations between entities

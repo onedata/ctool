@@ -36,7 +36,7 @@
 %%--------------------------------------------------------------------
 -spec send_email(FromEmail :: binary(), FromName :: binary(), To :: [binary()],
     BCC :: [binary()], Subject :: binary(), Body :: binary(),
-    Options :: maps:map()) -> ok | {error, term()}.
+    Options :: map()) -> ok | {error, term()}.
 send_email(FromEmail, FromName, To, BCC, Subject, Body, Options) ->
     % Resolve options for gen_smtp_client
     Relay = [{relay, maps:get(relay, Options)}],

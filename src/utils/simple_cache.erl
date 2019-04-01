@@ -17,6 +17,7 @@
 -define(APP_NAME, simple_cache).
 
 -type key() :: atom() | {atom(), term()}.
+%% TTL in milliseconds
 -type ttl() :: non_neg_integer() | infinity.
 -type value() :: term().
 
@@ -42,23 +43,27 @@ get(Key) ->
 %%--------------------------------------------------------------------
 %% @doc
 %% Returns cached or calculated value.
-%% DefaultValue function is used for calculation of value if cache does 
+%% ValueProvider function is used for calculation of value if cache does
 %% not exist or is expired. 
 %% This function should return a tuple {true, Value} or {true, Value, TTL} 
 %% if Value is to be stored in cache otherwise it should return {false, Value}.
 %% {true, Value} is equivalent to {true, Value, infinity}.
 %% @end
 %%--------------------------------------------------------------------
--spec get(key(), fun(() -> 
-    {true, value()} | 
-    {true, value(), ttl()} | 
-    {false, value()})) -> {ok, value()}.
-get(Key, DefaultValue) ->
+-spec get(key(), ValueProvider) -> {ok, value()} | Error when
+    Error :: term(),
+    ValueProvider :: fun(() ->
+        {true, value()} |
+        {true, value(), ttl()} |
+        {false, value()} |
+        Error
+    ).
+get(Key, ValueProvider) ->
     case ?MODULE:get(Key) of
         {ok, Value} ->
             {ok, Value};
         {error, not_found} ->
-            case DefaultValue() of
+            case ValueProvider() of
                 {false, Value} ->
                     {ok, Value};
                 {true, Value, TTL} ->

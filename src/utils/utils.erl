@@ -200,7 +200,7 @@ cmd(Command) ->
 %%--------------------------------------------------------------------
 %% @doc
 %% Measures execution time of a function. Returns function result and its
-%% duration both in microseconds and addjusted using adjust_duration function.
+%% duration both in microseconds and adjusted using adjust_duration function.
 %% @end
 %%--------------------------------------------------------------------
 -spec duration(Function :: fun(() -> Result)) -> {Result, UsDuration :: integer(),

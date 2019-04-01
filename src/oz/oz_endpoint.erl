@@ -21,10 +21,10 @@
 -type urn() :: string().
 -type method() :: http_client:method().
 -type headers() :: http_client:headers().
--type body() :: http_client:body().
+-type request_body() :: http_client:request_body().
 -type opts() :: http_client:opts() | [{endpoint, rest | rest_no_auth | gui}].
 -type response() :: http_client:response().
--type params() :: [{Key :: binary(), Value :: binary() | [binary()]}].
+-type params() :: [{Key :: binary(), Value :: binary() | [binary()]}] | map().
 -type client() :: client | provider | {user, token, macaroons()} |
 %% Credentials are in form "Basic base64(user:password)"
 {user, basic, Credentials :: binary()}.
@@ -112,7 +112,7 @@ request(Auth, URN, Method) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec request(Auth :: auth(), URN :: urn(), Method :: method(),
-    Body :: body()) -> Response :: response().
+    Body :: request_body()) -> Response :: response().
 request(Auth, URN, Method, Body) ->
     ?MODULE:request(Auth, URN, Method, Body, []).
 
@@ -121,7 +121,7 @@ request(Auth, URN, Method, Body) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec request(Auth :: auth(), URN :: urn(), Method :: method(),
-    Body :: body(), Opts :: opts()) -> Response :: response().
+    Body :: request_body(), Opts :: opts()) -> Response :: response().
 request(Auth, URN, Method, Body, Opts) ->
     ?MODULE:request(Auth, URN, Method, #{}, Body, Opts).
 
@@ -130,7 +130,7 @@ request(Auth, URN, Method, Body, Opts) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec request(Auth :: auth(), URN :: urn(), Method :: method(),
-    Headers :: headers(), Body :: body(), Opts :: opts()) -> Response :: response().
+    Headers :: headers(), Body :: request_body(), Opts :: opts()) -> Response :: response().
 request(Auth, URN, Method, Headers, Body, Opts) ->
     SSLOpts = lists_utils:key_get(ssl_options, Opts, []),
     Opts2 = lists_utils:key_store(ssl_options, [
@@ -155,6 +155,7 @@ request(Auth, URN, Method, Headers, Body, Opts) ->
 prepare_auth_headers(Auth, Headers) ->
     % Check REST client type and return auth headers if needed.
     case oz_plugin:auth_to_rest_client(Auth) of
+        {headers, Map} -> maps:merge(Headers, Map);
         {user, token, Token} ->
             Headers#{<<"X-Auth-Token">> => Token};
         {user, macaroon, {MacaroonBin, DischargeMacaroonsBin}} ->
