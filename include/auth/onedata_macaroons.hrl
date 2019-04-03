@@ -23,7 +23,7 @@
 
 -define(CLUSTER_TYPE_CAVEAT(ClusterType), {cluster_type, ClusterType}).
 
--define(SERVICE_ID_CAVEAT(ServiceId), {service_id, ServiceId}).
+-define(CLUSTER_ID_CAVEAT(ClusterId), {cluster_id, ClusterId}).
 
 
 -endif.

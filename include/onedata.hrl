@@ -16,6 +16,9 @@
 -define(ONEZONE, onezone).
 -define(ONEPROVIDER, oneprovider).
 
+-define(ONEZONE_CLUSTER_ID, <<"onezone">>).
+%% Oneprovider's ClusterId is the same as ProviderId
+
 %% Services in Onedata
 -define(OZ_WORKER, oz_worker).
 -define(OZ_PANEL, oz_panel).

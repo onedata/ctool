@@ -25,19 +25,19 @@
 -type session_id_caveat() :: {session_id_caveat, SessionId :: binary()}.
 -type session_id_verifier() :: {session_id_verifier, fun((SessionId :: binary()) -> boolean())}.
 -type cluster_type_caveat() :: {cluster_type, onedata:cluster_type()}.
--type service_id_caveat() :: {service_id, ServiceId :: binary()}.
+-type cluster_id_caveat() :: {cluster_id, ClusterId :: binary()}.
 %% @formatter:off
 -type caveat() ::          time_caveat() |
                            authorization_none_caveat() |
                            session_id_caveat() |
                            cluster_type_caveat() |
-                           service_id_caveat().
+                           cluster_id_caveat().
 
 -type caveat_verifier() :: time_caveat() |
                            authorization_none_caveat() |
                            session_id_verifier() |
                            cluster_type_caveat() |
-                           service_id_caveat().
+                           cluster_id_caveat().
 %% @formatter:on
 
 -export_type([location/0, caveat/0]).
@@ -159,11 +159,11 @@ caveat_to_binary(?AUTHORIZATION_NONE_CAVEAT) ->
 caveat_to_binary(?SESSION_ID_CAVEAT(SessionId)) ->
     <<"session_id = ", SessionId/binary>>;
 
-caveat_to_binary(?CLUSTER_TYPE_CAVEAT(ServiceType)) ->
-    <<"cluster_type = ", (atom_to_binary(ServiceType, utf8))/binary>>;
+caveat_to_binary(?CLUSTER_TYPE_CAVEAT(ClusterType)) ->
+    <<"cluster_type = ", (atom_to_binary(ClusterType, utf8))/binary>>;
 
-caveat_to_binary(?SERVICE_ID_CAVEAT(ServiceId)) ->
-    <<"service_id = ", ServiceId/binary>>.
+caveat_to_binary(?CLUSTER_ID_CAVEAT(ClusterId)) ->
+    <<"cluster_id = ", ClusterId/binary>>.
 
 
 -spec build_caveat_verifier(caveat_verifier()) -> binary() | macaroon_verifier:predicate().
