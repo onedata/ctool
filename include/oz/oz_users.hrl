@@ -23,7 +23,7 @@
     id :: binary(),
     name :: binary(),
     linked_accounts :: [proplists:proplist()] | undefined,
-    login :: binary() | undefined,
+    alias :: binary() | undefined,
     email_list :: [binary()] | undefined
 }).
 

@@ -94,16 +94,19 @@ teardown(_) ->
 should_register() ->
     meck:new(json_utils, [passthrough]),
     meck:expect(json_utils, encode_deprecated, fun(parameters) -> <<"body">> end),
-    meck:expect(json_utils, decode_deprecated,
+    meck:expect(json_utils, decode,
         fun(response_body) ->
-            [
-                {<<"providerId">>, <<"providerId">>},
-                {<<"macaroon">>, <<"macaroon">>}
-            ]
+            #{
+                <<"providerId">> => <<"providerId">>,
+                <<"macaroon">> => <<"macaroon">>
+            }
         end),
 
     Answer = oz_providers:register(client, parameters),
-    ?assertEqual({ok, <<"providerId">>, <<"macaroon">>}, Answer),
+    ?assertEqual({ok, #{
+        <<"providerId">> => <<"providerId">>,
+        <<"macaroon">> => <<"macaroon">>
+    }}, Answer),
 
     ?assert(meck:validate(json_utils)),
     ok = meck:unload(json_utils).
