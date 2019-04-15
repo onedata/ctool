@@ -51,7 +51,7 @@ encode(Map, JiffyOpts) ->
 %% @equiv decode(JSON, [])
 %% @end
 %%--------------------------------------------------------------------
--spec decode(binary()) -> json_term().
+-spec decode(iolist() | binary()) -> json_term().
 decode(JSON) ->
     decode(JSON, []).
 
@@ -62,7 +62,7 @@ decode(JSON) ->
 %% Objects are represented as maps. The output is in UTF8 encoding.
 %% @end
 %%--------------------------------------------------------------------
--spec decode(binary(), JiffyOpts :: list()) -> json_term().
+-spec decode(iolist() | binary(), JiffyOpts :: list()) -> json_term().
 decode(<<"">>, _) -> maps:new();
 decode(JSON, JiffyOpts) ->
     try
