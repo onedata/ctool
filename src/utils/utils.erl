@@ -159,6 +159,8 @@ get_values(Keys, List) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec random_element([term()]) -> term().
+random_element([]) ->
+    error(empty_list, [[]]);
 random_element(List) ->
     lists:nth(rand:uniform(length(List)), List).
 
