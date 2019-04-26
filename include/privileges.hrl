@@ -124,6 +124,8 @@
 %% Privileges to administrate users in OZ
 -define(OZ_USERS_LIST, oz_users_list).
 -define(OZ_USERS_VIEW, oz_users_view).
+-define(OZ_USERS_CREATE, oz_users_create).
+-define(OZ_USERS_MANAGE_PASSWORDS, oz_users_manage_passwords).
 -define(OZ_USERS_UPDATE, oz_users_update).
 -define(OZ_USERS_DELETE, oz_users_delete).
 -define(OZ_USERS_LIST_RELATIONSHIPS, oz_users_list_relationships).
