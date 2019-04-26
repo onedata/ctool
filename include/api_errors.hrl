@@ -99,6 +99,7 @@
 -define(ERROR_BAD_VALUE_IDENTIFIER(__Key), {error, {bad_identifier, __Key}}).
 -define(ERROR_BAD_VALUE_ALIAS, {error, bad_alias}).
 -define(ERROR_BAD_VALUE_USER_NAME, {error, bad_user_name}).
+-define(ERROR_BAD_VALUE_PASSWORD, {error, bad_password}).
 -define(ERROR_BAD_VALUE_NAME, {error, bad_name}).
 
 % Errors caused by illegal state
