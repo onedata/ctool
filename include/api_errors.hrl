@@ -102,10 +102,12 @@
 -define(ERROR_BAD_VALUE_NAME, {error, bad_name}).
 
 % Errors caused by illegal state
-% Subdomain delegation is not supported by Onezone
+% Subdomain delegation is (currently) not supported by this Onezone
 -define(ERROR_SUBDOMAIN_DELEGATION_NOT_SUPPORTED, {error, subdomain_delegation_not_supported}).
 % Subdomain delegation is disabled for given Oneprovider
 -define(ERROR_SUBDOMAIN_DELEGATION_DISABLED, {error, subdomain_delegation_disabled}).
+% Basic auth is not (currently) supported by this Onezone
+-define(ERROR_BASIC_AUTH_NOT_SUPPORTED, {error, basic_auth_not_supported}).
 % Basic auth is disabled for given user
 -define(ERROR_BASIC_AUTH_DISABLED, {error, basic_auth_disabled}).
 
