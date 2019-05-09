@@ -34,7 +34,9 @@
 
 ?GROUP_CREATE_HANDLE_SERVICE | ?GROUP_LEAVE_HANDLE_SERVICE |
 
-?GROUP_CREATE_HANDLE | ?GROUP_LEAVE_HANDLE.
+?GROUP_CREATE_HANDLE | ?GROUP_LEAVE_HANDLE |
+
+?GROUP_ADD_HARVESTER | ?GROUP_REMOVE_HARVESTER.
 
 %% User privileges with regards to Space management.
 -type space_privilege() ::
@@ -54,7 +56,9 @@
 
 ?SPACE_ADD_GROUP | ?SPACE_REMOVE_GROUP |
 
-?SPACE_ADD_PROVIDER | ?SPACE_REMOVE_PROVIDER.
+?SPACE_ADD_PROVIDER | ?SPACE_REMOVE_PROVIDER |
+
+?SPACE_ADD_HARVESTER | ?SPACE_REMOVE_HARVESTER.
 
 %% User privileges with regards to handle service.
 -type handle_service_privilege() ::
@@ -65,6 +69,17 @@
 
 %% User privileges with regards to handle.
 -type handle_privilege() :: ?HANDLE_VIEW | ?HANDLE_UPDATE | ?HANDLE_DELETE.
+
+%% User privileges with regards to harvester.
+-type harvester_privilege() ::
+?HARVESTER_VIEW | ?HARVESTER_UPDATE | ?HARVESTER_DELETE |
+?HARVESTER_VIEW_PRIVILEGES | ?HARVESTER_SET_PRIVILEGES |
+
+?HARVESTER_ADD_USER | ?HARVESTER_REMOVE_USER |
+
+?HARVESTER_ADD_GROUP | ?HARVESTER_REMOVE_GROUP |
+
+?HARVESTER_ADD_SPACE | ?HARVESTER_REMOVE_SPACE.
 
 %% User privileges with regards to Cluster management.
 -type cluster_privilege() ::
@@ -116,6 +131,12 @@
 ?OZ_HANDLES_VIEW_PRIVILEGES | ?OZ_HANDLES_SET_PRIVILEGES |
 ?OZ_HANDLES_LIST_RELATIONSHIPS | ?OZ_HANDLES_ADD_RELATIONSHIPS | ?OZ_HANDLES_REMOVE_RELATIONSHIPS |
 
+%% Privileges to administrate harvesters in OZ
+?OZ_HARVESTERS_LIST | ?OZ_HARVESTERS_VIEW |
+?OZ_HARVESTERS_CREATE | ?OZ_HARVESTERS_UPDATE | ?OZ_HARVESTERS_DELETE |
+?OZ_HARVESTERS_VIEW_PRIVILEGES | ?OZ_HARVESTERS_SET_PRIVILEGES |
+?OZ_HARVESTERS_LIST_RELATIONSHIPS | ?OZ_HARVESTERS_ADD_RELATIONSHIPS | ?OZ_HARVESTERS_REMOVE_RELATIONSHIPS |
+
 %% Privileges to administrate clusters in OZ
 ?OZ_CLUSTERS_LIST | ?OZ_CLUSTERS_VIEW |?OZ_CLUSTERS_UPDATE |
 ?OZ_CLUSTERS_VIEW_PRIVILEGES | ?OZ_CLUSTERS_SET_PRIVILEGES |
@@ -128,6 +149,7 @@
     group_privilege/0,
     handle_service_privilege/0,
     handle_privilege/0,
+    harvester_privilege/0,
     cluster_privilege/0,
     oz_privilege/0
 ]).
@@ -140,6 +162,7 @@
 -export([handle_service_user/0, handle_service_admin/0,
     handle_service_privileges/0]).
 -export([handle_user/0, handle_admin/0, handle_privileges/0]).
+-export([harvester_user/0, harvester_admin/0, harvester_privileges/0]).
 -export([cluster_user/0, cluster_manager/0, cluster_admin/0, cluster_privileges/0]).
 -export([oz_viewer/0, oz_admin/0, oz_privileges/0]).
 
@@ -193,7 +216,8 @@ group_manager() ->
         ?GROUP_VIEW_PRIVILEGES,
         ?GROUP_ADD_USER, ?GROUP_REMOVE_USER,
         ?GROUP_ADD_PARENT, ?GROUP_LEAVE_PARENT,
-        ?GROUP_ADD_CHILD, ?GROUP_REMOVE_CHILD
+        ?GROUP_ADD_CHILD, ?GROUP_REMOVE_CHILD,
+        ?GROUP_ADD_HARVESTER, ?GROUP_REMOVE_HARVESTER
     ]).
 
 %%--------------------------------------------------------------------
@@ -241,6 +265,7 @@ space_manager() ->
         ?SPACE_VIEW_PRIVILEGES,
         ?SPACE_ADD_USER, ?SPACE_REMOVE_USER,
         ?SPACE_ADD_GROUP, ?SPACE_REMOVE_GROUP,
+        ?SPACE_ADD_HARVESTER, ?SPACE_REMOVE_HARVESTER,
         ?SPACE_MANAGE_SHARES,
         ?SPACE_QUERY_INDEXES,
         ?SPACE_VIEW_STATISTICS,
@@ -330,6 +355,44 @@ handle_privileges() ->
 
 
 %%--------------------------------------------------------------------
+%% @doc A privilege level of a harvester user.
+%%--------------------------------------------------------------------
+-spec harvester_user() -> privileges(harvester_privilege()).
+harvester_user() ->
+    [?HARVESTER_VIEW].
+
+%%--------------------------------------------------------------------
+%% @doc A privilege level of a harvester manager.
+%%--------------------------------------------------------------------
+-spec harvester_manager() -> privileges(harvester_privilege()).
+harvester_manager() ->
+    union(harvester_user(), [
+        ?HARVESTER_ADD_USER, ?HARVESTER_REMOVE_USER,
+        ?HARVESTER_ADD_GROUP, ?HARVESTER_REMOVE_GROUP,
+        ?HARVESTER_ADD_SPACE, ?HARVESTER_REMOVE_SPACE
+    ]).
+
+%%--------------------------------------------------------------------
+%% @doc A privilege level of a Harvester administrator. This level contains all
+%% atoms representing harvester privileges.
+%% @end
+%%--------------------------------------------------------------------
+-spec harvester_admin() -> privileges(harvester_privilege()).
+harvester_admin() ->
+    union(harvester_manager(), [
+        ?HARVESTER_UPDATE, ?HARVESTER_DELETE,
+        ?HARVESTER_VIEW_PRIVILEGES, ?HARVESTER_SET_PRIVILEGES
+    ]).
+
+%%--------------------------------------------------------------------
+%% @doc All atoms representing harvester privileges.
+%%--------------------------------------------------------------------
+-spec harvester_privileges() -> privileges(harvester_privilege()).
+harvester_privileges() ->
+    harvester_admin().
+
+
+%%--------------------------------------------------------------------
 %% @doc A privilege level of a Cluster user.
 %%--------------------------------------------------------------------
 -spec cluster_user() -> privileges(cluster_privilege()).
@@ -389,6 +452,8 @@ oz_viewer() ->
 
         ?OZ_HANDLES_LIST, ?OZ_HANDLES_VIEW, ?OZ_HANDLES_LIST_RELATIONSHIPS,
 
+        ?OZ_HARVESTERS_LIST, ?OZ_HARVESTERS_VIEW, ?OZ_HARVESTERS_LIST_RELATIONSHIPS,
+
         ?OZ_CLUSTERS_LIST, ?OZ_CLUSTERS_VIEW, ?OZ_CLUSTERS_LIST_RELATIONSHIPS
     ]).
 
@@ -424,6 +489,9 @@ oz_admin() ->
         ?OZ_HANDLES_VIEW_PRIVILEGES, ?OZ_HANDLES_SET_PRIVILEGES,
         ?OZ_HANDLES_ADD_RELATIONSHIPS, ?OZ_HANDLES_REMOVE_RELATIONSHIPS,
 
+        ?OZ_HARVESTERS_CREATE, ?OZ_HARVESTERS_UPDATE, ?OZ_HARVESTERS_DELETE,
+        ?OZ_HARVESTERS_VIEW_PRIVILEGES, ?OZ_HARVESTERS_SET_PRIVILEGES,
+        ?OZ_HARVESTERS_ADD_RELATIONSHIPS, ?OZ_HARVESTERS_REMOVE_RELATIONSHIPS,
 
         ?OZ_CLUSTERS_UPDATE,
         ?OZ_CLUSTERS_VIEW_PRIVILEGES, ?OZ_CLUSTERS_SET_PRIVILEGES,

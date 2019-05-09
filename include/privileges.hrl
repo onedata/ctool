@@ -41,6 +41,9 @@
 -define(GROUP_CREATE_HANDLE, group_create_handle).
 -define(GROUP_LEAVE_HANDLE, group_leave_handle).
 
+-define(GROUP_ADD_HARVESTER, group_add_harvester).
+-define(GROUP_REMOVE_HARVESTER, group_remove_harvester).
+
 % Space privileges of members (users or groups)
 -define(SPACE_VIEW, space_view).
 -define(SPACE_UPDATE, space_update).
@@ -70,6 +73,9 @@
 -define(SPACE_ADD_PROVIDER, space_add_provider).
 -define(SPACE_REMOVE_PROVIDER, space_remove_provider).
 
+-define(SPACE_ADD_HARVESTER, space_add_harvester).
+-define(SPACE_REMOVE_HARVESTER, space_remove_harvester).
+
 % Handle service privileges of members (users or groups)
 -define(HANDLE_SERVICE_VIEW, handle_service_view).
 -define(HANDLE_SERVICE_UPDATE, handle_service_update).
@@ -81,6 +87,22 @@
 -define(HANDLE_VIEW, handle_view).
 -define(HANDLE_UPDATE, handle_update).
 -define(HANDLE_DELETE, handle_delete).
+
+% Harvester privileges of members (users or groups)
+-define(HARVESTER_VIEW, harvester_view).
+-define(HARVESTER_UPDATE, harvester_update).
+-define(HARVESTER_DELETE, harvester_delete).
+-define(HARVESTER_VIEW_PRIVILEGES, harvester_view_privileges).
+-define(HARVESTER_SET_PRIVILEGES, harvester_set_privileges).
+
+-define(HARVESTER_ADD_USER, harvester_add_user).
+-define(HARVESTER_REMOVE_USER, harvester_remove_user).
+
+-define(HARVESTER_ADD_GROUP, harvester_add_group).
+-define(HARVESTER_REMOVE_GROUP, harvester_remove_group).
+
+-define(HARVESTER_ADD_SPACE, harvester_add_space).
+-define(HARVESTER_REMOVE_SPACE, harvester_remove_space).
 
 % Cluster privileges of members (users or groups)
 -define(CLUSTER_VIEW, cluster_view).
@@ -170,6 +192,18 @@
 -define(OZ_HANDLES_LIST_RELATIONSHIPS, oz_handles_list_relationships).
 -define(OZ_HANDLES_ADD_RELATIONSHIPS, oz_handles_add_relationships).
 -define(OZ_HANDLES_REMOVE_RELATIONSHIPS, oz_handles_remove_relationships).
+
+%% Privileges to administrate harvesters in OZ
+-define(OZ_HARVESTERS_LIST, oz_harvesters_list).
+-define(OZ_HARVESTERS_VIEW, oz_harvesters_view).
+-define(OZ_HARVESTERS_CREATE, oz_harvesters_create).
+-define(OZ_HARVESTERS_UPDATE, oz_harvesters_update).
+-define(OZ_HARVESTERS_DELETE, oz_harvesters_delete).
+-define(OZ_HARVESTERS_VIEW_PRIVILEGES, oz_harvesters_view_privileges).
+-define(OZ_HARVESTERS_SET_PRIVILEGES, oz_harvesters_set_privileges).
+-define(OZ_HARVESTERS_LIST_RELATIONSHIPS, oz_harvesters_list_relationships).
+-define(OZ_HARVESTERS_ADD_RELATIONSHIPS, oz_harvesters_add_relationships).
+-define(OZ_HARVESTERS_REMOVE_RELATIONSHIPS, oz_harvesters_remove_relationships).
 
 %% Privileges to administrate clusters in OZ
 -define(OZ_CLUSTERS_LIST, oz_clusters_list).

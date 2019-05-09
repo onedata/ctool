@@ -118,6 +118,8 @@
 ).
 -define(ERROR_PROTECTED_GROUP, {error, protected_group}).
 
+-define(ERROR_TEMPORARY_FAILURE, {error, temporary_failure}).
+
 % Clproto connection errors
 -define(ERROR_NO_CONNECTION_TO_PEER_PROVIDER, {error, no_connection_to_peer_provider}).
 
