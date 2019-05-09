@@ -113,7 +113,7 @@ should_get_details() ->
 
     Answer = oz_users:get_details(client),
     ?assertEqual({ok, #user_details{id = <<"userId">>,
-        name = <<"name">>}}, Answer),
+        full_name = <<"name">>}}, Answer),
 
     ?assert(meck:validate(json_utils)),
     ok = meck:unload(json_utils).

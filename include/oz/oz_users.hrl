@@ -14,17 +14,17 @@
 
 %% user_details record contains following fields:
 %% * id   - unique user ID assigned by OZ
-%% * name - username
+%% * full_name - first name and surname
+%% * username - unique, human readable identifier, can used for authentication
 %% * linked_accounts - list of proplists with info about linked oauth accounts,
-%% contains data provided by oauth: provider_id, user_id, login, name, email_list
-%% * login - onedata user login
-%% * email_list - list of connected emails
+%% contains data provided by oauth: idp, subject_id, username, name, emails
+%% * emails - list of connected emails
 -record(user_details, {
     id :: binary(),
-    name :: binary(),
+    full_name :: binary(),
+    username :: binary() | undefined,
     linked_accounts :: [proplists:proplist()] | undefined,
-    alias :: binary() | undefined,
-    email_list :: [binary()] | undefined
+    emails :: [binary()] | undefined
 }).
 
 %% user_spaces record contains following fields:

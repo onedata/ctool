@@ -224,7 +224,7 @@ get_user_details(Auth, GroupId, UserId) ->
         Proplist = json_utils:decode_deprecated(ResponseBody),
         UserDetails = #user_details{
             id = lists_utils:key_get(<<"userId">>, Proplist),
-            name = lists_utils:key_get(<<"name">>, Proplist)
+            full_name = lists_utils:key_get(<<"name">>, Proplist)
         },
         {ok, UserDetails}
     end).
