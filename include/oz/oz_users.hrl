@@ -13,11 +13,13 @@
 -define(OZ_USERS_HRL, 1).
 
 %% user_details record contains following fields:
-%% * id   - unique user ID assigned by OZ
-%% * full_name - first name and surname
-%% * username - unique, human readable identifier, can used for authentication
-%% * linked_accounts - list of proplists with info about linked oauth accounts,
-%% contains data provided by oauth: idp, subject_id, username, name, emails
+%% * id - unique user ID assigned by OZ
+%% * full_name - given names and surname
+%% * username - a human-readable identifier, unique across the system,
+%%              can be used for authentication
+%% * linked_accounts - list of proplists with info about linked accounts,
+%%                     contains data provided by the IdP: idp, subject_id,
+%%                     fullName, username, emails
 %% * emails - list of connected emails
 -record(user_details, {
     id :: binary(),
