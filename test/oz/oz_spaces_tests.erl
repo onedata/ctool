@@ -244,7 +244,7 @@ should_get_user_details() ->
 
     Answer = oz_spaces:get_user_details(client, <<"spaceId">>, <<"userId">>),
     ?assertEqual({ok, #user_details{id = <<"userId">>,
-        name = <<"name">>}}, Answer),
+        full_name = <<"name">>}}, Answer),
 
     ?assert(meck:validate(json_utils)),
     ok = meck:unload(json_utils).

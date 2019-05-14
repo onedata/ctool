@@ -15,13 +15,11 @@
 -include("oz/oz_runner.hrl").
 -include("oz/oz_spaces.hrl").
 -include("oz/oz_providers.hrl").
--include("oz/oz_openid.hrl").
 -include("api_errors.hrl").
 
 %% API
 -export([register/2, register_with_uuid/2, unregister/1]).
 -export([get_details/1, get_details/2, modify_details/2]).
--export([get_token_issuer/2]).
 -export([get_zone_time/1]).
 -export([check_ip_address/1, check_port/4]).
 -export([create_space/2, support_space/2, revoke_space_support/2, get_spaces/1,
@@ -163,25 +161,6 @@ modify_details(Auth, Parameters) ->
         {ok, 204, _ResponseHeaders, _ResponseBody} =
             oz_endpoint:request(Auth, URN, patch, Body),
         ok
-    end).
-
-%%--------------------------------------------------------------------
-%% @doc Returns token issuer.
-%% @end
-%%--------------------------------------------------------------------
--spec get_token_issuer(Auth :: oz_endpoint:auth(), Token :: binary()) ->
-    {ok, TokenData :: #token_issuer{}} | {error, Reason :: term()}.
-get_token_issuer(Auth, Token) ->
-    ?run(fun() ->
-        URN = "/provider/token/" ++ binary_to_list(Token),
-        {ok, 200, _ResponseHeaders, ResponseBody} =
-            oz_endpoint:request(Auth, URN, get),
-        Proplist = json_utils:decode_deprecated(ResponseBody),
-        TokenIssuer = #token_issuer{
-            client_type = lists_utils:key_get(<<"clientType">>, Proplist),
-            client_id = lists_utils:key_get(<<"clientId">>, Proplist)
-        },
-        {ok, TokenIssuer}
     end).
 
 %%--------------------------------------------------------------------

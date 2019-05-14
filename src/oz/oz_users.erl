@@ -58,10 +58,12 @@ get_details(Auth) ->
         Proplist = json_utils:decode_deprecated(ResponseBody),
         UserDetails = #user_details{
             id = lists_utils:key_get(<<"userId">>, Proplist),
-            name = lists_utils:key_get(<<"name">>, Proplist),
+            full_name = lists_utils:key_get(<<"name">>, Proplist),
             linked_accounts = lists_utils:key_get(<<"linkedAccounts">>, Proplist),
-            alias = lists_utils:key_get(<<"alias">>, Proplist),
-            email_list = lists_utils:key_get(<<"emailList">>, Proplist)
+            username = lists_utils:key_get(
+                <<"username">>, Proplist, lists_utils:key_get(<<"alias">>, Proplist)
+            ),
+            emails = lists_utils:key_get(<<"emails">>, Proplist)
         },
         {ok, UserDetails}
     end).
