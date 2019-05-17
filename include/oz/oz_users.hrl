@@ -17,7 +17,7 @@
 %% * full_name - given names and surname
 %% * username - a human-readable identifier, unique across the system,
 %%              can be used for authentication
-%% * linked_accounts - list of proplists with info about linked accounts,
+%% * linked_accounts - list of maps with info about linked accounts,
 %%                     contains data provided by the IdP: idp, subject_id,
 %%                     fullName, username, emails
 %% * emails - list of connected emails
@@ -25,7 +25,7 @@
     id :: binary(),
     full_name :: binary(),
     username :: binary() | undefined,
-    linked_accounts :: [proplists:proplist()] | undefined,
+    linked_accounts :: [map()] | undefined,
     emails :: [binary()] | undefined
 }).
 
