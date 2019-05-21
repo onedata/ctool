@@ -13,26 +13,20 @@
 -define(OZ_USERS_HRL, 1).
 
 %% user_details record contains following fields:
-%% * id   - unique user ID assigned by OZ
-%% * name - username
-%% * linked_accounts - list of proplists with info about linked oauth accounts,
-%% contains data provided by oauth: provider_id, user_id, login, name, email_list
-%% * login - onedata user login
-%% * email_list - list of connected emails
+%% * id - unique user ID assigned by OZ
+%% * full_name - given names and surname
+%% * username - a human-readable identifier, unique across the system,
+%%              can be used for authentication
+%% * linked_accounts - list of maps with info about linked accounts,
+%%                     contains data provided by the IdP: idp, subject_id,
+%%                     fullName, username, emails
+%% * emails - list of connected emails
 -record(user_details, {
     id :: binary(),
-    name :: binary(),
-    linked_accounts :: [proplists:proplist()] | undefined,
-    alias :: binary() | undefined,
-    email_list :: [binary()] | undefined
-}).
-
-%% user_spaces record contains following fields:
-%% * ids     - list of IDs of user's Spaces
-%% * default - id of default user's Space
--record(user_spaces, {
-    ids :: [binary()],
-    default :: binary()
+    full_name :: binary(),
+    username :: binary() | undefined,
+    linked_accounts :: [map()] | undefined,
+    emails :: [binary()] | undefined
 }).
 
 -endif.

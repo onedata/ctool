@@ -97,13 +97,20 @@
 -define(ERROR_BAD_VALUE_IDENTIFIER_OCCUPIED(__Key), {error, {identifier_occupied, __Key}}).
 -define(ERROR_BAD_VALUE_BAD_TOKEN_TYPE(__Key), {error, {bad_token_type, __Key}}).
 -define(ERROR_BAD_VALUE_IDENTIFIER(__Key), {error, {bad_identifier, __Key}}).
--define(ERROR_BAD_VALUE_ALIAS, {error, bad_alias}).
--define(ERROR_BAD_VALUE_USER_NAME, {error, bad_user_name}).
+-define(ERROR_BAD_VALUE_FULL_NAME, {error, bad_full_name}).
+-define(ERROR_BAD_VALUE_USERNAME, {error, bad_username}).
+-define(ERROR_BAD_VALUE_PASSWORD, {error, bad_password}).
 -define(ERROR_BAD_VALUE_NAME, {error, bad_name}).
 
 % Errors caused by illegal state
+% Subdomain delegation is (currently) not supported by this Onezone
 -define(ERROR_SUBDOMAIN_DELEGATION_NOT_SUPPORTED, {error, subdomain_delegation_not_supported}).
+% Subdomain delegation is disabled for given Oneprovider
 -define(ERROR_SUBDOMAIN_DELEGATION_DISABLED, {error, subdomain_delegation_disabled}).
+% Basic auth is not (currently) supported by this Onezone
+-define(ERROR_BASIC_AUTH_NOT_SUPPORTED, {error, basic_auth_not_supported}).
+% Basic auth is disabled for given user
+-define(ERROR_BASIC_AUTH_DISABLED, {error, basic_auth_disabled}).
 
 % Errors connected with relations between entities
 -define(ERROR_RELATION_DOES_NOT_EXIST(__ChType, __ChId, __ParType, __ParId),
