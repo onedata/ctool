@@ -17,7 +17,6 @@
 %% monitoring data to cluster manager.
 -record(node_state, {
     node = node() :: node(),
-    ip_addr = {127, 0, 0, 1} :: {A :: byte(), B :: byte(), C :: byte(), D :: byte()},
     cpu_usage = [] :: float(),
     mem_usage = [] :: float(),
     net_usage = [] :: float()

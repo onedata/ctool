@@ -2,10 +2,17 @@
 *.iml
 *.sublime*
 *.beam
+*.o
 .eunit
 .dialyzer.plt
+ebin
 .rebar
+.rebar3
 
 test/eunit_results
 _build
+/priv
 compile_commands.json
+
+test_distributed/logs
+test_distributed/cover_tmp.spec

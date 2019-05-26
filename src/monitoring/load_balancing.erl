@@ -24,23 +24,6 @@
 % easier calculations (no danger of divison by zero).
 -define(SMALLEST_LOAD, 0.1).
 
-% Record used to express how DNS should be answering. Such records are distributed
-% to DNS modules, and later they evaluate choose_nodes_for_dns/1 function on this
-% record. The record structure shall not be visible outside this module.
--record(dns_lb_advice, {
-    % List of 2-element tuples {Node, Frequency}.
-    % Node is an IP address.
-    % Frequency (relative to other nodes) is how often
-    %   should given node appear at the top of DNS response.
-    nodes_and_frequency = [] :: [{Node :: term(), Frequency :: float()}],
-    % List of nodes to choose from. It introduces redundancy to above,
-    % but consider that it will be used multiple times and each of these
-    % times it would have to be calculated.
-    % This list is a list of nodes, duplicated once, so we can easily
-    % pick N consecutive nodes starting from any between 1 and N.
-    node_choices = [] :: [{A :: byte(), B :: byte(), C :: byte(), D :: byte()}]
-}).
-
 
 % Record used to express how dispatchers should be rerouting requests.
 % Such records are distributed to dispatcher modules,
@@ -69,14 +52,12 @@
     expected_extra_load = [] :: [{Node :: node(), ExtraLoad :: float()}]
 }).
 
--type dns_lb_advice() :: #dns_lb_advice{}.
 -type dispatcher_lb_advice() :: #dispatcher_lb_advice{}.
 -type load_balancing_state() :: #load_balancing_state{}.
 
--export_type([dns_lb_advice/0, dispatcher_lb_advice/0, load_balancing_state/0]).
+-export_type([dispatcher_lb_advice/0, load_balancing_state/0]).
 
 %% API
--export([advices_for_dnses/2, choose_nodes_for_dns/1, choose_ns_nodes_for_dns/1, initial_advice_for_dns/1]).
 -export([advices_for_dispatchers/3, choose_node_for_dispatcher/2]).
 -export([all_nodes_for_dispatcher/2, initial_advice_for_dispatcher/0]).
 
@@ -84,47 +65,6 @@
 %%%===================================================================
 %%% API
 %%%===================================================================
-
-%%--------------------------------------------------------------------
-%% @doc
-%% Returns guidelines that should be used by DNS servers in the cluster,
-%% based on node states of all nodes. The NodeStates list must not be empty.
-%% @end
-%%--------------------------------------------------------------------
--spec advices_for_dnses(NodeStates :: [#node_state{}], LBState :: #load_balancing_state{} | undefined) ->
-    {[{node(), #dispatcher_lb_advice{}}], #load_balancing_state{}}.
-advices_for_dnses(NodeStates, LBState) ->
-    ExtraLoads = case LBState of
-                     undefined ->
-                         [];
-                     #load_balancing_state{expected_extra_load = EEL} ->
-                         EEL
-                 end,
-    NodesAndIPs = [{NodeState#node_state.node, NodeState#node_state.ip_addr} || NodeState <- NodeStates],
-    LoadsForDNS = lists:map(
-        fun(NodeState) ->
-            L = load_for_dns(NodeState),
-            % TODO test if extra load is useful here in DNS and maybe move it to a helper function
-            % Extra load is calculate in advices_for_dispatchers function
-            ExtraLoad = proplists:get_value(NodeState#node_state.node, ExtraLoads, 0.0),
-            L * (1.0 - ExtraLoad)
-        end, NodeStates),
-    MinLoadForDNS = lists:min(LoadsForDNS),
-    LoadsAndNodes = lists:zip(LoadsForDNS, NodesAndIPs),
-    % Calculate how often should given nodes appear in the first row in DNS
-    % responses. The bigger the load, the less often should the node appear.
-    NodesAndFrequency = [{NodeIP, MinLoadForDNS / Load} || {Load, {_, NodeIP}} <- LoadsAndNodes],
-    FrequencySum = lists:foldl(fun({_, Freq}, Acc) -> Acc + Freq end, 0.0, NodesAndFrequency),
-    NormalizedNodesAndFrequency = [{NodeIP, Freq / FrequencySum} || {NodeIP, Freq} <- NodesAndFrequency],
-    NodeChoices = [NodeIP || {NodeIP, _} <- NormalizedNodesAndFrequency],
-    NodeChoicesDuplicated = NodeChoices ++ NodeChoices,
-    Result = lists:map(
-        fun({_, {Node, _}}) ->
-            {Node, #dns_lb_advice{nodes_and_frequency = NormalizedNodesAndFrequency,
-                node_choices = NodeChoicesDuplicated}}
-        end, LoadsAndNodes),
-    {Result, LBState}.
-
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -149,7 +89,7 @@ advices_for_dispatchers(NodeStates, LBState, Singletons) ->
     LoadsForDisp = lists:map(
         fun(NodeState) ->
             L = load_for_dispatcher(NodeState),
-            ExtraLoad = proplists:get_value(NodeState#node_state.node, ExtraLoads, 0.0),
+            ExtraLoad = lists_utils:key_get(NodeState#node_state.node, ExtraLoads, 0.0),
             L * (1.0 - ExtraLoad)
         end, NodeStates),
     AvgLoadForDisp = utils:average(LoadsForDisp),
@@ -187,7 +127,7 @@ advices_for_dispatchers(NodeStates, LBState, Singletons) ->
             {Node, #dispatcher_lb_advice{should_delegate = ShouldDelegate,
                 nodes_and_frequency = NodesAndFrequency, all_nodes = Nodes, singleton_modules = Singletons}}
         end, NodesAndLoads),
-    % TODO test if extra load is useful in DNS advices and maybe move it to a helper function
+
     % Calculate expected extra loads on each node.
     % For example:
     % node A is overloaded and will delegate 70% reqs to node B
@@ -215,7 +155,7 @@ advices_for_dispatchers(NodeStates, LBState, Singletons) ->
                                 NodeTo ->
                                     Acc;
                                 _ ->
-                                    Current = proplists:get_value(NodeTo, Acc, 0.0),
+                                    Current = lists_utils:key_get(NodeTo, Acc, 0.0),
                                     [{NodeTo, Current + Freq} | proplists:delete(NodeTo, Acc)]
                             end
                         end, ExtraLoadsAcc, NodesAndFreq)
@@ -230,38 +170,6 @@ advices_for_dispatchers(NodeStates, LBState, Singletons) ->
 
 %%--------------------------------------------------------------------
 %% @doc
-%% Returns list of nodes that should be returned as A records in DNS reply.
-%% The records are shuffled according to given load balancing advice.
-%% @end
-%%--------------------------------------------------------------------
--spec choose_nodes_for_dns(DSNAdvice :: #dns_lb_advice{}) -> [{A :: byte(), B :: byte(), C :: byte(), D :: byte()}].
-choose_nodes_for_dns(DNSAdvice) ->
-    #dns_lb_advice{nodes_and_frequency = NodesAndFreq,
-        node_choices = NodeChoices} = DNSAdvice,
-    Index = choose_index(NodesAndFreq),
-    Nodes = lists:sublist(NodeChoices, Index, length(NodesAndFreq)),
-    Nodes.
-
-
-%%--------------------------------------------------------------------
-%% @doc
-%% Returns list of nodes that should be returned as NS records in DNS reply.
-%% As DNS servers work on every node, its always a full list of nodes, but shuffled.
-%% @end
-%%--------------------------------------------------------------------
--spec choose_ns_nodes_for_dns(DSNAdvice :: #dns_lb_advice{}) -> [{A :: byte(), B :: byte(), C :: byte(), D :: byte()}].
-choose_ns_nodes_for_dns(DNSAdvice) ->
-    #dns_lb_advice{nodes_and_frequency = NodesAndFreq,
-        node_choices = NodeChoices} = DNSAdvice,
-    NumberOfNodes = length(NodesAndFreq),
-    random:seed(erlang:timestamp()),
-    Index = random:uniform(NumberOfNodes),
-    Nodes = lists:sublist(NodeChoices, Index, NumberOfNodes),
-    Nodes.
-
-
-%%--------------------------------------------------------------------
-%% @doc
 %% Returns guidelines that should be used by dispatchers in the cluster,
 %% based on node states of all nodes.
 %% @end
@@ -270,7 +178,7 @@ choose_ns_nodes_for_dns(DNSAdvice) ->
 choose_node_for_dispatcher(Advice, WorkerName) ->
     #dispatcher_lb_advice{should_delegate = ShouldDelegate,
         nodes_and_frequency = NodesAndFreq, singleton_modules = SM} = Advice,
-    case {proplists:get_value(WorkerName, SM), ShouldDelegate} of
+    case {lists_utils:key_get(WorkerName, SM), ShouldDelegate} of
         {undefined, false} ->
             node();
         {undefined, true} ->
@@ -290,24 +198,12 @@ choose_node_for_dispatcher(Advice, WorkerName) ->
 %%--------------------------------------------------------------------
 -spec all_nodes_for_dispatcher(Advice :: #dispatcher_lb_advice{}, WorkerName :: atom()) -> [node()].
 all_nodes_for_dispatcher(#dispatcher_lb_advice{all_nodes = AllNodes, singleton_modules = SM}, WorkerName) ->
-    case proplists:get_value(WorkerName, SM) of
+    case lists_utils:key_get(WorkerName, SM) of
         undefined ->
             AllNodes;
         DedicatedNode ->
             [DedicatedNode]
     end.
-
-
-%%--------------------------------------------------------------------
-%% @doc
-%% Returns an initial advice for DNS that can be used before cluster manager
-%% starts broadcasting advices.
-%% @end
-%%--------------------------------------------------------------------
--spec initial_advice_for_dns(NodeIP :: {A :: byte(), B :: byte(), C :: byte(), D :: byte()}) ->
-    #dns_lb_advice{}.
-initial_advice_for_dns(NodeIP) ->
-    #dns_lb_advice{nodes_and_frequency = [{NodeIP, 1.0}], node_choices = [NodeIP, NodeIP]}.
 
 
 %%--------------------------------------------------------------------
@@ -334,8 +230,8 @@ initial_advice_for_dispatcher() ->
 %%--------------------------------------------------------------------
 -spec choose_index(NodesAndFrequencies :: [{Node :: term(), Frequency :: float()}]) -> integer().
 choose_index(NodesAndFrequencies) ->
-    random:seed(erlang:timestamp()),
-    choose_index(NodesAndFrequencies, 0, random:uniform()).
+    rand:seed(exsplus),
+    choose_index(NodesAndFrequencies, 0, rand:uniform()).
 
 choose_index([], CurrIndex, _) ->
     CurrIndex;
@@ -364,35 +260,9 @@ load_for_dispatcher(#node_state{cpu_usage = CPU, mem_usage = Mem}) ->
 %%--------------------------------------------------------------------
 %% @private
 %% @doc
-%% Returns a single value representing node load.
-%% This value is used for comparison in DNS load balancing.
-%% @end
-%%--------------------------------------------------------------------
--spec load_for_dns(NodeState :: #node_state{}) -> float().
-load_for_dns(#node_state{net_usage = NetUsage} = NodeState) ->
-    LoadForDNS = (2.0 + load_for_dispatcher(NodeState) / 100) / 3 * NetUsage,
-    max(?SMALLEST_LOAD, LoadForDNS).
-
-
-%%--------------------------------------------------------------------
-%% @private
-%% @doc
 %% Decides if the node is overloaded from dispatcher point of view.
 %% @end
 %%--------------------------------------------------------------------
 -spec overloaded_for_dispatcher(NodeState :: #node_state{}, MinLoadForDisp :: float()) -> boolean().
 overloaded_for_dispatcher(LoadForDispatcher, MinLoadForDisp) ->
     LoadForDispatcher > 1.5 * MinLoadForDisp andalso LoadForDispatcher > 30.0.
-
-
-%%--------------------------------------------------------------------
-%% @private
-%% @doc
-%% Decides if the node is overloaded from DNS point of view.
-%% NOTE: Currently this is not used, as tests have shown that excluding
-%% nodes in DNS when there are heavy loaded in fact decreases the whole system throughput.
-%% @end
-%%--------------------------------------------------------------------
-%% -spec overloaded_for_dns(NodeState :: #node_state{}, MinLoadForDNS :: float()) -> boolean().
-%% overloaded_for_dns(LoadForDNS, MinLoadForDNS) ->
-%%     LoadForDNS > 1.5 * MinLoadForDNS.

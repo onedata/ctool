@@ -36,9 +36,9 @@ create(Auth, ShareId, SpaceId, Parameters) ->
     ?run(fun() ->
         URN = "/spaces/" ++ binary_to_list(SpaceId) ++
             "/shares/" ++ binary_to_list(ShareId),
-        Body = json_utils:encode(Parameters),
+        Body = json_utils:encode_deprecated(Parameters),
         {ok, 204, _ResponseHeaders, _ResponseBody} =
-            oz_endpoint:auth_request(Auth, URN, put, Body),
+            oz_endpoint:request(Auth, URN, put, Body),
         {ok, ShareId}
     end).
 
@@ -52,8 +52,8 @@ create(Auth, ShareId, SpaceId, Parameters) ->
 remove(Auth, ShareId) ->
     ?run(fun() ->
         URN = "/shares/" ++ binary_to_list(ShareId),
-        {ok, 202, _ResponseHeaders, _ResponseBody} =
-            oz_endpoint:auth_request(Auth, URN, delete),
+        {ok, 204, _ResponseHeaders, _ResponseBody} =
+            oz_endpoint:request(Auth, URN, delete),
         ok
     end).
 
@@ -68,17 +68,17 @@ get_details(Auth, ShareId) ->
     ?run(fun() ->
         URN = "/shares/" ++ binary_to_list(ShareId),
         {ok, 200, _ResponseHeaders, ResponseBody} =
-            oz_endpoint:auth_request(Auth, URN, get),
-        Props = json_utils:decode(ResponseBody),
+            oz_endpoint:request(Auth, URN, get),
+        Props = json_utils:decode_deprecated(ResponseBody),
         % Get default values of share_details record
         ShareDetails = #share_details{
-            id = proplists:get_value(<<"shareId">>, Props),
-            name = proplists:get_value(<<"name">>, Props),
-            public_url = proplists:get_value(
+            id = lists_utils:key_get(<<"shareId">>, Props),
+            name = lists_utils:key_get(<<"name">>, Props),
+            public_url = lists_utils:key_get(
                 <<"publicUrl">>, Props, undefined),
-            root_file = proplists:get_value(
+            root_file = lists_utils:key_get(
                 <<"rootFileId">>, Props, undefined),
-            space = proplists:get_value(
+            space = lists_utils:key_get(
                 <<"spaceId">>, Props, undefined)
         },
         {ok, ShareDetails}
@@ -95,8 +95,8 @@ get_details(Auth, ShareId) ->
 modify_details(Auth, ShareId, Parameters) ->
     ?run(fun() ->
         URN = "/shares/" ++ binary_to_list(ShareId),
-        Body = json_utils:encode(Parameters),
+        Body = json_utils:encode_deprecated(Parameters),
         {ok, 204, _ResponseHeaders, _ResponseBody} =
-            oz_endpoint:auth_request(Auth, URN, patch, Body),
+            oz_endpoint:request(Auth, URN, patch, Body),
         ok
     end).

@@ -9,39 +9,33 @@
 %%% OZ using REST API and returns responses.
 %%% @end
 %%%-------------------------------------------------------------------
-
 -module(oz_endpoint).
 
+-include("logging.hrl").
+-include("global_definitions.hrl").
+
 %% API
--export([auth_request/3, auth_request/4, auth_request/5, auth_request/6]).
--export([noauth_request/3, noauth_request/4, noauth_request/5,
-    noauth_request/6]).
--export([rest_api_root/0]).
+-export([get_api_root/1, get_cacerts/0, reset_cacerts/0]).
+-export([request/3, request/4, request/5, request/6]).
 
-%% Uniform Resource Name -
-%% for more details see: http://pl.wikipedia.org/wiki/Uniform_Resource_Name
 -type urn() :: string().
-%% HTTP request types
--type method() :: put | post | get | patch | delete.
--type headers() :: [{Key :: binary(), Value :: binary()}].
--type body() :: binary().
--type options() :: http_client:opts().
--type response() :: {ok, Status :: integer(), ResponseHeaders :: headers(),
-    ResponseBody :: body()} | {error, Reason :: term()}.
+-type method() :: http_client:method().
+-type headers() :: http_client:headers().
+-type body() :: http_client:body().
+-type opts() :: http_client:opts() | [{endpoint, rest | rest_no_auth | gui}].
+-type response() :: http_client:response().
 -type params() :: [{Key :: binary(), Value :: binary() | [binary()]}].
-
-%% OZ oz_endpoint:client()
-% Tuple containing root macaroon and discharge macaroons for user auth.
+-type client() :: client | provider | {user, token, macaroons()} |
+%% Credentials are in form "Basic base64(user:password)"
+{user, basic, Credentials :: binary()}.
+%% Tuple containing root macaroon and discharge macaroons for user auth.
 -type macaroons() :: {Macaroon :: macaroon:macaroon(),
     DischargeMacaroons :: [macaroon:macaroon()]}.
--type client() :: client | provider | {user, token, macaroons()} |
-% Credentials are in form "Basic base64(user:password)"
-{user, basic, Credentials :: binary()}.
-% Auth is an arbitrary term, which is treated like a black box by ctool.
-% It can carry any information, the only condition is that the project
-% using ctool implements the callback oz_plugin:auth_to_rest_client/1.
-% The callback changes the Auth term() to rest client type that ctool
-% can understand -> see client() type.
+%% Auth is an arbitrary term, which is treated like a black box by ctool.
+%% It can carry any information, the only condition is that the project
+%% using ctool implements the callback oz_plugin:auth_to_rest_client/1.
+%% The callback changes the Auth term() to rest client type that ctool
+%% can understand -> see client() type.
 -type auth() :: term().
 
 -export_type([auth/0, client/0, params/0, urn/0]).
@@ -51,161 +45,138 @@
 %%%===================================================================
 
 %%--------------------------------------------------------------------
-%% @equiv auth_request(Auth, URN, Method, [])
+%% @doc Returns root path to OZ API, for example:
+%% GUI: 'https://onedata.org'
+%% REST: 'https://onedata.org:8443/api/v3/onezone'
+%% based on information obtained from oz_plugin.
 %% @end
 %%--------------------------------------------------------------------
--spec auth_request(Auth :: auth(), URN :: urn(), Method :: method()) ->
-    response().
-auth_request(Auth, URN, Method) ->
-    oz_endpoint:auth_request(Auth, URN, Method, <<>>).
+-spec get_api_root(opts()) -> string().
+get_api_root(Opts) ->
+    case proplists:get_value(endpoint, Opts, rest) of
+        rest ->
+            % Regular REST endpoint with authorization by provider certs
+            str_utils:format("~s:~B~s", [
+                oz_plugin:get_oz_url(),
+                oz_plugin:get_oz_rest_port(),
+                oz_plugin:get_oz_rest_api_prefix()
+            ]);
+        rest_no_auth ->
+            % REST endpoint without authorization on standard 443 HTTPS port
+            str_utils:format("~s~s", [
+                oz_plugin:get_oz_url(),
+                oz_plugin:get_oz_rest_api_prefix()
+            ]);
+        gui ->
+            % Endpoint on standard 443 HTTPS port
+            str_utils:format("~s", [
+                oz_plugin:get_oz_url()
+            ])
+    end.
 
 %%--------------------------------------------------------------------
-%% @equiv auth_request(Auth, URN, Method, Body, [])
+%% @doc Returns cached CA certificates or loads them from a directory given
+%% by a oz_plugin:get_cacerts_dir/0 callback and stores them in the cache.
 %% @end
 %%--------------------------------------------------------------------
--spec auth_request(Auth :: auth(), URN :: urn(), Method :: method(),
-    Body :: body()) -> response().
-auth_request(Auth, URN, Method, Body) ->
-    oz_endpoint:auth_request(Auth, URN, Method, Body, []).
+-spec get_cacerts() -> CaCerts :: [public_key:der_encoded()].
+get_cacerts() ->
+    case application:get_env(?CTOOL_APP_NAME, cacerts) of
+        {ok, CaCerts} ->
+            CaCerts;
+        undefined ->
+            CaCerts = cert_utils:load_ders_in_dir(oz_plugin:get_cacerts_dir()),
+            application:set_env(?CTOOL_APP_NAME, cacerts, CaCerts),
+            CaCerts
+    end.
 
 %%--------------------------------------------------------------------
-%% @equiv auth_request(Auth, URN, Method, [], Body, Options)
+%% @doc Clears CA certificates cache.
 %% @end
 %%--------------------------------------------------------------------
--spec auth_request(Auth :: auth(), URN :: urn(), Method :: method(),
-    Body :: body(), Options :: options()) -> response().
-auth_request(Auth, URN, Method, Body, Options) ->
-    oz_endpoint:auth_request(Auth, URN, Method, [], Body, Options).
+-spec reset_cacerts() -> ok.
+reset_cacerts() ->
+    application:unset_env(?CTOOL_APP_NAME, cacerts).
 
 %%--------------------------------------------------------------------
-%% @doc Sends authenticated request to OZ.
+%% @doc @equiv request(Auth, URN, Method, <<>>)
 %% @end
 %%--------------------------------------------------------------------
--spec auth_request(Auth :: auth(), URN :: urn(), Method :: method(),
-    Headers :: headers(), Body :: body(), Options :: options()) -> response().
-auth_request(Auth, URN, Method, Headers, Body, Options) ->
-    AuthHeaders = prepare_auth_headers(Auth),
-    do_auth_request(URN, Method, AuthHeaders ++ Headers, Body, Options).
+-spec request(Auth :: auth(), URN :: urn(), Method :: method()) ->
+    Response :: response().
+request(Auth, URN, Method) ->
+    ?MODULE:request(Auth, URN, Method, <<>>).
 
 %%--------------------------------------------------------------------
-%% @equiv noauth_request(Auth, URN, Method, [])
+%% @doc @equiv request(Auth, URN, Method, Body, [])
 %% @end
 %%--------------------------------------------------------------------
--spec noauth_request(Auth :: auth(), URN :: urn(), Method :: method()) ->
-    response().
-noauth_request(Auth, URN, Method) ->
-    oz_endpoint:noauth_request(Auth, URN, Method, <<>>).
+-spec request(Auth :: auth(), URN :: urn(), Method :: method(),
+    Body :: body()) -> Response :: response().
+request(Auth, URN, Method, Body) ->
+    ?MODULE:request(Auth, URN, Method, Body, []).
 
 %%--------------------------------------------------------------------
-%% @equiv noauth_request(Auth, URN, Method, Body, [])
+%% @doc @equiv request(Auth, URN, Method, #{}, Body, Opts)
 %% @end
 %%--------------------------------------------------------------------
--spec noauth_request(Auth :: auth(), URN :: urn(), Method :: method(),
-    Body :: body()) -> response().
-noauth_request(Auth, URN, Method, Body) ->
-    oz_endpoint:noauth_request(Auth, URN, Method, Body, []).
-
-%%--------------------------------------------------------------------
-%% @equiv noauth_request(Auth, URN, Method, [], Body, Options)
-%% @end
-%%--------------------------------------------------------------------
--spec noauth_request(Auth :: auth(), URN :: urn(), Method :: method(),
-    Body :: body(), Options :: list()) -> response().
-noauth_request(Auth, URN, Method, Body, Options) ->
-    oz_endpoint:noauth_request(Auth, URN, Method, [], Body, Options).
+-spec request(Auth :: auth(), URN :: urn(), Method :: method(),
+    Body :: body(), Opts :: opts()) -> Response :: response().
+request(Auth, URN, Method, Body, Opts) ->
+    ?MODULE:request(Auth, URN, Method, #{}, Body, Opts).
 
 %%--------------------------------------------------------------------
 %% @doc Sends unauthenticated request to OZ.
 %% @end
 %%--------------------------------------------------------------------
--spec noauth_request(Auth :: auth(), URN :: urn(), Method :: method(),
-    Headers :: headers(), Body :: body(), Options :: options()) -> response().
-noauth_request(Auth, URN, Method, Headers, Body, Options) ->
-    AuthHeaders = prepare_auth_headers(Auth),
-    do_noauth_request(URN, Method, AuthHeaders ++ Headers, Body, Options).
-
+-spec request(Auth :: auth(), URN :: urn(), Method :: method(),
+    Headers :: headers(), Body :: body(), Opts :: opts()) -> Response :: response().
+request(Auth, URN, Method, Headers, Body, Opts) ->
+    SSLOpts = lists_utils:key_get(ssl_options, Opts, []),
+    Opts2 = lists_utils:key_store(ssl_options, [
+        {cacerts, get_cacerts()} | SSLOpts
+    ], Opts),
+    Headers2 = Headers#{<<"content-type">> => <<"application/json">>},
+    Headers3 = prepare_auth_headers(Auth, Headers2),
+    URL = get_api_root(Opts) ++ URN,
+    http_client:request(Method, URL, Headers3, Body, Opts2).
 
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
 
 %%--------------------------------------------------------------------
-%% @doc Sends request to OZ using REST API.
-%% Request is authenticated with provider certificate.
+%% @private @doc Returns properly formatted auth headers 
+%% (i.e. macaroon, basic auth), depending on type of REST client.
 %% @end
 %%--------------------------------------------------------------------
--spec do_auth_request(URN :: urn(), Method :: method(), Headers :: headers(),
-    Body :: body(), Options :: options()) -> response().
-do_auth_request(URN, Method, Headers, Body, Opts) ->
-    KeyPath = apply(oz_plugin, get_key_path, []),
-    CertPath = apply(oz_plugin, get_cert_path, []),
-    SSLOpts = {ssl_options, [{keyfile, KeyPath}, {certfile, CertPath}]},
-    do_noauth_request(URN, Method, Headers, Body, [SSLOpts | Opts]).
-
-
-%%--------------------------------------------------------------------
-%% @doc Sends request to OZ using REST API.
-%% Request is not authenticated with provider certificate.
-%% @end
-%%--------------------------------------------------------------------
--spec do_noauth_request(URN :: urn(), Method :: method(), Headers :: headers(),
-    Body :: body(), Options :: options()) -> response().
-do_noauth_request(URN, Method, Headers, Body, Options) ->
-    Opts = case application:get_env(ctool, verify_oz_cert) of
-        {ok, false} -> [insecure | Options];
-        _ -> Options
-    end,
-    NewHeaders = [{<<"content-type">>, <<"application/json">>} | Headers],
-    URL = rest_api_root() ++ URN,
-    http_client:request(Method, URL, NewHeaders, Body, Opts).
-
-
-%%--------------------------------------------------------------------
-%% @doc
-%% Returns root path to OZ REST API, for example:
-%%      https://onedata.org:8443/api/v3/onezone
-%% based on information obtained from oz_plugin.
-%% @end
-%%--------------------------------------------------------------------
--spec rest_api_root() -> string().
-rest_api_root() ->
-    str_utils:format("~s:~B~s", [
-        oz_plugin:get_oz_url(),
-        oz_plugin:get_oz_rest_port(),
-        oz_plugin:get_oz_rest_api_prefix()
-    ]).
-
-
-%%--------------------------------------------------------------------
-%% @doc
-%% Returns properly formatted auth headers (i.e. macaroon, basic auth),
-%% depending on type of REST client.
-%% @end
-%%--------------------------------------------------------------------
--spec prepare_auth_headers(Auth :: auth()) ->
-    [{Key :: binary(), Val :: binary()}].
-prepare_auth_headers(Auth) ->
+-spec prepare_auth_headers(Auth :: auth(), Headers :: headers()) ->
+    headers().
+prepare_auth_headers(Auth, Headers) ->
     % Check REST client type and return auth headers if needed.
     case oz_plugin:auth_to_rest_client(Auth) of
-        {user, token, {Macaroon, DischargeMacaroons}} ->
+        {user, token, Token} ->
+            Headers#{<<"X-Auth-Token">> => Token};
+        {user, macaroon, {MacaroonBin, DischargeMacaroonsBin}} ->
+            {ok, Macaroon} = onedata_macaroons:deserialize(MacaroonBin),
             BoundMacaroons = lists:map(
-                fun(DM) ->
+                fun(DischargeMacaroonBin) ->
+                    {ok, DM} = onedata_macaroons:deserialize(DischargeMacaroonBin),
                     BDM = macaroon:prepare_for_request(Macaroon, DM),
-                    {ok, SerializedBDM} = token_utils:serialize62(BDM),
+                    {ok, SerializedBDM} = onedata_macaroons:serialize(BDM),
                     SerializedBDM
-                end, DischargeMacaroons),
+                end, DischargeMacaroonsBin),
             % Bound discharge macaroons are sent in one header,
             % separated by spaces.
-            {ok, SerializedMacaroon} = token_utils:serialize62(Macaroon),
             BoundMacaroonsVal = str_utils:join_binary(BoundMacaroons, <<" ">>),
-            [
-                {<<"macaroon">>, SerializedMacaroon},
-                {<<"discharge-macaroons">>, BoundMacaroonsVal}
-            ];
+            Headers#{
+                <<"Macaroon">> => MacaroonBin,
+                <<"Discharge-Macaroons">> => BoundMacaroonsVal
+            };
         {user, basic, BasicAuthHeader} ->
-            [
-                {<<"Authorization">>, BasicAuthHeader}
-            ];
-        _ ->
-            []
+            Headers#{<<"Authorization">> => BasicAuthHeader};
+        {provider, Macaroon} ->
+            Headers#{<<"Macaroon">> => Macaroon};
+        none ->
+            Headers
     end.

@@ -11,7 +11,9 @@
 
 -module(logger).
 
--export([should_log/1, dispatch_log/5, parse_process_info/1]).
+-include("global_definitions.hrl").
+
+-export([should_log/1, dispatch_log/5, parse_process_info/1, log_with_rotation/4]).
 -export([set_loglevel/1, set_console_loglevel/1, set_include_stacktrace/1]).
 -export([get_current_loglevel/0, get_default_loglevel/0, get_console_loglevel/0, get_include_stacktrace/0]).
 -export([loglevel_int_to_atom/1, loglevel_atom_to_int/1]).
@@ -22,7 +24,7 @@
 %%--------------------------------------------------------------------
 -spec should_log(LoglevelAsInt :: integer()) -> boolean().
 should_log(LevelAsInt) ->
-    case application:get_env(ctool, current_loglevel) of
+    case application:get_env(?CTOOL_APP_NAME, current_loglevel) of
         {ok, Int} when LevelAsInt >= Int -> true;
         _ -> false
     end.
@@ -37,8 +39,8 @@ dispatch_log(LoglevelAsInt, Metadata, Format, Args, IncludeStacktrace) ->
     Severity = loglevel_int_to_atom(LoglevelAsInt),
     % Every project using the logging mechanism must contain a module
     % called exactly 'logger_plugin' that implements logic_plugin_behaviour.
-    lager:log(Severity, Metadata ++ apply(logger_plugin, gather_metadata, []),
-        compute_message(Format, Args, IncludeStacktrace)).
+    lager:log(Severity, Metadata ++ apply(logger_plugin, gather_metadata, []), "~ts",
+        [compute_message(Format, Args, IncludeStacktrace)]).
 
 %%--------------------------------------------------------------------
 %% @doc Changes current global loglevel to desired. Argument can be loglevel as int or atom
@@ -49,16 +51,16 @@ dispatch_log(LoglevelAsInt, Metadata, Format, Args, IncludeStacktrace) ->
 set_loglevel(Loglevel) when is_atom(Loglevel) ->
     try
         LevelAsInt = case Loglevel of
-                         default -> get_default_loglevel();
-                         Atom -> loglevel_atom_to_int(Atom)
-                     end,
+            default -> get_default_loglevel();
+            Atom -> loglevel_atom_to_int(Atom)
+        end,
         set_loglevel(LevelAsInt)
     catch _:_ ->
         {error, badarg}
     end;
 
 set_loglevel(Loglevel) when is_integer(Loglevel) andalso (Loglevel >= 0) andalso (Loglevel =< 7) ->
-    application:set_env(ctool, current_loglevel, Loglevel);
+    application:set_env(?CTOOL_APP_NAME, current_loglevel, Loglevel);
 
 set_loglevel(_) ->
     {error, badarg}.
@@ -75,13 +77,13 @@ set_console_loglevel(Loglevel) when is_integer(Loglevel) andalso (Loglevel >= 0)
 set_console_loglevel(Loglevel) when is_atom(Loglevel) ->
     try
         LevelAsAtom = case Loglevel of
-                          default ->
-                              {ok, Proplist} = application:get_env(lager, handlers),
-                              proplists:get_value(lager_console_backend, Proplist);
-                          Atom ->
-                              % Makes sure that the atom is recognizable as loglevel
-                              loglevel_int_to_atom(loglevel_atom_to_int(Atom))
-                      end,
+            default ->
+                {ok, Proplist} = application:get_env(lager, handlers),
+                lists_utils:key_get(lager_console_backend, Proplist);
+            Atom ->
+                % Makes sure that the atom is recognizable as loglevel
+                loglevel_int_to_atom(loglevel_atom_to_int(Atom))
+        end,
         gen_event:call(lager_event, lager_console_backend, {set_loglevel, LevelAsAtom}),
         ok
     catch _:_ ->
@@ -97,7 +99,7 @@ set_console_loglevel(_) ->
 %%--------------------------------------------------------------------
 -spec set_include_stacktrace(boolean()) -> ok | {error, badarg}.
 set_include_stacktrace(Flag) when is_boolean(Flag) ->
-    application:set_env(ctool, include_stacktrace, Flag);
+    application:set_env(?CTOOL_APP_NAME, include_stacktrace, Flag);
 
 set_include_stacktrace(_) ->
     {error, badarg}.
@@ -108,7 +110,7 @@ set_include_stacktrace(_) ->
 %%--------------------------------------------------------------------
 -spec get_current_loglevel() -> integer().
 get_current_loglevel() ->
-    {ok, Int} = application:get_env(ctool, current_loglevel),
+    {ok, Int} = application:get_env(?CTOOL_APP_NAME, current_loglevel),
     Int.
 
 %%--------------------------------------------------------------------
@@ -117,7 +119,7 @@ get_current_loglevel() ->
 %%--------------------------------------------------------------------
 -spec get_default_loglevel() -> integer().
 get_default_loglevel() ->
-    {ok, Int} = application:get_env(ctool, default_loglevel),
+    {ok, Int} = application:get_env(?CTOOL_APP_NAME, default_loglevel),
     Int.
 
 %%--------------------------------------------------------------------
@@ -137,7 +139,7 @@ get_console_loglevel() ->
 %%--------------------------------------------------------------------
 -spec get_include_stacktrace() -> boolean().
 get_include_stacktrace() ->
-    {ok, Boolean} = application:get_env(ctool, include_stacktrace),
+    {ok, Boolean} = application:get_env(?CTOOL_APP_NAME, include_stacktrace),
     Boolean.
 
 %%--------------------------------------------------------------------
@@ -176,14 +178,51 @@ loglevel_atom_to_int(emergency) -> 7.
 parse_process_info({_, {Module, Function, Arity}}) ->
     [{module, Module}, {function, Function}, {arity, Arity}].
 
+
+%%--------------------------------------------------------------------
+%% @doc Logs given message to LogFile.
+%% If size of LogFile exceeds MaxSize, its name will be appended with
+%% suffix ".1". Previous suffixed LogFile will be deleted, if it exists.
+%% @end
+%%--------------------------------------------------------------------
+-spec log_with_rotation(LogFile :: string(),
+    Format :: io:format(), Args :: [term()], MaxSize :: non_neg_integer()) -> ok.
+log_with_rotation(LogFile, Format, Args, MaxSize) ->
+    Now = os:timestamp(),
+    {Date, Time} = lager_util:format_time(lager_util:maybe_utc(
+        lager_util:localtime_ms(Now))),
+
+    case filelib:file_size(LogFile) > MaxSize of
+        true ->
+            LogFile2 = LogFile ++ ".1",
+            file:delete(LogFile2),
+            file:rename(LogFile, LogFile2),
+            ok;
+        _ ->
+            ok
+    end,
+
+    file:write_file(LogFile,
+        io_lib:format("~n~s, ~s: " ++ Format, [Date, Time | Args]), [append]),
+    ok.
+
 %%--------------------------------------------------------------------
 %% Internal functions
+%%--------------------------------------------------------------------
 
-% Computes a log message string, possibly including stacktrace
+%%--------------------------------------------------------------------
+%% @private @doc Computes a log message string, possibly including stacktrace.
+%% @end
+%%--------------------------------------------------------------------
+-spec compute_message(string(), list(), boolean()) -> string().
 compute_message(Format, Args, IncludeStackTrace) ->
-    {F, A} = case (IncludeStackTrace and get_include_stacktrace()) of
-                 false -> {Format, Args};
-                 true ->
-                     {Format ++ "~nStacktrace: ~p", Args ++ [erlang:get_stacktrace()]}
-             end,
-    lists:flatten(io_lib:format(F, A)).
+    {Format2, Args2} = case (IncludeStackTrace and get_include_stacktrace()) of
+        false ->
+            {Format, Args};
+        true ->
+            {
+                    Format ++ "~nStacktrace:~s",
+                    Args ++ [lager:pr_stacktrace(erlang:get_stacktrace())]
+            }
+    end,
+    lists:flatten(io_lib:format(Format2, Args2)).

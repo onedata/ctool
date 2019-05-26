@@ -10,11 +10,12 @@
 -author("Tomasz Lichon").
 
 -include("test/assertions.hrl").
--include_lib("common_test/include/ct.hrl").
+-include("test/test_utils.hrl").
 
 %% API
--export([prepare_test_environment/5, prepare_test_environment/4, clean_environment/1, clean_environment/2,
-    clean_environment/3, load_modules/2, maybe_start_cover/0, maybe_stop_cover/0]).
+-export([prepare_test_environment/3, prepare_test_environment/2,
+    clean_environment/1, clean_environment/2, load_modules/2,
+    maybe_start_cover/0, maybe_stop_cover/0]).
 
 -define(CLEANING_PROC_NAME, cleaning_proc).
 -define(TIMEOUT, timer:seconds(60)).
@@ -42,10 +43,10 @@
 %% Sets cookies (read from DescriptionFile) for erlang nodes.
 %% @end
 %%--------------------------------------------------------------------
--spec prepare_test_environment(Config :: list(), DescriptionFile :: string(),
-    TestModule :: module(), LoadModules :: [module()]) -> Result :: list() | {fail, tuple()}.
-prepare_test_environment(Config, DescriptionFile, TestModule, LoadModules) ->
-    prepare_test_environment(Config, DescriptionFile, TestModule, LoadModules, ?ALL_POSSIBLE_APPS).
+-spec prepare_test_environment(Config :: list(), TestModule :: module())
+        -> Result :: list() | {fail, tuple()}.
+prepare_test_environment(Config, TestModule) ->
+    prepare_test_environment(Config, TestModule, ?ALL_POSSIBLE_APPS).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -53,11 +54,12 @@ prepare_test_environment(Config, DescriptionFile, TestModule, LoadModules) ->
 %% Sets cookies (read from DescriptionFile) for erlang nodes.
 %% @end
 %%--------------------------------------------------------------------
--spec prepare_test_environment(Config :: list(), DescriptionFile :: string(),
-    TestModule :: module(), LoadModules :: [module()], Apps :: [{AppName :: atom(), ConfigName :: atom()}])
-        -> Result :: list() | {fail, tuple()}.
-prepare_test_environment(Config, DescriptionFile, TestModule, LoadModules, Apps) ->
-    ct:print("Env init in SUITE ~p", [TestModule]),
+-spec prepare_test_environment(Config :: list(), TestModule :: module(),
+    Apps :: [{AppName :: atom(), ConfigName :: atom()}]) -> Result :: list() | {fail, tuple()}.
+prepare_test_environment(Config, TestModule, Apps) ->
+    DescriptionFile = env_description(Config),
+    LoadModules = ?config(load_modules, Config, []),
+
     try
         DataDir = ?config(data_dir, Config),
         PrivDir = ?config(priv_dir, Config),
@@ -111,7 +113,7 @@ prepare_test_environment(Config, DescriptionFile, TestModule, LoadModules, Apps)
                     "    prepare_test_environment_error.log~n" ++
                     "    prepare_test_environment.log~n" ++
                     "Stacktrace: ~p", [E11, E12, erlang:get_stacktrace()]),
-                clean_environment(EnvDesc, TestModule),
+                clean_environment(EnvDesc),
                 {fail, {init_failed, E11, E12}}
         end
 
@@ -130,7 +132,8 @@ prepare_test_environment(Config, DescriptionFile, TestModule, LoadModules, Apps)
 %%--------------------------------------------------------------------
 -spec clean_environment(Config :: list()) -> ok.
 clean_environment(Config) ->
-    clean_environment(Config, no_suite_specified).
+    clean_environment(Config, ?ALL_POSSIBLE_APPS).
+
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -138,19 +141,8 @@ clean_environment(Config) ->
 %% Afterwards, cleans environment by running 'cleanup.py' script.
 %% @end
 %%--------------------------------------------------------------------
--spec clean_environment(Config :: list(), TestModule :: module()) -> ok.
-clean_environment(Config, TestModule) ->
-    clean_environment(Config, TestModule, ?ALL_POSSIBLE_APPS).
-
-%%--------------------------------------------------------------------
-%% @doc
-%% Gathers cover analysis reports if cover is started.
-%% Afterwards, cleans environment by running 'cleanup.py' script.
-%% @end
-%%--------------------------------------------------------------------
--spec clean_environment(Config :: list(), TestModule :: module(), Apps :: [{AppName :: atom(), ConfigName :: atom()}]) -> ok.
-clean_environment(Config, TestModule, Apps) ->
-    ct:print("Env cleaning in SUITE ~p", [TestModule]),
+-spec clean_environment(Config :: list(), Apps :: [{AppName :: atom(), ConfigName :: atom()}]) -> ok.
+clean_environment(Config, Apps) ->
     StopStatus = try
         case cover:modules() of
             [] ->
@@ -164,7 +156,7 @@ clean_environment(Config, TestModule, Apps) ->
                     ?config(ConfigName, Config)
                 end, Apps),
 
-                lists:foreach(fun(_) ->
+                lists:foreach(fun(Node) ->
                     receive
                         {app_ended, CoverNode, FileData} ->
                             {Mega, Sec, Micro} = os:timestamp(),
@@ -176,24 +168,26 @@ clean_environment(Config, TestModule, Apps) ->
                             cover:import(CoverFile),
                             file:delete(CoverFile)
                     after
-                        ?TIMEOUT -> throw(cover_not_received)
+                        ?TIMEOUT ->
+                            ct:print(
+                                "WARNING: Could not collect cover data from node: ~p", [
+                                    Node
+                                ])
                     end
                 end, AllNodes),
                 ok
         end
     catch
         E1:E2 ->
-            ct:print("Stopping of applications failed failed ~p:~p~n" ++
+            ct:print("Environment cleanup failed - ~p:~p~n" ++
             "Stacktrace: ~p", [E1, E2, erlang:get_stacktrace()]),
             E2
     end,
 
-    Dockers = proplists:get_value(docker_ids, Config, []),
-    ProjectRoot = ?config(project_root, Config),
+    Dockers = lists_utils:key_get(docker_ids, Config, []),
     DockersStr = lists:map(fun atom_to_list/1, Dockers),
-    CleanupScript =
-        filename:join([ProjectRoot, "bamboos", "docker", "cleanup.py"]),
-    utils:cmd([CleanupScript | DockersStr]),
+    ProjectRoot = ?config(project_root, Config),
+    remove_dockers(ProjectRoot, DockersStr),
 
     case StopStatus of
         ok ->
@@ -204,7 +198,7 @@ clean_environment(Config, TestModule, Apps) ->
 
 %%--------------------------------------------------------------------
 %% @doc
-%% Starts cover server if needed (if apropriate env is set).
+%% Starts cover server if needed (if appropriate env is set).
 %% @end
 %%--------------------------------------------------------------------
 -spec maybe_start_cover() -> ok.
@@ -244,7 +238,8 @@ maybe_start_cover() ->
                                 end
                             end, AllBeams -- ExcludedModulesFiles)
                         catch
-                            _:_ -> ok % a dir may not exist (it is added for other project)
+                            _:_ ->
+                                ok % a dir may not exist (it is added for other project)
                         end
                     end, Dirs)
             end,
@@ -296,8 +291,17 @@ stop_applications(Config, Apps) ->
     lists:foreach(
         fun({AppName, ConfigName}) ->
             Nodes = ?config(ConfigName, Config),
-            lists:foreach(fun(N) ->
-                ok = rpc:call(N, application, stop, [AppName])
+            lists:foreach(fun(Node) ->
+                try
+                    ok = rpc:call(Node, application, stop, [AppName])
+                catch
+                    Type:Reason ->
+                        ct:print(
+                            "WARNING: Stopping application ~p on node ~p failed - ~p:~p~n"
+                            "Stacktrace: ~p", [
+                                AppName, Node, Type, Reason, erlang:get_stacktrace()
+                            ])
+                end
             end, Nodes)
         end, Apps
     ).
@@ -410,7 +414,7 @@ get_cookies(Nodes, AppName, CookieKey, DescriptionFile) ->
 %%--------------------------------------------------------------------
 %% @private
 %% @doc
-%% Set cookies for each Node in NodesWithCookies list
+%% Set cookies for each Node in NodesWithCookies list.
 %% @end
 %%--------------------------------------------------------------------
 -spec set_cookies([{node(), atom()}]) -> ok.
@@ -432,17 +436,27 @@ set_cookies(NodesWithCookies) ->
 retry_running_env_up_script_until(ProjectRoot, AppmockRoot, CmRoot,
     LogsDir, DescriptionFile, RetriesNumber) ->
 
-    StartLog =run_env_up_script(ProjectRoot, AppmockRoot, CmRoot, LogsDir, DescriptionFile),
+    StartLog = run_env_up_script(ProjectRoot, AppmockRoot, CmRoot, LogsDir, DescriptionFile),
 
     case StartLog of
         <<"">> ->
+            Ids = string:tokens(string:strip(os:cmd(
+                "docker ps -aq"
+            ), right, $\n), "\n"),
+            MasterId = string:strip(os:cmd(
+                "docker ps -a | grep testmaster | awk '{print $1}'"
+            ), right, $\n),
+            remove_dockers(ProjectRoot, lists:delete(MasterId, Ids)),
+
+
             % if env_up.py failed, output will be empty,
             % because stderr is redirected to prepare_test_environment.log
             case RetriesNumber > 0 of
                 true ->
                     ct:print("Retrying to run env_up.py. Number of retries left: ~p~n", [RetriesNumber]),
+                    timer:sleep(timer:seconds(1)),
                     retry_running_env_up_script_until(ProjectRoot, AppmockRoot, CmRoot,
-                    LogsDir, DescriptionFile, RetriesNumber - 1);
+                        LogsDir, DescriptionFile, RetriesNumber - 1);
                 _ -> error(env_up_failed)
             end;
         Other -> Other
@@ -476,3 +490,26 @@ run_env_up_script(ProjectRoot, AppmockRoot, CmRoot, LogsDir, DescriptionFile) ->
         [] -> <<"">>;
         NotEmptyList -> lists:last(NotEmptyList)
     end.
+
+%%--------------------------------------------------------------------
+%% @private
+%% @doc
+%% Returns absolute path to environment description file
+%% @end
+%%--------------------------------------------------------------------
+-spec env_description([term()]) -> file:filename_all().
+env_description(Config) ->
+    EnvDescriptionRelativePath = ?config(?ENV_DESCRIPTION, Config, ?DEFAULT_ENV_DESCRIPTION),
+    ?TEST_FILE(Config, EnvDescriptionRelativePath).
+
+%%--------------------------------------------------------------------
+%% @private
+%% @doc
+%% Removes docker containers.
+%% @end
+%%--------------------------------------------------------------------
+-spec remove_dockers(string(), list(string())) -> string().
+remove_dockers(ProjectRoot, DockerIds) ->
+    CleanupScript =
+        filename:join([ProjectRoot, "bamboos", "docker", "cleanup.py"]),
+    utils:cmd([CleanupScript | DockerIds]).

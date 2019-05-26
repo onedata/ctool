@@ -13,12 +13,13 @@
 -ifdef(TEST).
 -include_lib("eunit/include/eunit.hrl").
 -include("logging.hrl").
+-include("global_definitions.hrl").
 
 main_test_() ->
     {setup,
         fun() ->
-            application:set_env(ctool, current_loglevel, 2),
-            application:set_env(ctool, default_loglevel, 0)
+            application:set_env(?CTOOL_APP_NAME, current_loglevel, 2),
+            application:set_env(?CTOOL_APP_NAME, default_loglevel, 0)
         end,
         fun(_) ->
             ok
@@ -71,7 +72,7 @@ main_test_() ->
 lager_interfacing_test_() ->
     {setup,
         fun() ->
-            application:set_env(ctool, current_loglevel, 0),
+            application:set_env(?CTOOL_APP_NAME, current_loglevel, 0),
             meck:new(logger_plugin, [non_strict]),
             meck:new(lager)
         end,
@@ -85,21 +86,21 @@ lager_interfacing_test_() ->
                     meck:expect(logger_plugin, gather_metadata, fun() ->
                         [] end),
                     meck:expect(lager, log,
-                        fun(debug, _, "debug message") -> ok;
-                            (info, _, "info message") -> ok;
-                            (warning, _, "warning message" ++ _Stacktrace) ->
+                        fun(debug, _, _, ["debug message"]) -> ok;
+                            (info, _, _, ["info message"]) -> ok;
+                            (warning, _, _, ["warning message" ++ _Stacktrace]) ->
                                 ok;
-                            (error, _, "error message") -> ok;
-                            (emergency, _, "emergency message") -> ok
+                            (error, _, _, ["error message"]) -> ok;
+                            (emergency, _, _, ["emergency message"]) -> ok
                         end),
 
-                    logger:set_include_stacktrace(true),
+                    logger:set_include_stacktrace(false),
                     logger:dispatch_log(0, [], "debug ~s", ["message"], false),
                     logger:dispatch_log(1, [], "info message", [], false),
-                    logger:dispatch_log(3, [], "warning message", [], true),
+                    logger:dispatch_log(3, [], "warning message", [], false),
                     logger:dispatch_log(4, [], "error ~s", ["message"], false),
                     logger:set_include_stacktrace(false),
-                    logger:dispatch_log(7, [], "emergency ~s", ["message"], true),
+                    logger:dispatch_log(7, [], "emergency ~s", ["message"], false),
                     ?debug("debug message"),
                     ?debug("debug ~s", ["message"]),
                     ?info("info message"),

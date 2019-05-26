@@ -40,12 +40,12 @@ authorize(CaveatId) ->
         URN = "/user/authorize",
         Body = jiffy:encode({[{<<"identifier">>, CaveatId}]}),
         {ok, 200, _ResponseHeaders, ResponseBody} =
-            oz_endpoint:auth_request(provider, URN, post, Body),
+            oz_endpoint:request(provider, URN, post, Body),
         {ok, iolist_to_binary(ResponseBody)}
     end).
 
 %%--------------------------------------------------------------------
-%% @doc Returns public details about user.
+%% @doc Returns details about current user.
 %% @end
 %%--------------------------------------------------------------------
 -spec get_details(Auth :: oz_endpoint:auth()) ->
@@ -54,14 +54,14 @@ get_details(Auth) ->
     ?run(fun() ->
         URN = "/user",
         {ok, 200, _ResponseHeaders, ResponseBody} =
-            oz_endpoint:auth_request(Auth, URN, get),
-        Proplist = json_utils:decode(ResponseBody),
+            oz_endpoint:request(Auth, URN, get),
+        Proplist = json_utils:decode_deprecated(ResponseBody),
         UserDetails = #user_details{
-            id = proplists:get_value(<<"userId">>, Proplist),
-            name = proplists:get_value(<<"name">>, Proplist),
-            connected_accounts = proplists:get_value(<<"connectedAccounts">>, Proplist),
-            alias = proplists:get_value(<<"alias">>, Proplist),
-            email_list = proplists:get_value(<<"emailList">>, Proplist)
+            id = lists_utils:key_get(<<"userId">>, Proplist),
+            name = lists_utils:key_get(<<"name">>, Proplist),
+            linked_accounts = lists_utils:key_get(<<"linkedAccounts">>, Proplist),
+            login = lists_utils:key_get(<<"login">>, Proplist),
+            email_list = lists_utils:key_get(<<"emailList">>, Proplist)
         },
         {ok, UserDetails}
     end).
@@ -76,9 +76,9 @@ get_details(Auth) ->
 modify_details(Auth, Parameters) ->
     ?run(fun() ->
         URN = "/user",
-        Body = json_utils:encode(Parameters),
+        Body = json_utils:encode_deprecated(Parameters),
         {ok, 204, _ResponseHeaders, _ResponseBody} =
-            oz_endpoint:auth_request(Auth, URN, patch, Body),
+            oz_endpoint:request(Auth, URN, patch, Body),
         ok
     end).
 
@@ -92,9 +92,9 @@ modify_details(Auth, Parameters) ->
 merge_account(Auth, Parameters) ->
     ?run(fun() ->
         URN = "/user/merge",
-        Body = json_utils:encode(Parameters),
+        Body = json_utils:encode_deprecated(Parameters),
         {ok, 201, _ResponseHeaders, _ResponseBody} =
-            oz_endpoint:auth_request(Auth, URN, post, Body),
+            oz_endpoint:request(Auth, URN, post, Body),
         ok
     end).
 
@@ -108,9 +108,9 @@ get_create_space_token(Auth) ->
     ?run(fun() ->
         URN = "/user/spaces/token",
         {ok, 200, _ResponseHeaders, ResponseBody} =
-            oz_endpoint:auth_request(Auth, URN, get),
-        Proplist = json_utils:decode(ResponseBody),
-        Token = proplists:get_value(<<"token">>, Proplist),
+            oz_endpoint:request(Auth, URN, get),
+        Proplist = json_utils:decode_deprecated(ResponseBody),
+        Token = lists_utils:key_get(<<"token">>, Proplist),
         {ok, Token}
     end).
 
@@ -124,9 +124,9 @@ get_merge_account_token(Auth) ->
     ?run(fun() ->
         URN = "/user/merge/token",
         {ok, 200, _ResponseHeaders, ResponseBody} =
-            oz_endpoint:auth_request(Auth, URN, get),
-        Proplist = json_utils:decode(ResponseBody),
-        Token = proplists:get_value(<<"token">>, Proplist),
+            oz_endpoint:request(Auth, URN, get),
+        Proplist = json_utils:decode_deprecated(ResponseBody),
+        Token = lists_utils:key_get(<<"token">>, Proplist),
         {ok, Token}
     end).
 
@@ -141,11 +141,10 @@ get_merge_account_token(Auth) ->
 create_space(Auth, Parameters) ->
     ?run(fun() ->
         URN = "/user/spaces",
-        Body = json_utils:encode(Parameters),
+        Body = json_utils:encode_deprecated(Parameters),
         {ok, 201, ResponseHeaders, _ResponseBody} =
-            oz_endpoint:auth_request(Auth, URN, post, Body),
-        <<"/spaces/", SpaceId/binary>> =
-            proplists:get_value(<<"location">>, ResponseHeaders),
+            oz_endpoint:request(Auth, URN, post, Body),
+        SpaceId = http_utils:last_url_part(maps:get(<<"Location">>, ResponseHeaders)),
         {ok, SpaceId}
     end).
 
@@ -160,11 +159,10 @@ create_space(Auth, Parameters) ->
 join_space(Auth, Parameters) ->
     ?run(fun() ->
         URN = "/user/spaces/join",
-        Body = json_utils:encode(Parameters),
+        Body = json_utils:encode_deprecated(Parameters),
         {ok, 201, ResponseHeaders, _ResponseBody} =
-            oz_endpoint:auth_request(Auth, URN, post, Body),
-        <<"/user/spaces/", SpaceId/binary>> =
-            proplists:get_value(<<"location">>, ResponseHeaders),
+            oz_endpoint:request(Auth, URN, post, Body),
+        SpaceId = http_utils:last_url_part(maps:get(<<"Location">>, ResponseHeaders)),
         {ok, SpaceId}
     end).
 
@@ -177,8 +175,8 @@ join_space(Auth, Parameters) ->
 leave_space(Auth, SpaceId) ->
     ?run(fun() ->
         URN = "/user/spaces/" ++ binary_to_list(SpaceId),
-        {ok, 202, _ResponseHeaders, _ResponseBody} =
-            oz_endpoint:auth_request(Auth, URN, delete),
+        {ok, 204, _ResponseHeaders, _ResponseBody} =
+            oz_endpoint:request(Auth, URN, delete),
         ok
     end).
 
@@ -192,11 +190,11 @@ get_spaces(Auth) ->
     ?run(fun() ->
         URN = "/user/spaces",
         {ok, 200, _ResponseHeaders, ResponseBody} =
-            oz_endpoint:auth_request(Auth, URN, get),
-        Proplist = json_utils:decode(ResponseBody),
+            oz_endpoint:request(Auth, URN, get),
+        Proplist = json_utils:decode_deprecated(ResponseBody),
         UserSpaces = #user_spaces{
-            ids = proplists:get_value(<<"spaces">>, Proplist),
-            default = proplists:get_value(<<"default">>, Proplist,
+            ids = lists_utils:key_get(<<"spaces">>, Proplist),
+            default = lists_utils:key_get(<<"default">>, Proplist,
                 <<"undefined">>)
         },
         {ok, UserSpaces}
@@ -212,13 +210,12 @@ get_space_details(Auth, SpaceId) ->
     ?run(fun() ->
         URN = "/user/spaces/" ++ binary_to_list(SpaceId),
         {ok, 200, _ResponseHeaders, ResponseBody} =
-            oz_endpoint:auth_request(Auth, URN, get),
-        Proplist = json_utils:decode(ResponseBody),
+            oz_endpoint:request(Auth, URN, get),
+        Proplist = json_utils:decode_deprecated(ResponseBody),
         SpaceDetails = #space_details{
-            id = proplists:get_value(<<"spaceId">>, Proplist),
-            name = proplists:get_value(<<"name">>, Proplist),
-            providers_supports = proplists:get_value(<<"providersSupports">>,
-                Proplist)
+            id = lists_utils:key_get(<<"spaceId">>, Proplist),
+            name = lists_utils:key_get(<<"name">>, Proplist),
+            providers_supports = lists_utils:key_get(<<"providers">>, Proplist)
         },
         {ok, SpaceDetails}
     end).
@@ -233,9 +230,9 @@ get_default_space(Auth) ->
     ?run(fun() ->
         URN = "/user/spaces/default",
         {ok, 200, _ResponseHeaders, ResponseBody} =
-            oz_endpoint:auth_request(Auth, URN, get),
-        Proplist = json_utils:decode(ResponseBody),
-        DefaultSpaceId = proplists:get_value(<<"spaceId">>, Proplist),
+            oz_endpoint:request(Auth, URN, get),
+        Proplist = json_utils:decode_deprecated(ResponseBody),
+        DefaultSpaceId = lists_utils:key_get(<<"spaceId">>, Proplist),
         {ok, DefaultSpaceId}
     end).
 
@@ -250,9 +247,9 @@ get_default_space(Auth) ->
 set_default_space(Auth, Parameters) ->
     ?run(fun() ->
         URN = "/user/spaces/default",
-        Body = json_utils:encode(Parameters),
+        Body = json_utils:encode_deprecated(Parameters),
         {ok, 204, _ResponseHeaders, _ResponseBody} =
-            oz_endpoint:auth_request(Auth, URN, put, Body),
+            oz_endpoint:request(Auth, URN, put, Body),
         ok
     end).
 
@@ -267,11 +264,10 @@ set_default_space(Auth, Parameters) ->
 create_group(Auth, Parameters) ->
     ?run(fun() ->
         URN = "/user/groups",
-        Body = json_utils:encode(Parameters),
+        Body = json_utils:encode_deprecated(Parameters),
         {ok, 201, ResponseHeaders, _ResponseBody} =
-            oz_endpoint:auth_request(Auth, URN, post, Body),
-        <<"/groups/", GroupId/binary>> =
-            proplists:get_value(<<"location">>, ResponseHeaders),
+            oz_endpoint:request(Auth, URN, post, Body),
+        GroupId = http_utils:last_url_part(maps:get(<<"Location">>, ResponseHeaders)),
         {ok, GroupId}
     end).
 
@@ -286,11 +282,10 @@ create_group(Auth, Parameters) ->
 join_group(Auth, Parameters) ->
     ?run(fun() ->
         URN = "/user/groups/join",
-        Body = json_utils:encode(Parameters),
+        Body = json_utils:encode_deprecated(Parameters),
         {ok, 201, ResponseHeaders, _ResponseBody} =
-            oz_endpoint:auth_request(Auth, URN, post, Body),
-        <<"/user/groups/", GroupId/binary>> =
-            proplists:get_value(<<"location">>, ResponseHeaders),
+            oz_endpoint:request(Auth, URN, post, Body),
+        GroupId = http_utils:last_url_part(maps:get(<<"Location">>, ResponseHeaders)),
         {ok, GroupId}
     end).
 
@@ -303,8 +298,8 @@ join_group(Auth, Parameters) ->
 leave_group(Auth, GroupId) ->
     ?run(fun() ->
         URN = "/user/groups/" ++ binary_to_list(GroupId),
-        {ok, 202, _ResponseHeaders, _ResponseBody} =
-            oz_endpoint:auth_request(Auth, URN, delete),
+        {ok, 204, _ResponseHeaders, _ResponseBody} =
+            oz_endpoint:request(Auth, URN, delete),
         ok
     end).
 
@@ -318,9 +313,9 @@ get_groups(Auth) ->
     ?run(fun() ->
         URN = "/user/groups",
         {ok, 200, _ResponseHeaders, ResponseBody} =
-            oz_endpoint:auth_request(Auth, URN, get),
-        Proplist = json_utils:decode(ResponseBody),
-        GroupIds = proplists:get_value(<<"groups">>, Proplist),
+            oz_endpoint:request(Auth, URN, get),
+        Proplist = json_utils:decode_deprecated(ResponseBody),
+        GroupIds = lists_utils:key_get(<<"groups">>, Proplist),
         {ok, GroupIds}
     end).
 
@@ -334,9 +329,9 @@ get_effective_groups(Auth) ->
     ?run(fun() ->
         URN = "/user/effective_groups",
         {ok, 200, _ResponseHeaders, ResponseBody} =
-            oz_endpoint:auth_request(Auth, URN, get),
-        Proplist = json_utils:decode(ResponseBody),
-        GroupIds = proplists:get_value(<<"effective_groups">>, Proplist),
+            oz_endpoint:request(Auth, URN, get),
+        Proplist = json_utils:decode_deprecated(ResponseBody),
+        GroupIds = lists_utils:key_get(<<"effective_groups">>, Proplist),
         {ok, GroupIds}
     end).
 
@@ -350,12 +345,12 @@ get_group_details(Auth, GroupId) ->
     ?run(fun() ->
         URN = "/user/groups/" ++ binary_to_list(GroupId),
         {ok, 200, _ResponseHeaders, ResponseBody} =
-            oz_endpoint:auth_request(Auth, URN, get),
-        Proplist = json_utils:decode(ResponseBody),
+            oz_endpoint:request(Auth, URN, get),
+        Proplist = json_utils:decode_deprecated(ResponseBody),
         GroupDetails = #group_details{
-            id = proplists:get_value(<<"groupId">>, Proplist),
-            name = proplists:get_value(<<"name">>, Proplist),
-            type = proplists:get_value(<<"type">>, Proplist)
+            id = lists_utils:key_get(<<"groupId">>, Proplist),
+            name = lists_utils:key_get(<<"name">>, Proplist),
+            type = lists_utils:key_get(<<"type">>, Proplist)
         },
         {ok, GroupDetails}
     end).

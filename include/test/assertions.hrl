@@ -46,10 +46,10 @@
             (_, {true, __Value__}) -> {true, __Value__};
             (__Fun__, {false, __Value__}) ->
                 try
-                    timer:sleep(Timeout),
                     {true, __Fun__(false)}
                 catch
                     error:{assertMatch_failed, _} ->
+                        timer:sleep(Timeout),
                         {false, __Value__}
                 end
         end, {false, undefined}, lists:duplicate(Attempts - 1,
@@ -57,7 +57,6 @@
         case __Matcher__ of
             {true, __Value__} -> __Value__;
             {false, _} ->
-                timer:sleep(Timeout),
                 ?assertMatch(Expect, Expr)
         end
     end)())).
@@ -93,17 +92,17 @@
             (_, true) -> true;
             (__Fun__, false) ->
                 try
-                    timer:sleep(Timeout),
                     __Fun__(Expect, false),
                     true
                 catch
-                    error:{assertEqual_failed, _} -> false
+                    error:{assertEqual_failed, _} ->
+                        timer:sleep(Timeout),
+                        false
                 end
         end, false, lists:duplicate(Attempts - 1, ?assertEqualFun(Expect, Expr))),
         case __E of
             true -> ok;
             false ->
-                timer:sleep(Timeout),
                 ?assertEqual(Expect, Expr)
         end
     end)())).

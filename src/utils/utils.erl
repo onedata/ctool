@@ -19,8 +19,12 @@
     process_info/1, process_info/2]).
 -export([duration/1, adjust_duration/2]).
 -export([mkdtemp/0, mkdtemp/3, rmtempdir/1]).
+-export([to_binary/1]).
+-export([save_file_on_hosts/3, save_file/2]).
 
 -type time_unit() :: us | ms | s | min | h.
+
+-define(TIMEOUT, 60000).
 
 %%%===================================================================
 %%% API
@@ -44,6 +48,8 @@ ensure_running(Application) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec pmap(Fun :: fun((X :: A) -> B), L :: [A]) -> [B].
+pmap(Fun, [X]) ->
+    [catch Fun(X)];
 pmap(Fun, L) ->
     Self = self(),
     Ref = erlang:make_ref(),
@@ -57,14 +63,17 @@ pmap(Fun, L) ->
 %% A parallel version of lists:foreach/2. See {@link lists:foreach/2}
 %% @end
 %%--------------------------------------------------------------------
--spec pforeach(Fun :: fun((X :: A) -> any()), L :: [A]) -> ok.
+-spec pforeach(Fun :: fun((X :: A) -> any()), L :: [A]) -> ok | error.
+pforeach(Fun, [X]) ->
+    catch Fun(X),
+    ok;
 pforeach(Fun, L) ->
     Self = self(),
     Ref = erlang:make_ref(),
-    lists:foreach(fun(X) ->
+    Pids = lists:map(fun(X) ->
         spawn(fun() -> pforeach_f(Self, Ref, Fun, X) end)
     end, L),
-    pforeach_gather(length(L), Ref).
+    pforeach_gather(Pids, Ref).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -101,7 +110,7 @@ trim_spaces(Binary) when is_binary(Binary) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec ceil(N :: number()) -> integer().
-ceil(N) when trunc(N) == N -> N;
+ceil(N) when trunc(N) == N -> trunc(N);
 ceil(N) -> trunc(N + 1).
 
 %%--------------------------------------------------------------------
@@ -112,10 +121,13 @@ ceil(N) -> trunc(N + 1).
 -spec aggregate_over_first_element(List :: [{K, V}]) -> [{K, [V]}].
 aggregate_over_first_element(List) ->
     lists:reverse(
-        lists:foldl(fun({Key, Value}, []) -> [{Key, [Value]}];
+        lists:foldl(fun
+            ({Key, Value}, []) ->
+                [{Key, [Value]}];
             ({Key, Value}, [{Key, AccValues} | Tail]) ->
                 [{Key, [Value | AccValues]} | Tail];
-            ({Key, Value}, Acc) -> [{Key, [Value]} | Acc]
+            ({Key, Value}, Acc) ->
+                [{Key, [Value]} | Acc]
         end, [], lists:keysort(1, List))).
 
 %%--------------------------------------------------------------------
@@ -134,10 +146,7 @@ average(List) ->
 %%--------------------------------------------------------------------
 -spec random_shuffle(List :: list()) -> NewList :: list().
 random_shuffle(List) ->
-    From = 0,
-    To = length(List) + 1,
-    [X || {_, X} <- lists:sort([{crypto:rand_uniform(From, To), N} || N <- List])].
-
+    [X || {_, X} <- lists:sort([{rand:uniform(), N} || N <- List])].
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -148,7 +157,7 @@ random_shuffle(List) ->
 -spec get_values(Keys :: list(), List :: proplists:proplist()) -> Values :: list().
 get_values(Keys, List) ->
     lists:map(fun(Key) ->
-        proplists:get_value(Key, List)
+        lists_utils:key_get(Key, List)
     end, Keys).
 
 
@@ -159,8 +168,7 @@ get_values(Keys, List) ->
 %%--------------------------------------------------------------------
 -spec random_element([term()]) -> term().
 random_element(List) ->
-    RandomIndex = crypto:rand_uniform(1, length(List) + 1),
-    lists:nth(RandomIndex, List).
+    lists:nth(rand:uniform(length(List)), List).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -220,13 +228,12 @@ adjust_duration(Duration, Unit) ->
         _ -> {Duration, atom_to_list(Unit)}
     end.
 
-
 %%--------------------------------------------------------------------
 %% @doc
 %% Creates a temporary dir (with any name) and returns its path.
 %% @end
 %%--------------------------------------------------------------------
--spec mkdtemp() ->    DirPath :: list().
+-spec mkdtemp() -> DirPath :: list().
 mkdtemp() ->
     mochitemp:mkdtemp().
 
@@ -243,6 +250,7 @@ mkdtemp(Suffix, Prefix, Dir) ->
 %% Removes a temporary dir.
 %% @end
 %%--------------------------------------------------------------------
+-spec rmtempdir(Dir :: string()) -> ok.
 rmtempdir(Dir) ->
     mochitemp:rmtempdir(Dir).
 
@@ -251,7 +259,7 @@ rmtempdir(Dir) ->
 %% Ensures value is defined.
 %% @end
 %%--------------------------------------------------------------------
--spec ensure_defined(Value :: term(), UndefinedValue :: term(), DefaultValue :: term()) ->term().
+-spec ensure_defined(Value :: term(), UndefinedValue :: term(), DefaultValue :: term()) -> term().
 ensure_defined(UndefinedValue, UndefinedValue, DefaultValue) ->
     DefaultValue;
 ensure_defined(Value, _, _) ->
@@ -288,6 +296,57 @@ process_info(Pid, Args) ->
             rpc:call(OtherNode, erlang, process_info, [Pid, Args])
     end.
 
+%%--------------------------------------------------------------------
+%% @doc
+%% Encodes given given term as binary.
+%% @end
+%%--------------------------------------------------------------------
+-spec to_binary(term()) -> binary().
+to_binary(Term) when is_binary(Term) ->
+    Term;
+to_binary(Term) ->
+    base64:encode(term_to_binary(Term)).
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Saves given file on given hosts.
+%% @end
+%%--------------------------------------------------------------------
+-spec save_file_on_hosts(Hosts :: [atom()], Path :: file:name_all(), Content :: binary()) ->
+    ok | [{node(), Reason :: term()}].
+save_file_on_hosts(Hosts, Path, Content) ->
+    Res = lists:foldl(
+        fun(Host, Acc) ->
+            case rpc:call(Host, ?MODULE, save_file, [Path, Content]) of
+                ok ->
+                    Acc;
+                {error, Reason} ->
+                    [{Host, Reason} | Acc]
+            end
+        end, [], Hosts),
+    case Res of
+        [] -> ok;
+        Other -> Other
+    end.
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Saves given file under given path.
+%% @end
+%%--------------------------------------------------------------------
+-spec save_file(Path :: file:name_all(), Content :: binary()) -> ok | {error, term()}.
+save_file(Path, Content) ->
+    try
+        file:make_dir(filename:dirname(Path)),
+        ok = file:write_file(Path, Content),
+        ok
+    catch
+        _:Reason ->
+            {error, Reason}
+    end.
+
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
@@ -321,11 +380,27 @@ pmap_f(Parent, Ref, Fun, X) -> Parent ! {self(), Ref, (catch Fun(X))}.
 %% Gathers the results of pmap.
 %% @end
 %%--------------------------------------------------------------------
--spec pmap_gather(PIDs :: [pid()], Ref :: reference(), Acc :: list()) -> list().
+-spec pmap_gather(PIDs :: [pid()], Ref :: reference(), Acc :: list()) ->
+    list().
 pmap_gather([], _Ref, Acc) -> lists:reverse(Acc);
-pmap_gather([PID | T], Ref, Acc) ->
+pmap_gather([PID | T] = Pids, Ref, Acc) ->
     receive
         {PID, Ref, Result} -> pmap_gather(T, Ref, [Result | Acc])
+    after
+        ?TIMEOUT ->
+            IsAnyAlive = lists:foldl(fun
+                (_, true) ->
+                    true;
+                (Pid, _Acc) ->
+                    erlang:is_process_alive(Pid)
+            end, false, Pids),
+            case IsAnyAlive of
+                true ->
+                    pmap_gather(Pids, Ref, Acc);
+                false ->
+                    Errors = lists:map(fun(_) -> {error, slave_error} end, Pids),
+                    lists:reverse(Acc) ++ Errors
+            end
     end.
 
 %%--------------------------------------------------------------------
@@ -334,8 +409,9 @@ pmap_gather([PID | T], Ref, Acc) ->
 %% Runs a function on X and signals parent that it's done.
 %% @end
 %%--------------------------------------------------------------------
--spec pforeach_f(Parent :: pid(), Ref :: reference(), Fun :: fun((E :: A) -> any()), X :: A) -> reference().
-pforeach_f(Parent, Ref, Fun, X) -> catch Fun(X), Parent ! Ref.
+-spec pforeach_f(Parent :: pid(), Ref :: reference(),
+    Fun :: fun((E :: A) -> any()), X :: A) -> {reference(), pid()}.
+pforeach_f(Parent, Ref, Fun, X) -> catch Fun(X), Parent ! {Ref, self()}.
 
 %%--------------------------------------------------------------------
 %% @private
@@ -343,10 +419,24 @@ pforeach_f(Parent, Ref, Fun, X) -> catch Fun(X), Parent ! Ref.
 %% Joins pforeach processes.
 %% @end
 %%--------------------------------------------------------------------
--spec pforeach_gather(N :: non_neg_integer(), Ref :: reference()) -> ok.
-pforeach_gather(0, _Ref) -> ok;
-pforeach_gather(N, Ref) ->
+-spec pforeach_gather([pid()], Ref :: reference()) -> ok | error.
+pforeach_gather([], _Ref) -> ok;
+pforeach_gather(Pids, Ref) ->
     receive
-        Ref -> pforeach_gather(N - 1, Ref)
+        {Ref, Pid} -> pforeach_gather(Pids -- [Pid], Ref)
+    after
+        ?TIMEOUT ->
+            IsAnyAlive = lists:foldl(fun
+                (_, true) ->
+                    true;
+                (Pid, _Acc) ->
+                    erlang:is_process_alive(Pid)
+            end, false, Pids),
+            case IsAnyAlive of
+                true ->
+                    pforeach_gather(Pids, Ref);
+                false ->
+                    error
+            end
     end.
 

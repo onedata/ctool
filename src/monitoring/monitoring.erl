@@ -27,7 +27,6 @@
 
 % Record holding all monitoring info and required measurement history.
 -record(node_monitoring_state, {
-    ip_addr = {127, 0, 0, 1} :: {byte(), byte(), byte(), byte()},
     cpu_stats = [] :: [{Name :: binary(), Value :: float()}],
     mem_stats = [] :: [{Name :: binary(), Value :: float()}],
     net_stats = [] :: [{Name :: binary(), Value :: float()}],
@@ -50,7 +49,7 @@
 -define(NET_DUPLEX_FILE(_Interface), "/sys/class/net/" ++ _Interface ++ "/duplex").
 
 %% API
--export([start/1, update/1, refresh_ip_address/2]).
+-export([start/0, update/1]).
 -export([get_node_state/1, get_memory_stats/0]).
 -export([cpu_usage/1, mem_usage/1, net_usage/1, erlang_vm_stats/1]).
 
@@ -64,22 +63,10 @@
 %% that will be used throughout the monitoring process.
 %% @end
 %%--------------------------------------------------------------------
--spec start(IPAddr :: {byte(), byte(), byte(), byte()}) -> #node_monitoring_state{}.
-start(IPAddr) ->
+-spec start() -> #node_monitoring_state{}.
+start() ->
     _InitialRecord = update(#node_monitoring_state{
-        ip_addr = IPAddr,
-        last_update = erlang:system_time(milli_seconds)}).
-
-
-%%--------------------------------------------------------------------
-%% @doc
-%% Refreshes IP address stored in node_monitoring_state record.
-%% @end
-%%--------------------------------------------------------------------
--spec refresh_ip_address(IPAddr :: {byte(), byte(), byte(), byte()}, #node_monitoring_state{}) ->
-    #node_monitoring_state{}.
-refresh_ip_address(IPAddr, MonState) ->
-    MonState#node_monitoring_state{ip_addr = IPAddr}.
+        last_update = time_utils:system_time_millis()}).
 
 
 %%--------------------------------------------------------------------
@@ -93,7 +80,7 @@ update(MonitoringState) ->
         last_update = LastUpdate,
         cpu_last = CPULast,
         net_last = NetLast} = MonitoringState,
-    Now = erlang:system_time(milli_seconds),
+    Now = time_utils:system_time_millis(),
     % Time difference is in seconds, float is required for better accuracy
     TimeDiff = (Now - LastUpdate) / 1000,
     {CPUStats, NewCPULast} = get_cpu_stats(CPULast),
@@ -118,11 +105,11 @@ update(MonitoringState) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec get_node_state(MonitoringState :: #node_monitoring_state{}) -> #node_state{}.
-get_node_state(#node_monitoring_state{ip_addr = IPAddr} = MonitoringState) ->
+get_node_state(MonitoringState) ->
     CPUUsage = cpu_usage(MonitoringState),
     MemUsage = mem_usage(MonitoringState),
     NetUsage = net_usage(MonitoringState),
-    #node_state{ip_addr = IPAddr, cpu_usage = CPUUsage, mem_usage = MemUsage, net_usage = NetUsage}.
+    #node_state{cpu_usage = CPUUsage, mem_usage = MemUsage, net_usage = NetUsage}.
 
 
 %%--------------------------------------------------------------------
@@ -133,7 +120,7 @@ get_node_state(#node_monitoring_state{ip_addr = IPAddr} = MonitoringState) ->
 %%--------------------------------------------------------------------
 -spec cpu_usage(MonitoringState :: #node_monitoring_state{}) -> float().
 cpu_usage(#node_monitoring_state{cpu_stats = CPUStats}) ->
-    _CPUUsage = proplists:get_value(<<"cpu">>, CPUStats, 0.0).
+    _CPUUsage = lists_utils:key_get(<<"cpu">>, CPUStats, 0.0).
 
 
 %%--------------------------------------------------------------------
@@ -144,7 +131,7 @@ cpu_usage(#node_monitoring_state{cpu_stats = CPUStats}) ->
 %%--------------------------------------------------------------------
 -spec mem_usage(MonitoringState :: #node_monitoring_state{}) -> float().
 mem_usage(#node_monitoring_state{mem_stats = MemStats}) ->
-    _MemUsage = proplists:get_value(<<"mem">>, MemStats, 0.0).
+    _MemUsage = lists_utils:key_get(<<"mem">>, MemStats, 0.0).
 
 
 %%--------------------------------------------------------------------
@@ -288,7 +275,7 @@ get_memory_stats() ->
     try
         case file:open(?MEM_STATS_FILE, [read]) of
             {ok, Fd} ->
-                read_memory_stats(Fd, 0, 0, 0);
+                read_memory_stats(Fd, -1, -1, 0);
             Other ->
                 ?error("Cannot open memory stats file: ~p", [Other]),
                 []
@@ -317,11 +304,22 @@ read_memory_stats(Fd, MemFree, MemTotal, Counter) ->
         list_to_integer(Value)
     end,
     case file:read_line(Fd) of
-        {ok, "MemTotal:" ++ Line} -> read_memory_stats(Fd, MemFree, GetValue(Line), Counter + 1);
-        {ok, "MemAvailable:" ++ Line} -> read_memory_stats(Fd, GetValue(Line), MemTotal, Counter + 1);
-        eof -> file:close(Fd), [];
-        {error, _} -> [];
-        _ -> read_memory_stats(Fd, MemFree, MemTotal, Counter)
+        {ok, "MemTotal:" ++ Line} ->
+            read_memory_stats(Fd, MemFree, GetValue(Line), Counter + 1);
+        {ok, "MemAvailable:" ++ Line} ->
+            read_memory_stats(Fd, GetValue(Line), MemTotal, Counter + 1);
+        eof ->
+            case {MemFree, Counter} of
+                {-1, 1} ->
+                    read_memory_stats(Fd, available_memory:calculate(), MemTotal, Counter + 1);
+                _ ->
+                    file:close(Fd),
+                    []
+            end;
+        {error, _} ->
+            [];
+        _ ->
+            read_memory_stats(Fd, MemFree, MemTotal, Counter)
     end.
 
 

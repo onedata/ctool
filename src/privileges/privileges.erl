@@ -1,56 +1,69 @@
 %%%-------------------------------------------------------------------
-%%% @author Konrad Zemek
-%%% @copyright (C): 2014 ACK CYFRONET AGH
+%%% @author Konrad Zemek, Lukasz Opiola
+%%% @copyright (C): 2014-2016 ACK CYFRONET AGH
 %%% This software is released under the MIT license
 %%% cited in 'LICENSE.txt'.
 %%% @end
 %%%-------------------------------------------------------------------
-%%% @doc The module describing user privileges in group and Space.
+%%% @doc
+%%% The module describes privileges of users and groups in the system.
+%%% @end
 %%%-------------------------------------------------------------------
 -module(privileges).
 -author("Konrad Zemek").
+-author("Lukasz Opiola").
 
+-include("privileges.hrl").
 
--export([space_user/0, space_manager/0, space_admin/0, space_privileges/0]).
--export([group_user/0, group_manager/0, group_admin/0, group_privileges/0]).
--export([handle_service_user/0, handle_service_admin/0,
-    handle_service_privileges/0]).
--export([handle_user/0, handle_admin/0, handle_privileges/0]).
--export([oz_viewer/0, oz_privileges/0]).
-
-%% User privileges with regards to Space management.
--type space_privilege() :: space_invite_user | space_remove_user |
-space_invite_group | space_remove_group | space_set_privileges |
-space_remove | space_add_provider | space_remove_provider |
-space_change_data | space_view_data | space_manage_shares | space_write_files.
+-type privileges(Type) :: ordsets:ordset(Type).
 
 %% User privileges with regards to group management.
--type group_privilege() :: group_change_data | group_invite_user |
-group_remove_user | group_join_space | group_create_space |
-group_set_privileges | group_remove | group_leave_space |
-group_view_data | group_create_space_token |
-group_join_group | group_invite_group | group_remove_group.
+-type group_privilege() :: ?GROUP_VIEW | ?GROUP_UPDATE | ?GROUP_DELETE |
+?GROUP_SET_PRIVILEGES |
+?GROUP_INVITE_USER | ?GROUP_REMOVE_USER |
+% TODO VFS-2918
+?GROUP_JOIN_GROUP | %?GROUP_LEAVE_GROUP |
+?GROUP_INVITE_GROUP | ?GROUP_REMOVE_GROUP |
+?GROUP_CREATE_SPACE | ?GROUP_JOIN_SPACE | ?GROUP_LEAVE_SPACE. %|
+% TODO VFS-2918
+%?GROUP_LEAVE_HANDLE_SERVICE | ?GROUP_LEAVE_HANDLE.
+
+
+% Group privileges of members (users or groups)
+
+%% User privileges with regards to Space management.
+-type space_privilege() :: ?SPACE_VIEW | ?SPACE_UPDATE | ?SPACE_DELETE |
+?SPACE_SET_PRIVILEGES |
+?SPACE_WRITE_DATA | ?SPACE_MANAGE_SHARES |
+?SPACE_INVITE_USER | ?SPACE_REMOVE_USER |
+?SPACE_INVITE_GROUP | ?SPACE_REMOVE_GROUP |
+?SPACE_INVITE_PROVIDER | ?SPACE_REMOVE_PROVIDER.
 
 %% User privileges with regards to handle service.
 -type handle_service_privilege() ::
 %%register_handle_service | list_handle_services | % we may need those
 %% privileges for admins in oz_privileges
-delete_handle_service | modify_handle_service | view_handle_service |
-register_handle.
+?HANDLE_SERVICE_VIEW | ?HANDLE_SERVICE_UPDATE | ?HANDLE_SERVICE_DELETE |
+?HANDLE_SERVICE_REGISTER_HANDLE | ?HANDLE_SERVICE_LIST_HANDLES.
 
 %% User privileges with regards to handle.
--type handle_privilege() :: delete_handle | modify_handle |
-view_handle.
+-type handle_privilege() :: ?HANDLE_VIEW | ?HANDLE_UPDATE | ?HANDLE_DELETE.
 
 %% User/group privileges to admin OZ API
--type oz_privilege() :: view_privileges | set_privileges |
-add_member_to_space | remove_member_from_space |
-list_users | list_users_of_provider |
-list_groups | list_groups_of_provider |
-list_spaces | list_spaces_of_provider |
-list_providers | list_providers_of_space.
+-type oz_privilege() :: ?OZ_VIEW_PRIVILEGES | ?OZ_SET_PRIVILEGES |
+?OZ_USERS_LIST | ?OZ_USERS_DELETE |
+?OZ_GROUPS_LIST | ?OZ_GROUPS_LIST_USERS | ?OZ_GROUPS_LIST_GROUPS |
+?OZ_GROUPS_ADD_MEMBERS | ?OZ_GROUPS_REMOVE_MEMBERS |
+?OZ_SPACES_LIST | ?OZ_SPACES_LIST_USERS | ?OZ_SPACES_LIST_GROUPS |
+?OZ_SPACES_LIST_PROVIDERS | ?OZ_SPACES_ADD_MEMBERS | ?OZ_SPACES_REMOVE_MEMBERS |
+?OZ_SHARES_LIST |
+?OZ_PROVIDERS_LIST | ?OZ_PROVIDERS_LIST_USERS | ?OZ_PROVIDERS_LIST_GROUPS |
+?OZ_PROVIDERS_LIST_SPACES | ?OZ_PROVIDERS_INVITE | ?OZ_PROVIDERS_DELETE |
+?OZ_HANDLE_SERVICES_CREATE | ?OZ_HANDLE_SERVICES_LIST |
+?OZ_HANDLES_LIST.
 
 -export_type([
+    privileges/1,
     space_privilege/0,
     group_privilege/0,
     handle_service_privilege/0,
@@ -58,142 +71,156 @@ list_providers | list_providers_of_space.
     oz_privilege/0
 ]).
 
+% Privileges manipulation
+-export([from_list/1, union/2, subtract/2]).
+% Privileges in the system
+-export([group_user/0, group_manager/0, group_admin/0, group_privileges/0]).
+-export([space_user/0, space_manager/0, space_admin/0, space_privileges/0]).
+-export([handle_service_user/0, handle_service_admin/0,
+    handle_service_privileges/0]).
+-export([handle_user/0, handle_admin/0, handle_privileges/0]).
+-export([oz_viewer/0, oz_admin/0, oz_privileges/0]).
+
 %%%===================================================================
 %%% API
 %%%===================================================================
 
 %%--------------------------------------------------------------------
-%% @doc A privilege level of a Space user.
-%%--------------------------------------------------------------------
--spec space_user() -> [space_privilege()].
-space_user() ->
-    [space_view_data, space_write_files].
-
-%%--------------------------------------------------------------------
-%% @doc A privilege level of a Space manager.
-%%--------------------------------------------------------------------
--spec space_manager() -> [space_privilege()].
-space_manager() ->
-    ordsets:union(
-        space_user(),
-        ordsets:from_list([
-            space_invite_user,
-            space_remove_user,
-            space_invite_group,
-            space_remove_group,
-            space_manage_shares
-        ])
-    ).
-
-%%--------------------------------------------------------------------
-%% @doc A privilege level of a Space administrator. This level contains all
-%% atoms representing space privileges.
+%% @doc Returns privileges from list. It is required so that privileges are
+%% always sorted.
 %% @end
 %%--------------------------------------------------------------------
--spec space_admin() -> [space_privilege()].
-space_admin() ->
-    ordsets:union(
-        space_manager(),
-        ordsets:from_list([
-            space_add_provider,
-            space_remove_provider,
-            space_set_privileges,
-            space_change_data,
-            space_remove
-        ])
-    ).
+-spec from_list(PrivilegesList :: [atom()]) -> privileges(atom()).
+from_list(PrivilegesList) ->
+    ordsets:from_list(PrivilegesList).
+
 
 %%--------------------------------------------------------------------
-%% @doc All atoms representing space privileges.
-%% @equiv space_admin()
+%% @doc Returns privileges from list. It is required so that privileges are
+%% always sorted.
+%% @end
 %%--------------------------------------------------------------------
--spec space_privileges() -> [space_privilege()].
-space_privileges() ->
-    space_admin().
+-spec union(PrivsA :: [atom()], PrivsB :: [atom()]) -> privileges(atom()).
+union(PrivilegesA, PrivilegesB) ->
+    ordsets:union(from_list(PrivilegesA), from_list(PrivilegesB)).
+
+
+%%--------------------------------------------------------------------
+%% @doc Returns privileges from list. It is required so that privileges are
+%% always sorted.
+%% @end
+%%--------------------------------------------------------------------
+-spec subtract(PrivsA :: [atom()], PrivsB :: [atom()]) -> privileges(atom()).
+subtract(PrivilegesA, PrivilegesB) ->
+    ordsets:subtract(from_list(PrivilegesA), from_list(PrivilegesB)).
 
 
 %%--------------------------------------------------------------------
 %% @doc A privilege level of a group user.
 %%--------------------------------------------------------------------
--spec group_user() -> [group_privilege()].
+-spec group_user() -> privileges(group_privilege()).
 group_user() ->
-    [group_view_data].
+    from_list([?GROUP_VIEW]).
 
 %%--------------------------------------------------------------------
 %% @doc A privilege level of a group manager.
 %%--------------------------------------------------------------------
--spec group_manager() -> [group_privilege()].
+-spec group_manager() -> privileges(group_privilege()).
 group_manager() ->
-    ordsets:union(
-        group_user(),
-        ordsets:from_list([
-            group_invite_user,
-            group_remove_user,
-            group_invite_group,
-            group_remove_group
-        ])
-    ).
+    union(group_user(), [
+        ?GROUP_INVITE_USER, ?GROUP_REMOVE_USER,
+        % TODO VFS-2918
+        ?GROUP_JOIN_GROUP, %?GROUP_LEAVE_GROUP,
+        ?GROUP_INVITE_GROUP, ?GROUP_REMOVE_GROUP
+    ]).
 
 %%--------------------------------------------------------------------
 %% @doc A privilege level of a group administrator. This level contains all
 %% atoms representing group privileges.
 %% @end
 %%--------------------------------------------------------------------
--spec group_admin() -> [group_privilege()].
+-spec group_admin() -> privileges(group_privilege()).
 group_admin() ->
-    ordsets:union(
-        group_manager(),
-        ordsets:from_list([
-            group_create_space,
-            group_create_space_token,
-            group_join_space,
-            group_leave_space,
-            group_set_privileges,
-            group_change_data,
-            group_remove,
-            group_join_group
-        ])
-    ).
+    union(group_manager(), [
+        ?GROUP_UPDATE, ?GROUP_DELETE, ?GROUP_SET_PRIVILEGES,
+        ?GROUP_CREATE_SPACE, ?GROUP_JOIN_SPACE, ?GROUP_LEAVE_SPACE%,
+        % TODO VFS-2918
+        %?GROUP_LEAVE_HANDLE_SERVICE, ?GROUP_LEAVE_HANDLE
+    ]).
 
 %%--------------------------------------------------------------------
 %% @doc All atoms representing group privileges.
 %% @equiv group_admin()
 %%--------------------------------------------------------------------
--spec group_privileges() -> [group_privilege()].
+-spec group_privileges() -> privileges(group_privilege()).
 group_privileges() ->
     group_admin().
 
 
 %%--------------------------------------------------------------------
+%% @doc A privilege level of a Space user.
+%%--------------------------------------------------------------------
+-spec space_user() -> privileges(space_privilege()).
+space_user() ->
+    from_list([?SPACE_VIEW, ?SPACE_WRITE_DATA]).
+
+%%--------------------------------------------------------------------
+%% @doc A privilege level of a Space manager.
+%%--------------------------------------------------------------------
+-spec space_manager() -> privileges(space_privilege()).
+space_manager() ->
+    union(space_user(), [
+        ?SPACE_INVITE_USER, ?SPACE_REMOVE_USER,
+        ?SPACE_INVITE_GROUP, ?SPACE_REMOVE_GROUP,
+        ?SPACE_MANAGE_SHARES
+    ]).
+
+%%--------------------------------------------------------------------
+%% @doc A privilege level of a Space administrator. This level contains all
+%% atoms representing space privileges.
+%% @end
+%%--------------------------------------------------------------------
+-spec space_admin() -> privileges(space_privilege()).
+space_admin() ->
+    union(space_manager(), [
+        ?SPACE_UPDATE, ?SPACE_DELETE, ?SPACE_SET_PRIVILEGES,
+        ?SPACE_INVITE_PROVIDER, ?SPACE_REMOVE_PROVIDER
+    ]).
+
+%%--------------------------------------------------------------------
+%% @doc All atoms representing space privileges.
+%% @equiv space_admin()
+%%--------------------------------------------------------------------
+-spec space_privileges() -> privileges(space_privilege()).
+space_privileges() ->
+    space_admin().
+
+
+%%--------------------------------------------------------------------
 %% @doc A privilege level of a handle_service user.
 %%--------------------------------------------------------------------
--spec handle_service_user() -> [handle_service_privilege()].
+-spec handle_service_user() -> privileges(handle_service_privilege()).
 handle_service_user() ->
-    [view_handle_service, register_handle].
+    from_list([?HANDLE_SERVICE_VIEW, ?HANDLE_SERVICE_REGISTER_HANDLE]).
 
 %%--------------------------------------------------------------------
 %% @doc A privilege level of a handle_service administrator. This level contains all
 %% atoms representing handle_service privileges.
 %% @end
 %%--------------------------------------------------------------------
--spec handle_service_admin() -> [handle_service_privilege()].
+-spec handle_service_admin() -> privileges(handle_service_privilege()).
 handle_service_admin() ->
-    ordsets:union(
-        handle_service_user(),
-        ordsets:from_list([
-%%            register_handle_service, % we may need those privileges for admins in oz_privileges
-%%            list_handle_services,
-            delete_handle_service,
-            modify_handle_service,
-            view_handle_service
-        ])
-    ).
+    union(handle_service_user(), [
+        ?HANDLE_SERVICE_UPDATE,
+        ?HANDLE_SERVICE_DELETE,
+        ?HANDLE_SERVICE_LIST_HANDLES
+    ]).
 
 %%--------------------------------------------------------------------
 %% @doc All atoms representing handle_service privileges.
 %% @equiv handle_service_admin()
 %%--------------------------------------------------------------------
--spec handle_service_privileges() -> [handle_service_privilege()].
+-spec handle_service_privileges() -> privileges(handle_service_privilege()).
 handle_service_privileges() ->
     handle_service_admin().
 
@@ -201,32 +228,27 @@ handle_service_privileges() ->
 %%--------------------------------------------------------------------
 %% @doc A privilege level of a handle user.
 %%--------------------------------------------------------------------
--spec handle_user() -> [handle_privilege()].
+-spec handle_user() -> privileges(handle_privilege()).
 handle_user() ->
-    [view_handle].
+    from_list([?HANDLE_VIEW]).
 
 %%--------------------------------------------------------------------
 %% @doc A privilege level of a handle administrator. This level contains all
 %% atoms representing handle privileges.
 %% @end
 %%--------------------------------------------------------------------
--spec handle_admin() -> [handle_privilege()].
+-spec handle_admin() -> privileges(handle_privilege()).
 handle_admin() ->
-    ordsets:union(
-        handle_user(),
-        ordsets:from_list([
-            list_handles,
-            delete_handle,
-            modify_handle,
-            view_handle
-        ])
-    ).
+    union(handle_user(), [
+        ?HANDLE_UPDATE,
+        ?HANDLE_DELETE
+    ]).
 
 %%--------------------------------------------------------------------
 %% @doc All atoms representing handle privileges.
 %% @equiv handle_admin()
 %%--------------------------------------------------------------------
--spec handle_privileges() -> [handle_privilege()].
+-spec handle_privileges() -> privileges(handle_privilege()).
 handle_privileges() ->
     handle_admin().
 
@@ -234,35 +256,49 @@ handle_privileges() ->
 %%--------------------------------------------------------------------
 %% @doc All view privileges in OZ API.
 %%--------------------------------------------------------------------
--spec oz_viewer() -> [oz_privilege()].
-oz_viewer() -> [
-    list_users,
+-spec oz_viewer() -> privileges(oz_privilege()).
+oz_viewer() ->
+    from_list([
+        ?OZ_USERS_LIST,
 
-    list_groups,
+        ?OZ_GROUPS_LIST, ?OZ_GROUPS_LIST_USERS, ?OZ_GROUPS_LIST_GROUPS,
 
-    list_spaces,
-    list_providers_of_space,
+        ?OZ_SPACES_LIST, ?OZ_SPACES_LIST_USERS, ?OZ_SPACES_LIST_GROUPS,
+        ?OZ_SPACES_LIST_PROVIDERS,
 
-    list_providers,
-    list_users_of_provider,
-    list_groups_of_provider,
-    list_spaces_of_provider
-].
+        ?OZ_SHARES_LIST,
+
+        ?OZ_PROVIDERS_LIST, ?OZ_PROVIDERS_LIST_USERS, ?OZ_PROVIDERS_LIST_GROUPS,
+        ?OZ_PROVIDERS_LIST_SPACES,
+
+        ?OZ_HANDLES_LIST,
+
+        ?OZ_HANDLE_SERVICES_LIST
+    ]).
+
+
+%%--------------------------------------------------------------------
+%% @doc Admin privileges in OZ API.
+%%--------------------------------------------------------------------
+-spec oz_admin() -> privileges(oz_privilege()).
+oz_admin() ->
+    union(oz_viewer(), [
+        ?OZ_VIEW_PRIVILEGES, ?OZ_SET_PRIVILEGES,
+        ?OZ_USERS_DELETE,
+        ?OZ_GROUPS_ADD_MEMBERS, ?OZ_GROUPS_REMOVE_MEMBERS,
+        ?OZ_SPACES_ADD_MEMBERS, ?OZ_SPACES_REMOVE_MEMBERS,
+        ?OZ_PROVIDERS_INVITE, ?OZ_PROVIDERS_DELETE,
+
+        ?OZ_HANDLE_SERVICES_CREATE
+    ]).
 
 
 %%--------------------------------------------------------------------
 %% @doc All OZ API privileges.
+%% @equiv oz_admin()
 %%--------------------------------------------------------------------
--spec oz_privileges() -> [oz_privilege()].
+-spec oz_privileges() -> privileges(oz_privilege()).
 oz_privileges() ->
-    ordsets:union(
-        oz_viewer(),
-        ordsets:from_list([
-            view_privileges,
-            set_privileges,
+    oz_admin().
 
-            add_member_to_space,
-            remove_member_from_space
-        ])
-    ).
 

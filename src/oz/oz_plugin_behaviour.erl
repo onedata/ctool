@@ -35,25 +35,20 @@
 -callback get_oz_rest_api_prefix() -> string().
 
 %%--------------------------------------------------------------------
-%% @doc Should return a path to file containing provider's private key.
-%%--------------------------------------------------------------------
--callback get_key_path() -> file:name_all().
-
-%%--------------------------------------------------------------------
-%% @doc Should return a path to file containing provider's CSR.
-%%--------------------------------------------------------------------
--callback get_csr_path() -> file:name_all().
-
-%%--------------------------------------------------------------------
-%% @doc Should return a path to file containing provider's public
-%% certificate signed by OZ.
+%% @doc Should return a path to the directory containing OZ
+%% CA certificates.
 %% @end
 %%--------------------------------------------------------------------
--callback get_cert_path() -> file:name_all().
+-callback get_cacerts_dir() -> file:name_all().
 
 %%--------------------------------------------------------------------
-%% @doc Should return a path to file containing OZ
-%% CA certificate.
+%% @doc
+%% This callback is used to convert Auth term, which is transparent to ctool,
+%% into one of possible authorization methods. Thanks to this, the code
+%% using OZ API can always use its specific Auth terms and they are converted
+%% when request is done.
 %% @end
 %%--------------------------------------------------------------------
--callback get_cacert_path() -> file:name_all().
+-callback auth_to_rest_client(Auth :: term()) -> {user, token, binary()} |
+{user, macaroon, {Macaroon :: binary(), DischargeMacaroons :: [binary()]}} |
+{user, basic, binary()} | {provider, Macaroon :: binary()} | none.

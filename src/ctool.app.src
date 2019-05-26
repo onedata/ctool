@@ -15,23 +15,22 @@
     {vsn, "3.0.0-beta3"},
     {registered, []},
     {applications, [
+        crypto,
+        asn1,
+        public_key,
+        ssl,
+        hackney,
         kernel,
         stdlib,
         lager,
-        gen_smtp,
-        % Web client will start etls and hackney
-        web_client,
-        cowboy
+        gen_smtp
     ]},
 
     {env, [
-        % The env below decides if the GR certificate should be verified
-        % during REST calls
-        {verify_oz_cert, true},
+        %% ===================================================================
+        %% LOGGING
+        %% ===================================================================
 
-        % ==================================
-
-        % LOGGING:
         % Current loglevel in the application. Logs with lower importance will be completely discarded
         % Available loglevels are 0-7, respectively: debug, info, notice, warning, error, critical, alert, emergency
         {current_loglevel, 1},
@@ -39,6 +38,14 @@
         % Available loglevels are 0-7, respectively: debug, info, notice, warning, error, critical, alert, emergency
         {default_loglevel, 1},
         % Determines whether the stacktrace should be included in logs (those that could contain it)
-        {include_stacktrace, true}
+        {include_stacktrace, true},
+
+
+        %% ===================================================================
+        %% WEB_CLIENT
+        %% ===================================================================
+        % This option turns off all verification procedures over SSL
+        % connections. USE WITH CARE, only for testing purposes.
+        {force_insecure_connections, false}
     ]}
 ]}.

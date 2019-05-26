@@ -54,7 +54,7 @@ oz_users_test_() ->
 
 setup() ->
     meck:new(oz_endpoint),
-    meck:expect(oz_endpoint, auth_request, fun
+    meck:expect(oz_endpoint, request, fun
         (client, "/user", get) ->
             {ok, 200, response_headers, response_body};
         (client, "/user/merge/token", get) ->
@@ -68,31 +68,31 @@ setup() ->
         (client, "/user/spaces/spaceId", get) ->
             {ok, 200, response_headers, response_body};
         (client, "/user/spaces/spaceId", delete) ->
-            {ok, 202, response_headers, response_body};
+            {ok, 204, response_headers, response_body};
         (client, "/user/groups", get) ->
             {ok, 200, response_headers, response_body};
         (client, "/user/groups/groupId", get) ->
             {ok, 200, response_headers, response_body};
         (client, "/user/groups/groupId", delete) ->
-            {ok, 202, response_headers, response_body}
+            {ok, 204, response_headers, response_body}
     end),
-    meck:expect(oz_endpoint, auth_request, fun
+    meck:expect(oz_endpoint, request, fun
         (client, "/user", patch, <<"body">>) ->
             {ok, 204, response_headers, response_body};
         (client, "/user/merge", post, <<"body">>) ->
             {ok, 201, response_headers, response_body};
         (client, "/user/spaces", post, <<"body">>) ->
-            {ok, 201, [{<<"location">>, <<"/spaces/spaceId">>}],
+            {ok, 201, #{<<"Location">> => <<"https://onedata.org/api/v3/onezone/spaces/spaceId">>},
                 response_body};
         (client, "/user/spaces/default", put, <<"body">>) ->
             {ok, 204, response_headers, response_body};
         (client, "/user/spaces/join", post, <<"body">>) ->
-            {ok, 201, [{<<"location">>, <<"/user/spaces/spaceId">>}],
+            {ok, 201, #{<<"Location">> => <<"https://onedata.org/api/v3/onezone/user/spaces/spaceId">>},
                 response_body};
         (client, "/user/groups", post, <<"body">>) ->
-            {ok, 201, [{<<"location">>, <<"/groups/groupId">>}], response_body};
+            {ok, 201, #{<<"Location">> => <<"https://onedata.org/api/v3/onezone/groups/groupId">>}, response_body};
         (client, "/user/groups/join", post, <<"body">>) ->
-            {ok, 201, [{<<"location">>, <<"/user/groups/groupId">>}],
+            {ok, 201, #{<<"Location">> => <<"https://onedata.org/api/v3/onezone/user/groups/groupId">>},
                 response_body}
     end).
 
@@ -106,8 +106,8 @@ teardown(_) ->
 %%%===================================================================
 
 should_get_details() ->
-    meck:new(json_utils),
-    meck:expect(json_utils, decode, fun(response_body) ->
+    meck:new(json_utils, [passthrough]),
+    meck:expect(json_utils, decode_deprecated, fun(response_body) ->
         [{<<"userId">>, <<"userId">>}, {<<"name">>, <<"name">>}]
     end),
 
@@ -120,8 +120,8 @@ should_get_details() ->
 
 
 should_modify_details() ->
-    meck:new(json_utils),
-    meck:expect(json_utils, encode, fun(parameters) -> <<"body">> end),
+    meck:new(json_utils, [passthrough]),
+    meck:expect(json_utils, encode_deprecated, fun(parameters) -> <<"body">> end),
 
     Answer = oz_users:modify_details(client, parameters),
     ?assertEqual(ok, Answer),
@@ -131,8 +131,8 @@ should_modify_details() ->
 
 
 should_merge_account() ->
-    meck:new(json_utils),
-    meck:expect(json_utils, encode, fun(parameters) -> <<"body">> end),
+    meck:new(json_utils, [passthrough]),
+    meck:expect(json_utils, encode_deprecated, fun(parameters) -> <<"body">> end),
 
     Answer = oz_users:merge_account(client, parameters),
     ?assertEqual(ok, Answer),
@@ -142,8 +142,8 @@ should_merge_account() ->
 
 
 should_get_create_space_token() ->
-    meck:new(json_utils),
-    meck:expect(json_utils, decode, fun(response_body) ->
+    meck:new(json_utils, [passthrough]),
+    meck:expect(json_utils, decode_deprecated, fun(response_body) ->
         [{<<"token">>, <<"token">>}]
     end),
 
@@ -155,8 +155,8 @@ should_get_create_space_token() ->
 
 
 should_get_merge_account_token() ->
-    meck:new(json_utils),
-    meck:expect(json_utils, decode, fun(response_body) ->
+    meck:new(json_utils, [passthrough]),
+    meck:expect(json_utils, decode_deprecated, fun(response_body) ->
         [{<<"token">>, <<"token">>}]
     end),
 
@@ -168,8 +168,8 @@ should_get_merge_account_token() ->
 
 
 should_create_space() ->
-    meck:new(json_utils),
-    meck:expect(json_utils, encode, fun(parameters) -> <<"body">> end),
+    meck:new(json_utils, [passthrough]),
+    meck:expect(json_utils, encode_deprecated, fun(parameters) -> <<"body">> end),
 
     Answer = oz_users:create_space(client, parameters),
     ?assertEqual({ok, <<"spaceId">>}, Answer),
@@ -179,8 +179,8 @@ should_create_space() ->
 
 
 should_join_space() ->
-    meck:new(json_utils),
-    meck:expect(json_utils, encode, fun(parameters) -> <<"body">> end),
+    meck:new(json_utils, [passthrough]),
+    meck:expect(json_utils, encode_deprecated, fun(parameters) -> <<"body">> end),
 
     Answer = oz_users:join_space(client, parameters),
     ?assertEqual({ok, <<"spaceId">>}, Answer),
@@ -195,8 +195,8 @@ should_leave_space() ->
 
 
 should_get_spaces() ->
-    meck:new(json_utils),
-    meck:expect(json_utils, decode, fun(response_body) -> [
+    meck:new(json_utils, [passthrough]),
+    meck:expect(json_utils, decode_deprecated, fun(response_body) -> [
         {<<"spaces">>, <<"spaces">>},
         {<<"default">>, <<"default">>}
     ]
@@ -213,12 +213,12 @@ should_get_spaces() ->
 
 
 should_get_space_details() ->
-    meck:new(json_utils),
-    meck:expect(json_utils, decode, fun(response_body) ->
+    meck:new(json_utils, [passthrough]),
+    meck:expect(json_utils, decode_deprecated, fun(response_body) ->
         [
             {<<"spaceId">>, <<"spaceId">>},
             {<<"name">>, <<"name">>},
-            {<<"providersSupports">>, [{<<"providerId">>, 123}]}
+            {<<"providers">>, [{<<"providerId">>, 123}]}
         ]
     end),
 
@@ -231,8 +231,8 @@ should_get_space_details() ->
 
 
 should_get_default_space() ->
-    meck:new(json_utils),
-    meck:expect(json_utils, encode, fun(parameters) -> <<"body">> end),
+    meck:new(json_utils, [passthrough]),
+    meck:expect(json_utils, encode_deprecated, fun(parameters) -> <<"body">> end),
 
     Answer = oz_users:set_default_space(client, parameters),
     ?assertEqual(ok, Answer),
@@ -242,8 +242,8 @@ should_get_default_space() ->
 
 
 should_set_default_space() ->
-    meck:new(json_utils),
-    meck:expect(json_utils, decode, fun(response_body) ->
+    meck:new(json_utils, [passthrough]),
+    meck:expect(json_utils, decode_deprecated, fun(response_body) ->
         [{<<"spaceId">>, <<"spaceId">>}]
     end),
 
@@ -255,8 +255,8 @@ should_set_default_space() ->
 
 
 should_create_group() ->
-    meck:new(json_utils),
-    meck:expect(json_utils, encode, fun(parameters) -> <<"body">> end),
+    meck:new(json_utils, [passthrough]),
+    meck:expect(json_utils, encode_deprecated, fun(parameters) -> <<"body">> end),
 
     Answer = oz_users:create_group(client, parameters),
     ?assertEqual({ok, <<"groupId">>}, Answer),
@@ -266,8 +266,8 @@ should_create_group() ->
 
 
 should_join_group() ->
-    meck:new(json_utils),
-    meck:expect(json_utils, encode, fun(parameters) -> <<"body">> end),
+    meck:new(json_utils, [passthrough]),
+    meck:expect(json_utils, encode_deprecated, fun(parameters) -> <<"body">> end),
 
     Answer = oz_users:join_group(client, parameters),
     ?assertEqual({ok, <<"groupId">>}, Answer),
@@ -282,8 +282,8 @@ should_leave_group() ->
 
 
 should_get_groups() ->
-    meck:new(json_utils),
-    meck:expect(json_utils, decode, fun(response_body) ->
+    meck:new(json_utils, [passthrough]),
+    meck:expect(json_utils, decode_deprecated, fun(response_body) ->
         [{<<"groups">>, <<"groups">>}]
     end),
 
@@ -295,8 +295,8 @@ should_get_groups() ->
 
 
 should_get_group_details() ->
-    meck:new(json_utils),
-    meck:expect(json_utils, decode, fun(response_body) -> [
+    meck:new(json_utils, [passthrough]),
+    meck:expect(json_utils, decode_deprecated, fun(response_body) -> [
         {<<"groupId">>, <<"groupId">>}, {<<"name">>, <<"name">>},
         {<<"type">>, <<"type">>}
     ] end),

@@ -15,15 +15,15 @@
 %% user_details record contains following fields:
 %% * id   - unique user ID assigned by OZ
 %% * name - username
-%% * connected_accounts - list of proplists with info about connected oauth accounts,
+%% * linked_accounts - list of proplists with info about linked oauth accounts,
 %% contains data provided by oauth: provider_id, user_id, login, name, email_list
-%% * alias - onedata user alias
+%% * login - onedata user login
 %% * email_list - list of connected emails
 -record(user_details, {
     id :: binary(),
     name :: binary(),
-    connected_accounts :: [proplists:proplist()] | undefined,
-    alias :: binary() | undefined,
+    linked_accounts :: [proplists:proplist()] | undefined,
+    login :: binary() | undefined,
     email_list :: [binary()] | undefined
 }).
 
