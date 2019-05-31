@@ -21,6 +21,7 @@
 -export([mkdtemp/0, mkdtemp/3, rmtempdir/1]).
 -export([to_binary/1]).
 -export([save_file_on_hosts/3, save_file/2]).
+-export([ensure_list/1]).
 
 -type time_unit() :: us | ms | s | min | h.
 
@@ -346,6 +347,15 @@ save_file(Path, Content) ->
         _:Reason ->
             {error, Reason}
     end.
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Ensures that returned value is a list.
+%% @end
+%%--------------------------------------------------------------------
+-spec ensure_list(term()) -> [term()].
+ensure_list(List) when is_list(List) -> List;
+ensure_list(Element) -> [Element].
 
 %%%===================================================================
 %%% Internal functions
