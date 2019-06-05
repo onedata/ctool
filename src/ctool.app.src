@@ -44,8 +44,34 @@
         %% ===================================================================
         %% WEB_CLIENT
         %% ===================================================================
+
         % This option turns off all verification procedures over SSL
         % connections. USE WITH CARE, only for testing purposes.
-        {force_insecure_connections, false}
+        {force_insecure_connections, false},
+
+
+        %% ===================================================================
+        %% COMPATIBILITY
+        %% ===================================================================
+
+        % Path to the JSON file holding information about services
+        % compatibility and verified gui hashes.
+        % Should be overriden in the including project.
+        {compatibility_registry_path, "./etc/compatibility.json"},
+        % URLs from the compatibility registry can be fetched - used when there
+        % is a chance that the static registry is outdated. The URLs are tried
+        % in the order up to the first successful mirror.
+        {compatibility_registry_mirrors, [
+            "https://onedata.org/#/home/documentation/doc/compatibility_reference/compatibility.json",
+            "https://raw.githubusercontent.com/onedata/onedata-documentation/master/doc/compatibility_reference/compatibility.json"
+        ]},
+        % For how long (in seconds) the cached compatibility registry is
+        % considered up-to-date. Before that time passes, the registry will not
+        % be reloaded from disk or fetched. In other words, you must wait up to
+        % this time for Onezone to pick up a new compatibility registry from
+        % known mirrors. The new registry is fetched when there is a chance that
+        % it is outdated - in case an incompatibility between services or
+        % unverified GUI is detected.
+        {compatibility_registry_cache_ttl, 900} % 15 minutes
     ]}
 ]}.

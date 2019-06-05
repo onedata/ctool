@@ -130,4 +130,9 @@
 % Clproto connection errors
 -define(ERROR_NO_CONNECTION_TO_PEER_PROVIDER, {error, no_connection_to_peer_provider}).
 
+% Errors related to GUI packages
+-define(ERROR_BAD_GUI_PACKAGE, {error, bad_gui_package}).
+-define(ERROR_GUI_PACKAGE_TOO_LARGE, {error, gui_package_too_large}).
+-define(ERROR_GUI_PACKAGE_UNVERIFIED, {error, gui_package_unverified}).
+
 -endif.
