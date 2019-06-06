@@ -436,6 +436,16 @@ registry_parsing_error() ->
         compatibility:verify_gui_hash(?ONEPANEL_GUI, <<"19.02.2">>, ?SHA_GAMMA)
     ),
 
+    % Inexistent compatibility file should also cause {error, cannot_parse_registry}
+    {ok, RegistryPath} = application:get_env(?CTOOL_APP_NAME, compatibility_registry_path),
+    ok = file:delete(RegistryPath),
+
+    compatibility:clear_registry_cache(),
+    ?assertEqual(
+        {error, cannot_parse_registry},
+        compatibility:verify_gui_hash(?ONEPANEL_GUI, <<"19.02.2">>, ?SHA_GAMMA)
+    ),
+
     ok.
 
 

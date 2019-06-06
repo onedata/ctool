@@ -13,6 +13,10 @@
 %%% might be fetched when there is a chance that it is outdated - in case an
 %%% incompatibility between services or unverified GUI is detected.
 %%%
+%%% The registry is versioned using the 'revision' field (integer). It should be
+%%% incremented upon any modification. Later, it is used to decide if the newly
+%%% fetched registry is newer than the local one and should replace it.
+%%%
 %%% The compatibility registry is serializable to JSON and based on a nested map
 %%% with the following structure:
 %%% {
@@ -279,12 +283,19 @@ reset_fetch_backoff() ->
     {ok, registry()} | {error, cannot_parse_registry | cannot_fetch_registry}.
 get_registry(local) ->
     simple_cache:get(compatibility_registry, fun() ->
-        {ok, Binary} = file:read_file(?REGISTRY_PATH),
-        case parse_registry(Binary) of
-            {error, cannot_parse_registry} ->
-                {error, cannot_parse_registry};
-            {ok, Registry} ->
-                {true, Registry, timer:seconds(?REGISTRY_CACHE_TTL)}
+        case file:read_file(?REGISTRY_PATH) of
+            {ok, Binary} ->
+                case parse_registry(Binary) of
+                    {error, cannot_parse_registry} ->
+                        {error, cannot_parse_registry};
+                    {ok, Registry} ->
+                        {true, Registry, timer:seconds(?REGISTRY_CACHE_TTL)}
+                end;
+            Other ->
+                ?error("Cannot parse compatibility registry (~s) due to ~w", [
+                    ?REGISTRY_PATH, Other
+                ]),
+                {error, cannot_parse_registry}
         end
     end);
 get_registry(fetch) ->

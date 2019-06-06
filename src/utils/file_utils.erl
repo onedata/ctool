@@ -101,7 +101,7 @@ move(From, To) ->
 %% given file.
 %% @end
 %%--------------------------------------------------------------------
--spec seconds_since_modification(file:name_all()) -> {ok, integer()} | {error, eexist}.
+-spec seconds_since_modification(file:name_all()) -> {ok, integer()} | {error, enoent}.
 seconds_since_modification(Path) ->
     case filelib:last_modified(Path) of
         0 ->
