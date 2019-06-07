@@ -20,7 +20,7 @@
 %%% The compatibility registry is serializable to JSON and based on a nested map
 %%% with the following structure:
 %%% {
-%%%     "revision": 1,
+%%%     "revision": 2019060700,
 %%%
 %%%     "compatibility": {
 %%%         "onezone:oneprovider": {
@@ -29,10 +29,17 @@
 %%%             ],
 %%%             "18.02.1": [
 %%%                 "18.02.0-rc13",
-%%%                 "18.02.1"
+%%%                 "18.02.1",
+%%%                 "18.02.2"
+%%%             ],
+%%%             "18.02.2": [
+%%%                 "18.02.0-rc13",
+%%%                 "18.02.1",
+%%%                 "18.02.2"
 %%%             ],
 %%%             "19.02.0-beta1": [
 %%%                 "18.02.1",
+%%%                 "18.02.2",
 %%%                 "19.02.0-beta1"
 %%%             ]
 %%%         },
@@ -44,6 +51,11 @@
 %%%                 "18.02.0-rc13",
 %%%                 "18.02.1"
 %%%             ],
+%%%             "18.02.2": [
+%%%                 "18.02.0-rc13",
+%%%                 "18.02.1",
+%%%                 "18.02.2"
+%%%             ],
 %%%             "19.02.0-beta1": [
 %%%                 "19.02.0-beta1"
 %%%             ]
@@ -54,7 +66,13 @@
 %%%             ],
 %%%             "18.02.1": [
 %%%                 "18.02.0-rc13",
-%%%                 "18.02.1"
+%%%                 "18.02.1",
+%%%                 "18.02.2"
+%%%             ],
+%%%             "18.02.2": [
+%%%                 "18.02.0-rc13",
+%%%                 "18.02.1",
+%%%                 "18.02.2"
 %%%             ],
 %%%             "19.02.0-beta1": [
 %%%                 "19.02.0-beta1"
@@ -65,23 +83,23 @@
 %%%     "gui-sha256": {
 %%%         "oz-worker": {
 %%%             "19.02.0-beta1": [
-%%%                 "3a6d28653c347965a2e2e6211849a12799f463c8b4801a56a22f0b48e51cde65"
+%%%                 "5b48b1885d6f03e689093b2d30efbd7f7c7152fbdc02ab009aafac21d734eec5"
 %%%             ]
 %%%         },
 %%%         "op-worker": {
 %%%             "19.02.0-beta1": [
-%%%                 "53cc8692eb0b7c6823c9cd5022b64ba66739efe0637b0e31b134c67c6365cb0c"
+%%%                 "bd47689bd7ef220d73ef4a61672b9f43dc60ae5815ce2aa5f2c8673f3eaafc85"
 %%%             ]
 %%%         },
 %%%         "onepanel": {
 %%%             "19.02.0-beta1": [
-%%%                 "8e741fa13536aad50dff4c81a29217fb7437cd5511ac7fcf8f0de05884d5768b"
+%%%                 "c5f9a1009588f3ae1407dc978b0c057213dd3753abb9d224acdbfc209ffadadd"
 %%%             ]
 %%%         },
 %%%         "harvester": {
-%%%             "19.02.0-beta1": [
-%%%                 "1a29258ad50dff4c1fa18c7fc8e745811a44d576835317fb7fb37cd5a8f0de06"
-%%%             ]
+%%%             "19.02.0-beta1": {
+%%%                 "ecrin": ["1a29258ad50dff4c1fa18c7fc8e745811a44d576835317fb7fb37cd5a8f0de06"]
+%%%             }
 %%%         }
 %%%     }
 %%% }
@@ -384,16 +402,28 @@ parse_registry(Binary) ->
         %% coalesced here.
         CompatibilitySection = maps:get(<<"compatibility">>, Registry, #{}),
         OPvsOPSection = maps:get(<<"oneprovider:oneprovider">>, CompatibilitySection, #{}),
+        OPvsOPCoalesced = maps:fold(fun(VersionA, CompatibleVersions, OuterAcc) ->
+            lists:foldl(fun(VersionB, InnerAcc) ->
+                InnerAcc#{
+                    VersionB => lists:usort([VersionA | maps:get(VersionB, InnerAcc, [])])
+                }
+            end, OuterAcc, CompatibleVersions)
+        end, OPvsOPSection, OPvsOPSection),
+
+        %% Harvester GUI entries have another nesting level with human-readable
+        %% labels (e.g. "ecrin") - it is flattened here.
+        GuiShaSection = maps:get(<<"gui-sha256">>, Registry, #{}),
+        HarvesterGuiSection = maps:get(<<"harvester">>, GuiShaSection, #{}),
+        HarvesterGuiCoalesced = maps:map(fun(_Version, LabelMap) ->
+            lists:flatten(maps:values(LabelMap))
+        end, HarvesterGuiSection),
 
         {ok, Registry#{
             <<"compatibility">> => CompatibilitySection#{
-                <<"oneprovider:oneprovider">> => maps:fold(fun(VersionA, CompatibleVersions, OuterAcc) ->
-                    lists:foldl(fun(VersionB, InnerAcc) ->
-                        InnerAcc#{
-                            VersionB => lists:usort([VersionA | maps:get(VersionB, InnerAcc, [])])
-                        }
-                    end, OuterAcc, CompatibleVersions)
-                end, OPvsOPSection, OPvsOPSection)
+                <<"oneprovider:oneprovider">> => OPvsOPCoalesced
+            },
+            <<"gui-sha256">> => GuiShaSection#{
+                <<"harvester">> => HarvesterGuiCoalesced
             }
         }}
     catch
