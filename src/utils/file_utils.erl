@@ -13,6 +13,7 @@
 
 %% API
 -export([read_files/1, recursive_del/1, move/2]).
+-export([seconds_since_modification/1]).
 
 %%%===================================================================
 %%% API functions
@@ -91,4 +92,22 @@ move(From, To) ->
             end;
         {false, _} -> {error, enoent};
         {_, true} -> {error, eexist}
+    end.
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Returns the number of seconds elapsed since the last modification of
+%% given file.
+%% @end
+%%--------------------------------------------------------------------
+-spec seconds_since_modification(file:name_all()) -> {ok, integer()} | {error, enoent}.
+seconds_since_modification(Path) ->
+    case filelib:last_modified(Path) of
+        0 ->
+            {error, enoent};
+        LastModified ->
+            CurrentDateTime = calendar:now_to_local_time(now()),
+            {ok, calendar:datetime_to_gregorian_seconds(CurrentDateTime) -
+                calendar:datetime_to_gregorian_seconds(LastModified)}
     end.
