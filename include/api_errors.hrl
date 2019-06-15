@@ -50,8 +50,8 @@
 % Errors connected with bad data
 -define(ERROR_MALFORMED_DATA, {error, malformed_data}).
 -define(ERROR_BAD_BASIC_CREDENTIALS, {error, bad_basic_credentials}).
--define(ERROR_BAD_EXTERNAL_ACCESS_TOKEN(__OAuthProviderId),
-    {error, {bad_external_access_token, __OAuthProviderId}}
+-define(ERROR_BAD_IDP_ACCESS_TOKEN(__OAuthProviderId),
+    {error, {bad_idp_access_token, __OAuthProviderId}}
 ).
 -define(ERROR_MISSING_REQUIRED_VALUE(__Key),
     {error, {missing_required_value, __Key}}
@@ -97,12 +97,20 @@
 -define(ERROR_BAD_VALUE_IDENTIFIER_OCCUPIED(__Key), {error, {identifier_occupied, __Key}}).
 -define(ERROR_BAD_VALUE_BAD_TOKEN_TYPE(__Key), {error, {bad_token_type, __Key}}).
 -define(ERROR_BAD_VALUE_IDENTIFIER(__Key), {error, {bad_identifier, __Key}}).
--define(ERROR_BAD_VALUE_ALIAS, {error, bad_alias}).
--define(ERROR_BAD_VALUE_USER_NAME, {error, bad_user_name}).
+-define(ERROR_BAD_VALUE_FULL_NAME, {error, bad_full_name}).
+-define(ERROR_BAD_VALUE_USERNAME, {error, bad_username}).
+-define(ERROR_BAD_VALUE_PASSWORD, {error, bad_password}).
 -define(ERROR_BAD_VALUE_NAME, {error, bad_name}).
 
 % Errors caused by illegal state
+% Subdomain delegation is (currently) not supported by this Onezone
+-define(ERROR_SUBDOMAIN_DELEGATION_NOT_SUPPORTED, {error, subdomain_delegation_not_supported}).
+% Subdomain delegation is disabled for given Oneprovider
 -define(ERROR_SUBDOMAIN_DELEGATION_DISABLED, {error, subdomain_delegation_disabled}).
+% Basic auth is not (currently) supported by this Onezone
+-define(ERROR_BASIC_AUTH_NOT_SUPPORTED, {error, basic_auth_not_supported}).
+% Basic auth is disabled for given user
+-define(ERROR_BASIC_AUTH_DISABLED, {error, basic_auth_disabled}).
 
 % Errors connected with relations between entities
 -define(ERROR_RELATION_DOES_NOT_EXIST(__ChType, __ChId, __ParType, __ParId),
@@ -111,12 +119,20 @@
 -define(ERROR_RELATION_ALREADY_EXISTS(__ChType, __ChId, __ParType, __ParId),
     {error, {relation_already_exists, __ChType, __ChId, __ParType, __ParId}}
 ).
+-define(ERROR_CANNOT_ADD_RELATION_TO_SELF, {error, cannot_add_relation_to_self}).
 -define(ERROR_CANNOT_DELETE_ENTITY(__EntityType, __EntityId),
     {error, {cannot_delete_entity, __EntityType, __EntityId}}
 ).
--define(ERROR_CANNOT_JOIN_GROUP_TO_ITSELF, {error, cannot_join_group_to_itself}).
+-define(ERROR_PROTECTED_GROUP, {error, protected_group}).
+
+-define(ERROR_TEMPORARY_FAILURE, {error, temporary_failure}).
 
 % Clproto connection errors
 -define(ERROR_NO_CONNECTION_TO_PEER_PROVIDER, {error, no_connection_to_peer_provider}).
+
+% Errors related to GUI packages
+-define(ERROR_BAD_GUI_PACKAGE, {error, bad_gui_package}).
+-define(ERROR_GUI_PACKAGE_TOO_LARGE, {error, gui_package_too_large}).
+-define(ERROR_GUI_PACKAGE_UNVERIFIED, {error, gui_package_unverified}).
 
 -endif.

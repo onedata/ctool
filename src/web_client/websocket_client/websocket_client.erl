@@ -162,12 +162,8 @@ websocket_handshake(WSReq) ->
         protocol, path, host, key, transport, socket, authorization
     ], WSReq),
     AuthorizationHeader = case Authorization of
-        undefined ->
-            <<"">>;
-        {cookie, {Name, Value}} ->
-            <<"\r\nCookie: ", Name/binary, "=", Value/binary>>;
-        {macaroon, Value} ->
-            <<"\r\nMacaroon: ", Value/binary>>
+        undefined -> <<"">>;
+        {macaroon, Macaroon} -> <<"\r\nMacaroon: ", Macaroon/binary>>
     end,
     Handshake = [<<"GET ">>, Path,
         <<" HTTP/1.1"

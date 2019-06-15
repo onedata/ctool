@@ -69,9 +69,8 @@
 -type fin() :: 0 | 1.
 -export_type([fin/0]).
 
--type authorization() :: undefined |
-    {cookie, {Name :: binary(), Value :: binary()}} |
-    {macaroon, Value :: binary()}.
+%% @TODO DEPRECATED VFS-5436 - HTTP auth supported for backward compatibility
+-type authorization() :: undefined | {macaroon, Value :: binary()}.
 -export_type([authorization/0]).
 
 -export([new/9,

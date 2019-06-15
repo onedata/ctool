@@ -30,33 +30,33 @@ helpers_test_() ->
         ]}.
 
 start() ->
-    consistent_hasing:cleanup().
+    consistent_hashing:cleanup().
 
 stop(_) ->
     ok.
 
 chash_should_create_single_node_ring() ->
-    ?assertEqual(ok, consistent_hasing:init([node()])).
+    ?assertEqual(ok, consistent_hashing:init([node()])).
 
 chash_should_create_multi_node_ring() ->
-    ?assertEqual(ok, consistent_hasing:init([node1, node2, node3])).
+    ?assertEqual(ok, consistent_hashing:init([node1, node2, node3])).
 
 chash_should_lookup_single_node_ring() ->
-    ?assertEqual(ok, consistent_hasing:init([node()])),
+    ?assertEqual(ok, consistent_hashing:init([node()])),
 
     %then
-    ?assertEqual(node(), consistent_hasing:get_node(key1)),
-    ?assertEqual(node(), consistent_hasing:get_node(key2)).
+    ?assertEqual(node(), consistent_hashing:get_node(key1)),
+    ?assertEqual(node(), consistent_hashing:get_node(key2)).
 
 chash_should_lookup_multi_node_ring() ->
     Nodes = [node1, node2, node3, node4, node5],
-    ?assertEqual(ok, consistent_hasing:init(Nodes)),
+    ?assertEqual(ok, consistent_hashing:init(Nodes)),
 
     %when
-    Key1NodeFirst = consistent_hasing:get_node(key1),
-    Key1NodeSecond = consistent_hasing:get_node(key1),
-    Key2NodeFirst = consistent_hasing:get_node(key2),
-    Key2NodeSecond = consistent_hasing:get_node(key2),
+    Key1NodeFirst = consistent_hashing:get_node(key1),
+    Key1NodeSecond = consistent_hashing:get_node(key1),
+    Key2NodeFirst = consistent_hashing:get_node(key2),
+    Key2NodeSecond = consistent_hashing:get_node(key2),
 
     %then
     ?assertEqual(Key1NodeFirst, Key1NodeSecond),
@@ -65,21 +65,21 @@ chash_should_lookup_multi_node_ring() ->
 
 chash_should_return_all_nodes_in_ring_of_one_node() ->
     Nodes = [node1],
-    ?assertEqual(ok, consistent_hasing:init(Nodes)),
+    ?assertEqual(ok, consistent_hashing:init(Nodes)),
 
     %then
-    ?assertEqual(Nodes, consistent_hasing:get_all_nodes()).
+    ?assertEqual(Nodes, consistent_hashing:get_all_nodes()).
 
 chash_should_return_all_nodes_in_ring_of_two_nodes() ->
     Nodes = [node1, node2],
-    ?assertEqual(ok, consistent_hasing:init(Nodes)),
+    ?assertEqual(ok, consistent_hashing:init(Nodes)),
 
     %then
-    ?assertEqual(Nodes, consistent_hasing:get_all_nodes()).
+    ?assertEqual(Nodes, consistent_hashing:get_all_nodes()).
 
 chash_should_return_all_nodes_in_ring() ->
     Nodes = [node1, node2, node3, node4, node5],
-    ?assertEqual(ok, consistent_hasing:init(Nodes)),
+    ?assertEqual(ok, consistent_hashing:init(Nodes)),
 
     %then
-    ?assertEqual(Nodes, consistent_hasing:get_all_nodes()).
+    ?assertEqual(Nodes, consistent_hashing:get_all_nodes()).

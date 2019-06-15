@@ -14,13 +14,31 @@
 
 -include("auth/onedata_macaroons.hrl").
 -include("api_errors.hrl").
--include_lib("ctool/include/logging.hrl").
+-include("global_definitions.hrl").
+-include("onedata.hrl").
+-include("logging.hrl").
 
 -type location() :: Domain :: binary().
 
 -type time_caveat() :: {time, CurrentTimestamp :: non_neg_integer(), MaxTtl :: non_neg_integer() | infinity}.
 -type authorization_none_caveat() :: authorization_none.
--type caveat() :: time_caveat() | authorization_none_caveat().
+-type session_id_caveat() :: {session_id_caveat, SessionId :: binary()}.
+-type session_id_verifier() :: {session_id_verifier, fun((SessionId :: binary()) -> boolean())}.
+-type cluster_type_caveat() :: {cluster_type, onedata:cluster_type()}.
+-type cluster_id_caveat() :: {cluster_id, ClusterId :: binary()}.
+%% @formatter:off
+-type caveat() ::          time_caveat() |
+                           authorization_none_caveat() |
+                           session_id_caveat() |
+                           cluster_type_caveat() |
+                           cluster_id_caveat().
+
+-type caveat_verifier() :: time_caveat() |
+                           authorization_none_caveat() |
+                           session_id_verifier() |
+                           cluster_type_caveat() |
+                           cluster_id_caveat().
+%% @formatter:on
 
 -export_type([location/0, caveat/0]).
 
@@ -49,14 +67,15 @@ create(Location, Secret, Identifier, Caveats) ->
 %%--------------------------------------------------------------------
 %% @doc
 %% Verifies a macaroon.
-%% Available caveats are specified as macros in auth/onedata_macaroons.hrl.
+%% Available verifiers are specified as macros in auth/onedata_macaroons.hrl.
+%% Some verifiers use the same macros as caveats.
 %% @end
 %%--------------------------------------------------------------------
 -spec verify(macaroon:macaroon(), Secret :: binary(),
-    DischargeMacaroons :: [macaroon:macaroon()], [caveat()]) ->
+    DischargeMacaroons :: [macaroon:macaroon()], [caveat_verifier()]) ->
     ok | {error, term()}.
-verify(Macaroon, Secret, DischargeMacaroons, Caveats) ->
-    Verifier = create_verifier(Caveats),
+verify(Macaroon, Secret, DischargeMacaroons, CaveatVerifiers) ->
+    Verifier = build_verifier(CaveatVerifiers),
     try macaroon_verifier:verify(Verifier, Macaroon, Secret, DischargeMacaroons) of
         ok -> ok;
         _ -> ?ERROR_MACAROON_INVALID
@@ -100,6 +119,7 @@ serialize(M) ->
 %%--------------------------------------------------------------------
 -spec deserialize(Macaroon :: binary()) ->
     {ok, macaroon:macaroon()} | {error, term()}.
+deserialize(<<>>) -> ?ERROR_BAD_MACAROON;
 deserialize(Macaroon) ->
     try macaroon:deserialize(base62_to_64(Macaroon)) of
         {ok, M} -> {ok, M};
@@ -112,17 +132,17 @@ deserialize(Macaroon) ->
 %%% Internal functions
 %%%===================================================================
 
--spec create_verifier([caveat()]) -> macaroon_verifier:verifier().
-create_verifier(Caveats) ->
+-spec build_verifier([caveat_verifier()]) -> macaroon_verifier:verifier().
+build_verifier(CaveatVerifiers) ->
     Verifier = macaroon_verifier:create(),
-    lists:foldl(fun(Caveat, VerifierAcc) ->
-        case verifier(Caveat) of
+    lists:foldl(fun(CaveatVerifier, VerifierAcc) ->
+        case build_caveat_verifier(CaveatVerifier) of
             Bin when is_binary(Bin) ->
                 macaroon_verifier:satisfy_exact(VerifierAcc, Bin);
             Fun when is_function(Fun) ->
                 macaroon_verifier:satisfy_general(VerifierAcc, Fun)
         end
-    end, Verifier, Caveats).
+    end, Verifier, CaveatVerifiers).
 
 
 -spec caveat_to_binary(caveat()) -> binary().
@@ -134,11 +154,20 @@ caveat_to_binary(?TIME_CAVEAT(Timestamp, MaxTtl)) ->
     <<"time < ", Expiration/binary>>;
 
 caveat_to_binary(?AUTHORIZATION_NONE_CAVEAT) ->
-    <<"authorization = none">>.
+    <<"authorization = none">>;
+
+caveat_to_binary(?SESSION_ID_CAVEAT(SessionId)) ->
+    <<"session_id = ", SessionId/binary>>;
+
+caveat_to_binary(?CLUSTER_TYPE_CAVEAT(ClusterType)) ->
+    <<"cluster_type = ", (atom_to_binary(ClusterType, utf8))/binary>>;
+
+caveat_to_binary(?CLUSTER_ID_CAVEAT(ClusterId)) ->
+    <<"cluster_id = ", ClusterId/binary>>.
 
 
--spec verifier(caveat()) -> binary() | macaroon_verifier:predicate().
-verifier(?TIME_CAVEAT(Timestamp, MaxTtl)) ->
+-spec build_caveat_verifier(caveat_verifier()) -> binary() | macaroon_verifier:predicate().
+build_caveat_verifier(?TIME_CAVEAT(Timestamp, MaxTtl)) ->
     fun
         (<<"time < infinity">>) ->
             case MaxTtl of
@@ -160,8 +189,14 @@ verifier(?TIME_CAVEAT(Timestamp, MaxTtl)) ->
             false
     end;
 
-verifier(?AUTHORIZATION_NONE_CAVEAT) ->
-    <<"authorization = none">>.
+build_caveat_verifier(?SESSION_ID_VERIFIER(VerifyFun)) ->
+    fun(<<"session_id = ", SessionId/binary>>) ->
+        VerifyFun(SessionId)
+    end;
+
+% The rest of the caveats are exact - 1:1 with the binary form.
+build_caveat_verifier(ExactCaveat) ->
+    caveat_to_binary(ExactCaveat).
 
 
 -spec base64_to_62(binary()) -> binary().

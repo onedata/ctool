@@ -15,12 +15,11 @@
 -include("oz/oz_runner.hrl").
 -include("oz/oz_spaces.hrl").
 -include("oz/oz_providers.hrl").
--include("oz/oz_openid.hrl").
+-include("api_errors.hrl").
 
 %% API
 -export([register/2, register_with_uuid/2, unregister/1]).
 -export([get_details/1, get_details/2, modify_details/2]).
--export([get_token_issuer/2]).
 -export([get_zone_time/1]).
 -export([check_ip_address/1, check_port/4]).
 -export([create_space/2, support_space/2, revoke_space_support/2, get_spaces/1,
@@ -40,7 +39,7 @@
 %%--------------------------------------------------------------------
 -spec register(Auth :: oz_endpoint:auth(),
     Parameters :: oz_endpoint:params()) ->
-    {ok, ProviderId :: binary(), Macaroon :: binary()} |
+    {ok, map()} |
     {error, Reason :: term()}.
 register(Auth, Parameters) ->
     ?run(fun() ->
@@ -51,15 +50,19 @@ register(Auth, Parameters) ->
             Auth, URN, post, Body, [{endpoint, rest_no_auth}]
         ) of
             {ok, 200, _ResponseHeaders, ResponseBody} ->
-                Proplist = json_utils:decode_deprecated(ResponseBody),
-                ProviderId = lists_utils:key_get(<<"providerId">>, Proplist),
-                Macaroon = lists_utils:key_get(<<"macaroon">>, Proplist),
-                {ok, ProviderId, Macaroon};
+                {ok, json_utils:decode(ResponseBody)};
 
-            {ok, 400, _ResponseHeaders, ResponseBody} ->
-                #{<<"error">> := <<"Bad value: provided identifier ",
-                    "(\"subdomain\") is already occupied">>} = json_utils:decode(ResponseBody),
-                {error, subdomain_reserved}
+            {ok, 400, _ResponseHeaders, ErrorBody} ->
+                #{<<"error">> := Error} = json_utils:decode(ErrorBody),
+
+                case Error of
+                    #{<<"id">> := <<"badValueIdentifierOccupied">>,
+                        <<"details">> := #{<<"key">> := Key}} ->
+                        ?ERROR_BAD_VALUE_IDENTIFIER_OCCUPIED(Key);
+                    #{<<"id">> := <<"badValueToken">>,
+                        <<"details">> := #{<<"key">> := Key}} ->
+                        ?ERROR_BAD_VALUE_TOKEN(Key)
+                end
         end
     end).
 
@@ -74,7 +77,7 @@ register(Auth, Parameters) ->
 %%--------------------------------------------------------------------
 -spec register_with_uuid(Auth :: oz_endpoint:auth(),
     Parameters :: oz_endpoint:params()) ->
-    {ok, ProviderId :: binary(), Macaroon :: binary()} |
+    {ok, map()} |
     {error, Reason :: term()}.
 register_with_uuid(Auth, Parameters) ->
     ?run(fun() ->
@@ -83,10 +86,7 @@ register_with_uuid(Auth, Parameters) ->
         {ok, 200, _ResponseHeaders, ResponseBody} = oz_endpoint:request(
             Auth, URN, post, Body, [{endpoint, rest_no_auth}]
         ),
-        Proplist = json_utils:decode_deprecated(ResponseBody),
-        ProviderId = lists_utils:key_get(<<"providerId">>, Proplist),
-        Macaroon = lists_utils:key_get(<<"macaroon">>, Proplist),
-        {ok, ProviderId, Macaroon}
+        {ok, json_utils:decode(ResponseBody)}
     end).
 
 %%--------------------------------------------------------------------
@@ -161,25 +161,6 @@ modify_details(Auth, Parameters) ->
         {ok, 204, _ResponseHeaders, _ResponseBody} =
             oz_endpoint:request(Auth, URN, patch, Body),
         ok
-    end).
-
-%%--------------------------------------------------------------------
-%% @doc Returns token issuer.
-%% @end
-%%--------------------------------------------------------------------
--spec get_token_issuer(Auth :: oz_endpoint:auth(), Token :: binary()) ->
-    {ok, TokenData :: #token_issuer{}} | {error, Reason :: term()}.
-get_token_issuer(Auth, Token) ->
-    ?run(fun() ->
-        URN = "/provider/token/" ++ binary_to_list(Token),
-        {ok, 200, _ResponseHeaders, ResponseBody} =
-            oz_endpoint:request(Auth, URN, get),
-        Proplist = json_utils:decode_deprecated(ResponseBody),
-        TokenIssuer = #token_issuer{
-            client_type = lists_utils:key_get(<<"clientType">>, Proplist),
-            client_id = lists_utils:key_get(<<"clientId">>, Proplist)
-        },
-        {ok, TokenIssuer}
     end).
 
 %%--------------------------------------------------------------------

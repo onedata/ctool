@@ -13,11 +13,22 @@
 -author("Tomasz Lichon").
 
 %% API
--export([start/1, stop/0, trace_calls/1, trace_calls/2]).
+-export([start/0, start/1, stop/0, trace_calls/1, trace_calls/2]).
 
 %%%===================================================================
 %%% API
 %%%===================================================================
+
+%%--------------------------------------------------------------------
+%% @doc @equiv start(node())
+%% @end
+%%--------------------------------------------------------------------
+-spec start() -> {ok, MatchDesc} | {error, term()} when
+    MatchDesc :: [MatchNum],
+    MatchNum :: {matched, node(), integer()} | {matched, node(), 0, RPCError},
+    RPCError :: term().
+start() -> start(node()).
+
 
 %%--------------------------------------------------------------------
 %% @doc

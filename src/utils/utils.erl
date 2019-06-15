@@ -21,6 +21,7 @@
 -export([mkdtemp/0, mkdtemp/3, rmtempdir/1]).
 -export([to_binary/1]).
 -export([save_file_on_hosts/3, save_file/2]).
+-export([ensure_list/1]).
 
 -type time_unit() :: us | ms | s | min | h.
 
@@ -200,7 +201,7 @@ cmd(Command) ->
 %%--------------------------------------------------------------------
 %% @doc
 %% Measures execution time of a function. Returns function result and its
-%% duration both in microseconds and addjusted using adjust_duration function.
+%% duration both in microseconds and adjusted using adjust_duration function.
 %% @end
 %%--------------------------------------------------------------------
 -spec duration(Function :: fun(() -> Result)) -> {Result, UsDuration :: integer(),
@@ -346,6 +347,15 @@ save_file(Path, Content) ->
         _:Reason ->
             {error, Reason}
     end.
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Ensures that returned value is a list.
+%% @end
+%%--------------------------------------------------------------------
+-spec ensure_list(term()) -> [term()].
+ensure_list(List) when is_list(List) -> List;
+ensure_list(Element) -> [Element].
 
 %%%===================================================================
 %%% Internal functions

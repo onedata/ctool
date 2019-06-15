@@ -52,7 +52,7 @@ system_time_seconds() ->
 %% @doc
 %% @equiv erlang:system_time(milli_seconds).
 %% @end
-%%---------------------------------------------\-----------------------
+%%--------------------------------------------------------------------
 -spec system_time_millis() -> non_neg_integer().
 system_time_millis() ->
     erlang:system_time(milli_seconds).

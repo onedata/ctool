@@ -14,9 +14,22 @@
 
 -include_lib("eunit/include/eunit.hrl").
 -include("auth/onedata_macaroons.hrl").
+-include("onedata.hrl").
 -include_lib("api_errors.hrl").
 
 -define(LOCATION, <<"dummy-location">>).
+
+serialize_and_deserialize_test() ->
+    M = onedata_macaroons:create(?LOCATION, <<"secret">>, <<"identifier">>, [
+        ?TIME_CAVEAT(0, 100),
+        ?AUTHORIZATION_NONE_CAVEAT
+    ]),
+    {ok, Serialized} = onedata_macaroons:serialize(M),
+    ?assert(is_binary(Serialized)),
+    ?assertEqual({ok, M}, onedata_macaroons:deserialize(Serialized)),
+    ?assertEqual(?ERROR_BAD_MACAROON, onedata_macaroons:serialize({a, b, c, d})),
+    ?assertEqual(?ERROR_BAD_MACAROON, onedata_macaroons:deserialize(<<"adsfasdfvhua89rwfg08asdf">>)).
+
 
 empty_macaroon_test() ->
     M = onedata_macaroons:create(?LOCATION, <<"secret">>, <<"identifier">>, []),
@@ -164,13 +177,81 @@ further_time_confinement_test() ->
     ok.
 
 
-serialize_and_deserialize_test() ->
+session_id_caveat_test() ->
+    CaveatSessionId = <<"sessId">>,
     M = onedata_macaroons:create(?LOCATION, <<"secret">>, <<"identifier">>, [
-        ?TIME_CAVEAT(0, 100),
-        ?AUTHORIZATION_NONE_CAVEAT
+        ?SESSION_ID_CAVEAT(CaveatSessionId)
     ]),
-    {ok, Serialized} = onedata_macaroons:serialize(M),
-    ?assert(is_binary(Serialized)),
-    ?assertEqual({ok, M}, onedata_macaroons:deserialize(Serialized)),
-    ?assertEqual(?ERROR_BAD_MACAROON, onedata_macaroons:serialize({a, b, c, d})),
-    ?assertEqual(?ERROR_BAD_MACAROON, onedata_macaroons:deserialize(<<"adsfasdfvhua89rwfg08asdf">>)).
+    ?assertEqual(?ERROR_MACAROON_INVALID, onedata_macaroons:verify(M, <<"secret">>, [], [
+        ?SESSION_ID_VERIFIER(fun(_SessionId) -> false end)
+    ])),
+    ?assertEqual(ok, onedata_macaroons:verify(M, <<"secret">>, [], [
+        ?SESSION_ID_VERIFIER(fun(SessionId) -> SessionId == CaveatSessionId end)
+    ])),
+    ?assertEqual(ok, onedata_macaroons:verify(M, <<"secret">>, [], [
+        ?SESSION_ID_VERIFIER(fun(_SessionId) -> true end)
+    ])).
+
+
+cluster_type_caveat_test() ->
+    MOz = onedata_macaroons:create(?LOCATION, <<"secret">>, <<"identifier">>, [
+        ?CLUSTER_TYPE_CAVEAT(?ONEZONE)
+    ]),
+    ?assertEqual(?ERROR_MACAROON_INVALID, onedata_macaroons:verify(MOz, <<"secret">>, [], [
+        ?CLUSTER_TYPE_CAVEAT(?ONEPROVIDER)
+    ])),
+    ?assertEqual(ok, onedata_macaroons:verify(MOz, <<"secret">>, [], [
+        ?CLUSTER_TYPE_CAVEAT(?ONEZONE)
+    ])),
+
+    MOp = onedata_macaroons:create(?LOCATION, <<"secret">>, <<"identifier">>, [
+        ?CLUSTER_TYPE_CAVEAT(?ONEPROVIDER)
+    ]),
+    ?assertEqual(?ERROR_MACAROON_INVALID, onedata_macaroons:verify(MOp, <<"secret">>, [], [
+        ?CLUSTER_TYPE_CAVEAT(?ONEZONE)
+    ])),
+    ?assertEqual(ok, onedata_macaroons:verify(MOp, <<"secret">>, [], [
+        ?CLUSTER_TYPE_CAVEAT(?ONEPROVIDER)
+    ])).
+
+
+cluster_id_caveat_test() ->
+    ClusterId = <<"ClusterId">>,
+    M = onedata_macaroons:create(?LOCATION, <<"secret">>, <<"identifier">>, [
+        ?CLUSTER_ID_CAVEAT(ClusterId)
+    ]),
+    ?assertEqual(?ERROR_MACAROON_INVALID, onedata_macaroons:verify(M, <<"secret">>, [], [
+        ?CLUSTER_ID_CAVEAT(<<"badClusterId">>)
+    ])),
+    ?assertEqual(ok, onedata_macaroons:verify(M, <<"secret">>, [], [
+        ?CLUSTER_ID_CAVEAT(ClusterId)
+    ])).
+
+
+gui_macaroon_test() ->
+    CaveatSessionId = <<"sessId">>,
+    ClusterId = <<"ClusterId">>,
+    M = onedata_macaroons:create(?LOCATION, <<"secret">>, <<"identifier">>, [
+        ?SESSION_ID_CAVEAT(CaveatSessionId),
+        ?CLUSTER_TYPE_CAVEAT(?ONEPROVIDER),
+        ?CLUSTER_ID_CAVEAT(ClusterId)
+    ]),
+
+    ?assertEqual(?ERROR_MACAROON_INVALID, onedata_macaroons:verify(M, <<"secret">>, [], [
+        ?CLUSTER_TYPE_CAVEAT(?ONEPROVIDER),
+        ?CLUSTER_ID_CAVEAT(ClusterId)
+    ])),
+    ?assertEqual(?ERROR_MACAROON_INVALID, onedata_macaroons:verify(M, <<"secret">>, [], [
+        ?SESSION_ID_VERIFIER(CaveatSessionId),
+        ?CLUSTER_ID_CAVEAT(ClusterId)
+    ])),
+    ?assertEqual(?ERROR_MACAROON_INVALID, onedata_macaroons:verify(M, <<"secret">>, [], [
+        ?SESSION_ID_VERIFIER(CaveatSessionId),
+        ?CLUSTER_TYPE_CAVEAT(?ONEPROVIDER)
+    ])),
+
+    ?assertEqual(ok, onedata_macaroons:verify(M, <<"secret">>, [], [
+        ?SESSION_ID_VERIFIER(fun(SessionId) -> SessionId == CaveatSessionId end),
+        ?CLUSTER_TYPE_CAVEAT(?ONEPROVIDER),
+        ?CLUSTER_ID_CAVEAT(ClusterId)
+    ])).
