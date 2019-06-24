@@ -15,7 +15,7 @@
 
 %% API
 -export([load_ders/1, load_ders_in_dir/1]).
--export([pem_to_ders/1]).
+-export([pem_to_ders/1, ders_to_pem/1]).
 -export([create_key/1]).
 -export([create_csr/3]).
 -export([create_signed_webcert/5]).
@@ -62,6 +62,21 @@ pem_to_ders(CertPem) ->
             _ -> false
         end
     end, PemEntries).
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Converts one or many certificates in der format into one pem binary.
+%% @end
+%%--------------------------------------------------------------------
+-spec ders_to_pem(Der | [Der]) -> Pem :: binary() when
+    Der :: public_key:der_encoded().
+ders_to_pem(CertDers) when is_list(CertDers) ->
+    Entries = [{'Certificate', Der, not_encrypted} || Der <- CertDers],
+    public_key:pem_encode(Entries);
+
+ders_to_pem(CertDers) ->
+    ders_to_pem([CertDers]).
 
 
 %%--------------------------------------------------------------------
