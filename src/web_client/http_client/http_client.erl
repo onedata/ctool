@@ -54,7 +54,10 @@ patch | purge. %% RFC-5789
 % Request options
 -type opts() :: [opt()].
 % Response
--type response() :: {ok, code(), headers(), body()} | {error, term()}.
+-type response() ::
+    {ok, code(), headers(), body()} |
+    {ok, code(), headers()} | % HEAD response
+    {error, term()}.
 
 % All possible request options
 -type opt() ::
@@ -448,6 +451,8 @@ do_request(Method, URL, Headers, Body, Opts) ->
     case hackney:request(Method, URL, HeadersProplist, Body, Opts3) of
         {ok, RespCode, RespHeaders, RespBody} ->
             {ok, RespCode, maps:from_list(RespHeaders), RespBody};
+        {ok, RespCode, RespHeaders} ->
+            {ok, RespCode, maps:from_list(RespHeaders)};
         Other ->
             Other
     end.
