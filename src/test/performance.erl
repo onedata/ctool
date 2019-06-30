@@ -358,6 +358,7 @@ concat_atoms(A1, A2) ->
 exec_ct_config(SuiteName, CaseName, CaseArgs, Params) ->
     NewCaseArgs = inject_parameters(CaseArgs, Params),
     apply(SuiteName, base_case(CaseName), [NewCaseArgs]).
+
 %%--------------------------------------------------------------------
 %% @private
 %% @doc
@@ -754,6 +755,8 @@ exec_test_repeat(SuiteName, CaseName, CaseConfig) ->
         Error:Reason ->
             Stacktrace = erlang:get_stacktrace(),
             Message = str_utils:format("~p:~p~n~p", [Error, Reason, Stacktrace]),
+            ct:print("~p:~p failed due to: ~w:~w~n"
+            "Stacktrace: ~p", [SuiteName, CaseName, Error, Reason, Stacktrace]),
             {error, list_to_binary(Message)}
     end.
 
