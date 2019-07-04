@@ -37,6 +37,8 @@
 -define(ERROR_NOT_FOUND, {error, not_found}).
 -define(ERROR_UNAUTHORIZED, {error, unauthorized}).
 -define(ERROR_FORBIDDEN, {error, forbidden}).
+-define(ERROR_ALREADY_EXISTS, {error, already_exists}).
+-define(ERROR_POSIX(__ERRNO), {error, {posix, __ERRNO}}).
 
 % Errors connected with macaroons
 % Bad macaroon - provided term cannot be understood
@@ -100,6 +102,7 @@
     {error, {list_of_values_not_allowed, __Key, {allowed, __AllowedVals}}}
 ).
 -define(ERROR_BAD_VALUE_ID_NOT_FOUND(__Key), {error, {id_not_found, __Key}}).
+-define(ERROR_BAD_VALUE_AMBIGUOUS_ID(__Key), {error, {ambiguous_id, __Key}}).
 -define(ERROR_BAD_VALUE_IDENTIFIER_OCCUPIED(__Key), {error, {identifier_occupied, __Key}}).
 -define(ERROR_BAD_VALUE_BAD_TOKEN_TYPE(__Key), {error, {bad_token_type, __Key}}).
 -define(ERROR_BAD_VALUE_IDENTIFIER(__Key), {error, {bad_identifier, __Key}}).
@@ -132,6 +135,14 @@
 -define(ERROR_PROTECTED_GROUP, {error, protected_group}).
 
 -define(ERROR_TEMPORARY_FAILURE, {error, temporary_failure}).
+
+% Provider related errors
+-define(ERROR_SPACE_NOT_SUPPORTED_BY(__ProviderId), {error, {space_not_supported_by, __ProviderId}}).
+-define(ERROR_INDEX_NOT_EXISTS_ON(__ProviderId), {error, {index_not_exists_on, __ProviderId}}).
+
+% Transfers related errors
+-define(ERROR_TRANSFER_ALREADY_ENDED, {error, transfer_already_ended}).
+-define(ERROR_TRANSFER_NOT_ENDED, {error, transfer_not_ended}).
 
 % Clproto connection errors
 -define(ERROR_NO_CONNECTION_TO_PEER_PROVIDER, {error, no_connection_to_peer_provider}).
