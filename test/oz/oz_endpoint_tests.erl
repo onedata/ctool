@@ -28,7 +28,7 @@ token_header() ->
 % Root macaroon
 macaroon() ->
     M = macaroon:create("Location", "Key", "Macaroon"),
-    {ok, Bin} = onedata_macaroons:serialize(M),
+    {ok, Bin} = macaroons:serialize(M),
     Bin.
 
 % Request header with root macaroon
@@ -41,19 +41,19 @@ disch_macaroons() ->
     M1 = macaroon:create("Location", "Key1", "Discharge macaroon 1"),
     M2 = macaroon:create("Location", "Key2", "Discharge macaroon 2"),
     M3 = macaroon:create("Location", "Key3", "Discharge macaroon 3"),
-    {ok, Bin1} = onedata_macaroons:serialize(M1),
-    {ok, Bin2} = onedata_macaroons:serialize(M2),
-    {ok, Bin3} = onedata_macaroons:serialize(M3),
+    {ok, Bin1} = macaroons:serialize(M1),
+    {ok, Bin2} = macaroons:serialize(M2),
+    {ok, Bin3} = macaroons:serialize(M3),
     [Bin1, Bin2, Bin3].
 
 % Bound disch macaroons joined into one string with spaces for request header.
 disch_macaroons_header() ->
     MacaroonBin = macaroon(),
-    {ok, Macaroon} = onedata_macaroons:deserialize(MacaroonBin),
+    {ok, Macaroon} = macaroons:deserialize(MacaroonBin),
     BoundMacaroons = lists:map(fun(DMBin) ->
-        {ok, DM} = onedata_macaroons:deserialize(DMBin),
+        {ok, DM} = macaroons:deserialize(DMBin),
         BDM = macaroon:prepare_for_request(Macaroon, DM),
-        {ok, Bin} = onedata_macaroons:serialize(BDM),
+        {ok, Bin} = macaroons:serialize(BDM),
         Bin
     end, disch_macaroons()),
     #{<<"Discharge-Macaroons">> => str_utils:join_binary(BoundMacaroons, <<" ">>)}.

@@ -159,12 +159,12 @@ prepare_auth_headers(Auth, Headers) ->
         {user, token, Token} ->
             Headers#{<<"X-Auth-Token">> => Token};
         {user, macaroon, {MacaroonBin, DischargeMacaroonsBin}} ->
-            {ok, Macaroon} = onedata_macaroons:deserialize(MacaroonBin),
+            {ok, Macaroon} = macaroons:deserialize(MacaroonBin),
             BoundMacaroons = lists:map(
                 fun(DischargeMacaroonBin) ->
-                    {ok, DM} = onedata_macaroons:deserialize(DischargeMacaroonBin),
+                    {ok, DM} = macaroons:deserialize(DischargeMacaroonBin),
                     BDM = macaroon:prepare_for_request(Macaroon, DM),
-                    {ok, SerializedBDM} = onedata_macaroons:serialize(BDM),
+                    {ok, SerializedBDM} = macaroons:serialize(BDM),
                     SerializedBDM
                 end, DischargeMacaroonsBin),
             % Bound discharge macaroons are sent in one header,

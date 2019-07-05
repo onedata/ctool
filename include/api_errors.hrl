@@ -46,6 +46,11 @@
 -define(ERROR_MACAROON_INVALID, {error, macaroon_invalid}).
 -define(ERROR_MACAROON_EXPIRED, {error, macaroon_expired}).
 -define(ERROR_MACAROON_TTL_TO_LONG(__MaxTtl), {error, {macaroon_ttl_too_long, __MaxTtl}}).
+% Requested audience is forbidden to consume the token (e.g. user is not
+% supported by the provider specified in audience)
+-define(ERROR_TOKEN_AUDIENCE_FORBIDDEN, {error, token_audience_forbidden}).
+-define(ERROR_TOKEN_SESSION_INVALID, {error, token_session_invalid}).
+-define(ERROR_BAD_AUDIENCE_TOKEN, {error, bad_audience_token}).
 
 % Errors connected with bad data
 -define(ERROR_MALFORMED_DATA, {error, malformed_data}).

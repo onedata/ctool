@@ -47,10 +47,8 @@ create_hash(Password) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec verify(Password :: binary(), SaltAndPasswdHash :: binary()) -> boolean().
-verify(Password, SaltAndPasswdHash) ->
-    <<Salt:?SALT_LENGTH/binary, ?JOIN_CHAR, PasswordHash/binary>> = SaltAndPasswdHash,
+verify(Password, <<Salt:?SALT_LENGTH/binary, ?JOIN_CHAR, PasswordHash/binary>>) ->
     case pbkdf2:pbkdf2(?ALG, Password, Salt, ?PBKDF2_ITERATIONS, ?HASH_LENGTH) of
         {ok, PasswordHash} -> true;
         _ -> false
     end.
-

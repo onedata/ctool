@@ -107,7 +107,7 @@ seconds_since_modification(Path) ->
         0 ->
             {error, enoent};
         LastModified ->
-            CurrentDateTime = calendar:now_to_local_time(now()),
+            CurrentDateTime = calendar:now_to_local_time(erlang:timestamp()),
             {ok, calendar:datetime_to_gregorian_seconds(CurrentDateTime) -
                 calendar:datetime_to_gregorian_seconds(LastModified)}
     end.
