@@ -34,6 +34,14 @@
 -type onezone_domain() :: binary().
 % A random string that uniquely identifies the token
 -type nonce() :: binary().
+% Indicates if given token is persistent:
+%   true -  the token's secret and possibly some additional information is
+%           stored by the issuer Onezone, retrievable by nonce - such tokens
+%           are revocable and traceable in the system
+%   false - the token uses a shared secret and is not persisted anywhere, which
+%           means it cannot be revoked or have any attached information apart
+%           from that carried by the token itself
+-type persistent() :: binary().
 % Type of the token as recognized across Onedata components
 -type type() :: access_token | {gui_token, aai:session_id()}.
 
@@ -50,8 +58,8 @@
 -type token_identifier() :: binary().
 
 -export_type([token/0, audience_token/0, serialized/0]).
--export_type([version/0, onezone_domain/0, nonce/0, type/0, secret/0]).
--export_type([caveat/0, caveat_verifier/0]).
+-export_type([version/0, onezone_domain/0, nonce/0, persistent/0, type/0]).
+-export_type([secret/0, caveat/0, caveat_verifier/0]).
 
 %% @todo VFS-5554 Deprecated, kept for backward compatibility
 -type discharge_macaroons() :: [macaroon:macaroon()].
@@ -232,7 +240,7 @@ to_identifier(Token = #auth_token{version = 1}) ->
     Token#auth_token.nonce;
 to_identifier(Token = #auth_token{version = 2}) ->
     <<
-        (integer_to_binary(Token#auth_token.version))/binary,
+        "2",
         "/",
         (encode_persistence(Token#auth_token.persistent))/binary,
         "/",

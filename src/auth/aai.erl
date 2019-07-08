@@ -14,12 +14,13 @@
 %%% attributes of the resources (privileges, existing relations).
 %%%
 %%% Onedata uses the concept of audience (#audience{}) to confine authorization
-%%% to a specific requesting party (e.g. a op_worker service). In such case, the
-%%% requesting party must prove its identity during the request. In REST, it is
-%%% done using the following headers:
+%%% to a specific requesting party (e.g. a specific op_worker service). In such
+%%% case, the requesting party must prove its identity during the request by
+%%% presenting a proper access token (aka audience token). In REST, it is done
+%%% using the following headers:
 %%%     X-Auth-Token               <- subject's access token
 %%%                                   (Authorization: Bearer $TOKEN) is also supported
-%%%     X-Onedata-Audience-Token   <- requesting party's access token
+%%%     X-Onedata-Audience-Token   <- requesting party's access token (aka audience token)
 %%% In GraphSync, the audience is inferred from the owner of GraphSync session.
 %%%
 %%% Tokens in Onedata have the following characteristics:
@@ -39,7 +40,10 @@
 -include("onedata.hrl").
 
 -type subject() :: #subject{}.
+% root is allowed to do anything, it must be used with caution
+% (should not be used in any kind of external API)
 -type subject_type() :: nobody | root | user | ?ONEPROVIDER.
+% Applicable in case of user or ?ONEPROVIDER type
 -type subject_id() :: undefined | binary().
 
 -type audience() :: #audience{}.

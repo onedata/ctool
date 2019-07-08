@@ -6,7 +6,8 @@
 %%% @end
 %%%-------------------------------------------------------------------
 %%% @doc
-%%% This file contains caveat macros used in macaroon building and verifying.
+%%% This file contains common definitions related to authentication and
+%%% authorization in Onedata.
 %%% @end
 %%%-------------------------------------------------------------------
 -ifndef(AAI_HRL).
@@ -16,8 +17,6 @@
 -include("macaroons.hrl").
 
 -record(subject, {
-    % root is allowed to do anything, it must be used with caution
-    % (should not be used in any kind of external API!)
     type = nobody :: aai:subject_type(),
     id = undefined :: aai:subject_id()
 }).
@@ -47,7 +46,7 @@
     version = ?CURRENT_TOKEN_VERSION :: tokens:version(),
     onezone_domain :: tokens:onezone_domain(),
     nonce :: tokens:nonce(),
-    persistent :: boolean(),
+    persistent :: tokens:persistent(),
     subject = #subject{} :: aai:subject(),
     type = ?ACCESS_TOKEN :: tokens:type(),
     macaroon = undefined :: undefined | macaroon:macaroon()
