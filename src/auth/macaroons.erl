@@ -179,7 +179,6 @@ build_caveat_verifier(ExactCaveat) ->
     caveat_to_binary(ExactCaveat).
 
 
-
 -spec base64_to_62(binary()) -> binary().
 base64_to_62(Token) ->
     <<<<(escape_to_base62(C))/binary>> || <<C>> <= Token>>.

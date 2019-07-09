@@ -39,7 +39,7 @@
 -define(ERROR_FORBIDDEN, {error, forbidden}).
 
 % Errors connected with macaroons
-% Bad macaroon - provided term is not a macaroon
+% Bad macaroon - provided term cannot be understood
 -define(ERROR_BAD_MACAROON, {error, bad_macaroon}).
 % Macaroon invalid - provided term is a macaroon, but it is not valid (caveats
 % could not be verified).
@@ -50,6 +50,7 @@
 % supported by the provider specified in audience)
 -define(ERROR_TOKEN_AUDIENCE_FORBIDDEN, {error, token_audience_forbidden}).
 -define(ERROR_TOKEN_SESSION_INVALID, {error, token_session_invalid}).
+% The presented audience token cannot be understood
 -define(ERROR_BAD_AUDIENCE_TOKEN, {error, bad_audience_token}).
 
 % Errors connected with bad data

@@ -104,7 +104,7 @@ auth_to_string(?USER(UId)) -> str_utils:format("user:~s", [UId]);
 auth_to_string(?PROVIDER(PId)) -> str_utils:format("provider:~s", [PId]).
 
 
--spec encode_audience_type(audience_type()) -> binary().
+-spec encode_audience_type(audience_type()) -> <<_:24>>.
 encode_audience_type(user) -> <<"usr">>;
 encode_audience_type(?OZ_WORKER) -> <<"ozw">>;
 encode_audience_type(?OZ_PANEL) -> <<"ozp">>;
@@ -113,7 +113,7 @@ encode_audience_type(?OP_PANEL) -> <<"opp">>;
 encode_audience_type(_) -> error(badarg).
 
 
--spec decode_audience_type(binary()) -> audience_type().
+-spec decode_audience_type(<<_:24>>) -> audience_type().
 decode_audience_type(<<"usr">>) -> user;
 decode_audience_type(<<"ozw">>) -> ?OZ_WORKER;
 decode_audience_type(<<"ozp">>) -> ?OZ_PANEL;

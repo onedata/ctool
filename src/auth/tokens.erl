@@ -24,12 +24,12 @@
 -type token() :: #auth_token{}.
 % Token represented by internal record
 -type audience_token() :: #audience_token{}.
-% Serialized token in binary from, or any binary token
+% Serialized token in binary form, or any binary token
 -type serialized() :: binary().
 
 % Version of the token. Legacy tokens are identified by version 1 and must be 
 % handled in legacy way to ensure backward compatibility.
--type version() :: integer().
+-type version() :: non_neg_integer().
 % Domain of the issuing Onezone
 -type onezone_domain() :: binary().
 % A random string that uniquely identifies the token
@@ -41,7 +41,7 @@
 %   false - the token uses a shared secret and is not persisted anywhere, which
 %           means it cannot be revoked or have any attached information apart
 %           from that carried by the token itself
--type persistent() :: binary().
+-type persistent() :: boolean().
 % Type of the token as recognized across Onedata components
 -type type() :: access_token | {gui_token, aai:session_id()}.
 
@@ -161,23 +161,22 @@ is_token(_) ->
 
 -spec generate_secret() -> secret().
 generate_secret() ->
-    BinSecret = crypto:strong_rand_bytes(macaroon:suggested_secret_length()),
-    <<<<Y>> || <<X:4>> <= BinSecret, Y <- integer_to_list(X, 16)>>.
+    hex_utils:hex(crypto:strong_rand_bytes(macaroon:suggested_secret_length())).
 
 
 -spec serialize_audience_token(audience_token()) -> {ok, serialized()} | {error, term()}.
 serialize_audience_token(#audience_token{audience_type = AudienceType, token = Token}) ->
     case serialize(Token) of
-        {ok, SerializedAudienceToken} ->
-            {ok, serialize_audience_token(AudienceType, SerializedAudienceToken)};
+        {ok, SerializedToken} ->
+            {ok, serialize_audience_token(AudienceType, SerializedToken)};
         {error, _} = Error ->
             Error
     end.
 
 
 -spec serialize_audience_token(aai:audience_type(), serialized()) -> serialized().
-serialize_audience_token(AudienceType, SerializedAudienceToken) ->
-    <<(aai:encode_audience_type(AudienceType))/binary, "-", SerializedAudienceToken/binary>>.
+serialize_audience_token(AudienceType, SerializedToken) ->
+    <<(aai:encode_audience_type(AudienceType))/binary, "-", SerializedToken/binary>>.
 
 
 -spec deserialize_audience_token(serialized()) -> {ok, audience_token()} | {error, term()}.
@@ -196,7 +195,7 @@ deserialize_audience_token(<<Type:3/binary, $-, SerializedToken/binary>>) ->
 deserialize_audience_token(SerializedToken) ->
     case deserialize(SerializedToken) of
         {ok, Token} ->
-            % If no audience indicator is given, assume it is a user
+            % If no audience type indicator is given, assume it is a user
             {ok, #audience_token{audience_type = user, token = Token}};
         {error, _} = Error ->
             Error
