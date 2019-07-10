@@ -10,37 +10,30 @@
 %%% recognizable by Onezone.
 %%% @end
 %%%-------------------------------------------------------------------
--module(onedata_macaroons).
+-module(macaroons).
 
--include("auth/onedata_macaroons.hrl").
+-include("aai/macaroons.hrl").
 -include("api_errors.hrl").
--include("global_definitions.hrl").
--include("onedata.hrl").
--include("logging.hrl").
 
 -type location() :: Domain :: binary().
+-type nonce() :: binary().
+-type secret() :: binary().
 
 -type time_caveat() :: {time, CurrentTimestamp :: non_neg_integer(), MaxTtl :: non_neg_integer() | infinity}.
 -type authorization_none_caveat() :: authorization_none.
--type session_id_caveat() :: {session_id_caveat, SessionId :: binary()}.
--type session_id_verifier() :: {session_id_verifier, fun((SessionId :: binary()) -> boolean())}.
--type cluster_type_caveat() :: {cluster_type, onedata:cluster_type()}.
--type cluster_id_caveat() :: {cluster_id, ClusterId :: binary()}.
+-type audience_caveat() :: auth:audience().
 %% @formatter:off
 -type caveat() ::          time_caveat() |
                            authorization_none_caveat() |
-                           session_id_caveat() |
-                           cluster_type_caveat() |
-                           cluster_id_caveat().
+                           audience_caveat().
 
 -type caveat_verifier() :: time_caveat() |
                            authorization_none_caveat() |
-                           session_id_verifier() |
-                           cluster_type_caveat() |
-                           cluster_id_caveat().
+                           audience_caveat().
 %% @formatter:on
 
--export_type([location/0, caveat/0]).
+-export_type([location/0, nonce/0, secret/0]).
+-export_type([caveat/0, caveat_verifier/0]).
 
 -export([create/4, verify/4, add_caveat/2]).
 -export([serialize/1, deserialize/1]).
@@ -52,13 +45,13 @@
 %%--------------------------------------------------------------------
 %% @doc
 %% Creates a macaroon.
-%% Available caveats are specified as macros in auth/onedata_macaroons.hrl.
+%% Available caveats are specified as macros in auth/macaroons.hrl.
 %% @end
 %%--------------------------------------------------------------------
--spec create(location(), Secret :: binary(), Identifier :: binary(), [caveat()]) ->
+-spec create(location(), nonce(), secret(), [caveat()]) ->
     macaroon:macaroon().
-create(Location, Secret, Identifier, Caveats) ->
-    Macaroon = macaroon:create(Location, Secret, Identifier),
+create(Location, Nonce, Secret, Caveats) ->
+    Macaroon = macaroon:create(Location, Secret, Nonce),
     lists:foldl(fun(Caveat, MAcc) ->
         add_caveat(MAcc, Caveat)
     end, Macaroon, Caveats).
@@ -67,11 +60,11 @@ create(Location, Secret, Identifier, Caveats) ->
 %%--------------------------------------------------------------------
 %% @doc
 %% Verifies a macaroon.
-%% Available verifiers are specified as macros in auth/onedata_macaroons.hrl.
+%% Available verifiers are specified as macros in auth/macaroons.hrl.
 %% Some verifiers use the same macros as caveats.
 %% @end
 %%--------------------------------------------------------------------
--spec verify(macaroon:macaroon(), Secret :: binary(),
+-spec verify(macaroon:macaroon(), secret(),
     DischargeMacaroons :: [macaroon:macaroon()], [caveat_verifier()]) ->
     ok | {error, term()}.
 verify(Macaroon, Secret, DischargeMacaroons, CaveatVerifiers) ->
@@ -88,7 +81,7 @@ verify(Macaroon, Secret, DischargeMacaroons, CaveatVerifiers) ->
 %%--------------------------------------------------------------------
 %% @doc
 %% Adds a caveat to an existing macaroon.
-%% Available caveats are specified as macros in auth/onedata_macaroons.hrl.
+%% Available caveats are specified as macros in auth/macaroons.hrl.
 %% @end
 %%--------------------------------------------------------------------
 -spec add_caveat(macaroon:macaroon(), caveat()) -> macaroon:macaroon().
@@ -101,8 +94,7 @@ add_caveat(Macaroon, Caveat) ->
 %% Serializes a macaroon from its internal format to portable binary.
 %% @end
 %%--------------------------------------------------------------------
--spec serialize(Macaroon :: macaroon:macaroon()) ->
-    {ok, binary()} | {error, term()}.
+-spec serialize(macaroon:macaroon()) -> {ok, binary()} | {error, term()}.
 serialize(M) ->
     try macaroon:serialize(M) of
         {ok, Token64} -> {ok, base64_to_62(Token64)};
@@ -117,8 +109,7 @@ serialize(M) ->
 %% Deserializes a macaroon from portable binary to its internal format.
 %% @end
 %%--------------------------------------------------------------------
--spec deserialize(Macaroon :: binary()) ->
-    {ok, macaroon:macaroon()} | {error, term()}.
+-spec deserialize(binary()) -> {ok, macaroon:macaroon()} | {error, term()}.
 deserialize(<<>>) -> ?ERROR_BAD_MACAROON;
 deserialize(Macaroon) ->
     try macaroon:deserialize(base62_to_64(Macaroon)) of
@@ -156,14 +147,8 @@ caveat_to_binary(?TIME_CAVEAT(Timestamp, MaxTtl)) ->
 caveat_to_binary(?AUTHORIZATION_NONE_CAVEAT) ->
     <<"authorization = none">>;
 
-caveat_to_binary(?SESSION_ID_CAVEAT(SessionId)) ->
-    <<"session_id = ", SessionId/binary>>;
-
-caveat_to_binary(?CLUSTER_TYPE_CAVEAT(ClusterType)) ->
-    <<"cluster_type = ", (atom_to_binary(ClusterType, utf8))/binary>>;
-
-caveat_to_binary(?CLUSTER_ID_CAVEAT(ClusterId)) ->
-    <<"cluster_id = ", ClusterId/binary>>.
+caveat_to_binary(?AUDIENCE_CAVEAT(Audience)) ->
+    <<"audience = ", (aai:encode_audience(Audience))/binary>>.
 
 
 -spec build_caveat_verifier(caveat_verifier()) -> binary() | macaroon_verifier:predicate().
@@ -187,11 +172,6 @@ build_caveat_verifier(?TIME_CAVEAT(Timestamp, MaxTtl)) ->
             end;
         (_) ->
             false
-    end;
-
-build_caveat_verifier(?SESSION_ID_VERIFIER(VerifyFun)) ->
-    fun(<<"session_id = ", SessionId/binary>>) ->
-        VerifyFun(SessionId)
     end;
 
 % The rest of the caveats are exact - 1:1 with the binary form.

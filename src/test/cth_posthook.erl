@@ -49,6 +49,13 @@ post_init_per_suite(_Suite, _Config, Return, State) ->
         undefined ->
             {Return, State};
         Posthook ->
-            NewConfig = Posthook(Return),
-            {NewConfig, State}
+            try
+                NewConfig = Posthook(Return),
+                {NewConfig, State}
+            catch
+                Type:Error ->
+                    ct:pal("CTH posthook failed due to~n~p:~p~n~p",
+                        [Type, Error, erlang:get_stacktrace()]),
+                    erlang:Type(Error)
+            end
     end.
