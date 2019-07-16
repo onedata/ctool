@@ -54,9 +54,13 @@
 -define(SPACE_READ_DATA, space_read_data).
 -define(SPACE_WRITE_DATA, space_write_data).
 -define(SPACE_MANAGE_SHARES, space_manage_shares).
--define(SPACE_MANAGE_INDEXES, space_manage_indexes).
--define(SPACE_QUERY_INDEXES, space_query_indexes).
+
+-define(SPACE_VIEW_INDICES, space_view_indices).
+-define(SPACE_MANAGE_INDICES, space_manage_indices).
+-define(SPACE_QUERY_INDICES, space_query_indices).
+
 -define(SPACE_VIEW_STATISTICS, space_view_statistics).
+-define(SPACE_VIEW_CHANGES_STREAM, space_view_changes_stream).
 
 -define(SPACE_VIEW_TRANSFERS, space_view_transfers).
 -define(SPACE_SCHEDULE_REPLICATION, space_schedule_replication).
