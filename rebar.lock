@@ -36,7 +36,7 @@
   0},
  {<<"lager">>,{pkg,<<"lager">>,<<"3.6.1">>},0},
  {<<"macaroons">>,
-  {git,"https://github.com/kzemek/macaroons.git",
+  {git,"ssh://git@git.onedata.org:7999/vfs/macaroons.git",
        {ref,"b15b13f1747210caf1152fc4444239d90b1b21cd"}},
   0},
  {<<"meck">>,
