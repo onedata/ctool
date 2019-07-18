@@ -14,14 +14,14 @@
 -define(API_ERRORS_HRL, 1).
 
 % Graph Sync errors
--define(ERROR_UNCLASSIFIED_ERROR(__ReadableDescription),
-    {error, {unclassified_error, __ReadableDescription}}
+-define(ERROR_UNKNOWN_ERROR(ErrorObject),
+    {error, {unknown_error, ErrorObject}}
 ).
--define(ERROR_BAD_MESSAGE(__Msg), {error, {bad_message, __Msg}}).
+-define(ERROR_BAD_MESSAGE(Msg), {error, {bad_message, Msg}}).
 -define(ERROR_EXPECTED_HANDSHAKE_MESSAGE, {error, expected_handshake_message}).
 -define(ERROR_HANDSHAKE_ALREADY_DONE, {error, handshake_already_done}).
--define(ERROR_BAD_VERSION(__SupportedVersions),
-    {error, {bad_version, {supported, __SupportedVersions}}}
+-define(ERROR_BAD_VERSION(SupportedVersions),
+    {error, {bad_version, {supported, SupportedVersions}}}
 ).
 -define(ERROR_BAD_TYPE, {error, bad_type}).
 -define(ERROR_RPC_UNDEFINED, {error, rpc_undefined}).
@@ -47,7 +47,7 @@
 % could not be verified).
 -define(ERROR_MACAROON_INVALID, {error, macaroon_invalid}).
 -define(ERROR_MACAROON_EXPIRED, {error, macaroon_expired}).
--define(ERROR_MACAROON_TTL_TO_LONG(__MaxTtl), {error, {macaroon_ttl_too_long, __MaxTtl}}).
+-define(ERROR_MACAROON_TTL_TO_LONG(MaxTtl), {error, {macaroon_ttl_too_long, MaxTtl}}).
 % Requested audience is forbidden to consume the token (e.g. user is not
 % supported by the provider specified in audience)
 -define(ERROR_TOKEN_AUDIENCE_FORBIDDEN, {error, token_audience_forbidden}).
@@ -58,54 +58,54 @@
 % Errors connected with bad data
 -define(ERROR_MALFORMED_DATA, {error, malformed_data}).
 -define(ERROR_BAD_BASIC_CREDENTIALS, {error, bad_basic_credentials}).
--define(ERROR_BAD_IDP_ACCESS_TOKEN(__OAuthProviderId),
-    {error, {bad_idp_access_token, __OAuthProviderId}}
+-define(ERROR_BAD_IDP_ACCESS_TOKEN(OAuthProviderId),
+    {error, {bad_idp_access_token, OAuthProviderId}}
 ).
--define(ERROR_MISSING_REQUIRED_VALUE(__Key),
-    {error, {missing_required_value, __Key}}
+-define(ERROR_MISSING_REQUIRED_VALUE(Key),
+    {error, {missing_required_value, Key}}
 ).
--define(ERROR_MISSING_AT_LEAST_ONE_VALUE(__Keys),
-    {error, {missing_at_least_one_value, __Keys}}
+-define(ERROR_MISSING_AT_LEAST_ONE_VALUE(Keys),
+    {error, {missing_at_least_one_value, Keys}}
 ).
--define(ERROR_BAD_DATA(__Key), {error, {bad_data, __Key}}).
--define(ERROR_BAD_VALUE_EMPTY(__Key), {error, {empty_value, __Key}}).
--define(ERROR_BAD_VALUE_ATOM(__Key), {error, {bad_value_atom, __Key}}).
--define(ERROR_BAD_VALUE_BOOLEAN(__Key), {error, {bad_value_boolean, __Key}}).
--define(ERROR_BAD_VALUE_LIST_OF_ATOMS(__Key),
-    {error, {bad_value_list_of_atoms, __Key}}
+-define(ERROR_BAD_DATA(Key), {error, {bad_data, Key}}).
+-define(ERROR_BAD_VALUE_EMPTY(Key), {error, {empty_value, Key}}).
+-define(ERROR_BAD_VALUE_ATOM(Key), {error, {bad_value_atom, Key}}).
+-define(ERROR_BAD_VALUE_BOOLEAN(Key), {error, {bad_value_boolean, Key}}).
+-define(ERROR_BAD_VALUE_LIST_OF_ATOMS(Key),
+    {error, {bad_value_list_of_atoms, Key}}
 ).
--define(ERROR_BAD_VALUE_BINARY(__Key), {error, {bad_value_binary, __Key}}).
--define(ERROR_BAD_VALUE_LIST_OF_BINARIES(__Key),
-    {error, {bad_value_list_of_binaries, __Key}}
+-define(ERROR_BAD_VALUE_BINARY(Key), {error, {bad_value_binary, Key}}).
+-define(ERROR_BAD_VALUE_LIST_OF_BINARIES(Key),
+    {error, {bad_value_list_of_binaries, Key}}
 ).
--define(ERROR_BAD_VALUE_INTEGER(__Key), {error, {bad_value_integer, __Key}}).
--define(ERROR_BAD_VALUE_FLOAT(__Key), {error, {bad_value_float, __Key}}).
--define(ERROR_BAD_VALUE_JSON(__Key), {error, {bad_value_json, __Key}}).
--define(ERROR_BAD_VALUE_TOKEN(__Key), {error, {bad_value_token, __Key}}).
--define(ERROR_BAD_VALUE_LIST_OF_IPV4_ADDRESSES(__Key), {error, {bad_value_list_of_ipv4_addresses, __Key}}).
--define(ERROR_BAD_VALUE_DOMAIN(__Key), {error, {bad_value_domain, __Key}}).
+-define(ERROR_BAD_VALUE_INTEGER(Key), {error, {bad_value_integer, Key}}).
+-define(ERROR_BAD_VALUE_FLOAT(Key), {error, {bad_value_float, Key}}).
+-define(ERROR_BAD_VALUE_JSON(Key), {error, {bad_value_json, Key}}).
+-define(ERROR_BAD_VALUE_TOKEN(Key), {error, {bad_value_token, Key}}).
+-define(ERROR_BAD_VALUE_LIST_OF_IPV4_ADDRESSES(Key), {error, {bad_value_list_of_ipv4_addresses, Key}}).
+-define(ERROR_BAD_VALUE_DOMAIN(Key), {error, {bad_value_domain, Key}}).
 -define(ERROR_BAD_VALUE_SUBDOMAIN, {error, bad_value_subdomain}).
 -define(ERROR_BAD_VALUE_EMAIL, {error, bad_value_email}).
--define(ERROR_BAD_VALUE_TOO_LOW(__Key, __Threshold),
-    {error, {value_too_low, __Key, {min, __Threshold}}}
+-define(ERROR_BAD_VALUE_TOO_LOW(Key, Threshold),
+    {error, {value_too_low, Key, {min, Threshold}}}
 ).
--define(ERROR_BAD_VALUE_TOO_HIGH(__Key, __Threshold),
-    {error, {value_too_high, __Key, {max, __Threshold}}}
+-define(ERROR_BAD_VALUE_TOO_HIGH(Key, Threshold),
+    {error, {value_too_high, Key, {max, Threshold}}}
 ).
--define(ERROR_BAD_VALUE_NOT_IN_RANGE(__Key, __Low, __High),
-    {error, {value_not_in_range, __Key, {range, __Low, __High}}}
+-define(ERROR_BAD_VALUE_NOT_IN_RANGE(Key, Low, High),
+    {error, {value_not_in_range, Key, {range, Low, High}}}
 ).
--define(ERROR_BAD_VALUE_NOT_ALLOWED(__Key, __AllowedVals),
-    {error, {value_not_allowed, __Key, {allowed, __AllowedVals}}}
+-define(ERROR_BAD_VALUE_NOT_ALLOWED(Key, AllowedVals),
+    {error, {value_not_allowed, Key, {allowed, AllowedVals}}}
 ).
--define(ERROR_BAD_VALUE_LIST_NOT_ALLOWED(__Key, __AllowedVals),
-    {error, {list_of_values_not_allowed, __Key, {allowed, __AllowedVals}}}
+-define(ERROR_BAD_VALUE_LIST_NOT_ALLOWED(Key, AllowedVals),
+    {error, {list_of_values_not_allowed, Key, {allowed, AllowedVals}}}
 ).
--define(ERROR_BAD_VALUE_ID_NOT_FOUND(__Key), {error, {id_not_found, __Key}}).
--define(ERROR_BAD_VALUE_AMBIGUOUS_ID(__Key), {error, {ambiguous_id, __Key}}).
--define(ERROR_BAD_VALUE_IDENTIFIER_OCCUPIED(__Key), {error, {identifier_occupied, __Key}}).
--define(ERROR_BAD_VALUE_BAD_TOKEN_TYPE(__Key), {error, {bad_token_type, __Key}}).
--define(ERROR_BAD_VALUE_IDENTIFIER(__Key), {error, {bad_identifier, __Key}}).
+-define(ERROR_BAD_VALUE_ID_NOT_FOUND(Key), {error, {id_not_found, Key}}).
+-define(ERROR_BAD_VALUE_AMBIGUOUS_ID(Key), {error, {ambiguous_id, Key}}).
+-define(ERROR_BAD_VALUE_IDENTIFIER_OCCUPIED(Key), {error, {identifier_occupied, Key}}).
+-define(ERROR_BAD_VALUE_BAD_TOKEN_TYPE(Key), {error, {bad_token_type, Key}}).
+-define(ERROR_BAD_VALUE_IDENTIFIER(Key), {error, {bad_identifier, Key}}).
 -define(ERROR_BAD_VALUE_FULL_NAME, {error, bad_full_name}).
 -define(ERROR_BAD_VALUE_USERNAME, {error, bad_username}).
 -define(ERROR_BAD_VALUE_PASSWORD, {error, bad_password}).
@@ -122,15 +122,15 @@
 -define(ERROR_BASIC_AUTH_DISABLED, {error, basic_auth_disabled}).
 
 % Errors connected with relations between entities
--define(ERROR_RELATION_DOES_NOT_EXIST(__ChType, __ChId, __ParType, __ParId),
-    {error, {relation_does_not_exist, __ChType, __ChId, __ParType, __ParId}}
+-define(ERROR_RELATION_DOES_NOT_EXIST(ChType, ChId, ParType, ParId),
+    {error, {relation_does_not_exist, ChType, ChId, ParType, ParId}}
 ).
--define(ERROR_RELATION_ALREADY_EXISTS(__ChType, __ChId, __ParType, __ParId),
-    {error, {relation_already_exists, __ChType, __ChId, __ParType, __ParId}}
+-define(ERROR_RELATION_ALREADY_EXISTS(ChType, ChId, ParType, ParId),
+    {error, {relation_already_exists, ChType, ChId, ParType, ParId}}
 ).
 -define(ERROR_CANNOT_ADD_RELATION_TO_SELF, {error, cannot_add_relation_to_self}).
--define(ERROR_CANNOT_DELETE_ENTITY(__EntityType, __EntityId),
-    {error, {cannot_delete_entity, __EntityType, __EntityId}}
+-define(ERROR_CANNOT_DELETE_ENTITY(EntityType, EntityId),
+    {error, {cannot_delete_entity, EntityType, EntityId}}
 ).
 -define(ERROR_PROTECTED_GROUP, {error, protected_group}).
 
