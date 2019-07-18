@@ -18,7 +18,7 @@
     random_element/1, get_host/1, get_host_as_atom/1, cmd/1, ensure_defined/3,
     process_info/1, process_info/2]).
 -export([duration/1, adjust_duration/2]).
--export([mkdtemp/0, mkdtemp/3, rmtempdir/1]).
+-export([mkdtemp/0, mkdtemp/3, rmtempdir/1, run_with_tempdir/1]).
 -export([to_binary/1]).
 -export([save_file_on_hosts/3, save_file/2]).
 -export([ensure_list/1]).
@@ -247,6 +247,23 @@ mkdtemp(Suffix, Prefix, Dir) ->
 -spec rmtempdir(Dir :: string()) -> ok.
 rmtempdir(Dir) ->
     mochitemp:rmtempdir(Dir).
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Provides given Fun with a temporary directory and ensures
+%% cleanup after execution.
+%% @end
+%%--------------------------------------------------------------------
+-spec run_with_tempdir(fun((file:filename()) -> Result)) -> Result.
+run_with_tempdir(Fun) ->
+    TempDir = mkdtemp(),
+    try
+        Fun(TempDir)
+    after
+        catch rmtempdir(TempDir)
+    end.
+
 
 %%--------------------------------------------------------------------
 %% @doc
