@@ -32,7 +32,7 @@
 %% is passed as secure flag and skip any verification.
 %% @end
 %%--------------------------------------------------------------------
--spec expand(http_client:url(), http_client:ssl_opts()) -> ssl:ssl_opts().
+-spec expand(http_client:url(), [http_client:ssl_opt()]) -> [http_client:ssl_opt()].
 expand(Url, SslOpts) ->
     ForceInsecure = application:get_env(?CTOOL_APP_NAME, force_insecure_connections, false),
     SecureFlag = proplists:get_value(secure, SslOpts, true),

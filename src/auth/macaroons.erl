@@ -21,7 +21,7 @@
 
 -type time_caveat() :: {time, CurrentTimestamp :: non_neg_integer(), MaxTtl :: non_neg_integer() | infinity}.
 -type authorization_none_caveat() :: authorization_none.
--type audience_caveat() :: auth:audience().
+-type audience_caveat() :: aai:audience().
 %% @formatter:off
 -type caveat() ::          time_caveat() |
                            authorization_none_caveat() |

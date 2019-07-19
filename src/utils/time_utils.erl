@@ -173,7 +173,7 @@ datetime_to_epoch({{_, _, _}, {_, _, _}} = DateTime) ->
 %%  YYYY-MM-DDThh:mm:ssZ
 %%% @end
 %%%--------------------------------------------------------------------
--spec datetime_to_datestamp(DateTime :: erlang:datetime()) -> binary().
+-spec datetime_to_datestamp(DateTime :: calendar:datetime()) -> binary().
 datetime_to_datestamp(DateTime) ->
     {{Year, Month, Day}, {Hour, Minute, Second}} = DateTime,
     str_utils:format_bin(
