@@ -13,7 +13,7 @@
 
 %% API
 -export([ensure_running/1, pmap/2, pforeach/2,
-    record_type/1, access_token_hash/1, trim_spaces/1, ceil/1,
+    record_type/1, trim_spaces/1, ceil/1,
     aggregate_over_first_element/1, average/1, random_shuffle/1, get_values/2,
     random_element/1, get_host/1, get_host_as_atom/1, cmd/1, ensure_defined/3,
     process_info/1, process_info/2]).
@@ -75,15 +75,6 @@ pforeach(Fun, L) ->
         spawn(fun() -> pforeach_f(Self, Ref, Fun, X) end)
     end, L),
     pforeach_gather(Pids, Ref).
-
-%%--------------------------------------------------------------------
-%% @doc
-%% Returns hash of given AccessToken. Can be used to confirm user's GlobalId using GlobalRegistry.
-%% @end
-%%--------------------------------------------------------------------
--spec access_token_hash(AccessToken :: binary()) -> Hash :: binary().
-access_token_hash(AccessToken) ->
-    base64:encode(crypto:hash(sha512, AccessToken)).
 
 %%--------------------------------------------------------------------
 %% @doc
