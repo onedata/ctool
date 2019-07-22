@@ -354,30 +354,26 @@ caching_local_registry_content() ->
 
 
 gui_hash_verification() ->
-    ?assertEqual({error, unknown_version}, ?VerifyGUI(?OZ_WORKER_GUI, <<"18.02.1">>, ?SHA_ALPHA)),
     ?assertEqual({error, unknown_version}, ?VerifyGUI(?OP_WORKER_GUI, <<"18.02.2">>, ?SHA_BETA)),
     ?assertEqual({error, unknown_version}, ?VerifyGUI(?ONEPANEL_GUI, <<"19.02.1">>, ?SHA_DELTA)),
     ?assertEqual({error, unknown_version}, ?VerifyGUI(?ONEPANEL_GUI, <<"19.02.2">>, ?SHA_GAMMA)),
     ?assertEqual({error, unknown_version}, ?VerifyGUI(?ONEPANEL_GUI, <<"19.02.2">>, ?SHA_GAMMA)),
+    ?assertEqual({error, unknown_version}, ?VerifyGUI(?HARVESTER_GUI, <<"18.02.1">>, ?SHA_ALPHA)),
 
     mock_compatibility_file(#{
         <<"revision">> => 2019071900,
         <<"gui-sha256">> => #{
-            <<"oz-worker">> => #{
-                <<"18.02.1">> => [
-                    ?SHA_ALPHA,
-                    ?SHA_BETA
-                ]
-            },
             <<"op-worker">> => #{
                 <<"18.02.2">> => [
-                    ?SHA_THETA,
-                    ?SHA_OMEGA
+                    ?SHA_ALPHA,
+                    ?SHA_BETA,
+                    ?SHA_THETA
                 ]
             },
             <<"onepanel">> => #{
                 <<"19.02.1">> => [
-                    ?SHA_DELTA
+                    ?SHA_DELTA,
+                    ?SHA_OMEGA
                 ],
                 <<"19.02.2">> => [
                     ?SHA_GAMMA
@@ -394,26 +390,24 @@ gui_hash_verification() ->
     }),
     compatibility:clear_registry_cache(),
 
-    ?assertEqual(true, ?VerifyGUI(?OZ_WORKER_GUI, <<"18.02.1">>, ?SHA_ALPHA)),
-    ?assertEqual(true, ?VerifyGUI(?OZ_WORKER_GUI, <<"18.02.1">>, ?SHA_BETA)),
+    ?assertEqual(true, ?VerifyGUI(?OP_WORKER_GUI, <<"18.02.2">>, ?SHA_ALPHA)),
+    ?assertEqual(true, ?VerifyGUI(?OP_WORKER_GUI, <<"18.02.2">>, ?SHA_BETA)),
     ?assertEqual(true, ?VerifyGUI(?OP_WORKER_GUI, <<"18.02.2">>, ?SHA_THETA)),
-    ?assertEqual(true, ?VerifyGUI(?OP_WORKER_GUI, <<"18.02.2">>, ?SHA_OMEGA)),
     ?assertEqual(true, ?VerifyGUI(?ONEPANEL_GUI, <<"19.02.1">>, ?SHA_DELTA)),
     ?assertEqual(true, ?VerifyGUI(?ONEPANEL_GUI, <<"19.02.1">>, ?SHA_DELTA)),
+    ?assertEqual(true, ?VerifyGUI(?ONEPANEL_GUI, <<"19.02.1">>, ?SHA_OMEGA)),
     ?assertEqual(true, ?VerifyGUI(?ONEPANEL_GUI, <<"19.02.2">>, ?SHA_GAMMA)),
     ?assertEqual(true, ?VerifyGUI(?ONEPANEL_GUI, <<"19.02.2">>, ?SHA_GAMMA)),
     ?assertEqual(true, ?VerifyGUI(?HARVESTER_GUI, <<"19.02.1">>, ?SHA_KAPPA)),
     ?assertEqual(true, ?VerifyGUI(?HARVESTER_GUI, <<"19.02.1">>, ?SHA_SIGMA)),
 
-    ?assertEqual({false, [?SHA_ALPHA, ?SHA_BETA]}, ?VerifyGUI(?OZ_WORKER_GUI, <<"18.02.1">>, ?SHA_OMEGA)),
-    ?assertEqual({false, [?SHA_THETA, ?SHA_OMEGA]}, ?VerifyGUI(?OP_WORKER_GUI, <<"18.02.2">>, ?SHA_BETA)),
-    ?assertEqual({false, [?SHA_DELTA]}, ?VerifyGUI(?ONEPANEL_GUI, <<"19.02.1">>, ?SHA_THETA)),
-    ?assertEqual({false, [?SHA_DELTA]}, ?VerifyGUI(?ONEPANEL_GUI, <<"19.02.1">>, ?SHA_THETA)),
+    ?assertEqual({false, [?SHA_ALPHA, ?SHA_BETA, ?SHA_THETA]}, ?VerifyGUI(?OP_WORKER_GUI, <<"18.02.2">>, ?SHA_DELTA)),
+    ?assertEqual({false, [?SHA_DELTA, ?SHA_OMEGA]}, ?VerifyGUI(?ONEPANEL_GUI, <<"19.02.1">>, ?SHA_THETA)),
+    ?assertEqual({false, [?SHA_DELTA, ?SHA_OMEGA]}, ?VerifyGUI(?ONEPANEL_GUI, <<"19.02.1">>, ?SHA_THETA)),
     ?assertEqual({false, [?SHA_GAMMA]}, ?VerifyGUI(?ONEPANEL_GUI, <<"19.02.2">>, ?SHA_ALPHA)),
     ?assertEqual({false, [?SHA_GAMMA]}, ?VerifyGUI(?ONEPANEL_GUI, <<"19.02.2">>, ?SHA_ALPHA)),
     ?assertEqual({false, [?SHA_KAPPA, ?SHA_SIGMA]}, ?VerifyGUI(?HARVESTER_GUI, <<"19.02.1">>, ?SHA_ALPHA)),
 
-    ?assertEqual({error, unknown_version}, ?VerifyGUI(?OZ_WORKER_GUI, <<"18.02.2">>, ?SHA_ALPHA)),
     ?assertEqual({error, unknown_version}, ?VerifyGUI(?OP_WORKER_GUI, <<"18.02.3">>, ?SHA_OMEGA)),
     ?assertEqual({error, unknown_version}, ?VerifyGUI(?ONEPANEL_GUI, <<"18.02.3">>, ?SHA_DELTA)),
     ?assertEqual({error, unknown_version}, ?VerifyGUI(?ONEPANEL_GUI, <<"18.02.3">>, ?SHA_GAMMA)),

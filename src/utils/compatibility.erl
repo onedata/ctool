@@ -81,11 +81,6 @@
 %%%     },
 %%%
 %%%     "gui-sha256": {
-%%%         "oz-worker": {
-%%%             "19.02.0-beta1": [
-%%%                 "5b48b1885d6f03e689093b2d30efbd7f7c7152fbdc02ab009aafac21d734eec5"
-%%%             ]
-%%%         },
 %%%         "op-worker": {
 %%%             "19.02.0-beta1": [
 %%%                 "bd47689bd7ef220d73ef4a61672b9f43dc60ae5815ce2aa5f2c8673f3eaafc85"
@@ -182,11 +177,10 @@ get_compatible_versions(_, _, _) ->
 %% Checks if the GUI hash is valid for the service in given version.
 %% @end
 %%--------------------------------------------------------------------
--spec verify_gui_hash(onedata:gui(), onedata:release_version(), onedata:gui_hash()) ->
+-spec verify_gui_hash(?OP_WORKER_GUI | ?ONEPANEL_GUI | ?HARVESTER_GUI,
+    onedata:release_version(), onedata:gui_hash()) ->
     true | {false, CorrectHashes :: [onedata:gui_hash()]} |
     {error, unknown_version | cannot_parse_registry}.
-verify_gui_hash(?OZ_WORKER_GUI, Version, GuiHash) ->
-    check_entry([<<"gui-sha256">>, <<"oz-worker">>], Version, GuiHash);
 verify_gui_hash(?OP_WORKER_GUI, Version, GuiHash) ->
     check_entry([<<"gui-sha256">>, <<"op-worker">>], Version, GuiHash);
 verify_gui_hash(?ONEPANEL_GUI, Version, GuiHash) ->
