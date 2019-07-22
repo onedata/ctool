@@ -37,6 +37,11 @@
 
 -type objectid() :: binary().
 -type file_guid() :: binary().
+-type space_id() :: binary().
+-type share_id() :: binary().
+-type file_meta_uuid() :: binary().
+
+-type share_root_file_guid() :: file_guid().
 
 -export_type([objectid/0, file_guid/0]).
 
@@ -107,8 +112,8 @@
 %% Converts Uuid, SpaceId and Share id to share guid (allowing for guest read)
 %% @end
 %%--------------------------------------------------------------------
--spec pack_share_guid(file_meta:uuid(), od_space:id(), od_share:id() | undefined) ->
-    od_share:share_guid().
+-spec pack_share_guid(file_meta_uuid(), space_id(), share_id() | undefined) ->
+    share_root_file_guid().
 pack_share_guid(FileUuid, SpaceId, undefined) ->
     pack_guid(FileUuid, SpaceId);
 pack_share_guid(FileUuid, SpaceId, ShareId) ->
@@ -124,8 +129,7 @@ pack_share_guid(FileUuid, SpaceId, ShareId) ->
 %% For given file Uuid and spaceId generates file's Guid.
 %% @end
 %%--------------------------------------------------------------------
--spec pack_guid(file_meta:uuid(), od_space:id() | undefined) ->
-    fslogic_worker:file_guid().
+-spec pack_guid(file_meta_uuid(), space_id() | undefined) -> file_guid().
 pack_guid(FileUuid, SpaceId) ->
     DefinedSpaceId = utils:ensure_defined(SpaceId, undefined, <<>>),
     http_utils:base64url_encode(<<?GUID_PREFIX, ?GUID_SEPARATOR,
@@ -137,8 +141,8 @@ pack_guid(FileUuid, SpaceId) ->
 %% Returns file's Uuid, its spaceId and its shareId for given file's share Guid.
 %% @end
 %%--------------------------------------------------------------------
--spec unpack_share_guid(od_share:share_guid()) ->
-    {file_meta:uuid(), undefined | od_space:id(), od_share:id() | undefined}.
+-spec unpack_share_guid(share_root_file_guid()) ->
+    {file_meta_uuid(), undefined | space_id(), share_id() | undefined}.
 unpack_share_guid(ShareGuid) ->
     try binary:split(http_utils:base64url_decode(ShareGuid), <<?GUID_SEPARATOR>>, [global]) of
         [<<?SHARE_GUID_PREFIX>>, FileUuid, SpaceId, ShareId] ->
@@ -156,13 +160,13 @@ unpack_share_guid(ShareGuid) ->
     end.
 
 
-%%--------------------------------------------------------------------
+%%-------------------------------------------:-------------------------
 %% @doc
 %% Returns file's Uuid and its SpaceId for given file's Guid.
 %% @end
 %%--------------------------------------------------------------------
--spec unpack_guid(FileGuid :: fslogic_worker:file_guid()) ->
-    {file_meta:uuid(), od_space:id() | undefined}.
+-spec unpack_guid(FileGuid :: file_guid()) ->
+    {file_meta_uuid(), space_id() | undefined}.
 unpack_guid(FileGuid) ->
     {FileUuid, SpaceId, _ShareId} = unpack_share_guid(FileGuid),
     {FileUuid, SpaceId}.
@@ -173,8 +177,8 @@ unpack_guid(FileGuid) ->
 %% Convert Guid and share id to share guid (allowing for guest read)
 %% @end
 %%--------------------------------------------------------------------
--spec guid_to_share_guid(fslogic_worker:file_guid(), od_share:id()) ->
-    od_share:share_guid().
+-spec guid_to_share_guid(file_guid(), share_id()) ->
+    share_root_file_guid().
 guid_to_share_guid(Guid, ShareId) ->
     {FileUuid, SpaceId} = unpack_guid(Guid),
     pack_share_guid(FileUuid, SpaceId, ShareId).
@@ -185,7 +189,7 @@ guid_to_share_guid(Guid, ShareId) ->
 %% Convert Share guid to Guid.
 %% @end
 %%--------------------------------------------------------------------
--spec share_guid_to_guid(od_share:share_guid()) -> fslogic_worker:file_guid().
+-spec share_guid_to_guid(share_root_file_guid()) -> file_guid().
 share_guid_to_guid(ShareGuid) ->
     {FileUuid, SpaceId, _} = unpack_share_guid(ShareGuid),
     pack_guid(FileUuid, SpaceId).
@@ -194,7 +198,7 @@ share_guid_to_guid(ShareGuid) ->
 %%--------------------------------------------------------------------
 %% @doc Converts Guid to cdmi objectid format
 %%--------------------------------------------------------------------
--spec guid_to_objectid(onedata_file_api:file_guid()) -> {ok, objectid()} | {error, atom()}.
+-spec guid_to_objectid(file_guid()) -> {ok, objectid()} | {error, atom()}.
 guid_to_objectid(Guid) ->
     case build_objectid(http_utils:base64url_decode(Guid)) of
         {error, Error} -> {error, Error};
@@ -205,7 +209,7 @@ guid_to_objectid(Guid) ->
 %%--------------------------------------------------------------------
 %% @doc Converts cdmi objectid format to guid
 %%--------------------------------------------------------------------
--spec objectid_to_guid(objectid()) -> {ok, onedata_file_api:file_guid()} | {error, atom()}.
+-spec objectid_to_guid(objectid()) -> {ok, file_guid()} | {error, atom()}.
 objectid_to_guid(ObjectId) ->
     case from_base16(ObjectId) of
         <<0:8, _Enum:24, 0:8, _Length:8, _Crc:16, Data/binary>> ->
@@ -219,7 +223,7 @@ objectid_to_guid(ObjectId) ->
 %% Get space id connected with given guid.
 %% @end
 %%--------------------------------------------------------------------
--spec guid_to_space_id(fslogic_worker:guid()) -> od_space:id() | undefined.
+-spec guid_to_space_id(share_root_file_guid()) -> space_id() | undefined.
 guid_to_space_id(Guid) ->
     {_FileUuid, SpaceId, _ShareId} = unpack_share_guid(Guid),
     SpaceId.
@@ -230,7 +234,7 @@ guid_to_space_id(Guid) ->
 %% Returns file's Uuid for given file's Guid.
 %% @end
 %%--------------------------------------------------------------------
--spec guid_to_uuid(fslogic_worker:file_guid()) -> file_meta:uuid().
+-spec guid_to_uuid(file_guid()) -> file_meta_uuid().
 guid_to_uuid(FileGuid) ->
     {FileUuid, _} = unpack_guid(FileGuid),
     FileUuid.
@@ -242,7 +246,7 @@ guid_to_uuid(FileGuid) ->
 %% not of shared type).
 %% @end
 %%--------------------------------------------------------------------
--spec guid_to_share_id(od_share:share_guid()) -> od_share:id() | undefined.
+-spec guid_to_share_id(share_root_file_guid()) -> share_id() | undefined.
 guid_to_share_id(Guid) ->
     {_, _, ShareId} = unpack_share_guid(Guid),
     ShareId.

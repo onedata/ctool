@@ -42,7 +42,7 @@
     path :: string(),
     keepalive = infinity :: infinity | integer(),
     keepalive_timer = undefined :: undefined | reference(),
-    socket :: inet:socket() | ssl:socket(),
+    socket :: inet:socket() | ssl:sslsocket(),
     transport :: module(),
     handler :: module(),
     key :: binary(),
@@ -98,7 +98,7 @@
 ]).
 
 -spec new(protocol(), string(), inet:port_number(),
-    string(), authorization(), inet:socket() | ssl:socket(),
+    string(), authorization(), inet:socket() | ssl:sslsocket(),
     module(), module(), binary()) -> req().
 new(Protocol, Host, Port, Path, Authorization, Socket, Transport, Handler, Key) ->
     #websocket_req{
@@ -175,10 +175,10 @@ keepalive(K, Req) ->
     Req#websocket_req{keepalive = K}.
 
 
--spec socket(req()) -> inet:socket() | ssl:socket().
+-spec socket(req()) -> inet:socket() | ssl:sslsocket().
 socket(#websocket_req{socket = S}) -> S.
 
--spec socket(inet:socket() | ssl:socket(), req()) -> req().
+-spec socket(inet:socket() | ssl:sslsocket(), req()) -> req().
 socket(S, Req) ->
     Req#websocket_req{socket = S}.
 

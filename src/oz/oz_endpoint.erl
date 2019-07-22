@@ -14,6 +14,8 @@
 -include("logging.hrl").
 -include("global_definitions.hrl").
 
+-define(OZ_PLUGIN, (application:get_env(ctool, oz_plugin_module, oz_plugin))).
+
 %% API
 -export([get_api_root/1, get_cacerts/0, reset_cacerts/0]).
 -export([request/3, request/4, request/5, request/6]).
@@ -57,20 +59,20 @@ get_api_root(Opts) ->
         rest ->
             % Regular REST endpoint with authorization by provider certs
             str_utils:format("~s:~B~s", [
-                oz_plugin:get_oz_url(),
-                oz_plugin:get_oz_rest_port(),
-                oz_plugin:get_oz_rest_api_prefix()
+                ?OZ_PLUGIN:get_oz_url(),
+                ?OZ_PLUGIN:get_oz_rest_port(),
+                ?OZ_PLUGIN:get_oz_rest_api_prefix()
             ]);
         rest_no_auth ->
             % REST endpoint without authorization on standard 443 HTTPS port
             str_utils:format("~s~s", [
-                oz_plugin:get_oz_url(),
-                oz_plugin:get_oz_rest_api_prefix()
+                ?OZ_PLUGIN:get_oz_url(),
+                ?OZ_PLUGIN:get_oz_rest_api_prefix()
             ]);
         gui ->
             % Endpoint on standard 443 HTTPS port
             str_utils:format("~s", [
-                oz_plugin:get_oz_url()
+                ?OZ_PLUGIN:get_oz_url()
             ])
     end.
 
@@ -85,7 +87,7 @@ get_cacerts() ->
         {ok, CaCerts} ->
             CaCerts;
         undefined ->
-            CaCerts = cert_utils:load_ders_in_dir(oz_plugin:get_cacerts_dir()),
+            CaCerts = cert_utils:load_ders_in_dir(?OZ_PLUGIN:get_cacerts_dir()),
             application:set_env(?CTOOL_APP_NAME, cacerts, CaCerts),
             CaCerts
     end.
@@ -154,7 +156,7 @@ request(Auth, URN, Method, Headers, Body, Opts) ->
     headers().
 prepare_auth_headers(Auth, Headers) ->
     % Check REST client type and return auth headers if needed.
-    case oz_plugin:auth_to_rest_client(Auth) of
+    case ?OZ_PLUGIN:auth_to_rest_client(Auth) of
         {headers, Map} -> maps:merge(Headers, Map);
         {user, token, Token} ->
             Headers#{<<"X-Auth-Token">> => Token};

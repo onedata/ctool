@@ -20,7 +20,6 @@
     mock_unload/2, mock_validate_and_unload/2, mock_assert_num_calls/5,
     mock_assert_num_calls/6]).
 -export([get_env/3, set_env/4]).
--export([enable_datastore_models/2]).
 -export([get_docker_ip/1]).
 
 -define(TIMEOUT, timer:seconds(60)).
@@ -29,40 +28,6 @@
 %%%===================================================================
 %%% API
 %%%===================================================================
-
-
-%%--------------------------------------------------------------------
-%% @doc
-%% Enables given local models in datastore that runs on given nodes.
-%% All given nodes should be form one single provider.
-%% @end
-%%--------------------------------------------------------------------
--spec enable_datastore_models(Nodes :: [node()], Models :: [model_behaviour:model_type()]) -> ok | no_return().
-enable_datastore_models([H | _] = Nodes, Models) ->
-    lists:foreach(
-        fun(Model) ->
-            {Module, Binary, Filename} = code:get_object_code(Model),
-            {_, []} = rpc:multicall(Nodes, code, load_binary, [Module, Filename, Binary])
-        end, Models),
-
-    mock_unload(Nodes, [plugins]),
-    catch mock_new(Nodes, [plugins]),
-    ok = mock_expect(Nodes, plugins, apply,
-        fun
-            (datastore_config_plugin, models, []) ->
-                meck:passthrough([datastore_config_plugin, models, []]) ++ Models;
-            (A1, A2, A3) ->
-                meck:passthrough([A1, A2, A3])
-        end),
-
-    lists:foreach(
-        fun(Node) ->
-            ok = gen_server:call({node_manager, Node},
-                {apply, datastore, check_and_initialize_state, [H, Models]},
-                ?TIMEOUT),
-            ok = gen_server:call({node_manager, Node},
-                {apply, datastore, cluster_initialized, []}, ?TIMEOUT)
-        end, Nodes).
 
 
 %%--------------------------------------------------------------------
