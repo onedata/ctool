@@ -143,6 +143,8 @@ end).
     {error, unknown_version | cannot_parse_registry}.
 check_products_compatibility(?ONEZONE, VersionA, ?ONEPROVIDER, VersionB) ->
     check_entry([<<"compatibility">>, <<"onezone:oneprovider">>], VersionA, VersionB);
+check_products_compatibility(?ONEPROVIDER, VersionA, ?ONEZONE, VersionB) ->
+    check_entry([<<"compatibility">>, <<"oneprovider:onezone">>], VersionA, VersionB);
 check_products_compatibility(?ONEPROVIDER, VersionA, ?ONEPROVIDER, VersionB) ->
     check_entry([<<"compatibility">>, <<"oneprovider:oneprovider">>], VersionA, VersionB);
 check_products_compatibility(?ONEPROVIDER, VersionA, ?ONECLIENT, VersionB) ->
@@ -164,6 +166,8 @@ check_products_compatibility(_, _, _, _) ->
     {error, unknown_version | cannot_parse_registry}.
 get_compatible_versions(?ONEZONE, VersionA, ?ONEPROVIDER) ->
     get_entries([<<"compatibility">>, <<"onezone:oneprovider">>], VersionA, local);
+get_compatible_versions(?ONEPROVIDER, VersionA, ?ONEZONE) ->
+    get_entries([<<"compatibility">>, <<"oneprovider:onezone">>], VersionA, local);
 get_compatible_versions(?ONEPROVIDER, VersionA, ?ONEPROVIDER) ->
     get_entries([<<"compatibility">>, <<"oneprovider:oneprovider">>], VersionA, local);
 get_compatible_versions(?ONEPROVIDER, VersionA, ?ONECLIENT) ->
@@ -245,7 +249,8 @@ check_entry(Section, Version, Entry, Strategy) ->
         {error, _} = Error ->
             Error;
         {ok, Entries} ->
-            case lists:member(Entry, Entries) of
+            NormalizedEntry = get_normalized_version(Entries, Entry),
+            case lists:member(NormalizedEntry, Entries) of
                 true -> true;
                 false -> {false, Entries}
             end
@@ -262,7 +267,8 @@ get_entries(Section, Version, Strategy) ->
             Error;
         {ok, Registry} ->
             AllVersions = get_section(Section, Registry),
-            case maps:find(Version, AllVersions) of
+            NormalizedVersion = get_normalized_version(maps:keys(AllVersions), Version),
+            case maps:find(NormalizedVersion, AllVersions) of
                 error ->
                     {error, unknown_version};
                 {ok, Entries} ->
@@ -404,6 +410,17 @@ parse_registry(Binary) ->
             end, OuterAcc, CompatibleVersions)
         end, OPvsOPSection, OPvsOPSection),
 
+        % Registry contains compatible provider versions for each zone version.
+        % Reversed relation needs to be calculated.
+        OZvsOPSection = maps:get(<<"onezone:oneprovider">>, CompatibilitySection, #{}),
+        OPvsOZ = maps:fold(fun(OzVersion, CompatibleOpVersions, OuterAcc) ->
+            lists:foldl(fun(OpVersion, InnerAcc) ->
+                maps:update_with(OpVersion, fun(CompOzVersions) ->
+                    [OzVersion | CompOzVersions]
+                end, [OzVersion], InnerAcc)
+            end, OuterAcc, CompatibleOpVersions)
+        end, #{}, OZvsOPSection),
+
         %% Harvester GUI entries have another nesting level with human-readable
         %% labels (e.g. "ecrin") - it is flattened here.
         GuiShaSection = maps:get(<<"gui-sha256">>, Registry, #{}),
@@ -414,7 +431,8 @@ parse_registry(Binary) ->
 
         {ok, Registry#{
             <<"compatibility">> => CompatibilitySection#{
-                <<"oneprovider:oneprovider">> => OPvsOPCoalesced
+                <<"oneprovider:oneprovider">> => OPvsOPCoalesced,
+                <<"oneprovider:onezone">> => OPvsOZ
             },
             <<"gui-sha256">> => GuiShaSection#{
                 <<"harvester">> => HarvesterGuiCoalesced
@@ -441,3 +459,32 @@ get_section([Key | Rest], Map) ->
 -spec revision(registry()) -> pos_integer().
 revision(#{<<"revision">> := Revision}) ->
     Revision.
+
+%%--------------------------------------------------------------------
+%% @private
+%% @doc
+%% Sometimes given version is extended with additional data
+%% (e.g. 18.02.0-rc13-10-aiosufshx) and need to be normalized.
+%% It is done by checking whether any of eligible versions is a prefix of given one.
+%% When there is more than one correct prefix the longest one is returned.
+%% @end
+%%--------------------------------------------------------------------
+-spec get_normalized_version([entry()], entry()) -> binary() | unknown_version.
+get_normalized_version(EligibleVersions, Version) ->
+    lists:foldl(fun(V, Acc) ->
+        case string:prefix(Version, V) of
+            nomatch -> Acc;
+            _ -> get_longer_string(V, Acc)
+        end
+    end,  unknown_version, EligibleVersions).
+
+
+%% @private
+-spec get_longer_string(binary(), unknown_version | binary()) ->
+    binary() | unknown_version.
+get_longer_string(S, unknown_version) -> S;
+get_longer_string(S1, S2) ->
+    case string:length(S1) > string:length(S2) of
+        true -> S1;
+        _ -> S2
+    end.
