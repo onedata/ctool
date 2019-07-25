@@ -14,7 +14,7 @@
 -include("logging.hrl").
 -include("global_definitions.hrl").
 
--define(OZ_PLUGIN, (application:get_env(ctool, oz_plugin_module, oz_plugin))).
+-define(OZ_PLUGIN, (oz_plugin_module())).
 
 %% API
 -export([get_api_root/1, get_cacerts/0, reset_cacerts/0]).
@@ -183,3 +183,17 @@ prepare_auth_headers(Auth, Headers) ->
         none ->
             Headers
     end.
+
+
+%%--------------------------------------------------------------------
+%% @private @doc
+%% Returns name of oz_plugin module.
+%% By using this functions rather than writing the module name inline
+%% Dialyzer warning about unknown module is bypassed (the module
+%% only exists in apps having ctool as dependency and not in ctool
+%% itself).
+%% @end
+%%--------------------------------------------------------------------
+-spec oz_plugin_module() -> module().
+oz_plugin_module() ->
+    oz_plugin.
