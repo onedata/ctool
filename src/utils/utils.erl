@@ -17,6 +17,7 @@
     aggregate_over_first_element/1, average/1, random_shuffle/1, get_values/2,
     random_element/1, get_host/1, get_host_as_atom/1, cmd/1, ensure_defined/3,
     process_info/1, process_info/2]).
+-export([timeout/2, timeout/4]).
 -export([duration/1, adjust_duration/2]).
 -export([mkdtemp/0, mkdtemp/3, rmtempdir/1, run_with_tempdir/1]).
 -export([to_binary/1]).
@@ -75,6 +76,28 @@ pforeach(Fun, L) ->
         spawn(fun() -> pforeach_f(Self, Ref, Fun, X) end)
     end, L),
     pforeach_gather(Pids, Ref).
+
+
+-spec timeout(Fun :: fun(() -> Result), TimeoutMillis :: non_neg_integer()) ->
+    {done, Result} | {error, timeout}.
+timeout(Fun, Timeout) when is_function(Fun, 0) ->
+    case rpc:call(node(), erlang, apply, [Fun, []], Timeout) of
+        {badrpc, timeout} -> {error, timeout};
+        {badrpc, _} = Error -> error(Error);
+        Result -> {done, Result}
+    end.
+
+
+-spec timeout(module(), Function :: atom(), Args :: list(),
+    TimeoutMillis :: non_neg_integer()) ->
+    {done, Result :: term()} | {error, timeout}.
+timeout(Module, Function, Args, Timeout) ->
+    case rpc:call(node(), Module, Function, Args, Timeout) of
+        {badrpc, timeout} -> {error, timeout};
+        {badrpc, _} = Error -> error(Error);
+        Result -> {done, Result}
+    end.
+
 
 %%--------------------------------------------------------------------
 %% @doc
