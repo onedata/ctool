@@ -27,12 +27,6 @@
     ]},
 
     {env, [
-        % Name of oz_plugin module. Define as a config variable instead of
-        % using it literally in code to prevent dialyzer warnings about
-        % unknown module, since the module exists only in apps having
-        % ctool as a dependency.
-        {oz_plugin_module, oz_plugin},
-
         %% ===================================================================
         %% LOGGING
         %% ===================================================================
