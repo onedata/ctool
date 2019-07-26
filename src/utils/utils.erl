@@ -78,6 +78,13 @@ pforeach(Fun, L) ->
     pforeach_gather(Pids, Ref).
 
 
+%%--------------------------------------------------------------------
+%% @doc
+%% Executes Fun waiting Timeout milliseconds for results.
+%% Note that execution of Fun might continue even after this function
+%% returns with {error, timeout}
+%% @end
+%%--------------------------------------------------------------------
 -spec timeout(Fun :: fun(() -> Result), TimeoutMillis :: non_neg_integer()) ->
     {done, Result} | {error, timeout}.
 timeout(Fun, Timeout) when is_function(Fun, 0) ->
@@ -88,6 +95,13 @@ timeout(Fun, Timeout) when is_function(Fun, 0) ->
     end.
 
 
+%%--------------------------------------------------------------------
+%% @doc
+%% Executes Module:Function(Args) waiting Timeout milliseconds for results.
+%% Note that execution of the called might continue even after this
+%% function returns with {error, timeout}
+%% @end
+%%--------------------------------------------------------------------
 -spec timeout(module(), Function :: atom(), Args :: list(),
     TimeoutMillis :: non_neg_integer()) ->
     {done, Result :: term()} | {error, timeout}.
@@ -159,7 +173,7 @@ average(List) ->
 %% Shuffles list randomly.
 %% @end
 %%--------------------------------------------------------------------
--spec random_shuffle(List :: list()) -> NewList :: list().
+-spec random_shuffle(List :: list(T)) -> NewList :: list(T).
 random_shuffle(List) ->
     [X || {_, X} <- lists:sort([{rand:uniform(), N} || N <- List])].
 
@@ -181,7 +195,7 @@ get_values(Keys, List) ->
 %% Get random element of list
 %% @end
 %%--------------------------------------------------------------------
--spec random_element([term()]) -> term().
+-spec random_element([T, ...]) -> T.
 random_element([]) ->
     error(empty_list, [[]]);
 random_element(List) ->
@@ -210,6 +224,7 @@ get_host_as_atom(Node) ->
 %% Runs a command given by a string list.
 %% @end
 %%--------------------------------------------------------------------
+-spec cmd(Command :: [string()]) -> string().
 cmd(Command) ->
     os:cmd(string:join(Command, " ")).
 
@@ -259,6 +274,7 @@ mkdtemp() ->
 %% Creates a temporary dir (with given location and name) and returns its path.
 %% @end
 %%--------------------------------------------------------------------
+-spec mkdtemp(Suffix :: string(), Prefix :: string(), Dir :: string()) -> Path :: string().
 mkdtemp(Suffix, Prefix, Dir) ->
     mochitemp:mkdtemp(Suffix, Prefix, Dir).
 
@@ -293,7 +309,8 @@ run_with_tempdir(Fun) ->
 %% Ensures value is defined.
 %% @end
 %%--------------------------------------------------------------------
--spec ensure_defined(Value :: term(), UndefinedValue :: term(), DefaultValue :: term()) -> term().
+-spec ensure_defined(Value, UndefinedValue :: term(), DefaultValue) ->
+    Value | DefaultValue.
 ensure_defined(UndefinedValue, UndefinedValue, DefaultValue) ->
     DefaultValue;
 ensure_defined(Value, _, _) ->
@@ -347,7 +364,7 @@ to_binary(Term) ->
 %% Saves given file on given hosts.
 %% @end
 %%--------------------------------------------------------------------
--spec save_file_on_hosts(Hosts :: [atom()], Path :: file:name_all(), Content :: binary()) ->
+-spec save_file_on_hosts(Hosts :: [node()], Path :: file:name_all(), Content :: binary()) ->
     ok | [{node(), Reason :: term()}].
 save_file_on_hosts(Hosts, Path, Content) ->
     Res = lists:foldl(
@@ -386,7 +403,7 @@ save_file(Path, Content) ->
 %% Ensures that returned value is a list.
 %% @end
 %%--------------------------------------------------------------------
--spec ensure_list(term()) -> [term()].
+-spec ensure_list(T | [T]) -> [T].
 ensure_list(List) when is_list(List) -> List;
 ensure_list(Element) -> [Element].
 
