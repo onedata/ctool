@@ -67,6 +67,10 @@
 -define(ROOT, #auth{subject = #subject{type = root}}).
 -define(USER, #auth{subject = #subject{type = user}}).
 -define(USER(Id), #auth{subject = #subject{type = user, id = Id}}).
+-define(USER(Id, SessionId), #auth{
+    subject = #subject{type = user, id = Id},
+    session_id = SessionId
+}).
 -define(PROVIDER, #auth{subject = #subject{type = ?ONEPROVIDER}}).
 -define(PROVIDER(Id), #auth{subject = #subject{type = ?ONEPROVIDER, id = Id}}).
 
