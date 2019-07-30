@@ -148,7 +148,8 @@ check_products_compatibility(?ONEPROVIDER, VersionA, ?ONEZONE, VersionB) ->
 check_products_compatibility(?ONEPROVIDER, VersionA, ?ONEPROVIDER, VersionB) ->
     check_entry([<<"compatibility">>, <<"oneprovider:oneprovider">>], VersionA, VersionB);
 check_products_compatibility(?ONEPROVIDER, VersionA, ?ONECLIENT, VersionB) ->
-    check_entry([<<"compatibility">>, <<"oneprovider:oneclient">>], VersionA, VersionB);
+    check_entry([<<"compatibility">>, <<"oneprovider:oneclient">>],
+        VersionA, normalize_oneclient_version(VersionB));
 check_products_compatibility(_, _, _, _) ->
     error(badarg).
 
@@ -249,8 +250,7 @@ check_entry(Section, Version, Entry, Strategy) ->
         {error, _} = Error ->
             Error;
         {ok, Entries} ->
-            NormalizedEntry = get_normalized_version(Entries, Entry),
-            case lists:member(NormalizedEntry, Entries) of
+            case lists:member(Entry, Entries) of
                 true -> true;
                 false -> {false, Entries}
             end
@@ -267,8 +267,7 @@ get_entries(Section, Version, Strategy) ->
             Error;
         {ok, Registry} ->
             AllVersions = get_section(Section, Registry),
-            NormalizedVersion = get_normalized_version(maps:keys(AllVersions), Version),
-            case maps:find(NormalizedVersion, AllVersions) of
+            case maps:find(Version, AllVersions) of
                 error ->
                     {error, unknown_version};
                 {ok, Entries} ->
@@ -460,31 +459,19 @@ get_section([Key | Rest], Map) ->
 revision(#{<<"revision">> := Revision}) ->
     Revision.
 
+
+% regex to retrieve release version from git full build version
+-define(OC_VERSION_RE, <<"^(?<release>[\\w.]+(-\\w+)?)(-\\d+-g\\w+)?$">>).
+
 %%--------------------------------------------------------------------
-%% @private
 %% @doc
-%% Sometimes given version is extended with additional data
-%% (e.g. 18.02.0-rc13-10-aiosufshx) and need to be normalized.
-%% It is done by checking whether any of eligible versions is a prefix of given one.
-%% When there is more than one correct prefix the longest one is returned.
+%% Oneclient version can be provided as full build version (e.g 19.02.0-beta1-10-gsadasd),
+%% so it needs to be normalized by retrieving release version.
 %% @end
 %%--------------------------------------------------------------------
--spec get_normalized_version([entry()], entry()) -> binary() | unknown_version.
-get_normalized_version(EligibleVersions, Version) ->
-    lists:foldl(fun(V, Acc) ->
-        case string:prefix(Version, V) of
-            nomatch -> Acc;
-            _ -> get_longer_string(V, Acc)
-        end
-    end,  unknown_version, EligibleVersions).
-
-
-%% @private
--spec get_longer_string(binary(), unknown_version | binary()) ->
-    binary() | unknown_version.
-get_longer_string(S, unknown_version) -> S;
-get_longer_string(S1, S2) ->
-    case string:length(S1) > string:length(S2) of
-        true -> S1;
-        _ -> S2
+-spec normalize_oneclient_version(binary()) -> binary().
+normalize_oneclient_version(Version) ->
+    case re:run(Version, ?OC_VERSION_RE, [{capture, all_names, binary}]) of
+        {match, [NormalizedVersion]} -> NormalizedVersion;
+        nomatch -> Version
     end.
