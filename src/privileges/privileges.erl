@@ -161,13 +161,14 @@
 % Privileges manipulation
 -export([from_list/1, union/2, subtract/2]).
 % Privileges in the system
--export([group_user/0, group_manager/0, group_admin/0, group_privileges/0]).
--export([space_user/0, space_manager/0, space_admin/0, space_privileges/0]).
--export([handle_service_user/0, handle_service_admin/0,
+-export([group_member/0, group_manager/0, group_admin/0, group_privileges/0]).
+-export([space_member/0, space_manager/0, space_admin/0, space_privileges/0]).
+-export([handle_service_member/0, handle_service_admin/0,
     handle_service_privileges/0]).
--export([handle_user/0, handle_admin/0, handle_privileges/0]).
--export([harvester_user/0, harvester_admin/0, harvester_privileges/0]).
--export([cluster_user/0, cluster_manager/0, cluster_admin/0, cluster_privileges/0]).
+-export([handle_member/0, handle_admin/0, handle_privileges/0]).
+-export([harvester_member/0, harvester_manager/0, harvester_admin/0,
+    harvester_privileges/0]).
+-export([cluster_member/0, cluster_manager/0, cluster_admin/0, cluster_privileges/0]).
 -export([oz_viewer/0, oz_admin/0, oz_privileges/0]).
 
 %%%===================================================================
@@ -207,8 +208,8 @@ subtract(PrivilegesA, PrivilegesB) ->
 %%--------------------------------------------------------------------
 %% @doc A privilege level of a group user.
 %%--------------------------------------------------------------------
--spec group_user() -> privileges(group_privilege()).
-group_user() ->
+-spec group_member() -> privileges(group_privilege()).
+group_member() ->
     from_list([?GROUP_VIEW]).
 
 %%--------------------------------------------------------------------
@@ -216,7 +217,7 @@ group_user() ->
 %%--------------------------------------------------------------------
 -spec group_manager() -> privileges(group_privilege()).
 group_manager() ->
-    union(group_user(), [
+    union(group_member(), [
         ?GROUP_VIEW_PRIVILEGES,
         ?GROUP_ADD_USER, ?GROUP_REMOVE_USER,
         ?GROUP_ADD_PARENT, ?GROUP_LEAVE_PARENT,
@@ -252,8 +253,8 @@ group_privileges() ->
 %%--------------------------------------------------------------------
 %% @doc A privilege level of a Space user.
 %%--------------------------------------------------------------------
--spec space_user() -> privileges(space_privilege()).
-space_user() ->
+-spec space_member() -> privileges(space_privilege()).
+space_member() ->
     from_list([
         ?SPACE_VIEW,
         ?SPACE_READ_DATA, ?SPACE_WRITE_DATA,
@@ -265,7 +266,7 @@ space_user() ->
 %%--------------------------------------------------------------------
 -spec space_manager() -> privileges(space_privilege()).
 space_manager() ->
-    union(space_user(), [
+    union(space_member(), [
         ?SPACE_VIEW_PRIVILEGES,
         ?SPACE_ADD_USER, ?SPACE_REMOVE_USER,
         ?SPACE_ADD_GROUP, ?SPACE_REMOVE_GROUP,
@@ -306,8 +307,8 @@ space_privileges() ->
 %%--------------------------------------------------------------------
 %% @doc A privilege level of a handle_service user.
 %%--------------------------------------------------------------------
--spec handle_service_user() -> privileges(handle_service_privilege()).
-handle_service_user() ->
+-spec handle_service_member() -> privileges(handle_service_privilege()).
+handle_service_member() ->
     from_list([?HANDLE_SERVICE_VIEW, ?HANDLE_SERVICE_REGISTER_HANDLE]).
 
 %%--------------------------------------------------------------------
@@ -317,7 +318,7 @@ handle_service_user() ->
 %%--------------------------------------------------------------------
 -spec handle_service_admin() -> privileges(handle_service_privilege()).
 handle_service_admin() ->
-    union(handle_service_user(), [
+    union(handle_service_member(), [
         ?HANDLE_SERVICE_UPDATE,
         ?HANDLE_SERVICE_DELETE,
         ?HANDLE_SERVICE_LIST_HANDLES
@@ -335,8 +336,8 @@ handle_service_privileges() ->
 %%--------------------------------------------------------------------
 %% @doc A privilege level of a handle user.
 %%--------------------------------------------------------------------
--spec handle_user() -> privileges(handle_privilege()).
-handle_user() ->
+-spec handle_member() -> privileges(handle_privilege()).
+handle_member() ->
     from_list([?HANDLE_VIEW]).
 
 %%--------------------------------------------------------------------
@@ -346,7 +347,7 @@ handle_user() ->
 %%--------------------------------------------------------------------
 -spec handle_admin() -> privileges(handle_privilege()).
 handle_admin() ->
-    union(handle_user(), [
+    union(handle_member(), [
         ?HANDLE_UPDATE,
         ?HANDLE_DELETE
     ]).
@@ -363,8 +364,8 @@ handle_privileges() ->
 %%--------------------------------------------------------------------
 %% @doc A privilege level of a harvester user.
 %%--------------------------------------------------------------------
--spec harvester_user() -> privileges(harvester_privilege()).
-harvester_user() ->
+-spec harvester_member() -> privileges(harvester_privilege()).
+harvester_member() ->
     [?HARVESTER_VIEW].
 
 %%--------------------------------------------------------------------
@@ -372,7 +373,7 @@ harvester_user() ->
 %%--------------------------------------------------------------------
 -spec harvester_manager() -> privileges(harvester_privilege()).
 harvester_manager() ->
-    union(harvester_user(), [
+    union(harvester_member(), [
         ?HARVESTER_ADD_USER, ?HARVESTER_REMOVE_USER,
         ?HARVESTER_ADD_GROUP, ?HARVESTER_REMOVE_GROUP,
         ?HARVESTER_ADD_SPACE, ?HARVESTER_REMOVE_SPACE
@@ -401,8 +402,8 @@ harvester_privileges() ->
 %%--------------------------------------------------------------------
 %% @doc A privilege level of a Cluster user.
 %%--------------------------------------------------------------------
--spec cluster_user() -> privileges(cluster_privilege()).
-cluster_user() ->
+-spec cluster_member() -> privileges(cluster_privilege()).
+cluster_member() ->
     from_list([
         ?CLUSTER_VIEW
     ]).
@@ -412,7 +413,7 @@ cluster_user() ->
 %%--------------------------------------------------------------------
 -spec cluster_manager() -> privileges(cluster_privilege()).
 cluster_manager() ->
-    union(cluster_user(), [
+    union(cluster_member(), [
         ?CLUSTER_ADD_USER, ?CLUSTER_REMOVE_USER,
         ?CLUSTER_ADD_GROUP, ?CLUSTER_REMOVE_GROUP
     ]).
