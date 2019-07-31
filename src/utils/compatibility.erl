@@ -143,10 +143,13 @@ end).
     {error, unknown_version | cannot_parse_registry}.
 check_products_compatibility(?ONEZONE, VersionA, ?ONEPROVIDER, VersionB) ->
     check_entry([<<"compatibility">>, <<"onezone:oneprovider">>], VersionA, VersionB);
+check_products_compatibility(?ONEPROVIDER, VersionA, ?ONEZONE, VersionB) ->
+    check_entry([<<"compatibility">>, <<"oneprovider:onezone">>], VersionA, VersionB);
 check_products_compatibility(?ONEPROVIDER, VersionA, ?ONEPROVIDER, VersionB) ->
     check_entry([<<"compatibility">>, <<"oneprovider:oneprovider">>], VersionA, VersionB);
 check_products_compatibility(?ONEPROVIDER, VersionA, ?ONECLIENT, VersionB) ->
-    check_entry([<<"compatibility">>, <<"oneprovider:oneclient">>], VersionA, VersionB);
+    check_entry([<<"compatibility">>, <<"oneprovider:oneclient">>],
+        VersionA, normalize_oneclient_version(VersionB));
 check_products_compatibility(_, _, _, _) ->
     error(badarg).
 
@@ -164,6 +167,8 @@ check_products_compatibility(_, _, _, _) ->
     {error, unknown_version | cannot_parse_registry}.
 get_compatible_versions(?ONEZONE, VersionA, ?ONEPROVIDER) ->
     get_entries([<<"compatibility">>, <<"onezone:oneprovider">>], VersionA, local);
+get_compatible_versions(?ONEPROVIDER, VersionA, ?ONEZONE) ->
+    get_entries([<<"compatibility">>, <<"oneprovider:onezone">>], VersionA, local);
 get_compatible_versions(?ONEPROVIDER, VersionA, ?ONEPROVIDER) ->
     get_entries([<<"compatibility">>, <<"oneprovider:oneprovider">>], VersionA, local);
 get_compatible_versions(?ONEPROVIDER, VersionA, ?ONECLIENT) ->
@@ -404,6 +409,17 @@ parse_registry(Binary) ->
             end, OuterAcc, CompatibleVersions)
         end, OPvsOPSection, OPvsOPSection),
 
+        % Registry contains compatible provider versions for each zone version.
+        % Reversed relation needs to be calculated.
+        OZvsOPSection = maps:get(<<"onezone:oneprovider">>, CompatibilitySection, #{}),
+        OPvsOZ = maps:fold(fun(OzVersion, CompatibleOpVersions, OuterAcc) ->
+            lists:foldl(fun(OpVersion, InnerAcc) ->
+                maps:update_with(OpVersion, fun(CompOzVersions) ->
+                    [OzVersion | CompOzVersions]
+                end, [OzVersion], InnerAcc)
+            end, OuterAcc, CompatibleOpVersions)
+        end, #{}, OZvsOPSection),
+
         %% Harvester GUI entries have another nesting level with human-readable
         %% labels (e.g. "ecrin") - it is flattened here.
         GuiShaSection = maps:get(<<"gui-sha256">>, Registry, #{}),
@@ -414,7 +430,8 @@ parse_registry(Binary) ->
 
         {ok, Registry#{
             <<"compatibility">> => CompatibilitySection#{
-                <<"oneprovider:oneprovider">> => OPvsOPCoalesced
+                <<"oneprovider:oneprovider">> => OPvsOPCoalesced,
+                <<"oneprovider:onezone">> => OPvsOZ
             },
             <<"gui-sha256">> => GuiShaSection#{
                 <<"harvester">> => HarvesterGuiCoalesced
@@ -441,3 +458,20 @@ get_section([Key | Rest], Map) ->
 -spec revision(registry()) -> pos_integer().
 revision(#{<<"revision">> := Revision}) ->
     Revision.
+
+
+% regex to retrieve release version from git full build version
+-define(OC_VERSION_RE, <<"^(?<release>[\\w.]+(-\\w+)?)(-\\d+-g\\w+)?$">>).
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Oneclient version can be provided as full build version (e.g 19.02.0-beta1-10-gsadasd),
+%% so it needs to be normalized by retrieving release version.
+%% @end
+%%--------------------------------------------------------------------
+-spec normalize_oneclient_version(binary()) -> binary().
+normalize_oneclient_version(Version) ->
+    case re:run(Version, ?OC_VERSION_RE, [{capture, all_names, binary}]) of
+        {match, [NormalizedVersion]} -> NormalizedVersion;
+        nomatch -> Version
+    end.
