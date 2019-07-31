@@ -13,8 +13,6 @@
 -module(consistent_hashing).
 -author("Tomasz Lichon").
 
--include("global_definitions.hrl").
-
 %% API
 -export([init/1, cleanup/0, get_chash_ring/0, set_chash_ring/1, get_node/1,
     get_all_nodes/0]).
@@ -33,17 +31,17 @@
 %%--------------------------------------------------------------------
 -spec init([node()]) -> ok.
 init([Node]) ->
-    application:set_env(?CTOOL_APP_NAME, chash, ?SINGLE_NODE_CHASH(Node));
+    ctool:set_env(chash, ?SINGLE_NODE_CHASH(Node));
 init(Nodes) ->
-    case application:get_env(?CTOOL_APP_NAME, chash) of
+    case ctool:get_env(chash, undefined) of
         undefined ->
             [Node0 | _] = Nodes,
             InitialCHash = chash:fresh(length(Nodes), Node0),
             CHash = lists:foldl(fun({I, Node}, CHashAcc) ->
                 chash:update(get_nth_index(I, CHashAcc), Node, CHashAcc)
             end, InitialCHash, lists:zip(lists:seq(1, length(Nodes)), Nodes)),
-            application:set_env(?CTOOL_APP_NAME, chash, CHash);
-        {ok, _Val} ->
+            ctool:set_env(chash, CHash);
+        _ ->
             ok
     end.
 
@@ -54,7 +52,7 @@ init(Nodes) ->
 %%--------------------------------------------------------------------
 -spec cleanup() -> ok.
 cleanup() ->
-    application:unset_env(?CTOOL_APP_NAME, chash).
+    ctool:unset_env(chash).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -63,7 +61,7 @@ cleanup() ->
 %%--------------------------------------------------------------------
 -spec get_chash_ring() -> chash:chash() | undefined.
 get_chash_ring() ->
-    application:get_env(?CTOOL_APP_NAME, chash, undefined).
+    ctool:get_env(chash, undefined).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -72,7 +70,7 @@ get_chash_ring() ->
 %%--------------------------------------------------------------------
 -spec set_chash_ring(chash:chash()) -> ok.
 set_chash_ring(CHash) ->
-    application:set_env(?CTOOL_APP_NAME, chash, CHash).
+    ctool:set_env(chash, CHash).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -81,7 +79,7 @@ set_chash_ring(CHash) ->
 %%--------------------------------------------------------------------
 -spec get_node(term()) -> node().
 get_node(Label) ->
-    {ok, CHash} = application:get_env(?CTOOL_APP_NAME, chash),
+    CHash = ctool:get_env(chash),
     case ?IS_SINGLE_NODE_CHASH(CHash) of
         true -> CHash;
         _ ->
@@ -97,7 +95,7 @@ get_node(Label) ->
 %%--------------------------------------------------------------------
 -spec get_all_nodes() -> [node()].
 get_all_nodes() ->
-    {ok, CHash} = application:get_env(?CTOOL_APP_NAME, chash),
+    CHash = ctool:get_env(chash),
     case ?IS_SINGLE_NODE_CHASH(CHash) of
         true -> [CHash];
         _ ->

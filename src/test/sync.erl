@@ -356,8 +356,7 @@ toggle_track_module(PathOrName, Flag) ->
         true ->
             PathOrName;
         _ ->
-            case find_all_files(ProjectDir, PathOrName ++ "'.erl'",
-                true) of
+            case find_all_files(ProjectDir, PathOrName ++ "'.erl'", true) of
                 [] ->
                     error_msg("Cannot track module `~s` - it was not "
                     "found in the source project dir.", [PathOrName]),

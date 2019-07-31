@@ -11,8 +11,6 @@
 
 -module(logger).
 
--include("global_definitions.hrl").
-
 -export([should_log/1, dispatch_log/5, parse_process_info/1, log_with_rotation/4]).
 -export([set_loglevel/1, set_console_loglevel/1, set_include_stacktrace/1]).
 -export([get_current_loglevel/0, get_default_loglevel/0, get_console_loglevel/0, get_include_stacktrace/0]).
@@ -24,8 +22,8 @@
 %%--------------------------------------------------------------------
 -spec should_log(LoglevelAsInt :: integer()) -> boolean().
 should_log(LevelAsInt) ->
-    case application:get_env(?CTOOL_APP_NAME, current_loglevel) of
-        {ok, Int} when LevelAsInt >= Int -> true;
+    case get_current_loglevel() of
+        Int when LevelAsInt >= Int -> true;
         _ -> false
     end.
 
@@ -37,10 +35,9 @@ should_log(LevelAsInt) ->
     Args :: [term()], IncludeStacktrace :: boolean()) -> ok | {error, lager_not_running}.
 dispatch_log(LoglevelAsInt, Metadata, Format, Args, IncludeStacktrace) ->
     Severity = loglevel_int_to_atom(LoglevelAsInt),
-    % Every project using the logging mechanism must contain a module
-    % called exactly 'logger_plugin' that implements logic_plugin_behaviour.
-    lager:log(Severity, Metadata ++ apply(logger_plugin, gather_metadata, []), "~ts",
-        [compute_message(Format, Args, IncludeStacktrace)]).
+    lager:log(Severity, Metadata, "~ts", [
+        compute_message(Format, Args, IncludeStacktrace)
+    ]).
 
 %%--------------------------------------------------------------------
 %% @doc Changes current global loglevel to desired. Argument can be loglevel as int or atom
@@ -60,7 +57,7 @@ set_loglevel(Loglevel) when is_atom(Loglevel) ->
     end;
 
 set_loglevel(Loglevel) when is_integer(Loglevel) andalso (Loglevel >= 0) andalso (Loglevel =< 7) ->
-    application:set_env(?CTOOL_APP_NAME, current_loglevel, Loglevel);
+    ctool:set_env(current_loglevel, Loglevel);
 
 set_loglevel(_) ->
     {error, badarg}.
@@ -99,7 +96,7 @@ set_console_loglevel(_) ->
 %%--------------------------------------------------------------------
 -spec set_include_stacktrace(boolean()) -> ok | {error, badarg}.
 set_include_stacktrace(Flag) when is_boolean(Flag) ->
-    application:set_env(?CTOOL_APP_NAME, include_stacktrace, Flag);
+    ctool:set_env(include_stacktrace, Flag);
 
 set_include_stacktrace(_) ->
     {error, badarg}.
@@ -110,8 +107,7 @@ set_include_stacktrace(_) ->
 %%--------------------------------------------------------------------
 -spec get_current_loglevel() -> integer().
 get_current_loglevel() ->
-    {ok, Int} = application:get_env(?CTOOL_APP_NAME, current_loglevel),
-    Int.
+    ctool:get_env(current_loglevel, 1).
 
 %%--------------------------------------------------------------------
 %% @doc Returns default loglevel as set in application's env
@@ -119,8 +115,7 @@ get_current_loglevel() ->
 %%--------------------------------------------------------------------
 -spec get_default_loglevel() -> integer().
 get_default_loglevel() ->
-    {ok, Int} = application:get_env(?CTOOL_APP_NAME, default_loglevel),
-    Int.
+    ctool:get_env(default_loglevel, 1).
 
 %%--------------------------------------------------------------------
 %% @doc Returns current console loglevel
@@ -139,8 +134,7 @@ get_console_loglevel() ->
 %%--------------------------------------------------------------------
 -spec get_include_stacktrace() -> boolean().
 get_include_stacktrace() ->
-    {ok, Boolean} = application:get_env(?CTOOL_APP_NAME, include_stacktrace),
-    Boolean.
+    ctool:get_env(include_stacktrace, true).
 
 %%--------------------------------------------------------------------
 %% @doc Returns loglevel name associated with loglevel number

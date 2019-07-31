@@ -12,7 +12,6 @@
 -module(consistent_hashing_test).
 -author("Tomasz Lichon").
 
--include("global_definitions.hrl").
 -include_lib("eunit/include/eunit.hrl").
 
 helpers_test_() ->

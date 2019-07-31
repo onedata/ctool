@@ -12,7 +12,6 @@
 -module(secure_ssl_opts).
 -author("Lukasz Opiola").
 
--include("global_definitions.hrl").
 -include_lib("public_key/include/OTP-PUB-KEY.hrl").
 
 %% API
@@ -34,7 +33,7 @@
 %%--------------------------------------------------------------------
 -spec expand(http_client:url(), [http_client:ssl_opt()]) -> [http_client:ssl_opt()].
 expand(Url, SslOpts) ->
-    ForceInsecure = application:get_env(?CTOOL_APP_NAME, force_insecure_connections, false),
+    ForceInsecure = ctool:get_env(force_insecure_connections, false),
     SecureFlag = proplists:get_value(secure, SslOpts, true),
     NewOpts = case ForceInsecure orelse SecureFlag =:= false of
         true ->

@@ -11,7 +11,6 @@
 %%%-------------------------------------------------------------------
 -module(hex_utils).
 
--include("global_definitions.hrl").
 -include_lib("ctool/include/logging.hrl").
 
 -export([hex/1]).
@@ -41,7 +40,7 @@ hex(_) ->
 -spec init() -> ok | {error, Reason :: term()}.
 init() ->
     LibName = "hex_utils",
-    LibPath = filename:join(code:priv_dir(?CTOOL_APP_NAME), LibName),
+    LibPath = filename:join(ctool:priv_dir(), LibName),
     
     case erlang:load_nif(LibPath, 0) of
         ok -> ok;

@@ -12,7 +12,6 @@
 -module(oz_endpoint).
 
 -include("logging.hrl").
--include("global_definitions.hrl").
 
 -define(OZ_PLUGIN, (oz_plugin_module())).
 
@@ -83,14 +82,10 @@ get_api_root(Opts) ->
 %%--------------------------------------------------------------------
 -spec get_cacerts() -> CaCerts :: [public_key:der_encoded()].
 get_cacerts() ->
-    case application:get_env(?CTOOL_APP_NAME, cacerts) of
-        {ok, CaCerts} ->
-            CaCerts;
-        undefined ->
-            CaCerts = cert_utils:load_ders_in_dir(?OZ_PLUGIN:get_cacerts_dir()),
-            application:set_env(?CTOOL_APP_NAME, cacerts, CaCerts),
-            CaCerts
-    end.
+    {ok, CaCerts} = simple_cache:get(cacerts_cache, fun() ->
+        {true, cert_utils:load_ders_in_dir(?OZ_PLUGIN:get_cacerts_dir())}
+    end),
+    CaCerts.
 
 %%--------------------------------------------------------------------
 %% @doc Clears CA certificates cache.
@@ -98,7 +93,7 @@ get_cacerts() ->
 %%--------------------------------------------------------------------
 -spec reset_cacerts() -> ok.
 reset_cacerts() ->
-    application:unset_env(?CTOOL_APP_NAME, cacerts).
+    simple_cache:clear(cacerts_cache).
 
 %%--------------------------------------------------------------------
 %% @doc @equiv request(Auth, URN, Method, <<>>)

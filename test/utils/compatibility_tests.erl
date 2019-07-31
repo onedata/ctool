@@ -15,7 +15,6 @@
 -include_lib("eunit/include/eunit.hrl").
 
 -include("onedata.hrl").
--include("global_definitions.hrl").
 
 -define(SHA_ALPHA, <<"8cf038be257096d4e621ae910cac2de3a9e42879a051b0beac30276dd35bd890">>).
 -define(SHA_BETA, <<"475d9b7c627d0c327d50cfda423c1671cd63ac2537a361c54fcdcbeb4006eb0f">>).
@@ -52,8 +51,8 @@ compatibility_verification_test_() ->
 setup() ->
     TmpPath = mochitemp:mkdtemp(),
     RegistryPath = filename:join(TmpPath, "compatibility.json"),
-    application:set_env(?CTOOL_APP_NAME, compatibility_registry_path, RegistryPath),
-    application:set_env(?CTOOL_APP_NAME, compatibility_registry_cache_ttl, 900),
+    ctool:set_env(compatibility_registry_path, RegistryPath),
+    ctool:set_env(compatibility_registry_cache_ttl, 900),
     compatibility:clear_registry_cache(),
     mock_compatibility_file(#{<<"revision">> => 2019010100}),
 
@@ -67,7 +66,7 @@ setup() ->
     ok.
 
 teardown(_) ->
-    {ok, RegistryPath} = application:get_env(?CTOOL_APP_NAME, compatibility_registry_path),
+    RegistryPath = ctool:get_env(compatibility_registry_path),
     TmpPath = filename:dirname(RegistryPath),
     mochitemp:rmtempdir(TmpPath),
     clear_mocked_mirrors(),
@@ -80,12 +79,12 @@ teardown(_) ->
 mock_compatibility_file(JsonMap) when is_map(JsonMap) ->
     mock_compatibility_file(json_utils:encode(JsonMap));
 mock_compatibility_file(Binary) when is_binary(Binary) ->
-    {ok, RegistryPath} = application:get_env(?CTOOL_APP_NAME, compatibility_registry_path),
+    RegistryPath = ctool:get_env(compatibility_registry_path),
     ok = file:write_file(RegistryPath, Binary).
 
 
 get_compatibility_file() ->
-    {ok, RegistryPath} = application:get_env(?CTOOL_APP_NAME, compatibility_registry_path),
+    RegistryPath = ctool:get_env(compatibility_registry_path),
     {ok, BinaryJson} = file:read_file(RegistryPath),
     json_utils:decode(BinaryJson).
 
@@ -100,7 +99,7 @@ mock_mirror_result(Url, Result) ->
 
 
 mock_mirror_list(Mirrors) ->
-    application:set_env(?CTOOL_APP_NAME, compatibility_registry_mirrors, Mirrors).
+    ctool:set_env(compatibility_registry_mirrors, Mirrors).
 
 
 get_mocked_mirror_result(Url) ->
@@ -397,7 +396,7 @@ caching_local_registry_content() ->
 
     % The file contents should be cached for configured time
     mock_compatibility_file(Newer),
-    {ok, CacheTTL} = application:get_env(?CTOOL_APP_NAME, compatibility_registry_cache_ttl),
+    CacheTTL = ctool:get_env(compatibility_registry_cache_ttl),
     simulate_time_passing(CacheTTL - 1),
     % The cache is still valid
     ?assertEqual({false, [<<"18.02.1">>]}, ?OZvsOP(<<"18.02.1">>, <<"18.02.2">>)),
@@ -488,7 +487,7 @@ registry_parsing_error() ->
     ),
 
     % Inexistent compatibility file should also cause {error, cannot_parse_registry}
-    {ok, RegistryPath} = application:get_env(?CTOOL_APP_NAME, compatibility_registry_path),
+    RegistryPath = ctool:get_env(compatibility_registry_path),
     ok = file:delete(RegistryPath),
 
     compatibility:clear_registry_cache(),
@@ -560,7 +559,7 @@ fetching_newer_registry() ->
             }
         }
     }}),
-    {ok, CacheTTL} = application:get_env(?CTOOL_APP_NAME, compatibility_registry_cache_ttl),
+    CacheTTL = ctool:get_env(compatibility_registry_cache_ttl),
     simulate_time_passing(CacheTTL - 1),
     % The cache is still valid
     ?assertEqual({false, [<<"18.02.1">>, <<"18.02.2">>]}, ?OZvsOP(<<"18.02.1">>, <<"18.02.3">>)),
