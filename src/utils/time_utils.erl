@@ -81,7 +81,7 @@ cluster_time_seconds() ->
 cluster_time_millis() ->
     remote_timestamp(cluster_time_bias, fun() ->
         try
-            {ok, gen_server2:call({global, ?CLUSTER_MANAGER}, get_current_time)}
+            {ok, gen_server:call({global, ?CLUSTER_MANAGER}, get_current_time)}
         catch
             exit:{Reason, _} ->
                 ?warning("Cannot get cluster time due to: ~p", [Reason]),

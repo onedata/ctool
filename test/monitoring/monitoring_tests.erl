@@ -80,15 +80,9 @@ get_multi_core_cpu_stats_test() ->
      {setup,
          fun() ->
              meck:new(file, [unstick, passthrough]),
-             meck:expect(file, open, fun("/proc/stat", [read]) -> {error, test_error} end),
-             %% TODO logger:should_log is mocked because it fails because
-             %% TODO there is no logger_plugin module
-             meck:new(logger, [passthrough]),
-             meck:expect(logger, should_log, fun(_) -> false end)
+             meck:expect(file, open, fun("/proc/stat", [read]) -> {error, test_error} end)
          end,
          fun(_) ->
-             ?assert(meck:validate(logger)),
-             ?assertEqual(ok, meck:unload(logger)),
              ?assert(meck:validate(file)),
              ?assertEqual(ok, meck:unload(file))
          end,
@@ -118,13 +112,9 @@ get_multi_core_cpu_stats_test() ->
      {setup,
          fun() ->
             meck:new(file, [unstick, passthrough]),
-            meck:expect(file, open, fun("/proc/meminfo", [read]) -> error end),
-            %% TODO logger:should_log is mocked because it
-            %% TODO fails because there is no logger_plugin module
-            mock_logger()
+            meck:expect(file, open, fun("/proc/meminfo", [read]) -> error end)
          end,
          fun(_) ->
-            unmock_logger(),
             unmock_file()
          end,
         fun get_memory_stats_error/0
@@ -164,14 +154,10 @@ file_open_error_test_() ->
     {foreach,
         fun() ->
             meck:new(file, [unstick, passthrough]),
-            meck:expect(file, open, fun(_, _) -> error end),
-            %% TODO logger:should_log is mocked because it fails because
-            %% TODO there is no logger_plugin module
-            mock_logger()
+            meck:expect(file, open, fun(_, _) -> error end)
         end,
         fun(_) ->
-            unmock_file(),
-            unmock_logger()
+            unmock_file()
         end,
         [
             {"errors in monitoring collection", fun errors_in_monitoring_collection/0},
@@ -273,16 +259,6 @@ create_sample_memory_stats_file() ->
             end;
         _ -> error
     end.
-
-
-mock_logger() ->
-    meck:new(logger, [passthrough]),
-    meck:expect(logger, should_log, fun(_) -> false end).
-
-
-unmock_logger() ->
-    ?assert(meck:validate(logger)),
-    ?assertEqual(ok, meck:unload(logger)).
 
 
 unmock_file() ->

@@ -97,8 +97,6 @@ oz_endpoint_test_() ->
 %%%===================================================================
 
 setup() ->
-    meck:new(logger_plugin, [non_strict]),
-    meck:expect(logger_plugin, gather_metadata, fun() -> [] end),
     meck:new(oz_plugin, [non_strict]),
     meck:new(cert_utils, []),
     meck:expect(oz_plugin, get_oz_url, fun() -> "OZ_URL" end),
@@ -114,7 +112,7 @@ teardown(_) ->
     lists:foreach(fun(Module) ->
         ?assert(meck:validate(Module)),
         ok = meck:unload(Module)
-    end, [oz_plugin, logger_plugin, cert_utils]).
+    end, [oz_plugin, cert_utils]).
 
 %%%===================================================================
 %%% Tests functions

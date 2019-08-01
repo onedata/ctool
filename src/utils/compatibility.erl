@@ -105,7 +105,6 @@
 
 -include("onedata.hrl").
 -include("logging.hrl").
--include("global_definitions.hrl").
 
 % A nested map acquired by parsing the JSON file
 -type registry() :: map().
@@ -115,12 +114,9 @@
 % specified per every version in the compatibility registry.
 -type entry() :: onedata:release_version() | onedata:gui_hash().
 
--define(REGISTRY_PATH, begin
-    {ok, __Path} = application:get_env(?CTOOL_APP_NAME, compatibility_registry_path),
-    __Path
-end).
--define(REGISTRY_CACHE_TTL, application:get_env(?CTOOL_APP_NAME, compatibility_registry_cache_ttl, 900)). % 15 minutes
--define(REGISTRY_MIRRORS, application:get_env(?CTOOL_APP_NAME, compatibility_registry_mirrors, [])).
+-define(REGISTRY_PATH, ctool:get_env(compatibility_registry_path)).
+-define(REGISTRY_CACHE_TTL, ctool:get_env(compatibility_registry_cache_ttl, 900)). % 15 minutes
+-define(REGISTRY_MIRRORS, ctool:get_env(compatibility_registry_mirrors, [])).
 
 -export([check_products_compatibility/4]).
 -export([get_compatible_versions/3]).

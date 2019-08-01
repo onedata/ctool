@@ -56,7 +56,7 @@
 
         % Path to the JSON file holding information about services
         % compatibility and verified gui hashes.
-        % Should be overriden in the including project.
+        % NOTE: Should be overriden in the including project.
         {compatibility_registry_path, "./etc/compatibility.json"},
         % URLs from the compatibility registry can be fetched - used when there
         % is a chance that the static registry is outdated. The URLs are tried
@@ -72,6 +72,33 @@
         % known mirrors. The new registry is fetched when there is a chance that
         % it is outdated - in case an incompatibility between services or
         % unverified GUI is detected.
-        {compatibility_registry_cache_ttl, 900} % 15 minutes
+        {compatibility_registry_cache_ttl, 900}, % 15 minutes
+
+
+        %% ===================================================================
+        %% GEOLOCATION
+        %% ===================================================================
+
+        % NOTE: ALL PATHS should be overriden in the including project.
+
+        % Path to compressed MaxMind's GeoLite2 databases used for mapping
+        % IP addresses to ASN and country.
+        {geo_db_path, #{
+            asn =>     "./etc/geo-db/geo-db-asn.tar.gz",
+            country => "./etc/geo-db/geo-db-country.tar.gz"
+        }},
+        % Mirrors from which the MaxMind DBs download will be attempted in case
+        % the refresh period passes.
+        {geo_db_mirror, #{
+            asn =>     "https://geolite.maxmind.com/download/geoip/database/GeoLite2-ASN.tar.gz",
+            country => "https://geolite.maxmind.com/download/geoip/database/GeoLite2-Country.tar.gz"
+        }},
+        % File that holds info about last successful and attempted updates
+        % of the MaxMind DBs.
+        {geo_db_status_path, "./etc/geo-db/geo-db-status.json"},
+        % How often (in days) should MaxMind DB refresh be performed
+        {geo_db_refresh_period_days, 3},
+        % Backoff (in seconds) in case fetching a newer DB fails
+        {geo_db_refresh_backoff_secs, 3600}
     ]}
 ]}.

@@ -24,7 +24,4 @@
 %% coordinates node life cycle.
 -define(NODE_MANAGER_NAME, node_manager).
 
-%% Name of the application.
--define(CTOOL_APP_NAME, ctool).
-
 -endif.

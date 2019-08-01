@@ -9,7 +9,7 @@
 %%% This module implements a high-level API for all kinds of tokens in Onedata.
 %%% Tokens are issued by Onezone services and can only be verified by them.
 %%% The underlying implementation uses macaroons, which allows confining
-%%% the tokens.
+%%% the tokens (adding contextual caveats).
 %%% @end
 %%%-------------------------------------------------------------------
 -module(tokens).
