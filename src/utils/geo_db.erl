@@ -54,7 +54,7 @@
 %%--------------------------------------------------------------------
 -spec lookup(db_type(), ip_utils:ip()) -> {ok, query_result()} | {error, lookup_error()}.
 lookup(DbType, IP) when DbType == asn orelse DbType == country ->
-    case is_db_loaded(DbType) of
+    case ensure_db_loaded(DbType) of
         true -> locus:lookup(DbType, IP);
         false -> {error, database_not_loaded}
     end.
@@ -63,27 +63,27 @@ lookup(DbType, IP) when DbType == asn orelse DbType == country ->
 %%% Internal functions
 %%%===================================================================
 
--spec is_db_loaded(db_type()) -> boolean().
-is_db_loaded(DbType) ->
+-spec ensure_db_loaded(db_type()) -> boolean().
+ensure_db_loaded(DbType) ->
     % Called not more frequently than every ?VALIDITY_CHECK_INTERVAL seconds
     % and handled in a critical section (per cluster node) to avoid race
     % conditions when reading / refreshing the database.
     % In case of failures, ?LOAD_ATTEMPT_BACKOFF applies.
     EnsureDb = fun() ->
         ?CRITICAL_SECTION(DbType, fun() ->
-            try ensure_db(DbType) of
+            try ensure_db_loaded_unsafe(DbType) of
                 ok ->
                     {true, loaded, ?VALIDITY_CHECK_INTERVAL};
                 {error, _} = Error ->
                     ?error(
                         "GEO DB could not be loaded due to ~w, next attempt in ~B seconds",
-                        [Error, ?LOAD_ATTEMPT_BACKOFF]
+                        [Error, ?LOAD_ATTEMPT_BACKOFF div 1000]
                     ),
                     {true, not_loaded, ?LOAD_ATTEMPT_BACKOFF}
             catch Type:Reason ->
                 ?error_stacktrace(
                     "Unexpected error when loading GEO DB (~p) - ~p:~p, next attempt in ~B seconds",
-                    [DbType, Type, Reason, ?LOAD_ATTEMPT_BACKOFF]
+                    [DbType, Type, Reason, ?LOAD_ATTEMPT_BACKOFF div 1000]
                 ),
                 {true, not_loaded, ?LOAD_ATTEMPT_BACKOFF}
             end
@@ -96,8 +96,8 @@ is_db_loaded(DbType) ->
 
 
 %% Unsafe - must be called in a critical section.
--spec ensure_db(db_type()) -> ok | {error, term()}.
-ensure_db(DbType) ->
+-spec ensure_db_loaded_unsafe(db_type()) -> ok | {error, term()}.
+ensure_db_loaded_unsafe(DbType) ->
     case maybe_fetch_newer_db(DbType) of
         true -> locus:stop_loader(DbType); % Forces reload
         false -> ok
@@ -131,10 +131,8 @@ load_db(DbType) ->
 -spec maybe_fetch_newer_db(db_type()) -> boolean().
 maybe_fetch_newer_db(DbType) ->
     case should_fetch_newer_db(DbType) of
-        false ->
-            false;
-        true ->
-            fetch_newer_db(DbType)
+        false -> false;
+        true -> fetch_newer_db(DbType)
     end.
 
 

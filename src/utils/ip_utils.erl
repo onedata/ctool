@@ -13,7 +13,8 @@
 -module(ip_utils).
 -author("Lukasz Opiola").
 
--include_lib("ctool/include/logging.hrl").
+-include("posix/errors.hrl").
+-include("logging.hrl").
 
 -type ip() :: inet:ip4_address() | nonempty_string() | binary().
 -export_type([ip/0]).
@@ -96,33 +97,33 @@ lookup_region(IP) ->
 %% Parses an IP mask from format: "189.45.21.0/24" (string or binary).
 %% @end
 %%--------------------------------------------------------------------
--spec parse_mask(mask_str()) -> {ok, mask()} | {error, einval}.
+-spec parse_mask(mask_str()) -> {ok, mask()} | {error, ?EINVAL}.
 parse_mask(IpSlashMask) when is_list(IpSlashMask) ->
     parse_mask(list_to_binary(IpSlashMask));
 parse_mask(IpSlashMask) ->
     case binary:split(IpSlashMask, <<"/">>, [global, trim_all]) of
         [IP] -> parse_mask(IP, 32);
         [IP, Len] -> parse_mask(IP, Len);
-        _ -> {error, einval}
+        _ -> {error, ?EINVAL}
     end.
 
 
 %% @private
--spec parse_mask(ip(), MaskLength :: binary() | integer()) -> {ok, mask()} | {error, einval}.
+-spec parse_mask(ip(), MaskLength :: binary() | integer()) -> {ok, mask()} | {error, ?EINVAL}.
 parse_mask(IP, MaskLength) when is_binary(MaskLength) ->
     try binary_to_integer(MaskLength) of
         Int -> parse_mask(IP, Int)
     catch
-        _:_ -> {error, einval}
+        _:_ -> {error, ?EINVAL}
     end;
 parse_mask(_IP, MaskLength) when MaskLength < 0 ->
-    {error, einval};
+    {error, ?EINVAL};
 parse_mask(_IP, MaskLength) when MaskLength > 32 ->
-    {error, einval};
+    {error, ?EINVAL};
 parse_mask(IP, MaskLength) ->
     case to_ip4_address(IP) of
         {ok, IP4Address} -> {ok, {IP4Address, MaskLength}};
-        {error, einval} -> {error, einval}
+        {error, ?EINVAL} -> {error, ?EINVAL}
     end.
 
 
@@ -140,27 +141,27 @@ matches_mask(IP, {MaskIP, MaskLength}) ->
 matches_mask(IP, Mask) ->
     case parse_mask(Mask) of
         {ok, {MaskIP, MaskLength}} -> matches_mask(IP, {MaskIP, MaskLength});
-        {error, einval} -> false
+        {error, ?EINVAL} -> false
     end.
 
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
 
--spec subnet_as_int(ip(), mask_length()) -> {ok, integer()} | {error, einval}.
+-spec subnet_as_int(ip(), mask_length()) -> {ok, integer()} | {error, ?EINVAL}.
 subnet_as_int(IP, MaskLength) ->
     case to_ip4_address(IP) of
         {ok, IP4Address} ->
             IpBytes = list_to_binary(tuple_to_list(IP4Address)),
-            Rest = (size(IpBytes) * 8) - MaskLength,
+            Rest = 32 - MaskLength,
             <<Subnet:MaskLength, _Host:Rest>> = IpBytes,
             {ok, Subnet};
-        {error, einval} ->
-            {error, einval}
+        {error, ?EINVAL} ->
+            {error, ?EINVAL}
     end.
 
 
--spec to_ip4_address(ip()) -> {ok, inet:ip4_address()} | {error, einval}.
+-spec to_ip4_address(ip()) -> {ok, inet:ip4_address()} | {error, ?EINVAL}.
 to_ip4_address(IP) when is_binary(IP) ->
     to_ip4_address(binary_to_list(IP));
 to_ip4_address(IP) when is_list(IP) ->
