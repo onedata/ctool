@@ -138,7 +138,7 @@
 
 % Provider related errors
 -define(ERROR_SPACE_NOT_SUPPORTED_BY(__ProviderId), {error, {space_not_supported_by, __ProviderId}}).
--define(ERROR_INDEX_NOT_EXISTS_ON(__ProviderId), {error, {index_not_exists_on, __ProviderId}}).
+-define(ERROR_VIEW_NOT_EXISTS_ON(__ProviderId), {error, {view_not_exists_on, __ProviderId}}).
 
 % Transfers related errors
 -define(ERROR_TRANSFER_ALREADY_ENDED, {error, transfer_already_ended}).
