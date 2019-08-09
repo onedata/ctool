@@ -13,6 +13,8 @@
 -module(consistent_hashing).
 -author("Tomasz Lichon").
 
+-type chash() :: chash:chash() | node().
+
 %% API
 -export([init/1, cleanup/0, get_chash_ring/0, set_chash_ring/1, get_node/1,
     get_all_nodes/0]).
@@ -31,16 +33,16 @@
 %%--------------------------------------------------------------------
 -spec init([node()]) -> ok.
 init([Node]) ->
-    ctool:set_env(chash, ?SINGLE_NODE_CHASH(Node));
+    set_chash_ring(?SINGLE_NODE_CHASH(Node));
 init(Nodes) ->
-    case ctool:get_env(chash, undefined) of
+    case get_chash_ring() of
         undefined ->
             [Node0 | _] = Nodes,
             InitialCHash = chash:fresh(length(Nodes), Node0),
             CHash = lists:foldl(fun({I, Node}, CHashAcc) ->
                 chash:update(get_nth_index(I, CHashAcc), Node, CHashAcc)
             end, InitialCHash, lists:zip(lists:seq(1, length(Nodes)), Nodes)),
-            ctool:set_env(chash, CHash);
+            set_chash_ring(CHash);
         _ ->
             ok
     end.
@@ -59,7 +61,7 @@ cleanup() ->
 %% Returns consistent hashing ring.
 %% @end
 %%--------------------------------------------------------------------
--spec get_chash_ring() -> chash:chash() | undefined.
+-spec get_chash_ring() -> chash() | undefined.
 get_chash_ring() ->
     ctool:get_env(chash, undefined).
 
@@ -68,7 +70,7 @@ get_chash_ring() ->
 %% Sets consistent hashing ring.
 %% @end
 %%--------------------------------------------------------------------
--spec set_chash_ring(chash:chash()) -> ok.
+-spec set_chash_ring(chash()) -> ok.
 set_chash_ring(CHash) ->
     ctool:set_env(chash, CHash).
 
@@ -79,10 +81,12 @@ set_chash_ring(CHash) ->
 %%--------------------------------------------------------------------
 -spec get_node(term()) -> node().
 get_node(Label) ->
-    CHash = ctool:get_env(chash),
-    case ?IS_SINGLE_NODE_CHASH(CHash) of
-        true -> CHash;
-        _ ->
+    case get_chash_ring() of
+        undefined ->
+            error(chash_ring_not_initialized);
+        Node when ?IS_SINGLE_NODE_CHASH(Node) ->
+            Node;
+        CHash ->
             Index = chash:key_of(Label),
             [{_, BestNode}] = chash:successors(Index, CHash, 1),
             BestNode
@@ -95,12 +99,14 @@ get_node(Label) ->
 %%--------------------------------------------------------------------
 -spec get_all_nodes() -> [node()].
 get_all_nodes() ->
-    CHash = ctool:get_env(chash),
-    case ?IS_SINGLE_NODE_CHASH(CHash) of
-        true -> [CHash];
-        _ ->
+    case get_chash_ring() of
+        undefined ->
+            error(chash_ring_not_initialized);
+        Node when ?IS_SINGLE_NODE_CHASH(Node) ->
+            [Node];
+        CHash ->
             NodesWithIndices = chash:nodes(CHash),
-            Nodes = [Node || {_, Node} <- NodesWithIndices],
+            {_, Nodes} = lists:unzip(NodesWithIndices),
             lists:usort(Nodes)
     end.
 

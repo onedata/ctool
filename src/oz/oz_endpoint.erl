@@ -11,6 +11,7 @@
 %%%-------------------------------------------------------------------
 -module(oz_endpoint).
 
+-include("aai/aai.hrl").
 -include("logging.hrl").
 
 -define(OZ_PLUGIN, (oz_plugin_module())).
@@ -26,12 +27,9 @@
 -type opts() :: http_client:opts() | [{endpoint, rest | rest_no_auth | gui}].
 -type response() :: http_client:response().
 -type params() :: [{Key :: binary(), Value :: binary() | [binary()]}] | map().
--type client() :: client | provider | {user, token, macaroons()} |
+-type client() :: client | provider | {user, token, tokens:token()} |
 %% Credentials are in form "Basic base64(user:password)"
 {user, basic, Credentials :: binary()}.
-%% Tuple containing root macaroon and discharge macaroons for user auth.
--type macaroons() :: {Macaroon :: macaroon:macaroon(),
-    DischargeMacaroons :: [macaroon:macaroon()]}.
 %% Auth is an arbitrary term, which is treated like a black box by ctool.
 %% It can carry any information, the only condition is that the project
 %% using ctool implements the callback oz_plugin:auth_to_rest_client/1.
@@ -144,7 +142,7 @@ request(Auth, URN, Method, Headers, Body, Opts) ->
 
 %%--------------------------------------------------------------------
 %% @private @doc Returns properly formatted auth headers 
-%% (i.e. macaroon, basic auth), depending on type of REST client.
+%% (i.e. token, basic auth), depending on type of REST client.
 %% @end
 %%--------------------------------------------------------------------
 -spec prepare_auth_headers(Auth :: auth(), Headers :: headers()) ->
@@ -152,29 +150,14 @@ request(Auth, URN, Method, Headers, Body, Opts) ->
 prepare_auth_headers(Auth, Headers) ->
     % Check REST client type and return auth headers if needed.
     case ?OZ_PLUGIN:auth_to_rest_client(Auth) of
-        {headers, Map} -> maps:merge(Headers, Map);
-        {user, token, Token} ->
-            Headers#{<<"X-Auth-Token">> => Token};
-        {user, macaroon, {MacaroonBin, DischargeMacaroonsBin}} ->
-            {ok, Macaroon} = macaroons:deserialize(MacaroonBin),
-            BoundMacaroons = lists:map(
-                fun(DischargeMacaroonBin) ->
-                    {ok, DM} = macaroons:deserialize(DischargeMacaroonBin),
-                    BDM = macaroon:prepare_for_request(Macaroon, DM),
-                    {ok, SerializedBDM} = macaroons:serialize(BDM),
-                    SerializedBDM
-                end, DischargeMacaroonsBin),
-            % Bound discharge macaroons are sent in one header,
-            % separated by spaces.
-            BoundMacaroonsVal = str_utils:join_binary(BoundMacaroons, <<" ">>),
-            Headers#{
-                <<"Macaroon">> => MacaroonBin,
-                <<"Discharge-Macaroons">> => BoundMacaroonsVal
-            };
+        {headers, Map} ->
+            maps:merge(Headers, Map);
+        {user, token, Token} when is_binary(Token) ->
+            Headers#{<<"x-auth-token">> => Token};
         {user, basic, BasicAuthHeader} ->
-            Headers#{<<"Authorization">> => BasicAuthHeader};
-        {provider, Macaroon} ->
-            Headers#{<<"Macaroon">> => Macaroon};
+            Headers#{<<"authorization">> => BasicAuthHeader};
+        {provider, Token} when is_binary(Token) ->
+            Headers#{<<"x-auth-token">> => Token};
         none ->
             Headers
     end.

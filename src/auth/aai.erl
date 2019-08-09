@@ -47,24 +47,25 @@
 -type subject_id() :: undefined | binary().
 
 -type audience() :: #audience{}.
--type audience_type() :: user | onedata:service().
+-type audience_type() :: user | group | onedata:service().
 -type audience_id() :: binary().
 
 % Can be undefined if the auth object is not related to any session
 -type session_id() :: undefined | binary().
 
 -type auth() :: #auth{}.
+-type auth_ctx() :: #auth_ctx{}.
 
 -export_type([subject/0, subject_type/0, subject_id/0]).
 -export_type([audience/0, audience_type/0, audience_id/0]).
 -export_type([session_id/0]).
--export_type([auth/0]).
+-export_type([auth/0, auth_ctx/0]).
 
 %%% API
 -export([root_auth/0, nobody_auth/0]).
 -export([auth_to_string/1]).
--export([encode_audience_type/1, decode_audience_type/1]).
--export([encode_audience/1]).
+-export([serialize_audience_type/1, deserialize_audience_type/1]).
+-export([serialize_audience/1, deserialize_audience/1]).
 
 %%%===================================================================
 %%% API
@@ -104,24 +105,33 @@ auth_to_string(?USER(UId)) -> str_utils:format("user:~s", [UId]);
 auth_to_string(?PROVIDER(PId)) -> str_utils:format("provider:~s", [PId]).
 
 
--spec encode_audience_type(audience_type()) -> <<_:24>>.
-encode_audience_type(user) -> <<"usr">>;
-encode_audience_type(?OZ_WORKER) -> <<"ozw">>;
-encode_audience_type(?OZ_PANEL) -> <<"ozp">>;
-encode_audience_type(?OP_WORKER) -> <<"opw">>;
-encode_audience_type(?OP_PANEL) -> <<"opp">>;
-encode_audience_type(_) -> error(badarg).
+-spec serialize_audience_type(audience_type()) -> <<_:24>>.
+serialize_audience_type(user) -> <<"usr">>;
+serialize_audience_type(group) -> <<"grp">>;
+serialize_audience_type(?OZ_WORKER) -> <<"ozw">>;
+serialize_audience_type(?OZ_PANEL) -> <<"ozp">>;
+serialize_audience_type(?OP_WORKER) -> <<"opw">>;
+serialize_audience_type(?OP_PANEL) -> <<"opp">>;
+serialize_audience_type(_) -> error(badarg).
 
 
--spec decode_audience_type(<<_:24>>) -> audience_type().
-decode_audience_type(<<"usr">>) -> user;
-decode_audience_type(<<"ozw">>) -> ?OZ_WORKER;
-decode_audience_type(<<"ozp">>) -> ?OZ_PANEL;
-decode_audience_type(<<"opw">>) -> ?OP_WORKER;
-decode_audience_type(<<"opp">>) -> ?OP_PANEL;
-decode_audience_type(_) -> error(badarg).
+-spec deserialize_audience_type(<<_:24>>) -> audience_type().
+deserialize_audience_type(<<"usr">>) -> user;
+deserialize_audience_type(<<"grp">>) -> group;
+deserialize_audience_type(<<"ozw">>) -> ?OZ_WORKER;
+deserialize_audience_type(<<"ozp">>) -> ?OZ_PANEL;
+deserialize_audience_type(<<"opw">>) -> ?OP_WORKER;
+deserialize_audience_type(<<"opp">>) -> ?OP_PANEL;
+deserialize_audience_type(_) -> error(badarg).
 
 
--spec encode_audience(audience()) -> binary().
-encode_audience(?AUD(Type, Id)) ->
-    <<(encode_audience_type(Type))/binary, "-", Id/binary>>.
+-spec serialize_audience(audience()) -> binary().
+serialize_audience(?AUD(Type, Id)) ->
+    <<(serialize_audience_type(Type))/binary, "-", Id/binary>>.
+
+
+-spec deserialize_audience(binary()) -> audience().
+deserialize_audience(<<Type:3/binary, "-", Id/binary>>) ->
+    ?AUD(deserialize_audience_type(Type), Id);
+deserialize_audience(_) ->
+    error(badarg).

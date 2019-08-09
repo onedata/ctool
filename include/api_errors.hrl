@@ -40,14 +40,11 @@
 -define(ERROR_ALREADY_EXISTS, {error, already_exists}).
 -define(ERROR_POSIX(__ERRNO), {error, {posix, __ERRNO}}).
 
-% Errors connected with macaroons
-% Bad macaroon - provided term cannot be understood
--define(ERROR_BAD_MACAROON, {error, bad_macaroon}).
-% Macaroon invalid - provided term is a macaroon, but it is not valid (caveats
-% could not be verified).
--define(ERROR_MACAROON_INVALID, {error, macaroon_invalid}).
--define(ERROR_MACAROON_EXPIRED, {error, macaroon_expired}).
--define(ERROR_MACAROON_TTL_TO_LONG(MaxTtl), {error, {macaroon_ttl_too_long, MaxTtl}}).
+-define(ERROR_BAD_TOKEN, {error, bad_token}).
+-define(ERROR_TOKEN_INVALID, {error, token_invalid}).
+-define(ERROR_TOKEN_CAVEAT_UNVERIFIED(Caveat), {error, {token_caveat_unverified, Caveat}}).
+% Token cannot be created for requested subject
+-define(ERROR_TOKEN_SUBJECT_INVALID, {error, token_subject_invalid}).
 % Requested audience is forbidden to consume the token (e.g. user is not
 % supported by the provider specified in audience)
 -define(ERROR_TOKEN_AUDIENCE_FORBIDDEN, {error, token_audience_forbidden}).

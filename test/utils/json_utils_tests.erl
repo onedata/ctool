@@ -12,6 +12,8 @@
 -module(json_utils_tests).
 -author("Tomasz Lichon").
 
+-ifdef(TEST).
+
 -include_lib("eunit/include/eunit.hrl").
 
 -export([encode_proplist_test/0, decode_proplist_test/0]).
@@ -58,3 +60,5 @@ decode_proplist_test() ->
     Json = <<"{\"first\":\"first\",\"second\":\"second\"}">>,
     Proplist = json_utils:decode_deprecated(Json),
     ?assertEqual([{<<"first">>, <<"first">>}, {<<"second">>, <<"second">>}], Proplist).
+
+-endif.

@@ -14,7 +14,7 @@
 -define(AAI_HRL, 1).
 
 -include("../onedata.hrl").
--include("macaroons.hrl").
+-include("caveats.hrl").
 
 -record(subject, {
     type = nobody :: aai:subject_type(),
@@ -31,6 +31,13 @@
     audience = undefined :: undefined | aai:audience(),
     % Can be undefined if the auth object is not related to any session
     session_id = undefined :: aai:session_id()
+}).
+
+% Context carrying information required to verify a token
+-record(auth_ctx, {
+    current_timestamp :: time_utils:seconds(),
+    audience = undefined :: undefined | aai:audience(),
+    ip = undefined :: undefined | ip_utils:ip()
 }).
 
 
