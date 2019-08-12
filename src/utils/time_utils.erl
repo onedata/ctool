@@ -100,15 +100,15 @@ cluster_time_millis() ->
 %% Synchronizes time with a remote server (procedure to get the timestamp should
 %% be given as RemoteTimestampFun). Calculates estimated bias between local and
 %% remote clock and caches it for some time, hence limiting number of remote
-%% API calls. The time is returned in seconds, and in most cases it has one
+%% API calls. The time is returned in milliseconds, and in most cases it has one
 %% second accuracy.
 %% Cache key is used to allow different caches for different remote servers.
 %% Any errors should be logged inside the RemoteTimestampFun fun and 'error'
 %% should be returned.
 %% @end
 %%--------------------------------------------------------------------
--spec remote_timestamp(CacheKey :: atom(), RemoteTimestampFun :: fun()) ->
-    non_neg_integer() | no_return().
+-spec remote_timestamp(CacheKey :: atom(), fun(() -> {ok, millis()} | error)) ->
+    millis() | no_return().
 remote_timestamp(CacheKey, RemoteTimestampFun) ->
     Now = system_time_millis(),
     % If possible, use cached bias (clocks difference between this node and
