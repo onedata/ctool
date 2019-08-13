@@ -13,6 +13,11 @@
 -module(time_utils).
 -author("Lukasz Opiola").
 
+% Expressive types for better code readability
+-type seconds() :: integer().
+-type millis() :: integer().
+-export_type([seconds/0, millis/0]).
+
 -include("logging.hrl").
 -include("global_definitions.hrl").
 
@@ -44,7 +49,7 @@
 %% @equiv erlang:system_time(seconds).
 %% @end
 %%--------------------------------------------------------------------
--spec system_time_seconds() -> non_neg_integer().
+-spec system_time_seconds() -> seconds().
 system_time_seconds() ->
     erlang:system_time(seconds).
 
@@ -53,7 +58,7 @@ system_time_seconds() ->
 %% @equiv erlang:system_time(milli_seconds).
 %% @end
 %%--------------------------------------------------------------------
--spec system_time_millis() -> non_neg_integer().
+-spec system_time_millis() -> millis().
 system_time_millis() ->
     erlang:system_time(milli_seconds).
 
@@ -63,7 +68,7 @@ system_time_millis() ->
 %% @equiv cluster_time_milli_seconds() div 1000
 %% @end
 %%--------------------------------------------------------------------
--spec cluster_time_seconds() -> non_neg_integer().
+-spec cluster_time_seconds() -> seconds().
 cluster_time_seconds() ->
     cluster_time_millis() div 1000.
 
@@ -77,7 +82,7 @@ cluster_time_seconds() ->
 %% other.
 %% @end
 %%--------------------------------------------------------------------
--spec cluster_time_millis() -> non_neg_integer() | no_return().
+-spec cluster_time_millis() -> millis() | no_return().
 cluster_time_millis() ->
     remote_timestamp(cluster_time_bias, fun() ->
         try
@@ -95,15 +100,15 @@ cluster_time_millis() ->
 %% Synchronizes time with a remote server (procedure to get the timestamp should
 %% be given as RemoteTimestampFun). Calculates estimated bias between local and
 %% remote clock and caches it for some time, hence limiting number of remote
-%% API calls. The time is returned in seconds, and in most cases it has one
+%% API calls. The time is returned in milliseconds, and in most cases it has one
 %% second accuracy.
 %% Cache key is used to allow different caches for different remote servers.
 %% Any errors should be logged inside the RemoteTimestampFun fun and 'error'
 %% should be returned.
 %% @end
 %%--------------------------------------------------------------------
--spec remote_timestamp(CacheKey :: atom(), RemoteTimestampFun :: fun()) ->
-    non_neg_integer() | no_return().
+-spec remote_timestamp(CacheKey :: atom(), fun(() -> {ok, millis()} | error)) ->
+    millis() | no_return().
 remote_timestamp(CacheKey, RemoteTimestampFun) ->
     Now = system_time_millis(),
     % If possible, use cached bias (clocks difference between this node and
@@ -141,7 +146,7 @@ remote_timestamp(CacheKey, RemoteTimestampFun) ->
 %% Convert unix epoch to iso8601 format.
 %% @end
 %%--------------------------------------------------------------------
--spec epoch_to_iso8601(Epoch :: non_neg_integer()) -> binary().
+-spec epoch_to_iso8601(Epoch :: seconds()) -> binary().
 epoch_to_iso8601(Epoch) ->
     iso8601:format({Epoch div 1000000, Epoch rem 1000000, 0}).
 
@@ -151,7 +156,7 @@ epoch_to_iso8601(Epoch) ->
 %% Convert iso8601 format to unix epoch time.
 %% @end
 %%--------------------------------------------------------------------
--spec iso8601_to_epoch(binary()) -> non_neg_integer().
+-spec iso8601_to_epoch(binary()) -> Epoch :: seconds().
 iso8601_to_epoch(Iso8601) ->
     DateTime = datestamp_to_datetime(Iso8601),
     datetime_to_epoch(DateTime).
@@ -162,7 +167,7 @@ iso8601_to_epoch(Iso8601) ->
 %% Converts erlang datetime to unix epoch time.
 %% @end
 %%-------------------------------------------------------------------
--spec datetime_to_epoch(calendar:datetime()) -> non_neg_integer().
+-spec datetime_to_epoch(calendar:datetime()) -> Epoch :: seconds().
 datetime_to_epoch({{_, _, _}, {_, _, _}} = DateTime) ->
     calendar:datetime_to_gregorian_seconds(DateTime) - ?UNIX_EPOCH.
 

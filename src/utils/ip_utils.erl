@@ -17,21 +17,22 @@
 -include("logging.hrl").
 
 -type ip() :: inet:ip4_address() | nonempty_string() | binary().
--export_type([ip/0]).
+
+-type mask_length() :: 0..32.
+-type mask_str() :: nonempty_string() | binary().
+-type mask() :: {inet:ip4_address(), mask_length()}.
 
 % Autonomous System Number registered by IANA for the Internet Service Provider
 % who manages the IP address.
--type asn_id() :: integer().
+-type asn() :: integer().
 
 % PL, FR, PT, ...
 -type country_code() :: <<_:16>>.
 
-% Africa, Antarctica, Asia, Europe, EU, NorthAmerica, SouthAmerica, Oceania
+% Africa, Antarctica, Asia, Europe, EU, NorthAmerica, Oceania, SouthAmerica
 -type region() :: binary().
 
--type mask_length() :: 0..32.
--type mask() :: {inet:ip4_address(), mask_length()}.
--type mask_str() :: nonempty_string() | binary().
+-export_type([ip/0, mask/0, asn/0, country_code/0, region/0]).
 
 %% macro for use in guard for checking ip address {A,B,C,D}
 -define(IS_IP(A, B, C, D),
@@ -40,7 +41,7 @@
 
 %% API
 -export([lookup_asn/1, lookup_country/1, lookup_region/1]).
--export([parse_mask/1, matches_mask/2]).
+-export([parse_mask/1, serialize_mask/1, matches_mask/2]).
 
 %%%===================================================================
 %%% API functions
@@ -51,7 +52,7 @@
 %% Returns the ASN ID for given IP address (if mapping exists).
 %% @end
 %%--------------------------------------------------------------------
--spec lookup_asn(ip()) -> {ok, asn_id()} | {error, geo_db:lookup_error()}.
+-spec lookup_asn(ip()) -> {ok, asn()} | {error, geo_db:lookup_error()}.
 lookup_asn(IP) ->
     case geo_db:lookup(asn, IP) of
         {ok, #{<<"autonomous_system_number">> := Id}} -> {ok, Id};
@@ -124,6 +125,14 @@ parse_mask(IP, MaskLength) ->
     case to_ip4_address(IP) of
         {ok, IP4Address} -> {ok, {IP4Address, MaskLength}};
         {error, ?EINVAL} -> {error, ?EINVAL}
+    end.
+
+
+-spec serialize_mask(mask()) -> {ok, mask_str()} | {error, ?EINVAL}.
+serialize_mask({MaskIP, MaskLength}) ->
+    case inet:ntoa(MaskIP) of
+        {error, ?EINVAL} -> {error, ?EINVAL};
+        AddressStr -> {ok, str_utils:format_bin("~s/~B", [AddressStr, MaskLength])}
     end.
 
 

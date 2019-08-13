@@ -12,6 +12,8 @@
 -module(ip_utils_tests).
 -author("Lukasz Opiola").
 
+-ifdef(TEST).
+
 -include_lib("eunit/include/eunit.hrl").
 
 geo_lookup_test_() ->
@@ -205,3 +207,5 @@ matches_mask_test() ->
     ?assert(M("128.0.0.0", "255.255.255.255/1")),
 
     ?assert(M("0.0.0.0", "255.255.255.255/0")).
+
+-endif.

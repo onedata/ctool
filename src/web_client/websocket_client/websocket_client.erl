@@ -34,24 +34,18 @@
 %% ===================================================================
 -module(websocket_client).
 
--export([start_link/4, start_link/5, cast/2, send/2]).
--export([ws_client_init/8]).
+-export([start_link/4, cast/2, send/2]).
+-export([ws_client_init/7]).
 
 
 %% @doc Start the websocket client
 -spec start_link(URL :: string(), Handler :: module(), Args :: list(), TransportOpts :: list()) ->
     {ok, pid()} | {error, term()}.
 start_link(URL, Handler, Args, TransportOpts) ->
-    start_link(URL, undefined, Handler, Args, TransportOpts).
-
--spec start_link(URL :: string(), Authorization :: websocket_req:authorization(),
-    Handler :: module(), Args :: list(), TransportOpts :: list()) ->
-    {ok, pid()} | {error, term()}.
-start_link(URL, Authorization, Handler, Args, TransportOpts) ->
     case http_uri:parse(URL, [{scheme_defaults, [{ws, 80}, {wss, 443}]}]) of
         {ok, {Protocol, _, Host, Port, Path, Query}} ->
             proc_lib:start_link(?MODULE, ws_client_init,
-                [Handler, Protocol, Host, Port, Path ++ Query, Authorization, Args, TransportOpts]);
+                [Handler, Protocol, Host, Port, Path ++ Query, Args, TransportOpts]);
         {error, _} = Error ->
             Error
     end.
@@ -65,9 +59,9 @@ cast(Client, Frame) ->
 %% @doc Create socket, execute handshake, and enter loop
 -spec ws_client_init(Handler :: module(), Protocol :: websocket_req:protocol(),
     Host :: string(), Port :: inet:port_number(), Path :: string(),
-    Authorization :: websocket_req:authorization(), Args :: list(), TransportOpts :: list()) ->
+    Args :: list(), TransportOpts :: list()) ->
     no_return().
-ws_client_init(Handler, Protocol, Host, Port, Path, Authorization, Args, TransportOpts) ->
+ws_client_init(Handler, Protocol, Host, Port, Path, Args, TransportOpts) ->
     Transport = case Protocol of
         wss -> ssl;
         ws -> gen_tcp
@@ -99,7 +93,6 @@ ws_client_init(Handler, Protocol, Host, Port, Path, Authorization, Args, Transpo
         Host,
         Port,
         Path,
-        Authorization,
         Socket,
         Transport,
         Handler,
@@ -158,13 +151,9 @@ ws_client_init(Handler, Protocol, Host, Port, Path, Authorization, Args, Transpo
 -spec websocket_handshake(WSReq :: websocket_req:req()) ->
     {error, term()} | {ok, binary()}.
 websocket_handshake(WSReq) ->
-    [Protocol, Path, Host, Key, Transport, Socket, Authorization] = websocket_req:get([
-        protocol, path, host, key, transport, socket, authorization
+    [Protocol, Path, Host, Key, Transport, Socket] = websocket_req:get([
+        protocol, path, host, key, transport, socket
     ], WSReq),
-    AuthorizationHeader = case Authorization of
-        undefined -> <<"">>;
-        {macaroon, Macaroon} -> <<"\r\nMacaroon: ", Macaroon/binary>>
-    end,
     Handshake = [<<"GET ">>, Path,
         <<" HTTP/1.1"
         "\r\nHost: ">>, Host,
@@ -174,7 +163,6 @@ websocket_handshake(WSReq) ->
         <<"\r\nOrigin: ">>, atom_to_binary(Protocol, utf8), <<"://">>, Host,
         <<"\r\nSec-WebSocket-Protocol: "
         "\r\nSec-WebSocket-Version: 13">>,
-        AuthorizationHeader,
         <<"\r\n\r\n">>],
     Transport = websocket_req:transport(WSReq),
     Socket = websocket_req:socket(WSReq),

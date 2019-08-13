@@ -12,6 +12,8 @@
 -module(geo_db_tests).
 -author("Lukasz Opiola").
 
+-ifdef(TEST).
+
 -include_lib("eunit/include/eunit.hrl").
 
 -define(TIME_MOCK_STARTING_TIMESTAMP, 1500000000).
@@ -149,8 +151,7 @@ get_mocked_time() ->
     ctool:get_env(mocked_time, ?TIME_MOCK_STARTING_TIMESTAMP).
 
 simulate_time_passing(Seconds) ->
-    ctool:set_env(mocked_time, get_mocked_time() + Seconds),
-    ok.
+    ctool:set_env(mocked_time, get_mocked_time() + Seconds).
 
 -define(DUMMY_ENV(DbType),
     binary_to_atom(str_utils:format_bin("db_loaded_~p", [DbType]), utf8)
@@ -319,3 +320,5 @@ bad_db_mirror(#{tmpDir := TmpDir}) ->
         }
     }),
     ?assertEqual({ok, ExpStatusOmega}, file:read_file(?DUMMY_STATUS_FILE(TmpDir))).
+
+-endif.

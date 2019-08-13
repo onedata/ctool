@@ -9,6 +9,8 @@
 %%%--------------------------------------------------------------------
 -module(file_id_test).
 
+-ifdef(TEST).
+
 -include_lib("eunit/include/eunit.hrl").
 
 -define(ENTERPRISENUM, 0).
@@ -44,7 +46,7 @@ share_guid_to_guid_test() ->
     ?assertEqual(U, file_id:guid_to_uuid(G2)).
 
 guid_objectid_test() ->
-    U = <<"uuid">>, S = <<"space_id">>, 
+    U = <<"uuid">>, S = <<"space_id">>,
     G = file_id:pack_guid(U, S),
     {ok, FileId} = file_id:guid_to_objectid(G),
     ?assertEqual({ok, G}, file_id:objectid_to_guid(FileId)).
@@ -133,3 +135,5 @@ base16_test() ->
     Obj = file_id:build_objectid(TestString),
     Encode = file_id:to_base16(Obj),
     ?assertEqual(Obj, file_id:from_base16(Encode)).
+
+-endif.

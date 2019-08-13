@@ -12,6 +12,8 @@
 -module(file_utils_tests).
 -author("Wojciech Geisler").
 
+-ifdef(TEST).
+
 -include_lib("eunit/include/eunit.hrl").
 
 -define(DATA_DIR, "./test/" ++ ?MODULE_STRING ++ "_data/").
@@ -178,3 +180,5 @@ touch(Path) ->
 path(#{cwd := Workdir}, Name) ->
     filename:join(Workdir, Name).
 
+
+-endif.

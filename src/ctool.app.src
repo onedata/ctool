@@ -62,7 +62,7 @@
         % is a chance that the static registry is outdated. The URLs are tried
         % in the order up to the first successful mirror.
         {compatibility_registry_mirrors, [
-            "https://onedata.org/#/home/documentation/doc/compatibility_reference/compatibility.json",
+            "https://onedata.org/docs/doc/compatibility_reference/compatibility.json",
             "https://raw.githubusercontent.com/onedata/onedata-documentation/master/doc/compatibility_reference/compatibility.json"
         ]},
         % For how long (in seconds) the cached compatibility registry is
