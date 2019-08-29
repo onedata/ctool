@@ -63,9 +63,11 @@
 
 %%% API
 -export([root_auth/0, nobody_auth/0]).
--export([auth_to_string/1]).
+-export([serialize_subject/1, deserialize_subject/1]).
 -export([serialize_audience_type/1, deserialize_audience_type/1]).
 -export([serialize_audience/1, deserialize_audience/1]).
+-export([auth_to_printable/1]).
+-export([audience_to_printable/1]).
 
 %%%===================================================================
 %%% API
@@ -93,36 +95,16 @@ nobody_auth() ->
     ?NOBODY.
 
 
-%%--------------------------------------------------------------------
-%% @doc
-%% Returns a readable string representing the subject of provided Auth.
-%% @end
-%%--------------------------------------------------------------------
--spec auth_to_string(auth()) -> string().
-auth_to_string(?NOBODY) -> "nobody (unauthenticated client)";
-auth_to_string(?ROOT) -> "root";
-auth_to_string(?USER(UId)) -> str_utils:format("user:~s", [UId]);
-auth_to_string(?PROVIDER(PId)) -> str_utils:format("provider:~s", [PId]).
+-spec serialize_subject(aai:subject()) -> json_utils:json_term().
+serialize_subject(?SUB(nobody)) -> <<"nobody">>;
+serialize_subject(?SUB(user, UserId)) -> #{<<"user">> => UserId};
+serialize_subject(?SUB(?ONEPROVIDER, PrId)) -> #{<<"provider">> => PrId}.
 
 
--spec serialize_audience_type(audience_type()) -> <<_:24>>.
-serialize_audience_type(user) -> <<"usr">>;
-serialize_audience_type(group) -> <<"grp">>;
-serialize_audience_type(?OZ_WORKER) -> <<"ozw">>;
-serialize_audience_type(?OZ_PANEL) -> <<"ozp">>;
-serialize_audience_type(?OP_WORKER) -> <<"opw">>;
-serialize_audience_type(?OP_PANEL) -> <<"opp">>;
-serialize_audience_type(_) -> error(badarg).
-
-
--spec deserialize_audience_type(<<_:24>>) -> audience_type().
-deserialize_audience_type(<<"usr">>) -> user;
-deserialize_audience_type(<<"grp">>) -> group;
-deserialize_audience_type(<<"ozw">>) -> ?OZ_WORKER;
-deserialize_audience_type(<<"ozp">>) -> ?OZ_PANEL;
-deserialize_audience_type(<<"opw">>) -> ?OP_WORKER;
-deserialize_audience_type(<<"opp">>) -> ?OP_PANEL;
-deserialize_audience_type(_) -> error(badarg).
+-spec deserialize_subject(json_utils:json_term()) -> aai:subject().
+deserialize_subject(<<"nobody">>) -> ?SUB(nobody);
+deserialize_subject(#{<<"user">> := UserId}) -> ?SUB(user, UserId);
+deserialize_subject(#{<<"provider">> := PrId}) -> ?SUB(?ONEPROVIDER, PrId).
 
 
 -spec serialize_audience(audience()) -> binary().
@@ -135,3 +117,26 @@ deserialize_audience(<<Type:3/binary, "-", Id/binary>>) ->
     ?AUD(deserialize_audience_type(Type), Id);
 deserialize_audience(_) ->
     error(badarg).
+
+
+-spec serialize_audience_type(audience_type()) -> <<_:24>>.
+serialize_audience_type(user) -> <<"usr">>;
+serialize_audience_type(group) -> <<"grp">>;
+serialize_audience_type(Service) -> onedata:service_shortname(Service).
+
+
+-spec deserialize_audience_type(<<_:24>>) -> audience_type().
+deserialize_audience_type(<<"usr">>) -> user;
+deserialize_audience_type(<<"grp">>) -> group;
+deserialize_audience_type(Shortname) -> onedata:service_by_shortname(Shortname).
+
+
+-spec auth_to_printable(auth()) -> string().
+auth_to_printable(?NOBODY) -> "nobody (unauthenticated client)";
+auth_to_printable(?ROOT) -> "root";
+auth_to_printable(?USER(UId)) -> str_utils:format("user:~s", [UId]);
+auth_to_printable(?PROVIDER(PId)) -> str_utils:format("provider:~s", [PId]).
+
+
+-spec audience_to_printable(audience()) -> string().
+audience_to_printable(?AUD(Type, Id)) -> str_utils:format("~s:~s", [Type, Id]).

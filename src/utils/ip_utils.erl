@@ -41,6 +41,7 @@
 
 %% API
 -export([lookup_asn/1, lookup_country/1, lookup_region/1]).
+-export([to_ip4_address/1, to_binary/1]).
 -export([parse_mask/1, serialize_mask/1, matches_mask/2]).
 
 %%%===================================================================
@@ -90,6 +91,25 @@ lookup_region(IP) ->
             {ok, [code_to_region(Code) | EURegion]};
         {error, _} = Error ->
             Error
+    end.
+
+
+-spec to_ip4_address(ip()) -> {ok, inet:ip4_address()} | {error, ?EINVAL}.
+to_ip4_address(IP) when is_binary(IP) ->
+    to_ip4_address(binary_to_list(IP));
+to_ip4_address(IP) when is_list(IP) ->
+    inet:parse_ipv4strict_address(IP);
+to_ip4_address({A, B, C, D}) when ?IS_IP(A, B, C, D) ->
+    {ok, {A, B, C, D}};
+to_ip4_address(_) ->
+    {error, ?EINVAL}.
+
+
+-spec to_binary(ip()) -> {ok, binary()} | {error, ?EINVAL}.
+to_binary(IP) ->
+    case to_ip4_address(IP) of
+        {ok, IPv4} -> {ok, list_to_binary(inet:ntoa(IPv4))};
+        {error, ?EINVAL} -> {error, ?EINVAL}
     end.
 
 
@@ -168,15 +188,6 @@ subnet_as_int(IP, MaskLength) ->
         {error, ?EINVAL} ->
             {error, ?EINVAL}
     end.
-
-
--spec to_ip4_address(ip()) -> {ok, inet:ip4_address()} | {error, ?EINVAL}.
-to_ip4_address(IP) when is_binary(IP) ->
-    to_ip4_address(binary_to_list(IP));
-to_ip4_address(IP) when is_list(IP) ->
-    inet:parse_ipv4strict_address(IP);
-to_ip4_address({A, B, C, D}) when ?IS_IP(A, B, C, D) ->
-    {ok, {A, B, C, D}}.
 
 
 -spec code_to_region(<<_:16>>) -> region().

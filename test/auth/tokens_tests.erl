@@ -16,7 +16,9 @@
 
 -include_lib("eunit/include/eunit.hrl").
 
+-include("onedata.hrl").
 -include("aai/aai.hrl").
+-include("graph_sync/graph_sync.hrl").
 -include("api_errors.hrl").
 
 -define(OZ_DOMAIN, <<"onezone.example.com">>).
@@ -192,6 +194,80 @@ audience_token_headers_manipulation_test() ->
     Headers = tokens:build_audience_token_header(AudienceToken),
     ?assertEqual(AudienceToken, tokens:parse_audience_token_header(?MOCK_COWBOY_REQ(Headers))).
 
+
+find_caveats_test() ->
+    F = fun caveats:find/2,
+    ?assertEqual(
+        false,
+        F(cv_time, [])
+    ),
+    ?assertEqual(
+        false,
+        F(cv_time, [
+            #cv_asn{whitelist = [322]},
+            #cv_audience{audience = ?AUD(?OZ_WORKER, ?ONEZONE_CLUSTER_ID)},
+            #cv_country{type = whitelist, list = [<<"PL">>, <<"FR">>]},
+            #cv_api{whitelist = [{all, all, ?GRI('*', <<"*">>, '*', '*')}]}
+        ])
+    ),
+    ?assertEqual(
+        {true, [#cv_time{valid_until = 123}]},
+        F(cv_time, [#cv_time{valid_until = 123}])
+    ),
+    ?assertEqual(
+        {true, [#cv_time{valid_until = 123}, #cv_time{valid_until = 456}, #cv_time{valid_until = 789}]},
+        F(cv_time, [
+            #cv_time{valid_until = 123},
+            #cv_asn{whitelist = [322]},
+            #cv_audience{audience = ?AUD(group, <<"123">>)},
+            #cv_time{valid_until = 456},
+            #cv_country{type = whitelist, list = [<<"PL">>, <<"FR">>]},
+            #cv_time{valid_until = 789},
+            #cv_api{whitelist = [{all, all, ?GRI('*', <<"*">>, '*', '*')}]}
+        ])
+    ).
+
+
+filter_caveats_test() ->
+    F = fun caveats:filter/2,
+    ?assertEqual(
+        [],
+        F([cv_time], [])
+    ),
+    ?assertEqual(
+        [],
+        F([cv_time], [
+            #cv_asn{whitelist = [322]},
+            #cv_audience{audience = ?AUD(user, <<"567">>)},
+            #cv_country{type = whitelist, list = [<<"PL">>, <<"FR">>]},
+            #cv_api{whitelist = [{all, all, ?GRI('*', <<"*">>, '*', '*')}]}
+        ])
+    ),
+    ?assertEqual(
+        [#cv_time{valid_until = 123}],
+        F([cv_time], [#cv_time{valid_until = 123}])
+    ),
+    ?assertEqual(
+        [
+            #cv_time{valid_until = 123},
+            #cv_asn{whitelist = [322]},
+            #cv_time{valid_until = 456},
+            #cv_time{valid_until = 789},
+            #cv_api{whitelist = [{all, all, ?GRI('*', <<"*">>, '*', '*')}]}
+        ],
+        F([cv_asn, cv_api, cv_time], [
+            #cv_time{valid_until = 123},
+            #cv_asn{whitelist = [322]},
+            #cv_audience{audience = ?AUD(?OP_PANEL, <<"provider-id">>)},
+            #cv_time{valid_until = 456},
+            #cv_country{type = whitelist, list = [<<"PL">>, <<"FR">>]},
+            #cv_time{valid_until = 789},
+            #cv_api{whitelist = [{all, all, ?GRI('*', <<"*">>, '*', '*')}]}
+        ])
+    ).
+
+
+
 %%%===================================================================
 %%% Token manipulation tests (combinations)
 %%%===================================================================
@@ -276,8 +352,14 @@ to_countries(IpList) ->
 to_regions(IpList) ->
     lists:flatten([element(2, {ok, _} = region(X)) || X <- IpList, X /= ?IP_LH]).
 
+% File paths must not contain the 0 (NULL) or slash characters
+-define(RAND_PATH_TOKEN, binary:replace(
+    binary:replace(crypto:strong_rand_bytes(16), <<0>>, <<"">>, [global]),
+    <<$/>>, <<"">>, [global]
+)).
+
 -define(RAND_PATH, str_utils:join_binary([<<"">> | rand_sublist([
-    ?RAND_STR, ?RAND_STR, ?RAND_STR, ?RAND_STR
+    ?RAND_PATH_TOKEN, ?RAND_PATH_TOKEN, ?RAND_PATH_TOKEN, ?RAND_PATH_TOKEN
 ], 1, 4)], <<"/">>)).
 
 -define(IP_EXAMPLES, [
@@ -389,7 +471,7 @@ check_verification_result(Token, Secret, Subject, AuthCtx, Caveats, [] = _Unveri
     CaveatTypes = [caveats:type(C) || C <- Caveats],
     ?assertMatch(?ERROR_TOKEN_INVALID, tokens:verify(Token, <<"bad-secret">>, AuthCtx, CaveatTypes)),
     ?assertMatch(?ERROR_TOKEN_INVALID, tokens:verify(Token, ?RAND_STR, AuthCtx, CaveatTypes)),
-    ?assertMatch({ok, Subject}, tokens:verify(Token, Secret, AuthCtx, CaveatTypes));
+    ?assertMatch({ok, #auth{subject = Subject}}, tokens:verify(Token, Secret, AuthCtx, CaveatTypes));
 % If there are any caveats expected to fail verification, make sure that token verification
 % fails and indicates one of the bad caveats.
 check_verification_result(Token, Secret, _Subject, AuthCtx, Caveats, Unverified) ->
@@ -397,7 +479,7 @@ check_verification_result(Token, Secret, _Subject, AuthCtx, Caveats, Unverified)
     VerifyResult = tokens:verify(Token, Secret, AuthCtx, CaveatTypes),
     ?assertMatch(?ERROR_TOKEN_CAVEAT_UNVERIFIED(_), VerifyResult),
     ?ERROR_TOKEN_CAVEAT_UNVERIFIED(UnverifiedCaveat) = VerifyResult,
-    ?assert(lists:member(caveats:deserialize(UnverifiedCaveat), Unverified)).
+    ?assert(lists:member(UnverifiedCaveat, Unverified)).
 
 
 % Make sures that if any of the caveats inscribed in the Token is not supported,
@@ -417,7 +499,7 @@ check_supported_caveats(Token, Secret, AuthCtx, Caveats, Unverified) ->
         VerifyResult = tokens:verify(Token, Secret, AuthCtx, SupportedCaveats),
         ?assertMatch(?ERROR_TOKEN_CAVEAT_UNVERIFIED(_), VerifyResult),
         ?ERROR_TOKEN_CAVEAT_UNVERIFIED(MissingCaveat) = VerifyResult,
-        ?assert(lists:member(caveats:deserialize(MissingCaveat), MissingCaveats ++ Unverified))
+        ?assert(lists:member(MissingCaveat, MissingCaveats ++ Unverified))
     end, CaveatTypeSubsets).
 
 
@@ -511,12 +593,12 @@ caveats_examples(cv_region, #auth_ctx{ip = Ip}) -> [
 % is consumed to perform an operation.
 caveats_examples(cv_api, _AuthCtx) -> [
     {#cv_api{whitelist = rand_sublist([
-        {create, <<"od_space.*.*:private">>},
-        {get, <<"od_user.", (?RAND_STR)/binary, ".instance:private">>},
-        {get, <<"od_user.", (?RAND_STR)/binary, ".instance:private">>},
-        {update, <<"od_group.*.users:*">>},
-        {delete, <<"od_group.*.users:*">>},
-        {all, <<"od_handle.*.*:*">>}
+        {all, create, ?GRI(od_space, <<"*">>, '*', private)},
+        {?OZ_WORKER, get, ?GRI(od_user, ?RAND_STR, instance, '*')},
+        {?OP_WORKER, all, ?GRI(od_user, ?RAND_STR, {group, ?RAND_STR}, private)},
+        {?OP_PANEL, update, ?GRI(od_group, <<"*">>, {'*', <<"*">>})},
+        {?OZ_PANEL, delete, ?GRI('*', <<"*">>, users, '*')},
+        {all, all, ?GRI(od_handle, <<"*">>, '*', '*')}
     ], 1, 6)}, success}
 ];
 
