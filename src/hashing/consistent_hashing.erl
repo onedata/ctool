@@ -17,7 +17,7 @@
 
 %% API
 -export([init/1, cleanup/0, get_chash_ring/0, set_chash_ring/1, get_node/1,
-    get_all_nodes/0]).
+    get_all_nodes/0, get_label_gen_size/0]).
 
 -define(SINGLE_NODE_CHASH(Node), Node).
 -define(IS_SINGLE_NODE_CHASH(CHash), is_atom(CHash)).
@@ -86,6 +86,11 @@ get_node(Label) ->
             error(chash_ring_not_initialized);
         Node when ?IS_SINGLE_NODE_CHASH(Node) ->
             Node;
+        CHash when is_binary(Label) ->
+            Length = min(byte_size(Label), get_label_gen_size()),
+            Index = chash:key_of(binary:part(Label, 0, Length)),
+            [{_, BestNode}] = chash:successors(Index, CHash, 1),
+            BestNode;
         CHash ->
             Index = chash:key_of(Label),
             [{_, BestNode}] = chash:successors(Index, CHash, 1),
@@ -109,6 +114,15 @@ get_all_nodes() ->
             {_, Nodes} = lists:unzip(NodesWithIndices),
             lists:usort(Nodes)
     end.
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Get number of bytes used to generate Index for binary labels.
+%% @end
+%%--------------------------------------------------------------------
+-spec get_label_gen_size() -> non_neg_integer().
+get_label_gen_size() ->
+    6.
 
 %%%===================================================================
 %%% Internal functions
