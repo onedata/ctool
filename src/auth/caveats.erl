@@ -23,37 +23,30 @@ cv_data_space | cv_data_access | cv_data_path | cv_data_objectid.
 #cv_data_space{} | #cv_data_access{} | #cv_data_path{} | #cv_data_objectid{}.
 -type serialized() :: binary().
 
--type api_operation() :: create | get | update | delete | all.
-% Matchspec is in GRI format, with possible wildcards, eg.:
-%   od_space.*.instance:private
-%   od_user.7496a16de55bf6bc42f606c5b268daa0.*:private
-%   *.*.instance:private
-%   *.*.*:*
--type api_matchspec() :: binary().
-
 % Caveats related to data access
 -type space_id() :: binary().
 -type data_access_type() :: read | write.
 -type data_path() :: binary().
 
 -export_type([type/0, caveat/0]).
--export_type([api_operation/0, api_matchspec/0]).
 -export_type([space_id/0, data_access_type/0, data_path/0]).
 
 % Separator used to create (white|black)lists in caveats
 -define(SEP, <<"|">>).
-% Separator used to create a list of file paths
--define(PATH_SEP, <<"//">>).
+% Separator used to create a list of file paths - null character, which is
+% forbidden inside a POSIX path
+-define(PATH_SEP, <<0>>).
 -define(SPLIT(List), binary:split(List, ?SEP, [global])).
 -define(SPLIT(List, Sep), binary:split(List, Sep, [global])).
 -define(JOIN(List), str_utils:join_binary(List, ?SEP)).
 -define(JOIN(List, Sep), str_utils:join_binary(List, Sep)).
 
 %% API
--export([add/2]).
--export([build_verifier/2]).
+-export([add/2, get_caveats/1, find/2, filter/2]).
 -export([type/1, all_types/0]).
--export([deserialize/1, serialize/1]).
+-export([build_verifier/2]).
+-export([serialize/1, deserialize/1]).
+-export([unverified_description/1]).
 
 %%%===================================================================
 %%% API functions
@@ -64,6 +57,39 @@ add(Caveats, Macaroon) when is_list(Caveats) ->
     lists:foldl(fun add/2, Macaroon, Caveats);
 add(Caveat, Macaroon) ->
     macaroon:add_first_party_caveat(Macaroon, serialize(Caveat)).
+
+
+-spec get_caveats(macaroon:macaroon()) -> [caveat()].
+get_caveats(Macaroon) ->
+    [deserialize(C) || C <- macaroon:first_party_caveats(Macaroon)].
+
+
+-spec find(type(), [caveat()]) -> {true, [caveat()]} | false.
+find(Type, Caveats) ->
+    case filter([Type], Caveats) of
+        [] -> false;
+        List -> {true, List}
+    end.
+
+
+-spec filter([type()], [caveat()]) -> [caveat()].
+filter([Type], Caveats) ->
+    lists:filter(fun(Caveat) -> type(Caveat) =:= Type end, Caveats);
+filter(Types, Caveats) ->
+    lists:filter(fun(Caveat) -> lists:member(type(Caveat), Types) end, Caveats).
+
+
+-spec type(caveat()) -> type().
+type(Caveat) when is_tuple(Caveat) ->
+    element(1, Caveat).
+
+
+-spec all_types() -> [type()].
+all_types() -> [
+    cv_time, cv_authorization_none, cv_audience,
+    cv_ip, cv_asn, cv_country, cv_region, cv_api,
+    cv_data_space, cv_data_access, cv_data_path, cv_data_objectid
+].
 
 
 -spec build_verifier(aai:auth_ctx(), [type()]) -> macaroon_verifier:verifier().
@@ -80,19 +106,6 @@ build_verifier(AuthCtx, SupportedCaveats) ->
             false
         end
     end).
-
-
--spec type(caveat()) -> type().
-type(Caveat) when is_tuple(Caveat) ->
-    element(1, Caveat).
-
-
--spec all_types() -> [type()].
-all_types() -> [
-    cv_time, cv_authorization_none, cv_audience,
-    cv_ip, cv_asn, cv_country, cv_region, cv_api,
-    cv_data_space, cv_data_access, cv_data_path, cv_data_objectid
-].
 
 
 -spec serialize(caveat()) -> serialized().
@@ -139,9 +152,7 @@ serialize(#cv_region{type = blacklist, list = List}) ->
 serialize(#cv_api{whitelist = []}) ->
     error(badarg);
 serialize(#cv_api{whitelist = Whitelist}) ->
-    SerializedEntries = lists:map(fun({Operation, MatchSpec}) ->
-        <<(serialize_api_operation(Operation))/binary, "/", MatchSpec/binary>>
-    end, Whitelist),
+    SerializedEntries = lists:map(fun cv_api:serialize_matchspec/1, Whitelist),
     <<"api = ", (?JOIN(SerializedEntries))/binary>>;
 
 serialize(#cv_data_space{whitelist = []}) ->
@@ -157,7 +168,7 @@ serialize(#cv_data_access{type = write}) ->
 serialize(#cv_data_path{whitelist = []}) ->
     error(badarg);
 serialize(#cv_data_path{whitelist = Whitelist}) ->
-    <<"data.path = ", (?JOIN(Whitelist, ?PATH_SEP))/binary>>;
+    <<"data.path = ", (base64:encode(?JOIN(Whitelist, ?PATH_SEP)))/binary>>;
 
 serialize(#cv_data_objectid{whitelist = []}) ->
     error(badarg);
@@ -199,10 +210,7 @@ deserialize(<<"geo.region != ", List/binary>>) ->
     #cv_region{type = blacklist, list = ?SPLIT(List)};
 
 deserialize(<<"api = ", SerializedEntries/binary>>) ->
-    Whitelist = lists:map(fun(Entry) ->
-        [Operation, MatchSpec] = ?SPLIT(Entry, <<"/">>),
-        {deserialize_api_operation(Operation), MatchSpec}
-    end, ?SPLIT(SerializedEntries)),
+    Whitelist = lists:map(fun cv_api:deserialize_matchspec/1, ?SPLIT(SerializedEntries)),
     #cv_api{whitelist = Whitelist};
 
 deserialize(<<"data.space = ", List/binary>>) ->
@@ -213,11 +221,98 @@ deserialize(<<"data.access = read">>) ->
 deserialize(<<"data.access = write">>) ->
     #cv_data_access{type = write};
 
-deserialize(<<"data.path = ", List/binary>>) ->
-    #cv_data_path{whitelist = ?SPLIT(List, ?PATH_SEP)};
+deserialize(<<"data.path = ", ListB64/binary>>) ->
+    #cv_data_path{whitelist = ?SPLIT(base64:decode(ListB64), ?PATH_SEP)};
 
 deserialize(<<"data.objectid = ", List/binary>>) ->
     #cv_data_objectid{whitelist = ?SPLIT(List)}.
+
+
+-spec unverified_description(caveat()) -> binary().
+unverified_description(#cv_time{valid_until = ValidUntil}) ->
+    str_utils:format_bin(
+        "unverified time caveat: this token has expired at ~s",
+        [time_utils:epoch_to_iso8601(ValidUntil)]
+    );
+
+unverified_description(#cv_authorization_none{}) ->
+    <<"this token carries no authorization (can be used solely for identity verification)">>;
+
+unverified_description(#cv_audience{audience = Audience}) ->
+    str_utils:format_bin(
+        "unverified audience caveat: the consumer of this token must authorize as ~s",
+        [aai:audience_to_printable(Audience)]
+    );
+
+unverified_description(#cv_ip{whitelist = Whitelist}) ->
+    str_utils:format_bin(
+        "unverified IP caveat: this token can only be used from an IP address that matches: ~s",
+        [?JOIN([element(2, {ok, _} = ip_utils:serialize_mask(M)) || M <- Whitelist], <<" or ">>)]
+    );
+
+unverified_description(#cv_asn{whitelist = Whitelist}) ->
+    str_utils:format_bin(
+        "unverified ASN caveat: this token can only be used from an IP address that "
+        "maps to the following Autonomous System Number: ~s",
+        [?JOIN(lists:map(fun integer_to_binary/1, Whitelist), <<" or ">>)]
+    );
+
+unverified_description(#cv_country{type = Type, list = List}) ->
+    ComesStr = case Type of
+        whitelist -> "comes";
+        blacklist -> "does NOT come"
+    end,
+    str_utils:format_bin(
+        "unverified country caveat: this token can only be used from an IP address that "
+        "~s from the following country: ~s",
+        [ComesStr, ?JOIN(List, <<" or ">>)]
+    );
+
+unverified_description(#cv_region{type = Type, list = List}) ->
+    ComesStr = case Type of
+        whitelist -> "comes";
+        blacklist -> "does NOT come"
+    end,
+    str_utils:format_bin(
+        "unverified region caveat: this token can only be used from an IP address that "
+        "~s from the following region: ~s",
+        [ComesStr, ?JOIN(List, <<" or ">>)]
+    );
+
+unverified_description(#cv_api{whitelist = Whitelist}) ->
+    str_utils:format_bin(
+        "unverified API caveat: this token can only be used for API calls that match "
+        "the following spec: ~s",
+        [?JOIN(lists:map(fun cv_api:serialize_matchspec/1, Whitelist), <<" or ">>)]
+    );
+
+unverified_description(#cv_data_space{whitelist = Whitelist}) ->
+    str_utils:format_bin(
+        "unverified data space caveat: this token can only be used to access data "
+        "in the following space: ~s",
+        [?JOIN(Whitelist, <<" or ">>)]
+    );
+
+unverified_description(#cv_data_access{type = Type}) ->
+    str_utils:format_bin(
+        "unverified data access caveat: this token allows for ~s-only data access",
+        [Type]
+    );
+
+unverified_description(#cv_data_path{whitelist = Whitelist}) ->
+    str_utils:format_bin(
+        "unverified data path caveat: this token can only be used to access data "
+        "under the following paths (and nested directories): ~ts",
+        [?JOIN(Whitelist, <<" or ">>)]
+    );
+
+unverified_description(#cv_data_objectid{whitelist = Whitelist}) ->
+    str_utils:format_bin(
+        "unverified data path caveat: this token can only be used to access data "
+        "with the following FILE_ID (and nested directories): ~ts",
+        [?JOIN(Whitelist, <<" or ">>)]
+    ).
+
 
 %%%===================================================================
 %%% Internal functions
@@ -277,23 +372,3 @@ is_allowed(whitelist, Whitelist, Predicate) ->
     lists:any(Predicate, Whitelist);
 is_allowed(blacklist, Blacklist, Predicate) ->
     lists:all(fun(Blacklisted) -> not Predicate(Blacklisted) end, Blacklist).
-
-
-%% @private
--spec serialize_api_operation(api_operation()) -> binary().
-serialize_api_operation(create) -> <<"create">>;
-serialize_api_operation(get) -> <<"get">>;
-serialize_api_operation(update) -> <<"update">>;
-serialize_api_operation(delete) -> <<"delete">>;
-serialize_api_operation(all) -> <<"all">>;
-serialize_api_operation(_) -> error(badarg).
-
-
-%% @private
--spec deserialize_api_operation(binary()) -> api_operation().
-deserialize_api_operation(<<"create">>) -> create;
-deserialize_api_operation(<<"get">>) -> get;
-deserialize_api_operation(<<"update">>) -> update;
-deserialize_api_operation(<<"delete">>) -> delete;
-deserialize_api_operation(<<"all">>) -> all;
-deserialize_api_operation(_) -> error(badarg).

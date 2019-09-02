@@ -42,6 +42,7 @@
 %% API
 -export([service_by_type/2, service_type/1, service_to_cluster_type/1]).
 -export([service_gui/1, service_by_gui/2]).
+-export([service_shortname/1, service_by_shortname/1]).
 -export([gui_prefix/1, gui_by_prefix/1]).
 
 %%%===================================================================
@@ -86,6 +87,22 @@ service_by_gui(?OP_WORKER_GUI, _) -> ?OP_WORKER;
 service_by_gui(?ONEPANEL_GUI, ?ONEZONE_CLUSTER_ID) -> ?OZ_PANEL;
 service_by_gui(?ONEPANEL_GUI, _) -> ?OP_PANEL;
 service_by_gui(_, _) -> error(badarg).
+
+
+-spec service_shortname(service()) -> <<_:24>>.
+service_shortname(?OZ_WORKER) -> <<"ozw">>;
+service_shortname(?OP_WORKER) -> <<"opw">>;
+service_shortname(?OZ_PANEL) -> <<"ozp">>;
+service_shortname(?OP_PANEL) -> <<"opp">>;
+service_shortname(_) -> error(badarg).
+
+
+-spec service_by_shortname(<<_:24>>) -> service().
+service_by_shortname(<<"ozw">>) -> ?OZ_WORKER;
+service_by_shortname(<<"opw">>) -> ?OP_WORKER;
+service_by_shortname(<<"ozp">>) -> ?OZ_PANEL;
+service_by_shortname(<<"opp">>) -> ?OP_PANEL;
+service_by_shortname(_) -> error(badarg).
 
 
 -spec gui_prefix(gui()) -> binary().

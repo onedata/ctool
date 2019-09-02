@@ -15,6 +15,7 @@
 -ifdef(TEST).
 
 -include_lib("eunit/include/eunit.hrl").
+-include("posix/errors.hrl").
 
 geo_lookup_test_() ->
     {setup,
@@ -84,6 +85,32 @@ geo_lookup(_) ->
     ?_assertEqual({error, not_found}, ip_utils:lookup_region("99.99.99.99")).
 
 
+to_ip4_address_test() ->
+    T = fun ip_utils:to_ip4_address/1,
+    ?assertEqual({ok, {1, 2, 3, 4}}, T("1.2.3.4")),
+    ?assertEqual({ok, {105, 21, 112, 14}}, T(<<"105.21.112.14">>)),
+    ?assertEqual({ok, {99, 98, 97, 96}}, T({99, 98, 97, 96})),
+
+    ?assertEqual({error, ?EINVAL}, T("1.2.3.400")),
+    ?assertEqual({error, ?EINVAL}, T("zxcklvj")),
+    ?assertEqual({error, ?EINVAL}, T(<<"723417">>)),
+    ?assertEqual({error, ?EINVAL}, T(<<"256.256.256.267">>)),
+    ?assertEqual({error, ?EINVAL}, T({-1, 678, 0, 906})).
+
+
+to_binary_test() ->
+    T = fun ip_utils:to_binary/1,
+    ?assertEqual({ok, <<"1.2.3.4">>}, T("1.2.3.4")),
+    ?assertEqual({ok, <<"105.21.112.14">>}, T(<<"105.21.112.14">>)),
+    ?assertEqual({ok, <<"99.98.97.96">>}, T({99, 98, 97, 96})),
+
+    ?assertEqual({error, ?EINVAL}, T("1.2.3.400")),
+    ?assertEqual({error, ?EINVAL}, T("zxcklvj")),
+    ?assertEqual({error, ?EINVAL}, T(<<"723417">>)),
+    ?assertEqual({error, ?EINVAL}, T(<<"256.256.256.267">>)),
+    ?assertEqual({error, ?EINVAL}, T({-1, 678, 0, 906})).
+
+
 parse_mask_test() ->
     P = fun ip_utils:parse_mask/1,
     ?assertEqual({ok, {{1, 2, 3, 4}, 32}}, P("1.2.3.4")),
@@ -94,13 +121,13 @@ parse_mask_test() ->
     ?assertEqual({ok, {{9, 8, 7, 6}, 23}}, P(<<"9.8.7.6/23">>)),
     ?assertEqual({ok, {{9, 8, 7, 6}, 32}}, P(<<"9.8.7.6/32">>)),
 
-    ?assertEqual({error, einval}, P("1.2.3.4/33")),
-    ?assertEqual({error, einval}, P("1.2.3.4/65")),
-    ?assertEqual({error, einval}, P(<<"1.2.3.4/-5">>)),
-    ?assertEqual({error, einval}, P("345.21.222.1111")),
-    ?assertEqual({error, einval}, P("345.21.222.1111/3")),
-    ?assertEqual({error, einval}, P(<<"345.21.222.1111/15">>)),
-    ?assertEqual({error, einval}, P("vxczzxcv/sdf/zzz")).
+    ?assertEqual({error, ?EINVAL}, P("1.2.3.4/33")),
+    ?assertEqual({error, ?EINVAL}, P("1.2.3.4/65")),
+    ?assertEqual({error, ?EINVAL}, P(<<"1.2.3.4/-5">>)),
+    ?assertEqual({error, ?EINVAL}, P("345.21.222.1111")),
+    ?assertEqual({error, ?EINVAL}, P("345.21.222.1111/3")),
+    ?assertEqual({error, ?EINVAL}, P(<<"345.21.222.1111/15">>)),
+    ?assertEqual({error, ?EINVAL}, P("vxczzxcv/sdf/zzz")).
 
 
 matches_mask_test() ->
