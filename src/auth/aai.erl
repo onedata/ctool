@@ -63,7 +63,7 @@
 
 %%% API
 -export([root_auth/0, nobody_auth/0]).
--export([serialize_subject/1, deserialize_subject/1]).
+-export([subject_to_json/1, json_to_subject/1]).
 -export([serialize_audience_type/1, deserialize_audience_type/1]).
 -export([serialize_audience/1, deserialize_audience/1]).
 -export([auth_to_printable/1]).
@@ -95,16 +95,16 @@ nobody_auth() ->
     ?NOBODY.
 
 
--spec serialize_subject(aai:subject()) -> json_utils:json_term().
-serialize_subject(?SUB(nobody)) -> <<"nobody">>;
-serialize_subject(?SUB(user, UserId)) -> #{<<"user">> => UserId};
-serialize_subject(?SUB(?ONEPROVIDER, PrId)) -> #{<<"provider">> => PrId}.
+-spec subject_to_json(aai:subject()) -> json_utils:json_term().
+subject_to_json(?SUB(nobody)) -> <<"nobody">>;
+subject_to_json(?SUB(user, UserId)) -> #{<<"user">> => UserId};
+subject_to_json(?SUB(?ONEPROVIDER, PrId)) -> #{<<"provider">> => PrId}.
 
 
--spec deserialize_subject(json_utils:json_term()) -> aai:subject().
-deserialize_subject(<<"nobody">>) -> ?SUB(nobody);
-deserialize_subject(#{<<"user">> := UserId}) -> ?SUB(user, UserId);
-deserialize_subject(#{<<"provider">> := PrId}) -> ?SUB(?ONEPROVIDER, PrId).
+-spec json_to_subject(json_utils:json_term()) -> aai:subject().
+json_to_subject(<<"nobody">>) -> ?SUB(nobody);
+json_to_subject(#{<<"user">> := UserId}) -> ?SUB(user, UserId);
+json_to_subject(#{<<"provider">> := PrId}) -> ?SUB(?ONEPROVIDER, PrId).
 
 
 -spec serialize_audience(audience()) -> binary().

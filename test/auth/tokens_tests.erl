@@ -353,13 +353,13 @@ to_regions(IpList) ->
     lists:flatten([element(2, {ok, _} = region(X)) || X <- IpList, X /= ?IP_LH]).
 
 % File paths must not contain the 0 (NULL) or slash characters
--define(RAND_PATH_TOKEN, binary:replace(
+-define(RAND_FILE_NAME, binary:replace(
     binary:replace(crypto:strong_rand_bytes(16), <<0>>, <<"">>, [global]),
     <<$/>>, <<"">>, [global]
 )).
 
 -define(RAND_PATH, str_utils:join_binary([<<"">> | rand_sublist([
-    ?RAND_PATH_TOKEN, ?RAND_PATH_TOKEN, ?RAND_PATH_TOKEN, ?RAND_PATH_TOKEN
+    ?RAND_FILE_NAME, ?RAND_FILE_NAME, ?RAND_FILE_NAME, ?RAND_FILE_NAME
 ], 1, 4)], <<"/">>)).
 
 -define(IP_EXAMPLES, [
