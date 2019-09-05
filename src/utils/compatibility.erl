@@ -117,6 +117,7 @@
 -define(REGISTRY_PATH, ctool:get_env(compatibility_registry_path)).
 -define(REGISTRY_CACHE_TTL, ctool:get_env(compatibility_registry_cache_ttl, 900)). % 15 minutes
 -define(REGISTRY_MIRRORS, ctool:get_env(compatibility_registry_mirrors, [])).
+-define(DEFAULT_REGISTRY, ctool:get_env(default_compatibility_registry)).
 
 -export([check_products_compatibility/4]).
 -export([get_compatible_versions/3]).
@@ -296,6 +297,7 @@ reset_fetch_backoff() ->
     {ok, registry()} | {error, cannot_parse_registry | cannot_fetch_registry}.
 get_registry(local) ->
     simple_cache:get(compatibility_registry, fun() ->
+        take_default_registry_if_newer(),
         case file:read_file(?REGISTRY_PATH) of
             {ok, Binary} ->
                 case parse_registry(Binary) of
@@ -442,6 +444,54 @@ parse_registry(Binary) ->
     end.
 
 
+%%--------------------------------------------------------------------
+%% @private
+%% @doc
+%% This function checks if the default registry for current software version is
+%% newer than the stored registry, and if so - replaces the registry with the
+%% default. This may happen if the software is upgraded to a newer version
+%% before it had a chance to fetch the newer registry.
+%% @end
+%%--------------------------------------------------------------------
+-spec take_default_registry_if_newer() -> ok.
+take_default_registry_if_newer() ->
+    case {peek_revision(?DEFAULT_REGISTRY), peek_revision(?REGISTRY_PATH)} of
+        {{ok, Default}, {ok, Current}} when Default > Current ->
+            {ok, _} = file:copy(?DEFAULT_REGISTRY, ?REGISTRY_PATH),
+            ?notice("Replaced the compatibility registry with the default one (rev. ~B)", [
+                Default
+            ]);
+        {{ok, _Default}, {ok, _Current}} ->
+            ?debug("Compatibility registry is not older than the default one");
+        {Other1, Other2} ->
+            ?warning(
+                "Cannot compare current and default compatibility registry~n"
+                "    Default: ~p~n"
+                "    Current: ~p",
+                [Other1, Other2]
+            )
+    end.
+
+
+%% @private
+-spec peek_revision(file:name_all()) -> {ok, pos_integer()} | {error, cannot_parse_registry}.
+peek_revision(RegistryFile) ->
+    case file:read_file(RegistryFile) of
+        {ok, Binary} ->
+            case parse_registry(Binary) of
+                {error, cannot_parse_registry} ->
+                    {error, cannot_parse_registry};
+                {ok, Registry} ->
+                    {ok, revision(Registry)}
+            end;
+        Other ->
+            ?error("Cannot parse compatibility registry (~s) due to ~w", [
+                RegistryFile, Other
+            ]),
+            {error, cannot_parse_registry}
+    end.
+
+
 %% @private
 -spec get_section(section(), registry()) -> map().
 get_section([], Map) ->
@@ -460,8 +510,9 @@ revision(#{<<"revision">> := Revision}) ->
 -define(OC_VERSION_RE, <<"^(?<release>[\\w.]+(-\\w+)?)(-\\d+-g\\w+)?$">>).
 
 %%--------------------------------------------------------------------
+%% @private
 %% @doc
-%% Oneclient version can be provided as full build version (e.g 19.02.0-beta1-10-gsadasd),
+%% Oneclient version can be provided as full build version (e.g 19.02.0-beta1-10-gb51aef),
 %% so it needs to be normalized by retrieving release version.
 %% @end
 %%--------------------------------------------------------------------
