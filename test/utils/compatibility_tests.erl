@@ -37,6 +37,7 @@ compatibility_verification_test_() ->
             {"Registry parsing error", fun registry_parsing_error/0},
             {"GUI hash verification", fun gui_hash_verification/0},
             {"Caching local registry content", fun caching_local_registry_content/0},
+            {"Taking default registry if newer", fun taking_default_registry_if_newer/0},
             {"Fetching newer registry", fun fetching_newer_registry/0},
             {"Fetching older registry", fun fetching_older_registry/0},
             {"Trying multiple mirrors", fun trying_multiple_mirrors/0}
@@ -51,10 +52,13 @@ compatibility_verification_test_() ->
 setup() ->
     TmpPath = mochitemp:mkdtemp(),
     RegistryPath = filename:join(TmpPath, "compatibility.json"),
+    DefaultRegistryPath = filename:join(TmpPath, "compatibility.default.json"),
     ctool:set_env(compatibility_registry_path, RegistryPath),
+    ctool:set_env(default_compatibility_registry, DefaultRegistryPath),
     ctool:set_env(compatibility_registry_cache_ttl, 900),
     compatibility:clear_registry_cache(),
     mock_compatibility_file(#{<<"revision">> => 2019010100}),
+    mock_default_compatibility_file(#{<<"revision">> => 2019010100}),
 
     meck:new(http_client, [passthrough]),
     meck:expect(http_client, get, fun get_mocked_mirror_result/1),
@@ -80,6 +84,13 @@ mock_compatibility_file(JsonMap) when is_map(JsonMap) ->
     mock_compatibility_file(json_utils:encode(JsonMap));
 mock_compatibility_file(Binary) when is_binary(Binary) ->
     RegistryPath = ctool:get_env(compatibility_registry_path),
+    ok = file:write_file(RegistryPath, Binary).
+
+
+mock_default_compatibility_file(JsonMap) when is_map(JsonMap) ->
+    mock_default_compatibility_file(json_utils:encode(JsonMap));
+mock_default_compatibility_file(Binary) when is_binary(Binary) ->
+    RegistryPath = ctool:get_env(default_compatibility_registry),
     ok = file:write_file(RegistryPath, Binary).
 
 
@@ -497,6 +508,54 @@ registry_parsing_error() ->
     ),
 
     ok.
+
+
+taking_default_registry_if_newer() ->
+    % Older or the same revision should not be taken
+    mock_compatibility_file(#{
+        <<"revision">> => 2019010100,
+        <<"compatibility">> => #{
+            <<"onezone:oneprovider">> => #{
+                <<"18.02.1">> => [
+                    <<"18.02.1">>
+                ]
+            }
+        }
+    }),
+    mock_default_compatibility_file(#{
+        <<"revision">> => 2019010100,
+        <<"compatibility">> => #{
+            <<"onezone:oneprovider">> => #{
+                <<"20.02.1">> => [
+                    <<"20.02.1">>
+                ]
+            }
+        }
+    }),
+    compatibility:clear_registry_cache(),
+
+    ?assertEqual({ok, [<<"18.02.1">>]}, ?OZvsOPVersions(<<"18.02.1">>)),
+    ?assertEqual({error, unknown_version}, ?OZvsOPVersions(<<"20.02.1">>)),
+
+    % Newer revision should be taken and overwrite the registry
+    DefaultRegistry = #{
+        <<"revision">> => 2019020304,
+        <<"compatibility">> => #{
+            <<"onezone:oneprovider">> => #{
+                <<"20.02.1">> => [
+                    <<"20.02.1">>
+                ]
+            }
+        }
+    },
+    mock_default_compatibility_file(DefaultRegistry),
+    compatibility:clear_registry_cache(),
+
+    ?assertEqual({ok, [<<"20.02.1">>]}, ?OZvsOPVersions(<<"20.02.1">>)),
+    ?assertEqual({error, unknown_version}, ?OZvsOPVersions(<<"18.02.1">>)),
+
+    CurrentRegistry = get_compatibility_file(),
+    ?assertEqual(CurrentRegistry, DefaultRegistry).
 
 
 fetching_newer_registry() ->
