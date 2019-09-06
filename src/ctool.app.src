@@ -54,10 +54,14 @@
         %% COMPATIBILITY
         %% ===================================================================
 
-        % Path to the JSON file holding information about services
-        % compatibility and verified gui hashes.
-        % NOTE: Should be overriden in the including project.
+        % Path to the JSON file holding information about services compatibility
+        % and verified gui hashes. This file evolves during service's lifetime -
+        % can be overwritten by a newer registry when such is available.
+        % NOTE: Must be overriden in the including project.
         {compatibility_registry_path, "./etc/compatibility.json"},
+        % Path to the default compatibility.json for current software version.
+        % NOTE: Must be overriden in the including project.
+        {default_compatibility_registry, "./data/compatibility.default.json"},
         % URLs from the compatibility registry can be fetched - used when there
         % is a chance that the static registry is outdated. The URLs are tried
         % in the order up to the first successful mirror.
