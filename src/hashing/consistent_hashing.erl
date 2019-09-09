@@ -17,7 +17,7 @@
 
 %% API
 -export([init/1, cleanup/0, get_chash_ring/0, set_chash_ring/1, get_node/1,
-    get_all_nodes/0, get_label_gen_size/0]).
+    get_nodes/2, get_all_nodes/0, get_label_gen_size/0]).
 
 -define(SINGLE_NODE_CHASH(Node), Node).
 -define(IS_SINGLE_NODE_CHASH(CHash), is_atom(CHash)).
@@ -95,6 +95,27 @@ get_node(Label) ->
             Index = chash:key_of(Label),
             [{_, BestNode}] = chash:successors(Index, CHash, 1),
             BestNode
+    end.
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Get nodes that are responsible for the data labeled with given term.
+%% @end
+%%--------------------------------------------------------------------
+-spec get_nodes(term(), non_neg_integer()) -> [node()].
+get_nodes(Label, NodesNum) ->
+    case get_chash_ring() of
+        undefined ->
+            error(chash_ring_not_initialized);
+        Node when ?IS_SINGLE_NODE_CHASH(Node) ->
+            [Node];
+        CHash when is_binary(Label) ->
+            Length = min(byte_size(Label), get_label_gen_size()),
+            Index = chash:key_of(binary:part(Label, 0, Length)),
+            lists:map(fun({_, Node}) -> Node end, chash:successors(Index, CHash, NodesNum));
+        CHash ->
+            Index = chash:key_of(Label),
+            lists:map(fun({_, Node}) -> Node end, chash:successors(Index, CHash, NodesNum))
     end.
 
 %%--------------------------------------------------------------------
