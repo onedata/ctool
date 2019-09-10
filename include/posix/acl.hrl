@@ -23,8 +23,6 @@
 -define(allow_mask, 16#00000000).
 -define(deny, <<"DENY">>).
 -define(deny_mask, 16#00000001).
--define(audit, <<"AUDIT">>).
--define(audit_mask, 16#00000002).
 
 % ace who identifiers
 -define(owner, <<"OWNER@">>).
@@ -47,22 +45,17 @@
 -define(write_object_mask, 16#00000002).
 -define(add_object, <<"ADD_OBJECT">>).
 -define(add_object_mask, 16#00000002).
--define(append_data, <<"APPEND_DATA">>).
--define(append_data_mask, 16#00000004).
 -define(add_subcontainer, <<"ADD_SUBCONTAINER">>).
 -define(add_subcontainer_mask, 16#00000004).
 -define(read_metadata, <<"READ_METADATA">>).
 -define(read_metadata_mask, 16#00000008).
 -define(write_metadata, <<"WRITE_METADATA">>).
 -define(write_metadata_mask, 16#00000010).
--define(execute, <<"EXECUTE">>).
--define(execute_mask, 16#00000020).
 -define(traverse_container, <<"TRAVERSE_CONTAINER">>).
 -define(traverse_container_mask, 16#00000020).
 -define(delete_object, <<"DELETE_OBJECT">>).
--define(delete_object_mask, 16#00000040).
 -define(delete_subcontainer, <<"DELETE_SUBCONTAINER">>).
--define(delete_subcontainer_mask, 16#00000040).
+-define(delete_child_mask, 16#00000040).
 -define(read_attributes, <<"READ_ATTRIBUTES">>).
 -define(read_attributes_mask, 16#00000080).
 -define(write_attributes, <<"WRITE_ATTRIBUTES">>).
@@ -73,24 +66,73 @@
 -define(read_acl_mask, 16#00020000).
 -define(write_acl, <<"WRITE_ACL">>).
 -define(write_acl_mask, 16#00040000).
--define(write_owner, <<"WRITE_OWNER">>).
--define(write_owner_mask, 16#00080000).
 
 % custom access flags
--define(all_perms, <<"ALL_PERMS">>).
--define(all_perms_mask, (?read_mask bor ?write_mask bor ?execute_mask)).
--define(rw, <<"RW_ALL">>).
--define(rw_mask, (?read_mask bor ?write_mask)).
+-define(read_all_object, <<"READ_ALL_OBJECT">>).
+-define(read_all_object_mask, (
+    ?read_object_mask bor
+    ?read_metadata_mask bor
+    ?read_attributes_mask bor
+    ?read_acl_mask
+)).
+-define(read_all_container, <<"READ_ALL_CONTAINER">>).
+-define(read_all_container_mask, (
+    ?list_container_mask bor
+    ?read_metadata_mask bor
+    ?read_attributes_mask bor
+    ?read_acl_mask
+)).
 -define(read, <<"READ_ALL">>).
--define(read_mask, (?read_object_mask bor ?read_metadata_mask bor ?read_attributes_mask bor ?read_acl_mask)).
+-define(read_mask, (?read_all_object_mask bor ?read_all_container_mask)).
+
+-define(write_all_object, <<"WRITE_ALL_OBJECT">>).
+-define(write_all_object_mask, (
+    ?write_object_mask bor
+    ?write_metadata_mask bor
+    ?write_attributes_mask bor
+    ?delete_mask bor
+    ?write_acl_mask
+)).
+-define(write_all_container, <<"WRITE_ALL_CONTAINER">>).
+-define(write_all_container_mask, (
+    ?add_object_mask bor
+    ?add_subcontainer_mask bor
+    ?write_metadata_mask bor
+    ?delete_child_mask bor
+    ?write_attributes_mask bor
+    ?write_acl_mask
+)).
 -define(write, <<"WRITE_ALL">>).
--define(write_mask, (?write_object_mask bor ?append_data_mask bor ?write_metadata_mask bor ?delete_object_mask bor ?write_attributes_mask bor ?delete_mask bor ?write_acl_mask)).
+-define(write_mask, (?write_all_object_mask bor ?write_all_container_mask)).
+
+-define(rw_all_object, <<"RW_ALL_OBJECT">>).
+-define(rw_all_object_mask, (
+    ?read_all_object_mask bor
+    ?write_all_object_mask
+)).
+-define(rw_all_container, <<"RW_ALL_CONTAINER">>).
+-define(rw_all_container_mask, (
+    ?read_all_container_mask bor
+    ?write_all_container_mask
+)).
+-define(rw, <<"RW_ALL">>).
+-define(rw_mask, (?rw_all_object_mask bor ?rw_all_container_mask)).
+
+-define(all_object_perms, <<"ALL_OBJECT_PERMS">>).
+-define(all_object_perms_mask, ?rw_all_object_mask).
+-define(all_container_perms, <<"ALL_CONTAINER_PERMS">>).
+-define(all_container_perms_mask, (
+    ?rw_all_container_mask bor
+    ?traverse_container_mask
+)).
+-define(all_perms, <<"ALL_PERMS">>).
+-define(all_perms_mask, (?all_object_perms_mask bor ?all_container_perms_mask)).
 
 -type user_id() :: binary().
 -type group_id() :: binary().
 
 -record(access_control_entity, {
-    acetype :: ?allow_mask | ?deny_mask | ?audit_mask,
+    acetype :: ?allow_mask | ?deny_mask,
     aceflags = ?no_flags_mask :: ?no_flags_mask | ?identifier_group_mask,
     identifier :: user_id() | group_id(),
     name :: undefined | binary(),
