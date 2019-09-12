@@ -62,6 +62,7 @@
 %%% API
 -export([construct/3]).
 -export([verify/4]).
+-export([get_caveats/1]).
 -export([confine/2]).
 -export([serialize/1, deserialize/1]).
 -export([is_token/1]).
@@ -97,20 +98,34 @@ construct(Prototype = #auth_token{onezone_domain = OzDomain}, Secret, Caveats) -
 %%--------------------------------------------------------------------
 %% @doc
 %% Verifies given token against given secret and supported caveats.
+%% Returns the resulting #auth{} object, expressing subject's authorization
+%% carried by the token.
 %% @end
 %%--------------------------------------------------------------------
 -spec verify(token(), secret(), aai:auth_ctx(), [caveats:type()]) ->
-    {ok, aai:subject()} | {error, term()}.
+    {ok, aai:auth()} | {error, term()}.
 verify(Token = #auth_token{macaroon = Macaroon}, Secret, AuthCtx, SupportedCaveats) ->
     Verifier = caveats:build_verifier(AuthCtx, SupportedCaveats),
     case macaroon_verifier:verify(Verifier, Macaroon, Secret) of
         ok ->
-            {ok, Token#auth_token.subject};
+            {ok, #auth{
+                subject = Token#auth_token.subject,
+                caveats = caveats:get_caveats(Macaroon),
+                session_id = case Token#auth_token.type of
+                    ?GUI_TOKEN(SessionId) -> SessionId;
+                    _ -> undefined
+                end
+            }};
         {error, {unverified_caveat, Serialized}} ->
-            ?ERROR_TOKEN_CAVEAT_UNVERIFIED(Serialized);
+            ?ERROR_TOKEN_CAVEAT_UNVERIFIED(caveats:deserialize(Serialized));
         _ ->
             ?ERROR_TOKEN_INVALID
     end.
+
+
+-spec get_caveats(token()) -> [caveats:caveat()].
+get_caveats(#auth_token{macaroon = Macaroon}) ->
+    caveats:get_caveats(Macaroon).
 
 
 %%--------------------------------------------------------------------

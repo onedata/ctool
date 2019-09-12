@@ -23,7 +23,7 @@
 -define(ERROR_BAD_VERSION(SupportedVersions),
     {error, {bad_version, {supported, SupportedVersions}}}
 ).
--define(ERROR_BAD_TYPE, {error, bad_type}).
+-define(ERROR_BAD_GRI, {error, bad_gri}).
 -define(ERROR_RPC_UNDEFINED, {error, rpc_undefined}).
 -define(ERROR_NOT_SUBSCRIBABLE, {error, not_subscribable}).
 
@@ -79,6 +79,7 @@
 -define(ERROR_BAD_VALUE_FLOAT(Key), {error, {bad_value_float, Key}}).
 -define(ERROR_BAD_VALUE_JSON(Key), {error, {bad_value_json, Key}}).
 -define(ERROR_BAD_VALUE_TOKEN(Key), {error, {bad_value_token, Key}}).
+-define(ERROR_BAD_VALUE_IPV4_ADDRESS(Key), {error, {bad_value_ipv4_address, Key}}).
 -define(ERROR_BAD_VALUE_LIST_OF_IPV4_ADDRESSES(Key), {error, {bad_value_list_of_ipv4_addresses, Key}}).
 -define(ERROR_BAD_VALUE_DOMAIN(Key), {error, {bad_value_domain, Key}}).
 -define(ERROR_BAD_VALUE_SUBDOMAIN, {error, bad_value_subdomain}).

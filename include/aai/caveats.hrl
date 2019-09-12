@@ -43,7 +43,7 @@
 }).
 
 -record(cv_api, {
-    whitelist = [] :: [{caveats:api_operation(), caveats:api_matchspec()}]
+    whitelist = [] :: [cv_api:matchspec()]
 }).
 
 -record(cv_data_space, {

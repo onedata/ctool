@@ -28,7 +28,7 @@
 
 -record(auth, {
     subject = #subject{} :: aai:subject(),
-    audience = undefined :: undefined | aai:audience(),
+    caveats = [] :: [caveats:caveat()],
     % Can be undefined if the auth object is not related to any session
     session_id = undefined :: aai:session_id()
 }).
