@@ -99,6 +99,7 @@
     ?add_subcontainer_mask bor
     ?write_metadata_mask bor
     ?delete_child_mask bor
+    ?delete_mask bor
     ?write_attributes_mask bor
     ?write_acl_mask
 )).
