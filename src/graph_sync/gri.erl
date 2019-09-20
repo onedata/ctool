@@ -36,7 +36,7 @@
 -type entity_type() :: '*' |
 oz_worker | od_user | od_group | od_space | od_share |
 od_provider | od_handle_service | od_handle | od_cluster | od_harvester |
-op_file | op_replica | op_transfer | op_user |
+op_file | op_replica | op_transfer | op_user | op_group |
 op_space | op_share | op_provider | op_metrics.
 -type entity_id() :: undefined | binary().
 -type aspect() :: atom() | {atom(), atom() | binary()}.
@@ -114,6 +114,7 @@ serialize_type(op_file, _) -> <<"file">>;
 serialize_type(op_replica, _) -> <<"op_replica">>;
 serialize_type(op_transfer, _) -> <<"op_transfer">>;
 serialize_type(op_user, _) -> <<"op_user">>;
+serialize_type(op_group, _) -> <<"op_group">>;
 serialize_type(op_space, _) -> <<"op_space">>;
 serialize_type(op_share, _) -> <<"op_share">>;
 serialize_type(op_provider, _) -> <<"op_provider">>;
@@ -141,6 +142,7 @@ deserialize_type(<<"file">>, _) -> op_file;
 deserialize_type(<<"op_replica">>, _) -> op_replica;
 deserialize_type(<<"op_transfer">>, _) -> op_transfer;
 deserialize_type(<<"op_user">>, _) -> op_user;
+deserialize_type(<<"op_group">>, _) -> op_group;
 deserialize_type(<<"op_space">>, _) -> op_space;
 deserialize_type(<<"op_share">>, _) -> op_share;
 deserialize_type(<<"op_provider">>, _) -> op_provider;
