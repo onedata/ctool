@@ -17,10 +17,14 @@
 
 %% API
 -export([init/1, cleanup/0, get_chash_ring/0, set_chash_ring/1, get_node/1,
-    get_nodes/2, get_all_nodes/0, get_label_gen_size/0]).
+    get_nodes/2, get_all_nodes/0,
+    create_label/2, get_label_hash_part/1, has_hash_part/1, get_hash_part_length/0]).
 
 -define(SINGLE_NODE_CHASH(Node), Node).
 -define(IS_SINGLE_NODE_CHASH(CHash), is_atom(CHash)).
+-define(HASH_SEPARATOR, "!@hsh_").
+-define(HASH_SEPARATOR_BIN, <<?HASH_SEPARATOR>>).
+-define(HASH_LENGTH, 4).
 
 %%%===================================================================
 %%% API
@@ -86,13 +90,8 @@ get_node(Label) ->
             error(chash_ring_not_initialized);
         Node when ?IS_SINGLE_NODE_CHASH(Node) ->
             Node;
-        CHash when is_binary(Label) ->
-            Length = min(byte_size(Label), get_label_gen_size()),
-            Index = chash:key_of(binary:part(Label, 0, Length)),
-            [{_, BestNode}] = chash:successors(Index, CHash, 1),
-            BestNode;
         CHash ->
-            Index = chash:key_of(Label),
+            Index = chash:key_of(get_key(Label)),
             [{_, BestNode}] = chash:successors(Index, CHash, 1),
             BestNode
     end.
@@ -109,12 +108,8 @@ get_nodes(Label, NodesNum) ->
             error(chash_ring_not_initialized);
         Node when ?IS_SINGLE_NODE_CHASH(Node) ->
             [Node];
-        CHash when is_binary(Label) ->
-            Length = min(byte_size(Label), get_label_gen_size()),
-            Index = chash:key_of(binary:part(Label, 0, Length)),
-            lists:map(fun({_, Node}) -> Node end, chash:successors(Index, CHash, NodesNum));
         CHash ->
-            Index = chash:key_of(Label),
+            Index = chash:key_of(get_key(Label)),
             lists:map(fun({_, Node}) -> Node end, chash:successors(Index, CHash, NodesNum))
     end.
 
@@ -138,16 +133,65 @@ get_all_nodes() ->
 
 %%--------------------------------------------------------------------
 %% @doc
+%% Creates label with part used to choose node.
+%% @end
+%%--------------------------------------------------------------------
+-spec create_label(binary(), binary()) -> binary().
+create_label(HashPart, Tail) ->
+    <<?HASH_SEPARATOR, HashPart/binary, Tail/binary>>.
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Gets part of the label used to choose node.
+%% @end
+%%--------------------------------------------------------------------
+-spec get_label_hash_part(binary()) -> binary() | undefined.
+get_label_hash_part(Label) ->
+    case binary:split(Label, ?HASH_SEPARATOR_BIN) of
+        [_, Hash | _] ->
+            binary:part(Hash, 0, ?HASH_LENGTH);
+        _ ->
+            undefined
+    end.
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Verifies whether Label has hash part (part used to choose node) defined.
+%% @end
+%%--------------------------------------------------------------------
+-spec has_hash_part(term()) -> boolean().
+has_hash_part(Label) when is_binary(Label) ->
+    get_label_hash_part(Label) =/= undefined;
+has_hash_part(_Label) ->
+    false.
+
+%%--------------------------------------------------------------------
+%% @doc
 %% Get number of bytes used to generate Index for binary labels.
 %% @end
 %%--------------------------------------------------------------------
--spec get_label_gen_size() -> non_neg_integer().
-get_label_gen_size() ->
-    6.
+-spec get_hash_part_length() -> non_neg_integer().
+get_hash_part_length() ->
+    ?HASH_LENGTH.
 
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
+
+%%--------------------------------------------------------------------
+%% @private
+%% @doc
+%% Get key used to choose node.
+%% @end
+%%--------------------------------------------------------------------
+-spec get_key(term()) -> term().
+get_key(Label) when is_binary(Label) ->
+    case get_label_hash_part(Label) of
+        undefined -> Label;
+        Hash -> Hash
+    end;
+get_key(Label) ->
+    Label.
 
 %%--------------------------------------------------------------------
 %% @private
