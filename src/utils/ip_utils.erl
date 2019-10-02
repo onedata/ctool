@@ -13,7 +13,7 @@
 -module(ip_utils).
 -author("Lukasz Opiola").
 
--include("posix/errors.hrl").
+-include("errors.hrl").
 -include("logging.hrl").
 
 -type ip() :: inet:ip4_address() | nonempty_string() | binary().
@@ -43,6 +43,7 @@
 -export([lookup_asn/1, lookup_country/1, lookup_region/1]).
 -export([to_ip4_address/1, to_binary/1]).
 -export([parse_mask/1, serialize_mask/1, matches_mask/2]).
+-export([is_region/1]).
 
 %%%===================================================================
 %%% API functions
@@ -172,6 +173,18 @@ matches_mask(IP, Mask) ->
         {ok, {MaskIP, MaskLength}} -> matches_mask(IP, {MaskIP, MaskLength});
         {error, ?EINVAL} -> false
     end.
+
+
+-spec is_region(binary()) -> boolean().
+is_region(<<"Africa">>) -> true;
+is_region(<<"Antarctica">>) -> true;
+is_region(<<"Asia">>) -> true;
+is_region(<<"Europe">>) -> true;
+is_region(<<"EU">>) -> true;
+is_region(<<"NorthAmerica">>) -> true;
+is_region(<<"Oceania">>) -> true;
+is_region(<<"SouthAmerica">>) -> true;
+is_region(_) -> false.
 
 %%%===================================================================
 %%% Internal functions

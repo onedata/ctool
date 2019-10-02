@@ -13,7 +13,7 @@
 -author("Lukasz Opiola").
 
 -include_lib("eunit/include/eunit.hrl").
--include("api_errors.hrl").
+-include("errors.hrl").
 -include("graph_sync/graph_sync.hrl").
 
 serialize_deserialize_test() ->
@@ -64,6 +64,10 @@ serialize_deserialize_testcases() -> [
     {
         <<"harvester.hrv13.harvest_metadata:private">>,
         #gri{type = od_harvester, id = <<"hrv13">>, aspect = harvest_metadata, scope = private}
+    },
+    {
+        <<"token.tok9876.instane:public">>,
+        #gri{type = od_token, id = <<"tok9876">>, aspect = instane, scope = public}
     },
     {
         <<"file.891234718246113331.attrs:protected">>,

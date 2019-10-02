@@ -29,8 +29,11 @@
 %%%     * tokens can have contextual confinements which all must be satisfied during verification
 %%%     * tokens are implemented using the macaroons library
 %%%
-%%% Tokens and audience tokens (which are essentially a tuple: {AudienceType, Token})
-%%% are represented by #auth_token{} and #audience_token{} records.
+%%% Tokens and audience tokens are both represented by the #token{} record.
+%%% The token in serialized form can have a three letter indicator of
+%%% audience type, e.g. opw-MDax34Gh5TyOP032..., which can be used in case of
+%%% ?ONEPROVIDER auth to specify exactly which service is authorizing
+%%% (panel or worker).
 %%% @end
 %%%-------------------------------------------------------------------
 -module(aai).
@@ -43,6 +46,9 @@
 % root is allowed to do anything, it must be used with caution
 % (should not be used in any kind of external API)
 -type subject_type() :: nobody | root | user | ?ONEPROVIDER.
+% Applicable only in case of ?ONEPROVIDER type to differentiate between
+% ?OP_WORKER and ?OP_PANEL services, that both use the same auth
+-type subject_subtype() :: undefined | ?OP_WORKER | ?OP_PANEL.
 % Applicable in case of user or ?ONEPROVIDER type
 -type subject_id() :: undefined | binary().
 
@@ -53,19 +59,23 @@
 % Can be undefined if the auth object is not related to any session
 -type session_id() :: undefined | binary().
 
+-type group_membership_checker() :: fun((aai:audience(), GroupId :: gri:entity_id()) -> boolean()).
+
 -type auth() :: #auth{}.
 -type auth_ctx() :: #auth_ctx{}.
 
--export_type([subject/0, subject_type/0, subject_id/0]).
+-export_type([subject/0, subject_type/0, subject_subtype/0, subject_id/0]).
 -export_type([audience/0, audience_type/0, audience_id/0]).
 -export_type([session_id/0]).
+-export_type([group_membership_checker/0]).
 -export_type([auth/0, auth_ctx/0]).
 
 %%% API
--export([root_auth/0, nobody_auth/0]).
--export([subject_to_json/1, json_to_subject/1]).
--export([serialize_audience_type/1, deserialize_audience_type/1]).
+-export([root_auth/0, nobody_auth/0, user_auth/1]).
+-export([auth_to_audience/1]).
+-export([serialize_subject/1, deserialize_subject/1]).
 -export([serialize_audience/1, deserialize_audience/1]).
+-export([serialize_audience_type/1, deserialize_audience_type/1]).
 -export([auth_to_printable/1]).
 -export([audience_to_printable/1]).
 
@@ -95,16 +105,43 @@ nobody_auth() ->
     ?NOBODY.
 
 
--spec subject_to_json(aai:subject()) -> json_utils:json_term().
-subject_to_json(?SUB(nobody)) -> <<"nobody">>;
-subject_to_json(?SUB(user, UserId)) -> #{<<"user">> => UserId};
-subject_to_json(?SUB(?ONEPROVIDER, PrId)) -> #{<<"provider">> => PrId}.
+%%--------------------------------------------------------------------
+%% @doc
+%% Returns the Auth object representing NOBODY authorization
+%% (allowed only to perform publicly available operations).
+%% @end
+%%--------------------------------------------------------------------
+-spec user_auth(UserId :: aai:subject_id()) -> auth().
+user_auth(UserId) ->
+    ?USER(UserId).
 
 
--spec json_to_subject(json_utils:json_term()) -> aai:subject().
-json_to_subject(<<"nobody">>) -> ?SUB(nobody);
-json_to_subject(#{<<"user">> := UserId}) -> ?SUB(user, UserId);
-json_to_subject(#{<<"provider">> := PrId}) -> ?SUB(?ONEPROVIDER, PrId).
+-spec auth_to_audience(aai:auth()) -> audience() | undefined.
+auth_to_audience(#auth{subject = ?SUB(user, UserId)}) ->
+    ?AUD(user, UserId);
+auth_to_audience(#auth{subject = ?SUB(?ONEPROVIDER, ?OP_WORKER, PrId)}) ->
+    ?AUD(?OP_WORKER, PrId);
+auth_to_audience(#auth{subject = ?SUB(?ONEPROVIDER, ?OP_PANEL, PrId)}) ->
+    ?AUD(?OP_PANEL, PrId);
+auth_to_audience(#auth{subject = ?SUB(?ONEPROVIDER, PrId)}) ->
+    % Default to op-worker if subtype is not known
+    ?AUD(?OP_WORKER, PrId);
+auth_to_audience(_) ->
+    undefined.
+
+
+-spec serialize_subject(aai:subject()) -> binary().
+serialize_subject(?SUB(nobody)) -> <<"nobody">>;
+% root subject must not have a representation outside of the application
+serialize_subject(?SUB(root)) -> <<"nobody">>;
+serialize_subject(?SUB(user, UserId)) -> <<"usr-", UserId/binary>>;
+serialize_subject(?SUB(?ONEPROVIDER, Provider)) -> <<"prv-", Provider/binary>>.
+
+
+-spec deserialize_subject(binary()) -> aai:subject().
+deserialize_subject(<<"nobody">>) -> ?SUB(nobody);
+deserialize_subject(<<"usr-", UserId/binary>>) -> ?SUB(user, UserId);
+deserialize_subject(<<"prv-", Provider/binary>>) -> ?SUB(?ONEPROVIDER, Provider).
 
 
 -spec serialize_audience(audience()) -> binary().

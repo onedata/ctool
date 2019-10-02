@@ -157,7 +157,9 @@ format_byte_size(Size, [Unit | _]) ->
 
 %%--------------------------------------------------------------------
 %% @doc
-%% Generates random binary hex string of given size.
+%% Generates a hex string from a random binary of given size. The resulting
+%% string is two times longer than the number of bytes (Size), as each byte is
+%% encoded by two hex characters.
 %% @end
 %%--------------------------------------------------------------------
 -spec rand_hex(non_neg_integer()) -> binary().
