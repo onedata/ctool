@@ -146,6 +146,7 @@ create_label(HashPart, Tail) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec get_label_hash_part(binary()) -> binary() | undefined.
+% TODO - mozna tu zwracac tez zamiast undefined, ale zwrocic dodatkowo (true/false - wlasciwa czesc czy z ogolnego uuid generowana)
 get_label_hash_part(Label) ->
     case binary:split(Label, ?HASH_SEPARATOR_BIN) of
         [_, Hash | _] ->
@@ -187,7 +188,9 @@ get_hash_part_length() ->
 -spec get_key(term()) -> term().
 get_key(Label) when is_binary(Label) ->
     case get_label_hash_part(Label) of
-        undefined -> Label;
+        undefined ->
+            Len = byte_size(Label),
+            binary:part(Label, Len, -1 * min(?HASH_LENGTH, Len));
         Hash -> Hash
     end;
 get_key(Label) ->
