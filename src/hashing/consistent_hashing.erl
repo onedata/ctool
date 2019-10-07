@@ -18,7 +18,7 @@
 %% API
 -export([init/1, cleanup/0, get_chash_ring/0, set_chash_ring/1,
     get_node/1, get_nodes/2, get_all_nodes/0,
-    get_hashing_key/1, gen_hashing_key/0, has_hash_part/1, create_label/2]).
+    get_hashing_key/1, gen_hashing_key/0, get_random_labal_part/1, has_hash_part/1, create_label/2]).
 
 -define(SINGLE_NODE_CHASH(Node), Node).
 -define(IS_SINGLE_NODE_CHASH(CHash), is_atom(CHash)).
@@ -138,13 +138,25 @@ get_all_nodes() ->
 %%--------------------------------------------------------------------
 -spec get_hashing_key(term()) -> term().
 get_hashing_key(Label) when is_binary(Label) ->
-    case get_label_hash_part(Label) of
-        undefined ->
+    case split_hash(Label) of
+        {undefined, _} ->
             Len = byte_size(Label),
             binary:part(Label, Len, -1 * min(?HASH_LENGTH, Len));
-        Hash -> Hash
+        {Hash, _} -> Hash
     end;
 get_hashing_key(Label) ->
+    Label.
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Get random part of label.
+%% @end
+%%--------------------------------------------------------------------
+-spec get_random_labal_part(term()) -> term().
+get_random_labal_part(Label) when is_binary(Label) ->
+    {_, Random} = split_hash(Label),
+    Random;
+get_random_labal_part(Label) ->
     Label.
 
 %%--------------------------------------------------------------------
@@ -163,7 +175,8 @@ gen_hashing_key() ->
 %%--------------------------------------------------------------------
 -spec has_hash_part(term()) -> boolean().
 has_hash_part(Label) when is_binary(Label) ->
-    get_label_hash_part(Label) =/= undefined;
+    {Hash, _} = split_hash(Label),
+    Hash =/= undefined;
 has_hash_part(_Label) ->
     false.
 
@@ -186,13 +199,13 @@ create_label(HashPart, Tail) ->
 %% Gets part of the label used to choose node.
 %% @end
 %%--------------------------------------------------------------------
--spec get_label_hash_part(binary()) -> binary() | undefined.
-get_label_hash_part(Label) ->
+-spec split_hash(binary()) -> {binary() | undefined, binary()}.
+split_hash(Label) ->
     case binary:split(Label, ?HASH_SEPARATOR_BIN) of
         [_, Hash | _] ->
-            binary:part(Hash, 0, ?HASH_LENGTH);
+            {binary:part(Hash, 0, ?HASH_LENGTH), binary:part(Hash, ?HASH_LENGTH, byte_size(Hash) - ?HASH_LENGTH)};
         _ ->
-            undefined
+            {undefined, Label}
     end.
 
 %%--------------------------------------------------------------------
