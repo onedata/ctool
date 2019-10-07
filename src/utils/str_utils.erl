@@ -135,7 +135,7 @@ format(Format, Args) ->
 %%--------------------------------------------------------------------
 -spec format_bin(Format :: string(), Args :: [term()]) -> binary().
 format_bin(Format, Args) ->
-    to_binary(format(Format, Args)).
+    unicode_list_to_binary(format(Format, Args)).
 
 
 %%--------------------------------------------------------------------

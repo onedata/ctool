@@ -30,10 +30,11 @@
 %%%     * tokens are implemented using the macaroons library
 %%%
 %%% Tokens and audience tokens are both represented by the #token{} record.
-%%% The token in serialized form can have a three letter indicator of
-%%% audience type, e.g. opw-MDax34Gh5TyOP032..., which can be used in case of
-%%% ?ONEPROVIDER auth to specify exactly which service is authorizing
-%%% (panel or worker).
+%%%
+%%% ?ONEPROVIDER access tokens are a specific case where the serialized form can
+%%% have a three letter indicator of service type that is authorizing itself
+%%% (op-worker or op-panel), e.g. opw-MDax34Gh5TyOP032... It is added using the
+%%% tokens:build_service_access_token/2 function (consult for details).
 %%% @end
 %%%-------------------------------------------------------------------
 -module(aai).

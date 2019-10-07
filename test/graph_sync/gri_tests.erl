@@ -66,8 +66,8 @@ serialize_deserialize_testcases() -> [
         #gri{type = od_harvester, id = <<"hrv13">>, aspect = harvest_metadata, scope = private}
     },
     {
-        <<"token.tok9876.instane:public">>,
-        #gri{type = od_token, id = <<"tok9876">>, aspect = instane, scope = public}
+        <<"token.tok9876.instance:public">>,
+        #gri{type = od_token, id = <<"tok9876">>, aspect = instance, scope = public}
     },
     {
         <<"file.891234718246113331.attrs:protected">>,

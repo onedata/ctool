@@ -39,7 +39,7 @@ http_code_test() ->
             {different, A, B} -> {A, B};
             Err -> {Err, Err}
         end,
-        Code = errors:http_code(Error),
+        Code = errors:to_http_code(Error),
         ?assert(Code >= 400),
         ?assert(Code =< 503)
     end, testcases()).

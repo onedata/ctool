@@ -168,8 +168,14 @@ serialize(Token) ->
 
 %%--------------------------------------------------------------------
 %% @doc
-%% Adds an indication of service (op-worker or op-panel) to a provider access
-%% token, which is later used during deserialization to resolve subject subtype.
+%% Builds a service access token based on service (op-worker or op-panel) and
+%% corresponding Oneprovider's access token. Service access token is essentially
+%% an access token with a hint which Oneprovider's service is authorizing
+%% itself. This hint is useful for Onezone, because both op-worker and op-panel
+%% use exactly the same access token. This way, Onezone is able to resolve the
+%% subject's subtype upon successful verification of the access token. The
+%% knowledge whether this is a op-worker or op-panel service is later used for
+%% example when specific audience is expected to verify another token.
 %% @end
 %%--------------------------------------------------------------------
 -spec build_service_access_token(?OP_WORKER | ?OP_PANEL, serialized()) -> tokens:serialized().

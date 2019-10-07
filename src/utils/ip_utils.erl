@@ -29,6 +29,7 @@
 % PL, FR, PT, ...
 -type country_code() :: <<_:16>>.
 
+% Region is an enum type with the following valid values (specific for Onedata):
 % Africa, Antarctica, Asia, Europe, EU, NorthAmerica, Oceania, SouthAmerica
 -type region() :: binary().
 
@@ -175,6 +176,12 @@ matches_mask(IP, Mask) ->
     end.
 
 
+%%--------------------------------------------------------------------
+%% @doc
+%% Checks if given binary expresses one of the predefined regions
+%% (specific for Onedata).
+%% @end
+%%--------------------------------------------------------------------
 -spec is_region(binary()) -> boolean().
 is_region(<<"Africa">>) -> true;
 is_region(<<"Antarctica">>) -> true;
@@ -190,6 +197,7 @@ is_region(_) -> false.
 %%% Internal functions
 %%%===================================================================
 
+%% @private
 -spec subnet_as_int(ip(), mask_length()) -> {ok, integer()} | {error, ?EINVAL}.
 subnet_as_int(IP, MaskLength) ->
     case to_ip4_address(IP) of
@@ -203,6 +211,12 @@ subnet_as_int(IP, MaskLength) ->
     end.
 
 
+%%--------------------------------------------------------------------
+%% @private
+%% @doc
+%% Maps a region code retrieved from GEO DB to onedata specific region name.
+%% @end
+%%--------------------------------------------------------------------
 -spec code_to_region(<<_:16>>) -> region().
 code_to_region(<<"AF">>) -> <<"Africa">>;
 code_to_region(<<"AN">>) -> <<"Antarctica">>;

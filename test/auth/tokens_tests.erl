@@ -26,7 +26,7 @@
 % Dummy timestamp, tokens API always depends on timestamps provided, so
 % any value can be used
 -define(NOW(), 15000000000).
--define(RAND_STR, hex_utils:hex(crypto:strong_rand_bytes(16))).
+-define(RAND_STR, str_utils:rand_hex(16)).
 -define(CUSTOM_MAX_TOKEN_SIZE, 4485764).
 
 %%%===================================================================
@@ -328,7 +328,7 @@ filter_caveats_test() ->
 too_large_token_test() ->
     ctool:set_env(max_token_size, ?CUSTOM_MAX_TOKEN_SIZE),
     % Hex converts each byte to two chars
-    LargeToken = hex_utils:hex(crypto:strong_rand_bytes(?CUSTOM_MAX_TOKEN_SIZE div 2 + 1)),
+    LargeToken = str_utils:rand_hex(?CUSTOM_MAX_TOKEN_SIZE div 2 + 1),
     ?assertEqual(?ERROR_TOKEN_TOO_LARGE(?CUSTOM_MAX_TOKEN_SIZE), tokens:deserialize(LargeToken)).
 
 
