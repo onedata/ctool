@@ -17,14 +17,11 @@
 
 -include("aai/aai.hrl").
 -include("onedata.hrl").
--include("api_errors.hrl").
+-include("errors.hrl").
 -include("logging.hrl").
 
-% @todo VFS-5524 rename to #token{} after refactoring Onezone invite tokens
 % Token represented by internal record
--type token() :: #auth_token{}.
-% Token represented by internal record
--type audience_token() :: #audience_token{}.
+-type token() :: #token{}.
 % Serialized token in binary form, or any binary token
 -type serialized() :: binary().
 
@@ -44,8 +41,14 @@
 %           from that carried by the token itself
 -type persistent() :: boolean().
 % Type of the token as recognized across Onedata components
--type type() :: access_token | {gui_token, aai:session_id()}.
-
+-type type() :: access_token | {gui_token, aai:session_id()} |
+{invite_token, invite_token_type(), gri:entity_id()}.
+% Subtypes of invite tokens
+-type invite_token_type() :: ?GROUP_INVITE_USER_TOKEN | ?GROUP_INVITE_GROUP_TOKEN |
+?SPACE_INVITE_USER_TOKEN | ?SPACE_INVITE_GROUP_TOKEN | ?SPACE_SUPPORT_TOKEN |
+?CLUSTER_INVITE_USER_TOKEN | ?CLUSTER_INVITE_GROUP_TOKEN |
+?PROVIDER_REGISTRATION_TOKEN |
+?HARVESTER_INVITE_USER_TOKEN | ?HARVESTER_INVITE_GROUP_TOKEN | ?HARVESTER_INVITE_SPACE_TOKEN.
 % A secret for verifying the token, known only to the issuing Onezone
 -type secret() :: binary().
 
@@ -55,8 +58,9 @@
 % need to be stored anywhere.
 -type token_identifier() :: binary().
 
--export_type([token/0, audience_token/0, serialized/0]).
--export_type([version/0, onezone_domain/0, persistent/0, type/0]).
+-export_type([token/0, serialized/0]).
+-export_type([version/0, onezone_domain/0, persistent/0]).
+-export_type([type/0, invite_token_type/0]).
 -export_type([nonce/0, secret/0]).
 
 %%% API
@@ -64,14 +68,17 @@
 -export([verify/4]).
 -export([get_caveats/1]).
 -export([confine/2]).
--export([serialize/1, deserialize/1]).
+-export([serialize/1, build_service_access_token/2]).
+-export([deserialize/1]).
 -export([is_token/1]).
+-export([sanitize_type/1, serialize_type/1, deserialize_type/1]).
+-export([invite_token_types/0]).
 -export([generate_secret/0]).
--export([serialize_audience_token/1, serialize_audience_token/2]).
--export([deserialize_audience_token/1]).
 -export([build_access_token_header/1, parse_access_token_header/1]).
 -export([supported_access_token_headers/0]).
 -export([build_audience_token_header/1, parse_audience_token_header/1]).
+
+-define(MAX_TOKEN_SIZE, ctool:get_env(max_token_size, 1048576)). % 1MiB
 
 %%%===================================================================
 %%% API
@@ -79,18 +86,18 @@
 
 %%--------------------------------------------------------------------
 %% @doc
-%% Constructs a new token based on a prototype - partially filled #auth_token{}
+%% Constructs a new token based on a prototype - partially filled #token{}
 %% record.
 %% @end
 %%--------------------------------------------------------------------
 -spec construct(Prototype :: token(), secret(), [caveats:caveat()]) -> token().
 % Subject is supported for versions 2 and above, make sure that it is valid
-construct(#auth_token{version = V, subject = ?SUB(S)}, _, _) when V > 1 andalso S /= user andalso S /= ?ONEPROVIDER ->
+construct(#token{version = V, subject = ?SUB(S)}, _, _) when V > 1 andalso S /= user andalso S /= ?ONEPROVIDER ->
     throw(?ERROR_TOKEN_SUBJECT_INVALID);
-construct(Prototype = #auth_token{onezone_domain = OzDomain}, Secret, Caveats) ->
+construct(Prototype = #token{onezone_domain = OzDomain}, Secret, Caveats) ->
     Identifier = to_identifier(Prototype),
     Macaroon = macaroon:create(OzDomain, Secret, Identifier),
-    Prototype#auth_token{
+    Prototype#token{
         macaroon = caveats:add(Caveats, Macaroon)
     }.
 
@@ -104,15 +111,16 @@ construct(Prototype = #auth_token{onezone_domain = OzDomain}, Secret, Caveats) -
 %%--------------------------------------------------------------------
 -spec verify(token(), secret(), aai:auth_ctx(), [caveats:type()]) ->
     {ok, aai:auth()} | {error, term()}.
-verify(Token = #auth_token{macaroon = Macaroon}, Secret, AuthCtx, SupportedCaveats) ->
+verify(Token = #token{macaroon = Macaroon}, Secret, AuthCtx, SupportedCaveats) ->
     Verifier = caveats:build_verifier(AuthCtx, SupportedCaveats),
     case macaroon_verifier:verify(Verifier, Macaroon, Secret) of
         ok ->
             {ok, #auth{
-                subject = Token#auth_token.subject,
+                subject = Token#token.subject,
                 caveats = caveats:get_caveats(Macaroon),
-                session_id = case Token#auth_token.type of
-                    ?GUI_TOKEN(SessionId) -> SessionId;
+                peer_ip = AuthCtx#auth_ctx.ip,
+                session_id = case Token#token.type of
+                    ?GUI_ACCESS_TOKEN(SessionId) -> SessionId;
                     _ -> undefined
                 end
             }};
@@ -124,7 +132,7 @@ verify(Token = #auth_token{macaroon = Macaroon}, Secret, AuthCtx, SupportedCavea
 
 
 -spec get_caveats(token()) -> [caveats:caveat()].
-get_caveats(#auth_token{macaroon = Macaroon}) ->
+get_caveats(#token{macaroon = Macaroon}) ->
     caveats:get_caveats(Macaroon).
 
 
@@ -135,8 +143,8 @@ get_caveats(#auth_token{macaroon = Macaroon}) ->
 %%--------------------------------------------------------------------
 -spec confine(Token, caveats:caveat() | [caveats:caveat()]) -> Token when
     Token :: token() | serialized().
-confine(Token = #auth_token{macaroon = Macaroon}, Confinement) ->
-    Token#auth_token{macaroon = caveats:add(Confinement, Macaroon)};
+confine(Token = #token{macaroon = Macaroon}, Confinement) ->
+    Token#token{macaroon = caveats:add(Confinement, Macaroon)};
 confine(Serialized, Confinement) when is_binary(Serialized) ->
     {ok, Token} = deserialize(Serialized),
     {ok, Limited} = serialize(confine(Token, Confinement)),
@@ -149,15 +157,32 @@ confine(Serialized, Confinement) when is_binary(Serialized) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec serialize(token()) -> {ok, serialized()} | {error, term()}.
-serialize(#auth_token{macaroon = Macaroon}) ->
-    try macaroon:serialize(Macaroon) of
-        {ok, Token64} -> {ok, base62:from_base64(Token64)};
-        _ -> ?ERROR_BAD_TOKEN
+serialize(Token) ->
+    try
+        {ok, Token64} = macaroon:serialize(Token#token.macaroon),
+        {ok, base62:from_base64(Token64)}
     catch
         _:_ -> ?ERROR_BAD_TOKEN
-    end;
-serialize(_) ->
-    ?ERROR_BAD_TOKEN.
+    end.
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Builds a service access token based on service (op-worker or op-panel) and
+%% corresponding Oneprovider's access token. Service access token is essentially
+%% an access token with a hint which Oneprovider's service is authorizing
+%% itself. This hint is useful for Onezone, because both op-worker and op-panel
+%% use exactly the same access token. This way, Onezone is able to resolve the
+%% subject's subtype upon successful verification of the access token. The
+%% knowledge whether this is a op-worker or op-panel service is later used for
+%% example when specific audience is expected to verify another token.
+%% @end
+%%--------------------------------------------------------------------
+-spec build_service_access_token(?OP_WORKER | ?OP_PANEL, serialized()) -> tokens:serialized().
+build_service_access_token(Service, Serialized) when Service == ?OP_WORKER orelse Service == ?OP_PANEL ->
+    <<(onedata:service_shortname(Service))/binary, "-", Serialized/binary>>;
+build_service_access_token(_, _) ->
+    error(badarg).
 
 
 %%--------------------------------------------------------------------
@@ -168,14 +193,30 @@ serialize(_) ->
 -spec deserialize(serialized()) -> {ok, token()} | {error, term()}.
 deserialize(<<>>) -> ?ERROR_BAD_TOKEN;
 deserialize(Serialized) ->
-    try macaroon:deserialize(base62:to_base64(Serialized)) of
-        {ok, Macaroon} ->
-            Identifier = macaroon:identifier(Macaroon),
-            OnezoneDomain = macaroon:location(Macaroon),
-            Token = from_identifier(Identifier, OnezoneDomain),
-            {ok, Token#auth_token{macaroon = Macaroon}};
-        _ ->
-            ?ERROR_BAD_TOKEN
+    try
+        MaxTokenSize = ?MAX_TOKEN_SIZE,
+        case size(Serialized) > MaxTokenSize of
+            true ->
+                ?ERROR_TOKEN_TOO_LARGE(MaxTokenSize);
+            false ->
+                % Resolve subject subtype if it was provided in the serialized token form
+                {SubjectSubtype, SerializedToken} = case Serialized of
+                    <<Shortname:3/binary, "-", Rest/binary>> ->
+                        Service = onedata:service_by_shortname(Shortname),
+                        Service == ?OP_WORKER orelse Service == ?OP_PANEL orelse error(badarg),
+                        {Service, Rest};
+                    _ ->
+                        {undefined, Serialized}
+                end,
+                {ok, Macaroon} = macaroon:deserialize(base62:to_base64(SerializedToken)),
+                Identifier = macaroon:identifier(Macaroon),
+                OnezoneDomain = macaroon:location(Macaroon),
+                Token = from_identifier(Identifier, OnezoneDomain),
+                {ok, Token#token{
+                    macaroon = Macaroon,
+                    subject = Token#token.subject#subject{subtype = SubjectSubtype}
+                }}
+        end
     catch
         Type:Reason ->
             ?debug_stacktrace("Cannot deserialize token (~p) due to ~p:~p", [
@@ -186,53 +227,69 @@ deserialize(Serialized) ->
 
 
 -spec is_token(term()) -> boolean().
-is_token(#auth_token{macaroon = Macaroon}) ->
+is_token(#token{macaroon = Macaroon}) ->
     macaroon:is_macaroon(Macaroon);
 is_token(_) ->
     false.
 
 
+-spec sanitize_type(type() | binary()) -> {true, type()} | false.
+sanitize_type(?ACCESS_TOKEN) ->
+    {true, ?ACCESS_TOKEN};
+sanitize_type(?GUI_ACCESS_TOKEN(SessionId)) when is_binary(SessionId) ->
+    {true, ?GUI_ACCESS_TOKEN(SessionId)};
+sanitize_type(?INVITE_TOKEN(Type, EntityId)) when is_binary(EntityId) ->
+    case lists:member(Type, invite_token_types()) of
+        true -> {true, ?INVITE_TOKEN(Type, EntityId)};
+        false -> false
+    end;
+sanitize_type(Serialized) when is_binary(Serialized) ->
+    try
+        sanitize_type(deserialize_type(Serialized))
+    catch _:_ ->
+        false
+    end;
+sanitize_type(_) ->
+    false.
+
+
+-spec invite_token_types() -> [invite_token_type()].
+invite_token_types() -> [
+    ?GROUP_INVITE_USER_TOKEN,
+    ?GROUP_INVITE_GROUP_TOKEN,
+    ?SPACE_INVITE_USER_TOKEN,
+    ?SPACE_INVITE_GROUP_TOKEN,
+    ?SPACE_SUPPORT_TOKEN,
+    ?CLUSTER_INVITE_USER_TOKEN,
+    ?CLUSTER_INVITE_GROUP_TOKEN,
+    ?PROVIDER_REGISTRATION_TOKEN,
+    ?HARVESTER_INVITE_USER_TOKEN,
+    ?HARVESTER_INVITE_GROUP_TOKEN,
+    ?HARVESTER_INVITE_SPACE_TOKEN
+].
+
+
+-spec serialize_type(type()) -> binary().
+serialize_type(?ACCESS_TOKEN) ->
+    <<"act">>;
+serialize_type(?GUI_ACCESS_TOKEN(SessionId)) ->
+    <<"gui-", SessionId/binary>>;
+serialize_type(?INVITE_TOKEN(Type, EntityId)) ->
+    <<(serialize_invite_token_type(Type))/binary, "-", EntityId/binary>>.
+
+
+-spec deserialize_type(binary()) -> type().
+deserialize_type(<<"act">>) ->
+    ?ACCESS_TOKEN;
+deserialize_type(<<"gui-", SessionId/binary>>) when size(SessionId) > 0 ->
+    ?GUI_ACCESS_TOKEN(SessionId);
+deserialize_type(<<InviteTokenType:3/binary, "-", EntityId/binary>>) when size(EntityId) > 0 ->
+    ?INVITE_TOKEN(deserialize_invite_token_type(InviteTokenType), EntityId).
+
+
 -spec generate_secret() -> secret().
 generate_secret() ->
     str_utils:rand_hex(macaroon:suggested_secret_length()).
-
-
--spec serialize_audience_token(audience_token()) -> {ok, serialized()} | {error, term()}.
-serialize_audience_token(#audience_token{audience_type = AudienceType, token = Token}) ->
-    case serialize(Token) of
-        {ok, SerializedToken} ->
-            {ok, serialize_audience_token(AudienceType, SerializedToken)};
-        {error, _} = Error ->
-            Error
-    end.
-
-
--spec serialize_audience_token(aai:audience_type(), serialized()) -> serialized().
-serialize_audience_token(AudienceType, SerializedToken) ->
-    <<(aai:serialize_audience_type(AudienceType))/binary, "-", SerializedToken/binary>>.
-
-
--spec deserialize_audience_token(serialized()) -> {ok, audience_token()} | {error, term()}.
-deserialize_audience_token(<<Type:3/binary, $-, SerializedToken/binary>>) ->
-    try
-        AudienceType = aai:deserialize_audience_type(Type),
-        case deserialize(SerializedToken) of
-            {ok, Token} ->
-                {ok, #audience_token{audience_type = AudienceType, token = Token}};
-            {error, _} ->
-                ?ERROR_BAD_AUDIENCE_TOKEN
-        end
-    catch _:_ ->
-        ?ERROR_BAD_AUDIENCE_TOKEN
-    end;
-deserialize_audience_token(SerializedToken) ->
-    case deserialize(SerializedToken) of
-        {ok, Token} ->
-            % If no audience type indicator is given, assume it is a user
-            {ok, #audience_token{audience_type = user, token = Token}};
-        {error, _} = Error ->
-            Error
-    end.
 
 
 -spec build_access_token_header(serialized()) -> cowboy:http_headers().
@@ -266,24 +323,26 @@ parse_audience_token_header(_) -> undefined.
 %%% Internal functions
 %%%===================================================================
 
+%% @private
 -spec to_identifier(token()) -> token_identifier().
-to_identifier(Token = #auth_token{version = 1}) ->
+to_identifier(Token = #token{version = 1}) ->
     % Legacy tokens do not carry any information in the identifier
-    Token#auth_token.nonce;
-to_identifier(Token = #auth_token{version = 2}) ->
+    Token#token.nonce;
+to_identifier(Token = #token{version = 2}) ->
     <<
         "2",
         "/",
-        (serialize_persistence(Token#auth_token.persistent))/binary,
+        (serialize_persistence(Token#token.persistent))/binary,
         "/",
-        (serialize_subject(Token#auth_token.subject))/binary,
+        (aai:serialize_subject(Token#token.subject))/binary,
         "/",
-        (serialize_type(Token#auth_token.type))/binary,
+        (serialize_type(Token#token.type))/binary,
         "/",
-        (Token#auth_token.nonce)/binary
+        (Token#token.nonce)/binary
     >>.
 
 
+%% @private
 -spec from_identifier(token_identifier(), onezone_domain()) -> token().
 from_identifier(Identifier, OnezoneDomain) ->
     case binary:split(Identifier, <<"/">>, [global]) of
@@ -298,9 +357,10 @@ from_identifier(Identifier, OnezoneDomain) ->
     end.
 
 
+%% @private
 -spec from_identifier(version(), Fragments :: [binary()], onezone_domain()) -> token().
 from_identifier(1, [Identifier], OnezoneDomain) ->
-    #auth_token{
+    #token{
         version = 1,
         onezone_domain = OnezoneDomain,
         nonce = Identifier,
@@ -308,41 +368,53 @@ from_identifier(1, [Identifier], OnezoneDomain) ->
         type = ?ACCESS_TOKEN
     };
 from_identifier(2, [Persistent, Subject, Type, Nonce], OnezoneDomain) ->
-    #auth_token{
+    #token{
         version = 2,
         onezone_domain = OnezoneDomain,
         nonce = Nonce,
         persistent = deserialize_persistence(Persistent),
-        subject = deserialize_subject(Subject),
+        subject = aai:deserialize_subject(Subject),
         type = deserialize_type(Type)
     }.
 
 
+%% @private
 -spec serialize_persistence(boolean()) -> binary().
 serialize_persistence(true) -> <<"pst">>;
 serialize_persistence(false) -> <<"tmp">>.
 
 
+%% @private
 -spec deserialize_persistence(binary()) -> boolean().
 deserialize_persistence(<<"pst">>) -> true;
 deserialize_persistence(<<"tmp">>) -> false.
 
 
--spec serialize_subject(aai:subject()) -> binary().
-serialize_subject(?SUB(user, UserId)) -> <<"usr-", UserId/binary>>;
-serialize_subject(?SUB(?ONEPROVIDER, Provider)) -> <<"prv-", Provider/binary>>.
+%% @private
+-spec serialize_invite_token_type(invite_token_type()) -> binary().
+serialize_invite_token_type(?GROUP_INVITE_USER_TOKEN) -> <<"giu">>;
+serialize_invite_token_type(?GROUP_INVITE_GROUP_TOKEN) -> <<"gig">>;
+serialize_invite_token_type(?SPACE_INVITE_USER_TOKEN) -> <<"siu">>;
+serialize_invite_token_type(?SPACE_INVITE_GROUP_TOKEN) -> <<"sig">>;
+serialize_invite_token_type(?SPACE_SUPPORT_TOKEN) -> <<"ssu">>;
+serialize_invite_token_type(?CLUSTER_INVITE_USER_TOKEN) -> <<"ciu">>;
+serialize_invite_token_type(?CLUSTER_INVITE_GROUP_TOKEN) -> <<"cig">>;
+serialize_invite_token_type(?PROVIDER_REGISTRATION_TOKEN) -> <<"pre">>;
+serialize_invite_token_type(?HARVESTER_INVITE_USER_TOKEN) -> <<"hiu">>;
+serialize_invite_token_type(?HARVESTER_INVITE_GROUP_TOKEN) -> <<"hig">>;
+serialize_invite_token_type(?HARVESTER_INVITE_SPACE_TOKEN) -> <<"his">>.
 
 
--spec deserialize_subject(binary()) -> aai:subject().
-deserialize_subject(<<"usr-", UserId/binary>>) -> ?SUB(user, UserId);
-deserialize_subject(<<"prv-", Provider/binary>>) -> ?SUB(?ONEPROVIDER, Provider).
-
-
--spec serialize_type(type()) -> binary().
-serialize_type(?ACCESS_TOKEN) -> <<"act">>;
-serialize_type(?GUI_TOKEN(SessionId)) -> <<"gui-", SessionId/binary>>.
-
-
--spec deserialize_type(binary()) -> type().
-deserialize_type(<<"act">>) -> ?ACCESS_TOKEN;
-deserialize_type(<<"gui-", SessionId/binary>>) -> ?GUI_TOKEN(SessionId).
+%% @private
+-spec deserialize_invite_token_type(binary()) -> invite_token_type().
+deserialize_invite_token_type(<<"giu">>) -> ?GROUP_INVITE_USER_TOKEN;
+deserialize_invite_token_type(<<"gig">>) -> ?GROUP_INVITE_GROUP_TOKEN;
+deserialize_invite_token_type(<<"siu">>) -> ?SPACE_INVITE_USER_TOKEN;
+deserialize_invite_token_type(<<"sig">>) -> ?SPACE_INVITE_GROUP_TOKEN;
+deserialize_invite_token_type(<<"ssu">>) -> ?SPACE_SUPPORT_TOKEN;
+deserialize_invite_token_type(<<"ciu">>) -> ?CLUSTER_INVITE_USER_TOKEN;
+deserialize_invite_token_type(<<"cig">>) -> ?CLUSTER_INVITE_GROUP_TOKEN;
+deserialize_invite_token_type(<<"pre">>) -> ?PROVIDER_REGISTRATION_TOKEN;
+deserialize_invite_token_type(<<"hiu">>) -> ?HARVESTER_INVITE_USER_TOKEN;
+deserialize_invite_token_type(<<"hig">>) -> ?HARVESTER_INVITE_GROUP_TOKEN;
+deserialize_invite_token_type(<<"his">>) -> ?HARVESTER_INVITE_SPACE_TOKEN.

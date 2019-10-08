@@ -13,7 +13,7 @@
 -author("Bartosz Walkowicz").
 
 -include_lib("eunit/include/eunit.hrl").
--include_lib("api_errors.hrl").
+-include_lib("errors.hrl").
 
 -define(SALT_LENGTH, 32).
 -define(JOIN_CHAR, $.).
