@@ -32,7 +32,7 @@ onepanel_env_test_() ->
             fun remove_file_test/1,
             fun remove_nonexistent_test/1,
             fun remove_empty_dir_test/1,
-            fun remove_nonexistent_test/1,
+            fun remove_nonempty_dir_test/1,
             fun rename_directory_test/1,
             fun rename_file_test/1,
             fun rename_fails_when_target_exists_test/1

@@ -21,7 +21,7 @@
 -record(cv_authorization_none, {}).
 
 -record(cv_audience, {
-    audience :: undefined | aai:audience()
+    whitelist = [] :: [aai:audience()]
 }).
 
 -record(cv_ip, {

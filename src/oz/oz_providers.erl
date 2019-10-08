@@ -15,7 +15,7 @@
 -include("oz/oz_runner.hrl").
 -include("oz/oz_spaces.hrl").
 -include("oz/oz_providers.hrl").
--include("api_errors.hrl").
+-include("errors.hrl").
 
 %% API
 -export([register/2, register_with_uuid/2, unregister/1]).
@@ -54,15 +54,7 @@ register(Auth, Parameters) ->
 
             {ok, 400, _ResponseHeaders, ErrorBody} ->
                 #{<<"error">> := Error} = json_utils:decode(ErrorBody),
-
-                case Error of
-                    #{<<"id">> := <<"badValueIdentifierOccupied">>,
-                        <<"details">> := #{<<"key">> := Key}} ->
-                        ?ERROR_BAD_VALUE_IDENTIFIER_OCCUPIED(Key);
-                    #{<<"id">> := <<"badValueToken">>,
-                        <<"details">> := #{<<"key">> := Key}} ->
-                        ?ERROR_BAD_VALUE_TOKEN(Key)
-                end
+                errors:from_json(Error)
         end
     end).
 

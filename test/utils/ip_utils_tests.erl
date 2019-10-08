@@ -15,7 +15,7 @@
 -ifdef(TEST).
 
 -include_lib("eunit/include/eunit.hrl").
--include("posix/errors.hrl").
+-include("errors.hrl").
 
 geo_lookup_test_() ->
     {setup,
@@ -60,7 +60,7 @@ geo_lookup_cleanup(_) ->
 
 
 geo_lookup(_) ->
-    ?_assertEqual({ok, 1234}, ip_utils:lookup_asn("1.2.3.4")),
+    ?assertEqual({ok, 1234}, ip_utils:lookup_asn("1.2.3.4")),
     ?assertEqual({ok, 99}, ip_utils:lookup_asn("11.22.33.44")),
     ?assertEqual({error, not_found}, ip_utils:lookup_asn("99.99.99.99")),
 

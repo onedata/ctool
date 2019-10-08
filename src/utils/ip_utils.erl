@@ -13,7 +13,7 @@
 -module(ip_utils).
 -author("Lukasz Opiola").
 
--include("posix/errors.hrl").
+-include("errors.hrl").
 -include("logging.hrl").
 
 -type ip() :: inet:ip4_address() | nonempty_string() | binary().
@@ -29,6 +29,7 @@
 % PL, FR, PT, ...
 -type country_code() :: <<_:16>>.
 
+% Region is an enum type with the following valid values (specific for Onedata):
 % Africa, Antarctica, Asia, Europe, EU, NorthAmerica, Oceania, SouthAmerica
 -type region() :: binary().
 
@@ -43,6 +44,7 @@
 -export([lookup_asn/1, lookup_country/1, lookup_region/1]).
 -export([to_ip4_address/1, to_binary/1]).
 -export([parse_mask/1, serialize_mask/1, matches_mask/2]).
+-export([is_region/1]).
 
 %%%===================================================================
 %%% API functions
@@ -173,10 +175,29 @@ matches_mask(IP, Mask) ->
         {error, ?EINVAL} -> false
     end.
 
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Checks if given binary expresses one of the predefined regions
+%% (specific for Onedata).
+%% @end
+%%--------------------------------------------------------------------
+-spec is_region(binary()) -> boolean().
+is_region(<<"Africa">>) -> true;
+is_region(<<"Antarctica">>) -> true;
+is_region(<<"Asia">>) -> true;
+is_region(<<"Europe">>) -> true;
+is_region(<<"EU">>) -> true;
+is_region(<<"NorthAmerica">>) -> true;
+is_region(<<"Oceania">>) -> true;
+is_region(<<"SouthAmerica">>) -> true;
+is_region(_) -> false.
+
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
 
+%% @private
 -spec subnet_as_int(ip(), mask_length()) -> {ok, integer()} | {error, ?EINVAL}.
 subnet_as_int(IP, MaskLength) ->
     case to_ip4_address(IP) of
@@ -190,6 +211,12 @@ subnet_as_int(IP, MaskLength) ->
     end.
 
 
+%%--------------------------------------------------------------------
+%% @private
+%% @doc
+%% Maps a region code retrieved from GEO DB to onedata specific region name.
+%% @end
+%%--------------------------------------------------------------------
 -spec code_to_region(<<_:16>>) -> region().
 code_to_region(<<"AF">>) -> <<"Africa">>;
 code_to_region(<<"AN">>) -> <<"Antarctica">>;
