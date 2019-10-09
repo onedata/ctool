@@ -27,14 +27,20 @@
 
 %% Standard HTTP headers
 
+-define(HDR_ACCEPT, <<"accept">>).
 -define(HDR_ACCESS_CONTROL_ALLOW_HEADERS, <<"access-control-allow-headers">>).
 -define(HDR_ACCESS_CONTROL_ALLOW_METHODS, <<"access-control-allow-methods">>).
 -define(HDR_ACCESS_CONTROL_ALLOW_ORIGIN, <<"access-control-allow-origin">>).
 -define(HDR_ACCESS_CONTROL_REQUEST_METHOD, <<"access-control-request-method">>).
 -define(HDR_ALLOW, <<"allow">>).
+-define(HDR_CONNECTION, <<"connection">>).
+-define(HDR_CONTENT_DISPOSITION, <<"content-disposition">>).
+-define(HDR_CONTENT_LENGTH, <<"content-length">>).
 -define(HDR_CONTENT_TYPE, <<"content-type">>).
 -define(HDR_COOKIE, <<"cookie">>).
 -define(HDR_LOCATION, <<"location">>).
+-define(HDR_UPGRADE, <<"upgrade">>).
 -define(HDR_X_FRAME_OPTIONS, <<"x-frame-options">>).
+-define(HDR_CACHE_CONTROL, <<"cache-control">>).
 
 -endif.
