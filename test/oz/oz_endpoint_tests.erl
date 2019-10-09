@@ -23,21 +23,21 @@ token() ->
 
 
 token_header() ->
-    #{?HTTP_X_AUTH_TOKEN => token()}.
+    #{?HDR_X_AUTH_TOKEN => token()}.
 
 
 -define(CONTENT_TYPE_HEADER,
-    #{?HTTP_CONTENT_TYPE => <<"application/json">>}
+    #{?HDR_CONTENT_TYPE => <<"application/json">>}
 ).
 
 -define(CONTENT_TYPE_HEADER_MATCH,
-    #{?HTTP_CONTENT_TYPE := <<"application/json">>}
+    #{?HDR_CONTENT_TYPE := <<"application/json">>}
 ).
 
 % Request header with HTTP basic auth
 -define(BASIC_AUTH_HEADER, <<"Basic ", (base64:encode(<<"user:password">>))/binary>>).
 basic_auth_header() ->
-    #{?HTTP_AUTHORIZATION => ?BASIC_AUTH_HEADER}.
+    #{?HDR_AUTHORIZATION => ?BASIC_AUTH_HEADER}.
 
 
 %%%===================================================================

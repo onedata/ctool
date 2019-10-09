@@ -132,7 +132,7 @@ request(Auth, URN, Method, Headers, Body, Opts) ->
     Opts2 = lists_utils:key_store(ssl_options, [
         {cacerts, get_cacerts()} | SSLOpts
     ], Opts),
-    Headers2 = Headers#{?HTTP_CONTENT_TYPE => <<"application/json">>},
+    Headers2 = Headers#{?HDR_CONTENT_TYPE => <<"application/json">>},
     Headers3 = prepare_auth_headers(Auth, Headers2),
     URL = get_api_root(Opts) ++ URN,
     http_client:request(Method, URL, Headers3, Body, Opts2).
@@ -154,11 +154,11 @@ prepare_auth_headers(Auth, Headers) ->
         {headers, Map} ->
             maps:merge(Headers, Map);
         {user, token, Token} when is_binary(Token) ->
-            Headers#{?HTTP_X_AUTH_TOKEN => Token};
+            Headers#{?HDR_X_AUTH_TOKEN => Token};
         {user, basic, BasicAuthHeader} ->
-            Headers#{?HTTP_AUTHORIZATION => BasicAuthHeader};
+            Headers#{?HDR_AUTHORIZATION => BasicAuthHeader};
         {provider, Token} when is_binary(Token) ->
-            Headers#{?HTTP_X_AUTH_TOKEN => Token};
+            Headers#{?HDR_X_AUTH_TOKEN => Token};
         none ->
             Headers
     end.

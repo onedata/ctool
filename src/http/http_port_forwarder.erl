@@ -69,4 +69,4 @@ add_forwarded_header(Req) ->
     Headers = cowboy_req:headers(Req),
     {PeerIp, _Port} = cowboy_req:peer(Req),
     {ok, IpBin} = ip_utils:to_binary(PeerIp),
-    Headers#{?HTTP_X_ONEDATA_FORWARDED_FOR => IpBin}.
+    Headers#{?HDR_X_ONEDATA_FORWARDED_FOR => IpBin}.
