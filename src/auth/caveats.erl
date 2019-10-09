@@ -46,15 +46,19 @@ cv_data_space | cv_data_access | cv_data_path | cv_data_objectid.
 -export([type/1, all_types/0]).
 -export([build_verifier/2]).
 -export([serialize/1, deserialize/1]).
+-export([sanitize/1]).
 -export([unverified_description/1]).
 
 %%%===================================================================
 %%% API functions
 %%%===================================================================
 
--spec add(caveat() | [caveat()], macaroon:macaroon()) -> macaroon:macaroon().
+-spec add(Caveat | [Caveat], macaroon:macaroon()) -> macaroon:macaroon() when
+    Caveat :: caveat() | serialized().
 add(Caveats, Macaroon) when is_list(Caveats) ->
     lists:foldl(fun add/2, Macaroon, Caveats);
+add(Caveat, Macaroon) when is_binary(Caveat) ->
+    macaroon:add_first_party_caveat(Macaroon, Caveat);
 add(Caveat, Macaroon) ->
     macaroon:add_first_party_caveat(Macaroon, serialize(Caveat)).
 
@@ -73,8 +77,6 @@ find(Type, Caveats) ->
 
 
 -spec filter([type()], [caveat()]) -> [caveat()].
-filter([Type], Caveats) ->
-    lists:filter(fun(Caveat) -> type(Caveat) =:= Type end, Caveats);
 filter(Types, Caveats) ->
     lists:filter(fun(Caveat) -> lists:member(type(Caveat), Types) end, Caveats).
 
@@ -117,8 +119,10 @@ serialize(#cv_time{valid_until = ValidUntil}) ->
 serialize(#cv_authorization_none{}) ->
     <<"authorization = none">>;
 
-serialize(#cv_audience{audience = Audience}) ->
-    <<"audience = ", (aai:serialize_audience(Audience))/binary>>;
+serialize(#cv_audience{whitelist = []}) ->
+    error(badarg);
+serialize(#cv_audience{whitelist = Whitelist}) ->
+    <<"audience = ", (?JOIN([aai:serialize_audience(A) || A <- Whitelist]))/binary>>;
 
 serialize(#cv_ip{whitelist = []}) ->
     error(badarg);
@@ -185,8 +189,9 @@ deserialize(<<"time < ", ValidUntil/binary>>) ->
 deserialize(<<"authorization = none">>) ->
     #cv_authorization_none{};
 
-deserialize(<<"audience = ", Audience/binary>>) ->
-    #cv_audience{audience = aai:deserialize_audience(Audience)};
+deserialize(<<"audience = ", SerializedAudiences/binary>>) ->
+    Whitelist = lists:map(fun aai:deserialize_audience/1, ?SPLIT(SerializedAudiences)),
+    #cv_audience{whitelist = Whitelist};
 
 deserialize(<<"ip = ", SerializedMasks/binary>>) ->
     Whitelist = lists:map(fun(MaskBin) ->
@@ -228,6 +233,108 @@ deserialize(<<"data.objectid = ", List/binary>>) ->
     #cv_data_objectid{whitelist = ?SPLIT(List)}.
 
 
+%%--------------------------------------------------------------------
+%% @doc
+%% Parses given caveat if needed and checks if it is semantically correct.
+%% Returns the sanitized caveat upon success.
+%% @end
+%%--------------------------------------------------------------------
+-spec sanitize(caveat() | serialized()) -> {true, caveat()} | false.
+sanitize(C = #cv_time{valid_until = ?INFINITY}) -> {true, C};
+sanitize(C = #cv_time{valid_until = Int}) when is_integer(Int) -> {true, C};
+sanitize(_ = #cv_time{}) -> false;
+
+sanitize(C = #cv_authorization_none{}) -> {true, C};
+
+sanitize(C = #cv_audience{whitelist = Whitelist}) when Whitelist /= [] ->
+    try
+        [A = aai:deserialize_audience(aai:serialize_audience(A)) || A <- Whitelist],
+        {true, C}
+    catch _:_ ->
+        false
+    end;
+
+sanitize(C = #cv_ip{whitelist = Whitelist}) when Whitelist /= [] ->
+    try
+        [{ok, M} = ip_utils:parse_mask(element(2, {ok, _} = ip_utils:serialize_mask(M))) || M <- Whitelist],
+        {true, C}
+    catch _:_ ->
+        false
+    end;
+
+sanitize(C = #cv_asn{whitelist = Whitelist}) when Whitelist /= [] ->
+    try
+        [true = is_integer(Asn) || Asn <- Whitelist],
+        {true, C}
+    catch _:_ ->
+        false
+    end;
+
+sanitize(C = #cv_country{type = Type, list = List}) when List /= [] ->
+    try
+        true = lists:member(Type, [whitelist, blacklist]),
+        [<<_:16>> = Country || Country <- List],
+        {true, C}
+    catch _:_ ->
+        false
+    end;
+
+sanitize(C = #cv_region{type = Type, list = List}) when List /= [] ->
+    try
+        true = lists:member(Type, [whitelist, blacklist]),
+        [true = ip_utils:is_region(Region) || Region <- List],
+        {true, C}
+    catch _:_ ->
+        false
+    end;
+
+sanitize(C = #cv_api{whitelist = Whitelist}) when Whitelist /= [] ->
+    try
+        C = deserialize(serialize(C)),
+        {true, C}
+    catch _:_ ->
+        false
+    end;
+
+sanitize(C = #cv_data_space{whitelist = Whitelist}) when Whitelist /= [] ->
+    try
+        [<<_:8, _/binary>> = SpaceId || SpaceId <- Whitelist],
+        {true, C}
+    catch _:_ ->
+        false
+    end;
+
+sanitize(C = #cv_data_access{type = read}) -> {true, C};
+sanitize(C = #cv_data_access{type = write}) -> {true, C};
+sanitize(_ = #cv_data_access{}) -> false;
+
+sanitize(C = #cv_data_path{whitelist = Whitelist}) when Whitelist /= [] ->
+    try
+        [<<_:8, _/binary>> = Path || Path <- Whitelist],
+        {true, deserialize(serialize(C))}
+    catch _:_ ->
+        false
+    end;
+
+sanitize(C = #cv_data_objectid{whitelist = Whitelist}) when Whitelist /= [] ->
+    try
+        [<<_:8, _/binary>> = ObjectId || ObjectId <- Whitelist],
+        {true, C}
+    catch _:_ ->
+        false
+    end;
+
+sanitize(Serialized) when is_binary(Serialized) ->
+    try
+        sanitize(deserialize(Serialized))
+    catch _:_ ->
+        false
+    end;
+
+sanitize(_) ->
+    false.
+
+
 -spec unverified_description(caveat()) -> binary().
 unverified_description(#cv_time{valid_until = ValidUntil}) ->
     str_utils:format_bin(
@@ -238,10 +345,11 @@ unverified_description(#cv_time{valid_until = ValidUntil}) ->
 unverified_description(#cv_authorization_none{}) ->
     <<"this token carries no authorization (can be used solely for identity verification)">>;
 
-unverified_description(#cv_audience{audience = Audience}) ->
+unverified_description(#cv_audience{whitelist = AllowedAudiences}) ->
     str_utils:format_bin(
-        "unverified audience caveat: the consumer of this token must authorize as ~s",
-        [aai:audience_to_printable(Audience)]
+        "unverified audience caveat: the consumer of this token must authorize as ~s "
+        "(use the x-onedata-audience-token header)",
+        [?JOIN([aai:audience_to_printable(A) || A <- AllowedAudiences], <<" or ">>)]
     );
 
 unverified_description(#cv_ip{whitelist = Whitelist}) ->
@@ -331,8 +439,14 @@ verify(#cv_authorization_none{}, _AuthCtx) ->
     % verify the subject's identity alone.
     true;
 
-verify(#cv_audience{audience = CaveatAud}, #auth_ctx{audience = CtxAud}) ->
-    CaveatAud =:= CtxAud;
+verify(#cv_audience{whitelist = Whitelist}, #auth_ctx{audience = Audience} = AuthCtx) ->
+    is_allowed(whitelist, Whitelist, fun
+        (?AUD(group, GroupId)) ->
+            Checker = AuthCtx#auth_ctx.group_membership_checker,
+            Checker(Audience, GroupId);
+        (Entry) ->
+            Audience =:= Entry
+    end);
 
 verify(#cv_ip{}, #auth_ctx{ip = undefined}) ->
     false;

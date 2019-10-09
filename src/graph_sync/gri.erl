@@ -29,15 +29,15 @@
 -module(gri).
 -author("Lukasz Opiola").
 
--include("api_errors.hrl").
+-include("errors.hrl").
 -include("graph_sync/graph_sync.hrl").
 
 % '*' wildcard is used only in GRI patterns
--type entity_type() :: '*' |
-oz_worker | od_user | od_group | od_space | od_share |
-od_provider | od_handle_service | od_handle | od_cluster | od_harvester |
-op_file | op_replica | op_transfer | op_user | op_group |
-op_space | op_share | op_provider | op_metrics.
+-type entity_type() :: '*'
+| oz_worker | od_user | od_group | od_space | od_share | od_provider
+| od_handle_service | od_handle | od_cluster | od_harvester | od_token
+| op_file | op_replica | op_transfer | op_user | op_group
+| op_space | op_share | op_provider | op_metrics.
 -type entity_id() :: undefined | binary().
 -type aspect() :: atom() | {atom(), atom() | binary()}.
 % '*' wildcard is used only in GRI patterns
@@ -109,6 +109,7 @@ serialize_type(od_handle_service, _) -> <<"handleService">>;
 serialize_type(od_handle, _) -> <<"handle">>;
 serialize_type(od_cluster, _) -> <<"cluster">>;
 serialize_type(od_harvester, _) -> <<"harvester">>;
+serialize_type(od_token, _) -> <<"token">>;
 
 serialize_type(op_file, _) -> <<"file">>;
 serialize_type(op_replica, _) -> <<"op_replica">>;
@@ -137,6 +138,7 @@ deserialize_type(<<"handleService">>, _) -> od_handle_service;
 deserialize_type(<<"handle">>, _) -> od_handle;
 deserialize_type(<<"cluster">>, _) -> od_cluster;
 deserialize_type(<<"harvester">>, _) -> od_harvester;
+deserialize_type(<<"token">>, _) -> od_token;
 
 deserialize_type(<<"file">>, _) -> op_file;
 deserialize_type(<<"op_replica">>, _) -> op_replica;

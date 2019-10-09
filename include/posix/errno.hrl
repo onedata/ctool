@@ -1,16 +1,17 @@
-%% ===================================================================
-%% @author Lukasz Opiola
-%% @copyright (C): 2015, ACK CYFRONET AGH
-%% This software is released under the MIT license
-%% cited in 'LICENSE.txt'.
+%%%-------------------------------------------------------------------
+%%% @author Lukasz Opiola
+%%% @copyright (C) 2015 ACK CYFRONET AGH
+%%% This software is released under the MIT license
+%%% cited in 'LICENSE.txt'.
+%%% @end
+%%%-------------------------------------------------------------------
+%% @doc
+%% This header file contains macros for POSIX errors.
 %% @end
-%% ===================================================================
-%% @doc This header file contains declarations of errors used across the project.
-%% @end
-%% ===================================================================
+%%%-------------------------------------------------------------------
 
--ifndef(ERRORS_HRL).
--define(ERRORS_HRL, 1).
+-ifndef(ERRNO_HRL).
+-define(ERRNO_HRL, 1).
 
 %% List of all codes that can be present in status message sent to FUSE client.
 -define(OK, ok).
