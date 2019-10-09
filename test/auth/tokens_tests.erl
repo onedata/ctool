@@ -230,9 +230,9 @@ access_token_headers_manipulation_test() ->
     ?assertEqual(AccessToken, tokens:parse_access_token_header(?MOCK_COWBOY_REQ(Headers))),
 
     lists:foreach(fun
-        (<<"authorization">>) ->
+        (?HTTP_AUTHORIZATION) ->
             ?assertEqual(AccessToken, tokens:parse_access_token_header(?MOCK_COWBOY_REQ(#{
-                <<"authorization">> => <<"Bearer ", AccessToken/binary>>
+                ?HTTP_AUTHORIZATION => <<"Bearer ", AccessToken/binary>>
             })));
         (SupportedHeader) ->
             ?assertEqual(AccessToken, tokens:parse_access_token_header(?MOCK_COWBOY_REQ(#{

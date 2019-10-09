@@ -13,7 +13,18 @@
 -ifndef(HTTP_HEADERS_HRL).
 -define(HTTP_HEADERS_HRL, 1).
 
-% Header containing original peer IP for connection proxied by http_port_forwarder
+% Headers carrying subject token
+-define(HTTP_AUTHORIZATION, <<"authorization">>).
+-define(HTTP_X_AUTH_TOKEN, <<"x-auth-token">>).
+-define(HTTP_MACAROON, <<"macaroon">>). % @todo VFS-5554 Deprecated
+
+% Headers carrying audience token
+-define(HTTP_X_ONEDATA_AUDIENCE_TOKEN, <<"x-onedata-audience-token">>).
+
+% Header carrying original peer IP for request proxied by http_port_forwarder
 -define(HTTP_X_ONEDATA_FORWARDED_FOR, <<"x-onedata-forwarded-for">>).
+
+% Standard HTTP headers
+-define(HTTP_CONTENT_TYPE, <<"content-type">>).
 
 -endif.

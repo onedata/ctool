@@ -19,6 +19,7 @@
 -include("onedata.hrl").
 -include("errors.hrl").
 -include("logging.hrl").
+-include("http/headers.hrl").
 
 % Token represented by internal record
 -type token() :: #token{}.
@@ -294,29 +295,29 @@ generate_secret() ->
 
 -spec build_access_token_header(serialized()) -> cowboy:http_headers().
 build_access_token_header(SerializedToken) ->
-    #{<<"x-auth-token">> => SerializedToken}.
+    #{?HTTP_X_AUTH_TOKEN => SerializedToken}.
 
 
 -spec parse_access_token_header(cowboy_req:req()) -> undefined | serialized().
-parse_access_token_header(#{headers := #{<<"x-auth-token">> := T}}) -> T;
-parse_access_token_header(#{headers := #{<<"authorization">> := <<"Bearer ", T/binary>>}}) -> T;
-parse_access_token_header(#{headers := #{<<"macaroon">> := T}}) -> T; % @todo VFS-5554 Deprecated
+parse_access_token_header(#{headers := #{?HTTP_X_AUTH_TOKEN := T}}) -> T;
+parse_access_token_header(#{headers := #{?HTTP_AUTHORIZATION := <<"Bearer ", T/binary>>}}) -> T;
+parse_access_token_header(#{headers := #{?HTTP_MACAROON := T}}) -> T; % @todo VFS-5554 Deprecated
 parse_access_token_header(_) -> undefined.
 
 
 -spec supported_access_token_headers() -> [binary()].
 supported_access_token_headers() ->
     % @todo VFS-5554 macaroon header is deprecated
-    [<<"x-auth-token">>, <<"authorization">>, <<"macaroon">>].
+    [?HTTP_X_AUTH_TOKEN, ?HTTP_AUTHORIZATION, ?HTTP_MACAROON].
 
 
 -spec build_audience_token_header(serialized()) -> cowboy:http_headers().
 build_audience_token_header(SerializedToken) ->
-    #{<<"x-onedata-audience-token">> => SerializedToken}.
+    #{?HTTP_X_ONEDATA_AUDIENCE_TOKEN => SerializedToken}.
 
 
 -spec parse_audience_token_header(cowboy_req:req()) -> undefined | serialized().
-parse_audience_token_header(#{headers := #{<<"x-onedata-audience-token">> := T}}) -> T;
+parse_audience_token_header(#{headers := #{?HTTP_X_ONEDATA_AUDIENCE_TOKEN := T}}) -> T;
 parse_audience_token_header(_) -> undefined.
 
 %%%===================================================================
