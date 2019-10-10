@@ -16,10 +16,11 @@
 
 -include_lib("eunit/include/eunit.hrl").
 
--include("onedata.hrl").
 -include("aai/aai.hrl").
--include("graph_sync/graph_sync.hrl").
 -include("errors.hrl").
+-include("graph_sync/graph_sync.hrl").
+-include("http/headers.hrl").
+-include("onedata.hrl").
 
 -define(OZ_DOMAIN, <<"onezone.example.com">>).
 -define(MOCK_COWBOY_REQ(Headers), #{headers => Headers}).
