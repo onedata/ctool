@@ -18,7 +18,7 @@
 %% API
 -export([init/1, cleanup/0, get_chash_ring/0, set_chash_ring/1,
     get_node/1, get_nodes/2, get_all_nodes/0,
-    get_hashing_key/1, gen_hashing_key/0, get_random_labal_part/1, has_hash_part/1, create_label/2]).
+    get_hashing_key/1, gen_hashing_key/0, get_random_label_part/1, has_hash_part/1, create_label/2]).
 
 -define(SINGLE_NODE_CHASH(Node), Node).
 -define(IS_SINGLE_NODE_CHASH(CHash), is_atom(CHash)).
@@ -140,6 +140,7 @@ get_all_nodes() ->
 get_hashing_key(Label) when is_binary(Label) ->
     case split_hash(Label) of
         {undefined, _} ->
+            % Label does not contain hash part - generate key from label's random part
             Len = byte_size(Label),
             binary:part(Label, Len, -1 * min(?HASH_LENGTH, Len));
         {Hash, _} -> Hash
@@ -152,11 +153,11 @@ get_hashing_key(Label) ->
 %% Get random part of label.
 %% @end
 %%--------------------------------------------------------------------
--spec get_random_labal_part(term()) -> term().
-get_random_labal_part(Label) when is_binary(Label) ->
+-spec get_random_label_part(term()) -> term().
+get_random_label_part(Label) when is_binary(Label) ->
     {_, Random} = split_hash(Label),
     Random;
-get_random_labal_part(Label) ->
+get_random_label_part(Label) ->
     Label.
 
 %%--------------------------------------------------------------------
