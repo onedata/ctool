@@ -14,6 +14,7 @@
 
 -ifdef(TEST).
 
+-include("http/headers.hrl").
 -include_lib("eunit/include/eunit.hrl").
 
 
@@ -22,21 +23,21 @@ token() ->
 
 
 token_header() ->
-    #{<<"x-auth-token">> => token()}.
+    #{?HDR_X_AUTH_TOKEN => token()}.
 
 
 -define(CONTENT_TYPE_HEADER,
-    #{<<"content-type">> => <<"application/json">>}
+    #{?HDR_CONTENT_TYPE => <<"application/json">>}
 ).
 
 -define(CONTENT_TYPE_HEADER_MATCH,
-    #{<<"content-type">> := <<"application/json">>}
+    #{?HDR_CONTENT_TYPE := <<"application/json">>}
 ).
 
 % Request header with HTTP basic auth
 -define(BASIC_AUTH_HEADER, <<"Basic ", (base64:encode(<<"user:password">>))/binary>>).
 basic_auth_header() ->
-    #{<<"authorization">> => ?BASIC_AUTH_HEADER}.
+    #{?HDR_AUTHORIZATION => ?BASIC_AUTH_HEADER}.
 
 
 %%%===================================================================
