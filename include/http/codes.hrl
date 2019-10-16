@@ -6,14 +6,13 @@
 %%% @end
 %%%-------------------------------------------------------------------
 %%% @doc
-%%% Common definitions for modules related to HTTP.
+%%% Macros for HTTP code integers.
 %%% @end
 %%%-------------------------------------------------------------------
 
 -ifndef(HTTP_CODES_HRL).
 -define(HTTP_CODES_HRL, 1).
 
-% Defines with HTTP codes
 -define(HTTP_200_OK, 200).
 -define(HTTP_201_CREATED, 201).
 -define(HTTP_202_ACCEPTED, 202).

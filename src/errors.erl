@@ -92,9 +92,10 @@ already_exists | unauthorized | forbidden.
 
 -type unknown() :: {unknown_error, as_json()}.
 
--type error() :: {error, general() | auth() | graph_sync() | data_validation() | state() | posix() | unknown()}.
+-type reason() :: general() | auth() | graph_sync() | data_validation() | state() | posix() | unknown().
+-type error() :: {error, reason()}.
 -type as_json() :: json_utils:json_term().
--export_type([error/0, as_json/0]).
+-export_type([error/0, reason/0, as_json/0]).
 
 %% API
 -export([to_json/1, from_json/1, to_http_code/1]).
@@ -927,7 +928,7 @@ from_json(#{<<"id">> := <<"transferAlreadyEnded">>}) ->
 from_json(#{<<"id">> := <<"transferNotEnded">>}) ->
     ?ERROR_TRANSFER_NOT_ENDED;
 
-from_json(ErrorAsJson) ->
+from_json(ErrorAsJson) when is_map(ErrorAsJson) ->
     ?ERROR_UNKNOWN_ERROR(ErrorAsJson).
 
 

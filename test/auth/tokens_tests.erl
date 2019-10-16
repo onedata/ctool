@@ -16,10 +16,11 @@
 
 -include_lib("eunit/include/eunit.hrl").
 
--include("onedata.hrl").
 -include("aai/aai.hrl").
--include("graph_sync/graph_sync.hrl").
 -include("errors.hrl").
+-include("graph_sync/graph_sync.hrl").
+-include("http/headers.hrl").
+-include("onedata.hrl").
 
 -define(OZ_DOMAIN, <<"onezone.example.com">>).
 -define(MOCK_COWBOY_REQ(Headers), #{headers => Headers}).
@@ -230,9 +231,9 @@ access_token_headers_manipulation_test() ->
     ?assertEqual(AccessToken, tokens:parse_access_token_header(?MOCK_COWBOY_REQ(Headers))),
 
     lists:foreach(fun
-        (<<"authorization">>) ->
+        (?HDR_AUTHORIZATION) ->
             ?assertEqual(AccessToken, tokens:parse_access_token_header(?MOCK_COWBOY_REQ(#{
-                <<"authorization">> => <<"Bearer ", AccessToken/binary>>
+                ?HDR_AUTHORIZATION => <<"Bearer ", AccessToken/binary>>
             })));
         (SupportedHeader) ->
             ?assertEqual(AccessToken, tokens:parse_access_token_header(?MOCK_COWBOY_REQ(#{
