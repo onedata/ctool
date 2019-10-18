@@ -16,11 +16,15 @@
 -type chash() :: chash:chash() | node().
 
 %% API
--export([init/1, cleanup/0, get_chash_ring/0, set_chash_ring/1, get_node/1,
-    get_all_nodes/0]).
+-export([init/1, cleanup/0, get_chash_ring/0, set_chash_ring/1,
+    get_node/1, get_nodes/2, get_all_nodes/0,
+    get_hashing_key/1, gen_hashing_key/0, get_random_label_part/1, has_hash_part/1, create_label/2]).
 
 -define(SINGLE_NODE_CHASH(Node), Node).
 -define(IS_SINGLE_NODE_CHASH(CHash), is_atom(CHash)).
+-define(HASH_SEPARATOR, "!@hsh_").
+-define(HASH_SEPARATOR_BIN, <<?HASH_SEPARATOR>>).
+-define(HASH_LENGTH, 4).
 
 %%%===================================================================
 %%% API
@@ -87,9 +91,26 @@ get_node(Label) ->
         Node when ?IS_SINGLE_NODE_CHASH(Node) ->
             Node;
         CHash ->
-            Index = chash:key_of(Label),
+            Index = chash:key_of(get_hashing_key(Label)),
             [{_, BestNode}] = chash:successors(Index, CHash, 1),
             BestNode
+    end.
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Get nodes that are responsible for the data labeled with given term.
+%% @end
+%%--------------------------------------------------------------------
+-spec get_nodes(term(), non_neg_integer()) -> [node()].
+get_nodes(Label, NodesNum) ->
+    case get_chash_ring() of
+        undefined ->
+            error(chash_ring_not_initialized);
+        Node when ?IS_SINGLE_NODE_CHASH(Node) ->
+            [Node];
+        CHash ->
+            Index = chash:key_of(get_hashing_key(Label)),
+            lists:map(fun({_, Node}) -> Node end, chash:successors(Index, CHash, NodesNum))
     end.
 
 %%--------------------------------------------------------------------
@@ -110,12 +131,85 @@ get_all_nodes() ->
             lists:usort(Nodes)
     end.
 
+%%--------------------------------------------------------------------
+%% @doc
+%% Get key used to choose node.
+%% @end
+%%--------------------------------------------------------------------
+-spec get_hashing_key(term()) -> term().
+get_hashing_key(Label) when is_binary(Label) ->
+    case split_hash(Label) of
+        {undefined, _} ->
+            % Label does not contain hash part - generate key from label's random part
+            Len = byte_size(Label),
+            binary:part(Label, Len, -1 * min(?HASH_LENGTH, Len));
+        {Hash, _} -> Hash
+    end;
+get_hashing_key(Label) ->
+    Label.
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Get random part of label.
+%% @end
+%%--------------------------------------------------------------------
+-spec get_random_label_part(term()) -> term().
+get_random_label_part(Label) when is_binary(Label) ->
+    {_, Random} = split_hash(Label),
+    Random;
+get_random_label_part(Label) ->
+    Label.
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Generates random hashing key.
+%% @end
+%%--------------------------------------------------------------------
+-spec gen_hashing_key() -> binary().
+gen_hashing_key() ->
+    str_utils:rand_hex(?HASH_LENGTH).
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Verifies whether Label has hash part (part used to choose node) defined.
+%% @end
+%%--------------------------------------------------------------------
+-spec has_hash_part(term()) -> boolean().
+has_hash_part(Label) when is_binary(Label) ->
+    {Hash, _} = split_hash(Label),
+    Hash =/= undefined;
+has_hash_part(_Label) ->
+    false.
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Creates label with part used to choose node.
+%% @end
+%%--------------------------------------------------------------------
+-spec create_label(binary(), binary()) -> binary().
+create_label(HashPart, Tail) ->
+    <<?HASH_SEPARATOR, HashPart/binary, Tail/binary>>.
+
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
 
-%%--------------------------------------------------------------------
+%%-------------------------------------------------------------------
 %% @private
+%% @doc
+%% Gets part of the label used to choose node.
+%% @end
+%%--------------------------------------------------------------------
+-spec split_hash(binary()) -> {binary() | undefined, binary()}.
+split_hash(Label) ->
+    case binary:split(Label, ?HASH_SEPARATOR_BIN) of
+        [_, Hash | _] ->
+            {binary:part(Hash, 0, ?HASH_LENGTH), binary:part(Hash, ?HASH_LENGTH, byte_size(Hash) - ?HASH_LENGTH)};
+        _ ->
+            {undefined, Label}
+    end.
+
+%%--------------------------------------------------------------------
 %% @doc
 %% Get hash index of nth node in ring.
 %% @end
