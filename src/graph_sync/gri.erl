@@ -35,7 +35,7 @@
 % '*' wildcard is used only in GRI patterns
 -type entity_type() :: '*'
 | oz_worker | od_user | od_group | od_space | od_share | od_provider
-| od_handle_service | od_handle | od_cluster | od_harvester | od_storage| od_token
+| od_handle_service | od_handle | od_cluster | od_harvester | od_storage | od_token
 | op_file | op_replica | op_transfer | op_user | op_group
 | op_space | op_share | op_provider | op_metrics.
 -type entity_id() :: undefined | binary().
@@ -93,6 +93,7 @@ matches(GRI, Pattern) ->
     catch _:_ ->
         false
     end.
+
 
 -spec serialize_type(entity_type(), mode()) -> binary().
 serialize_type('*', pattern) -> <<"*">>;

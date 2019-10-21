@@ -74,8 +74,8 @@
 -define(SPACE_ADD_GROUP, space_add_group).
 -define(SPACE_REMOVE_GROUP, space_remove_group).
 
--define(SPACE_ADD_SUPPORT, space_add_provider).
--define(SPACE_REMOVE_SUPPORT, space_remove_provider).
+-define(SPACE_ADD_SUPPORT, space_add_support).
+-define(SPACE_REMOVE_SUPPORT, space_remove_support).
 
 -define(SPACE_ADD_HARVESTER, space_add_harvester).
 -define(SPACE_REMOVE_HARVESTER, space_remove_harvester).
