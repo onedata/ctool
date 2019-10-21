@@ -22,7 +22,7 @@
 
 -define(SINGLE_NODE_CHASH(Node), Node).
 -define(IS_SINGLE_NODE_CHASH(CHash), is_atom(CHash)).
--define(HASH_SEPARATOR, "!@hsh_").
+-define(HASH_SEPARATOR, "_hash_").
 -define(HASH_SEPARATOR_BIN, <<?HASH_SEPARATOR>>).
 -define(HASH_LENGTH, 4).
 
