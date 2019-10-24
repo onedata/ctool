@@ -525,6 +525,10 @@ to_json(?ERROR_BAD_VALUE_CAVEATS) -> #{
     <<"id">> => <<"badValueCaveats">>,
     <<"description">> => <<"Provided caveats are invalid.">>
 };
+to_json(?ERROR_BAD_VALUE_QOS_PARAMETERS) -> #{
+    <<"id">> => <<"badValueQoSParameters">>,
+    <<"description">> => <<"Provided QoS parameters are invalid.">>
+};
 to_json(?ERROR_BAD_GUI_PACKAGE) -> #{
     <<"id">> => <<"badGuiPackage">>,
     <<"description">> => <<"Provider GUI package could not be understood by the server.">>
@@ -869,6 +873,9 @@ from_json(#{<<"id">> := <<"badValueSubdomain">>}) ->
 from_json(#{<<"id">> := <<"badValueCaveats">>}) ->
     ?ERROR_BAD_VALUE_CAVEATS;
 
+from_json(#{<<"id">> := <<"badValueQoSParameters">>}) ->
+    ?ERROR_BAD_VALUE_QOS_PARAMETERS;
+
 from_json(#{<<"id">> := <<"badGuiPackage">>}) ->
     ?ERROR_BAD_GUI_PACKAGE;
 
@@ -1021,6 +1028,7 @@ to_http_code(?ERROR_BAD_VALUE_NAME) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_BAD_VALUE_DOMAIN) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_BAD_VALUE_SUBDOMAIN) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_BAD_VALUE_CAVEATS) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_BAD_VALUE_QOS_PARAMETERS) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_BAD_GUI_PACKAGE) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_GUI_PACKAGE_TOO_LARGE) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_GUI_PACKAGE_UNVERIFIED) -> ?HTTP_400_BAD_REQUEST;
@@ -1058,3 +1066,4 @@ join_values_with_commas(Values) ->
         (Value) -> str_utils:format_bin("~tp", [Value])
     end, Values),
     str_utils:join_binary(StrValues, <<", ">>).
+

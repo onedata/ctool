@@ -113,6 +113,7 @@
 -define(ERROR_BAD_VALUE_DOMAIN, {error, bad_value_domain}).
 -define(ERROR_BAD_VALUE_SUBDOMAIN, {error, bad_value_subdomain}).
 -define(ERROR_BAD_VALUE_CAVEATS, {error, bad_caveats}).
+-define(ERROR_BAD_VALUE_QOS_PARAMETERS, {error, bad_qos_parameters}).
 -define(ERROR_BAD_GUI_PACKAGE, {error, bad_gui_package}).
 -define(ERROR_GUI_PACKAGE_TOO_LARGE, {error, gui_package_too_large}).
 -define(ERROR_GUI_PACKAGE_UNVERIFIED, {error, gui_package_unverified}).
@@ -150,3 +151,4 @@
 -define(ERROR_UNKNOWN_ERROR(ErrorAsJson), {error, {unknown_error, ErrorAsJson}}).
 
 -endif.
+
