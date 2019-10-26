@@ -22,7 +22,7 @@
 
 -define(SINGLE_NODE_CHASH(Node), Node).
 -define(IS_SINGLE_NODE_CHASH(CHash), is_atom(CHash)).
--define(HASH_SEPARATOR, "!@hsh_").
+-define(HASH_SEPARATOR, "ip2").
 -define(HASH_SEPARATOR_BIN, <<?HASH_SEPARATOR>>).
 -define(HASH_LENGTH, 4).
 
@@ -187,8 +187,8 @@ has_hash_part(_Label) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec create_label(binary(), binary()) -> binary().
-create_label(HashPart, Tail) ->
-    <<?HASH_SEPARATOR, HashPart/binary, Tail/binary>>.
+create_label(HashPart, RandomPart) ->
+    <<RandomPart/binary, ?HASH_SEPARATOR, HashPart/binary>>.
 
 %%%===================================================================
 %%% Internal functions
@@ -203,8 +203,8 @@ create_label(HashPart, Tail) ->
 -spec split_hash(binary()) -> {binary() | undefined, binary()}.
 split_hash(Label) ->
     case binary:split(Label, ?HASH_SEPARATOR_BIN) of
-        [_, Hash | _] ->
-            {binary:part(Hash, 0, ?HASH_LENGTH), binary:part(Hash, ?HASH_LENGTH, byte_size(Hash) - ?HASH_LENGTH)};
+        [RandomPart, Hash | _] ->
+            {binary:part(Hash, 0, ?HASH_LENGTH), RandomPart};
         _ ->
             {undefined, Label}
     end.
