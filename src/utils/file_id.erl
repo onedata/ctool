@@ -160,7 +160,7 @@ unpack_share_guid(ShareGuid) ->
     end.
 
 
-%%-------------------------------------------:-------------------------
+%%--------------------------------------------------------------------
 %% @doc
 %% Returns file's Uuid and its SpaceId for given file's Guid.
 %% @end
