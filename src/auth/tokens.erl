@@ -331,7 +331,7 @@ type_to_printable(?INVITE_TOKEN(?REGISTER_ONEPROVIDER, AdminUserId)) ->
 type_to_printable(?INVITE_TOKEN(?USER_JOIN_CLUSTER, ClusterId)) ->
     str_utils:format("invitation token for a user to join cluster \"~s\"", [ClusterId]);
 type_to_printable(?INVITE_TOKEN(?GROUP_JOIN_CLUSTER, ClusterId)) ->
-    str_utils:format("invitation token for a group to join harvester \"~s\"", [ClusterId]);
+    str_utils:format("invitation token for a group to join cluster \"~s\"", [ClusterId]);
 type_to_printable(?INVITE_TOKEN(?USER_JOIN_HARVESTER, HarvesterId)) ->
     str_utils:format("invitation token for a user to join harvester \"~s\"", [HarvesterId]);
 type_to_printable(?INVITE_TOKEN(?GROUP_JOIN_HARVESTER, HarvesterId)) ->
@@ -542,7 +542,7 @@ deserialize_persistence(<<"tmp">>) -> false.
 -spec serialize_invite_token_type(invite_token_type()) -> binary().
 serialize_invite_token_type(?USER_JOIN_GROUP) -> <<"ujg">>;
 serialize_invite_token_type(?GROUP_JOIN_GROUP) -> <<"gjg">>;
-serialize_invite_token_type(?USER_JOIN_SPACE) -> <<"ujp">>;
+serialize_invite_token_type(?USER_JOIN_SPACE) -> <<"ujs">>;
 serialize_invite_token_type(?GROUP_JOIN_SPACE) -> <<"gjs">>;
 serialize_invite_token_type(?SUPPORT_SPACE) -> <<"ssp">>;
 serialize_invite_token_type(?REGISTER_ONEPROVIDER) -> <<"rop">>;
@@ -557,7 +557,7 @@ serialize_invite_token_type(?SPACE_JOIN_HARVESTER) -> <<"sjh">>.
 -spec deserialize_invite_token_type(binary()) -> invite_token_type().
 deserialize_invite_token_type(<<"ujg">>) -> ?USER_JOIN_GROUP;
 deserialize_invite_token_type(<<"gjg">>) -> ?GROUP_JOIN_GROUP;
-deserialize_invite_token_type(<<"ujp">>) -> ?USER_JOIN_SPACE;
+deserialize_invite_token_type(<<"ujs">>) -> ?USER_JOIN_SPACE;
 deserialize_invite_token_type(<<"gjs">>) -> ?GROUP_JOIN_SPACE;
 deserialize_invite_token_type(<<"ssp">>) -> ?SUPPORT_SPACE;
 deserialize_invite_token_type(<<"rop">>) -> ?REGISTER_ONEPROVIDER;
