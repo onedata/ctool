@@ -12,7 +12,8 @@
 
 % Conversion
 -export([to_list/1, to_binary/1]).
--export([join_binary/1, join_binary/2, reverse_binary/1, binary_starts_with/2]).
+-export([join_binary/1, join_binary/2, reverse_binary/1, ensure_suffix/2]).
+-export([binary_starts_with/2, binary_ends_with/2]).
 
 % Conversion between unicode and binaries
 -export([unicode_list_to_binary/1, binary_to_unicode_list/1]).
@@ -86,15 +87,35 @@ reverse_binary(Binary) ->
     <<X:S/integer-big>>.
 
 
-%--------------------------------------------------------------------
-%% @doc Predicate that tells whether binary starts with given prefix.
+%%--------------------------------------------------------------------
+%% @doc Predicate saying whether binary starts with given prefix.
 %%--------------------------------------------------------------------
 -spec binary_starts_with(Binary :: binary(), Prefix :: binary()) -> boolean().
 binary_starts_with(Binary, Prefix) ->
-    Size = byte_size(Prefix),
-    case Binary of
-        <<Prefix:Size/binary, _/binary>> -> true;
-        _ -> false
+    byte_size(Prefix) == binary:longest_common_prefix([Binary, Prefix]).
+
+
+%%--------------------------------------------------------------------
+%% @doc Predicate saying whether binary ends with given prefix.
+%%--------------------------------------------------------------------
+-spec binary_ends_with(Binary :: binary(), Prefix :: binary()) -> boolean().
+binary_ends_with(Binary, Suffix) ->
+    byte_size(Suffix) == binary:longest_common_suffix([Binary, Suffix]).
+
+
+%%--------------------------------------------------------------------
+%% @doc Ensures a string ends with a given string by adding the suffix
+%% if not already present.
+%% @end
+%%--------------------------------------------------------------------
+-spec ensure_suffix(String :: unicode:chardata(), Suffix :: unicode:chardata()) ->
+    binary().
+ensure_suffix(String, Suffix)->
+    StringBin = unicode_list_to_binary(String),
+    SuffixBin = unicode_list_to_binary(Suffix),
+    case binary_ends_with(StringBin, SuffixBin) of
+        true -> StringBin;
+        false -> <<StringBin/binary, SuffixBin/binary>>
     end.
 
 
@@ -102,7 +123,7 @@ binary_starts_with(Binary, Prefix) ->
 %% @doc Converts a unicode list to utf8 binary.
 %% @end
 %%--------------------------------------------------------------------
--spec unicode_list_to_binary(String :: string() | binary()) -> binary().
+-spec unicode_list_to_binary(unicode:chardata()) -> binary().
 unicode_list_to_binary(Binary) when is_binary(Binary) ->
     Binary;
 unicode_list_to_binary(String) ->
