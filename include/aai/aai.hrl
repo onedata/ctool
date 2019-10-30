@@ -51,25 +51,25 @@
 
 % Types of tokens
 -define(ACCESS_TOKEN, access_token).
--define(GUI_ACCESS_TOKEN(SessionId), {gui_token, SessionId}).
+-define(GUI_ACCESS_TOKEN(SessionId), {gui_access_token, SessionId}).
 -define(INVITE_TOKEN(SubType, EntityId), {invite_token, SubType, EntityId}).
 % Subtypes of invite tokens
--define(GROUP_INVITE_USER_TOKEN, group_invite_user_token).
--define(GROUP_INVITE_GROUP_TOKEN, group_invite_group_token).
--define(SPACE_INVITE_USER_TOKEN, space_invite_user_token).
--define(SPACE_INVITE_GROUP_TOKEN, space_invite_group_token).
--define(SPACE_SUPPORT_TOKEN, space_support_token).
--define(CLUSTER_INVITE_USER_TOKEN, cluster_invite_user_token).
--define(CLUSTER_INVITE_GROUP_TOKEN, cluster_invite_group_token).
--define(PROVIDER_REGISTRATION_TOKEN, provider_registration_token).
--define(HARVESTER_INVITE_USER_TOKEN, harvester_invite_user_token).
--define(HARVESTER_INVITE_GROUP_TOKEN, harvester_invite_group_token).
--define(HARVESTER_INVITE_SPACE_TOKEN, harvester_invite_space_token).
+-define(USER_JOIN_GROUP, user_join_group).
+-define(GROUP_JOIN_GROUP, group_join_group).
+-define(USER_JOIN_SPACE, user_join_space).
+-define(GROUP_JOIN_SPACE, group_join_space).
+-define(SUPPORT_SPACE, support_space).
+-define(REGISTER_ONEPROVIDER, register_oneprovider).
+-define(USER_JOIN_CLUSTER, user_join_cluster).
+-define(GROUP_JOIN_CLUSTER, group_join_cluster).
+-define(USER_JOIN_HARVESTER, user_join_harvester).
+-define(GROUP_JOIN_HARVESTER, group_join_harvester).
+-define(SPACE_JOIN_HARVESTER, space_join_harvester).
 
 -record(token, {
     version = ?CURRENT_TOKEN_VERSION :: tokens:version(),
     onezone_domain :: tokens:onezone_domain(),
-    nonce :: tokens:nonce(),
+    id :: tokens:id(),
     persistent :: tokens:persistent(),
     subject = #subject{type = nobody} :: aai:subject(),
     type = ?ACCESS_TOKEN :: tokens:type(),

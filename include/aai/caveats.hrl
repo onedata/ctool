@@ -12,10 +12,8 @@
 -ifndef(CAVEATS_HRL).
 -define(CAVEATS_HRL, 1).
 
--define(INFINITY, infinity).
-
 -record(cv_time, {
-    valid_until = 0 :: time_utils:seconds() | infinity
+    valid_until = 0 :: time_utils:seconds()
 }).
 
 -record(cv_authorization_none, {}).

@@ -15,6 +15,7 @@
 -module(errors).
 -author("Lukasz Opiola").
 
+-include("aai/aai.hrl").
 -include("errors.hrl").
 -include("validation.hrl").
 -include("http/codes.hrl").
@@ -26,11 +27,13 @@ already_exists | unauthorized | forbidden.
 
 -type auth() :: bad_basic_credentials | {bad_idp_access_token, IdP :: atom()}
 | bad_token | bad_audience_token | token_invalid | token_revoked
-| not_an_access_token | {not_an_invite_token, tokens:invite_token_type()}
-| invite_token_issuer_not_authorized
-| {token_caveat_unverified, caveats:caveat()} | token_subject_invalid
-| {token_audience_forbidden, aai:audience()} | token_session_invalid
-| {token_time_caveat_required, time_utils:seconds()}.
+| not_an_access_token
+| {not_an_invite_token, ExpectedInviteTokenType :: any | tokens:invite_token_type(), Received :: tokens:type()}
+| {token_caveat_unverified, caveats:caveat()}
+| {token_time_caveat_required, time_utils:seconds()}
+| token_subject_invalid | {token_audience_forbidden, aai:audience()}
+| invite_token_creator_not_authorized | invite_token_usage_limit_exceeded
+| {invite_token_consumer_invalid, aai:audience()} | token_session_invalid.
 
 -type graph_sync() :: expected_handshake_message | handshake_already_done
 | {bad_version, {supported, [Version :: integer()]}} | bad_gri
@@ -45,7 +48,8 @@ already_exists | unauthorized | forbidden.
 | {bad_value_binary, key()} | {bad_value_list_of_binaries, key()}
 | {bad_value_integer, key()} | {bad_value_float, key()}
 | {bad_value_json, key()}
-| {bad_value_token, key(), auth()} | {bad_value_token_type, key()}
+| {bad_value_token, key(), auth()}
+| {bad_value_token_type, key()} | {bad_value_invite_token_type, key()}
 | {bad_value_ipv4_address, key()} | {bad_value_list_of_ipv4_addresses, key()}
 | {value_too_low, key(), {min, integer()}}
 | {value_too_high, key(), {max, integer()}}
@@ -220,42 +224,42 @@ to_json(?ERROR_TOKEN_TOO_LARGE(SizeLimit)) -> #{
     },
     <<"description">> => ?FMT("Provided token exceeds the allowed size (~B bytes).", [SizeLimit])
 };
-to_json(?ERROR_NOT_AN_ACCESS_TOKEN) -> #{
+to_json(?ERROR_NOT_AN_ACCESS_TOKEN(ReceivedTokenType)) -> #{
     <<"id">> => <<"notAnAccessToken">>,
-    <<"description">> => <<"Provided token is not an access token (invite token?).">>
+    <<"details">> => #{
+        <<"received">> => tokens:type_to_json(ReceivedTokenType)
+    },
+    <<"description">> => ?FMT("Expected an access token, but received a(n) ~s.", [
+        tokens:type_to_printable(ReceivedTokenType)
+    ])
 };
-to_json(?ERROR_NOT_AN_INVITE_TOKEN(Type)) -> #{
+to_json(?ERROR_NOT_AN_INVITE_TOKEN(ExpectedInviteTokenType, ReceivedTokenType)) -> #{
     <<"id">> => <<"notAnInviteToken">>,
     <<"details">> => #{
-        <<"expectedType">> => atom_to_binary(Type, utf8)
+        <<"expectedInviteTokenType">> => case ExpectedInviteTokenType of
+            any -> <<"any">>;
+            _ -> tokens:invite_token_type_to_str(ExpectedInviteTokenType)
+        end,
+        <<"received">> => tokens:type_to_json(ReceivedTokenType)
     },
-    <<"description">> => ?FMT("Expected a ~p token.", [Type])
+    <<"description">> => ?FMT("Expected an invitation token of type '~s', but received a(n) ~s.", [
+        ExpectedInviteTokenType,
+        tokens:type_to_printable(ReceivedTokenType)
+    ])
 };
-to_json(?ERROR_INVITE_TOKEN_ISSUER_NOT_AUTHORIZED) -> #{
-    <<"id">> => <<"inviteTokenIssuerNotAuthorized">>,
-    <<"description">> => <<"The creator of this token is no longer authorized to issue such invites.">>
+to_json(?ERROR_TOKEN_CAVEAT_UNKNOWN(CaveatBinary)) -> #{
+    <<"id">> => <<"tokenCaveatUnknown">>,
+    <<"details">> => #{
+        <<"caveat">> => CaveatBinary
+    },
+    <<"description">> => ?FMT("Unknown caveat - '~ts'.", [CaveatBinary])
 };
 to_json(?ERROR_TOKEN_CAVEAT_UNVERIFIED(Caveat)) -> #{
     <<"id">> => <<"tokenCaveatUnverified">>,
     <<"details">> => #{
-        <<"caveat">> => caveats:serialize(Caveat)
+        <<"caveat">> => caveats:to_json(Caveat)
     },
     <<"description">> => ?FMT("Provided token is not valid - ~ts.", [caveats:unverified_description(Caveat)])
-};
-to_json(?ERROR_TOKEN_SUBJECT_INVALID) -> #{
-    <<"id">> => <<"tokenSubjectInvalid">>,
-    <<"description">> => <<"Token cannot be created for requested subject.">>
-};
-to_json(?ERROR_TOKEN_AUDIENCE_FORBIDDEN(Audience)) -> #{
-    <<"id">> => <<"tokenAudienceForbidden">>,
-    <<"details">> => #{
-        <<"audience">> => aai:serialize_audience(Audience)
-    },
-    <<"description">> => ?FMT("The audience ~s is forbidden for this subject.", [aai:audience_to_printable(Audience)])
-};
-to_json(?ERROR_TOKEN_SESSION_INVALID) -> #{
-    <<"id">> => <<"tokenSessionInvalid">>,
-    <<"description">> => <<"This token was issued for a session that no longer exists.">>
 };
 to_json(?ERROR_TOKEN_TIME_CAVEAT_REQUIRED(MaxTtl)) -> #{
     <<"id">> => <<"tokenTimeCaveatRequired">>,
@@ -263,6 +267,36 @@ to_json(?ERROR_TOKEN_TIME_CAVEAT_REQUIRED(MaxTtl)) -> #{
         <<"maxTtl">> => MaxTtl
     },
     <<"description">> => ?FMT("You must specify a time caveat with maximum TTL of ~B seconds.", [MaxTtl])
+};
+to_json(?ERROR_TOKEN_SUBJECT_INVALID) -> #{
+    <<"id">> => <<"tokenSubjectInvalid">>,
+    <<"description">> => <<"The token subject is invalid (does not exist or is different than expected).">>
+};
+to_json(?ERROR_TOKEN_AUDIENCE_FORBIDDEN(Audience)) -> #{
+    <<"id">> => <<"tokenAudienceForbidden">>,
+    <<"details">> => #{
+        <<"audience">> => aai:audience_to_json(Audience)
+    },
+    <<"description">> => ?FMT("The audience ~s is forbidden for this subject.", [aai:audience_to_printable(Audience)])
+};
+to_json(?ERROR_INVITE_TOKEN_CREATOR_NOT_AUTHORIZED) -> #{
+    <<"id">> => <<"inviteTokenCreatorNotAuthorized">>,
+    <<"description">> => <<"The creator of this token is not (or not longer) authorized to issue such invitations.">>
+};
+to_json(?ERROR_INVITE_TOKEN_USAGE_LIMIT_REACHED) -> #{
+    <<"id">> => <<"inviteTokenUsageLimitReached">>,
+    <<"description">> => <<"The usage limit of this invite token has been reached.">>
+};
+to_json(?ERROR_INVITE_TOKEN_CONSUMER_INVALID(Audience)) -> #{
+    <<"id">> => <<"inviteTokenConsumerInvalid">>,
+    <<"details">> => #{
+        <<"consumer">> => aai:subject_to_json(Audience)
+    },
+    <<"description">> => ?FMT("The consumer ~s is invalid for this type of invite token.", [aai:subject_to_printable(Audience)])
+};
+to_json(?ERROR_TOKEN_SESSION_INVALID) -> #{
+    <<"id">> => <<"tokenSessionInvalid">>,
+    <<"description">> => <<"This token was issued for a session that no longer exists.">>
 };
 
 %% -----------------------------------------------------------------------------
@@ -403,6 +437,13 @@ to_json(?ERROR_BAD_VALUE_TOKEN_TYPE(Key)) -> #{
         <<"key">> => Key
     },
     <<"description">> => ?FMT("Bad value: provided \"~s\" is not a valid token type.", [Key])
+};
+to_json(?ERROR_BAD_VALUE_INVITE_TOKEN_TYPE(Key)) -> #{
+    <<"id">> => <<"badValueInviteTokenType">>,
+    <<"details">> => #{
+        <<"key">> => Key
+    },
+    <<"description">> => ?FMT("Bad value: provided \"~s\" is not a valid invite token type.", [Key])
 };
 to_json(?ERROR_BAD_VALUE_IPV4_ADDRESS(Key)) -> #{
     <<"id">> => <<"badValueIPv4Address">>,
@@ -724,29 +765,43 @@ from_json(#{<<"id">> := <<"tokenRevoked">>}) ->
 from_json(#{<<"id">> := <<"tokenTooLarge">>, <<"details">> := #{<<"limit">> := SizeLimit}}) ->
     ?ERROR_TOKEN_TOO_LARGE(SizeLimit);
 
-from_json(#{<<"id">> := <<"notAnAccessToken">>}) ->
-    ?ERROR_NOT_AN_ACCESS_TOKEN;
+from_json(#{<<"id">> := <<"notAnAccessToken">>, <<"details">> := #{<<"received">> := ReceivedTokenType}}) ->
+    ?ERROR_NOT_AN_ACCESS_TOKEN(tokens:json_to_type(ReceivedTokenType));
 
-from_json(#{<<"id">> := <<"notAnInviteToken">>, <<"details">> := #{<<"expectedType">> := Type}}) ->
-    ?ERROR_NOT_AN_INVITE_TOKEN(binary_to_existing_atom(Type, utf8));
+from_json(#{<<"id">> := <<"notAnInviteToken">>, <<"details">> := Details}) ->
+    #{<<"expectedInviteTokenType">> := ExpectedInviteTokenTypeStr, <<"received">> := RecvType} = Details,
+    ExpectedInviteTokenType = case ExpectedInviteTokenTypeStr of
+        <<"any">> -> any;
+        _ -> tokens:str_to_invite_token_type(ExpectedInviteTokenTypeStr)
+    end,
+    ?ERROR_NOT_AN_INVITE_TOKEN(ExpectedInviteTokenType, tokens:json_to_type(RecvType));
 
-from_json(#{<<"id">> := <<"inviteTokenIssuerNotAuthorized">>}) ->
-    ?ERROR_INVITE_TOKEN_ISSUER_NOT_AUTHORIZED;
+from_json(#{<<"id">> := <<"tokenCaveatUnknown">>, <<"details">> := #{<<"caveat">> := CaveatBinary}}) ->
+    ?ERROR_TOKEN_CAVEAT_UNKNOWN(CaveatBinary);
 
 from_json(#{<<"id">> := <<"tokenCaveatUnverified">>, <<"details">> := #{<<"caveat">> := Caveat}}) ->
-    ?ERROR_TOKEN_CAVEAT_UNVERIFIED(caveats:deserialize(Caveat));
+    ?ERROR_TOKEN_CAVEAT_UNVERIFIED(caveats:from_json(Caveat));
+
+from_json(#{<<"id">> := <<"tokenTimeCaveatRequired">>, <<"details">> := #{<<"maxTtl">> := MaxTtl}}) ->
+    ?ERROR_TOKEN_TIME_CAVEAT_REQUIRED(MaxTtl);
 
 from_json(#{<<"id">> := <<"tokenSubjectInvalid">>}) ->
     ?ERROR_TOKEN_SUBJECT_INVALID;
 
 from_json(#{<<"id">> := <<"tokenAudienceForbidden">>, <<"details">> := #{<<"audience">> := Audience}}) ->
-    ?ERROR_TOKEN_AUDIENCE_FORBIDDEN(aai:deserialize_audience(Audience));
+    ?ERROR_TOKEN_AUDIENCE_FORBIDDEN(aai:audience_from_json(Audience));
+
+from_json(#{<<"id">> := <<"inviteTokenCreatorNotAuthorized">>}) ->
+    ?ERROR_INVITE_TOKEN_CREATOR_NOT_AUTHORIZED;
+
+from_json(#{<<"id">> := <<"inviteTokenUsageLimitReached">>}) ->
+    ?ERROR_INVITE_TOKEN_USAGE_LIMIT_REACHED;
+
+from_json(#{<<"id">> := <<"inviteTokenConsumerInvalid">>, <<"details">> := #{<<"consumer">> := Audience}}) ->
+    ?ERROR_INVITE_TOKEN_CONSUMER_INVALID(aai:subject_from_json(Audience));
 
 from_json(#{<<"id">> := <<"tokenSessionInvalid">>}) ->
     ?ERROR_TOKEN_SESSION_INVALID;
-
-from_json(#{<<"id">> := <<"tokenTimeCaveatRequired">>, <<"details">> := #{<<"maxTtl">> := MaxTtl}}) ->
-    ?ERROR_TOKEN_TIME_CAVEAT_REQUIRED(MaxTtl);
 
 %% -----------------------------------------------------------------------------
 %% Graph Sync errors
@@ -811,6 +866,9 @@ from_json(#{<<"id">> := <<"badValueToken">>, <<"details">> := #{<<"key">> := Key
 
 from_json(#{<<"id">> := <<"badValueTokenType">>, <<"details">> := #{<<"key">> := Key}}) ->
     ?ERROR_BAD_VALUE_TOKEN_TYPE(Key);
+
+from_json(#{<<"id">> := <<"badValueInviteTokenType">>, <<"details">> := #{<<"key">> := Key}}) ->
+    ?ERROR_BAD_VALUE_INVITE_TOKEN_TYPE(Key);
 
 from_json(#{<<"id">> := <<"badValueIPv4Address">>, <<"details">> := #{<<"key">> := Key}}) ->
     ?ERROR_BAD_VALUE_IPV4_ADDRESS(Key);
@@ -965,14 +1023,17 @@ to_http_code(?ERROR_BAD_AUDIENCE_TOKEN(_)) -> ?HTTP_401_UNAUTHORIZED;
 to_http_code(?ERROR_TOKEN_INVALID) -> ?HTTP_401_UNAUTHORIZED;
 to_http_code(?ERROR_TOKEN_REVOKED) -> ?HTTP_401_UNAUTHORIZED;
 to_http_code(?ERROR_TOKEN_TOO_LARGE(_)) -> ?HTTP_401_UNAUTHORIZED;
-to_http_code(?ERROR_NOT_AN_ACCESS_TOKEN) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_NOT_AN_INVITE_TOKEN(_)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_INVITE_TOKEN_ISSUER_NOT_AUTHORIZED) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_NOT_AN_ACCESS_TOKEN(_)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_NOT_AN_INVITE_TOKEN(_, _)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_TOKEN_CAVEAT_UNKNOWN(_)) -> ?HTTP_401_UNAUTHORIZED;
 to_http_code(?ERROR_TOKEN_CAVEAT_UNVERIFIED(_)) -> ?HTTP_401_UNAUTHORIZED;
+to_http_code(?ERROR_TOKEN_TIME_CAVEAT_REQUIRED(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_TOKEN_SUBJECT_INVALID) -> ?HTTP_401_UNAUTHORIZED;
 to_http_code(?ERROR_TOKEN_AUDIENCE_FORBIDDEN(_)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_INVITE_TOKEN_USAGE_LIMIT_REACHED) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_INVITE_TOKEN_CREATOR_NOT_AUTHORIZED) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_INVITE_TOKEN_CONSUMER_INVALID(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_TOKEN_SESSION_INVALID) -> ?HTTP_401_UNAUTHORIZED;
-to_http_code(?ERROR_TOKEN_TIME_CAVEAT_REQUIRED(_)) -> ?HTTP_400_BAD_REQUEST;
 
 %% -----------------------------------------------------------------------------
 %% Graph Sync errors
@@ -1002,6 +1063,7 @@ to_http_code(?ERROR_BAD_VALUE_FLOAT(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_BAD_VALUE_JSON(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_BAD_VALUE_TOKEN(_, _)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_BAD_VALUE_TOKEN_TYPE(_)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_BAD_VALUE_INVITE_TOKEN_TYPE(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_BAD_VALUE_IPV4_ADDRESS(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_BAD_VALUE_LIST_OF_IPV4_ADDRESSES(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_BAD_VALUE_TOO_LOW(_, _)) -> ?HTTP_400_BAD_REQUEST;

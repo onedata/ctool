@@ -74,10 +74,13 @@
 %%% API
 -export([root_auth/0, nobody_auth/0, user_auth/1]).
 -export([auth_to_audience/1]).
+-export([subject_to_json/1, subject_from_json/1]).
 -export([serialize_subject/1, deserialize_subject/1]).
+-export([audience_to_json/1, audience_from_json/1]).
 -export([serialize_audience/1, deserialize_audience/1]).
 -export([serialize_audience_type/1, deserialize_audience_type/1]).
 -export([auth_to_printable/1]).
+-export([subject_to_printable/1]).
 -export([audience_to_printable/1]).
 
 %%%===================================================================
@@ -131,6 +134,27 @@ auth_to_audience(_) ->
     undefined.
 
 
+-spec subject_to_json(aai:subject()) -> json_utils:json_term().
+subject_to_json(?SUB(nobody)) ->
+    #{<<"type">> => <<"nobody">>, <<"id">> => null};
+% root subject must not have a representation outside of the application
+subject_to_json(?SUB(root)) ->
+    #{<<"type">> => <<"nobody">>, <<"id">> => null};
+subject_to_json(?SUB(user, UserId)) ->
+    #{<<"type">> => <<"user">>, <<"id">> => UserId};
+subject_to_json(?SUB(?ONEPROVIDER, PrId)) ->
+    #{<<"type">> => <<"oneprovider">>, <<"id">> => PrId}.
+
+
+-spec subject_from_json(json_utils:json_term()) -> aai:subject().
+subject_from_json(#{<<"type">> := <<"nobody">>, <<"id">> := null}) ->
+    ?SUB(nobody);
+subject_from_json(#{<<"type">> := <<"user">>, <<"id">> := UserId}) ->
+    ?SUB(user, UserId);
+subject_from_json(#{<<"type">> := <<"oneprovider">>, <<"id">> := PrId}) ->
+    ?SUB(?ONEPROVIDER, PrId).
+
+
 -spec serialize_subject(aai:subject()) -> binary().
 serialize_subject(?SUB(nobody)) -> <<"nobody">>;
 % root subject must not have a representation outside of the application
@@ -143,6 +167,16 @@ serialize_subject(?SUB(?ONEPROVIDER, Provider)) -> <<"prv-", Provider/binary>>.
 deserialize_subject(<<"nobody">>) -> ?SUB(nobody);
 deserialize_subject(<<"usr-", UserId/binary>>) -> ?SUB(user, UserId);
 deserialize_subject(<<"prv-", Provider/binary>>) -> ?SUB(?ONEPROVIDER, Provider).
+
+
+-spec audience_to_json(audience()) -> json_utils:json_term().
+audience_to_json(?AUD(Type, Id)) ->
+    #{<<"type">> => atom_to_binary(Type, utf8), <<"id">> => Id}.
+
+
+-spec audience_from_json(json_utils:json_term()) -> audience().
+audience_from_json(#{<<"type">> := Type, <<"id">> := Id}) ->
+    ?AUD(binary_to_existing_atom(Type, utf8), Id).
 
 
 -spec serialize_audience(audience()) -> binary().
@@ -174,6 +208,10 @@ auth_to_printable(?NOBODY) -> "nobody (unauthenticated client)";
 auth_to_printable(?ROOT) -> "root";
 auth_to_printable(?USER(UId)) -> str_utils:format("user:~s", [UId]);
 auth_to_printable(?PROVIDER(PId)) -> str_utils:format("provider:~s", [PId]).
+
+
+-spec subject_to_printable(subject()) -> string().
+subject_to_printable(?SUB(Type, Id)) -> str_utils:format("~s:~s", [Type, Id]).
 
 
 -spec audience_to_printable(audience()) -> string().

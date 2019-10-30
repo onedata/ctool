@@ -52,17 +52,20 @@
 -define(ERROR_TOKEN_INVALID, {error, token_invalid}).
 -define(ERROR_TOKEN_REVOKED, {error, token_revoked}).
 -define(ERROR_TOKEN_TOO_LARGE(SizeLimit), {error, {token_too_large, {max, SizeLimit}}}).
--define(ERROR_NOT_AN_ACCESS_TOKEN, {error, not_an_access_token}).
--define(ERROR_NOT_AN_INVITE_TOKEN(Type), {error, {not_an_invite_token, Type}}).
--define(ERROR_INVITE_TOKEN_ISSUER_NOT_AUTHORIZED, {error, invite_token_issuer_not_authorized}).
+-define(ERROR_NOT_AN_ACCESS_TOKEN(ReceivedTokenType), {error, {not_an_access_token, ReceivedTokenType}}).
+-define(ERROR_NOT_AN_INVITE_TOKEN(ExpTokenType, RecvTokenType), {error, {not_an_invite_token, ExpTokenType, RecvTokenType}}).
+-define(ERROR_TOKEN_CAVEAT_UNKNOWN(CaveatBinary), {error, {token_caveat_unknown, CaveatBinary}}).
 -define(ERROR_TOKEN_CAVEAT_UNVERIFIED(Caveat), {error, {token_caveat_unverified, Caveat}}).
-% Token cannot be created for requested subject
+-define(ERROR_TOKEN_TIME_CAVEAT_REQUIRED(MaxTtl), {error, {token_time_caveat_required, MaxTtl}}).
+% Token cannot be created for requested subject as it is invalid
 -define(ERROR_TOKEN_SUBJECT_INVALID, {error, token_subject_invalid}).
 % Requested audience is forbidden to consume the token (e.g. user is not
 % supported by the provider specified in audience)
 -define(ERROR_TOKEN_AUDIENCE_FORBIDDEN(Audience), {error, {token_audience_forbidden, Audience}}).
+-define(ERROR_INVITE_TOKEN_CREATOR_NOT_AUTHORIZED, {error, invite_token_creator_not_authorized}).
+-define(ERROR_INVITE_TOKEN_USAGE_LIMIT_REACHED, {error, invite_token_usage_limit_exceeded}).
+-define(ERROR_INVITE_TOKEN_CONSUMER_INVALID(Audience), {error, {invite_token_consumer_invalid, Audience}}).
 -define(ERROR_TOKEN_SESSION_INVALID, {error, token_session_invalid}).
--define(ERROR_TOKEN_TIME_CAVEAT_REQUIRED(MaxTtl), {error, {token_time_caveat_required, MaxTtl}}).
 
 
 %%--------------------------------------------------------------------
@@ -94,6 +97,7 @@
 -define(ERROR_BAD_VALUE_JSON(Key), {error, {bad_value_json, Key}}).
 -define(ERROR_BAD_VALUE_TOKEN(Key, TokenError), {error, {bad_value_token, Key, TokenError}}).
 -define(ERROR_BAD_VALUE_TOKEN_TYPE(Key), {error, {bad_value_token_type, Key}}).
+-define(ERROR_BAD_VALUE_INVITE_TOKEN_TYPE(Key), {error, {bad_value_invite_token_type, Key}}).
 -define(ERROR_BAD_VALUE_IPV4_ADDRESS(Key), {error, {bad_value_ipv4_address, Key}}).
 -define(ERROR_BAD_VALUE_LIST_OF_IPV4_ADDRESSES(Key), {error, {bad_value_list_of_ipv4_addresses, Key}}).
 -define(ERROR_BAD_VALUE_TOO_LOW(Key, Threshold), {error, {value_too_low, Key, {min, Threshold}}}).

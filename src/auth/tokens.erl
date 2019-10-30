@@ -32,29 +32,29 @@
 % Domain of the issuing Onezone
 -type onezone_domain() :: binary().
 % A random string that uniquely identifies the token
--type nonce() :: binary().
+-type id() :: binary().
 % Indicates if given token is persistent:
 %   true -  the token's secret and possibly some additional information is
-%           stored by the issuer Onezone, retrievable by nonce - such tokens
+%           stored by the issuer Onezone, retrievable by id - such tokens
 %           are revocable and traceable in the system
 %   false - the token uses a shared secret and is not persisted anywhere, which
 %           means it cannot be revoked or have any attached information apart
 %           from that carried by the token itself
 -type persistent() :: boolean().
 % Type of the token as recognized across Onedata components
--type type() :: access_token | {gui_token, aai:session_id()} |
+-type type() :: access_token | {gui_access_token, aai:session_id()} |
 {invite_token, invite_token_type(), gri:entity_id()}.
 % Subtypes of invite tokens
--type invite_token_type() :: ?GROUP_INVITE_USER_TOKEN | ?GROUP_INVITE_GROUP_TOKEN |
-?SPACE_INVITE_USER_TOKEN | ?SPACE_INVITE_GROUP_TOKEN | ?SPACE_SUPPORT_TOKEN |
-?CLUSTER_INVITE_USER_TOKEN | ?CLUSTER_INVITE_GROUP_TOKEN |
-?PROVIDER_REGISTRATION_TOKEN |
-?HARVESTER_INVITE_USER_TOKEN | ?HARVESTER_INVITE_GROUP_TOKEN | ?HARVESTER_INVITE_SPACE_TOKEN.
+-type invite_token_type() :: ?USER_JOIN_GROUP | ?GROUP_JOIN_GROUP |
+?USER_JOIN_SPACE | ?GROUP_JOIN_SPACE | ?SUPPORT_SPACE |
+?USER_JOIN_CLUSTER | ?GROUP_JOIN_CLUSTER |
+?REGISTER_ONEPROVIDER |
+?USER_JOIN_HARVESTER | ?GROUP_JOIN_HARVESTER | ?SPACE_JOIN_HARVESTER.
 % A secret for verifying the token, known only to the issuing Onezone
 -type secret() :: binary().
 
 % Internal type used for encoding basic information about the token (version,
-% nonce, persistence, subject and type), it is used as the identifier in the
+% id, persistence, subject and type), it is used as the identifier in the
 % underlying macaroon, which allows creating self contained tokens that do not
 % need to be stored anywhere.
 -type token_identifier() :: binary().
@@ -62,7 +62,7 @@
 -export_type([token/0, serialized/0]).
 -export_type([version/0, onezone_domain/0, persistent/0]).
 -export_type([type/0, invite_token_type/0]).
--export_type([nonce/0, secret/0]).
+-export_type([id/0, secret/0]).
 
 %%% API
 -export([construct/3]).
@@ -72,8 +72,12 @@
 -export([serialize/1, build_service_access_token/2]).
 -export([deserialize/1]).
 -export([is_token/1]).
--export([sanitize_type/1, serialize_type/1, deserialize_type/1]).
+-export([is_invite_token/2]).
 -export([invite_token_types/0]).
+-export([sanitize_type/1, sanitize_invite_token_type/1, type_to_printable/1]).
+-export([serialize_type/1, deserialize_type/1]).
+-export([type_to_json/1, json_to_type/1]).
+-export([invite_token_type_to_str/1, str_to_invite_token_type/1]).
 -export([generate_secret/0]).
 -export([build_access_token_header/1, parse_access_token_header/1]).
 -export([supported_access_token_headers/0]).
@@ -114,7 +118,7 @@ construct(Prototype = #token{onezone_domain = OzDomain}, Secret, Caveats) ->
     {ok, aai:auth()} | {error, term()}.
 verify(Token = #token{macaroon = Macaroon}, Secret, AuthCtx, SupportedCaveats) ->
     Verifier = caveats:build_verifier(AuthCtx, SupportedCaveats),
-    case macaroon_verifier:verify(Verifier, Macaroon, Secret) of
+    try macaroon_verifier:verify(Verifier, Macaroon, Secret) of
         ok ->
             {ok, #auth{
                 subject = Token#token.subject,
@@ -128,6 +132,11 @@ verify(Token = #token{macaroon = Macaroon}, Secret, AuthCtx, SupportedCaveats) -
         {error, {unverified_caveat, Serialized}} ->
             ?ERROR_TOKEN_CAVEAT_UNVERIFIED(caveats:deserialize(Serialized));
         _ ->
+            ?ERROR_TOKEN_INVALID
+    catch
+        throw:{error, _} = Error ->
+            Error;
+        _:_ ->
             ?ERROR_TOKEN_INVALID
     end.
 
@@ -234,19 +243,50 @@ is_token(_) ->
     false.
 
 
--spec sanitize_type(type() | binary()) -> {true, type()} | false.
+%%--------------------------------------------------------------------
+%% @doc
+%% Checks if given term is an invite token of expected type - 'any' can be
+%% used to indicate that any invite token is expected.
+%% @end
+%%--------------------------------------------------------------------
+-spec is_invite_token(term(), ExpectedType :: any | invite_token_type()) -> boolean().
+is_invite_token(#token{type = ?INVITE_TOKEN(_, _)}, any) ->
+    true;
+is_invite_token(#token{type = ?INVITE_TOKEN(ExpType, _)}, ExpType) ->
+    true;
+is_invite_token(_, _) ->
+    false.
+
+
+-spec invite_token_types() -> [invite_token_type()].
+invite_token_types() -> [
+    ?USER_JOIN_GROUP,
+    ?GROUP_JOIN_GROUP,
+    ?USER_JOIN_SPACE,
+    ?GROUP_JOIN_SPACE,
+    ?SUPPORT_SPACE,
+    ?REGISTER_ONEPROVIDER,
+    ?USER_JOIN_CLUSTER,
+    ?GROUP_JOIN_CLUSTER,
+    ?USER_JOIN_HARVESTER,
+    ?GROUP_JOIN_HARVESTER,
+    ?SPACE_JOIN_HARVESTER
+].
+
+
+-spec sanitize_type(type() | json_utils:json_term()) -> {true, type()} | false.
 sanitize_type(?ACCESS_TOKEN) ->
     {true, ?ACCESS_TOKEN};
 sanitize_type(?GUI_ACCESS_TOKEN(SessionId)) when is_binary(SessionId) ->
     {true, ?GUI_ACCESS_TOKEN(SessionId)};
-sanitize_type(?INVITE_TOKEN(Type, EntityId)) when is_binary(EntityId) ->
-    case lists:member(Type, invite_token_types()) of
-        true -> {true, ?INVITE_TOKEN(Type, EntityId)};
+sanitize_type(?INVITE_TOKEN(InviteTokenType, EntityId)) when is_binary(EntityId) ->
+    case lists:member(InviteTokenType, invite_token_types()) of
+        true -> {true, ?INVITE_TOKEN(InviteTokenType, EntityId)};
         false -> false
     end;
-sanitize_type(Serialized) when is_binary(Serialized) ->
+sanitize_type(AsJson) when is_map(AsJson) ->
     try
-        sanitize_type(deserialize_type(Serialized))
+        sanitize_type(json_to_type(AsJson))
     catch _:_ ->
         false
     end;
@@ -254,20 +294,50 @@ sanitize_type(_) ->
     false.
 
 
--spec invite_token_types() -> [invite_token_type()].
-invite_token_types() -> [
-    ?GROUP_INVITE_USER_TOKEN,
-    ?GROUP_INVITE_GROUP_TOKEN,
-    ?SPACE_INVITE_USER_TOKEN,
-    ?SPACE_INVITE_GROUP_TOKEN,
-    ?SPACE_SUPPORT_TOKEN,
-    ?CLUSTER_INVITE_USER_TOKEN,
-    ?CLUSTER_INVITE_GROUP_TOKEN,
-    ?PROVIDER_REGISTRATION_TOKEN,
-    ?HARVESTER_INVITE_USER_TOKEN,
-    ?HARVESTER_INVITE_GROUP_TOKEN,
-    ?HARVESTER_INVITE_SPACE_TOKEN
-].
+-spec sanitize_invite_token_type(invite_token_type() | binary()) ->
+    {true, invite_token_type()} | false.
+sanitize_invite_token_type(InviteTokenType) when is_atom(InviteTokenType) ->
+    case lists:member(InviteTokenType, invite_token_types()) of
+        true -> {true, InviteTokenType};
+        false -> false
+    end;
+sanitize_invite_token_type(InviteTokenType) when is_binary(InviteTokenType) ->
+    try
+        sanitize_invite_token_type(str_to_invite_token_type(InviteTokenType))
+    catch _:_ ->
+        false
+    end;
+sanitize_invite_token_type(_) ->
+    false.
+
+
+-spec type_to_printable(type()) -> string().
+type_to_printable(?ACCESS_TOKEN) ->
+    "access token";
+type_to_printable(?GUI_ACCESS_TOKEN(SessionId)) ->
+    str_utils:format("GUI access token for session \"~s\"", [SessionId]);
+type_to_printable(?INVITE_TOKEN(?USER_JOIN_GROUP, GroupId)) ->
+    str_utils:format("invitation token for a user to join group \"~s\"", [GroupId]);
+type_to_printable(?INVITE_TOKEN(?GROUP_JOIN_GROUP, GroupId)) ->
+    str_utils:format("invitation token for a group to join group \"~s\"", [GroupId]);
+type_to_printable(?INVITE_TOKEN(?USER_JOIN_SPACE, SpaceId)) ->
+    str_utils:format("invitation token for a user to join space \"~s\"", [SpaceId]);
+type_to_printable(?INVITE_TOKEN(?GROUP_JOIN_SPACE, SpaceId)) ->
+    str_utils:format("invitation token for a group to join space \"~s\"", [SpaceId]);
+type_to_printable(?INVITE_TOKEN(?SUPPORT_SPACE, SpaceId)) ->
+    str_utils:format("invitation token to grant support for space \"~s\"", [SpaceId]);
+type_to_printable(?INVITE_TOKEN(?REGISTER_ONEPROVIDER, AdminUserId)) ->
+    str_utils:format("invitation token to register a Oneprovider for admin user \"~s\"", [AdminUserId]);
+type_to_printable(?INVITE_TOKEN(?USER_JOIN_CLUSTER, ClusterId)) ->
+    str_utils:format("invitation token for a user to join cluster \"~s\"", [ClusterId]);
+type_to_printable(?INVITE_TOKEN(?GROUP_JOIN_CLUSTER, ClusterId)) ->
+    str_utils:format("invitation token for a group to join harvester \"~s\"", [ClusterId]);
+type_to_printable(?INVITE_TOKEN(?USER_JOIN_HARVESTER, HarvesterId)) ->
+    str_utils:format("invitation token for a user to join harvester \"~s\"", [HarvesterId]);
+type_to_printable(?INVITE_TOKEN(?GROUP_JOIN_HARVESTER, HarvesterId)) ->
+    str_utils:format("invitation token for a group to join harvester \"~s\"", [HarvesterId]);
+type_to_printable(?INVITE_TOKEN(?SPACE_JOIN_HARVESTER, HarvesterId)) ->
+    str_utils:format("invitation token for a space to become a metadata source for harvester \"~s\"", [HarvesterId]).
 
 
 -spec serialize_type(type()) -> binary().
@@ -286,6 +356,83 @@ deserialize_type(<<"gui-", SessionId/binary>>) when size(SessionId) > 0 ->
     ?GUI_ACCESS_TOKEN(SessionId);
 deserialize_type(<<InviteTokenType:3/binary, "-", EntityId/binary>>) when size(EntityId) > 0 ->
     ?INVITE_TOKEN(deserialize_invite_token_type(InviteTokenType), EntityId).
+
+
+-spec type_to_json(type()) -> json_utils:json_term().
+type_to_json(?ACCESS_TOKEN) ->
+    #{<<"accessToken">> => #{}};
+type_to_json(?GUI_ACCESS_TOKEN(SessionId)) ->
+    #{<<"guiAccessToken">> => #{
+        <<"sessionId">> => SessionId
+    }};
+type_to_json(?INVITE_TOKEN(InvTokenType, EntityId)) ->
+    InviteTokenParams = case InvTokenType of
+        ?USER_JOIN_GROUP -> #{<<"groupId">> => EntityId};
+        ?GROUP_JOIN_GROUP -> #{<<"groupId">> => EntityId};
+        ?USER_JOIN_SPACE -> #{<<"spaceId">> => EntityId};
+        ?GROUP_JOIN_SPACE -> #{<<"spaceId">> => EntityId};
+        ?SUPPORT_SPACE -> #{<<"spaceId">> => EntityId};
+        ?REGISTER_ONEPROVIDER -> #{<<"adminUserId">> => EntityId};
+        ?USER_JOIN_CLUSTER -> #{<<"clusterId">> => EntityId};
+        ?GROUP_JOIN_CLUSTER -> #{<<"clusterId">> => EntityId};
+        ?USER_JOIN_HARVESTER -> #{<<"harvesterId">> => EntityId};
+        ?GROUP_JOIN_HARVESTER -> #{<<"harvesterId">> => EntityId};
+        ?SPACE_JOIN_HARVESTER -> #{<<"harvesterId">> => EntityId}
+    end,
+    #{<<"inviteToken">> => InviteTokenParams#{
+        <<"subtype">> => invite_token_type_to_str(InvTokenType)
+    }}.
+
+
+-spec json_to_type(json_utils:json_term()) -> type().
+json_to_type(#{<<"accessToken">> := _}) ->
+    ?ACCESS_TOKEN;
+json_to_type(#{<<"guiAccessToken">> := #{<<"sessionId">> := SessionId}}) ->
+    ?GUI_ACCESS_TOKEN(SessionId);
+json_to_type(#{<<"inviteToken">> := InviteTokenParams = #{<<"subtype">> := Subtype}}) ->
+    InvTokenType = str_to_invite_token_type(Subtype),
+    EntityId = case InvTokenType of
+        ?USER_JOIN_GROUP -> maps:get(<<"groupId">>, InviteTokenParams);
+        ?GROUP_JOIN_GROUP -> maps:get(<<"groupId">>, InviteTokenParams);
+        ?USER_JOIN_SPACE -> maps:get(<<"spaceId">>, InviteTokenParams);
+        ?GROUP_JOIN_SPACE -> maps:get(<<"spaceId">>, InviteTokenParams);
+        ?SUPPORT_SPACE -> maps:get(<<"spaceId">>, InviteTokenParams);
+        ?REGISTER_ONEPROVIDER -> maps:get(<<"adminUserId">>, InviteTokenParams);
+        ?USER_JOIN_CLUSTER -> maps:get(<<"clusterId">>, InviteTokenParams);
+        ?GROUP_JOIN_CLUSTER -> maps:get(<<"clusterId">>, InviteTokenParams);
+        ?USER_JOIN_HARVESTER -> maps:get(<<"harvesterId">>, InviteTokenParams);
+        ?GROUP_JOIN_HARVESTER -> maps:get(<<"harvesterId">>, InviteTokenParams);
+        ?SPACE_JOIN_HARVESTER -> maps:get(<<"harvesterId">>, InviteTokenParams)
+    end,
+    ?INVITE_TOKEN(InvTokenType, EntityId).
+
+
+-spec invite_token_type_to_str(invite_token_type()) -> binary().
+invite_token_type_to_str(?USER_JOIN_GROUP) -> <<"userJoinGroup">>;
+invite_token_type_to_str(?GROUP_JOIN_GROUP) -> <<"groupJoinGroup">>;
+invite_token_type_to_str(?USER_JOIN_SPACE) -> <<"userJoinSpace">>;
+invite_token_type_to_str(?GROUP_JOIN_SPACE) -> <<"groupJoinSpace">>;
+invite_token_type_to_str(?SUPPORT_SPACE) -> <<"supportSpace">>;
+invite_token_type_to_str(?REGISTER_ONEPROVIDER) -> <<"registerOneprovider">>;
+invite_token_type_to_str(?USER_JOIN_CLUSTER) -> <<"userJoinCluster">>;
+invite_token_type_to_str(?GROUP_JOIN_CLUSTER) -> <<"groupJoinCluster">>;
+invite_token_type_to_str(?USER_JOIN_HARVESTER) -> <<"userJoinHarvester">>;
+invite_token_type_to_str(?GROUP_JOIN_HARVESTER) -> <<"groupJoinHarvester">>;
+invite_token_type_to_str(?SPACE_JOIN_HARVESTER) -> <<"spaceJoinHarvester">>.
+
+
+-spec str_to_invite_token_type(binary()) -> invite_token_type().
+str_to_invite_token_type(<<"userJoinGroup">>) -> ?USER_JOIN_GROUP;
+str_to_invite_token_type(<<"groupJoinGroup">>) -> ?GROUP_JOIN_GROUP;
+str_to_invite_token_type(<<"userJoinSpace">>) -> ?USER_JOIN_SPACE;
+str_to_invite_token_type(<<"groupJoinSpace">>) -> ?GROUP_JOIN_SPACE;
+str_to_invite_token_type(<<"supportSpace">>) -> ?SUPPORT_SPACE;
+str_to_invite_token_type(<<"registerOneprovider">>) -> ?REGISTER_ONEPROVIDER;
+str_to_invite_token_type(<<"userJoinCluster">>) -> ?USER_JOIN_CLUSTER;
+str_to_invite_token_type(<<"groupJoinCluster">>) -> ?GROUP_JOIN_CLUSTER;
+str_to_invite_token_type(<<"userJoinHarvester">>) -> ?USER_JOIN_HARVESTER;
+str_to_invite_token_type(<<"groupJoinHarvester">>) -> ?GROUP_JOIN_HARVESTER;
+str_to_invite_token_type(<<"spaceJoinHarvester">>) -> ?SPACE_JOIN_HARVESTER.
 
 
 -spec generate_secret() -> secret().
@@ -328,7 +475,7 @@ parse_audience_token_header(_) -> undefined.
 -spec to_identifier(token()) -> token_identifier().
 to_identifier(Token = #token{version = 1}) ->
     % Legacy tokens do not carry any information in the identifier
-    Token#token.nonce;
+    Token#token.id;
 to_identifier(Token = #token{version = 2}) ->
     <<
         "2",
@@ -339,7 +486,7 @@ to_identifier(Token = #token{version = 2}) ->
         "/",
         (serialize_type(Token#token.type))/binary,
         "/",
-        (Token#token.nonce)/binary
+        (Token#token.id)/binary
     >>.
 
 
@@ -364,15 +511,15 @@ from_identifier(1, [Identifier], OnezoneDomain) ->
     #token{
         version = 1,
         onezone_domain = OnezoneDomain,
-        nonce = Identifier,
+        id = Identifier,
         persistent = true,
         type = ?ACCESS_TOKEN
     };
-from_identifier(2, [Persistent, Subject, Type, Nonce], OnezoneDomain) ->
+from_identifier(2, [Persistent, Subject, Type, Id], OnezoneDomain) ->
     #token{
         version = 2,
         onezone_domain = OnezoneDomain,
-        nonce = Nonce,
+        id = Id,
         persistent = deserialize_persistence(Persistent),
         subject = aai:deserialize_subject(Subject),
         type = deserialize_type(Type)
@@ -393,29 +540,29 @@ deserialize_persistence(<<"tmp">>) -> false.
 
 %% @private
 -spec serialize_invite_token_type(invite_token_type()) -> binary().
-serialize_invite_token_type(?GROUP_INVITE_USER_TOKEN) -> <<"giu">>;
-serialize_invite_token_type(?GROUP_INVITE_GROUP_TOKEN) -> <<"gig">>;
-serialize_invite_token_type(?SPACE_INVITE_USER_TOKEN) -> <<"siu">>;
-serialize_invite_token_type(?SPACE_INVITE_GROUP_TOKEN) -> <<"sig">>;
-serialize_invite_token_type(?SPACE_SUPPORT_TOKEN) -> <<"ssu">>;
-serialize_invite_token_type(?CLUSTER_INVITE_USER_TOKEN) -> <<"ciu">>;
-serialize_invite_token_type(?CLUSTER_INVITE_GROUP_TOKEN) -> <<"cig">>;
-serialize_invite_token_type(?PROVIDER_REGISTRATION_TOKEN) -> <<"pre">>;
-serialize_invite_token_type(?HARVESTER_INVITE_USER_TOKEN) -> <<"hiu">>;
-serialize_invite_token_type(?HARVESTER_INVITE_GROUP_TOKEN) -> <<"hig">>;
-serialize_invite_token_type(?HARVESTER_INVITE_SPACE_TOKEN) -> <<"his">>.
+serialize_invite_token_type(?USER_JOIN_GROUP) -> <<"ujg">>;
+serialize_invite_token_type(?GROUP_JOIN_GROUP) -> <<"gjg">>;
+serialize_invite_token_type(?USER_JOIN_SPACE) -> <<"ujp">>;
+serialize_invite_token_type(?GROUP_JOIN_SPACE) -> <<"gjs">>;
+serialize_invite_token_type(?SUPPORT_SPACE) -> <<"ssp">>;
+serialize_invite_token_type(?REGISTER_ONEPROVIDER) -> <<"rop">>;
+serialize_invite_token_type(?USER_JOIN_CLUSTER) -> <<"ujc">>;
+serialize_invite_token_type(?GROUP_JOIN_CLUSTER) -> <<"gjc">>;
+serialize_invite_token_type(?USER_JOIN_HARVESTER) -> <<"ujh">>;
+serialize_invite_token_type(?GROUP_JOIN_HARVESTER) -> <<"gjh">>;
+serialize_invite_token_type(?SPACE_JOIN_HARVESTER) -> <<"sjh">>.
 
 
 %% @private
 -spec deserialize_invite_token_type(binary()) -> invite_token_type().
-deserialize_invite_token_type(<<"giu">>) -> ?GROUP_INVITE_USER_TOKEN;
-deserialize_invite_token_type(<<"gig">>) -> ?GROUP_INVITE_GROUP_TOKEN;
-deserialize_invite_token_type(<<"siu">>) -> ?SPACE_INVITE_USER_TOKEN;
-deserialize_invite_token_type(<<"sig">>) -> ?SPACE_INVITE_GROUP_TOKEN;
-deserialize_invite_token_type(<<"ssu">>) -> ?SPACE_SUPPORT_TOKEN;
-deserialize_invite_token_type(<<"ciu">>) -> ?CLUSTER_INVITE_USER_TOKEN;
-deserialize_invite_token_type(<<"cig">>) -> ?CLUSTER_INVITE_GROUP_TOKEN;
-deserialize_invite_token_type(<<"pre">>) -> ?PROVIDER_REGISTRATION_TOKEN;
-deserialize_invite_token_type(<<"hiu">>) -> ?HARVESTER_INVITE_USER_TOKEN;
-deserialize_invite_token_type(<<"hig">>) -> ?HARVESTER_INVITE_GROUP_TOKEN;
-deserialize_invite_token_type(<<"his">>) -> ?HARVESTER_INVITE_SPACE_TOKEN.
+deserialize_invite_token_type(<<"ujg">>) -> ?USER_JOIN_GROUP;
+deserialize_invite_token_type(<<"gjg">>) -> ?GROUP_JOIN_GROUP;
+deserialize_invite_token_type(<<"ujp">>) -> ?USER_JOIN_SPACE;
+deserialize_invite_token_type(<<"gjs">>) -> ?GROUP_JOIN_SPACE;
+deserialize_invite_token_type(<<"ssp">>) -> ?SUPPORT_SPACE;
+deserialize_invite_token_type(<<"rop">>) -> ?REGISTER_ONEPROVIDER;
+deserialize_invite_token_type(<<"ujc">>) -> ?USER_JOIN_CLUSTER;
+deserialize_invite_token_type(<<"gjc">>) -> ?GROUP_JOIN_CLUSTER;
+deserialize_invite_token_type(<<"ujh">>) -> ?USER_JOIN_HARVESTER;
+deserialize_invite_token_type(<<"gjh">>) -> ?GROUP_JOIN_HARVESTER;
+deserialize_invite_token_type(<<"sjh">>) -> ?SPACE_JOIN_HARVESTER.
