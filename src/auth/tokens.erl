@@ -115,7 +115,7 @@ construct(Prototype = #token{onezone_domain = OzDomain}, Secret, Caveats) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec verify(token(), secret(), aai:auth_ctx(), [caveats:type()]) ->
-    {ok, aai:auth()} | {error, term()}.
+    {ok, aai:auth()} | errors:error().
 verify(Token = #token{macaroon = Macaroon}, Secret, AuthCtx, SupportedCaveats) ->
     Verifier = caveats:build_verifier(AuthCtx, SupportedCaveats),
     try macaroon_verifier:verify(Verifier, Macaroon, Secret) of
@@ -166,7 +166,7 @@ confine(Serialized, Confinement) when is_binary(Serialized) ->
 %% Serializes a token to portable binary form.
 %% @end
 %%--------------------------------------------------------------------
--spec serialize(token()) -> {ok, serialized()} | {error, term()}.
+-spec serialize(token()) -> {ok, serialized()} | errors:error().
 serialize(Token) ->
     try
         {ok, Token64} = macaroon:serialize(Token#token.macaroon),
@@ -200,7 +200,7 @@ build_service_access_token(_, _) ->
 %% Deserializes a token from portable binary form.
 %% @end
 %%--------------------------------------------------------------------
--spec deserialize(serialized()) -> {ok, token()} | {error, term()}.
+-spec deserialize(serialized()) -> {ok, token()} | errors:error().
 deserialize(<<>>) -> ?ERROR_BAD_TOKEN;
 deserialize(Serialized) ->
     try
