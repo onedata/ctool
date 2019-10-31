@@ -53,7 +53,7 @@
 -define(ERROR_TOKEN_REVOKED, {error, token_revoked}).
 -define(ERROR_TOKEN_TOO_LARGE(SizeLimit), {error, {token_too_large, {max, SizeLimit}}}).
 -define(ERROR_NOT_AN_ACCESS_TOKEN(ReceivedTokenType), {error, {not_an_access_token, ReceivedTokenType}}).
--define(ERROR_NOT_AN_INVITE_TOKEN(ExpTokenType, RecvTokenType), {error, {not_an_invite_token, ExpTokenType, RecvTokenType}}).
+-define(ERROR_NOT_AN_INVITE_TOKEN(ExpInviteTokenType, RecvTokenType), {error, {not_an_invite_token, ExpInviteTokenType, RecvTokenType}}).
 -define(ERROR_TOKEN_CAVEAT_UNKNOWN(CaveatBinary), {error, {token_caveat_unknown, CaveatBinary}}).
 -define(ERROR_TOKEN_CAVEAT_UNVERIFIED(Caveat), {error, {token_caveat_unverified, Caveat}}).
 -define(ERROR_TOKEN_TIME_CAVEAT_REQUIRED(MaxTtl), {error, {token_time_caveat_required, MaxTtl}}).

@@ -289,12 +289,12 @@ to_json(?ERROR_INVITE_TOKEN_USAGE_LIMIT_REACHED) -> #{
     <<"id">> => <<"inviteTokenUsageLimitReached">>,
     <<"description">> => <<"The usage limit of this invite token has been reached.">>
 };
-to_json(?ERROR_INVITE_TOKEN_CONSUMER_INVALID(Audience)) -> #{
+to_json(?ERROR_INVITE_TOKEN_CONSUMER_INVALID(Subject)) -> #{
     <<"id">> => <<"inviteTokenConsumerInvalid">>,
     <<"details">> => #{
-        <<"consumer">> => aai:subject_to_json(Audience)
+        <<"consumer">> => aai:subject_to_json(Subject)
     },
-    <<"description">> => ?FMT("The consumer ~s is invalid for this type of invite token.", [aai:subject_to_printable(Audience)])
+    <<"description">> => ?FMT("The consumer ~s is invalid for this type of invite token.", [aai:subject_to_printable(Subject)])
 };
 to_json(?ERROR_TOKEN_SESSION_INVALID) -> #{
     <<"id">> => <<"tokenSessionInvalid">>,
