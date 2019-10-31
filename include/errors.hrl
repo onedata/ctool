@@ -149,8 +149,18 @@
 
 
 %%--------------------------------------------------------------------
-%% Unknown error
+%% Unknown / unexpected error
 %%--------------------------------------------------------------------
+% Reported when the system logic returns an internal error that is not recognized
+% among the definitions in this module. In such case, a random ErrorRef will be
+% generated and included in an automatic debug log. This way, the caller can
+% examine the logs and find what error exactly has appeared.
+-define(ERROR_UNEXPECTED_ERROR(ErrorRef), {error, {unexpected_error, ErrorRef}}).
+
+% Reported when decoding an external error and its format is not known to the
+% current software version (for example, a newer server responds with an error
+% to an older client, which does not know the error signature). The original
+% JSON representing the error is retained and returned to the caller.
 -define(ERROR_UNKNOWN_ERROR(ErrorAsJson), {error, {unknown_error, ErrorAsJson}}).
 
 -endif.

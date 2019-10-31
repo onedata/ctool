@@ -35,14 +35,22 @@ encode_decode_error_test() ->
 
 http_code_test() ->
     lists:foreach(fun(Testcase) ->
-        {Error, _} = case Testcase of
-            {different, A, B} -> {A, B};
-            Err -> {Err, Err}
+        Error = case Testcase of
+            {different, A, _B} -> A;
+            Err -> Err
         end,
         Code = errors:to_http_code(Error),
         ?assert(Code >= 400),
         ?assert(Code =< 503)
     end, testcases()).
+
+
+unexpected_error_test() ->
+    UnexpectedError = {error, {some_error, that_we_dont_understand, 1653}},
+    ?assertMatch(
+        ?ERROR_UNEXPECTED_ERROR(_),
+        errors:from_json(errors:to_json(UnexpectedError))
+    ).
 
 
 % {different, Before, After} is used when encoding and decoding causes the error to change.
@@ -173,6 +181,7 @@ testcases() -> [
     %% -----------------------------------------------------------------------------
     %% Unknown error
     %% -----------------------------------------------------------------------------
+    ?ERROR_UNEXPECTED_ERROR(<<"deb7a8aaf82">>),
     ?ERROR_UNKNOWN_ERROR(#{
         <<"id">> => <<"someErrorThatWasNotSpecifiedInThisSoftwareVersion">>,
         <<"details">> => #{<<"key">> => <<"value">>},

@@ -19,6 +19,7 @@
 -include("errors.hrl").
 -include("validation.hrl").
 -include("http/codes.hrl").
+-include("logging.hrl").
 
 -type general() :: {bad_message, json_utils:json_term()} | no_connection_to_oz
 | no_connection_to_peer_provider | unregistered_provider | internal_server_error
@@ -94,9 +95,10 @@ already_exists | unauthorized | forbidden.
 | ?ESRCH | ?ETIME | ?ETIMEDOUT | ?ETXTBSY | ?EWOULDBLOCK | ?EXDEV.
 -type posix() :: {posix, errno()}.
 
+-type unexpected() :: {unexpected_error, ErrorRef :: binary()}.
 -type unknown() :: {unknown_error, as_json()}.
 
--type reason() :: general() | auth() | graph_sync() | data_validation() | state() | posix() | unknown().
+-type reason() :: general() | auth() | graph_sync() | data_validation() | state() | posix() | unexpected() | unknown().
 -type error() :: {error, reason()}.
 -type as_json() :: json_utils:json_term().
 -export_type([error/0, reason/0, as_json/0]).
@@ -678,7 +680,7 @@ to_json(?ERROR_TRANSFER_NOT_ENDED) -> #{
 };
 
 %%--------------------------------------------------------------------
-%% Unknown error
+%% Unknown / unexpected error
 %%--------------------------------------------------------------------
 to_json(?ERROR_UNKNOWN_ERROR(ErrorAsJson)) ->
     case maps:is_key(<<"description">>, ErrorAsJson) of
@@ -686,7 +688,22 @@ to_json(?ERROR_UNKNOWN_ERROR(ErrorAsJson)) ->
             ErrorAsJson;
         false ->
             ErrorAsJson#{<<"description">> => <<"No description (unknown error).">>}
-    end.
+    end;
+to_json(?ERROR_UNEXPECTED_ERROR(ErrorRef)) ->
+    #{
+        <<"id">> => <<"unexpectedError">>,
+        <<"details">> => #{
+            <<"reference">> => ErrorRef
+        },
+        <<"description">> => ?FMT("Unexpected error, reference: ~s.", [ErrorRef])
+    };
+to_json(UnexpectedError) ->
+    % Wildcard to catch all errors that might be returned by the logic, in such
+    % case log a debug with random error ref.
+    ErrorRef = str_utils:rand_hex(5),
+    ?debug("Cannot translate error (ref. ~s): ~tp", [ErrorRef, UnexpectedError]),
+    to_json(?ERROR_UNEXPECTED_ERROR(ErrorRef)).
+
 
 
 -spec from_json(as_json()) -> undefined | error().
@@ -986,6 +1003,12 @@ from_json(#{<<"id">> := <<"transferAlreadyEnded">>}) ->
 from_json(#{<<"id">> := <<"transferNotEnded">>}) ->
     ?ERROR_TRANSFER_NOT_ENDED;
 
+%%--------------------------------------------------------------------
+%% Unknown / unexpected error
+%%--------------------------------------------------------------------
+from_json(#{<<"id">> := <<"unexpectedError">>, <<"details">> := #{<<"reference">> := ErrorRef}}) ->
+    ?ERROR_UNEXPECTED_ERROR(ErrorRef);
+
 from_json(ErrorAsJson) when is_map(ErrorAsJson) ->
     ?ERROR_UNKNOWN_ERROR(ErrorAsJson).
 
@@ -1105,8 +1128,9 @@ to_http_code(?ERROR_TRANSFER_ALREADY_ENDED) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_TRANSFER_NOT_ENDED) -> ?HTTP_400_BAD_REQUEST;
 
 %% -----------------------------------------------------------------------------
-%% Unknown error
+%% Unknown / unexpected error
 %% -----------------------------------------------------------------------------
+to_http_code(?ERROR_UNEXPECTED_ERROR(_)) -> ?HTTP_500_INTERNAL_SERVER_ERROR;
 to_http_code(?ERROR_UNKNOWN_ERROR(_)) -> ?HTTP_400_BAD_REQUEST.
 
 %%%===================================================================
