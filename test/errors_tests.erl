@@ -180,6 +180,7 @@ testcases() -> [
     ?ERROR_VIEW_NOT_EXISTS_ON(<<"providerId">>),
     ?ERROR_TRANSFER_ALREADY_ENDED,
     ?ERROR_TRANSFER_NOT_ENDED,
+    ?ERROR_STORAGE_IN_USE,
 
     %% -----------------------------------------------------------------------------
     %% Unknown error
