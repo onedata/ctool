@@ -705,7 +705,6 @@ to_json(UnexpectedError) ->
     to_json(?ERROR_UNEXPECTED_ERROR(ErrorRef)).
 
 
-
 -spec from_json(as_json()) -> undefined | error().
 from_json(null) ->
     undefined;
@@ -1121,7 +1120,7 @@ to_http_code(?ERROR_PROTECTED_GROUP) -> ?HTTP_403_FORBIDDEN;
 to_http_code(?ERROR_CANNOT_DELETE_ENTITY(_, _)) -> ?HTTP_500_INTERNAL_SERVER_ERROR;
 to_http_code(?ERROR_CANNOT_ADD_RELATION_TO_SELF) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_RELATION_DOES_NOT_EXIST(_, _, _, _)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_RELATION_ALREADY_EXISTS(_, _, _, _)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_RELATION_ALREADY_EXISTS(_, _, _, _)) -> ?HTTP_409_CONFLICT;
 to_http_code(?ERROR_SPACE_NOT_SUPPORTED_BY(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_VIEW_NOT_EXISTS_ON(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_TRANSFER_ALREADY_ENDED) -> ?HTTP_400_BAD_REQUEST;
