@@ -185,7 +185,7 @@ to_json(?ERROR_POSIX(Errno)) -> #{
     <<"details">> => #{
         <<"errno">> => atom_to_binary(Errno, utf8)
     },
-    <<"description">> => ?FMT("Operation failed with POSIX error: ~p.", [Errno])
+    <<"description">> => ?FMT("Operation failed with POSIX error: ~s.", [Errno])
 };
 
 %% -----------------------------------------------------------------------------
@@ -326,7 +326,7 @@ to_json(?ERROR_BAD_VERSION(SupportedVersions)) -> #{
     <<"details">> => #{
         <<"supportedVersions">> => SupportedVersions
     },
-    <<"description">> => ?FMT("Bad version - supported versions: ~p", [SupportedVersions])
+    <<"description">> => ?FMT("Bad version - supported versions: ~p.", [SupportedVersions])
 };
 to_json(?ERROR_BAD_GRI) -> #{
     <<"id">> => <<"badGRI">>,
@@ -649,7 +649,7 @@ to_json(?ERROR_RELATION_DOES_NOT_EXIST(ChType, ChId, ParType, ParId)) ->
             <<"parentType">> => ParType,
             <<"parentId">> => ParId
         },
-        <<"description">> => ?FMT("Bad value: ~s:~s ~s ~s:~s", [
+        <<"description">> => ?FMT("Bad value: ~s:~s ~s ~s:~s.", [
             gri:serialize_type(ChType), ChId,
             RelationToString,
             gri:serialize_type(ParType), ParId
@@ -668,7 +668,7 @@ to_json(?ERROR_RELATION_ALREADY_EXISTS(ChType, ChId, ParType, ParId)) ->
             <<"parentType">> => ParType,
             <<"parentId">> => ParId
         },
-        <<"description">> => ?FMT("Bad value: ~s:~s ~s ~s:~s", [
+        <<"description">> => ?FMT("Bad value: ~s:~s ~s ~s:~s.", [
             gri:serialize_type(ChType), ChId,
             RelationToString,
             gri:serialize_type(ParType), ParId
@@ -679,14 +679,14 @@ to_json(?ERROR_SPACE_NOT_SUPPORTED_BY(ProviderId)) -> #{
     <<"details">> => #{
         <<"providerId">> => ProviderId
     },
-    <<"description">> => ?FMT("Specified space is not supported by provider ~s", [ProviderId])
+    <<"description">> => ?FMT("Specified space is not supported by provider ~s.", [ProviderId])
 };
 to_json(?ERROR_VIEW_NOT_EXISTS_ON(ProviderId)) -> #{
     <<"id">> => <<"viewNotExistsOn">>,
     <<"details">> => #{
         <<"providerId">> => ProviderId
     },
-    <<"description">> => ?FMT("Specified view does not exist on provider ~s", [ProviderId])
+    <<"description">> => ?FMT("Specified view does not exist on provider ~s.", [ProviderId])
 };
 to_json(?ERROR_TRANSFER_ALREADY_ENDED) -> #{
     <<"id">> => <<"transferAlreadyEnded">>,

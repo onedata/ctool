@@ -49,7 +49,7 @@
 
 -define(USERNAME_REQUIREMENTS_DESCRIPTION, <<
     "Username must be 2-20 characters long and composed only of letters and digits. "
-    "Dashes and underscores are allowed (but not at the beginning or the end). "
+    "Dashes and underscores are allowed (but not at the beginning or the end)."
 >>).
 -define(USERNAME_FIRST_CHARS_ALLOWED, <<"a-z0-9A-Z">>).
 -define(USERNAME_MIDDLE_CHARS_ALLOWED, <<"a-z0-9A-Z._-">>).

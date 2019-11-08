@@ -16,33 +16,37 @@
 -include("errors.hrl").
 -include("aai/aai.hrl").
 
-encode_decode_error_test() ->
-    lists:foreach(fun(Testcase) ->
-        {Before, After} = case Testcase of
-            {different, A, B} -> {A, B};
-            Err -> {Err, Err}
-        end,
-        Json = errors:to_json(Before),
-        ?assert(is_map(Json)),
-        ?assert(size(maps:get(<<"description">>, Json)) > 0),
-        EncodedJSON = json_utils:encode(Json),
-        DecodedJSON = json_utils:decode(EncodedJSON),
-        FromJson = errors:from_json(DecodedJSON),
-        ?assertMatch({error, _}, FromJson),
-        ?assertEqual(After, FromJson)
-    end, testcases()).
+encode_decode_error_test_() ->
+    lists:map(fun(Testcase) ->
+        {str_utils:to_binary(Testcase), fun() ->
+            {Before, After} = case Testcase of
+                {different, A, B} -> {A, B};
+                Err -> {Err, Err}
+            end,
+            Json = errors:to_json(Before),
+            ?assert(is_map(Json)),
+            ?assert(size(maps:get(<<"description">>, Json)) > 0),
+            % enforce description convention
+            ?assert(str_utils:binary_ends_with(maps:get(<<"description">>, Json), <<".">>)),
+            EncodedJSON = json_utils:encode(Json),
+            DecodedJSON = json_utils:decode(EncodedJSON),
+            FromJson = errors:from_json(DecodedJSON),
+            ?assertMatch({error, _}, FromJson),
+            ?assertEqual(After, FromJson)
+        end} end, testcases()).
 
 
-http_code_test() ->
-    lists:foreach(fun(Testcase) ->
-        Error = case Testcase of
-            {different, A, _B} -> A;
-            Err -> Err
-        end,
-        Code = errors:to_http_code(Error),
-        ?assert(Code >= 400),
-        ?assert(Code =< 503)
-    end, testcases()).
+http_code_test_() ->
+    lists:map(fun(Testcase) ->
+        {str_utils:to_binary(Testcase), fun() ->
+            Error = case Testcase of
+                {different, A, _B} -> A;
+                Err -> Err
+            end,
+            Code = errors:to_http_code(Error),
+            ?assert(Code >= 400),
+            ?assert(Code =< 503)
+        end} end, testcases()).
 
 
 unexpected_error_test() ->
