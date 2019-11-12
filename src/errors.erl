@@ -60,7 +60,7 @@ already_exists | unauthorized | forbidden.
 | {ambiguous_id, key()} | {bad_identifier, key()} | {identifier_occupied, key()}
 | bad_full_name | bad_username | bad_password | bad_value_email | bad_name
 | bad_value_domain | bad_value_subdomain | bad_caveats | bad_gui_package
-| gui_package_too_large | gui_package_unverified.
+| gui_package_too_large | gui_package_unverified | invalid_qos_expression.
 
 -type state() :: basic_auth_not_supported | basic_auth_disabled
 | subdomain_delegation_not_supported | subdomain_delegation_disabled
@@ -580,6 +580,10 @@ to_json(?ERROR_GUI_PACKAGE_UNVERIFIED) -> #{
     <<"id">> => <<"guiPackageUnverified">>,
     <<"description">> => <<"Provider GUI package could not be verified.">>
 };
+to_json(?ERROR_INVALID_QOS_EXPRESSION) -> #{
+    <<"id">> => <<"invalidQosExpression">>,
+    <<"description">> => <<"Invalid QoS expression">>
+};
 
 %%--------------------------------------------------------------------
 %% State errors
@@ -952,6 +956,9 @@ from_json(#{<<"id">> := <<"guiPackageTooLarge">>}) ->
 from_json(#{<<"id">> := <<"guiPackageUnverified">>}) ->
     ?ERROR_GUI_PACKAGE_UNVERIFIED;
 
+from_json(#{<<"id">> := <<"invalidQosExpression">>}) ->
+    ?ERROR_INVALID_QOS_EXPRESSION;
+
 %% -----------------------------------------------------------------------------
 %% State errors
 %% -----------------------------------------------------------------------------
@@ -1108,6 +1115,7 @@ to_http_code(?ERROR_BAD_VALUE_CAVEATS) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_BAD_GUI_PACKAGE) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_GUI_PACKAGE_TOO_LARGE) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_GUI_PACKAGE_UNVERIFIED) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_INVALID_QOS_EXPRESSION) -> ?HTTP_400_BAD_REQUEST;
 
 %% -----------------------------------------------------------------------------
 %% State errors

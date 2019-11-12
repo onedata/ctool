@@ -160,6 +160,7 @@ testcases() -> [
     ?ERROR_BAD_GUI_PACKAGE,
     ?ERROR_GUI_PACKAGE_TOO_LARGE,
     ?ERROR_GUI_PACKAGE_UNVERIFIED,
+    ?ERROR_INVALID_QOS_EXPRESSION,
 
     %% -----------------------------------------------------------------------------
     %% State errors
