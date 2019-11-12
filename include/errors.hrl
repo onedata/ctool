@@ -117,6 +117,7 @@
 -define(ERROR_BAD_GUI_PACKAGE, {error, bad_gui_package}).
 -define(ERROR_GUI_PACKAGE_TOO_LARGE, {error, gui_package_too_large}).
 -define(ERROR_GUI_PACKAGE_UNVERIFIED, {error, gui_package_unverified}).
+-define(ERROR_INVALID_QOS_EXPRESSION, {error, invalid_qos_expression}).
 
 
 %%--------------------------------------------------------------------
