@@ -34,7 +34,8 @@ already_exists | unauthorized | forbidden.
 | {token_time_caveat_required, time_utils:seconds()}
 | token_subject_invalid | {token_audience_forbidden, aai:audience()}
 | invite_token_creator_not_authorized | invite_token_usage_limit_exceeded
-| {invite_token_consumer_invalid, aai:audience()} | token_session_invalid.
+| {invite_token_consumer_invalid, aai:audience()}
+| {invite_token_target_id_invalid, Id :: binary()} | token_session_invalid.
 
 -type graph_sync() :: expected_handshake_message | handshake_already_done
 | {bad_version, {supported, [Version :: integer()]}} | bad_gri
@@ -294,7 +295,14 @@ to_json(?ERROR_INVITE_TOKEN_CONSUMER_INVALID(Subject)) -> #{
     <<"details">> => #{
         <<"consumer">> => aai:subject_to_json(Subject)
     },
-    <<"description">> => ?FMT("The consumer ~s is invalid for this type of invite token.", [aai:subject_to_printable(Subject)])
+    <<"description">> => ?FMT("The consumer '~s' is invalid for this type of invite token.", [aai:subject_to_printable(Subject)])
+};
+to_json(?ERROR_INVITE_TOKEN_TARGET_ID_INVALID(Id)) -> #{
+    <<"id">> => <<"inviteTokenTargetIdInvalid">>,
+    <<"details">> => #{
+        <<"id">> => Id
+    },
+    <<"description">> => ?FMT("The target id '~s' is invalid for this type of invite token.", [Id])
 };
 to_json(?ERROR_TOKEN_SESSION_INVALID) -> #{
     <<"id">> => <<"tokenSessionInvalid">>,
@@ -820,6 +828,9 @@ from_json(#{<<"id">> := <<"inviteTokenUsageLimitReached">>}) ->
 from_json(#{<<"id">> := <<"inviteTokenConsumerInvalid">>, <<"details">> := #{<<"consumer">> := Audience}}) ->
     ?ERROR_INVITE_TOKEN_CONSUMER_INVALID(aai:subject_from_json(Audience));
 
+from_json(#{<<"id">> := <<"inviteTokenTargetIdInvalid">>, <<"details">> := #{<<"id">> := Id}}) ->
+    ?ERROR_INVITE_TOKEN_TARGET_ID_INVALID(Id);
+
 from_json(#{<<"id">> := <<"tokenSessionInvalid">>}) ->
     ?ERROR_TOKEN_SESSION_INVALID;
 
@@ -1062,6 +1073,7 @@ to_http_code(?ERROR_TOKEN_AUDIENCE_FORBIDDEN(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_INVITE_TOKEN_USAGE_LIMIT_REACHED) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_INVITE_TOKEN_CREATOR_NOT_AUTHORIZED) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_INVITE_TOKEN_CONSUMER_INVALID(_)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_INVITE_TOKEN_TARGET_ID_INVALID(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_TOKEN_SESSION_INVALID) -> ?HTTP_401_UNAUTHORIZED;
 
 %% -----------------------------------------------------------------------------

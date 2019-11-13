@@ -103,6 +103,7 @@ testcases() -> [
     ?ERROR_INVITE_TOKEN_USAGE_LIMIT_REACHED,
     ?ERROR_INVITE_TOKEN_CONSUMER_INVALID(?SUB(?ONEPROVIDER, <<"zxbcv78s0dfasdf">>)),
     ?ERROR_INVITE_TOKEN_CONSUMER_INVALID(?SUB(nobody)),
+    ?ERROR_INVITE_TOKEN_TARGET_ID_INVALID(<<"123456">>),
     ?ERROR_TOKEN_SESSION_INVALID,
 
     %% -----------------------------------------------------------------------------
