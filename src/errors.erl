@@ -594,7 +594,7 @@ to_json(?ERROR_GUI_PACKAGE_UNVERIFIED) -> #{
 };
 to_json(?ERROR_INVALID_QOS_EXPRESSION) -> #{
     <<"id">> => <<"invalidQosExpression">>,
-    <<"description">> => <<"Invalid QoS expression">>
+    <<"description">> => <<"Invalid QoS expression.">>
 };
 
 %%--------------------------------------------------------------------
