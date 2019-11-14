@@ -1176,9 +1176,4 @@ to_http_code(_) -> ?HTTP_500_INTERNAL_SERVER_ERROR.
 
 -spec join_values_with_commas([term()]) -> binary().
 join_values_with_commas(Values) ->
-    StrValues = lists:map(fun
-        (Value) when is_binary(Value) -> Value;
-        (Value) -> str_utils:format_bin("~tp", [Value])
-    end, Values),
-    str_utils:join_binary(StrValues, <<", ">>).
-
+    str_utils:join_as_binaries(Values, <<", ">>).
