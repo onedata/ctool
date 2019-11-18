@@ -14,7 +14,12 @@
 
 % Representation of any valid JSON term in erlang
 -type json_term() :: jiffy:json_value().
--export_type([json_term/0]).
+
+% Jiffy accepts atoms as map keys, but Onedata convention is to use
+% binaries in maps intended for JSON serialization.
+-type json_map() :: #{binary() => json_term()}.
+
+-export_type([json_term/0, json_map/0]).
 
 %% API
 -export([encode/1, encode/2, decode/1, decode/2]).

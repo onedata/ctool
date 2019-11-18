@@ -17,6 +17,7 @@
     aggregate_over_first_element/1, average/1, random_shuffle/1, get_values/2,
     random_element/1, random_sublist/1, random_sublist/3, get_host/1,
     get_host_as_atom/1, cmd/1, ensure_defined/3, process_info/1, process_info/2]).
+-export([undefined_to_null/1, null_to_undefined/1]).
 -export([timeout/2, timeout/4]).
 -export([duration/1, adjust_duration/2]).
 -export([mkdtemp/0, mkdtemp/3, rmtempdir/1, run_with_tempdir/1]).
@@ -332,6 +333,31 @@ ensure_defined(UndefinedValue, UndefinedValue, DefaultValue) ->
     DefaultValue;
 ensure_defined(Value, _, _) ->
     Value.
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%% If given term is undefined returns null, otherwise returns unchanged term.
+%% @end
+%%--------------------------------------------------------------------
+-spec undefined_to_null(undefined | T) -> null | T.
+undefined_to_null(undefined) ->
+    null;
+undefined_to_null(Other) ->
+    Other.
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%% If given term is undefined returns null, otherwise returns unchanged term.
+%% @end
+%%--------------------------------------------------------------------
+-spec null_to_undefined(null | T) -> undefined | T.
+null_to_undefined(null) ->
+    undefined;
+null_to_undefined(Other) ->
+    Other.
+
 
 %%--------------------------------------------------------------------
 %% @doc
