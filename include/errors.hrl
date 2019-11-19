@@ -167,6 +167,8 @@
 %%--------------------------------------------------------------------
 %% onepanel errors
 %%--------------------------------------------------------------------
+% error wrapper to indicate nodes where error occured
+-define(ERROR_ON_NODES(Error, Hostnames), {error, {error_on_nodes, Error, Hostnames}}).
 -define(ERROR_NO_CONNECTION_TO_NEW_NODE(HostnameBin),
     {error, {no_connection_to_node, HostnameBin}}).
 -define(ERROR_NODE_NOT_COMPATIBLE(HostnameBin, ClusterType),

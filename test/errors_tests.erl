@@ -205,6 +205,7 @@ testcases() -> [
     %%--------------------------------------------------------------------
     %% onepanel errors
     %%--------------------------------------------------------------------
+    ?ERROR_ON_NODES(?ERROR_FILE_ACCESS(<<"/path">>, ?EACCES), [<<"node1.example.com">>]),
     ?ERROR_NO_CONNECTION_TO_NEW_NODE(<<"onepanel@example.com">>),
     ?ERROR_NODE_NOT_COMPATIBLE(<<"onepanel@example.com">>, ?ONEPROVIDER),
     ?ERROR_NODE_NOT_COMPATIBLE(<<"onepanel@example.com">>, ?ONEZONE),

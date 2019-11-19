@@ -89,7 +89,8 @@ already_exists | unauthorized | forbidden.
 
 -type op_worker() :: {storage_test_failed, read | write | remove}.
 
--type onepanel() :: {no_connection_to_node, Hostname :: binary()}
+-type onepanel() :: {error_on_nodes, error(), Hostnames :: [binary()]}
+| {no_connection_to_node, Hostname :: binary()}
 | {node_not_compatible, Hostname :: binary(), onedata:cluster_type()}
 | {node_already_in_cluster, Hostname :: binary()}
 | {file_allocation, ActualSize :: number(), TargetSize :: number()}
@@ -773,6 +774,17 @@ to_json(?ERROR_STORAGE_TEST_FAILED(Operation)) -> #{
 %%--------------------------------------------------------------------
 %% onepanel errors
 %%--------------------------------------------------------------------
+to_json(?ERROR_ON_NODES(Error, Hostnames)) ->
+    #{<<"description">> := Description} = InnerError = to_json(Error),
+    #{
+        <<"id">> => <<"errorOnNodes">>,
+        <<"details">> => #{
+            <<"error">> => InnerError,
+            <<"hostnames">> => Hostnames
+        },
+        <<"description">> => ?FMT("Error on nodes ~ts: ~ts",
+            [join_values_with_commas(Hostnames), Description])
+    };
 to_json(?ERROR_NO_CONNECTION_TO_NEW_NODE(Hostname)) -> #{
     <<"id">> => <<"noConnectionToNewNode">>,
     <<"description">> => ?FMT("Cannot add node \"~ts\", connection failed.", [Hostname]),
@@ -1191,6 +1203,9 @@ from_json(#{<<"id">> := <<"storageTestFailed">>, <<"details">> := #{<<"operation
 %%--------------------------------------------------------------------
 %% onepanel errors
 %%--------------------------------------------------------------------
+from_json(#{<<"id">> := <<"errorOnNodes">>, <<"details">> := #{
+    <<"error">> := Error, <<"hostnames">> := Hostnames}}) ->
+    ?ERROR_ON_NODES(from_json(Error), Hostnames);
 from_json(#{<<"id">> := <<"noConnectionToNewNode">>,
     <<"details">> := #{<<"hostname">> := Hostname}}) ->
     ?ERROR_NO_CONNECTION_TO_NEW_NODE(Hostname);
@@ -1363,6 +1378,7 @@ to_http_code(?ERROR_STORAGE_TEST_FAILED(_)) -> ?HTTP_400_BAD_REQUEST;
 %%--------------------------------------------------------------------
 %% onepanel errors
 %%--------------------------------------------------------------------
+to_http_code(?ERROR_ON_NODES(Error, _)) -> to_http_code(Error);
 to_http_code(?ERROR_NO_CONNECTION_TO_NEW_NODE(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_NODE_NOT_COMPATIBLE(_, _)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_NODE_ALREADY_IN_CLUSTER(_)) -> ?HTTP_400_BAD_REQUEST;
