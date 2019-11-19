@@ -38,7 +38,7 @@ already_exists | unauthorized | forbidden.
 | invite_token_creator_not_authorized | invite_token_usage_limit_exceeded
 | {invite_token_consumer_invalid, aai:audience()}
 | {invite_token_target_id_invalid, Id :: binary()} | token_session_invalid
-| {file_access, Path :: binary(), Errno :: errno()}.
+| {file_access, Path :: file:name_all(), Errno :: errno()}.
 
 -type graph_sync() :: expected_handshake_message | handshake_already_done
 | {bad_version, {supported, [Version :: integer()]}} | bad_gri
