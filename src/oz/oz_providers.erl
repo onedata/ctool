@@ -39,8 +39,7 @@
 %%--------------------------------------------------------------------
 -spec register(Auth :: oz_endpoint:auth(),
     Parameters :: oz_endpoint:params()) ->
-    {ok, map()} |
-    {error, Reason :: term()}.
+    {ok, map()} | errors:error().
 register(Auth, Parameters) ->
     ?run(fun() ->
         URN = "/providers",

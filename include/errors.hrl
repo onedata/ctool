@@ -21,6 +21,7 @@
 -define(ERROR_BAD_MESSAGE(MessageBinOrJson), {error, {bad_message, MessageBinOrJson}}).
 -define(ERROR_NO_CONNECTION_TO_ONEZONE, {error, no_connection_to_onezone}).
 -define(ERROR_NO_CONNECTION_TO_PEER_ONEPROVIDER, {error, no_connection_to_peer_oneprovider}).
+-define(ERROR_NO_CONNECTION_TO_CLUSTER_NODE, {error, no_connection_to_cluster_node}).
 -define(ERROR_UNREGISTERED_ONEPROVIDER, {error, unregistered_oneprovider}).
 -define(ERROR_INTERNAL_SERVER_ERROR, {error, internal_server_error}).
 -define(ERROR_NOT_IMPLEMENTED, {error, not_implemented}).
@@ -31,6 +32,7 @@
 -define(ERROR_FORBIDDEN, {error, forbidden}).
 -define(ERROR_NOT_FOUND, {error, not_found}).
 -define(ERROR_ALREADY_EXISTS, {error, already_exists}).
+-define(ERROR_FILE_ACCESS(Path, Errno), {error, {file_access, Path, Errno}}).
 
 
 %%--------------------------------------------------------------------
@@ -150,6 +152,34 @@
 -define(ERROR_TRANSFER_ALREADY_ENDED, {error, transfer_already_ended}).
 -define(ERROR_TRANSFER_NOT_ENDED, {error, transfer_not_ended}).
 -define(ERROR_STORAGE_IN_USE, {error, storage_in_use}).
+-define(ERROR_FILE_POPULARITY_DISABLED, {error, file_popularity_disabled}).
+-define(ERROR_AUTO_CLEANING_DISABLED, {error, auto_cleaning_disabled}).
+-define(ERROR_OPERATION_IN_PROGRESS, {error, operation_in_progress}).
+-define(ERROR_DNS_SERVERS_UNREACHABLE(UsedServers), {error, {dns_servers_unreachable, UsedServers}}).
+
+
+%%--------------------------------------------------------------------
+%% op_worker errors
+%%--------------------------------------------------------------------
+-define(ERROR_STORAGE_TEST_FAILED(Operation), {error, {storage_test_failed, Operation}}).
+
+
+%%--------------------------------------------------------------------
+%% onepanel errors
+%%--------------------------------------------------------------------
+-define(ERROR_NO_CONNECTION_TO_NEW_NODE(HostnameBin),
+    {error, {no_connection_to_node, HostnameBin}}).
+-define(ERROR_NODE_NOT_COMPATIBLE(HostnameBin, ClusterType),
+    {error, {node_not_compatible, HostnameBin, ClusterType}}).
+-define(ERROR_NODE_ALREADY_IN_CLUSTER(HostnameBin),
+    {error, {node_already_in_cluster, HostnameBin}}).
+-define(ERROR_FILE_ALLOCATION(ActualSize, TargetSize),
+    {error, {file_allocation, ActualSize, TargetSize}}).
+-define(ERROR_NO_SERVICE_NODES(Service), {error, {no_service_nodes, Service}}).
+-define(ERROR_LETS_ENCRYPT_NOT_SUPPORTED, {error, lets_encrypt_not_supported}).
+-define(ERROR_LETS_ENCRYPT_NOT_REACHABLE, {error, lets_encrypt_not_reachable}).
+-define(ERROR_LETS_ENCRYPT_RESPONSE(ProblemDocument, ErrorMessage),
+    {error, {lets_encrypt_response, ProblemDocument, ErrorMessage}}).
 
 
 %%--------------------------------------------------------------------

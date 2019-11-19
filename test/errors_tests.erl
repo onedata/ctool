@@ -76,6 +76,8 @@ testcases() -> [
     ?ERROR_FORBIDDEN,
     ?ERROR_NOT_FOUND,
     ?ERROR_ALREADY_EXISTS,
+    ?ERROR_FILE_ACCESS(<<"/etc/cert/web_key.pem">>, ?EROFS),
+    {different, ?ERROR_FILE_ACCESS(['./', ["name"]], ?EROFS), ?ERROR_FILE_ACCESS(<<"./name">>, ?EROFS)},
 
     %% -----------------------------------------------------------------------------
     %% POSIX errors
@@ -128,6 +130,7 @@ testcases() -> [
     ?ERROR_MISSING_AT_LEAST_ONE_VALUE([<<"name">>, <<"type">>]),
     ?ERROR_BAD_DATA(<<"spaceId">>),
     ?ERROR_BAD_VALUE_EMPTY(<<"spaceId">>),
+    % @TODO VFS-5838 Placeholder to plug into existing onepanel mechanism
     ?ERROR_BAD_VALUE_BOOLEAN(<<"subdomainDelegation">>),
     {different, ?ERROR_BAD_VALUE_ATOM(<<"spaceId">>), ?ERROR_BAD_VALUE_BINARY(<<"spaceId">>)},
     {different, ?ERROR_BAD_VALUE_LIST_OF_ATOMS(<<"privileges">>), ?ERROR_BAD_VALUE_LIST_OF_BINARIES(<<"privileges">>)},
@@ -185,6 +188,36 @@ testcases() -> [
     ?ERROR_TRANSFER_ALREADY_ENDED,
     ?ERROR_TRANSFER_NOT_ENDED,
     ?ERROR_STORAGE_IN_USE,
+    ?ERROR_FILE_POPULARITY_DISABLED,
+    ?ERROR_AUTO_CLEANING_DISABLED,
+    ?ERROR_OPERATION_IN_PROGRESS,
+    ?ERROR_DNS_SERVERS_UNREACHABLE([default, {1,2,3,4}]),
+    {different, ?ERROR_DNS_SERVERS_UNREACHABLE([<<"1.1.1.1">>, <<"8.8.8.8">>]),
+        ?ERROR_DNS_SERVERS_UNREACHABLE([{1,1,1,1}, {8,8,8,8}])},
+
+    %%--------------------------------------------------------------------
+    %% op_worker errors
+    %%--------------------------------------------------------------------
+    ?ERROR_STORAGE_TEST_FAILED(read),
+    ?ERROR_STORAGE_TEST_FAILED(write),
+    ?ERROR_STORAGE_TEST_FAILED(remove),
+
+    %%--------------------------------------------------------------------
+    %% onepanel errors
+    %%--------------------------------------------------------------------
+    ?ERROR_NO_CONNECTION_TO_NEW_NODE(<<"onepanel@example.com">>),
+    ?ERROR_NODE_NOT_COMPATIBLE(<<"onepanel@example.com">>, ?ONEPROVIDER),
+    ?ERROR_NODE_NOT_COMPATIBLE(<<"onepanel@example.com">>, ?ONEZONE),
+    ?ERROR_NODE_ALREADY_IN_CLUSTER(<<"onepanel@example.com">>),
+    ?ERROR_FILE_ALLOCATION(1000, 2000),
+    {different, ?ERROR_NO_SERVICE_NODES(op_worker), ?ERROR_NO_SERVICE_NODES(<<"op_worker">>)},
+    ?ERROR_LETS_ENCRYPT_NOT_SUPPORTED,
+    ?ERROR_LETS_ENCRYPT_NOT_REACHABLE,
+    ?ERROR_LETS_ENCRYPT_RESPONSE(undefined, <<"Bad Let's Encrypt response">>),
+    ?ERROR_LETS_ENCRYPT_RESPONSE(
+        #{<<"type">> => <<"urn:ietf:params:acme:error:rateLimited">>,
+            <<"status">> => 429, <<"detail">> => <<"Error creating new order">>},
+        <<"Error creating new order">>),
 
     %% -----------------------------------------------------------------------------
     %% Unknown error
