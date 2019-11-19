@@ -42,10 +42,23 @@ bad_token_test() ->
     ?assertMatch(?ERROR_BAD_TOKEN, tokens:deserialize(<<"rubbish-123">>)).
 
 
+unknown_caveat_test() ->
+    Secret = <<"secrettt123">>,
+    Macaroon = macaroon:create(?OZ_DOMAIN, Secret, <<"id123">>),
+    Macaroon2 = macaroon:add_first_party_caveat(Macaroon, <<"grant = everything">>),
+    {ok, Token64} = macaroon:serialize(Macaroon2),
+    Serialized = base62:from_base64(Token64),
+    {ok, Token} = tokens:deserialize(Serialized),
+    ?assertEqual(
+        ?ERROR_TOKEN_CAVEAT_UNKNOWN(<<"grant = everything">>),
+        tokens:verify(Token, Secret, #auth_ctx{current_timestamp = ?NOW()}, [])
+    ).
+
+
 invalid_subject_test() ->
     Prototype = #token{
         onezone_domain = ?OZ_DOMAIN,
-        nonce = ?RAND_STR,
+        id = ?RAND_STR,
         persistent = false,
         type = ?ACCESS_TOKEN
     },
@@ -70,7 +83,7 @@ invalid_subject_test() ->
 confine_test() ->
     Prototype = #token{
         onezone_domain = ?OZ_DOMAIN,
-        nonce = ?RAND_STR,
+        id = ?RAND_STR,
         subject = ?SUB(user, <<"uid">>),
         persistent = true,
         type = ?GUI_ACCESS_TOKEN(?RAND_STR)
@@ -108,54 +121,181 @@ confine_test() ->
     ?assertEqual({ok, LimitedToken}, tokens:deserialize(tokens:confine(SerializedAlpha, [CvAud, CvTime, CvAuthNone]))).
 
 
+is_token_or_invite_token_test() ->
+    IsToken = fun tokens:is_token/1,
+    IsInviteToken = fun tokens:is_invite_token/2,
+
+    AccessTokenPrototype = #token{
+        onezone_domain = ?OZ_DOMAIN,
+        id = ?RAND_STR,
+        subject = ?SUB(?ONEPROVIDER, <<"pid">>),
+        persistent = true,
+        type = ?ACCESS_TOKEN
+    },
+
+    GuiAccessTokenPrototype = #token{
+        onezone_domain = ?OZ_DOMAIN,
+        id = ?RAND_STR,
+        subject = ?SUB(user, <<"uid">>),
+        persistent = false,
+        type = ?GUI_ACCESS_TOKEN(?RAND_STR)
+    },
+
+    InviteTokenPrototype = #token{
+        onezone_domain = ?OZ_DOMAIN,
+        id = ?RAND_STR,
+        subject = ?SUB(user, <<"uid">>),
+        persistent = false,
+        type = ?INVITE_TOKEN(?USER_JOIN_SPACE, ?RAND_STR)
+    },
+
+    ?assertEqual(false, IsToken(AccessTokenPrototype)),
+    ?assertEqual(false, IsInviteToken(AccessTokenPrototype, ?GROUP_JOIN_HARVESTER)),
+    ?assertEqual(true, IsToken(tokens:construct(AccessTokenPrototype, <<"secret">>, []))),
+    ?assertEqual(false, IsInviteToken(tokens:construct(AccessTokenPrototype, <<"secret">>, []), any)),
+
+    ?assertEqual(false, IsToken(GuiAccessTokenPrototype)),
+    ?assertEqual(false, IsInviteToken(GuiAccessTokenPrototype, any)),
+    ?assertEqual(true, IsToken(tokens:construct(GuiAccessTokenPrototype, <<"secret">>, []))),
+    ?assertEqual(false, IsInviteToken(tokens:construct(GuiAccessTokenPrototype, <<"secret">>, []), ?USER_JOIN_SPACE)),
+
+    ?assertEqual(false, IsToken(InviteTokenPrototype)),
+    ?assertEqual(false, IsInviteToken(InviteTokenPrototype, ?USER_JOIN_CLUSTER)),
+    ?assertEqual(true, IsToken(tokens:construct(InviteTokenPrototype, <<"secret">>, []))),
+    ?assertEqual(true, IsInviteToken(tokens:construct(InviteTokenPrototype, <<"secret">>, []), ?USER_JOIN_SPACE)),
+    ?assertEqual(true, IsInviteToken(tokens:construct(InviteTokenPrototype, <<"secret">>, []), any)),
+    ?assertEqual(false, IsInviteToken(tokens:construct(InviteTokenPrototype, <<"secret">>, []), ?GROUP_JOIN_SPACE)),
+
+    ?assertEqual(false, IsToken(12345)),
+    ?assertEqual(false, IsToken(<<"12345">>)),
+    ?assertEqual(false, IsToken(#{<<"token">> => <<"12345">>})),
+    ?assertEqual(false, IsToken(macaroon:create(?OZ_DOMAIN, <<"secret">>, <<"id">>))),
+
+    ?assertEqual(false, IsInviteToken(12345, any)),
+    ?assertEqual(false, IsInviteToken(<<"12345">>, ?SUPPORT_SPACE)),
+    ?assertEqual(false, IsInviteToken(#{<<"token">> => <<"12345">>}, ?REGISTER_ONEPROVIDER)),
+    ?assertEqual(false, IsInviteToken(macaroon:create(?OZ_DOMAIN, <<"secret">>, <<"id">>), ?SPACE_JOIN_HARVESTER)).
+
+
 sanitize_type_test() ->
     S = fun tokens:sanitize_type/1,
 
     ?assertEqual({true, ?ACCESS_TOKEN}, S(?ACCESS_TOKEN)),
-    ?assertEqual({true, ?ACCESS_TOKEN}, S(<<"act">>)),
+    ?assertEqual({true, ?ACCESS_TOKEN}, S(#{<<"accessToken">> => #{}})),
     ?assertEqual(false, S(<<"access">>)),
 
     ?assertEqual({true, ?GUI_ACCESS_TOKEN(<<"sess">>)}, S(?GUI_ACCESS_TOKEN(<<"sess">>))),
-    ?assertEqual({true, ?GUI_ACCESS_TOKEN(<<"sess">>)}, S(<<"gui-sess">>)),
+    ?assertEqual({true, ?GUI_ACCESS_TOKEN(<<"sess">>)}, S(#{<<"guiAccessToken">> => #{<<"sessionId">> => <<"sess">>}})),
+    ?assertEqual(false, S(#{<<"guiAccessToken">> => #{}})),
     ?assertEqual(false, S(<<"gui">>)),
     ?assertEqual(false, S(<<"gui-">>)),
 
-    ?assertEqual({true, ?INVITE_TOKEN(?GROUP_INVITE_USER_TOKEN, <<"id">>)}, S(?INVITE_TOKEN(?GROUP_INVITE_USER_TOKEN, <<"id">>))),
-    ?assertEqual({true, ?INVITE_TOKEN(?GROUP_INVITE_USER_TOKEN, <<"id">>)}, S(<<"giu-id">>)),
+    ?assertEqual({true, ?INVITE_TOKEN(?USER_JOIN_GROUP, <<"id">>)}, S(?INVITE_TOKEN(?USER_JOIN_GROUP, <<"id">>))),
+    ?assertEqual({true, ?INVITE_TOKEN(?USER_JOIN_GROUP, <<"id">>)}, S(#{<<"inviteToken">> => #{
+        <<"subtype">> => <<"userJoinGroup">>, <<"groupId">> => <<"id">>
+    }})),
 
-    ?assertEqual({true, ?INVITE_TOKEN(?GROUP_INVITE_GROUP_TOKEN, <<"id">>)}, S(?INVITE_TOKEN(?GROUP_INVITE_GROUP_TOKEN, <<"id">>))),
-    ?assertEqual({true, ?INVITE_TOKEN(?GROUP_INVITE_GROUP_TOKEN, <<"id">>)}, S(<<"gig-id">>)),
+    ?assertEqual({true, ?INVITE_TOKEN(?GROUP_JOIN_GROUP, <<"id">>)}, S(?INVITE_TOKEN(?GROUP_JOIN_GROUP, <<"id">>))),
+    ?assertEqual({true, ?INVITE_TOKEN(?GROUP_JOIN_GROUP, <<"id">>)}, S(#{<<"inviteToken">> => #{
+        <<"subtype">> => <<"groupJoinGroup">>, <<"groupId">> => <<"id">>
+    }})),
 
-    ?assertEqual({true, ?INVITE_TOKEN(?SPACE_INVITE_USER_TOKEN, <<"id">>)}, S(?INVITE_TOKEN(?SPACE_INVITE_USER_TOKEN, <<"id">>))),
-    ?assertEqual({true, ?INVITE_TOKEN(?SPACE_INVITE_USER_TOKEN, <<"id">>)}, S(<<"siu-id">>)),
+    ?assertEqual({true, ?INVITE_TOKEN(?USER_JOIN_SPACE, <<"id">>)}, S(?INVITE_TOKEN(?USER_JOIN_SPACE, <<"id">>))),
+    ?assertEqual({true, ?INVITE_TOKEN(?USER_JOIN_SPACE, <<"id">>)}, S(#{<<"inviteToken">> => #{
+        <<"subtype">> => <<"userJoinSpace">>, <<"spaceId">> => <<"id">>
+    }})),
 
-    ?assertEqual({true, ?INVITE_TOKEN(?SPACE_INVITE_GROUP_TOKEN, <<"id">>)}, S(?INVITE_TOKEN(?SPACE_INVITE_GROUP_TOKEN, <<"id">>))),
-    ?assertEqual({true, ?INVITE_TOKEN(?SPACE_INVITE_GROUP_TOKEN, <<"id">>)}, S(<<"sig-id">>)),
+    ?assertEqual({true, ?INVITE_TOKEN(?GROUP_JOIN_SPACE, <<"id">>)}, S(?INVITE_TOKEN(?GROUP_JOIN_SPACE, <<"id">>))),
+    ?assertEqual({true, ?INVITE_TOKEN(?GROUP_JOIN_SPACE, <<"id">>)}, S(#{<<"inviteToken">> => #{
+        <<"subtype">> => <<"groupJoinSpace">>, <<"spaceId">> => <<"id">>
+    }})),
 
-    ?assertEqual({true, ?INVITE_TOKEN(?SPACE_SUPPORT_TOKEN, <<"id">>)}, S(?INVITE_TOKEN(?SPACE_SUPPORT_TOKEN, <<"id">>))),
-    ?assertEqual({true, ?INVITE_TOKEN(?SPACE_SUPPORT_TOKEN, <<"id">>)}, S(<<"ssu-id">>)),
+    ?assertEqual({true, ?INVITE_TOKEN(?SUPPORT_SPACE, <<"id">>)}, S(?INVITE_TOKEN(?SUPPORT_SPACE, <<"id">>))),
+    ?assertEqual({true, ?INVITE_TOKEN(?SUPPORT_SPACE, <<"id">>)}, S(#{<<"inviteToken">> => #{
+        <<"subtype">> => <<"supportSpace">>, <<"spaceId">> => <<"id">>
+    }})),
 
-    ?assertEqual({true, ?INVITE_TOKEN(?CLUSTER_INVITE_USER_TOKEN, <<"id">>)}, S(?INVITE_TOKEN(?CLUSTER_INVITE_USER_TOKEN, <<"id">>))),
-    ?assertEqual({true, ?INVITE_TOKEN(?CLUSTER_INVITE_USER_TOKEN, <<"id">>)}, S(<<"ciu-id">>)),
+    ?assertEqual({true, ?INVITE_TOKEN(?REGISTER_ONEPROVIDER, <<"id">>)}, S(?INVITE_TOKEN(?REGISTER_ONEPROVIDER, <<"id">>))),
+    ?assertEqual({true, ?INVITE_TOKEN(?REGISTER_ONEPROVIDER, <<"id">>)}, S(#{<<"inviteToken">> => #{
+        <<"subtype">> => <<"registerOneprovider">>, <<"adminUserId">> => <<"id">>
+    }})),
 
-    ?assertEqual({true, ?INVITE_TOKEN(?CLUSTER_INVITE_GROUP_TOKEN, <<"id">>)}, S(?INVITE_TOKEN(?CLUSTER_INVITE_GROUP_TOKEN, <<"id">>))),
-    ?assertEqual({true, ?INVITE_TOKEN(?CLUSTER_INVITE_GROUP_TOKEN, <<"id">>)}, S(<<"cig-id">>)),
+    ?assertEqual({true, ?INVITE_TOKEN(?USER_JOIN_CLUSTER, <<"id">>)}, S(?INVITE_TOKEN(?USER_JOIN_CLUSTER, <<"id">>))),
+    ?assertEqual({true, ?INVITE_TOKEN(?USER_JOIN_CLUSTER, <<"id">>)}, S(#{<<"inviteToken">> => #{
+        <<"subtype">> => <<"userJoinCluster">>, <<"clusterId">> => <<"id">>
+    }})),
 
-    ?assertEqual({true, ?INVITE_TOKEN(?PROVIDER_REGISTRATION_TOKEN, <<"id">>)}, S(?INVITE_TOKEN(?PROVIDER_REGISTRATION_TOKEN, <<"id">>))),
-    ?assertEqual({true, ?INVITE_TOKEN(?PROVIDER_REGISTRATION_TOKEN, <<"id">>)}, S(<<"pre-id">>)),
+    ?assertEqual({true, ?INVITE_TOKEN(?GROUP_JOIN_CLUSTER, <<"id">>)}, S(?INVITE_TOKEN(?GROUP_JOIN_CLUSTER, <<"id">>))),
+    ?assertEqual({true, ?INVITE_TOKEN(?GROUP_JOIN_CLUSTER, <<"id">>)}, S(#{<<"inviteToken">> => #{
+        <<"subtype">> => <<"groupJoinCluster">>, <<"clusterId">> => <<"id">>
+    }})),
 
-    ?assertEqual({true, ?INVITE_TOKEN(?HARVESTER_INVITE_USER_TOKEN, <<"id">>)}, S(?INVITE_TOKEN(?HARVESTER_INVITE_USER_TOKEN, <<"id">>))),
-    ?assertEqual({true, ?INVITE_TOKEN(?HARVESTER_INVITE_USER_TOKEN, <<"id">>)}, S(<<"hiu-id">>)),
+    ?assertEqual({true, ?INVITE_TOKEN(?USER_JOIN_HARVESTER, <<"id">>)}, S(?INVITE_TOKEN(?USER_JOIN_HARVESTER, <<"id">>))),
+    ?assertEqual({true, ?INVITE_TOKEN(?USER_JOIN_HARVESTER, <<"id">>)}, S(#{<<"inviteToken">> => #{
+        <<"subtype">> => <<"userJoinHarvester">>, <<"harvesterId">> => <<"id">>
+    }})),
 
-    ?assertEqual({true, ?INVITE_TOKEN(?HARVESTER_INVITE_GROUP_TOKEN, <<"id">>)}, S(?INVITE_TOKEN(?HARVESTER_INVITE_GROUP_TOKEN, <<"id">>))),
-    ?assertEqual({true, ?INVITE_TOKEN(?HARVESTER_INVITE_GROUP_TOKEN, <<"id">>)}, S(<<"hig-id">>)),
+    ?assertEqual({true, ?INVITE_TOKEN(?GROUP_JOIN_HARVESTER, <<"id">>)}, S(?INVITE_TOKEN(?GROUP_JOIN_HARVESTER, <<"id">>))),
+    ?assertEqual({true, ?INVITE_TOKEN(?GROUP_JOIN_HARVESTER, <<"id">>)}, S(#{<<"inviteToken">> => #{
+        <<"subtype">> => <<"groupJoinHarvester">>, <<"harvesterId">> => <<"id">>
+    }})),
 
-    ?assertEqual({true, ?INVITE_TOKEN(?HARVESTER_INVITE_SPACE_TOKEN, <<"id">>)}, S(?INVITE_TOKEN(?HARVESTER_INVITE_SPACE_TOKEN, <<"id">>))),
-    ?assertEqual({true, ?INVITE_TOKEN(?HARVESTER_INVITE_SPACE_TOKEN, <<"id">>)}, S(<<"his-id">>)),
+    ?assertEqual({true, ?INVITE_TOKEN(?SPACE_JOIN_HARVESTER, <<"id">>)}, S(?INVITE_TOKEN(?SPACE_JOIN_HARVESTER, <<"id">>))),
+    ?assertEqual({true, ?INVITE_TOKEN(?SPACE_JOIN_HARVESTER, <<"id">>)}, S(#{<<"inviteToken">> => #{
+        <<"subtype">> => <<"spaceJoinHarvester">>, <<"harvesterId">> => <<"id">>
+    }})),
 
     ?assertEqual(false, S(<<"giu-">>)),
     ?assertEqual(false, S(<<"hi">>)),
     ?assertEqual(false, S(<<"h">>)).
+
+
+sanitize_invite_token_type_test() ->
+    S = fun tokens:sanitize_invite_token_type/1,
+
+    ?assertEqual({true, ?USER_JOIN_GROUP}, S(?USER_JOIN_GROUP)),
+    ?assertEqual({true, ?USER_JOIN_GROUP}, S(<<"userJoinGroup">>)),
+    ?assertEqual(false, S(<<"userjoingroup">>)),
+
+    ?assertEqual({true, ?GROUP_JOIN_GROUP}, S(?GROUP_JOIN_GROUP)),
+    ?assertEqual({true, ?GROUP_JOIN_GROUP}, S(<<"groupJoinGroup">>)),
+    ?assertEqual(false, S(<<"gjg">>)),
+
+    ?assertEqual({true, ?USER_JOIN_SPACE}, S(?USER_JOIN_SPACE)),
+    ?assertEqual({true, ?USER_JOIN_SPACE}, S(<<"userJoinSpace">>)),
+    ?assertEqual(false, S(123456)),
+
+    ?assertEqual({true, ?GROUP_JOIN_SPACE}, S(?GROUP_JOIN_SPACE)),
+    ?assertEqual({true, ?GROUP_JOIN_SPACE}, S(<<"groupJoinSpace">>)),
+    ?assertEqual(false, S(<<"group_join_space">>)),
+
+    ?assertEqual({true, ?SUPPORT_SPACE}, S(?SUPPORT_SPACE)),
+    ?assertEqual({true, ?SUPPORT_SPACE}, S(<<"supportSpace">>)),
+    ?assertEqual(false, S(<<"spaceSupport">>)),
+
+    ?assertEqual({true, ?REGISTER_ONEPROVIDER}, S(?REGISTER_ONEPROVIDER)),
+    ?assertEqual({true, ?REGISTER_ONEPROVIDER}, S(<<"registerOneprovider">>)),
+    ?assertEqual(false, S(<<"">>)),
+
+    ?assertEqual({true, ?USER_JOIN_CLUSTER}, S(?USER_JOIN_CLUSTER)),
+    ?assertEqual({true, ?USER_JOIN_CLUSTER}, S(<<"userJoinCluster">>)),
+    ?assertEqual(false, S(<<"ujc">>)),
+
+    ?assertEqual({true, ?GROUP_JOIN_CLUSTER}, S(?GROUP_JOIN_CLUSTER)),
+    ?assertEqual({true, ?GROUP_JOIN_CLUSTER}, S(<<"groupJoinCluster">>)),
+    ?assertEqual(false, S(#{<<"inviteTokenType">> => <<"groupJoinCluster">>})),
+
+    ?assertEqual({true, ?USER_JOIN_HARVESTER}, S(?USER_JOIN_HARVESTER)),
+    ?assertEqual({true, ?USER_JOIN_HARVESTER}, S(<<"userJoinHarvester">>)),
+    ?assertEqual(false, S(7.13)),
+
+    ?assertEqual({true, ?GROUP_JOIN_HARVESTER}, S(?GROUP_JOIN_HARVESTER)),
+    ?assertEqual({true, ?GROUP_JOIN_HARVESTER}, S(<<"groupJoinHarvester">>)),
+    ?assertEqual(false, S(<<"group-join-harvester">>)),
+
+    ?assertEqual({true, ?SPACE_JOIN_HARVESTER}, S(?SPACE_JOIN_HARVESTER)),
+    ?assertEqual({true, ?SPACE_JOIN_HARVESTER}, S(<<"spaceJoinHarvester">>)),
+    ?assertEqual(false, S("spaceJoinHarvester")).
 
 
 secret_generation_test() ->
@@ -165,12 +305,12 @@ secret_generation_test() ->
 
 service_access_tokens_test() ->
     ProviderId = <<"another-provider-id">>,
-    Nonce = <<"z234xcvzasdfa0sd8fh7a8wesdd352a24">>,
+    Id = <<"z234xcvzasdfa0sd8fh7a8wesdd352a24">>,
     Secret = <<"secret-4">>,
     Subject = ?SUB(?ONEPROVIDER, ProviderId),
     Prototype = #token{
         onezone_domain = ?OZ_DOMAIN,
-        nonce = Nonce,
+        id = Id,
         persistent = false,
         subject = Subject,
         type = ?ACCESS_TOKEN
@@ -344,92 +484,129 @@ sanitize_caveats_test() ->
     ?BAD(S(atom)),
 
     ?OK(#cv_time{valid_until = 123}, S(#cv_time{valid_until = 123})),
-    ?OK(#cv_time{valid_until = ?INFINITY}, S(#cv_time{valid_until = ?INFINITY})),
-    ?OK(#cv_time{valid_until = 123}, S(<<"time < 123">>)),
-    ?OK(#cv_time{valid_until = ?INFINITY}, S(<<"time < infinity">>)),
+    ?OK(#cv_time{valid_until = 123}, S(#{<<"type">> => <<"time">>, <<"validUntil">> => 123})),
     ?BAD(S(#cv_time{valid_until = dsfdsf})),
-    ?BAD(S(<<"time<infinity">>)),
-    ?BAD(S(<<"time > 12312">>)),
+    ?BAD(S(#{<<"type">> => <<"time">>, <<"validAfter">> => 1231231})),
+    ?BAD(S(#{<<"type">> => <<"time">>, <<"validUntil">> => <<"infinity">>})),
 
     ?OK(#cv_authorization_none{}, S(#cv_authorization_none{})),
-    ?OK(#cv_authorization_none{}, S(<<"authorization = none">>)),
-    ?BAD(S(<<"authorization = full">>)),
-    ?BAD(S(<<"authoriztion = none">>)),
+    ?OK(#cv_authorization_none{}, S(#{<<"type">> => <<"authorizationNone">>})),
+    ?BAD(S(#{<<"type">> => <<"authorizationFull">>})),
 
-    ?OK(#cv_ip{whitelist = [{{172, 98, 11, 23}, 32}]}, S(#cv_ip{whitelist = [{{172, 98, 11, 23}, 32}]})),
-    ?OK(#cv_ip{whitelist = [{{172, 98, 11, 23}, 32}]}, S(<<"ip = 172.98.11.23/32">>)),
+
+    ?OK(#cv_audience{whitelist = [?AUD(?OP_PANEL, <<"123">>)]},
+        S(#cv_audience{whitelist = [?AUD(?OP_PANEL, <<"123">>)]})),
+    ?OK(#cv_audience{whitelist = [?AUD(?OP_PANEL, <<"123">>)]},
+        S(#{<<"type">> => <<"audience">>, <<"whitelist">> => [<<"opp-123">>]})),
+    ?BAD(S(#cv_audience{whitelist = []})),
+    ?BAD(S(#cv_audience{whitelist = dsfdsf})),
+    ?BAD(S(#{<<"type">> => <<"audience">>, <<"whitelist">> => []})),
+    ?BAD(S(#{<<"type">> => <<"audience">>, <<"whitelist">> => <<"opp-123">>})),
+    ?BAD(S(#{<<"type">> => <<"audience">>, <<"whitelist">> => [<<"xcvsdjuhfsdfh">>]})),
+    ?BAD(S(#{<<"type">> => <<"audience">>, <<"blacklist">> => [<<"opp-123">>]})),
+
+    ?OK(#cv_ip{whitelist = [{{172, 98, 11, 23}, 32}]},
+        S(#cv_ip{whitelist = [{{172, 98, 11, 23}, 32}]})),
+    ?OK(#cv_ip{whitelist = [{{172, 98, 11, 23}, 32}]},
+        S(#{<<"type">> => <<"ip">>, <<"whitelist">> => [<<"172.98.11.23/32">>]})),
     ?BAD(S(#cv_ip{whitelist = []})),
     ?BAD(S(#cv_ip{whitelist = dsfdsf})),
-    ?BAD(S(<<"ip = ">>)),
-    ?BAD(S(<<"ip = all">>)),
-    ?BAD(S(<<"ip = 172.98.11.23/34">>)),
-    ?BAD(S(<<"ip = 172.9998.11.23/30">>)),
+    ?BAD(S(#{<<"type">> => <<"ip">>, <<"whitelist">> => []})),
+    ?BAD(S(#{<<"type">> => <<"ip">>, <<"whitelist">> => <<"all">>})),
+    ?BAD(S(#{<<"type">> => <<"ip">>, <<"whitelist">> => [<<"all">>]})),
+    ?BAD(S(#{<<"type">> => <<"ip">>, <<"whitelist">> => [<<"172.98.11.23/34">>]})),
+    ?BAD(S(#{<<"type">> => <<"ip">>, <<"whitelist">> => [<<"172.9998.11.23/30">>]})),
+    ?BAD(S(#{<<"type">> => <<"ip">>, <<"blacklist">> => [<<"172.98.11.23/32">>]})),
 
-    ?OK(#cv_asn{whitelist = [45, 785, 112]}, S(#cv_asn{whitelist = [45, 785, 112]})),
-    ?OK(#cv_asn{whitelist = [45, 785, 112]}, S(<<"asn = 45|785|112">>)),
+    ?OK(#cv_asn{whitelist = [45, 785, 112]},
+        S(#cv_asn{whitelist = [45, 785, 112]})),
+    ?OK(#cv_asn{whitelist = [45, 785, 112]},
+        S(#{<<"type">> => <<"asn">>, <<"whitelist">> => [45, 785, 112]})),
     ?BAD(S(#cv_asn{whitelist = []})),
     ?BAD(S(#cv_asn{whitelist = dsfdsf})),
-    ?BAD(S(<<"asn = ">>)),
-    ?BAD(S(<<"asn = all">>)),
-    ?BAD(S(<<"asn = 45.785.112">>)),
-    ?BAD(S(<<"asn = 76fb">>)),
+    ?BAD(S(#{<<"type">> => <<"asn">>, <<"whitelist">> => []})),
+    ?BAD(S(#{<<"type">> => <<"asn">>, <<"whitelist">> => <<"zxcvxz">>})),
+    ?BAD(S(#{<<"type">> => <<"asn">>, <<"whitelist">> => [<<"zxcvxz">>]})),
+    ?BAD(S(#{<<"type">> => <<"asn">>, <<"whitelist">> => [<<"45.785.112">>]})),
+    ?BAD(S(#{<<"type">> => <<"asn">>, <<"whitelist">> => [<<"76fb">>]})),
+    ?BAD(S(#{<<"type">> => <<"asn">>, <<"blacklist">> => [45, 785, 112]})),
 
-    ?OK(#cv_country{type = whitelist, list = [<<"PL">>, <<"DE">>]}, S(#cv_country{type = whitelist, list = [<<"PL">>, <<"DE">>]})),
-    ?OK(#cv_country{type = blacklist, list = [<<"PL">>, <<"DE">>]}, S(<<"geo.country != PL|DE">>)),
+    ?OK(#cv_country{type = whitelist, list = [<<"PL">>, <<"DE">>]},
+        S(#cv_country{type = whitelist, list = [<<"PL">>, <<"DE">>]})),
+    ?OK(#cv_country{type = blacklist, list = [<<"PL">>, <<"DE">>]},
+        S(#{<<"type">> => <<"geo.country">>, <<"filter">> => <<"blacklist">>, <<"list">> => [<<"PL">>, <<"DE">>]})),
     ?BAD(S(#cv_country{type = whitelist, list = []})),
     ?BAD(S(#cv_country{type = blacklist, list = dsfdsf})),
     ?BAD(S(#cv_country{type = all, list = [<<"PL">>, <<"DE">>]})),
-    ?BAD(S(<<"geo.country = ">>)),
-    ?BAD(S(<<"geo.country = all">>)),
-    ?BAD(S(<<"geo.country = PL,DE">>)),
-    ?BAD(S(<<"geo.country = ABCDEF">>)),
+    ?BAD(S(#{<<"type">> => <<"geo.country">>, <<"filter">> => <<"blacklist">>, <<"list">> => []})),
+    ?BAD(S(#{<<"type">> => <<"geo.country">>, <<"filter">> => <<"whitelist">>, <<"list">> => []})),
+    ?BAD(S(#{<<"type">> => <<"geo.country">>, <<"filter">> => <<"badlist">>, <<"list">> => [<<"PL">>, <<"DE">>]})),
+    ?BAD(S(#{<<"type">> => <<"geo.country">>, <<"filter">> => <<"blacklist">>, <<"list">> => [1, 2, 3]})),
 
-    ?OK(#cv_region{type = whitelist, list = [<<"Asia">>, <<"EU">>]}, S(#cv_region{type = whitelist, list = [<<"Asia">>, <<"EU">>]})),
-    ?OK(#cv_region{type = blacklist, list = [<<"Asia">>, <<"EU">>]}, S(<<"geo.region != Asia|EU">>)),
+    ?OK(#cv_region{type = whitelist, list = [<<"Asia">>, <<"EU">>]},
+        S(#cv_region{type = whitelist, list = [<<"Asia">>, <<"EU">>]})),
+    ?OK(#cv_region{type = blacklist, list = [<<"Asia">>, <<"EU">>]},
+        S(#{<<"type">> => <<"geo.region">>, <<"filter">> => <<"blacklist">>, <<"list">> => [<<"Asia">>, <<"EU">>]})),
     ?BAD(S(#cv_region{type = whitelist, list = []})),
     ?BAD(S(#cv_region{type = blacklist, list = 5663452})),
     ?BAD(S(#cv_region{type = all, list = [<<"Asia">>, <<"EU">>]})),
-    ?BAD(S(<<"geo.region = ">>)),
-    ?BAD(S(<<"geo.region = all">>)),
-    ?BAD(S(<<"geo.region = Asia-EU">>)),
-    ?BAD(S(<<"geo.region = 123">>)),
+    ?BAD(S(#{<<"type">> => <<"geo.region">>, <<"filter">> => <<"blacklist">>, <<"list">> => []})),
+    ?BAD(S(#{<<"type">> => <<"geo.region">>, <<"filter">> => <<"whitelist">>, <<"list">> => []})),
+    ?BAD(S(#{<<"type">> => <<"geo.region">>, <<"filter">> => <<"badlist">>, <<"list">> => [<<"Asia">>, <<"EU">>]})),
+    ?BAD(S(#{<<"type">> => <<"geo.region">>, <<"filter">> => <<"blacklist">>, <<"list">> => [1, 2, 3]})),
 
-    ?OK(#cv_api{whitelist = [{?OZ_WORKER, all, ?GRI(od_user, <<"*">>, '*', auto)}]}, S(#cv_api{whitelist = [{?OZ_WORKER, all, ?GRI(od_user, <<"*">>, '*', auto)}]})),
-    ?OK(#cv_api{whitelist = [{?OZ_WORKER, all, ?GRI(od_user, <<"*">>, '*', auto)}]}, S(<<"api = ozw/all/user.*.*:auto">>)),
+    ?OK(#cv_api{whitelist = [{?OZ_WORKER, all, ?GRI(od_user, <<"*">>, '*', auto)}]},
+        S(#cv_api{whitelist = [{?OZ_WORKER, all, ?GRI(od_user, <<"*">>, '*', auto)}]})),
+    ?OK(#cv_api{whitelist = [{?OZ_WORKER, all, ?GRI(od_user, <<"*">>, '*', auto)}]},
+        S(#{<<"type">> => <<"api">>, <<"whitelist">> => [<<"ozw/all/user.*.*:auto">>]})),
     ?BAD(S(#cv_api{whitelist = []})),
     ?BAD(S(#cv_api{whitelist = [<<"avbb">>, 343]})),
-    ?BAD(S(<<"api = ">>)),
-    ?BAD(S(<<"api = ozw/*.*.*:*">>)),
-    ?BAD(S(<<"api = all/*.*.*:*">>)),
-    ?BAD(S(<<"api = 999abcdf">>)),
+    ?BAD(S(#{<<"type">> => <<"api">>, <<"whitelist">> => []})),
+    ?BAD(S(#{<<"type">> => <<"api">>, <<"blacklist">> => [<<"ozw/all/user.*.*:auto">>]})),
+    ?BAD(S(#{<<"type">> => <<"api">>, <<"whitelist">> => [<<"all/user.*.*:auto">>]})),
+    ?BAD(S(#{<<"type">> => <<"api">>, <<"whitelist">> => <<"8sdafhg72aw3r">>})),
 
-    ?OK(#cv_data_space{whitelist = [<<"abcd">>, <<"ghij">>]}, S(#cv_data_space{whitelist = [<<"abcd">>, <<"ghij">>]})),
-    ?OK(#cv_data_space{whitelist = [<<"abcd">>, <<"ghij">>]}, S(<<"data.space = abcd|ghij">>)),
+    ?OK(#cv_data_space{whitelist = [<<"abcd">>, <<"ghij">>]},
+        S(#cv_data_space{whitelist = [<<"abcd">>, <<"ghij">>]})),
+    ?OK(#cv_data_space{whitelist = [<<"abcd">>, <<"ghij">>]},
+        S(#{<<"type">> => <<"data.space">>, <<"whitelist">> => [<<"abcd">>, <<"ghij">>]})),
     ?BAD(S(#cv_data_space{whitelist = []})),
     ?BAD(S(#cv_data_space{whitelist = [784, 343]})),
-    ?BAD(S(<<"data.space = ">>)),
-    ?BAD(S(<<"data.space != 1,2,3">>)),
+    ?BAD(S(#{<<"type">> => <<"data.space">>, <<"whitelist">> => []})),
+    ?BAD(S(#{<<"type">> => <<"data.space">>, <<"whitelist">> => [1, 2, 3]})),
+    ?BAD(S(#{<<"type">> => <<"data.space">>, <<"blacklist">> => [<<"abcd">>, <<"ghij">>]})),
 
-    ?OK(#cv_data_access{type = read}, S(#cv_data_access{type = read})),
-    ?OK(#cv_data_access{type = write}, S(<<"data.access = write">>)),
+    ?OK(#cv_data_access{type = read},
+        S(#cv_data_access{type = read})),
+    ?OK(#cv_data_access{type = write},
+        S(#{<<"type">> => <<"data.access">>, <<"accessType">> => <<"write">>})),
     ?BAD(S(#cv_data_access{type = []})),
     ?BAD(S(#cv_data_access{type = all})),
-    ?BAD(S(<<"data.access = true">>)),
-    ?BAD(S(<<"data.access = read|write">>)),
+    ?BAD(S(#{<<"type">> => <<"data.access">>, <<"accessType">> => <<"true">>})),
+    ?BAD(S(#{<<"type">> => <<"data.access">>, <<"accessType">> => [<<"read">>, <<"write">>]})),
+    ?BAD(S(#{<<"type">> => <<"data.access">>, <<"badKey">> => <<"write">>})),
 
-    ?OK(#cv_data_path{whitelist = [<<"a/b/c/d">>]}, S(#cv_data_path{whitelist = [<<"a/b/c/d">>]})),
-    ?OK(#cv_data_path{whitelist = [<<"/dir/file.txt">>]}, S(<<"data.path = ", (base64:encode(<<"/dir/file.txt">>))/binary>>)),
+    ?OK(#cv_data_path{whitelist = [<<"a/b/c/d">>]},
+        S(#cv_data_path{whitelist = [<<"a/b/c/d">>]})),
+    ?OK(#cv_data_path{whitelist = [<<"/dir1/file1.txt">>, <<"/dir2/file2.txt">>]},
+        S(#{<<"type">> => <<"data.path">>, <<"whitelist">> => [
+            base64:encode(<<"/dir1/file1.txt">>), base64:encode(<<"/dir2/file2.txt">>)
+        ]})),
     ?BAD(S(#cv_data_path{whitelist = []})),
     ?BAD(S(#cv_data_path{whitelist = [<<"avbb">>, 343]})),
-    ?BAD(S(<<"data.path = ">>)),
-    ?BAD(S(<<"data.path = /a/b/c/d/e">>)),
+    ?BAD(S(#{<<"type">> => <<"data.path">>, <<"whitelist">> => []})),
+    ?BAD(S(#{<<"type">> => <<"data.path">>, <<"whitelist">> => <<"a/b/c/d/e">>})),
+    ?BAD(S(#{<<"type">> => <<"data.path">>, <<"whitelist">> => [<<"a/b/c/d/e$%#@">>]})),
+    ?BAD(S(#{<<"type">> => <<"data.path">>, <<"blacklist">> => [base64:encode(<<"/dir1/file1.txt">>)]})),
 
-    ?OK(#cv_data_objectid{whitelist = [<<"01234">>, <<"7890">>]}, S(#cv_data_objectid{whitelist = [<<"01234">>, <<"7890">>]})),
-    ?OK(#cv_data_objectid{whitelist = [<<"01234">>, <<"7890">>]}, S(<<"data.objectid = 01234|7890">>)),
+    ?OK(#cv_data_objectid{whitelist = [<<"01234">>, <<"7890">>]},
+        S(#cv_data_objectid{whitelist = [<<"01234">>, <<"7890">>]})),
+    ?OK(#cv_data_objectid{whitelist = [<<"01234">>, <<"7890">>]},
+        S(#{<<"type">> => <<"data.objectid">>, <<"whitelist">> => [<<"01234">>, <<"7890">>]})),
     ?BAD(S(#cv_data_objectid{whitelist = []})),
     ?BAD(S(#cv_data_objectid{whitelist = [atom, 343]})),
-    ?BAD(S(<<"data.objectid = ">>)),
-    ?BAD(S(<<"data.objectid != 01234/7890">>)).
+    ?BAD(S(#{<<"type">> => <<"data.objectid">>, <<"whitelist">> => []})),
+    ?BAD(S(#{<<"type">> => <<"data.objectid">>, <<"blacklist">> => [<<"01234">>, <<"7890">>]})).
 
 
 %%%===================================================================
@@ -620,7 +797,7 @@ combinations(Persistent, Subject, Type, AuthCtx, #caveats_testcase{caveats = Cav
     Secret = ?RAND_STR,
     Prototype = #token{
         onezone_domain = ?OZ_DOMAIN,
-        nonce = ?RAND_STR,
+        id = ?RAND_STR,
         persistent = Persistent,
         subject = Subject,
         type = Type
@@ -628,6 +805,7 @@ combinations(Persistent, Subject, Type, AuthCtx, #caveats_testcase{caveats = Cav
     Token = tokens:construct(Prototype, Secret, Caveats),
 
     check_serialize_deserialize(Token),
+    check_caveats_to_json_and_back(Token),
     check_verification_result(Token, Secret, Subject, AuthCtx, Caveats, Unverified),
     check_supported_caveats(Token, Secret, AuthCtx, Caveats, Unverified).
 
@@ -636,6 +814,15 @@ check_serialize_deserialize(Token) ->
     ?assertMatch({ok, _}, tokens:serialize(Token)),
     {ok, Serialized} = tokens:serialize(Token),
     ?assertEqual({ok, Token}, tokens:deserialize(Serialized)).
+
+
+check_caveats_to_json_and_back(Token) ->
+    Caveats = tokens:get_caveats(Token),
+    lists:foreach(fun(Caveat) ->
+        CaveatAsJson = caveats:to_json(Caveat),
+        ?assert(is_map(CaveatAsJson)),
+        ?assertEqual(Caveat, caveats:from_json(CaveatAsJson))
+    end, Caveats).
 
 
 % If no caveats were expected to fail verification, make sure that token verification

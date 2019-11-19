@@ -35,14 +35,22 @@ encode_decode_error_test() ->
 
 http_code_test() ->
     lists:foreach(fun(Testcase) ->
-        {Error, _} = case Testcase of
-            {different, A, B} -> {A, B};
-            Err -> {Err, Err}
+        Error = case Testcase of
+            {different, A, _B} -> A;
+            Err -> Err
         end,
         Code = errors:to_http_code(Error),
         ?assert(Code >= 400),
         ?assert(Code =< 503)
     end, testcases()).
+
+
+unexpected_error_test() ->
+    UnexpectedError = {error, {some_error, that_we_dont_understand, 1653}},
+    ?assertMatch(
+        ?ERROR_UNEXPECTED_ERROR(_),
+        errors:from_json(errors:to_json(UnexpectedError))
+    ).
 
 
 % {different, Before, After} is used when encoding and decoding causes the error to change.
@@ -82,14 +90,21 @@ testcases() -> [
     ?ERROR_BAD_AUDIENCE_TOKEN(?ERROR_TOKEN_CAVEAT_UNVERIFIED(#cv_time{valid_until = 12345678})),
     ?ERROR_TOKEN_INVALID,
     ?ERROR_TOKEN_REVOKED,
-    ?ERROR_NOT_AN_ACCESS_TOKEN,
-    ?ERROR_NOT_AN_INVITE_TOKEN(?SPACE_INVITE_USER_TOKEN),
-    ?ERROR_INVITE_TOKEN_ISSUER_NOT_AUTHORIZED,
+    ?ERROR_NOT_AN_ACCESS_TOKEN(?INVITE_TOKEN(?USER_JOIN_SPACE, <<"123">>)),
+    ?ERROR_NOT_AN_INVITE_TOKEN(?USER_JOIN_SPACE, ?GUI_ACCESS_TOKEN(<<"sess-8765">>)),
+    ?ERROR_NOT_AN_INVITE_TOKEN(?GROUP_JOIN_GROUP, ?INVITE_TOKEN(?SPACE_JOIN_HARVESTER, <<"12345">>)),
+    ?ERROR_NOT_AN_INVITE_TOKEN(any, ?ACCESS_TOKEN),
+    ?ERROR_TOKEN_CAVEAT_UNKNOWN(<<"grant = everything">>),
     ?ERROR_TOKEN_CAVEAT_UNVERIFIED(#cv_time{valid_until = 12323746234}),
+    ?ERROR_TOKEN_TIME_CAVEAT_REQUIRED(86400),
     ?ERROR_TOKEN_SUBJECT_INVALID,
     ?ERROR_TOKEN_AUDIENCE_FORBIDDEN(?AUD(?OP_PANEL, <<"kjasif2387rg7adc09jf8a0sdfg97a">>)),
+    ?ERROR_INVITE_TOKEN_CREATOR_NOT_AUTHORIZED,
+    ?ERROR_INVITE_TOKEN_USAGE_LIMIT_REACHED,
+    ?ERROR_INVITE_TOKEN_CONSUMER_INVALID(?SUB(?ONEPROVIDER, <<"zxbcv78s0dfasdf">>)),
+    ?ERROR_INVITE_TOKEN_CONSUMER_INVALID(?SUB(nobody)),
+    ?ERROR_INVITE_TOKEN_TARGET_ID_INVALID(<<"123456">>),
     ?ERROR_TOKEN_SESSION_INVALID,
-    ?ERROR_TOKEN_TIME_CAVEAT_REQUIRED(86400),
 
     %% -----------------------------------------------------------------------------
     %% Graph Sync errors
@@ -120,9 +135,10 @@ testcases() -> [
     ?ERROR_BAD_VALUE_TOKEN(<<"supportToken">>, ?ERROR_BAD_TOKEN),
     ?ERROR_BAD_VALUE_TOKEN(<<"supportToken">>, ?ERROR_TOKEN_INVALID),
     ?ERROR_BAD_VALUE_TOKEN(<<"supportToken">>, ?ERROR_TOKEN_REVOKED),
-    ?ERROR_BAD_VALUE_TOKEN(<<"supportToken">>, ?ERROR_NOT_AN_INVITE_TOKEN(?GROUP_INVITE_GROUP_TOKEN)),
+    ?ERROR_BAD_VALUE_TOKEN(<<"supportToken">>, ?ERROR_NOT_AN_INVITE_TOKEN(?GROUP_JOIN_GROUP, ?ACCESS_TOKEN)),
     ?ERROR_BAD_VALUE_TOKEN(<<"supportToken">>, ?ERROR_TOKEN_CAVEAT_UNVERIFIED(#cv_authorization_none{})),
     ?ERROR_BAD_VALUE_TOKEN_TYPE(<<"type">>),
+    ?ERROR_BAD_VALUE_INVITE_TOKEN_TYPE(<<"expectedInviteTokenType">>),
     ?ERROR_BAD_VALUE_IPV4_ADDRESS(<<"ip">>),
     ?ERROR_BAD_VALUE_LIST_OF_IPV4_ADDRESSES(<<"ip_list">>),
     ?ERROR_BAD_VALUE_TOO_LOW(<<"size">>, 500),
@@ -167,6 +183,7 @@ testcases() -> [
     %% -----------------------------------------------------------------------------
     %% Unknown error
     %% -----------------------------------------------------------------------------
+    ?ERROR_UNEXPECTED_ERROR(<<"deb7a8aaf82">>),
     ?ERROR_UNKNOWN_ERROR(#{
         <<"id">> => <<"someErrorThatWasNotSpecifiedInThisSoftwareVersion">>,
         <<"details">> => #{<<"key">> => <<"value">>},
