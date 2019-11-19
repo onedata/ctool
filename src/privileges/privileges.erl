@@ -473,7 +473,7 @@ oz_admin() ->
     union(oz_viewer(), [
         ?OZ_VIEW_PRIVILEGES, ?OZ_SET_PRIVILEGES,
 
-        ?OZ_MANAGE_TOKENS,
+        ?OZ_TOKENS_MANAGE,
 
         ?OZ_USERS_CREATE, ?OZ_USERS_MANAGE_PASSWORDS,
         ?OZ_USERS_UPDATE, ?OZ_USERS_DELETE,

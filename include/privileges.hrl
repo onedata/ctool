@@ -125,9 +125,6 @@
 -define(OZ_VIEW_PRIVILEGES, oz_view_privileges).
 -define(OZ_SET_PRIVILEGES, oz_set_privileges).
 
-% OZ privileges to administrate access / invite tokens of users and providers
--define(OZ_MANAGE_TOKENS, oz_manage_tokens).
-
 %% Privileges to administrate users in OZ
 -define(OZ_USERS_LIST, oz_users_list).
 -define(OZ_USERS_VIEW, oz_users_view).
@@ -177,6 +174,9 @@
 -define(OZ_PROVIDERS_DELETE, oz_providers_delete).
 -define(OZ_PROVIDERS_LIST_RELATIONSHIPS, oz_providers_list_relationships).
 -define(OZ_PROVIDERS_INVITE, oz_providers_invite).
+
+% OZ privileges to administrate access / invite tokens of users and providers
+-define(OZ_TOKENS_MANAGE, oz_tokens_manage).
 
 %% Privileges to administrate handle services in OZ
 -define(OZ_HANDLE_SERVICES_LIST, oz_handle_services_list).
