@@ -80,7 +80,8 @@ already_exists | unauthorized | forbidden.
     ParId :: gri:entity_id()
 } | {space_not_supported_by, ProviderId :: binary()}
 | {view_not_exists_on, ProviderId :: binary()}
-| transfer_already_ended | transfer_not_ended | storage_in_use.
+| transfer_already_ended | transfer_not_ended
+| storage_in_use.
 
 -type errno() :: ?OK | ?E2BIG | ?EACCES | ?EADDRINUSE | ?EADDRNOTAVAIL
 | ?EAFNOSUPPORT | ?EAGAIN | ?EALREADY | ?EBADF | ?EBADMSG | ?EBUSY
@@ -698,7 +699,7 @@ to_json(?ERROR_TRANSFER_NOT_ENDED) -> #{
 };
 to_json(?ERROR_STORAGE_IN_USE) -> #{
     <<"id">> => <<"storageInUse">>,
-    <<"description">> => <<"Specified storage is supporting a space.">>
+    <<"description">> => <<"Specified storage supports a space.">>
 };
 
 %%--------------------------------------------------------------------
@@ -1035,6 +1036,10 @@ from_json(#{<<"id">> := <<"transferNotEnded">>}) ->
 
 from_json(#{<<"id">> := <<"storageInUse">>}) ->
     ?ERROR_STORAGE_IN_USE;
+
+from_json(#{<<"id">> := <<"invalidQosExpression">>}) ->
+    ?ERROR_INVALID_QOS_EXPRESSION;
+
 %%--------------------------------------------------------------------
 %% Unknown / unexpected error
 %%--------------------------------------------------------------------
