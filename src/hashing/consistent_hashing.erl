@@ -204,7 +204,7 @@ create_label(HashPart, RandomPart) ->
 split_hash(Label) ->
     case binary:split(Label, ?HASH_SEPARATOR_BIN) of
         [RandomPart, Hash | _] ->
-            {binary:part(Hash, 0, ?HASH_LENGTH), RandomPart};
+            {binary:part(Hash, 0, min(?HASH_LENGTH, byte_size(Hash))), RandomPart};
         _ ->
             {undefined, Label}
     end.
