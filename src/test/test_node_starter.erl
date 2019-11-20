@@ -439,7 +439,9 @@ retry_running_env_up_script_until(ProjectRoot, AppmockRoot, CmRoot,
     StartLog = run_env_up_script(ProjectRoot, AppmockRoot, CmRoot, LogsDir, DescriptionFile),
 
     case StartLog of
-        <<"">> ->
+        % if env_up.py failed, last line of output will start with "Using default image for",
+        % because stderr is redirected to prepare_test_environment.log
+        <<"Using default image for", _/binary>> ->
             Ids = string:tokens(string:strip(os:cmd(
                 "docker ps -aq"
             ), right, $\n), "\n"),
@@ -449,8 +451,6 @@ retry_running_env_up_script_until(ProjectRoot, AppmockRoot, CmRoot,
             remove_dockers(ProjectRoot, lists:delete(MasterId, Ids)),
 
 
-            % if env_up.py failed, output will be empty,
-            % because stderr is redirected to prepare_test_environment.log
             case RetriesNumber > 0 of
                 true ->
                     ct:print("Retrying to run env_up.py. Number of retries left: ~p~n", [RetriesNumber]),
