@@ -858,7 +858,7 @@ to_json(UnexpectedError) ->
     % Wildcard to catch all errors that might be returned by the logic, in such
     % case log a debug with random error ref.
     ErrorRef = str_utils:rand_hex(5),
-    ?debug("Cannot translate error (ref. ~s): ~tp", [ErrorRef, UnexpectedError]),
+    ?warning("Cannot translate error (ref. ~s): ~tp", [ErrorRef, UnexpectedError]),
     to_json(?ERROR_UNEXPECTED_ERROR(ErrorRef)).
 
 
