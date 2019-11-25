@@ -125,7 +125,7 @@ already_exists | unauthorized | forbidden.
 | state() | posix() | op_worker() | onepanel() | unexpected() | unknown().
 -type error() :: {error, reason()}.
 
--type as_json() :: json_utils:json_term().
+-type as_json() :: json_utils:json_map().
 -export_type([error/0, reason/0, as_json/0]).
 
 %% API
@@ -1246,7 +1246,8 @@ from_json(ErrorAsJson) when is_map(ErrorAsJson) ->
     ?ERROR_UNKNOWN_ERROR(ErrorAsJson).
 
 
--spec to_http_code(error()) -> 400 | 401 | 403 | 404 | 500 | 501 | 503.
+-spec to_http_code(error()) ->
+    400 | 401 | 403 | 404 | 409 | 500 | 501 | 503.
 %% -----------------------------------------------------------------------------
 %% General errors
 %% -----------------------------------------------------------------------------
