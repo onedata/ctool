@@ -167,7 +167,7 @@ get_random_label_part(Label) ->
 %%--------------------------------------------------------------------
 -spec gen_hashing_key() -> binary().
 gen_hashing_key() ->
-    str_utils:rand_hex(?HASH_LENGTH).
+    str_utils:rand_hex(?HASH_LENGTH div 2).
 
 %%--------------------------------------------------------------------
 %% @doc
