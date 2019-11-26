@@ -117,9 +117,8 @@
 pack_share_guid(FileUuid, SpaceId, undefined) ->
     pack_guid(FileUuid, SpaceId);
 pack_share_guid(FileUuid, SpaceId, ShareId) ->
-    DefinedSpaceId = utils:ensure_defined(SpaceId, undefined, <<>>),
     http_utils:base64url_encode(<<?SHARE_GUID_PREFIX, ?GUID_SEPARATOR,  FileUuid/binary,
-        ?GUID_SEPARATOR, DefinedSpaceId/binary,
+        ?GUID_SEPARATOR, SpaceId/binary,
         ?GUID_SEPARATOR, ShareId/binary
     >>).
 
@@ -129,11 +128,10 @@ pack_share_guid(FileUuid, SpaceId, ShareId) ->
 %% For given file Uuid and spaceId generates file's Guid.
 %% @end
 %%--------------------------------------------------------------------
--spec pack_guid(file_meta_uuid(), space_id() | undefined) -> file_guid().
+-spec pack_guid(file_meta_uuid(), space_id()) -> file_guid().
 pack_guid(FileUuid, SpaceId) ->
-    DefinedSpaceId = utils:ensure_defined(SpaceId, undefined, <<>>),
     http_utils:base64url_encode(<<?GUID_PREFIX, ?GUID_SEPARATOR,
-        FileUuid/binary, ?GUID_SEPARATOR, DefinedSpaceId/binary>>).
+        FileUuid/binary, ?GUID_SEPARATOR, SpaceId/binary>>).
 
 
 %%--------------------------------------------------------------------
@@ -142,21 +140,16 @@ pack_guid(FileUuid, SpaceId) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec unpack_share_guid(share_root_file_guid()) ->
-    {file_meta_uuid(), undefined | space_id(), share_id() | undefined}.
+    {file_meta_uuid(), space_id(), share_id() | undefined}.
 unpack_share_guid(ShareGuid) ->
-    try binary:split(http_utils:base64url_decode(ShareGuid), <<?GUID_SEPARATOR>>, [global]) of
+    case binary:split(http_utils:base64url_decode(ShareGuid), <<?GUID_SEPARATOR>>, [global]) of
         [<<?SHARE_GUID_PREFIX>>, FileUuid, SpaceId, ShareId] ->
-            NonEmptySpaceId = utils:ensure_defined(SpaceId, <<>>, undefined),
             NonEmptyShareId = utils:ensure_defined(ShareId, <<>>, undefined),
-            {FileUuid, NonEmptySpaceId, NonEmptyShareId};
+            {FileUuid, SpaceId, NonEmptyShareId};
         [<<?GUID_PREFIX>>, FileUuid, SpaceId] ->
-            NonEmptySpaceId = utils:ensure_defined(SpaceId, <<>>, undefined),
-            {FileUuid, NonEmptySpaceId, undefined};
+            {FileUuid, SpaceId, undefined};
         _ ->
-            {ShareGuid, undefined, undefined}
-    catch
-        _:_ ->
-            {ShareGuid, undefined, undefined}
+            throw({invalid_guid, ShareGuid})
     end.
 
 
@@ -165,8 +158,7 @@ unpack_share_guid(ShareGuid) ->
 %% Returns file's Uuid and its SpaceId for given file's Guid.
 %% @end
 %%--------------------------------------------------------------------
--spec unpack_guid(FileGuid :: file_guid()) ->
-    {file_meta_uuid(), space_id() | undefined}.
+-spec unpack_guid(FileGuid :: file_guid()) -> {file_meta_uuid(), space_id()}.
 unpack_guid(FileGuid) ->
     {FileUuid, SpaceId, _ShareId} = unpack_share_guid(FileGuid),
     {FileUuid, SpaceId}.
@@ -223,7 +215,7 @@ objectid_to_guid(ObjectId) ->
 %% Get space id connected with given guid.
 %% @end
 %%--------------------------------------------------------------------
--spec guid_to_space_id(share_root_file_guid()) -> space_id() | undefined.
+-spec guid_to_space_id(share_root_file_guid()) -> space_id().
 guid_to_space_id(Guid) ->
     {_FileUuid, SpaceId, _ShareId} = unpack_share_guid(Guid),
     SpaceId.
@@ -259,9 +251,14 @@ guid_to_share_id(Guid) ->
 %%--------------------------------------------------------------------
 -spec is_share_guid(binary()) -> boolean().
 is_share_guid(Id) ->
-    case unpack_share_guid(Id) of
-        {_, _, undefined} -> false;
-        _ -> true
+    try
+        case unpack_share_guid(Id) of
+            {_, _, undefined} -> false;
+            _ -> true
+        end
+    catch
+        _:_ ->
+            false
     end.
 
 

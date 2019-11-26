@@ -18,15 +18,12 @@
 
 pack_unpack_guid_test() ->
     U = <<"uuid">>, S = <<"space_id">>,
-    ?assertEqual({U, S}, file_id:unpack_guid(file_id:pack_guid(U, S))),
-    ?assertEqual({U, undefined}, file_id:unpack_guid(file_id:pack_guid(U, <<>>))),
-    ?assertEqual({U, undefined}, file_id:unpack_guid(file_id:pack_guid(U, undefined))).
+    ?assertEqual({U, S}, file_id:unpack_guid(file_id:pack_guid(U, S))).
 
 pack_unpack_share_guid_test() ->
     U = <<"uuid">>, S = <<"space_id">>, Sh = <<"share_id">>,
     ?assertEqual({U, S, Sh}, file_id:unpack_share_guid(file_id:pack_share_guid(U, S, Sh))),
-    ?assertEqual({U, undefined, Sh}, file_id:unpack_share_guid(file_id:pack_share_guid(U, undefined, Sh))),
-    ?assertEqual({U, undefined, Sh}, file_id:unpack_share_guid(file_id:pack_share_guid(U, <<>>, Sh))),
+    ?assertEqual({U, <<>>, Sh}, file_id:unpack_share_guid(file_id:pack_share_guid(U, <<>>, Sh))),
     ?assertEqual({U, S, undefined}, file_id:unpack_share_guid(file_id:pack_share_guid(U, S, undefined))),
     ?assertEqual({U, S, undefined}, file_id:unpack_share_guid(file_id:pack_share_guid(U, S, <<>>))).
 
