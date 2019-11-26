@@ -116,7 +116,7 @@
     share_root_file_guid().
 pack_share_guid(FileUuid, SpaceId, undefined) ->
     pack_guid(FileUuid, SpaceId);
-pack_share_guid(FileUuid, SpaceId, ShareId) ->
+pack_share_guid(FileUuid, SpaceId, ShareId) when is_binary(SpaceId) andalso byte_size(SpaceId) > 0 ->
     http_utils:base64url_encode(<<?SHARE_GUID_PREFIX, ?GUID_SEPARATOR,  FileUuid/binary,
         ?GUID_SEPARATOR, SpaceId/binary,
         ?GUID_SEPARATOR, ShareId/binary
@@ -129,7 +129,7 @@ pack_share_guid(FileUuid, SpaceId, ShareId) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec pack_guid(file_meta_uuid(), space_id()) -> file_guid().
-pack_guid(FileUuid, SpaceId) ->
+pack_guid(FileUuid, SpaceId) when is_binary(SpaceId) andalso byte_size(SpaceId) > 0 ->
     http_utils:base64url_encode(<<?GUID_PREFIX, ?GUID_SEPARATOR,
         FileUuid/binary, ?GUID_SEPARATOR, SpaceId/binary>>).
 
@@ -149,7 +149,7 @@ unpack_share_guid(ShareGuid) ->
         [<<?GUID_PREFIX>>, FileUuid, SpaceId] ->
             {FileUuid, SpaceId, undefined};
         _ ->
-            throw({invalid_guid, ShareGuid})
+            error({invalid_guid, ShareGuid})
     end.
 
 
@@ -251,14 +251,11 @@ guid_to_share_id(Guid) ->
 %%--------------------------------------------------------------------
 -spec is_share_guid(binary()) -> boolean().
 is_share_guid(Id) ->
-    try
-        case unpack_share_guid(Id) of
-            {_, _, undefined} -> false;
-            _ -> true
-        end
+    try unpack_share_guid(Id) of
+        {_, _, undefined} -> false;
+        _ -> true
     catch
-        _:_ ->
-            false
+        error:{invalid_guid, Id} -> false
     end.
 
 
