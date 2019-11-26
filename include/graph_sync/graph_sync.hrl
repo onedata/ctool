@@ -21,8 +21,18 @@
     scope = private :: gri:scope()
 }).
 
+% Used for GRI pattern matching; each of the fields can contain the wildcard (*)
+-record(gri_pattern, {
+    type :: '*' | gri:entity_type(),
+    id :: undefined | gri:entity_id(),
+    aspect :: '*' | {'*', atom() | binary()} | gri:aspect(),
+    scope = private :: '*' | gri:scope()
+}).
+
 -define(GRI(Type, Id, Aspect), #gri{type = Type, id = Id, aspect = Aspect}).
 -define(GRI(Type, Id, Aspect, Scope), #gri{type = Type, id = Id, aspect = Aspect, scope = Scope}).
+-define(GRI_PATTERN(Type, Id, Aspect), #gri_pattern{type = Type, id = Id, aspect = Aspect}).
+-define(GRI_PATTERN(Type, Id, Aspect, Scope), #gri_pattern{type = Type, id = Id, aspect = Aspect, scope = Scope}).
 
 % Special id expressing "myself" (the client that is authenticated)
 -define(SELF, <<"self">>).
