@@ -576,7 +576,7 @@ to_json(?ERROR_BAD_VALUE_SUBDOMAIN) -> #{
 to_json(?ERROR_BAD_VALUE_CAVEAT(CaveatJson)) -> #{
     <<"id">> => <<"badValueCaveat">>,
     <<"caveat">> => CaveatJson,
-    <<"description">> => ?FMT("Provided caveat is invalid: '~p'.", [CaveatJson])
+    <<"description">> => ?FMT("Provided caveat is invalid: '~s'.", [json_utils:encode(CaveatJson)])
 };
 to_json(?ERROR_BAD_GUI_PACKAGE) -> #{
     <<"id">> => <<"badGuiPackage">>,

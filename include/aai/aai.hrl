@@ -43,7 +43,7 @@
     ip = undefined :: undefined | ip_utils:ip(),
     interface = undefined :: undefined | cv_interface:interface(),
     audience :: aai:audience(),
-    allow_data_access_caveats = false :: boolean(),
+    data_access_caveats_policy = disallow_data_access_caveats :: data_access_caveats:policy(),
     group_membership_checker :: aai:group_membership_checker()
 }).
 

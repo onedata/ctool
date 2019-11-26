@@ -6,11 +6,13 @@
 %%% @end
 %%%--------------------------------------------------------------------
 %%% @doc
-%%% This module handles verification of token caveats that have an impact on
-%%% allowed API: cv_api caveats and data access caveats (see data_access_caveats
-%%% module for more). These caveats are lazy; they are not verified during
-%%% authentication, but must be verified whenever the #auth{} resulting from a
-%%% token is used to authorize an operation.
+%%% This module handles verification of authorization in the context of an API
+%%% operation. It checks the caveats that have an impact on allowed API:
+%%%     * cv_api caveats
+%%%     * data access caveats (see data_access_caveats module for more).
+%%% These caveats are lazy; they are not verified during authentication, but
+%%% must be verified whenever the #auth{} resulting from a token is used to
+%%% authorize an operation.
 %%%
 %%% NOTE: Data access caveats do not explicitly confine the API, but their
 %%% presence indicates that the token is intended for data access only, which
@@ -18,21 +20,15 @@
 %%% API depends on the caveat (see data_access_caveats:to_allowed_api/1).
 %%% @end
 %%%--------------------------------------------------------------------
--module(api_caveats).
+-module(api_auth).
 -author("Lukasz Opiola").
 
 -include("errors.hrl").
 -include("aai/aai.hrl").
--include("graph_sync/graph_sync.hrl").
-
--type service_pattern() :: all | onedata:service().
--type operation() :: create | get | update | delete.
--type operation_pattern() :: all | operation().
--type matchspec() :: {service_pattern(), operation_pattern(), gri:gri_pattern()}.
--export_type([matchspec/0]).
+-include("graph_sync/gri.hrl").
 
 %% API
--export([find_any/1, check_authorization/4]).
+-export([ensure_unlimited/1, check_authorization/4]).
 
 %%%===================================================================
 %%% API functions
@@ -40,16 +36,16 @@
 
 %%--------------------------------------------------------------------
 %% @doc
-%% Looks through a list of caveats and returns the first found caveat that
-%% causes an API limitation, if any.
+%% Ensures that given #auth{} carries unlimited authorization for API operations.
+%% If not, returns one of the offending caveats as unverified.
 %% @end
 %%--------------------------------------------------------------------
--spec find_any([caveats:caveat()]) -> false | {true, caveats:caveat()}.
-find_any(Caveats) ->
+-spec ensure_unlimited(aai:auth()) -> ok | errors:error().
+ensure_unlimited(#auth{caveats = Caveats}) ->
     case {caveats:filter([cv_api], Caveats), data_access_caveats:find_any(Caveats)} of
-        {[], false} -> false;
-        {[Cv | _], _} -> {true, Cv};
-        {_, {true, Cv}} -> {true, Cv}
+        {[], false} -> ok;
+        {[Cv | _], _} -> ?ERROR_TOKEN_CAVEAT_UNVERIFIED(Cv);
+        {_, {true, Cv}} -> ?ERROR_TOKEN_CAVEAT_UNVERIFIED(Cv)
     end.
 
 
@@ -62,14 +58,14 @@ find_any(Caveats) ->
 %%     allowed API imposed by the caveat.
 %% @end
 %%--------------------------------------------------------------------
--spec check_authorization([caveats:caveat()], onedata:service(), cv_api:operation(), gri:gri()) ->
+-spec check_authorization(aai:auth(), onedata:service(), cv_api:operation(), gri:gri()) ->
     ok | errors:error().
-check_authorization(Caveats, Service, Operation, GRI) ->
+check_authorization(#auth{caveats = Caveats}, Service, Operation, GRI) ->
     case verify_api_caveats(Caveats, Service, Operation, GRI) of
         ok ->
             verify_data_access_caveats_against_operation(Caveats, Service, Operation, GRI);
-        {error, _} = Err1 ->
-            Err1
+        {error, _} = Error ->
+            Error
     end.
 
 %%%===================================================================
@@ -83,7 +79,7 @@ check_authorization(Caveats, Service, Operation, GRI) ->
 %% are given, the verification is always successful (whole API is allowed).
 %% @end
 %%--------------------------------------------------------------------
--spec verify_api_caveats([caveats:caveat()], onedata:service(), operation(), gri:gri()) ->
+-spec verify_api_caveats([caveats:caveat()], onedata:service(), cv_api:operation(), gri:gri()) ->
     ok | errors:error().
 verify_api_caveats(Caveats, Service, Operation, GRI) ->
     ApiCaveats = caveats:filter([cv_api], Caveats),

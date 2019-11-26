@@ -30,21 +30,33 @@
 -author("Lukasz Opiola").
 
 -include("errors.hrl").
--include("graph_sync/graph_sync.hrl").
+-include("graph_sync/gri.hrl").
+
+-type bin_wildcard() :: <<_:8>>.  % <<"*">>
 
 -type entity_type() :: oz_worker | od_user | od_group | od_space | od_share
 | od_provider | od_handle_service | od_handle | od_cluster | od_harvester
 | od_token | op_file | op_replica | op_transfer | op_user | op_group
 | op_space | op_share | op_provider | op_metrics.
+-type entity_type_pattern() :: '*' | entity_type().
+
 -type entity_id() :: undefined | binary().
+-type entity_id_pattern() :: bin_wildcard() | entity_id().
+
 -type aspect() :: atom() | {atom(), atom() | binary()}.
-% '*' wildcard is used only in GRI patterns
+% <<"*">> is used as wildcard
+-type aspect_pattern() :: '*' | {'*', '*' | atom() | bin_wildcard() | binary()} | aspect().
+
 -type scope() :: private | protected | shared | public | auto.
+-type scope_pattern() :: '*' | scope().
+
+% '*' wildcard is used only in GRI patterns
 -type gri() :: #gri{}.
 -type gri_pattern() :: #gri_pattern{}.
 -type serialized() :: binary().
 
 -export_type([entity_type/0, entity_id/0, aspect/0, scope/0]).
+-export_type([entity_type_pattern/0, entity_id_pattern/0, aspect_pattern/0, scope_pattern/0]).
 -export_type([gri/0, gri_pattern/0, serialized/0]).
 
 % Indicates the format of the GRI:
@@ -140,7 +152,8 @@ deserialize(Serialized, Format) ->
 
 
 %% @private
--spec pack({entity_type(), entity_id(), aspect(), scope()}, format()) -> gri() | gri_pattern().
+-spec pack({entity_type_pattern(), entity_id_pattern(), aspect_pattern(), scope_pattern()}, format()) ->
+    gri() | gri_pattern().
 pack({Type, Id, Aspect, Scope}, regular) ->
     #gri{type = Type, id = Id, aspect = Aspect, scope = Scope};
 pack({Type, Id, Aspect, Scope}, pattern) ->
@@ -148,7 +161,8 @@ pack({Type, Id, Aspect, Scope}, pattern) ->
 
 
 %% @private
--spec unpack(gri() | gri_pattern(), format()) -> {entity_type(), entity_id(), aspect(), scope()}.
+-spec unpack(gri() | gri_pattern(), format()) ->
+    {entity_type_pattern(), entity_id_pattern(), aspect_pattern(), scope_pattern()}.
 unpack(#gri{type = Type, id = Id, aspect = Aspect, scope = Scope}, regular) ->
     {Type, Id, Aspect, Scope};
 unpack(#gri_pattern{type = Type, id = Id, aspect = Aspect, scope = Scope}, pattern) ->
@@ -158,7 +172,7 @@ unpack(_, _) ->
 
 
 %% @private
--spec serialize_type('*' | entity_type(), format()) -> binary().
+-spec serialize_type(entity_type_pattern(), format()) -> binary().
 serialize_type('*', pattern) -> <<"*">>;
 serialize_type('*', regular) -> throw(?ERROR_BAD_GRI);
 
@@ -188,7 +202,7 @@ serialize_type(_, _) -> throw(?ERROR_BAD_GRI).
 
 
 %% @private
--spec deserialize_type(binary(), format()) -> entity_type() | '*'.
+-spec deserialize_type(binary(), format()) -> entity_type_pattern().
 deserialize_type(<<"*">>, pattern) -> '*';
 deserialize_type(<<"*">>, regular) -> throw(?ERROR_BAD_GRI);
 
@@ -225,7 +239,7 @@ matches_type(_, _) -> false.
 
 
 %% @private
--spec serialize_id(undefined | entity_id(), format()) -> binary().
+-spec serialize_id(entity_id_pattern(), format()) -> binary().
 serialize_id(undefined, _) -> <<"null">>;
 serialize_id(?SELF, _) -> <<"self">>;
 serialize_id(<<"*">>, pattern) -> <<"*">>;
@@ -234,7 +248,7 @@ serialize_id(Bin, _) when is_binary(Bin) -> Bin.
 
 
 %% @private
--spec deserialize_id(binary(), format()) -> undefined | entity_id().
+-spec deserialize_id(binary(), format()) -> entity_id_pattern().
 deserialize_id(<<"null">>, _) -> undefined;
 deserialize_id(<<"self">>, _) -> ?SELF;
 deserialize_id(<<"*">>, pattern) -> <<"*">>;
@@ -250,7 +264,7 @@ matches_id(_, _) -> false.
 
 
 %% @private
--spec serialize_aspect('*' | {'*', atom() | binary()} | aspect(), format()) -> binary().
+-spec serialize_aspect(aspect_pattern(), format()) -> binary().
 serialize_aspect({'*', <<"*">>}, pattern) -> <<"*,*">>;
 serialize_aspect({'*', Bin}, pattern) -> <<"*,", Bin/binary>>;
 serialize_aspect({Atom, <<"*">>}, pattern) when is_atom(Atom) -> <<(?ATOM_TO_BIN(Atom))/binary, ",*">>;
@@ -264,7 +278,7 @@ serialize_aspect(_, _) -> throw(?ERROR_BAD_GRI).
 
 
 %% @private
--spec deserialize_aspect(binary() | [binary()], format()) -> '*' | {'*', atom() | binary()} | aspect().
+-spec deserialize_aspect(binary() | [binary()], format()) -> aspect_pattern().
 deserialize_aspect(Binary, Format) when is_binary(Binary) ->
     deserialize_aspect(binary:split(Binary, <<",">>, [global]), Format);
 deserialize_aspect([<<"*">>, <<"*">>], pattern) -> {'*', <<"*">>};
@@ -290,7 +304,7 @@ matches_aspect(_, _) -> false.
 
 
 %% @private
--spec serialize_scope('*' | scope(), format()) -> binary().
+-spec serialize_scope(scope_pattern(), format()) -> binary().
 serialize_scope(private, _) -> <<"private">>;
 serialize_scope(protected, _) -> <<"protected">>;
 serialize_scope(shared, _) -> <<"shared">>;
@@ -301,7 +315,7 @@ serialize_scope('*', regular) -> throw(?ERROR_BAD_GRI).
 
 
 %% @private
--spec deserialize_scope(binary(), format()) -> '*' | scope().
+-spec deserialize_scope(binary(), format()) -> scope_pattern().
 deserialize_scope(<<"private">>, _) -> private;
 deserialize_scope(<<"protected">>, _) -> protected;
 deserialize_scope(<<"shared">>, _) -> shared;

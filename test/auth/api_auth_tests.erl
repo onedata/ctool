@@ -9,7 +9,7 @@
 %%% Eunit tests of api_caveats module.
 %%% @end
 %%%-------------------------------------------------------------------
--module(api_caveats_tests).
+-module(api_auth_tests).
 -author("Lukasz Opiola").
 
 -ifdef(TEST).
@@ -17,7 +17,7 @@
 -include_lib("eunit/include/eunit.hrl").
 -include("aai/aai.hrl").
 -include("errors.hrl").
--include("graph_sync/graph_sync.hrl").
+-include("graph_sync/gri.hrl").
 
 -define(SPACE_ALPHA, <<"d409171e7ba30b60d332d45c857745d4">>).
 -define(SPACE_GAMMA, <<"bdee07d32260a56d159a980ca0d64357">>).
@@ -53,7 +53,7 @@
     #cv_interface{interface = graphsync}
 ]).
 
-find_any_test() ->
+ensure_unlimited_test() ->
     lists:foreach(fun(_) ->
         RandApiLimiting = utils:random_sublist(?API_LIMITING_CAVEATS_EXAMPLES),
         RandIrrelevant = utils:random_sublist(?IRRELEVANT_CAVEATS_EXAMPLES),
@@ -61,12 +61,16 @@ find_any_test() ->
             1 -> RandApiLimiting ++ RandIrrelevant;
             _ -> RandIrrelevant ++ RandApiLimiting
         end,
+        Auth = #auth{subject = ?SUB(user, <<"123">>), caveats = RandCaveats},
         case RandApiLimiting of
             [] ->
-                ?assertEqual(false, api_caveats:find_any(RandCaveats));
+                ?assertEqual(ok, api_auth:ensure_unlimited(Auth));
             [_ | _] ->
-                ?assertMatch({true, _}, api_caveats:find_any(RandCaveats)),
-                {true, Cv} = api_caveats:find_any(RandCaveats),
+                ?assertMatch(
+                    ?ERROR_TOKEN_CAVEAT_UNVERIFIED(_),
+                    api_auth:ensure_unlimited(Auth)
+                ),
+                ?ERROR_TOKEN_CAVEAT_UNVERIFIED(Cv) = api_auth:ensure_unlimited(Auth),
                 ?assert(lists:member(Cv, RandApiLimiting))
         end
     end, lists:seq(1, 1000)).
@@ -103,17 +107,20 @@ check_authorization_test(#testcase{service = Service, operation = Operation, gri
             (_) ->
                 false
         end, CaveatExamplesSubset),
-        Caveats = utils:random_shuffle(ApiLimitingCaveats ++ IrrelevantCaveats),
+        Auth = #auth{
+            subject = ?SUB(user, <<"123">>),
+            caveats = utils:random_shuffle(ApiLimitingCaveats ++ IrrelevantCaveats)
+        },
         case ExpUnverifiedCaveats of
             [] ->
-                ?assertEqual(ok, api_caveats:check_authorization(Caveats, Service, Operation, GRI));
+                ?assertEqual(ok, api_auth:check_authorization(Auth, Service, Operation, GRI));
             _ ->
                 ?assertMatch(
                     ?ERROR_TOKEN_CAVEAT_UNVERIFIED(_),
-                    api_caveats:check_authorization(Caveats, Service, Operation, GRI)
+                    api_auth:check_authorization(Auth, Service, Operation, GRI)
                 ),
-                ?ERROR_TOKEN_CAVEAT_UNVERIFIED(UnverifiedCaveat) = api_caveats:check_authorization(
-                    Caveats, Service, Operation, GRI
+                ?ERROR_TOKEN_CAVEAT_UNVERIFIED(UnverifiedCaveat) = api_auth:check_authorization(
+                    Auth, Service, Operation, GRI
                 ),
                 ?assert(lists:member(UnverifiedCaveat, ExpUnverifiedCaveats))
         end

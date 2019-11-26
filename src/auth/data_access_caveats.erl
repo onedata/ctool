@@ -24,10 +24,12 @@
 -author("Lukasz Opiola").
 
 -include("aai/aai.hrl").
--include("graph_sync/graph_sync.hrl").
+-include("graph_sync/gri.hrl").
 
--type cv_data_path() :: #cv_data_path{}.
--type cv_data_objectid() :: #cv_data_objectid{}.
+% Decides if data access caveats are allowed in the context of authorization.
+-type policy() :: disallow_data_access_caveats | allow_data_access_caveats.
+-export_type([policy/0]).
+
 % Canonical path has the following requirements:
 %   - starts with a slash
 %   - first element is a space id
@@ -42,6 +44,9 @@
 -type objectid() :: file_id:objectid().
 -type allowed_spaces() :: nonrestricted | [file_id:space_id()].
 -export_type([canonical_path/0, objectid/0, allowed_spaces/0]).
+
+-type cv_data_path() :: #cv_data_path{}.
+-type cv_data_objectid() :: #cv_data_objectid{}.
 
 -define(DATA_ACCESS_CAVEATS, [
     cv_interface, cv_data_readonly, cv_data_path, cv_data_objectid
@@ -123,7 +128,7 @@ find_any(Caveats) ->
 %% of allowed spaces.
 %% @end
 %%--------------------------------------------------------------------
--spec to_allowed_api(caveats:caveat()) -> [cv_api:cv_api()].
+-spec to_allowed_api(caveats:caveat()) -> cv_api:cv_api().
 to_allowed_api(#cv_interface{interface = oneclient}) ->
     % Oneclient interface caveat does not confine access to specific spaces
     AllowedSpaces = [<<"*">>],
@@ -169,7 +174,7 @@ to_allowed_api(#cv_data_objectid{whitelist = ObjectidsWhitelist}) ->
 %% (OZ|OP)-PANEL API is completely disallowed.
 %% @end
 %%--------------------------------------------------------------------
--spec gen_allowed_api([file_id:space_id()]) -> [cv_api:cv_api()].
+-spec gen_allowed_api([file_id:space_id()]) -> cv_api:cv_api().
 gen_allowed_api(AllowedSpaces) ->
     #cv_api{whitelist = lists:flatten([
         {?OZ_WORKER, get, ?GRI_PATTERN(od_user, <<"*">>, instance, '*')},

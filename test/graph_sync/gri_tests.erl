@@ -14,7 +14,7 @@
 
 -include_lib("eunit/include/eunit.hrl").
 -include("errors.hrl").
--include("graph_sync/graph_sync.hrl").
+-include("graph_sync/gri.hrl").
 
 -define(GRI_TO_PATTERN(GRI), #gri_pattern{
     type = GRI#gri.type,

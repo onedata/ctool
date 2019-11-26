@@ -18,7 +18,7 @@
 
 -include("aai/aai.hrl").
 -include("errors.hrl").
--include("graph_sync/graph_sync.hrl").
+-include("graph_sync/gri.hrl").
 -include("http/headers.hrl").
 -include("onedata.hrl").
 
@@ -610,14 +610,17 @@ sanitize_caveats_test() ->
     ?BAD(S(#{<<"type">> => <<"data.path">>, <<"whitelist">> => [base64:encode(<<"/space1/">>)]})),
     ?BAD(S(#{<<"type">> => <<"data.path">>, <<"whitelist">> => [<<"/">>]})),
 
-    ?OK(#cv_data_objectid{whitelist = [<<"01234">>, <<"7890">>]},
-        S(#cv_data_objectid{whitelist = [<<"01234">>, <<"7890">>]})),
-    ?OK(#cv_data_objectid{whitelist = [<<"01234">>, <<"7890">>]},
-        S(#{<<"type">> => <<"data.objectid">>, <<"whitelist">> => [<<"01234">>, <<"7890">>]})),
+    CorrectObjectid1 = element(2, {ok, _} = file_id:guid_to_objectid(file_id:pack_guid(?RAND_STR, ?RAND_STR))),
+    CorrectObjectid2 = element(2, {ok, _} = file_id:guid_to_objectid(file_id:pack_guid(?RAND_STR, ?RAND_STR))),
+
+    ?OK(#cv_data_objectid{whitelist = [CorrectObjectid1, CorrectObjectid2]},
+        S(#cv_data_objectid{whitelist = [CorrectObjectid1, CorrectObjectid2]})),
+    ?OK(#cv_data_objectid{whitelist = [CorrectObjectid1, CorrectObjectid2]},
+        S(#{<<"type">> => <<"data.objectid">>, <<"whitelist">> => [CorrectObjectid1, CorrectObjectid2]})),
     ?BAD(S(#cv_data_objectid{whitelist = []})),
     ?BAD(S(#cv_data_objectid{whitelist = [atom, 343]})),
     ?BAD(S(#{<<"type">> => <<"data.objectid">>, <<"whitelist">> => []})),
-    ?BAD(S(#{<<"type">> => <<"data.objectid">>, <<"blacklist">> => [<<"01234">>, <<"7890">>]})).
+    ?BAD(S(#{<<"type">> => <<"data.objectid">>, <<"blacklist">> => [CorrectObjectid1, CorrectObjectid2]})).
 
 
 %%%===================================================================
@@ -699,7 +702,7 @@ auth_ctx(Ip) ->
         ip = Ip,
         interface = utils:random_element([undefined | cv_interface:valid_interfaces()]),
         audience = audience(Ip),
-        allow_data_access_caveats = utils:random_element([true, false]),
+        data_access_caveats_policy = utils:random_element([disallow_data_access_caveats, allow_data_access_caveats]),
         group_membership_checker = fun
             (?AUD_USR, ?DUMMY_GROUP) -> true;
             (_, _) -> false
@@ -744,9 +747,9 @@ to_regions(IpList) ->
 ]).
 
 -define(SUCCESS_IF_DATA_ACCESS_CAVEATS_ALLOWED(AuthCtx),
-    case AuthCtx#auth_ctx.allow_data_access_caveats of
-        true -> success;
-        false -> failure
+    case AuthCtx#auth_ctx.data_access_caveats_policy of
+        allow_data_access_caveats -> success;
+        disallow_data_access_caveats -> failure
     end
 ).
 
@@ -979,7 +982,7 @@ caveats_examples(cv_region, #auth_ctx{ip = Ip}) -> [
 caveats_examples(cv_interface, #auth_ctx{interface = undefined}) -> [
     {#cv_interface{interface = utils:random_element(cv_interface:valid_interfaces())}, failure}
 ];
-caveats_examples(cv_interface, #auth_ctx{interface = oneclient, allow_data_access_caveats = false}) -> [
+caveats_examples(cv_interface, #auth_ctx{interface = oneclient, data_access_caveats_policy = disallow_data_access_caveats}) -> [
     % Oneclient interface should fail as it is allowed only when data_access_caveats are allowed.
     % Other interfaces should fail too as they do not match the oneclient interface from auth_ctx.
     {#cv_interface{interface = utils:random_element(cv_interface:valid_interfaces())}, failure}

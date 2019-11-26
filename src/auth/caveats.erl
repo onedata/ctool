@@ -583,7 +583,7 @@ verify(#cv_interface{}, #auth_ctx{interface = undefined}) ->
     false;
 % If oneclient interface is specified, this caveat is treated as a data access caveat
 verify(#cv_interface{interface = oneclient}, #auth_ctx{interface = oneclient} = AuthCtx) ->
-    AuthCtx#auth_ctx.allow_data_access_caveats;
+    AuthCtx#auth_ctx.data_access_caveats_policy == allow_data_access_caveats;
 verify(#cv_interface{interface = Interface}, #auth_ctx{interface = Interface}) ->
     true;
 verify(#cv_interface{}, _AuthCtx) ->
@@ -602,11 +602,11 @@ verify(#cv_api{}, _AuthCtx) ->
 % access. The proper verification of these caveats is performed in Oneprovider,
 % here only a general check is done.
 verify(#cv_data_readonly{}, AuthCtx) ->
-    AuthCtx#auth_ctx.allow_data_access_caveats;
+    AuthCtx#auth_ctx.data_access_caveats_policy == allow_data_access_caveats;
 verify(#cv_data_path{}, AuthCtx) ->
-    AuthCtx#auth_ctx.allow_data_access_caveats;
+    AuthCtx#auth_ctx.data_access_caveats_policy == allow_data_access_caveats;
 verify(#cv_data_objectid{}, AuthCtx) ->
-    AuthCtx#auth_ctx.allow_data_access_caveats.
+    AuthCtx#auth_ctx.data_access_caveats_policy == allow_data_access_caveats.
 
 
 %% @private
