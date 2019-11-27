@@ -131,12 +131,12 @@ find_any(Caveats) ->
 -spec to_allowed_api(caveats:caveat()) -> cv_api:cv_api().
 to_allowed_api(#cv_interface{interface = oneclient}) ->
     % Oneclient interface caveat does not confine access to specific spaces
-    AllowedSpaces = [<<"*">>],
+    AllowedSpaces = ['*'],
     gen_allowed_api(AllowedSpaces);
 
 to_allowed_api(#cv_data_readonly{}) ->
     % Data readonly caveat does not confine access to specific spaces
-    AllowedSpaces = [<<"*">>],
+    AllowedSpaces = ['*'],
     gen_allowed_api(AllowedSpaces);
 
 to_allowed_api(#cv_data_path{whitelist = PathsWhitelist}) ->
@@ -174,10 +174,10 @@ to_allowed_api(#cv_data_objectid{whitelist = ObjectidsWhitelist}) ->
 %% (OZ|OP)-PANEL API is completely disallowed.
 %% @end
 %%--------------------------------------------------------------------
--spec gen_allowed_api([file_id:space_id()]) -> cv_api:cv_api().
+-spec gen_allowed_api(['*' | file_id:space_id()]) -> cv_api:cv_api().
 gen_allowed_api(AllowedSpaces) ->
     #cv_api{whitelist = lists:flatten([
-        {?OZ_WORKER, get, ?GRI_PATTERN(od_user, <<"*">>, instance, '*')},
+        {?OZ_WORKER, get, ?GRI_PATTERN(od_user, '*', instance, '*')},
         [{?OZ_WORKER, get, ?GRI_PATTERN(od_space, S, instance, '*')} || S <- AllowedSpaces],
-        {?OP_WORKER, all, ?GRI_PATTERN(op_file, <<"*">>, '*', '*')}
+        {?OP_WORKER, all, ?GRI_PATTERN(op_file, '*', '*', '*')}
     ])}.

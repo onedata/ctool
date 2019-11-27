@@ -1152,7 +1152,8 @@ to_http_code(?ERROR_TRANSFER_NOT_ENDED) -> ?HTTP_400_BAD_REQUEST;
 %% Unknown / unexpected error
 %% -----------------------------------------------------------------------------
 to_http_code(?ERROR_UNKNOWN_ERROR(_)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_UNEXPECTED_ERROR(_)) -> ?HTTP_500_INTERNAL_SERVER_ERROR.
+to_http_code(?ERROR_UNEXPECTED_ERROR(_)) -> ?HTTP_500_INTERNAL_SERVER_ERROR;
+to_http_code(_) -> ?HTTP_500_INTERNAL_SERVER_ERROR.
 
 %%%===================================================================
 %%% Internal functions

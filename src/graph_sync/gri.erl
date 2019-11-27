@@ -20,10 +20,10 @@
 %%%                 authorized to access.
 %%% GRI can be used as pattern to match against a regular GRI, in such case it
 %%% can contain wildcards, eg.:
-%%%  od_space.*.instance:private = #gri_pattern{type = od_space, id = <<"*">>, aspect = instance, scope = private}
+%%%  od_space.*.instance:private = #gri_pattern{type = od_space, id = '*', aspect = instance, scope = private}
 %%%  od_user.7496a15.*:protected = #gri_pattern{type = od_user, id = <<"7496a15">>, aspect = '*', scope = protected}
-%%%  *.*.user,*:auto             = #gri_pattern{type = '*', id = <<"*">>, aspect = {user,'*'}, scope = protected}
-%%%  *.*.*:*                     = #gri_pattern{type = '*', id = <<"*">>, aspect = '*', scope = '*'}
+%%%  *.*.user,*:auto             = #gri_pattern{type = '*', id = '*', aspect = {user,'*'}, scope = protected}
+%%%  *.*.*:*                     = #gri_pattern{type = '*', id = '*', aspect = '*', scope = '*'}
 %%% @end
 %%%-------------------------------------------------------------------
 -module(gri).
@@ -32,8 +32,6 @@
 -include("errors.hrl").
 -include("graph_sync/gri.hrl").
 
--type bin_wildcard() :: <<_:8>>.  % <<"*">>
-
 -type entity_type() :: oz_worker | od_user | od_group | od_space | od_share
 | od_provider | od_handle_service | od_handle | od_cluster | od_harvester
 | od_token | op_file | op_replica | op_transfer | op_user | op_group
@@ -41,16 +39,14 @@
 -type entity_type_pattern() :: '*' | entity_type().
 
 -type entity_id() :: undefined | binary().
--type entity_id_pattern() :: bin_wildcard() | entity_id().
+-type entity_id_pattern() :: '*' | entity_id().
 
 -type aspect() :: atom() | {atom(), atom() | binary()}.
-% <<"*">> is used as wildcard
--type aspect_pattern() :: '*' | {'*', '*' | atom() | bin_wildcard() | binary()} | aspect().
+-type aspect_pattern() :: '*' | {'*' | atom(), '*' | atom() | binary()} | aspect().
 
 -type scope() :: private | protected | shared | public | auto.
 -type scope_pattern() :: '*' | scope().
 
-% '*' wildcard is used only in GRI patterns
 -type gri() :: #gri{}.
 -type gri_pattern() :: #gri_pattern{}.
 -type serialized() :: binary().
@@ -61,7 +57,7 @@
 
 % Indicates the format of the GRI:
 %   regular - identifies a certain graph resource
-%   pattern - used for matching against regular GRIs, can include wildcards
+%   pattern - used for matching against regular GRIs, can include wildcards '*'
 -type format() :: regular | pattern.
 
 -export([serialize/1, deserialize/1]).
@@ -242,8 +238,8 @@ matches_type(_, _) -> false.
 -spec serialize_id(entity_id_pattern(), format()) -> binary().
 serialize_id(undefined, _) -> <<"null">>;
 serialize_id(?SELF, _) -> <<"self">>;
-serialize_id(<<"*">>, pattern) -> <<"*">>;
-serialize_id(<<"*">>, regular) -> throw(?ERROR_BAD_GRI);
+serialize_id('*', pattern) -> <<"*">>;
+serialize_id('*', regular) -> throw(?ERROR_BAD_GRI);
 serialize_id(Bin, _) when is_binary(Bin) -> Bin.
 
 
@@ -251,25 +247,25 @@ serialize_id(Bin, _) when is_binary(Bin) -> Bin.
 -spec deserialize_id(binary(), format()) -> entity_id_pattern().
 deserialize_id(<<"null">>, _) -> undefined;
 deserialize_id(<<"self">>, _) -> ?SELF;
-deserialize_id(<<"*">>, pattern) -> <<"*">>;
+deserialize_id(<<"*">>, pattern) -> '*';
 deserialize_id(<<"*">>, regular) -> throw(?ERROR_BAD_GRI);
 deserialize_id(Bin, _) -> Bin.
 
 
 %% @private
 -spec matches_id(gri(), gri_pattern()) -> boolean().
-matches_id(#gri{id = _}, #gri_pattern{id = <<"*">>}) -> true;
+matches_id(#gri{id = _}, #gri_pattern{id = '*'}) -> true;
 matches_id(#gri{id = Id}, #gri_pattern{id = Id}) -> true;
 matches_id(_, _) -> false.
 
 
 %% @private
 -spec serialize_aspect(aspect_pattern(), format()) -> binary().
-serialize_aspect({'*', <<"*">>}, pattern) -> <<"*,*">>;
+serialize_aspect({'*', '*'}, pattern) -> <<"*,*">>;
 serialize_aspect({'*', Bin}, pattern) -> <<"*,", Bin/binary>>;
-serialize_aspect({Atom, <<"*">>}, pattern) when is_atom(Atom) -> <<(?ATOM_TO_BIN(Atom))/binary, ",*">>;
+serialize_aspect({Atom, '*'}, pattern) when is_atom(Atom) -> <<(?ATOM_TO_BIN(Atom))/binary, ",*">>;
 serialize_aspect({'*', _}, regular) -> throw(?ERROR_BAD_GRI);
-serialize_aspect({_, <<"*">>}, regular) -> throw(?ERROR_BAD_GRI);
+serialize_aspect({_, '*'}, regular) -> throw(?ERROR_BAD_GRI);
 serialize_aspect({A, B}, _) when is_atom(A) andalso is_binary(B) -> <<(?ATOM_TO_BIN(A))/binary, ",", B/binary>>;
 serialize_aspect('*', pattern) -> <<"*">>;
 serialize_aspect('*', regular) -> throw(?ERROR_BAD_GRI);
@@ -281,9 +277,9 @@ serialize_aspect(_, _) -> throw(?ERROR_BAD_GRI).
 -spec deserialize_aspect(binary() | [binary()], format()) -> aspect_pattern().
 deserialize_aspect(Binary, Format) when is_binary(Binary) ->
     deserialize_aspect(binary:split(Binary, <<",">>, [global]), Format);
-deserialize_aspect([<<"*">>, <<"*">>], pattern) -> {'*', <<"*">>};
+deserialize_aspect([<<"*">>, <<"*">>], pattern) -> {'*', '*'};
 deserialize_aspect([<<"*">>, Bin], pattern) -> {'*', Bin};
-deserialize_aspect([Bin, <<"*">>], pattern) -> {?BIN_TO_ATOM(Bin), <<"*">>};
+deserialize_aspect([Bin, <<"*">>], pattern) -> {?BIN_TO_ATOM(Bin), '*'};
 deserialize_aspect([_, <<"*">>], regular) -> throw(?ERROR_BAD_GRI);
 deserialize_aspect([<<"*">>, _], regular) -> throw(?ERROR_BAD_GRI);
 deserialize_aspect([A, B], _) -> {?BIN_TO_ATOM(A), B};
@@ -296,9 +292,9 @@ deserialize_aspect([Bin], _) -> ?BIN_TO_ATOM(Bin).
 %% @private
 -spec matches_aspect(gri(), gri_pattern()) -> boolean().
 matches_aspect(#gri{aspect = _}, #gri_pattern{aspect = '*'}) -> true;
-matches_aspect(#gri{aspect = {Aspect, _}}, #gri_pattern{aspect = {Aspect, <<"*">>}}) -> true;
+matches_aspect(#gri{aspect = {Aspect, _}}, #gri_pattern{aspect = {Aspect, '*'}}) -> true;
 matches_aspect(#gri{aspect = {_, Bin}}, #gri_pattern{aspect = {'*', Bin}}) -> true;
-matches_aspect(#gri{aspect = {_, _}}, #gri_pattern{aspect = {'*', <<"*">>}}) -> true;
+matches_aspect(#gri{aspect = {_, _}}, #gri_pattern{aspect = {'*', '*'}}) -> true;
 matches_aspect(#gri{aspect = Aspect}, #gri_pattern{aspect = Aspect}) -> true;
 matches_aspect(_, _) -> false.
 

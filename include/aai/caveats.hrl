@@ -18,9 +18,10 @@
 
 -record(cv_authorization_none, {}).
 
+-define(ANY_AUDIENCE_ID, <<"*">>).
+% Special audience id <<"*">> can be used to match any id, for example
+% #audience{type = ?OP_WORKER, id = <<"*">>} will match any op-worker service
 -record(cv_audience, {
-    % Special audience id <<"*">> can be used to match any id, for example
-    % #audience{type = ?OP_WORKER, id = <<"*">>} will match any op-worker service
     whitelist = [] :: [aai:audience()]
 }).
 

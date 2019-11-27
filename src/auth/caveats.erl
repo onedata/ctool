@@ -556,7 +556,7 @@ verify(#cv_audience{whitelist = Whitelist}, #auth_ctx{audience = Audience} = Aut
         (?AUD(group, GroupId)) ->
             Checker = AuthCtx#auth_ctx.group_membership_checker,
             Checker(Audience, GroupId);
-        (?AUD(Type, <<"*">>)) ->
+        (?AUD(Type, ?ANY_AUDIENCE_ID)) ->
             Audience#audience.type =:= Type;
         (Entry) ->
             Audience =:= Entry
