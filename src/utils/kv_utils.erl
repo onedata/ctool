@@ -32,7 +32,7 @@
 -export_type([nested/0, nested/2, path/0, path/1]).
 
 %% API
--export([get/2, get/3, find/2, put/3, remove/2]).
+-export([get/2, get/3, find/2, put/3, remove/2, rename/3]).
 -export([copy/3, copy_found/3, find_many/2]).
 
 
@@ -106,6 +106,8 @@ find(_, BadNested) ->
 %% Value existing in the given location is replaced.
 %% If any intermediate step encounters an invalid nested container
 %% an exception is raised.
+%% If intermediate containers are missing, they are creating, with
+%% the same type as their parent (map in a map, list in a list).
 %% @end
 %%--------------------------------------------------------------------
 -spec put(path(K), Value :: V, nested(K, V)) -> nested(K, V).
@@ -134,7 +136,8 @@ put(_, _, BadNested) ->
 
 
 %%--------------------------------------------------------------------
-%% @doc Removes value at given path. Ignores missing keys, never throws.
+%% @doc Removes value at given path.
+%% Does nothing if one of the keys in path is missing, never throws.
 %% @end
 %%--------------------------------------------------------------------
 -spec remove(path(K1), nested(K1 | K2, V)) -> nested(K2, V).
@@ -158,7 +161,22 @@ remove(Path, Nested) ->
 
 
 %%--------------------------------------------------------------------
+%% @doc Removes value from the old location and inserts at new.
+%% Returns error if the value was not found.
+%% @end
+%%--------------------------------------------------------------------
+-spec rename(OldKeys :: path(K1), NewKeys :: path(K2), nested(K1, V)) ->
+    {ok, nested(K2, V)} | error.
+rename(OldKeys, NewKeys, Nested) ->
+    case find(OldKeys, Nested) of
+        {ok, Found} -> {ok, put(NewKeys, Found, remove(OldKeys, Nested))};
+        error -> error
+    end.
+
+
+%%--------------------------------------------------------------------
 %% @doc Copies values between containers according to given paths mapping.
+%% Overwrites existing values at Target path.
 %% Raises error when value is missing from the Source container.
 %% @end
 %%--------------------------------------------------------------------
@@ -209,6 +227,7 @@ find_many(Mappings, Source) ->
 %%--------------------------------------------------------------------
 %% @private
 %% @doc Removes all tuples whose first element matches Key.
+%% This differs from lists:keydelete which removes only the first occurrence.
 %% @end
 %%--------------------------------------------------------------------
 -spec keydelete(term(), list()) -> list().
