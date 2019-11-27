@@ -98,7 +98,7 @@ verify_data_access_caveats_against_operation(Caveats, Service, Operation, GRI) -
     DataAccessCaveats = data_access_caveats:filter(Caveats),
     lists:foldl(fun
         (DataAccessCaveat, ok) ->
-            ApiCaveat = data_access_caveats:to_allowed_api(DataAccessCaveat),
+            ApiCaveat = data_access_caveats:to_allowed_api(Service, DataAccessCaveat),
             case cv_api:verify(ApiCaveat, Service, Operation, GRI) of
                 ok -> ok;
                 {error, _} -> ?ERROR_TOKEN_CAVEAT_UNVERIFIED(DataAccessCaveat)

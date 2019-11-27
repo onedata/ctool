@@ -56,7 +56,7 @@
 -export([sanitize_path_caveat/1]).
 -export([sanitize_objectid_caveat/1]).
 -export([filter/1, find_any/1]).
--export([to_allowed_api/1]).
+-export([to_allowed_api/2]).
 
 %%%===================================================================
 %%% API functions
@@ -123,23 +123,35 @@ find_any(Caveats) ->
 
 %%--------------------------------------------------------------------
 %% @doc
-%% Returns the allowed API for given data access caveat. In general, the caveats
-%% allow for the same API, but path and objectid caveats further limit the list
-%% of allowed spaces.
+%% Returns the allowed API in given service for given data access caveat.
+%% OZ-WORKER API is limited to fetching user's data and his spaces' data.
+%% OP-WORKER API is limited to operations on files.
+%% (OZ|OP)-PANEL API is completely disallowed.
 %% @end
 %%--------------------------------------------------------------------
--spec to_allowed_api(caveats:caveat()) -> cv_api:cv_api().
-to_allowed_api(#cv_interface{interface = oneclient}) ->
+-spec to_allowed_api(onedata:service(), caveats:caveat()) -> cv_api:cv_api().
+to_allowed_api(?OZ_PANEL, _) ->
+    #cv_api{whitelist = []};
+
+to_allowed_api(?OP_PANEL, _) ->
+    #cv_api{whitelist = []};
+
+to_allowed_api(?OP_WORKER, _) ->
+    #cv_api{whitelist = [
+        {?OP_WORKER, all, ?GRI_PATTERN(op_file, '*', '*', '*')}
+    ]};
+
+to_allowed_api(?OZ_WORKER, #cv_interface{interface = oneclient}) ->
     % Oneclient interface caveat does not confine access to specific spaces
     AllowedSpaces = ['*'],
-    gen_allowed_api(AllowedSpaces);
+    oz_worker_allowed_api(AllowedSpaces);
 
-to_allowed_api(#cv_data_readonly{}) ->
+to_allowed_api(?OZ_WORKER, #cv_data_readonly{}) ->
     % Data readonly caveat does not confine access to specific spaces
     AllowedSpaces = ['*'],
-    gen_allowed_api(AllowedSpaces);
+    oz_worker_allowed_api(AllowedSpaces);
 
-to_allowed_api(#cv_data_path{whitelist = PathsWhitelist}) ->
+to_allowed_api(?OZ_WORKER, #cv_data_path{whitelist = PathsWhitelist}) ->
     % Data path caveat includes a list of canonical paths that precisely
     % narrow down the allowed spaces
     AllowedSpaces = lists:filtermap(fun(Path) ->
@@ -148,9 +160,9 @@ to_allowed_api(#cv_data_path{whitelist = PathsWhitelist}) ->
             _ -> false  % Invalid paths are ignored
         end
     end, PathsWhitelist),
-    gen_allowed_api(AllowedSpaces);
+    oz_worker_allowed_api(AllowedSpaces);
 
-to_allowed_api(#cv_data_objectid{whitelist = ObjectidsWhitelist}) ->
+to_allowed_api(?OZ_WORKER, #cv_data_objectid{whitelist = ObjectidsWhitelist}) ->
     % Data objectid caveat includes a list of file ids that precisely
     % narrow down the allowed spaces
     AllowedSpaces = lists:filtermap(fun(Objectid) ->
@@ -161,21 +173,13 @@ to_allowed_api(#cv_data_objectid{whitelist = ObjectidsWhitelist}) ->
             false  % Invalid Objectids are ignored
         end
     end, ObjectidsWhitelist),
-    gen_allowed_api(AllowedSpaces).
+    oz_worker_allowed_api(AllowedSpaces).
 
 
-%%--------------------------------------------------------------------
 %% @private
-%% @doc
-%% Allowed API common for all data access caveats. The space API depends on the
-%% list of allowed spaces.
-%% OZ-WORKER API is limited to fetching user's data and his spaces' data.
-%% OP-WORKER API is limited to operations on files.
-%% (OZ|OP)-PANEL API is completely disallowed.
-%% @end
 %%--------------------------------------------------------------------
--spec gen_allowed_api(['*' | file_id:space_id()]) -> cv_api:cv_api().
-gen_allowed_api(AllowedSpaces) ->
+-spec oz_worker_allowed_api(['*' | file_id:space_id()]) -> cv_api:cv_api().
+oz_worker_allowed_api(AllowedSpaces) ->
     #cv_api{whitelist = lists:flatten([
         {?OZ_WORKER, get, ?GRI_PATTERN(od_user, '*', instance, '*')},
         [{?OZ_WORKER, get, ?GRI_PATTERN(od_space, S, instance, '*')} || S <- AllowedSpaces],
