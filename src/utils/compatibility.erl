@@ -494,10 +494,8 @@ peek_revision(RegistryFile) ->
 
 %% @private
 -spec get_section(section(), registry()) -> map().
-get_section([], Map) ->
-    Map;
-get_section([Key | Rest], Map) ->
-    get_section(Rest, maps:get(Key, Map, #{})).
+get_section(Section, Map) ->
+    kv_utils:get(Section, Map, #{}).
 
 
 %% @private
