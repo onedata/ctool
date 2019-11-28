@@ -18,6 +18,9 @@
 
 -record(cv_authorization_none, {}).
 
+-define(ANY_AUDIENCE_ID, <<"*">>).
+% Special audience id <<"*">> can be used to match any id, for example
+% #audience{type = ?OP_WORKER, id = <<"*">>} will match any op-worker service
 -record(cv_audience, {
     whitelist = [] :: [aai:audience()]
 }).
@@ -40,24 +43,22 @@
     list = [] :: [ip_utils:region()]
 }).
 
+-record(cv_interface, {
+    interface :: cv_interface:interface()
+}).
+
 -record(cv_api, {
     whitelist = [] :: [cv_api:matchspec()]
 }).
 
--record(cv_data_space, {
-    whitelist = [] :: [caveats:space_id()]
-}).
-
--record(cv_data_access, {
-    type = read :: caveats:data_access_type()
-}).
+-record(cv_data_readonly, {}).
 
 -record(cv_data_path, {
-    whitelist = [] :: [caveats:data_path()]
+    whitelist = [] :: [data_access_caveats:canonical_path()]
 }).
 
 -record(cv_data_objectid, {
-    whitelist = [] :: [file_id:objectid()]
+    whitelist = [] :: [data_access_caveats:objectid()]
 }).
 
 -endif.

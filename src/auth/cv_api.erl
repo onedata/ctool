@@ -6,21 +6,21 @@
 %%% @end
 %%%--------------------------------------------------------------------
 %%% @doc
-%%% Functions for manipulating token caveats.
+%%% This module includes definitions related to cv_api caveat.
 %%% @end
 %%%--------------------------------------------------------------------
 -module(cv_api).
 -author("Lukasz Opiola").
 
 -include("aai/aai.hrl").
+-include("errors.hrl").
 
--type cv_api_caveat() :: #cv_api{}.
+-type cv_api() :: #cv_api{}.
 -type service_pattern() :: all | onedata:service().
 -type operation() :: create | get | update | delete.
 -type operation_pattern() :: all | operation().
--type matchspec() :: {service_pattern(), operation_pattern(), gri:gri()}.
-
--export_type([matchspec/0]).
+-type matchspec() :: {service_pattern(), operation_pattern(), gri:gri_pattern()}.
+-export_type([cv_api/0, operation/0, matchspec/0]).
 
 %% API
 -export([verify/4]).
@@ -30,13 +30,19 @@
 %%% API functions
 %%%===================================================================
 
--spec verify(cv_api_caveat(), onedata:service(), operation(), gri:gri()) -> boolean().
-verify(#cv_api{whitelist = Whitelist}, Service, Operation, GRI) ->
-    lists:any(fun({ServicePattern, OperationPattern, GRIPattern}) ->
-        match_service(Service, ServicePattern) andalso
-            match_operation(Operation, OperationPattern) andalso
-            gri:matches(GRI, GRIPattern)
-    end, Whitelist).
+%%--------------------------------------------------------------------
+%% @doc
+%% Verifies given cv_api caveat. Should not be used directly - use the
+%% api_caveats module that encapsulates all API related verification logic.
+%% @end
+%%--------------------------------------------------------------------
+-spec verify(cv_api(), onedata:service(), operation(), gri:gri()) ->
+    ok | {errors:error()}.
+verify(#cv_api{whitelist = Whitelist} = Cv, Service, Operation, GRI) ->
+    case is_operation_whitelisted(Whitelist, Service, Operation, GRI) of
+        true -> ok;
+        false -> ?ERROR_TOKEN_CAVEAT_UNVERIFIED(Cv)
+    end.
 
 
 -spec serialize_matchspec(matchspec()) -> binary().
@@ -58,6 +64,17 @@ deserialize_matchspec(Serialized) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
+
+%% @private
+-spec is_operation_whitelisted([matchspec()], onedata:service(), operation(), gri:gri()) ->
+    boolean().
+is_operation_whitelisted(Whitelist, Service, Operation, GRI) ->
+    lists:any(fun({ServicePattern, OperationPattern, GRIPattern}) ->
+        match_service(Service, ServicePattern) andalso
+            match_operation(Operation, OperationPattern) andalso
+            gri:matches(GRI, GRIPattern)
+    end, Whitelist).
+
 
 %% @private
 -spec serialize_service(service_pattern()) -> <<_:24>>.

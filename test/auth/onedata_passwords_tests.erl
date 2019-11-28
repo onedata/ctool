@@ -12,6 +12,8 @@
 -module(onedata_passwords_tests).
 -author("Bartosz Walkowicz").
 
+-ifdef(TEST).
+
 -include_lib("eunit/include/eunit.hrl").
 -include_lib("errors.hrl").
 
@@ -39,3 +41,5 @@ generate_different_salt_test() ->
 
     ?assertNotEqual(Salt1, Salt2),
     ?assertNotEqual(PasswordHash1, PasswordHash2).
+
+-endif.

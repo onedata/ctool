@@ -60,7 +60,8 @@ already_exists | unauthorized | forbidden.
 | {values_not_allowed, key(), {allowed, [term()]}} | {id_not_found, key()}
 | {ambiguous_id, key()} | {bad_identifier, key()} | {identifier_occupied, key()}
 | bad_full_name | bad_username | bad_password | bad_value_email | bad_name
-| bad_value_domain | bad_value_subdomain | bad_caveats | bad_gui_package
+| bad_value_domain | bad_value_subdomain
+| {bad_value_caveat, CaveatJson :: as_json()} | bad_gui_package
 | gui_package_too_large | gui_package_unverified | invalid_qos_expression.
 
 -type state() :: basic_auth_not_supported | basic_auth_disabled
@@ -572,9 +573,10 @@ to_json(?ERROR_BAD_VALUE_SUBDOMAIN) -> #{
     <<"id">> => <<"badValueSubdomain">>,
     <<"description">> => <<"Bad value: provided subdomain is not valid.">>
 };
-to_json(?ERROR_BAD_VALUE_CAVEATS) -> #{
-    <<"id">> => <<"badValueCaveats">>,
-    <<"description">> => <<"Provided caveats are invalid.">>
+to_json(?ERROR_BAD_VALUE_CAVEAT(CaveatJson)) -> #{
+    <<"id">> => <<"badValueCaveat">>,
+    <<"caveat">> => CaveatJson,
+    <<"description">> => ?FMT("Provided caveat is invalid: '~s'.", [json_utils:encode(CaveatJson)])
 };
 to_json(?ERROR_BAD_VALUE_QOS_PARAMETERS) -> #{
     <<"id">> => <<"badValueQoSParameters">>,
@@ -627,7 +629,7 @@ to_json(?ERROR_CANNOT_DELETE_ENTITY(EntityType, EntityId)) -> #{
         <<"entityId">> => EntityId
     },
     <<"description">> => ?FMT("Cannot delete ~s:~s; failed to delete some dependent relations.", [
-        gri:serialize_type(EntityType, regular), EntityId
+        gri:serialize_type(EntityType), EntityId
     ])
 };
 to_json(?ERROR_CANNOT_ADD_RELATION_TO_SELF) -> #{
@@ -648,9 +650,9 @@ to_json(?ERROR_RELATION_DOES_NOT_EXIST(ChType, ChId, ParType, ParId)) ->
             <<"parentId">> => ParId
         },
         <<"description">> => ?FMT("Bad value: ~s:~s ~s ~s:~s", [
-            gri:serialize_type(ChType, regular), ChId,
+            gri:serialize_type(ChType), ChId,
             RelationToString,
-            gri:serialize_type(ParType, regular), ParId
+            gri:serialize_type(ParType), ParId
         ])
     };
 to_json(?ERROR_RELATION_ALREADY_EXISTS(ChType, ChId, ParType, ParId)) ->
@@ -667,9 +669,9 @@ to_json(?ERROR_RELATION_ALREADY_EXISTS(ChType, ChId, ParType, ParId)) ->
             <<"parentId">> => ParId
         },
         <<"description">> => ?FMT("Bad value: ~s:~s ~s ~s:~s", [
-            gri:serialize_type(ChType, regular), ChId,
+            gri:serialize_type(ChType), ChId,
             RelationToString,
-            gri:serialize_type(ParType, regular), ParId
+            gri:serialize_type(ParType), ParId
         ])
     };
 to_json(?ERROR_SPACE_NOT_SUPPORTED_BY(ProviderId)) -> #{
@@ -963,8 +965,8 @@ from_json(#{<<"id">> := <<"badValueDomain">>}) ->
 from_json(#{<<"id">> := <<"badValueSubdomain">>}) ->
     ?ERROR_BAD_VALUE_SUBDOMAIN;
 
-from_json(#{<<"id">> := <<"badValueCaveats">>}) ->
-    ?ERROR_BAD_VALUE_CAVEATS;
+from_json(#{<<"id">> := <<"badValueCaveat">>, <<"caveat">> := CaveatJson}) ->
+    ?ERROR_BAD_VALUE_CAVEAT(CaveatJson);
 
 from_json(#{<<"id">> := <<"badValueQoSParameters">>}) ->
     ?ERROR_BAD_VALUE_QOS_PARAMETERS;
@@ -1136,7 +1138,7 @@ to_http_code(?ERROR_BAD_VALUE_EMAIL) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_BAD_VALUE_NAME) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_BAD_VALUE_DOMAIN) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_BAD_VALUE_SUBDOMAIN) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_BAD_VALUE_CAVEATS) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_BAD_VALUE_CAVEAT(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_BAD_VALUE_QOS_PARAMETERS) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_BAD_GUI_PACKAGE) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_GUI_PACKAGE_TOO_LARGE) -> ?HTTP_400_BAD_REQUEST;
@@ -1164,8 +1166,9 @@ to_http_code(?ERROR_STORAGE_IN_USE) -> ?HTTP_400_BAD_REQUEST;
 %% -----------------------------------------------------------------------------
 %% Unknown / unexpected error
 %% -----------------------------------------------------------------------------
+to_http_code(?ERROR_UNKNOWN_ERROR(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_UNEXPECTED_ERROR(_)) -> ?HTTP_500_INTERNAL_SERVER_ERROR;
-to_http_code(?ERROR_UNKNOWN_ERROR(_)) -> ?HTTP_400_BAD_REQUEST.
+to_http_code(_) -> ?HTTP_500_INTERNAL_SERVER_ERROR.
 
 %%%===================================================================
 %%% Internal functions

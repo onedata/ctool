@@ -15,8 +15,8 @@
 -export([ensure_running/1, pmap/2, pforeach/2,
     record_type/1, trim_spaces/1, ceil/1,
     aggregate_over_first_element/1, average/1, random_shuffle/1, get_values/2,
-    random_element/1, get_host/1, get_host_as_atom/1, cmd/1, ensure_defined/3,
-    process_info/1, process_info/2]).
+    random_element/1, random_sublist/1, random_sublist/3, get_host/1,
+    get_host_as_atom/1, cmd/1, ensure_defined/3, process_info/1, process_info/2]).
 -export([timeout/2, timeout/4]).
 -export([duration/1, adjust_duration/2]).
 -export([mkdtemp/0, mkdtemp/3, rmtempdir/1, run_with_tempdir/1]).
@@ -189,7 +189,6 @@ get_values(Keys, List) ->
         lists_utils:key_get(Key, List)
     end, Keys).
 
-
 %%--------------------------------------------------------------------
 %% @doc
 %% Get random element of list
@@ -200,6 +199,25 @@ random_element([]) ->
     error(empty_list, [[]]);
 random_element(List) ->
     lists:nth(rand:uniform(length(List)), List).
+
+%%--------------------------------------------------------------------
+%% @doc
+%% @equiv random_sublist(List, 0, length(List))
+%% @end
+%%--------------------------------------------------------------------
+-spec random_sublist([T]) -> [T].
+random_sublist(List) ->
+    random_sublist(List, 0, length(List)).
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Returns a random sublist of a list, with random length within given limits.
+%% @end
+%%--------------------------------------------------------------------
+-spec random_sublist([T], MinLen :: non_neg_integer(), MaxLen :: non_neg_integer()) -> [T].
+random_sublist(List, MinLength, MaxLength) ->
+    Shuffled = random_shuffle(List),
+    lists:sublist(Shuffled, MinLength + rand:uniform(MaxLength - MinLength + 1) - 1).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -227,7 +245,6 @@ get_host_as_atom(Node) ->
 -spec cmd(Command :: [string()]) -> string().
 cmd(Command) ->
     os:cmd(string:join(Command, " ")).
-
 
 %%--------------------------------------------------------------------
 %% @doc
