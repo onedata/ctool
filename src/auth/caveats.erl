@@ -16,22 +16,18 @@
 -include("logging.hrl").
 -include("errors.hrl").
 
--type type() :: cv_time | cv_authorization_none | cv_audience |
-cv_ip | cv_asn | cv_country | cv_region | cv_api |
-cv_data_space | cv_data_access | cv_data_path | cv_data_objectid.
--type caveat() :: #cv_time{} | #cv_authorization_none{} | #cv_audience{} |
-#cv_ip{} | #cv_asn{} | #cv_country{} | #cv_region{} | #cv_api{} |
-#cv_data_space{} | #cv_data_access{} | #cv_data_path{} | #cv_data_objectid{}.
+-type type() :: cv_time | cv_authorization_none | cv_audience
+| cv_ip | cv_asn | cv_country | cv_region
+| cv_interface | cv_api
+| cv_data_readonly | cv_data_path | cv_data_objectid.
+-type caveat() :: #cv_time{} | #cv_authorization_none{} | #cv_audience{}
+| #cv_ip{} | #cv_asn{} | #cv_country{} | #cv_region{}
+| #cv_interface{} | #cv_api{}
+| #cv_data_readonly{} | #cv_data_path{} | #cv_data_objectid{}.
 -type serialized() :: binary().
 -type as_json() :: json_utils:json_term().
 
-% Caveats related to data access
--type space_id() :: binary().
--type data_access_type() :: read | write.
--type data_path() :: binary().
-
 -export_type([type/0, caveat/0]).
--export_type([space_id/0, data_access_type/0, data_path/0]).
 
 % Separator used to create (white|black)lists in caveats
 -define(SEP, <<"|">>).
@@ -88,8 +84,9 @@ type(Caveat) when is_tuple(Caveat) ->
 -spec all_types() -> [type()].
 all_types() -> [
     cv_time, cv_authorization_none, cv_audience,
-    cv_ip, cv_asn, cv_country, cv_region, cv_api,
-    cv_data_space, cv_data_access, cv_data_path, cv_data_objectid
+    cv_ip, cv_asn, cv_country, cv_region,
+    cv_interface, cv_api,
+    cv_data_readonly, cv_data_path, cv_data_objectid
 ].
 
 
@@ -151,21 +148,17 @@ serialize(#cv_region{type = whitelist, list = List}) ->
 serialize(#cv_region{type = blacklist, list = List}) ->
     <<"geo.region != ", (?JOIN(List))/binary>>;
 
+serialize(#cv_interface{interface = Interface}) ->
+    <<"interface = ", (cv_interface:serialize_interface(Interface))/binary>>;
+
 serialize(#cv_api{whitelist = []}) ->
     error(badarg);
 serialize(#cv_api{whitelist = Whitelist}) ->
     SerializedEntries = lists:map(fun cv_api:serialize_matchspec/1, Whitelist),
     <<"api = ", (?JOIN(SerializedEntries))/binary>>;
 
-serialize(#cv_data_space{whitelist = []}) ->
-    error(badarg);
-serialize(#cv_data_space{whitelist = Whitelist}) ->
-    <<"data.space = ", (?JOIN(Whitelist))/binary>>;
-
-serialize(#cv_data_access{type = read}) ->
-    <<"data.access = read">>;
-serialize(#cv_data_access{type = write}) ->
-    <<"data.access = write">>;
+serialize(#cv_data_readonly{}) ->
+    <<"data.readonly">>;
 
 serialize(#cv_data_path{whitelist = []}) ->
     error(badarg);
@@ -186,45 +179,43 @@ deserialize(<<"time < ", ValidUntil/binary>>) ->
 deserialize(<<"authorization = none">>) ->
     #cv_authorization_none{};
 
-deserialize(<<"audience = ", SerializedAudiences/binary>>) ->
+deserialize(<<"audience = ", SerializedAudiences/binary>>) when size(SerializedAudiences) > 0 ->
     Whitelist = lists:map(fun aai:deserialize_audience/1, ?SPLIT(SerializedAudiences)),
     #cv_audience{whitelist = Whitelist};
 
-deserialize(<<"ip = ", SerializedMasks/binary>>) ->
+deserialize(<<"ip = ", SerializedMasks/binary>>) when size(SerializedMasks) > 0 ->
     Whitelist = [element(2, {ok, _} = ip_utils:parse_mask(M)) || M <- ?SPLIT(SerializedMasks)],
     #cv_ip{whitelist = Whitelist};
 
-deserialize(<<"asn = ", SerializedASNs/binary>>) ->
+deserialize(<<"asn = ", SerializedASNs/binary>>) when size(SerializedASNs) > 0 ->
     Whitelist = lists:map(fun binary_to_integer/1, ?SPLIT(SerializedASNs)),
     #cv_asn{whitelist = Whitelist};
 
-deserialize(<<"geo.country = ", List/binary>>) ->
+deserialize(<<"geo.country = ", List/binary>>) when size(List) > 0 ->
     #cv_country{type = whitelist, list = ?SPLIT(List)};
-deserialize(<<"geo.country != ", List/binary>>) ->
+deserialize(<<"geo.country != ", List/binary>>) when size(List) > 0 ->
     #cv_country{type = blacklist, list = ?SPLIT(List)};
 
-deserialize(<<"geo.region = ", List/binary>>) ->
+deserialize(<<"geo.region = ", List/binary>>) when size(List) > 0 ->
     #cv_region{type = whitelist, list = ?SPLIT(List)};
-deserialize(<<"geo.region != ", List/binary>>) ->
+deserialize(<<"geo.region != ", List/binary>>) when size(List) > 0 ->
     #cv_region{type = blacklist, list = ?SPLIT(List)};
 
-deserialize(<<"api = ", SerializedEntries/binary>>) ->
+deserialize(<<"interface = ", Interface/binary>>) ->
+    #cv_interface{interface = cv_interface:deserialize_interface(Interface)};
+
+deserialize(<<"api = ", SerializedEntries/binary>>) when size(SerializedEntries) > 0 ->
     Whitelist = lists:map(fun cv_api:deserialize_matchspec/1, ?SPLIT(SerializedEntries)),
     #cv_api{whitelist = Whitelist};
 
-deserialize(<<"data.space = ", Whitelist/binary>>) ->
-    #cv_data_space{whitelist = ?SPLIT(Whitelist)};
+deserialize(<<"data.readonly">>) ->
+    #cv_data_readonly{};
 
-deserialize(<<"data.access = read">>) ->
-    #cv_data_access{type = read};
-deserialize(<<"data.access = write">>) ->
-    #cv_data_access{type = write};
-
-deserialize(<<"data.path = ", B64EncodedEntries/binary>>) ->
+deserialize(<<"data.path = ", B64EncodedEntries/binary>>) when size(B64EncodedEntries) > 0 ->
     Whitelist = lists:map(fun base64:decode/1, ?SPLIT(B64EncodedEntries)),
     #cv_data_path{whitelist = Whitelist};
 
-deserialize(<<"data.objectid = ", Whitelist/binary>>) ->
+deserialize(<<"data.objectid = ", Whitelist/binary>>) when size(Whitelist) > 0 ->
     #cv_data_objectid{whitelist = ?SPLIT(Whitelist)}.
 
 
@@ -270,7 +261,7 @@ to_json(#cv_country{list = []}) ->
 to_json(#cv_country{type = FilterType, list = List}) ->
     #{
         <<"type">> => <<"geo.country">>,
-        <<"filter">> => filter_type_to_json(FilterType),
+        <<"filter">> => serialize_filter_type(FilterType),
         <<"list">> => List
     };
 
@@ -279,8 +270,14 @@ to_json(#cv_region{list = []}) ->
 to_json(#cv_region{type = FilterType, list = List}) ->
     #{
         <<"type">> => <<"geo.region">>,
-        <<"filter">> => filter_type_to_json(FilterType),
+        <<"filter">> => serialize_filter_type(FilterType),
         <<"list">> => List
+    };
+
+to_json(#cv_interface{interface = Interface}) ->
+    #{
+        <<"type">> => <<"interface">>,
+        <<"interface">> => cv_interface:serialize_interface(Interface)
     };
 
 to_json(#cv_api{whitelist = []}) ->
@@ -291,21 +288,9 @@ to_json(#cv_api{whitelist = Whitelist}) ->
         <<"whitelist">> => lists:map(fun cv_api:serialize_matchspec/1, Whitelist)
     };
 
-to_json(#cv_data_space{whitelist = []}) ->
-    error(badarg);
-to_json(#cv_data_space{whitelist = Whitelist}) ->
+to_json(#cv_data_readonly{}) ->
     #{
-        <<"type">> => <<"data.space">>,
-        <<"whitelist">> => Whitelist
-    };
-
-to_json(#cv_data_access{type = AccessType}) ->
-    #{
-        <<"type">> => <<"data.access">>,
-        <<"accessType">> => case AccessType of
-            read -> <<"read">>;
-            write -> <<"write">>
-        end
+        <<"type">> => <<"data.readonly">>
     };
 
 to_json(#cv_data_path{whitelist = []}) ->
@@ -332,41 +317,38 @@ from_json(#{<<"type">> := <<"time">>, <<"validUntil">> := ValidUntil}) ->
 from_json(#{<<"type">> := <<"authorizationNone">>}) ->
     #cv_authorization_none{};
 
-from_json(#{<<"type">> := <<"audience">>, <<"whitelist">> := SerializedAudiences}) ->
+from_json(#{<<"type">> := <<"audience">>, <<"whitelist">> := SerializedAudiences}) when length(SerializedAudiences) > 0 ->
     Whitelist = lists:map(fun aai:deserialize_audience/1, SerializedAudiences),
     #cv_audience{whitelist = Whitelist};
 
-from_json(#{<<"type">> := <<"ip">>, <<"whitelist">> := SerializedMasks}) ->
+from_json(#{<<"type">> := <<"ip">>, <<"whitelist">> := SerializedMasks}) when length(SerializedMasks) > 0 ->
     Whitelist = [element(2, {ok, _} = ip_utils:parse_mask(M)) || M <- SerializedMasks],
     #cv_ip{whitelist = Whitelist};
 
-from_json(#{<<"type">> := <<"asn">>, <<"whitelist">> := Whitelist}) ->
+from_json(#{<<"type">> := <<"asn">>, <<"whitelist">> := Whitelist}) when length(Whitelist) > 0 ->
     #cv_asn{whitelist = Whitelist};
 
-from_json(#{<<"type">> := <<"geo.country">>, <<"filter">> := FilterType, <<"list">> := List}) ->
-    #cv_country{type = json_to_filter_type(FilterType), list = List};
+from_json(#{<<"type">> := <<"geo.country">>, <<"filter">> := FilterType, <<"list">> := List}) when length(List) > 0 ->
+    #cv_country{type = deserialize_filter_type(FilterType), list = List};
 
-from_json(#{<<"type">> := <<"geo.region">>, <<"filter">> := FilterType, <<"list">> := List}) ->
-    #cv_region{type = json_to_filter_type(FilterType), list = List};
+from_json(#{<<"type">> := <<"geo.region">>, <<"filter">> := FilterType, <<"list">> := List}) when length(List) > 0 ->
+    #cv_region{type = deserialize_filter_type(FilterType), list = List};
 
-from_json(#{<<"type">> := <<"api">>, <<"whitelist">> := SerializedEntries}) ->
+from_json(#{<<"type">> := <<"interface">>, <<"interface">> := Interface}) ->
+    #cv_interface{interface = cv_interface:deserialize_interface(Interface)};
+
+from_json(#{<<"type">> := <<"api">>, <<"whitelist">> := SerializedEntries}) when length(SerializedEntries) > 0 ->
     Whitelist = lists:map(fun cv_api:deserialize_matchspec/1, SerializedEntries),
     #cv_api{whitelist = Whitelist};
 
-from_json(#{<<"type">> := <<"data.space">>, <<"whitelist">> := Whitelist}) ->
-    #cv_data_space{whitelist = Whitelist};
+from_json(#{<<"type">> := <<"data.readonly">>}) ->
+    #cv_data_readonly{};
 
-from_json(#{<<"type">> := <<"data.access">>, <<"accessType">> := AccessType}) ->
-    #cv_data_access{type = case AccessType of
-        <<"read">> -> read;
-        <<"write">> -> write
-    end};
-
-from_json(#{<<"type">> := <<"data.path">>, <<"whitelist">> := B64EncodedEntries}) ->
+from_json(#{<<"type">> := <<"data.path">>, <<"whitelist">> := B64EncodedEntries}) when length(B64EncodedEntries) > 0 ->
     Whitelist = lists:map(fun base64:decode/1, B64EncodedEntries),
     #cv_data_path{whitelist = Whitelist};
 
-from_json(#{<<"type">> := <<"data.objectid">>, <<"whitelist">> := Whitelist}) ->
+from_json(#{<<"type">> := <<"data.objectid">>, <<"whitelist">> := Whitelist}) when length(Whitelist) > 0 ->
     #cv_data_objectid{whitelist = Whitelist}.
 
 
@@ -430,6 +412,14 @@ sanitize(C = #cv_region{type = Type, list = List}) when List /= [] ->
         false
     end;
 
+sanitize(C = #cv_interface{interface = Interface}) ->
+    try
+        Interface = cv_interface:deserialize_interface(cv_interface:serialize_interface(Interface)),
+        {true, C}
+    catch _:_ ->
+        false
+    end;
+
 sanitize(C = #cv_api{whitelist = Whitelist}) when Whitelist /= [] ->
     try
         C = deserialize(serialize(C)),
@@ -438,32 +428,18 @@ sanitize(C = #cv_api{whitelist = Whitelist}) when Whitelist /= [] ->
         false
     end;
 
-sanitize(C = #cv_data_space{whitelist = Whitelist}) when Whitelist /= [] ->
-    try
-        [<<_:8, _/binary>> = SpaceId || SpaceId <- Whitelist],
-        {true, C}
-    catch _:_ ->
-        false
-    end;
-
-sanitize(C = #cv_data_access{type = read}) -> {true, C};
-sanitize(C = #cv_data_access{type = write}) -> {true, C};
-sanitize(_ = #cv_data_access{}) -> false;
+sanitize(C = #cv_data_readonly{}) -> {true, C};
 
 sanitize(C = #cv_data_path{whitelist = Whitelist}) when Whitelist /= [] ->
-    try
-        [<<_:8, _/binary>> = Path || Path <- Whitelist],
-        {true, deserialize(serialize(C))}
-    catch _:_ ->
-        false
+    case data_access_caveats:sanitize_path_caveat(C) of
+        true -> {true, C};
+        false -> false
     end;
 
 sanitize(C = #cv_data_objectid{whitelist = Whitelist}) when Whitelist /= [] ->
-    try
-        [<<_:8, _/binary>> = ObjectId || ObjectId <- Whitelist],
-        {true, C}
-    catch _:_ ->
-        false
+    case data_access_caveats:sanitize_objectid_caveat(C) of
+        true -> {true, C};
+        false -> false
     end;
 
 sanitize(AsJson) when is_map(AsJson) ->
@@ -529,6 +505,12 @@ unverified_description(#cv_region{type = Type, list = List}) ->
         [ComesStr, ?JOIN(List, <<" or ">>)]
     );
 
+unverified_description(#cv_interface{interface = Interface}) ->
+    str_utils:format_bin(
+        "unverified interface caveat: this token can only be used in the '~s' interface",
+        [Interface]
+    );
+
 unverified_description(#cv_api{whitelist = Whitelist}) ->
     str_utils:format_bin(
         "unverified API caveat: this token can only be used for API calls that match "
@@ -536,18 +518,8 @@ unverified_description(#cv_api{whitelist = Whitelist}) ->
         [?JOIN(lists:map(fun cv_api:serialize_matchspec/1, Whitelist), <<" or ">>)]
     );
 
-unverified_description(#cv_data_space{whitelist = Whitelist}) ->
-    str_utils:format_bin(
-        "unverified data space caveat: this token can only be used to access data "
-        "in the following space: ~s",
-        [?JOIN(Whitelist, <<" or ">>)]
-    );
-
-unverified_description(#cv_data_access{type = Type}) ->
-    str_utils:format_bin(
-        "unverified data access caveat: this token allows for ~s-only data access",
-        [Type]
-    );
+unverified_description(#cv_data_readonly{}) ->
+    <<"unverified data access caveat: this token allows for readonly data access">>;
 
 unverified_description(#cv_data_path{whitelist = Whitelist}) ->
     str_utils:format_bin(
@@ -584,6 +556,8 @@ verify(#cv_audience{whitelist = Whitelist}, #auth_ctx{audience = Audience} = Aut
         (?AUD(group, GroupId)) ->
             Checker = AuthCtx#auth_ctx.group_membership_checker,
             Checker(Audience, GroupId);
+        (?AUD(Type, ?ANY_AUDIENCE_ID)) ->
+            Audience#audience.type =:= Type;
         (Entry) ->
             Audience =:= Entry
     end);
@@ -605,19 +579,34 @@ verify(#cv_region{type = Type, list = List}, #auth_ctx{ip = IP}) ->
     {ok, Regions} = ip_utils:lookup_region(IP),
     is_allowed(Type, List, fun(Entry) -> lists:member(Entry, Regions) end);
 
-% Below caveats are lazy - always true when verifying a token (still, they must
-% be explicitly supported). They are checked when the resulting aai:auth() object
-% is consumed to perform an operation.
+verify(#cv_interface{}, #auth_ctx{interface = undefined}) ->
+    false;
+% If oneclient interface is specified, this caveat is treated as a data access caveat
+verify(#cv_interface{interface = oneclient}, #auth_ctx{interface = oneclient} = AuthCtx) ->
+    AuthCtx#auth_ctx.data_access_caveats_policy == allow_data_access_caveats;
+verify(#cv_interface{interface = Interface}, #auth_ctx{interface = Interface}) ->
+    true;
+verify(#cv_interface{}, _AuthCtx) ->
+    false;
+
+% API caveats are lazy - always true when verifying a token, but checked when
+% the resulting aai:auth() object is used to perform an operation.
+% Each system component that accepts tokens must explicitly check the API
+% caveats in its internal logic.
 verify(#cv_api{}, _AuthCtx) ->
     true;
-verify(#cv_data_space{}, _AuthCtx) ->
-    true;
-verify(#cv_data_access{}, _AuthCtx) ->
-    true;
-verify(#cv_data_path{}, _AuthCtx) ->
-    true;
-verify(#cv_data_objectid{}, _AuthCtx) ->
-    true.
+
+% Data access caveats are allowed only if the authorizing party requested so.
+% Beside those below, cv_interface = oneclient is also considered as such.
+% These caveats are supported only in Oneprovider, on interfaces used for data
+% access. The proper verification of these caveats is performed in Oneprovider,
+% here only a general check is done.
+verify(#cv_data_readonly{}, AuthCtx) ->
+    AuthCtx#auth_ctx.data_access_caveats_policy == allow_data_access_caveats;
+verify(#cv_data_path{}, AuthCtx) ->
+    AuthCtx#auth_ctx.data_access_caveats_policy == allow_data_access_caveats;
+verify(#cv_data_objectid{}, AuthCtx) ->
+    AuthCtx#auth_ctx.data_access_caveats_policy == allow_data_access_caveats.
 
 
 %% @private
@@ -629,12 +618,12 @@ is_allowed(blacklist, Blacklist, Predicate) ->
 
 
 %% @private
--spec filter_type_to_json(whitelist | blacklist) -> binary().
-filter_type_to_json(whitelist) -> <<"whitelist">>;
-filter_type_to_json(blacklist) -> <<"blacklist">>.
+-spec serialize_filter_type(whitelist | blacklist) -> binary().
+serialize_filter_type(whitelist) -> <<"whitelist">>;
+serialize_filter_type(blacklist) -> <<"blacklist">>.
 
 
 %% @private
--spec json_to_filter_type(binary()) -> whitelist | blacklist.
-json_to_filter_type(<<"whitelist">>) -> whitelist;
-json_to_filter_type(<<"blacklist">>) -> blacklist.
+-spec deserialize_filter_type(binary()) -> whitelist | blacklist.
+deserialize_filter_type(<<"whitelist">>) -> whitelist;
+deserialize_filter_type(<<"blacklist">>) -> blacklist.

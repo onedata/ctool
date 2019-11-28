@@ -41,7 +41,9 @@
 -record(auth_ctx, {
     current_timestamp :: time_utils:seconds(),
     ip = undefined :: undefined | ip_utils:ip(),
+    interface = undefined :: undefined | cv_interface:interface(),
     audience :: aai:audience(),
+    data_access_caveats_policy = disallow_data_access_caveats :: data_access_caveats:policy(),
     group_membership_checker :: aai:group_membership_checker()
 }).
 
