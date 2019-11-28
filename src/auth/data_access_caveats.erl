@@ -177,11 +177,9 @@ to_allowed_api(?OZ_WORKER, #cv_data_objectid{whitelist = ObjectidsWhitelist}) ->
 
 
 %% @private
-%%--------------------------------------------------------------------
 -spec oz_worker_allowed_api(['*' | file_id:space_id()]) -> cv_api:cv_api().
 oz_worker_allowed_api(AllowedSpaces) ->
     #cv_api{whitelist = lists:flatten([
         {?OZ_WORKER, get, ?GRI_PATTERN(od_user, '*', instance, '*')},
-        [{?OZ_WORKER, get, ?GRI_PATTERN(od_space, S, instance, '*')} || S <- AllowedSpaces],
-        {?OP_WORKER, all, ?GRI_PATTERN(op_file, '*', '*', '*')}
+        [{?OZ_WORKER, get, ?GRI_PATTERN(od_space, S, instance, '*')} || S <- AllowedSpaces]
     ])}.
