@@ -202,7 +202,7 @@ build_service_access_token(_, _) ->
 %%--------------------------------------------------------------------
 -spec deserialize(serialized()) -> {ok, token()} | errors:error().
 deserialize(<<>>) -> ?ERROR_BAD_TOKEN;
-deserialize(Serialized) ->
+deserialize(Serialized) when is_binary(Serialized) ->
     try
         MaxTokenSize = ?MAX_TOKEN_SIZE,
         case size(Serialized) > MaxTokenSize of
@@ -233,7 +233,8 @@ deserialize(Serialized) ->
                 Serialized, Type, Reason
             ]),
             ?ERROR_BAD_TOKEN
-    end.
+    end;
+deserialize(_) -> ?ERROR_BAD_TOKEN.
 
 
 -spec is_token(term()) -> boolean().

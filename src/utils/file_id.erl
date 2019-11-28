@@ -43,7 +43,7 @@
 
 -type share_root_file_guid() :: file_guid().
 
--export_type([objectid/0, file_guid/0]).
+-export_type([objectid/0, file_guid/0, space_id/0]).
 
 %% The SNMP Enterprise Number for your organization in network byte
 %% order. See RFC 2578 and

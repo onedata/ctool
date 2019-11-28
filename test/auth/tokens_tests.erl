@@ -18,7 +18,7 @@
 
 -include("aai/aai.hrl").
 -include("errors.hrl").
--include("graph_sync/graph_sync.hrl").
+-include("graph_sync/gri.hrl").
 -include("http/headers.hrl").
 -include("onedata.hrl").
 
@@ -406,7 +406,7 @@ find_caveats_test() ->
             #cv_asn{whitelist = [322]},
             #cv_audience{whitelist = [?AUD(?OZ_WORKER, ?ONEZONE_CLUSTER_ID)]},
             #cv_country{type = whitelist, list = [<<"PL">>, <<"FR">>]},
-            #cv_api{whitelist = [{all, all, ?GRI('*', <<"*">>, '*', '*')}]}
+            #cv_api{whitelist = [{all, all, ?GRI_PATTERN('*', '*', '*', '*')}]}
         ])
     ),
     ?assertEqual(
@@ -422,7 +422,7 @@ find_caveats_test() ->
             #cv_time{valid_until = 456},
             #cv_country{type = whitelist, list = [<<"PL">>, <<"FR">>]},
             #cv_time{valid_until = 789},
-            #cv_api{whitelist = [{all, all, ?GRI('*', <<"*">>, '*', '*')}]}
+            #cv_api{whitelist = [{all, all, ?GRI_PATTERN('*', '*', '*', '*')}]}
         ])
     ).
 
@@ -439,7 +439,7 @@ filter_caveats_test() ->
             #cv_asn{whitelist = [322]},
             #cv_audience{whitelist = [?AUD(user, <<"567">>)]},
             #cv_country{type = whitelist, list = [<<"PL">>, <<"FR">>]},
-            #cv_api{whitelist = [{all, all, ?GRI('*', <<"*">>, '*', '*')}]}
+            #cv_api{whitelist = [{all, all, ?GRI_PATTERN('*', '*', '*', '*')}]}
         ])
     ),
     ?assertEqual(
@@ -452,7 +452,7 @@ filter_caveats_test() ->
             #cv_asn{whitelist = [322]},
             #cv_time{valid_until = 456},
             #cv_time{valid_until = 789},
-            #cv_api{whitelist = [{all, all, ?GRI('*', <<"*">>, '*', '*')}]}
+            #cv_api{whitelist = [{all, all, ?GRI_PATTERN('*', '*', '*', '*')}]}
         ],
         F([cv_asn, cv_api, cv_time], [
             #cv_time{valid_until = 123},
@@ -461,7 +461,7 @@ filter_caveats_test() ->
             #cv_time{valid_until = 456},
             #cv_country{type = whitelist, list = [<<"PL">>, <<"FR">>]},
             #cv_time{valid_until = 789},
-            #cv_api{whitelist = [{all, all, ?GRI('*', <<"*">>, '*', '*')}]}
+            #cv_api{whitelist = [{all, all, ?GRI_PATTERN('*', '*', '*', '*')}]}
         ])
     ).
 
@@ -555,9 +555,28 @@ sanitize_caveats_test() ->
     ?BAD(S(#{<<"type">> => <<"geo.region">>, <<"filter">> => <<"badlist">>, <<"list">> => [<<"Asia">>, <<"EU">>]})),
     ?BAD(S(#{<<"type">> => <<"geo.region">>, <<"filter">> => <<"blacklist">>, <<"list">> => [1, 2, 3]})),
 
-    ?OK(#cv_api{whitelist = [{?OZ_WORKER, all, ?GRI(od_user, <<"*">>, '*', auto)}]},
-        S(#cv_api{whitelist = [{?OZ_WORKER, all, ?GRI(od_user, <<"*">>, '*', auto)}]})),
-    ?OK(#cv_api{whitelist = [{?OZ_WORKER, all, ?GRI(od_user, <<"*">>, '*', auto)}]},
+    ?OK(#cv_interface{interface = graphsync},
+        S(#cv_interface{interface = graphsync})),
+    ?OK(#cv_interface{interface = graphsync},
+        S(#{<<"type">> => <<"interface">>, <<"interface">> => <<"graphsync">>})),
+    ?OK(#cv_interface{interface = rest},
+        S(#cv_interface{interface = rest})),
+    ?OK(#cv_interface{interface = rest},
+        S(#{<<"type">> => <<"interface">>, <<"interface">> => <<"rest">>})),
+    ?OK(#cv_interface{interface = oneclient},
+        S(#cv_interface{interface = oneclient})),
+    ?OK(#cv_interface{interface = oneclient},
+        S(#{<<"type">> => <<"interface">>, <<"interface">> => <<"oneclient">>})),
+    ?BAD(S(#cv_interface{interface = []})),
+    ?BAD(S(#cv_interface{interface = [rest, oneclient]})),
+    ?BAD(S(#cv_interface{interface = 165})),
+    ?BAD(S(#{<<"type">> => <<"interface">>, <<"interface">> => [<<"graphsync">>, <<"rest">>]})),
+    ?BAD(S(#{<<"type">> => <<"interface">>, <<"interface">> => 123})),
+    ?BAD(S(#{<<"type">> => <<"interface">>, <<"interface">> => #{<<"abcd">> => <<"ghij">>}})),
+
+    ?OK(#cv_api{whitelist = [{?OZ_WORKER, all, ?GRI_PATTERN(od_user, '*', '*', auto)}]},
+        S(#cv_api{whitelist = [{?OZ_WORKER, all, ?GRI_PATTERN(od_user, '*', '*', auto)}]})),
+    ?OK(#cv_api{whitelist = [{?OZ_WORKER, all, ?GRI_PATTERN(od_user, '*', '*', auto)}]},
         S(#{<<"type">> => <<"api">>, <<"whitelist">> => [<<"ozw/all/user.*.*:auto">>]})),
     ?BAD(S(#cv_api{whitelist = []})),
     ?BAD(S(#cv_api{whitelist = [<<"avbb">>, 343]})),
@@ -566,47 +585,42 @@ sanitize_caveats_test() ->
     ?BAD(S(#{<<"type">> => <<"api">>, <<"whitelist">> => [<<"all/user.*.*:auto">>]})),
     ?BAD(S(#{<<"type">> => <<"api">>, <<"whitelist">> => <<"8sdafhg72aw3r">>})),
 
-    ?OK(#cv_data_space{whitelist = [<<"abcd">>, <<"ghij">>]},
-        S(#cv_data_space{whitelist = [<<"abcd">>, <<"ghij">>]})),
-    ?OK(#cv_data_space{whitelist = [<<"abcd">>, <<"ghij">>]},
-        S(#{<<"type">> => <<"data.space">>, <<"whitelist">> => [<<"abcd">>, <<"ghij">>]})),
-    ?BAD(S(#cv_data_space{whitelist = []})),
-    ?BAD(S(#cv_data_space{whitelist = [784, 343]})),
-    ?BAD(S(#{<<"type">> => <<"data.space">>, <<"whitelist">> => []})),
-    ?BAD(S(#{<<"type">> => <<"data.space">>, <<"whitelist">> => [1, 2, 3]})),
-    ?BAD(S(#{<<"type">> => <<"data.space">>, <<"blacklist">> => [<<"abcd">>, <<"ghij">>]})),
+    ?OK(#cv_data_readonly{},
+        S(#cv_data_readonly{})),
+    ?OK(#cv_data_readonly{},
+        S(#{<<"type">> => <<"data.readonly">>})),
+    ?BAD(S(#{<<"type">> => <<"data.writeonly">>})),
 
-    ?OK(#cv_data_access{type = read},
-        S(#cv_data_access{type = read})),
-    ?OK(#cv_data_access{type = write},
-        S(#{<<"type">> => <<"data.access">>, <<"accessType">> => <<"write">>})),
-    ?BAD(S(#cv_data_access{type = []})),
-    ?BAD(S(#cv_data_access{type = all})),
-    ?BAD(S(#{<<"type">> => <<"data.access">>, <<"accessType">> => <<"true">>})),
-    ?BAD(S(#{<<"type">> => <<"data.access">>, <<"accessType">> => [<<"read">>, <<"write">>]})),
-    ?BAD(S(#{<<"type">> => <<"data.access">>, <<"badKey">> => <<"write">>})),
-
-    ?OK(#cv_data_path{whitelist = [<<"a/b/c/d">>]},
-        S(#cv_data_path{whitelist = [<<"a/b/c/d">>]})),
-    ?OK(#cv_data_path{whitelist = [<<"/dir1/file1.txt">>, <<"/dir2/file2.txt">>]},
+    ?OK(#cv_data_path{whitelist = [<<"/a/b/c/d">>]},
+        S(#cv_data_path{whitelist = [<<"/a/b/c/d">>]})),
+    ?OK(#cv_data_path{whitelist = [<<"/space1/file1.txt">>, <<"/space2/dir/file2.txt">>]},
         S(#{<<"type">> => <<"data.path">>, <<"whitelist">> => [
-            base64:encode(<<"/dir1/file1.txt">>), base64:encode(<<"/dir2/file2.txt">>)
+            base64:encode(<<"/space1/file1.txt">>), base64:encode(<<"/space2/dir/file2.txt">>)
         ]})),
     ?BAD(S(#cv_data_path{whitelist = []})),
     ?BAD(S(#cv_data_path{whitelist = [<<"avbb">>, 343]})),
     ?BAD(S(#{<<"type">> => <<"data.path">>, <<"whitelist">> => []})),
-    ?BAD(S(#{<<"type">> => <<"data.path">>, <<"whitelist">> => <<"a/b/c/d/e">>})),
     ?BAD(S(#{<<"type">> => <<"data.path">>, <<"whitelist">> => [<<"a/b/c/d/e$%#@">>]})),
-    ?BAD(S(#{<<"type">> => <<"data.path">>, <<"blacklist">> => [base64:encode(<<"/dir1/file1.txt">>)]})),
+    ?BAD(S(#{<<"type">> => <<"data.path">>, <<"blacklist">> => [base64:encode(<<"/space1/file1.txt">>)]})),
+    % Make sure canonical form is checked
+    ?BAD(S(#cv_data_path{whitelist = [<<"a/b/c/d/e">>]})),
+    ?BAD(S(#cv_data_path{whitelist = [<<"/a/b/c/d/e/">>, <<"/space/dir">>]})),
+    ?BAD(S(#cv_data_path{whitelist = [<<"/">>]})),
+    ?BAD(S(#{<<"type">> => <<"data.path">>, <<"whitelist">> => [<<"a">>, <<"/b/c">>]})),
+    ?BAD(S(#{<<"type">> => <<"data.path">>, <<"whitelist">> => [base64:encode(<<"/space1/">>)]})),
+    ?BAD(S(#{<<"type">> => <<"data.path">>, <<"whitelist">> => [<<"/">>]})),
 
-    ?OK(#cv_data_objectid{whitelist = [<<"01234">>, <<"7890">>]},
-        S(#cv_data_objectid{whitelist = [<<"01234">>, <<"7890">>]})),
-    ?OK(#cv_data_objectid{whitelist = [<<"01234">>, <<"7890">>]},
-        S(#{<<"type">> => <<"data.objectid">>, <<"whitelist">> => [<<"01234">>, <<"7890">>]})),
+    CorrectObjectid1 = element(2, {ok, _} = file_id:guid_to_objectid(file_id:pack_guid(?RAND_STR, ?RAND_STR))),
+    CorrectObjectid2 = element(2, {ok, _} = file_id:guid_to_objectid(file_id:pack_guid(?RAND_STR, ?RAND_STR))),
+
+    ?OK(#cv_data_objectid{whitelist = [CorrectObjectid1, CorrectObjectid2]},
+        S(#cv_data_objectid{whitelist = [CorrectObjectid1, CorrectObjectid2]})),
+    ?OK(#cv_data_objectid{whitelist = [CorrectObjectid1, CorrectObjectid2]},
+        S(#{<<"type">> => <<"data.objectid">>, <<"whitelist">> => [CorrectObjectid1, CorrectObjectid2]})),
     ?BAD(S(#cv_data_objectid{whitelist = []})),
     ?BAD(S(#cv_data_objectid{whitelist = [atom, 343]})),
     ?BAD(S(#{<<"type">> => <<"data.objectid">>, <<"whitelist">> => []})),
-    ?BAD(S(#{<<"type">> => <<"data.objectid">>, <<"blacklist">> => [<<"01234">>, <<"7890">>]})).
+    ?BAD(S(#{<<"type">> => <<"data.objectid">>, <<"blacklist">> => [CorrectObjectid1, CorrectObjectid2]})).
 
 
 %%%===================================================================
@@ -686,7 +700,9 @@ auth_ctx(Ip) ->
     #auth_ctx{
         current_timestamp = ?NOW(),
         ip = Ip,
+        interface = utils:random_element([undefined | cv_interface:valid_interfaces()]),
         audience = audience(Ip),
+        data_access_caveats_policy = utils:random_element([disallow_data_access_caveats, allow_data_access_caveats]),
         group_membership_checker = fun
             (?AUD_USR, ?DUMMY_GROUP) -> true;
             (_, _) -> false
@@ -708,7 +724,7 @@ to_regions(IpList) ->
     <<$/>>, <<"">>, [global]
 )).
 
--define(RAND_PATH, str_utils:join_binary([<<"">> | rand_sublist([
+-define(RAND_PATH, str_utils:join_binary([<<"">> | utils:random_sublist([
     ?RAND_FILE_NAME, ?RAND_FILE_NAME, ?RAND_FILE_NAME, ?RAND_FILE_NAME
 ], 1, 4)], <<"/">>)).
 
@@ -729,6 +745,13 @@ to_regions(IpList) ->
     <<"Africa">>, <<"Antarctica">>, <<"Asia">>, <<"Europe">>,
     <<"NorthAmerica">>, <<"Oceania">>, <<"SouthAmerica">>
 ]).
+
+-define(SUCCESS_IF_DATA_ACCESS_CAVEATS_ALLOWED(AuthCtx),
+    case AuthCtx#auth_ctx.data_access_caveats_policy of
+        allow_data_access_caveats -> success;
+        disallow_data_access_caveats -> failure
+    end
+).
 
 -record(caveats_testcase, {
     % Caveats in the token
@@ -850,7 +873,7 @@ check_supported_caveats(Token, Secret, AuthCtx, Caveats, Unverified) ->
     CaveatTypeSubsets = case length(CaveatTypes) of
         0 -> [];
         1 -> [[]];
-        Len -> [rand_sublist(CaveatTypes, 0, Len - 1) || _ <- lists:seq(1, Len)]
+        Len -> [utils:random_sublist(CaveatTypes, 0, Len - 1) || _ <- lists:seq(1, Len)]
     end,
     lists:foreach(fun(SupportedCaveats) ->
         MissingCaveats = lists:filter(fun(Caveat) ->
@@ -887,8 +910,8 @@ caveats_testcases(AuthCtx) ->
 % function creates two examples from each one by randomly cutting down the number of caveats.
 randomize_caveats_testcases(CaveatsTestcases) ->
     lists:flatmap(fun(Testcase = #caveats_testcase{caveats = Caveats, unverified = Unverified}) ->
-        RandA = rand_sublist(Caveats, 0, length(Caveats)),
-        RandB = rand_sublist(Caveats, 0, length(Caveats)),
+        RandA = utils:random_sublist(Caveats, 0, length(Caveats)),
+        RandB = utils:random_sublist(Caveats, 0, length(Caveats)),
         [
             Testcase#caveats_testcase{caveats = RandA, unverified = Unverified -- (Caveats -- RandA)},
             Testcase#caveats_testcase{caveats = RandB, unverified = Unverified -- (Caveats -- RandB)}
@@ -906,7 +929,7 @@ caveats_examples(cv_authorization_none, _AuthCtx) -> [
 ];
 
 caveats_examples(cv_audience, #auth_ctx{audience = undefined}) -> [
-    {#cv_audience{whitelist = rand_sublist(?AUDIENCE_EXAMPLES, 1, length(?AUDIENCE_EXAMPLES))}, failure}
+    {#cv_audience{whitelist = utils:random_sublist(?AUDIENCE_EXAMPLES, 1, length(?AUDIENCE_EXAMPLES))}, failure}
 ];
 caveats_examples(cv_audience, #auth_ctx{audience = ?AUD_USR}) -> [
     % The ?DUMMY_USER (?AUD_USR) belongs to the ?DUMMY_GROUP (?AUD_GRP), so
@@ -916,7 +939,8 @@ caveats_examples(cv_audience, #auth_ctx{audience = ?AUD_USR}) -> [
 ];
 caveats_examples(cv_audience, #auth_ctx{audience = Audience}) -> [
     {#cv_audience{whitelist = rand_audiences_without([Audience])}, failure},
-    {#cv_audience{whitelist = rand_audiences_with([Audience])}, success}
+    {#cv_audience{whitelist = rand_audiences_with([Audience])}, success},
+    {#cv_audience{whitelist = [Audience#audience{id = ?ANY_AUDIENCE_ID}]}, success}
 ];
 
 caveats_examples(cv_ip, #auth_ctx{ip = Ip}) -> [
@@ -950,45 +974,52 @@ caveats_examples(cv_region, #auth_ctx{ip = ?IP_LH}) -> [
 caveats_examples(cv_region, #auth_ctx{ip = Ip}) -> [
     {#cv_region{type = whitelist, list = rand_regions_without(to_regions([Ip]))}, failure},
     {#cv_region{type = whitelist, list = to_regions(rand_ips_with([Ip]))}, success},
-    {#cv_region{type = whitelist, list = rand_sublist(to_regions([Ip]), 1, 1)}, success},
+    {#cv_region{type = whitelist, list = utils:random_sublist(to_regions([Ip]), 1, 1)}, success},
     {#cv_region{type = blacklist, list = to_regions(rand_ips_with([Ip]))}, failure},
     {#cv_region{type = blacklist, list = rand_regions_without(to_regions([Ip]))}, success}
+];
+
+caveats_examples(cv_interface, #auth_ctx{interface = undefined}) -> [
+    {#cv_interface{interface = utils:random_element(cv_interface:valid_interfaces())}, failure}
+];
+caveats_examples(cv_interface, #auth_ctx{interface = oneclient, data_access_caveats_policy = disallow_data_access_caveats}) -> [
+    % Oneclient interface should fail as it is allowed only when data_access_caveats are allowed.
+    % Other interfaces should fail too as they do not match the oneclient interface from auth_ctx.
+    {#cv_interface{interface = utils:random_element(cv_interface:valid_interfaces())}, failure}
+];
+caveats_examples(cv_interface, #auth_ctx{interface = Interface}) -> [
+    {#cv_interface{interface = Interface}, success},
+    {#cv_interface{interface = utils:random_element(cv_interface:valid_interfaces() -- [Interface])}, failure}
 ];
 
 % Below caveats are lazy - always true when verifying a token (still, they must
 % be explicitly supported). They are checked when the resulting aai:auth() object
 % is consumed to perform an operation.
 caveats_examples(cv_api, _AuthCtx) -> [
-    {#cv_api{whitelist = rand_sublist([
-        {all, create, ?GRI(od_space, <<"*">>, '*', private)},
-        {?OZ_WORKER, get, ?GRI(od_user, ?RAND_STR, instance, '*')},
-        {?OP_WORKER, all, ?GRI(od_user, ?RAND_STR, {group, ?RAND_STR}, private)},
-        {?OP_PANEL, update, ?GRI(od_group, <<"*">>, {'*', <<"*">>})},
-        {?OZ_PANEL, delete, ?GRI('*', <<"*">>, users, '*')},
-        {all, all, ?GRI(od_handle, <<"*">>, '*', '*')}
+    {#cv_api{whitelist = utils:random_sublist([
+        {all, create, ?GRI_PATTERN(od_space, '*', '*', private)},
+        {?OZ_WORKER, get, ?GRI_PATTERN(od_user, ?RAND_STR, instance, '*')},
+        {?OP_WORKER, all, ?GRI_PATTERN(od_user, ?RAND_STR, {group, ?RAND_STR}, private)},
+        {?OP_PANEL, update, ?GRI_PATTERN(od_group, '*', {'*', '*'})},
+        {?OZ_PANEL, delete, ?GRI_PATTERN('*', '*', users, '*')},
+        {all, all, ?GRI_PATTERN(od_handle, '*', '*', '*')}
     ], 1, 6)}, success}
 ];
 
-caveats_examples(cv_data_space, _AuthCtx) -> [
-    {#cv_data_space{whitelist = rand_sublist([
-        ?RAND_STR, ?RAND_STR, ?RAND_STR, ?RAND_STR, ?RAND_STR
-    ], 1, 5)}, success}
+caveats_examples(cv_data_readonly, AuthCtx) -> [
+    {#cv_data_readonly{}, ?SUCCESS_IF_DATA_ACCESS_CAVEATS_ALLOWED(AuthCtx)}
 ];
 
-caveats_examples(cv_data_access, _AuthCtx) -> [
-    {#cv_data_access{type = hd(rand_sublist([read, write], 1, 1))}, success}
-];
-
-caveats_examples(cv_data_path, _AuthCtx) -> [
-    {#cv_data_path{whitelist = rand_sublist([
+caveats_examples(cv_data_path, AuthCtx) -> [
+    {#cv_data_path{whitelist = utils:random_sublist([
         ?RAND_PATH, ?RAND_PATH, ?RAND_PATH, ?RAND_PATH, ?RAND_PATH
-    ], 1, 5)}, success}
+    ], 1, 5)}, ?SUCCESS_IF_DATA_ACCESS_CAVEATS_ALLOWED(AuthCtx)}
 ];
 
-caveats_examples(cv_data_objectid, _AuthCtx) -> [
-    {#cv_data_objectid{whitelist = rand_sublist([
+caveats_examples(cv_data_objectid, AuthCtx) -> [
+    {#cv_data_objectid{whitelist = utils:random_sublist([
         ?RAND_STR, ?RAND_STR, ?RAND_STR, ?RAND_STR, ?RAND_STR
-    ], 1, 5)}, success}
+    ], 1, 5)}, ?SUCCESS_IF_DATA_ACCESS_CAVEATS_ALLOWED(AuthCtx)}
 ].
 
 %%%===================================================================
@@ -998,12 +1029,12 @@ caveats_examples(cv_data_objectid, _AuthCtx) -> [
 rand_regions_without(Excludes) ->
     List = ?ALL_REGIONS -- Excludes,
     % Return at least one region
-    rand_sublist(List, 1, length(List)).
+    utils:random_sublist(List, 1, length(List)).
 
 
 rand_ips_with(Includes) ->
     % RandIps can be empty as we are adding Includes anyway
-    RandIps = rand_sublist(?IP_EXAMPLES, 0, length(?IP_EXAMPLES)),
+    RandIps = utils:random_sublist(?IP_EXAMPLES, 0, length(?IP_EXAMPLES)),
     % make sure Includes are not duplicated
     (RandIps -- Includes) ++ Includes.
 
@@ -1011,24 +1042,19 @@ rand_ips_with(Includes) ->
 rand_ips_without(Excludes) ->
     List = ?IP_EXAMPLES -- Excludes,
     % Return at least one IP
-    rand_sublist(List, 1, length(List)).
+    utils:random_sublist(List, 1, length(List)).
 
 
 rand_audiences_without(Excludes) ->
     List = ?AUDIENCE_EXAMPLES -- Excludes,
     % Return at least one region
-    rand_sublist(List, 1, length(List)).
+    utils:random_sublist(List, 1, length(List)).
 
 
 rand_audiences_with(Includes) ->
     % RandIps can be empty as we are adding Includes anyway
-    RandIps = rand_sublist(?AUDIENCE_EXAMPLES, 0, length(?AUDIENCE_EXAMPLES)),
+    RandIps = utils:random_sublist(?AUDIENCE_EXAMPLES, 0, length(?AUDIENCE_EXAMPLES)),
     % make sure Includes are not duplicated
     (RandIps -- Includes) ++ Includes.
-
-
-rand_sublist(List, MinLength, MaxLength) ->
-    Shuffled = utils:random_shuffle(List),
-    lists:sublist(Shuffled, MinLength + rand:uniform(MaxLength - MinLength + 1) - 1).
 
 -endif.
