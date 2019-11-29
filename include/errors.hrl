@@ -149,6 +149,7 @@
 -define(ERROR_VIEW_NOT_EXISTS_ON(ProviderId), {error, {view_not_exists_on, ProviderId}}).
 -define(ERROR_TRANSFER_ALREADY_ENDED, {error, transfer_already_ended}).
 -define(ERROR_TRANSFER_NOT_ENDED, {error, transfer_not_ended}).
+-define(ERROR_STORAGE_IN_USE, {error, storage_in_use}).
 
 
 %%--------------------------------------------------------------------

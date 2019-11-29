@@ -80,7 +80,7 @@ already_exists | unauthorized | forbidden.
     ParId :: gri:entity_id()
 } | {space_not_supported_by, ProviderId :: binary()}
 | {view_not_exists_on, ProviderId :: binary()}
-| transfer_already_ended | transfer_not_ended.
+| transfer_already_ended | transfer_not_ended | storage_in_use.
 
 -type errno() :: ?OK | ?E2BIG | ?EACCES | ?EADDRINUSE | ?EADDRNOTAVAIL
 | ?EAFNOSUPPORT | ?EAGAIN | ?EALREADY | ?EBADF | ?EBADMSG | ?EBUSY
@@ -596,7 +596,7 @@ to_json(?ERROR_GUI_PACKAGE_UNVERIFIED) -> #{
 };
 to_json(?ERROR_INVALID_QOS_EXPRESSION) -> #{
     <<"id">> => <<"invalidQosExpression">>,
-    <<"description">> => <<"Invalid QoS expression">>
+    <<"description">> => <<"Invalid QoS expression.">>
 };
 
 %%--------------------------------------------------------------------
@@ -695,6 +695,10 @@ to_json(?ERROR_TRANSFER_ALREADY_ENDED) -> #{
 to_json(?ERROR_TRANSFER_NOT_ENDED) -> #{
     <<"id">> => <<"transferNotEnded">>,
     <<"description">> => <<"Specified transfer has not ended yet.">>
+};
+to_json(?ERROR_STORAGE_IN_USE) -> #{
+    <<"id">> => <<"storageInUse">>,
+    <<"description">> => <<"Specified storage is supporting a space.">>
 };
 
 %%--------------------------------------------------------------------
@@ -1029,6 +1033,8 @@ from_json(#{<<"id">> := <<"transferAlreadyEnded">>}) ->
 from_json(#{<<"id">> := <<"transferNotEnded">>}) ->
     ?ERROR_TRANSFER_NOT_ENDED;
 
+from_json(#{<<"id">> := <<"storageInUse">>}) ->
+    ?ERROR_STORAGE_IN_USE;
 %%--------------------------------------------------------------------
 %% Unknown / unexpected error
 %%--------------------------------------------------------------------
@@ -1155,6 +1161,7 @@ to_http_code(?ERROR_SPACE_NOT_SUPPORTED_BY(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_VIEW_NOT_EXISTS_ON(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_TRANSFER_ALREADY_ENDED) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_TRANSFER_NOT_ENDED) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_STORAGE_IN_USE) -> ?HTTP_400_BAD_REQUEST;
 
 %% -----------------------------------------------------------------------------
 %% Unknown / unexpected error
