@@ -825,7 +825,7 @@ to_json(?ERROR_LETS_ENCRYPT_NOT_SUPPORTED) -> #{
 };
 to_json(?ERROR_LETS_ENCRYPT_NOT_REACHABLE) -> #{
     <<"id">> => <<"letsEncryptNotReachable">>,
-    <<"description">> => <<"Connecting to Let's Encrypt server failed.">>
+    <<"description">> => <<"Connection to Let's Encrypt server failed.">>
 };
 to_json(?ERROR_LETS_ENCRYPT_RESPONSE(ProblemDocument, ErrorMessage)) -> #{
     <<"id">> => <<"letsEncryptResponse">>,

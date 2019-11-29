@@ -108,7 +108,7 @@ find(_, BadNested) ->
 %% Value existing in the given location is replaced.
 %% If any intermediate step encounters an invalid nested container
 %% an exception is raised.
-%% If intermediate containers are missing, they are creating, with
+%% If intermediate containers are missing, they are created, with
 %% the same type as their parent (map in a map, list in a list).
 %% @end
 %%--------------------------------------------------------------------
@@ -167,11 +167,11 @@ remove(Path, Nested) ->
 %% Returns error if the value was not found.
 %% @end
 %%--------------------------------------------------------------------
--spec rename(OldKeys :: path(K1), NewKeys :: path(K2), nested(K1, V)) ->
-    {ok, nested(K2, V)} | error.
-rename(OldKeys, NewKeys, Nested) ->
-    case find(OldKeys, Nested) of
-        {ok, Found} -> {ok, put(NewKeys, Found, remove(OldKeys, Nested))};
+-spec rename(OldPath :: path(K), NewPath :: path(K), nested(K, V)) ->
+    {ok, nested(K, V)} | error.
+rename(OldPath, NewPath, Nested) ->
+    case find(OldPath, Nested) of
+        {ok, Found} -> {ok, put(NewPath, Found, remove(OldPath, Nested))};
         error -> error
     end.
 

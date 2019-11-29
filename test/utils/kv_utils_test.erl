@@ -6,7 +6,7 @@
 %%% @end
 %%%--------------------------------------------------------------------
 %%% @doc
-%%% Unit tests for nested module.
+%%% Unit tests for kv_utils module.
 %%% @end
 %%%--------------------------------------------------------------------
 -module(kv_utils_test).
@@ -90,7 +90,7 @@ find_test_() -> [[
         ?_assertEqual(error, kv_utils:find([key2, missing], Container))}
 ] || Container <- ?ALL].
 
-get_find_test_() -> [[
+get_and_find_raise_badnested_test_() -> [[
     {"fail on bad container",
         ?_assertError({badnested, 'not-a-container'}, kv_utils:Fun(key, 'not-a-container'))},
     {"fail on bad subcontainer",
