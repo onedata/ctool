@@ -58,18 +58,18 @@ get_details(Auth, HandleId) ->
         Props = json_utils:decode_deprecated(ResponseBody),
         % Get default values of share_details record
         HandleDetails = #handle_details{
-            id = lists_utils:key_get(<<"handleId">>, Props),
-            handle_service = lists_utils:key_get(
+            id = proplists:get_value(<<"handleId">>, Props),
+            handle_service = proplists:get_value(
                 <<"handleServiceId">>, Props),
-            public_handle = lists_utils:key_get(
+            public_handle = proplists:get_value(
                 <<"handle">>, Props, undefined),
-            resource_type = lists_utils:key_get(
+            resource_type = proplists:get_value(
                 <<"resourceType">>, Props, undefined),
-            resource_id = lists_utils:key_get(
+            resource_id = proplists:get_value(
                 <<"resourceId">>, Props, undefined),
-            metadata = lists_utils:key_get(
+            metadata = proplists:get_value(
                 <<"metadata">>, Props, undefined),
-            timestamp = time_utils:datestamp_to_datetime(lists_utils:key_get(
+            timestamp = time_utils:datestamp_to_datetime(proplists:get_value(
                 <<"timestamp">>, Props, undefined))
         },
         {ok, HandleDetails}
@@ -90,10 +90,10 @@ get_public_details(Auth, HandleId) ->
         Props = json_utils:decode_deprecated(ResponseBody),
         % Get default values of share_details record
         HandleDetails = #handle_details{
-            id = lists_utils:key_get(<<"handleId">>, Props),
-            public_handle = lists_utils:key_get(
+            id = proplists:get_value(<<"handleId">>, Props),
+            public_handle = proplists:get_value(
                 <<"handle">>, Props, undefined),
-            metadata = lists_utils:key_get(
+            metadata = proplists:get_value(
                 <<"metadata">>, Props, undefined)
         },
         {ok, HandleDetails}

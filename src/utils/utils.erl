@@ -14,7 +14,7 @@
 %% API
 -export([ensure_running/1, pmap/2, pforeach/2,
     record_type/1, trim_spaces/1, ceil/1,
-    aggregate_over_first_element/1, average/1, random_shuffle/1, get_values/2,
+    aggregate_over_first_element/1, average/1, random_shuffle/1,
     random_element/1, random_sublist/1, random_sublist/3, get_host/1,
     get_host_as_atom/1, cmd/1, ensure_defined/3, process_info/1, process_info/2]).
 -export([undefined_to_null/1, null_to_undefined/1]).
@@ -177,18 +177,6 @@ average(List) ->
 -spec random_shuffle(List :: list(T)) -> NewList :: list(T).
 random_shuffle(List) ->
     [X || {_, X} <- lists:sort([{rand:uniform(), N} || N <- List])].
-
-%%--------------------------------------------------------------------
-%% @doc
-%% Returns a list of values associated with the keys. For a key that
-%% is missing in the property list an 'undefined' value is returned.
-%% @end
-%%--------------------------------------------------------------------
--spec get_values(Keys :: list(), List :: proplists:proplist()) -> Values :: list().
-get_values(Keys, List) ->
-    lists:map(fun(Key) ->
-        lists_utils:key_get(Key, List)
-    end, Keys).
 
 %%--------------------------------------------------------------------
 %% @doc

@@ -70,6 +70,8 @@ get(Path, Nested, Default) ->
         {ok, Found} -> Found;
         error -> Default
     end.
+
+
 %%--------------------------------------------------------------------
 %% @doc Returns value at a given path or 'error' if the value
 %% or any intermediary is missing.

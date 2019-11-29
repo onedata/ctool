@@ -21,7 +21,6 @@
 
 %% API
 -export([hd/1]).
--export([key_get/2, key_get/3, key_store/2, key_store/3]).
 -export([union/1, union/2, intersect/2, subtract/2, foldl_while/3]).
 -export([ensure_length/2]).
 
@@ -38,51 +37,6 @@
 -spec hd([]) -> undefined; ([T, ...]) -> T.
 hd([]) -> undefined;
 hd([Head | _]) -> Head.
-
-
-%%--------------------------------------------------------------------
-%% @doc @equiv key_get(Key, KvList, undefined)
-%% @end
-%%--------------------------------------------------------------------
--spec key_get(Key, KvList :: kvlist(Key, Value)) -> Value.
-key_get(Key, KvList) ->
-    key_get(Key, KvList, undefined).
-
-
-%%--------------------------------------------------------------------
-%% @doc Returns value associated with provided key form key-value list.
-%% If provided key is missing returns default value.
-%% @end
-%%--------------------------------------------------------------------
--spec key_get(Key, KvList :: kvlist(Key, Value), Default) -> Value | Default.
-key_get(Key, KvList, Default) ->
-    case lists:keyfind(Key, 1, KvList) of
-        {Key, Value} -> Value;
-        false -> Default
-    end.
-
-
-%%--------------------------------------------------------------------
-%% @doc Merge key-value list KVListSrc with KvListDst. If key from KvListSrc
-%% already exists in KvListDst it will be overwritten.
-%% @end
-%%--------------------------------------------------------------------
--spec key_store(KVListSrc :: kvlist(K1, V1), KvListDst :: kvlist(K2, V2)) ->
-    KvList :: kvlist(K1 | K2, V1 | V2).
-key_store(KVListSrc, KvListDst) ->
-    lists:foldl(fun({Key, Value}, KvList) ->
-        key_store(Key, Value, KvList)
-    end, KvListDst, KVListSrc).
-
-
-%%--------------------------------------------------------------------
-%% @doc Stores {Key, Value} pair in the provided key-value KvList.
-%% If Key already exists in the KvList it will be overwritten.
-%% @end
-%%--------------------------------------------------------------------
--spec key_store(Key, Value, KvList :: kvlist(Key, Value)) -> kvlist(Key, Value).
-key_store(Key, Value, KvList) ->
-    lists:keystore(Key, 1, KvList, {Key, Value}).
 
 
 %%--------------------------------------------------------------------

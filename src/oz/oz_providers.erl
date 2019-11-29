@@ -107,11 +107,11 @@ get_details(Auth) ->
             oz_endpoint:request(Auth, URN, get),
         Proplist = json_utils:decode_deprecated(ResponseBody),
         ProviderDetails = #provider_details{
-            id = lists_utils:key_get(<<"providerId">>, Proplist),
-            name = lists_utils:key_get(<<"name">>, Proplist),
-            domain = lists_utils:key_get(<<"domain">>, Proplist),
-            latitude = lists_utils:key_get(<<"latitude">>, Proplist, 0.0),
-            longitude = lists_utils:key_get(<<"longitude">>, Proplist, 0.0)
+            id = proplists:get_value(<<"providerId">>, Proplist),
+            name = proplists:get_value(<<"name">>, Proplist),
+            domain = proplists:get_value(<<"domain">>, Proplist),
+            latitude = proplists:get_value(<<"latitude">>, Proplist, 0.0),
+            longitude = proplists:get_value(<<"longitude">>, Proplist, 0.0)
         },
         {ok, ProviderDetails}
     end).
@@ -129,11 +129,11 @@ get_details(Auth, ProviderId) ->
             oz_endpoint:request(Auth, URN, get),
         Proplist = json_utils:decode_deprecated(ResponseBody),
         ProviderDetails = #provider_details{
-            id = lists_utils:key_get(<<"providerId">>, Proplist),
-            name = lists_utils:key_get(<<"name">>, Proplist),
-            domain = lists_utils:key_get(<<"domain">>, Proplist),
-            latitude = lists_utils:key_get(<<"latitude">>, Proplist, 0.0),
-            longitude = lists_utils:key_get(<<"longitude">>, Proplist, 0.0)
+            id = proplists:get_value(<<"providerId">>, Proplist),
+            name = proplists:get_value(<<"name">>, Proplist),
+            domain = proplists:get_value(<<"domain">>, Proplist),
+            latitude = proplists:get_value(<<"latitude">>, Proplist, 0.0),
+            longitude = proplists:get_value(<<"longitude">>, Proplist, 0.0)
         },
         {ok, ProviderDetails}
     end).
@@ -206,7 +206,7 @@ check_port(Auth, IpAddress, Port, Type) ->
         {ok, 200, _ResponseHeaders, ResponseBody} =
             oz_endpoint:request(Auth, URN, post, Body, [{endpoint, rest_no_auth}]),
         Proplist = json_utils:decode_deprecated(ResponseBody),
-        <<"ok">> = lists_utils:key_get(CheckURL, Proplist),
+        <<"ok">> = proplists:get_value(CheckURL, Proplist),
         ok
     end).
 
@@ -276,7 +276,7 @@ get_spaces(Auth) ->
         {ok, 200, _ResponseHeaders, ResponseBody} =
             oz_endpoint:request(Auth, URN, get),
         Proplist = json_utils:decode_deprecated(ResponseBody),
-        SpaceIds = lists_utils:key_get(<<"spaces">>, Proplist),
+        SpaceIds = proplists:get_value(<<"spaces">>, Proplist),
         {ok, SpaceIds}
     end).
 
@@ -293,9 +293,9 @@ get_space_details(Auth, SpaceId) ->
             oz_endpoint:request(Auth, URN, get),
         Proplist = json_utils:decode_deprecated(ResponseBody),
         SpaceDetails = #space_details{
-            id = lists_utils:key_get(<<"spaceId">>, Proplist),
-            name = lists_utils:key_get(<<"name">>, Proplist),
-            providers_supports = lists_utils:key_get(
+            id = proplists:get_value(<<"spaceId">>, Proplist),
+            name = proplists:get_value(<<"name">>, Proplist),
+            providers_supports = proplists:get_value(
                 <<"providers">>, Proplist)
         },
         {ok, SpaceDetails}

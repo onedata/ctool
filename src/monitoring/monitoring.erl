@@ -120,7 +120,7 @@ get_node_state(MonitoringState) ->
 %%--------------------------------------------------------------------
 -spec cpu_usage(MonitoringState :: #node_monitoring_state{}) -> float().
 cpu_usage(#node_monitoring_state{cpu_stats = CPUStats}) ->
-    _CPUUsage = lists_utils:key_get(<<"cpu">>, CPUStats, 0.0).
+    _CPUUsage = proplists:get_value(<<"cpu">>, CPUStats, 0.0).
 
 
 %%--------------------------------------------------------------------
@@ -131,7 +131,7 @@ cpu_usage(#node_monitoring_state{cpu_stats = CPUStats}) ->
 %%--------------------------------------------------------------------
 -spec mem_usage(MonitoringState :: #node_monitoring_state{}) -> float().
 mem_usage(#node_monitoring_state{mem_stats = MemStats}) ->
-    _MemUsage = lists_utils:key_get(<<"mem">>, MemStats, 0.0).
+    _MemUsage = proplists:get_value(<<"mem">>, MemStats, 0.0).
 
 
 %%--------------------------------------------------------------------

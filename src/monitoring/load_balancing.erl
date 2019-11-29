@@ -89,7 +89,7 @@ advices_for_dispatchers(NodeStates, LBState, Singletons) ->
     LoadsForDisp = lists:map(
         fun(NodeState) ->
             L = load_for_dispatcher(NodeState),
-            ExtraLoad = lists_utils:key_get(NodeState#node_state.node, ExtraLoads, 0.0),
+            ExtraLoad = proplists:get_value(NodeState#node_state.node, ExtraLoads, 0.0),
             L * (1.0 - ExtraLoad)
         end, NodeStates),
     AvgLoadForDisp = utils:average(LoadsForDisp),
@@ -155,7 +155,7 @@ advices_for_dispatchers(NodeStates, LBState, Singletons) ->
                                 NodeTo ->
                                     Acc;
                                 _ ->
-                                    Current = lists_utils:key_get(NodeTo, Acc, 0.0),
+                                    Current = proplists:get_value(NodeTo, Acc, 0.0),
                                     [{NodeTo, Current + Freq} | proplists:delete(NodeTo, Acc)]
                             end
                         end, ExtraLoadsAcc, NodesAndFreq)
@@ -178,7 +178,7 @@ advices_for_dispatchers(NodeStates, LBState, Singletons) ->
 choose_node_for_dispatcher(Advice, WorkerName) ->
     #dispatcher_lb_advice{should_delegate = ShouldDelegate,
         nodes_and_frequency = NodesAndFreq, singleton_modules = SM} = Advice,
-    case {lists_utils:key_get(WorkerName, SM), ShouldDelegate} of
+    case {proplists:get_value(WorkerName, SM), ShouldDelegate} of
         {undefined, false} ->
             node();
         {undefined, true} ->
@@ -198,7 +198,7 @@ choose_node_for_dispatcher(Advice, WorkerName) ->
 %%--------------------------------------------------------------------
 -spec all_nodes_for_dispatcher(Advice :: #dispatcher_lb_advice{}, WorkerName :: atom()) -> [node()].
 all_nodes_for_dispatcher(#dispatcher_lb_advice{all_nodes = AllNodes, singleton_modules = SM}, WorkerName) ->
-    case lists_utils:key_get(WorkerName, SM) of
+    case proplists:get_value(WorkerName, SM) of
         undefined ->
             AllNodes;
         DedicatedNode ->
