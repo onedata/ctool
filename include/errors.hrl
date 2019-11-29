@@ -26,6 +26,7 @@
 -define(ERROR_INTERNAL_SERVER_ERROR, {error, internal_server_error}).
 -define(ERROR_NOT_IMPLEMENTED, {error, not_implemented}).
 -define(ERROR_NOT_SUPPORTED, {error, not_supported}).
+-define(ERROR_SERVICE_UNAVAILABLE, {error, service_unavailable}).
 -define(ERROR_TIMEOUT, {error, timeout}).
 -define(ERROR_TEMPORARY_FAILURE, {error, temporary_failure}).
 -define(ERROR_UNAUTHORIZED, {error, unauthorized}).

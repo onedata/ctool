@@ -25,8 +25,9 @@
 -type general() :: {bad_message, json_utils:json_term()} | no_connection_to_oz
 | no_connection_to_peer_provider | no_connection_to_cluster_node
 | unregistered_provider | internal_server_error | not_implemented
-| not_supported | timeout | temporary_failure | not_found |
-already_exists | unauthorized | forbidden.
+| not_supported | service_unavailable |  timeout | temporary_failure
+| unauthorized | forbidden | not_found | already_exists
+| {file_access, Path :: file:name_all(), Errno :: errno()}.
 
 -type auth() :: bad_basic_credentials | {bad_idp_access_token, IdP :: atom()}
 | bad_token | bad_audience_token | token_invalid | token_revoked
@@ -37,8 +38,7 @@ already_exists | unauthorized | forbidden.
 | token_subject_invalid | {token_audience_forbidden, aai:audience()}
 | invite_token_creator_not_authorized | invite_token_usage_limit_exceeded
 | {invite_token_consumer_invalid, aai:audience()}
-| {invite_token_target_id_invalid, Id :: binary()} | token_session_invalid
-| {file_access, Path :: file:name_all(), Errno :: errno()}.
+| {invite_token_target_id_invalid, Id :: binary()} | token_session_invalid.
 
 -type graph_sync() :: expected_handshake_message | handshake_already_done
 | {bad_version, {supported, [Version :: integer()]}} | bad_gri
@@ -183,6 +183,9 @@ to_json(?ERROR_NOT_SUPPORTED) -> #{
     <<"id">> => <<"notSupported">>,
     <<"description">> => <<"This operation is not supported.">>
 };
+to_json(?ERROR_SERVICE_UNAVAILABLE) -> #{
+    <<"id">> => <<"serviceUnavailable">>,
+    <<"description">> => <<"Service required for this operation is offline.">>};
 to_json(?ERROR_TIMEOUT) -> #{
     <<"id">> => <<"timeout">>,
     <<"description">> => <<"Operation timed out.">>
@@ -896,6 +899,9 @@ from_json(#{<<"id">> := <<"notImplemented">>}) ->
 from_json(#{<<"id">> := <<"notSupported">>}) ->
     ?ERROR_NOT_SUPPORTED;
 
+from_json(#{<<"id">> := <<"serviceUnavailable">>}) ->
+    ?ERROR_SERVICE_UNAVAILABLE;
+
 from_json(#{<<"id">> := <<"timeout">>}) ->
     ?ERROR_TIMEOUT;
 
@@ -1264,6 +1270,7 @@ to_http_code(?ERROR_UNREGISTERED_ONEPROVIDER) -> ?HTTP_503_SERVICE_UNAVAILABLE;
 to_http_code(?ERROR_INTERNAL_SERVER_ERROR) -> ?HTTP_500_INTERNAL_SERVER_ERROR;
 to_http_code(?ERROR_NOT_IMPLEMENTED) -> ?HTTP_501_NOT_IMPLEMENTED;
 to_http_code(?ERROR_NOT_SUPPORTED) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_SERVICE_UNAVAILABLE) -> ?HTTP_503_SERVICE_UNAVAILABLE;
 to_http_code(?ERROR_TIMEOUT) -> ?HTTP_503_SERVICE_UNAVAILABLE;
 to_http_code(?ERROR_TEMPORARY_FAILURE) -> ?HTTP_503_SERVICE_UNAVAILABLE;
 to_http_code(?ERROR_UNAUTHORIZED) -> ?HTTP_401_UNAUTHORIZED;
