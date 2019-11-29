@@ -69,8 +69,9 @@ fi
     printf 'to_json(?%s%s) -> #{\n    <<"id">> => <<"%s">>,\n' \
         "$MACRO_NAME" "$ARGS" "$ID"
 
+    printf '    <<"description">> => <<"@FIXME">>'
     if [ -n "$DETAILS" ]; then
-        printf '    <<"details">> => #{\n'
+        printf ',\n    <<"details">> => #{\n'
         HAS_PREVIOUS=false
         for detail in $DETAILS; do
             if [ $HAS_PREVIOUS = true ]; then
@@ -79,9 +80,8 @@ fi
             printf '%8s<<"%s">> => %s' '' "$(first_to_lower "${detail}")" "${detail}"
             HAS_PREVIOUS=true
         done
-        printf '\n    },\n'
+        printf '\n    }\n'
     fi
-    printf '    <<"description">> => <<"@FIXME">>\n'
     printf '};\n'
 
     # add from_json clause

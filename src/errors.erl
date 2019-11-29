@@ -767,8 +767,8 @@ to_json(?ERROR_DNS_SERVERS_UNREACHABLE(UsedServers)) ->
 %%--------------------------------------------------------------------
 to_json(?ERROR_STORAGE_TEST_FAILED(Operation)) -> #{
     <<"id">> => <<"storageTestFailed">>,
-    <<"description">> => ?FMT("Failed to ~ts test file on storage.", [Operation]),
-    <<"details">> => #{<<"operation">> => str_utils:to_binary(Operation)}
+    <<"details">> => #{<<"operation">> => str_utils:to_binary(Operation)},
+    <<"description">> => ?FMT("Failed to ~ts test file on storage.", [Operation])
 };
 
 %%--------------------------------------------------------------------
@@ -787,37 +787,37 @@ to_json(?ERROR_ON_NODES(Error, Hostnames)) ->
     };
 to_json(?ERROR_NO_CONNECTION_TO_NEW_NODE(Hostname)) -> #{
     <<"id">> => <<"noConnectionToNewNode">>,
-    <<"description">> => ?FMT("Cannot add node \"~ts\", connection failed.", [Hostname]),
-    <<"details">> => #{<<"hostname">> => Hostname}
+    <<"details">> => #{<<"hostname">> => Hostname},
+    <<"description">> => ?FMT("Cannot add node \"~ts\", connection failed.", [Hostname])
 };
 to_json(?ERROR_NODE_NOT_COMPATIBLE(Hostname, NodeClusterType)) when
     NodeClusterType == ?ONEPROVIDER orelse NodeClusterType == ?ONEZONE -> #{
     <<"id">> => <<"nodeNotCompatible">>,
-    <<"description">> => ?FMT("Cannot add \"~ts\", it is a ~ts node.",
-        [Hostname, NodeClusterType]),
     <<"details">> => #{
-        <<"hostname">> => Hostname, <<"clusterType">> => NodeClusterType}
+        <<"hostname">> => Hostname, <<"clusterType">> => NodeClusterType},
+    <<"description">> => ?FMT("Cannot add \"~ts\", it is a ~ts node.",
+        [Hostname, NodeClusterType])
 };
 to_json(?ERROR_NODE_ALREADY_IN_CLUSTER(Hostname)) -> #{
     <<"id">> => <<"nodeAlreadyInCluster">>,
-    <<"description">> => ?FMT("Cannot add \"~ts\", it is already part of a cluster.", [Hostname]),
-    <<"details">> => #{<<"hostname">> => Hostname}
+    <<"details">> => #{<<"hostname">> => Hostname},
+    <<"description">> => ?FMT("Cannot add \"~ts\", it is already part of a cluster.", [Hostname])
 };
 to_json(?ERROR_FILE_ALLOCATION(ActualSize, TargetSize)) -> #{
     <<"id">> => <<"fileAllocation">>,
+    <<"description">> => ?FMT("File allocation error. Allocated ~s out of ~s.",
+        [str_utils:format_byte_size(ActualSize), str_utils:format_byte_size(TargetSize)]),
     <<"details">> => #{
         <<"actualSize">> => ActualSize,
         <<"targetSize">> => TargetSize
-    },
-    <<"description">> => ?FMT("File allocation error. Allocated ~s out of ~s.",
-        [str_utils:format_byte_size(ActualSize), str_utils:format_byte_size(TargetSize)])
+    }
 };
 to_json(?ERROR_NO_SERVICE_NODES(Service)) -> #{
     <<"id">> => <<"noServiceNodes">>,
+    <<"description">> => ?FMT("Service ~s is not deployed on any node.", [Service]),
     <<"details">> => #{
         <<"service">> => Service
-    },
-    <<"description">> => ?FMT("Service ~s is not deployed on any node.", [Service])
+    }
 };
 to_json(?ERROR_LETS_ENCRYPT_NOT_SUPPORTED) -> #{
     <<"id">> => <<"letsEncryptNotSupported">>,
@@ -829,11 +829,11 @@ to_json(?ERROR_LETS_ENCRYPT_NOT_REACHABLE) -> #{
 };
 to_json(?ERROR_LETS_ENCRYPT_RESPONSE(ProblemDocument, ErrorMessage)) -> #{
     <<"id">> => <<"letsEncryptResponse">>,
+    <<"description">> => ?FMT("Bad Let's Encrypt response: ~ts.", [ErrorMessage]),
     <<"details">> => #{
         <<"problemDocument">> => utils:undefined_to_null(ProblemDocument),
         <<"errorMessage">> => ErrorMessage
-    },
-    <<"description">> => ?FMT("Bad Let's Encrypt response: ~ts.", [ErrorMessage])
+    }
 };
 
 %%--------------------------------------------------------------------
