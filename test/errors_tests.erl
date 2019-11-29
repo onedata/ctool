@@ -172,7 +172,7 @@ testcases() -> [
     ?ERROR_INVALID_QOS_EXPRESSION,
 
     %% -----------------------------------------------------------------------------
-    %% State errors
+    %% oz_worker errors
     %% -----------------------------------------------------------------------------
     ?ERROR_BASIC_AUTH_NOT_SUPPORTED,
     ?ERROR_BASIC_AUTH_DISABLED,
@@ -183,42 +183,42 @@ testcases() -> [
     ?ERROR_CANNOT_ADD_RELATION_TO_SELF,
     ?ERROR_RELATION_DOES_NOT_EXIST(od_user, <<"user1">>, od_space, <<"space1">>),
     ?ERROR_RELATION_ALREADY_EXISTS(od_user, <<"user1">>, od_space, <<"space1">>),
-    ?ERROR_SPACE_NOT_SUPPORTED_BY(<<"providerId">>),
-    ?ERROR_VIEW_NOT_EXISTS_ON(<<"providerId">>),
-    ?ERROR_TRANSFER_ALREADY_ENDED,
-    ?ERROR_TRANSFER_NOT_ENDED,
-    ?ERROR_STORAGE_IN_USE,
-    ?ERROR_FILE_POPULARITY_DISABLED,
-    ?ERROR_AUTO_CLEANING_DISABLED,
-    ?ERROR_OPERATION_IN_PROGRESS,
-    ?ERROR_DNS_SERVERS_UNREACHABLE([default, {1,2,3,4}]),
-    {different, ?ERROR_DNS_SERVERS_UNREACHABLE([<<"1.1.1.1">>, <<"8.8.8.8">>]),
-        ?ERROR_DNS_SERVERS_UNREACHABLE([{1,1,1,1}, {8,8,8,8}])},
 
     %%--------------------------------------------------------------------
     %% op_worker errors
     %%--------------------------------------------------------------------
+    ?ERROR_AUTO_CLEANING_DISABLED,
+    ?ERROR_FILE_POPULARITY_DISABLED,
+    ?ERROR_OPERATION_IN_PROGRESS,
+    ?ERROR_SPACE_NOT_SUPPORTED_BY(<<"providerId">>),
+    ?ERROR_STORAGE_IN_USE,
     ?ERROR_STORAGE_TEST_FAILED(read),
     ?ERROR_STORAGE_TEST_FAILED(write),
     ?ERROR_STORAGE_TEST_FAILED(remove),
+    ?ERROR_TRANSFER_ALREADY_ENDED,
+    ?ERROR_TRANSFER_NOT_ENDED,
+    ?ERROR_VIEW_NOT_EXISTS_ON(<<"providerId">>),
+    {different, ?ERROR_DNS_SERVERS_UNREACHABLE([<<"1.1.1.1">>, <<"8.8.8.8">>]),
+        ?ERROR_DNS_SERVERS_UNREACHABLE([{1,1,1,1}, {8,8,8,8}])},
 
     %%--------------------------------------------------------------------
     %% onepanel errors
     %%--------------------------------------------------------------------
     ?ERROR_ON_NODES(?ERROR_FILE_ACCESS(<<"/path">>, ?EACCES), [<<"node1.example.com">>]),
-    ?ERROR_NO_CONNECTION_TO_NEW_NODE(<<"onepanel@example.com">>),
-    ?ERROR_NODE_NOT_COMPATIBLE(<<"onepanel@example.com">>, ?ONEPROVIDER),
-    ?ERROR_NODE_NOT_COMPATIBLE(<<"onepanel@example.com">>, ?ONEZONE),
-    ?ERROR_NODE_ALREADY_IN_CLUSTER(<<"onepanel@example.com">>),
+    ?ERROR_DNS_SERVERS_UNREACHABLE([default, {1,2,3,4}]),
     ?ERROR_FILE_ALLOCATION(1000, 2000),
-    {different, ?ERROR_NO_SERVICE_NODES(op_worker), ?ERROR_NO_SERVICE_NODES(<<"op_worker">>)},
-    ?ERROR_LETS_ENCRYPT_NOT_SUPPORTED,
     ?ERROR_LETS_ENCRYPT_NOT_REACHABLE,
+    ?ERROR_LETS_ENCRYPT_NOT_SUPPORTED,
     ?ERROR_LETS_ENCRYPT_RESPONSE(undefined, <<"Bad Let's Encrypt response">>),
     ?ERROR_LETS_ENCRYPT_RESPONSE(
         #{<<"type">> => <<"urn:ietf:params:acme:error:rateLimited">>,
             <<"status">> => 429, <<"detail">> => <<"Error creating new order">>},
         <<"Error creating new order">>),
+    ?ERROR_NODE_ALREADY_IN_CLUSTER(<<"onepanel@example.com">>),
+    ?ERROR_NODE_NOT_COMPATIBLE(<<"onepanel@example.com">>, ?ONEPROVIDER),
+    ?ERROR_NODE_NOT_COMPATIBLE(<<"onepanel@example.com">>, ?ONEZONE),
+    ?ERROR_NO_CONNECTION_TO_NEW_NODE(<<"onepanel@example.com">>),
+    {different, ?ERROR_NO_SERVICE_NODES(op_worker), ?ERROR_NO_SERVICE_NODES(<<"op_worker">>)},
 
     %% -----------------------------------------------------------------------------
     %% Unknown error

@@ -67,7 +67,7 @@ already_exists | unauthorized | forbidden.
 | {bad_value_caveat, CaveatJson :: as_json()} | bad_gui_package
 | gui_package_too_large | gui_package_unverified | invalid_qos_expression.
 
--type state() :: basic_auth_not_supported | basic_auth_disabled
+-type oz_worker() :: basic_auth_not_supported | basic_auth_disabled
 | subdomain_delegation_not_supported | subdomain_delegation_disabled
 | protected_group | {cannot_delete_entity, gri:entity_type(), gri:entity_id()}
 | cannot_add_relation_to_self
@@ -81,22 +81,25 @@ already_exists | unauthorized | forbidden.
     ChId :: gri:entity_id(),
     ParType :: gri:entity_type(),
     ParId :: gri:entity_id()
-} | {space_not_supported_by, ProviderId :: binary()}
-| {view_not_exists_on, ProviderId :: binary()}
-| transfer_already_ended | transfer_not_ended | storage_in_use
-| file_popularity_disabled | auto_cleaning_disabled
-| operation_in_progress | {dns_servers_unreachable, [ip_utils:ip() | default]}.
+}.
 
--type op_worker() :: {storage_test_failed, read | write | remove}.
+-type op_worker() :: auto_cleaning_disabled
+| file_popularity_disabled | operation_in_progress
+| {space_not_supported_by, ProviderId :: binary()}
+| storage_in_use
+| transfer_already_ended | transfer_not_ended
+| {storage_test_failed, read | write | remove}
+| {view_not_exists_on, ProviderId :: binary()}.
 
 -type onepanel() :: {error_on_nodes, error(), Hostnames :: [binary()]}
-| {no_connection_to_node, Hostname :: binary()}
-| {node_not_compatible, Hostname :: binary(), onedata:cluster_type()}
-| {node_already_in_cluster, Hostname :: binary()}
+| {dns_servers_unreachable, [ip_utils:ip() | default]}
 | {file_allocation, ActualSize :: number(), TargetSize :: number()}
-| {no_service_nodes, Service :: atom() | binary()}
 | lets_encrypt_not_supported | lets_encrypt_not_reachable
-| {lets_encrypt_response, problem_document() | undefined, binary()}.
+| {lets_encrypt_response, problem_document() | undefined, binary()}
+| {node_already_in_cluster, Hostname :: binary()}
+| {node_not_compatible, Hostname :: binary(), onedata:cluster_type()}
+| {no_connection_to_new_node, Hostname :: binary()}
+| {no_service_nodes, Service :: atom() | binary()}.
 
 -type errno() :: ?OK | ?E2BIG | ?EACCES | ?EADDRINUSE | ?EADDRNOTAVAIL
 | ?EAFNOSUPPORT | ?EAGAIN | ?EALREADY | ?EBADF | ?EBADMSG | ?EBUSY
@@ -122,7 +125,7 @@ already_exists | unauthorized | forbidden.
 -type unknown() :: {unknown_error, as_json()}.
 
 -type reason() :: general() | auth() | graph_sync() | data_validation()
-| state() | posix() | op_worker() | onepanel() | unexpected() | unknown().
+| oz_worker() | posix() | op_worker() | onepanel() | unexpected() | unknown().
 -type error() :: {error, reason()}.
 
 -type as_json() :: json_utils:json_map().
@@ -636,7 +639,7 @@ to_json(?ERROR_INVALID_QOS_EXPRESSION) -> #{
 };
 
 %%--------------------------------------------------------------------
-%% State errors
+%% oz_worker error
 %%--------------------------------------------------------------------
 to_json(?ERROR_BASIC_AUTH_NOT_SUPPORTED) -> #{
     <<"id">> => <<"basicAuthNotSupported">>,
@@ -710,6 +713,22 @@ to_json(?ERROR_RELATION_ALREADY_EXISTS(ChType, ChId, ParType, ParId)) ->
             gri:serialize_type(ParType), ParId
         ])
     };
+
+%%--------------------------------------------------------------------
+%% op_worker errors
+%%--------------------------------------------------------------------
+to_json(?ERROR_AUTO_CLEANING_DISABLED) -> #{
+    <<"id">> => <<"autoCleaningDisabled">>,
+    <<"description">> => <<"Auto-cleaning is disabled.">>
+};
+to_json(?ERROR_FILE_POPULARITY_DISABLED) -> #{
+    <<"id">> => <<"filePopularityDisabled">>,
+    <<"description">> => <<"File popularity is disabled.">>
+};
+to_json(?ERROR_OPERATION_IN_PROGRESS) -> #{
+    <<"id">> => <<"operationInProgress">>,
+    <<"description">> => <<"Running operation prevents this action.">>
+};
 to_json(?ERROR_SPACE_NOT_SUPPORTED_BY(ProviderId)) -> #{
     <<"id">> => <<"spaceNotSupportedBy">>,
     <<"details">> => #{
@@ -717,12 +736,14 @@ to_json(?ERROR_SPACE_NOT_SUPPORTED_BY(ProviderId)) -> #{
     },
     <<"description">> => ?FMT("Specified space is not supported by provider ~s.", [ProviderId])
 };
-to_json(?ERROR_VIEW_NOT_EXISTS_ON(ProviderId)) -> #{
-    <<"id">> => <<"viewNotExistsOn">>,
-    <<"details">> => #{
-        <<"providerId">> => ProviderId
-    },
-    <<"description">> => ?FMT("Specified view does not exist on provider ~s.", [ProviderId])
+to_json(?ERROR_STORAGE_IN_USE) -> #{
+    <<"id">> => <<"storageInUse">>,
+    <<"description">> => <<"Specified storage supports a space.">>
+};
+to_json(?ERROR_STORAGE_TEST_FAILED(Operation)) -> #{
+    <<"id">> => <<"storageTestFailed">>,
+    <<"details">> => #{<<"operation">> => str_utils:to_binary(Operation)},
+    <<"description">> => ?FMT("Failed to ~ts test file on storage.", [Operation])
 };
 to_json(?ERROR_TRANSFER_ALREADY_ENDED) -> #{
     <<"id">> => <<"transferAlreadyEnded">>,
@@ -732,43 +753,12 @@ to_json(?ERROR_TRANSFER_NOT_ENDED) -> #{
     <<"id">> => <<"transferNotEnded">>,
     <<"description">> => <<"Specified transfer has not ended yet.">>
 };
-to_json(?ERROR_STORAGE_IN_USE) -> #{
-    <<"id">> => <<"storageInUse">>,
-    <<"description">> => <<"Specified storage supports a space.">>
-};
-to_json(?ERROR_FILE_POPULARITY_DISABLED) -> #{
-    <<"id">> => <<"filePopularityDisabled">>,
-    <<"description">> => <<"File popularity is disabled.">>
-};
-to_json(?ERROR_AUTO_CLEANING_DISABLED) -> #{
-    <<"id">> => <<"autoCleaningDisabled">>,
-    <<"description">> => <<"Auto-cleaning is disabled.">>
-};
-to_json(?ERROR_OPERATION_IN_PROGRESS) -> #{
-    <<"id">> => <<"operationInProgress">>,
-    <<"description">> => <<"Running operation prevents this action.">>
-};
-to_json(?ERROR_DNS_SERVERS_UNREACHABLE(UsedServers)) ->
-    Servers = lists:map(fun
-        (default) -> ?DNS_DEFAULTS;
-        (IP) -> element(2, {ok, _} = ip_utils:to_binary(IP))
-    end, UsedServers),
-    #{
-        <<"id">> => <<"dnsServersUnreachable">>,
-        <<"details">> => #{
-            <<"servers">> => Servers
-        },
-        <<"description">> => ?FMT("Error fetching DNS records. Used servers: ~ts.",
-            [join_values_with_commas(Servers)])
-    };
-
-%%--------------------------------------------------------------------
-%% op_worker errors
-%%--------------------------------------------------------------------
-to_json(?ERROR_STORAGE_TEST_FAILED(Operation)) -> #{
-    <<"id">> => <<"storageTestFailed">>,
-    <<"details">> => #{<<"operation">> => str_utils:to_binary(Operation)},
-    <<"description">> => ?FMT("Failed to ~ts test file on storage.", [Operation])
+to_json(?ERROR_VIEW_NOT_EXISTS_ON(ProviderId)) -> #{
+    <<"id">> => <<"viewNotExistsOn">>,
+    <<"details">> => #{
+        <<"providerId">> => ProviderId
+    },
+    <<"description">> => ?FMT("Specified view does not exist on provider ~s.", [ProviderId])
 };
 
 %%--------------------------------------------------------------------
@@ -785,24 +775,19 @@ to_json(?ERROR_ON_NODES(Error, Hostnames)) ->
         <<"description">> => ?FMT("Error on nodes ~ts: ~ts",
             [join_values_with_commas(Hostnames), Description])
     };
-to_json(?ERROR_NO_CONNECTION_TO_NEW_NODE(Hostname)) -> #{
-    <<"id">> => <<"noConnectionToNewNode">>,
-    <<"details">> => #{<<"hostname">> => Hostname},
-    <<"description">> => ?FMT("Cannot add node \"~ts\", connection failed.", [Hostname])
-};
-to_json(?ERROR_NODE_NOT_COMPATIBLE(Hostname, NodeClusterType)) when
-    NodeClusterType == ?ONEPROVIDER orelse NodeClusterType == ?ONEZONE -> #{
-    <<"id">> => <<"nodeNotCompatible">>,
-    <<"details">> => #{
-        <<"hostname">> => Hostname, <<"clusterType">> => NodeClusterType},
-    <<"description">> => ?FMT("Cannot add \"~ts\", it is a ~ts node.",
-        [Hostname, NodeClusterType])
-};
-to_json(?ERROR_NODE_ALREADY_IN_CLUSTER(Hostname)) -> #{
-    <<"id">> => <<"nodeAlreadyInCluster">>,
-    <<"details">> => #{<<"hostname">> => Hostname},
-    <<"description">> => ?FMT("Cannot add \"~ts\", it is already part of a cluster.", [Hostname])
-};
+to_json(?ERROR_DNS_SERVERS_UNREACHABLE(UsedServers)) ->
+    Servers = lists:map(fun
+        (default) -> ?DNS_DEFAULTS;
+        (IP) -> element(2, {ok, _} = ip_utils:to_binary(IP))
+    end, UsedServers),
+    #{
+        <<"id">> => <<"dnsServersUnreachable">>,
+        <<"details">> => #{
+            <<"servers">> => Servers
+        },
+        <<"description">> => ?FMT("Error fetching DNS records. Used servers: ~ts.",
+            [join_values_with_commas(Servers)])
+    };
 to_json(?ERROR_FILE_ALLOCATION(ActualSize, TargetSize)) -> #{
     <<"id">> => <<"fileAllocation">>,
     <<"description">> => ?FMT("File allocation error. Allocated ~s out of ~s.",
@@ -812,20 +797,13 @@ to_json(?ERROR_FILE_ALLOCATION(ActualSize, TargetSize)) -> #{
         <<"targetSize">> => TargetSize
     }
 };
-to_json(?ERROR_NO_SERVICE_NODES(Service)) -> #{
-    <<"id">> => <<"noServiceNodes">>,
-    <<"description">> => ?FMT("Service ~s is not deployed on any node.", [Service]),
-    <<"details">> => #{
-        <<"service">> => Service
-    }
+to_json(?ERROR_LETS_ENCRYPT_NOT_REACHABLE) -> #{
+    <<"id">> => <<"letsEncryptNotReachable">>,
+    <<"description">> => <<"Connection to Let's Encrypt server failed.">>
 };
 to_json(?ERROR_LETS_ENCRYPT_NOT_SUPPORTED) -> #{
     <<"id">> => <<"letsEncryptNotSupported">>,
     <<"description">> => <<"No supported method of authorization in Let's Encrypt is currently available.">>
-};
-to_json(?ERROR_LETS_ENCRYPT_NOT_REACHABLE) -> #{
-    <<"id">> => <<"letsEncryptNotReachable">>,
-    <<"description">> => <<"Connection to Let's Encrypt server failed.">>
 };
 to_json(?ERROR_LETS_ENCRYPT_RESPONSE(ProblemDocument, ErrorMessage)) -> #{
     <<"id">> => <<"letsEncryptResponse">>,
@@ -833,6 +811,31 @@ to_json(?ERROR_LETS_ENCRYPT_RESPONSE(ProblemDocument, ErrorMessage)) -> #{
     <<"details">> => #{
         <<"problemDocument">> => utils:undefined_to_null(ProblemDocument),
         <<"errorMessage">> => ErrorMessage
+    }
+};
+to_json(?ERROR_NODE_ALREADY_IN_CLUSTER(Hostname)) -> #{
+    <<"id">> => <<"nodeAlreadyInCluster">>,
+    <<"details">> => #{<<"hostname">> => Hostname},
+    <<"description">> => ?FMT("Cannot add \"~ts\", it is already part of a cluster.", [Hostname])
+};
+to_json(?ERROR_NODE_NOT_COMPATIBLE(Hostname, NodeClusterType)) when
+    NodeClusterType == ?ONEPROVIDER orelse NodeClusterType == ?ONEZONE -> #{
+    <<"id">> => <<"nodeNotCompatible">>,
+    <<"details">> => #{
+        <<"hostname">> => Hostname, <<"clusterType">> => NodeClusterType},
+    <<"description">> => ?FMT("Cannot add \"~ts\", it is a ~ts node.",
+        [Hostname, NodeClusterType])
+};
+to_json(?ERROR_NO_CONNECTION_TO_NEW_NODE(Hostname)) -> #{
+    <<"id">> => <<"noConnectionToNewNode">>,
+    <<"details">> => #{<<"hostname">> => Hostname},
+    <<"description">> => ?FMT("Cannot add node \"~ts\", connection failed.", [Hostname])
+};
+to_json(?ERROR_NO_SERVICE_NODES(Service)) -> #{
+    <<"id">> => <<"noServiceNodes">>,
+    <<"description">> => ?FMT("Service ~s is not deployed on any node.", [Service]),
+    <<"details">> => #{
+        <<"service">> => Service
     }
 };
 
@@ -1125,7 +1128,7 @@ from_json(#{<<"id">> := <<"invalidQosExpression">>}) ->
     ?ERROR_INVALID_QOS_EXPRESSION;
 
 %% -----------------------------------------------------------------------------
-%% State errors
+%% oz_worker errors
 %% -----------------------------------------------------------------------------
 from_json(#{<<"id">> := <<"basicAuthNotSupported">>}) ->
     ?ERROR_BASIC_AUTH_NOT_SUPPORTED;
@@ -1162,11 +1165,27 @@ from_json(#{<<"id">> := <<"relationAlreadyExists">>, <<"details">> := #{
     ParTypeAtom = binary_to_existing_atom(ParType, utf8),
     ?ERROR_RELATION_ALREADY_EXISTS(ChTypeAtom, ChId, ParTypeAtom, ParId);
 
+%%--------------------------------------------------------------------
+%% op_worker errors
+%%--------------------------------------------------------------------
+from_json(#{<<"id">> := <<"autoCleaningDisabled">>}) ->
+    ?ERROR_AUTO_CLEANING_DISABLED;
+
+from_json(#{<<"id">> := <<"filePopularityDisabled">>}) ->
+    ?ERROR_FILE_POPULARITY_DISABLED;
+
+from_json(#{<<"id">> := <<"operationInProgress">>}) ->
+    ?ERROR_OPERATION_IN_PROGRESS;
+
 from_json(#{<<"id">> := <<"spaceNotSupportedBy">>, <<"details">> := #{<<"providerId">> := ProviderId}}) ->
     ?ERROR_SPACE_NOT_SUPPORTED_BY(ProviderId);
 
-from_json(#{<<"id">> := <<"viewNotExistsOn">>, <<"details">> := #{<<"providerId">> := ProviderId}}) ->
-    ?ERROR_VIEW_NOT_EXISTS_ON(ProviderId);
+from_json(#{<<"id">> := <<"storageInUse">>}) ->
+    ?ERROR_STORAGE_IN_USE;
+
+from_json(#{<<"id">> := <<"storageTestFailed">>, <<"details">> := #{<<"operation">> := Operation}})
+    when Operation == <<"read">>; Operation == <<"write">>; Operation == <<"remove">> ->
+    ?ERROR_STORAGE_TEST_FAILED(binary_to_atom(Operation, utf8));
 
 from_json(#{<<"id">> := <<"transferAlreadyEnded">>}) ->
     ?ERROR_TRANSFER_ALREADY_ENDED;
@@ -1174,17 +1193,16 @@ from_json(#{<<"id">> := <<"transferAlreadyEnded">>}) ->
 from_json(#{<<"id">> := <<"transferNotEnded">>}) ->
     ?ERROR_TRANSFER_NOT_ENDED;
 
-from_json(#{<<"id">> := <<"storageInUse">>}) ->
-    ?ERROR_STORAGE_IN_USE;
+from_json(#{<<"id">> := <<"viewNotExistsOn">>, <<"details">> := #{<<"providerId">> := ProviderId}}) ->
+    ?ERROR_VIEW_NOT_EXISTS_ON(ProviderId);
 
-from_json(#{<<"id">> := <<"filePopularityDisabled">>}) ->
-    ?ERROR_FILE_POPULARITY_DISABLED;
 
-from_json(#{<<"id">> := <<"autoCleaningDisabled">>}) ->
-    ?ERROR_AUTO_CLEANING_DISABLED;
-
-from_json(#{<<"id">> := <<"operationInProgress">>}) ->
-    ?ERROR_OPERATION_IN_PROGRESS;
+%%--------------------------------------------------------------------
+%% onepanel errors
+%%--------------------------------------------------------------------
+from_json(#{<<"id">> := <<"errorOnNodes">>, <<"details">> := #{
+    <<"error">> := Error, <<"hostnames">> := Hostnames}}) ->
+    ?ERROR_ON_NODES(from_json(Error), Hostnames);
 
 from_json(#{<<"id">> := <<"dnsServersUnreachable">>, <<"details">> := #{<<"servers">> := UsedServers}}) ->
     Servers = lists:map(fun
@@ -1193,37 +1211,9 @@ from_json(#{<<"id">> := <<"dnsServersUnreachable">>, <<"details">> := #{<<"serve
     end, UsedServers),
     ?ERROR_DNS_SERVERS_UNREACHABLE(Servers);
 
-%%--------------------------------------------------------------------
-%% op_worker errors
-%%--------------------------------------------------------------------
-from_json(#{<<"id">> := <<"storageTestFailed">>, <<"details">> := #{<<"operation">> := Operation}})
-    when Operation == <<"read">>; Operation == <<"write">>; Operation == <<"remove">> ->
-    ?ERROR_STORAGE_TEST_FAILED(binary_to_atom(Operation, utf8));
-
-%%--------------------------------------------------------------------
-%% onepanel errors
-%%--------------------------------------------------------------------
-from_json(#{<<"id">> := <<"errorOnNodes">>, <<"details">> := #{
-    <<"error">> := Error, <<"hostnames">> := Hostnames}}) ->
-    ?ERROR_ON_NODES(from_json(Error), Hostnames);
-from_json(#{<<"id">> := <<"noConnectionToNewNode">>,
-    <<"details">> := #{<<"hostname">> := Hostname}}) ->
-    ?ERROR_NO_CONNECTION_TO_NEW_NODE(Hostname);
-
-from_json(#{<<"id">> := <<"nodeNotCompatible">>,
-    <<"details">> := #{<<"hostname">> := Hostname, <<"clusterType">> := ClusterType}}) ->
-    ?ERROR_NODE_NOT_COMPATIBLE(Hostname, binary_to_existing_atom(ClusterType, utf8));
-
-from_json(#{<<"id">> := <<"nodeAlreadyInCluster">>,
-    <<"details">> := #{<<"hostname">> := Hostname}}) ->
-    ?ERROR_NODE_ALREADY_IN_CLUSTER(Hostname);
-
 from_json(#{<<"id">> := <<"fileAllocation">>, <<"details">> := #{
     <<"actualSize">> := ActualSize, <<"targetSize">> := TargetSize}}) ->
     ?ERROR_FILE_ALLOCATION(ActualSize, TargetSize);
-
-from_json(#{<<"id">> := <<"noServiceNodes">>, <<"details">> := #{<<"service">> := Service}}) ->
-    ?ERROR_NO_SERVICE_NODES(Service);
 
 from_json(#{<<"id">> := <<"letsEncryptNotSupported">>}) ->
     ?ERROR_LETS_ENCRYPT_NOT_SUPPORTED;
@@ -1235,6 +1225,21 @@ from_json(#{<<"id">> := <<"letsEncryptResponse">>, <<"details">> := #{
     <<"problemDocument">> := ProblemDocument, <<"errorMessage">> := ErrorMessage
 }}) ->
     ?ERROR_LETS_ENCRYPT_RESPONSE(utils:null_to_undefined(ProblemDocument), ErrorMessage);
+
+from_json(#{<<"id">> := <<"nodeAlreadyInCluster">>,
+    <<"details">> := #{<<"hostname">> := Hostname}}) ->
+    ?ERROR_NODE_ALREADY_IN_CLUSTER(Hostname);
+
+from_json(#{<<"id">> := <<"nodeNotCompatible">>,
+    <<"details">> := #{<<"hostname">> := Hostname, <<"clusterType">> := ClusterType}}) ->
+    ?ERROR_NODE_NOT_COMPATIBLE(Hostname, binary_to_existing_atom(ClusterType, utf8));
+
+from_json(#{<<"id">> := <<"noConnectionToNewNode">>,
+    <<"details">> := #{<<"hostname">> := Hostname}}) ->
+    ?ERROR_NO_CONNECTION_TO_NEW_NODE(Hostname);
+
+from_json(#{<<"id">> := <<"noServiceNodes">>, <<"details">> := #{<<"service">> := Service}}) ->
+    ?ERROR_NO_SERVICE_NODES(Service);
 
 %%--------------------------------------------------------------------
 %% Unknown / unexpected error
@@ -1350,7 +1355,7 @@ to_http_code(?ERROR_GUI_PACKAGE_UNVERIFIED) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_INVALID_QOS_EXPRESSION) -> ?HTTP_400_BAD_REQUEST;
 
 %% -----------------------------------------------------------------------------
-%% State errors
+%% oz_worker errors
 %% -----------------------------------------------------------------------------
 to_http_code(?ERROR_BASIC_AUTH_NOT_SUPPORTED) -> ?HTTP_401_UNAUTHORIZED;
 to_http_code(?ERROR_BASIC_AUTH_DISABLED) -> ?HTTP_400_BAD_REQUEST;
@@ -1361,33 +1366,33 @@ to_http_code(?ERROR_CANNOT_DELETE_ENTITY(_, _)) -> ?HTTP_500_INTERNAL_SERVER_ERR
 to_http_code(?ERROR_CANNOT_ADD_RELATION_TO_SELF) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_RELATION_DOES_NOT_EXIST(_, _, _, _)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_RELATION_ALREADY_EXISTS(_, _, _, _)) -> ?HTTP_409_CONFLICT;
-to_http_code(?ERROR_SPACE_NOT_SUPPORTED_BY(_)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_VIEW_NOT_EXISTS_ON(_)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_TRANSFER_ALREADY_ENDED) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_TRANSFER_NOT_ENDED) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_STORAGE_IN_USE) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_FILE_POPULARITY_DISABLED) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_AUTO_CLEANING_DISABLED) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_OPERATION_IN_PROGRESS) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_DNS_SERVERS_UNREACHABLE(_)) -> ?HTTP_503_SERVICE_UNAVAILABLE;
 
 %%--------------------------------------------------------------------
 %% op_worker errors
 %%--------------------------------------------------------------------
+to_http_code(?ERROR_AUTO_CLEANING_DISABLED) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_FILE_POPULARITY_DISABLED) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_OPERATION_IN_PROGRESS) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_SPACE_NOT_SUPPORTED_BY(_)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_STORAGE_IN_USE) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_STORAGE_TEST_FAILED(_)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_TRANSFER_ALREADY_ENDED) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_TRANSFER_NOT_ENDED) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_VIEW_NOT_EXISTS_ON(_)) -> ?HTTP_400_BAD_REQUEST;
 
 %%--------------------------------------------------------------------
 %% onepanel errors
 %%--------------------------------------------------------------------
 to_http_code(?ERROR_ON_NODES(Error, _)) -> to_http_code(Error);
-to_http_code(?ERROR_NO_CONNECTION_TO_NEW_NODE(_)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_NODE_NOT_COMPATIBLE(_, _)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_NODE_ALREADY_IN_CLUSTER(_)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_DNS_SERVERS_UNREACHABLE(_)) -> ?HTTP_503_SERVICE_UNAVAILABLE;
 to_http_code(?ERROR_FILE_ALLOCATION(_, _)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_NO_SERVICE_NODES(_)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_LETS_ENCRYPT_NOT_SUPPORTED) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_LETS_ENCRYPT_NOT_REACHABLE) -> ?HTTP_503_SERVICE_UNAVAILABLE;
+to_http_code(?ERROR_LETS_ENCRYPT_NOT_SUPPORTED) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_LETS_ENCRYPT_RESPONSE(_, _)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_NODE_ALREADY_IN_CLUSTER(_)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_NODE_NOT_COMPATIBLE(_, _)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_NO_CONNECTION_TO_NEW_NODE(_)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_NO_SERVICE_NODES(_)) -> ?HTTP_400_BAD_REQUEST;
 
 %% -----------------------------------------------------------------------------
 %% Unknown / unexpected error
