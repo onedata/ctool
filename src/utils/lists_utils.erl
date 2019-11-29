@@ -22,7 +22,7 @@
 %% API
 -export([hd/1]).
 -export([union/1, union/2, intersect/2, subtract/2, foldl_while/3]).
--export([ensure_length/2]).
+-export([ensure_length/2, number_items/1]).
 
 
 %%%===================================================================
@@ -97,6 +97,15 @@ ensure_length(TargetLength, []) -> error(badarg, [TargetLength, []]);
 ensure_length(TargetLength, List) ->
     Repeats = utils:ceil(TargetLength / length(List)),
     lists:sublist(lists:append(lists:duplicate(Repeats, List)), TargetLength).
+
+
+%%--------------------------------------------------------------------
+%% @doc Adds sequence number to each list element.
+%% @end
+%%--------------------------------------------------------------------
+-spec number_items([T]) -> [{pos_integer(), T}].
+number_items(List) ->
+    lists:zip(lists:seq(1, length(List)), List).
 
 
 %%--------------------------------------------------------------------
