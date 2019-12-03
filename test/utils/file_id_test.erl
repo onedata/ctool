@@ -19,14 +19,15 @@
 pack_unpack_guid_test() ->
     U = <<"uuid">>, S = <<"space_id">>,
     ?assertEqual({U, S}, file_id:unpack_guid(file_id:pack_guid(U, S))),
-    ?assertEqual({U, undefined}, file_id:unpack_guid(file_id:pack_guid(U, <<>>))),
-    ?assertEqual({U, undefined}, file_id:unpack_guid(file_id:pack_guid(U, undefined))).
+    ?assertException(error, function_clause, file_id:unpack_guid(file_id:pack_guid(U, undefined))),
+    ?assertException(error, function_clause, file_id:unpack_guid(file_id:pack_guid(U, <<>>))).
+
 
 pack_unpack_share_guid_test() ->
     U = <<"uuid">>, S = <<"space_id">>, Sh = <<"share_id">>,
     ?assertEqual({U, S, Sh}, file_id:unpack_share_guid(file_id:pack_share_guid(U, S, Sh))),
-    ?assertEqual({U, undefined, Sh}, file_id:unpack_share_guid(file_id:pack_share_guid(U, undefined, Sh))),
-    ?assertEqual({U, undefined, Sh}, file_id:unpack_share_guid(file_id:pack_share_guid(U, <<>>, Sh))),
+    ?assertException(error, function_clause, file_id:unpack_share_guid(file_id:pack_share_guid(U, <<>>, Sh))),
+    ?assertException(error, function_clause, file_id:unpack_share_guid(file_id:pack_share_guid(U, unedfined, Sh))),
     ?assertEqual({U, S, undefined}, file_id:unpack_share_guid(file_id:pack_share_guid(U, S, undefined))),
     ?assertEqual({U, S, undefined}, file_id:unpack_share_guid(file_id:pack_share_guid(U, S, <<>>))).
 
@@ -68,15 +69,19 @@ guid_to_uuid_test() ->
     U = <<"uuid">>, S = <<"space_id">>, Sh = <<"share_id">>,
     G1 = file_id:pack_guid(U, S),
     G2 = file_id:pack_share_guid(U, S, Sh),
+    G3 = <<"invalidGuid">>,
     ?assertEqual(U, file_id:guid_to_uuid(G1)),
-    ?assertEqual(U, file_id:guid_to_uuid(G2)).
+    ?assertEqual(U, file_id:guid_to_uuid(G2)),
+    ?assertException(error, {invalid_guid, G3}, file_id:guid_to_uuid(G3)).
 
 guid_to_share_id_test() ->
     U = <<"uuid">>, S = <<"space_id">>, Sh = <<"share_id">>,
     G1 = file_id:pack_guid(U, S),
     G2 = file_id:pack_share_guid(U, S, Sh),
+    G3 = <<"invalidGuid">>,
     ?assertEqual(undefined, file_id:guid_to_share_id(G1)),
-    ?assertEqual(Sh, file_id:guid_to_share_id(G2)).
+    ?assertEqual(Sh, file_id:guid_to_share_id(G2)),
+    ?assertException(error, {invalid_guid, G3}, file_id:guid_to_share_id(G3)).
 
 is_share_guid_test() ->
     U = <<"uuid">>, S = <<"space_id">>, Sh = <<"share_id">>,

@@ -158,6 +158,7 @@ testcases() -> [
     ?ERROR_BAD_VALUE_DOMAIN,
     ?ERROR_BAD_VALUE_SUBDOMAIN,
     ?ERROR_BAD_VALUE_CAVEAT(#{<<"foo">> => <<"bar">>}),
+    ?ERROR_BAD_VALUE_QOS_PARAMETERS,
     ?ERROR_BAD_GUI_PACKAGE,
     ?ERROR_GUI_PACKAGE_TOO_LARGE,
     ?ERROR_GUI_PACKAGE_UNVERIFIED,
@@ -179,6 +180,7 @@ testcases() -> [
     ?ERROR_VIEW_NOT_EXISTS_ON(<<"providerId">>),
     ?ERROR_TRANSFER_ALREADY_ENDED,
     ?ERROR_TRANSFER_NOT_ENDED,
+    ?ERROR_STORAGE_IN_USE,
 
     %% -----------------------------------------------------------------------------
     %% Unknown error

@@ -118,6 +118,7 @@
 -define(ERROR_BAD_VALUE_DOMAIN, {error, bad_value_domain}).
 -define(ERROR_BAD_VALUE_SUBDOMAIN, {error, bad_value_subdomain}).
 -define(ERROR_BAD_VALUE_CAVEAT(Caveat), {error, {bad_value_caveat, Caveat}}).
+-define(ERROR_BAD_VALUE_QOS_PARAMETERS, {error, bad_qos_parameters}).
 -define(ERROR_BAD_GUI_PACKAGE, {error, bad_gui_package}).
 -define(ERROR_GUI_PACKAGE_TOO_LARGE, {error, gui_package_too_large}).
 -define(ERROR_GUI_PACKAGE_UNVERIFIED, {error, gui_package_unverified}).
@@ -148,6 +149,7 @@
 -define(ERROR_VIEW_NOT_EXISTS_ON(ProviderId), {error, {view_not_exists_on, ProviderId}}).
 -define(ERROR_TRANSFER_ALREADY_ENDED, {error, transfer_already_ended}).
 -define(ERROR_TRANSFER_NOT_ENDED, {error, transfer_not_ended}).
+-define(ERROR_STORAGE_IN_USE, {error, storage_in_use}).
 
 
 %%--------------------------------------------------------------------
@@ -166,3 +168,4 @@
 -define(ERROR_UNKNOWN_ERROR(ErrorAsJson), {error, {unknown_error, ErrorAsJson}}).
 
 -endif.
+
