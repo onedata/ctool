@@ -190,7 +190,6 @@ testcases() -> [
     %%--------------------------------------------------------------------
     ?ERROR_AUTO_CLEANING_DISABLED,
     ?ERROR_FILE_POPULARITY_DISABLED,
-    ?ERROR_OPERATION_IN_PROGRESS,
     ?ERROR_SPACE_NOT_SUPPORTED_BY(<<"providerId">>),
     ?ERROR_STORAGE_IN_USE,
     ?ERROR_STORAGE_TEST_FAILED(read),
@@ -199,6 +198,7 @@ testcases() -> [
     ?ERROR_TRANSFER_ALREADY_ENDED,
     ?ERROR_TRANSFER_NOT_ENDED,
     ?ERROR_VIEW_NOT_EXISTS_ON(<<"providerId">>),
+    ?ERROR_DNS_SERVERS_UNREACHABLE([default, {1,2,3,4}]),
     {different, ?ERROR_DNS_SERVERS_UNREACHABLE([<<"1.1.1.1">>, <<"8.8.8.8">>]),
         ?ERROR_DNS_SERVERS_UNREACHABLE([{1,1,1,1}, {8,8,8,8}])},
 
@@ -220,6 +220,7 @@ testcases() -> [
     ?ERROR_NODE_NOT_COMPATIBLE(<<"onepanel@example.com">>, ?ONEZONE),
     ?ERROR_NO_CONNECTION_TO_NEW_NODE(<<"onepanel@example.com">>),
     {different, ?ERROR_NO_SERVICE_NODES(op_worker), ?ERROR_NO_SERVICE_NODES(<<"op_worker">>)},
+    ?ERROR_STORAGE_IMPORT_STARTED,
 
     %% -----------------------------------------------------------------------------
     %% Unknown error

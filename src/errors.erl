@@ -84,7 +84,7 @@
 }.
 
 -type op_worker() :: auto_cleaning_disabled
-| file_popularity_disabled | operation_in_progress
+| file_popularity_disabled
 | {space_not_supported_by, ProviderId :: binary()}
 | storage_in_use
 | transfer_already_ended | transfer_not_ended
@@ -99,7 +99,8 @@
 | {node_already_in_cluster, Hostname :: binary()}
 | {node_not_compatible, Hostname :: binary(), onedata:cluster_type()}
 | {no_connection_to_new_node, Hostname :: binary()}
-| {no_service_nodes, Service :: atom() | binary()}.
+| {no_service_nodes, Service :: atom() | binary()}
+| storage_import_started.
 
 -type errno() :: ?OK | ?E2BIG | ?EACCES | ?EADDRINUSE | ?EADDRNOTAVAIL
 | ?EAFNOSUPPORT | ?EAGAIN | ?EALREADY | ?EBADF | ?EBADMSG | ?EBUSY
@@ -728,10 +729,6 @@ to_json(?ERROR_FILE_POPULARITY_DISABLED) -> #{
     <<"id">> => <<"filePopularityDisabled">>,
     <<"description">> => <<"File popularity is disabled.">>
 };
-to_json(?ERROR_OPERATION_IN_PROGRESS) -> #{
-    <<"id">> => <<"operationInProgress">>,
-    <<"description">> => <<"Running operation prevents this action.">>
-};
 to_json(?ERROR_SPACE_NOT_SUPPORTED_BY(ProviderId)) -> #{
     <<"id">> => <<"spaceNotSupportedBy">>,
     <<"details">> => #{
@@ -841,6 +838,9 @@ to_json(?ERROR_NO_SERVICE_NODES(Service)) -> #{
         <<"service">> => Service
     }
 };
+to_json(?ERROR_STORAGE_IMPORT_STARTED) -> #{
+    <<"id">> => <<"storageImportStarted">>,
+    <<"description">> => <<"Modifying storageImport that has been already started.">>};
 
 %%--------------------------------------------------------------------
 %% Unknown / unexpected error
@@ -1180,9 +1180,6 @@ from_json(#{<<"id">> := <<"autoCleaningDisabled">>}) ->
 from_json(#{<<"id">> := <<"filePopularityDisabled">>}) ->
     ?ERROR_FILE_POPULARITY_DISABLED;
 
-from_json(#{<<"id">> := <<"operationInProgress">>}) ->
-    ?ERROR_OPERATION_IN_PROGRESS;
-
 from_json(#{<<"id">> := <<"spaceNotSupportedBy">>, <<"details">> := #{<<"providerId">> := ProviderId}}) ->
     ?ERROR_SPACE_NOT_SUPPORTED_BY(ProviderId);
 
@@ -1246,6 +1243,9 @@ from_json(#{<<"id">> := <<"noConnectionToNewNode">>,
 
 from_json(#{<<"id">> := <<"noServiceNodes">>, <<"details">> := #{<<"service">> := Service}}) ->
     ?ERROR_NO_SERVICE_NODES(Service);
+
+from_json(#{<<"id">> := <<"storageImportStarted">>}) ->
+    ?ERROR_STORAGE_IMPORT_STARTED;
 
 %%--------------------------------------------------------------------
 %% Unknown / unexpected error
@@ -1379,7 +1379,6 @@ to_http_code(?ERROR_RELATION_ALREADY_EXISTS(_, _, _, _)) -> ?HTTP_409_CONFLICT;
 %%--------------------------------------------------------------------
 to_http_code(?ERROR_AUTO_CLEANING_DISABLED) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_FILE_POPULARITY_DISABLED) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_OPERATION_IN_PROGRESS) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_SPACE_NOT_SUPPORTED_BY(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_STORAGE_IN_USE) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_STORAGE_TEST_FAILED(_)) -> ?HTTP_400_BAD_REQUEST;
@@ -1400,6 +1399,7 @@ to_http_code(?ERROR_NODE_ALREADY_IN_CLUSTER(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_NODE_NOT_COMPATIBLE(_, _)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_NO_CONNECTION_TO_NEW_NODE(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_NO_SERVICE_NODES(_)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_STORAGE_IMPORT_STARTED) -> ?HTTP_400_BAD_REQUEST;
 
 %% -----------------------------------------------------------------------------
 %% Unknown / unexpected error

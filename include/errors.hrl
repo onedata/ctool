@@ -24,7 +24,9 @@
 -define(ERROR_NO_CONNECTION_TO_CLUSTER_NODE, {error, no_connection_to_cluster_node}).
 -define(ERROR_UNREGISTERED_ONEPROVIDER, {error, unregistered_oneprovider}).
 -define(ERROR_INTERNAL_SERVER_ERROR, {error, internal_server_error}).
+% feature not implemented yet, to be expected in the future
 -define(ERROR_NOT_IMPLEMENTED, {error, not_implemented}).
+% feature does not exist
 -define(ERROR_NOT_SUPPORTED, {error, not_supported}).
 -define(ERROR_SERVICE_UNAVAILABLE, {error, service_unavailable}).
 -define(ERROR_TIMEOUT, {error, timeout}).
@@ -155,7 +157,6 @@
 %%--------------------------------------------------------------------
 -define(ERROR_AUTO_CLEANING_DISABLED, {error, auto_cleaning_disabled}).
 -define(ERROR_FILE_POPULARITY_DISABLED, {error, file_popularity_disabled}).
--define(ERROR_OPERATION_IN_PROGRESS, {error, operation_in_progress}).
 -define(ERROR_SPACE_NOT_SUPPORTED_BY(ProviderId), {error, {space_not_supported_by, ProviderId}}).
 -define(ERROR_STORAGE_IN_USE, {error, storage_in_use}).
 -define(ERROR_STORAGE_TEST_FAILED(Operation), {error, {storage_test_failed, Operation}}).
@@ -178,6 +179,7 @@
 -define(ERROR_NODE_NOT_COMPATIBLE(HostnameBin, ClusterType), {error, {node_not_compatible, HostnameBin, ClusterType}}).
 -define(ERROR_NO_CONNECTION_TO_NEW_NODE(HostnameBin), {error, {no_connection_to_new_node, HostnameBin}}).
 -define(ERROR_NO_SERVICE_NODES(Service), {error, {no_service_nodes, Service}}).
+-define(ERROR_STORAGE_IMPORT_STARTED, {error, storage_import_started}).
 
 
 %%--------------------------------------------------------------------
