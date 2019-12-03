@@ -801,10 +801,6 @@ to_json(?ERROR_LETS_ENCRYPT_NOT_REACHABLE) -> #{
     <<"id">> => <<"letsEncryptNotReachable">>,
     <<"description">> => <<"Connection to Let's Encrypt server failed.">>
 };
-to_json(?ERROR_LETS_ENCRYPT_NOT_SUPPORTED) -> #{
-    <<"id">> => <<"letsEncryptNotSupported">>,
-    <<"description">> => <<"No supported method of authorization in Let's Encrypt is currently available.">>
-};
 to_json(?ERROR_LETS_ENCRYPT_RESPONSE(ProblemDocument, ErrorMessage)) -> #{
     <<"id">> => <<"letsEncryptResponse">>,
     <<"description">> => ?FMT("Bad Let's Encrypt response: ~ts.", [ErrorMessage]),
@@ -1218,9 +1214,6 @@ from_json(#{<<"id">> := <<"fileAllocation">>, <<"details">> := #{
     <<"actualSize">> := ActualSize, <<"targetSize">> := TargetSize}}) ->
     ?ERROR_FILE_ALLOCATION(ActualSize, TargetSize);
 
-from_json(#{<<"id">> := <<"letsEncryptNotSupported">>}) ->
-    ?ERROR_LETS_ENCRYPT_NOT_SUPPORTED;
-
 from_json(#{<<"id">> := <<"letsEncryptNotReachable">>}) ->
     ?ERROR_LETS_ENCRYPT_NOT_REACHABLE;
 
@@ -1393,7 +1386,6 @@ to_http_code(?ERROR_ON_NODES(Error, _)) -> to_http_code(Error);
 to_http_code(?ERROR_DNS_SERVERS_UNREACHABLE(_)) -> ?HTTP_503_SERVICE_UNAVAILABLE;
 to_http_code(?ERROR_FILE_ALLOCATION(_, _)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_LETS_ENCRYPT_NOT_REACHABLE) -> ?HTTP_503_SERVICE_UNAVAILABLE;
-to_http_code(?ERROR_LETS_ENCRYPT_NOT_SUPPORTED) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_LETS_ENCRYPT_RESPONSE(_, _)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_NODE_ALREADY_IN_CLUSTER(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_NODE_NOT_COMPATIBLE(_, _)) -> ?HTTP_400_BAD_REQUEST;

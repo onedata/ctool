@@ -209,7 +209,6 @@ testcases() -> [
     ?ERROR_DNS_SERVERS_UNREACHABLE([default, {1,2,3,4}]),
     ?ERROR_FILE_ALLOCATION(1000, 2000),
     ?ERROR_LETS_ENCRYPT_NOT_REACHABLE,
-    ?ERROR_LETS_ENCRYPT_NOT_SUPPORTED,
     ?ERROR_LETS_ENCRYPT_RESPONSE(undefined, <<"Bad Let's Encrypt response">>),
     ?ERROR_LETS_ENCRYPT_RESPONSE(
         #{<<"type">> => <<"urn:ietf:params:acme:error:rateLimited">>,
