@@ -32,8 +32,8 @@
 -export_type([nested/0, nested/2, path/0, path/1]).
 
 %% API
--export([get/2, get/3, find/2, put/3, remove/2, rename/3]).
--export([copy/3, copy_found/3, find_many/2]).
+-export([get/2, get/3, find/2, put/3, remove/2, rename_entry/3]).
+-export([copy_all/3, copy_found/2, copy_found/3]).
 
 
 %%%===================================================================
@@ -167,9 +167,9 @@ remove(Path, Nested) ->
 %% Returns error if the value was not found.
 %% @end
 %%--------------------------------------------------------------------
--spec rename(OldPath :: path(K), NewPath :: path(K), nested(K, V)) ->
+-spec rename_entry(OldPath :: path(K), NewPath :: path(K), nested(K, V)) ->
     {ok, nested(K, V)} | error.
-rename(OldPath, NewPath, Nested) ->
+rename_entry(OldPath, NewPath, Nested) ->
     case find(OldPath, Nested) of
         {ok, Found} -> {ok, put(NewPath, Found, remove(OldPath, Nested))};
         error -> error
@@ -182,15 +182,25 @@ rename(OldPath, NewPath, Nested) ->
 %% Raises error when value is missing from the Source container.
 %% @end
 %%--------------------------------------------------------------------
--spec copy([mapping(K1, K2, V)],
+-spec copy_all([mapping(K1, K2, V)],
     Source :: nested(K1, V), Target :: nested(K2, V)) -> nested(K2, V).
-copy(Mappings, Source, Target) ->
+copy_all(Mappings, Source, Target) ->
     lists:foldl(fun
         ({From, To}, TargetAcc) ->
             put(To, get(From, Source), TargetAcc);
         ({From, To, Default}, TargetAcc) ->
             put(To, get(From, Source, Default), TargetAcc)
     end, Target, Mappings).
+
+
+%%--------------------------------------------------------------------
+%% @doc Returns new map with requested keys, skipping missing entries.
+%% {@equiv copy_found(Mappings, Source, #{})}
+%% @end
+%%--------------------------------------------------------------------
+-spec copy_found([mapping(K1, K2, V)], Source :: nested(K1, V)) -> nested(K2, V).
+copy_found(Mappings, Source) ->
+    copy_found(Mappings, Source, #{}).
 
 
 %%--------------------------------------------------------------------
@@ -210,16 +220,6 @@ copy_found(Mappings, Source, Target) ->
         ({From, To, Default}, TargetAcc) ->
             put(To, get(From, Source, Default), TargetAcc)
     end, Target, Mappings).
-
-
-%%--------------------------------------------------------------------
-%% @doc Returns new map with requested keys, skipping missing entries.
-%% {@equiv copy_found(Mappings, Source, #{})}
-%% @end
-%%--------------------------------------------------------------------
--spec find_many([mapping(K1, K2, V)], Source :: nested(K1, V)) -> nested(K2, V).
-find_many(Mappings, Source) ->
-    copy_found(Mappings, Source, #{}).
 
 
 %%%===================================================================

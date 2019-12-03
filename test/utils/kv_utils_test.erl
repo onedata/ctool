@@ -163,15 +163,15 @@ remove_test_() -> [
 
 rename_test_() -> [
     ?_assertEqual({ok, #{new_key => value}},
-        kv_utils:rename(old_key, new_key, #{old_key => value})),
+        kv_utils:rename_entry(old_key, new_key, #{old_key => value})),
     ?_assertEqual(error,
-        kv_utils:rename(old_key, new_key, #{other_key => value})),
+        kv_utils:rename_entry(old_key, new_key, #{other_key => value})),
     ?_assertEqual({ok, #{key1 => #{key2 => #{key3 => value}}}},
-        kv_utils:rename(old_key, [key1, key2, key3], #{old_key => value})),
+        kv_utils:rename_entry(old_key, [key1, key2, key3], #{old_key => value})),
     ?_assertEqual({ok, #{stays => stayed, new_key => value}},
-        kv_utils:rename(old_key, new_key, #{stays => stayed, old_key => value})),
+        kv_utils:rename_entry(old_key, new_key, #{stays => stayed, old_key => value})),
     ?_assertEqual({ok, [{new_key, value}, {stays, stayed}]},
-        kv_utils:rename(old_key, new_key, [{stays, stayed}, {old_key, value}]))
+        kv_utils:rename_entry(old_key, new_key, [{stays, stayed}, {old_key, value}]))
 ].
 
 
@@ -215,24 +215,24 @@ copy_and_copy_found_test_() -> [[
         ?_assertError({badnested, _}, kv_utils:Fun([{[bad2, subkey, subkey2], key}], Container, #{})),
         ?_assertError({badnested, _}, kv_utils:Fun([{key1, [bad1, subkey]}], #{key1 => value}, Container))
     ]}
-] || Container <- ?ALL, Fun <- [copy, copy_found]].
+] || Container <- ?ALL, Fun <- [copy_all, copy_found]].
 
 
 copy_test_() -> [[
     {"fail on missing",[
         ?_assertError({badkeys, [missing]},
-            kv_utils:copy([{missing, key1}], Container, #{key1 => old})),
+            kv_utils:copy_all([{missing, key1}], Container, #{key1 => old})),
         ?_assertError({badkeys, [missing, subkey]},
-            kv_utils:copy([{[missing, subkey], key1}], Container, #{key1 => old})),
+            kv_utils:copy_all([{[missing, subkey], key1}], Container, #{key1 => old})),
         ?_assertError({badkeys, [missing]},
-            kv_utils:copy([
+            kv_utils:copy_all([
                 {key1, key1},
                 {missing, key2}
             ], Container, Container))
     ]},
     {"multiple mappings",
         ?_assertEqual(#{{target} => value1, key3 => value3},
-            kv_utils:copy([
+            kv_utils:copy_all([
                 {key1, {target}},
                 {[key2, key3], key3}
             ], Container, #{}))}
@@ -256,10 +256,10 @@ copy_found_test_() -> [[
 find_many_test() -> [[
     {"skip missing",
         ?_assertEqual(#{},
-            kv_utils:find_many([{missing, key1}], Container))},
+            kv_utils:copy_found([{missing, key1}], Container))},
     {"multiple mappings",
         ?_assertEqual(#{{target} => value1, key3 => value3},
-            kv_utils:find_many([
+            kv_utils:copy_found([
                 {key1, {target}},
                 {missing, key2},
                 {[key2, key3], key3}
