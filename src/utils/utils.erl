@@ -14,9 +14,9 @@
 %% API
 -export([ensure_running/1, pmap/2, pforeach/2,
     record_type/1, trim_spaces/1, ceil/1,
-    aggregate_over_first_element/1, average/1, random_shuffle/1,
-    random_element/1, random_sublist/1, random_sublist/3, get_host/1,
-    get_host_as_atom/1, cmd/1, ensure_defined/3, process_info/1, process_info/2]).
+    average/1, random_shuffle/1, random_element/1,
+    random_sublist/1, random_sublist/3, get_host/1, get_host_as_atom/1, cmd/1,
+    ensure_defined/3, process_info/1, process_info/2]).
 -export([undefined_to_null/1, null_to_undefined/1]).
 -export([timeout/2, timeout/4]).
 -export([duration/1, adjust_duration/2]).
@@ -145,29 +145,12 @@ ceil(N) -> trunc(N + 1).
 
 %%--------------------------------------------------------------------
 %% @doc
-%% Aggregates list over first element of tuple.
-%% @end
-%%--------------------------------------------------------------------
--spec aggregate_over_first_element(List :: [{K, V}]) -> [{K, [V]}].
-aggregate_over_first_element(List) ->
-    lists:reverse(
-        lists:foldl(fun
-            ({Key, Value}, []) ->
-                [{Key, [Value]}];
-            ({Key, Value}, [{Key, AccValues} | Tail]) ->
-                [{Key, [Value | AccValues]} | Tail];
-            ({Key, Value}, Acc) ->
-                [{Key, [Value]} | Acc]
-        end, [], lists:keysort(1, List))).
-
-%%--------------------------------------------------------------------
-%% @doc
 %% Calculates average of listed numbers.
 %% @end
 %%--------------------------------------------------------------------
--spec average(List :: list()) -> float().
+-spec average(List :: list(number())) -> float().
 average(List) ->
-    lists:foldl(fun(N, Acc) -> N + Acc end, 0, List) / length(List).
+    lists:sum(List) / length(List).
 
 %%--------------------------------------------------------------------
 %% @doc
