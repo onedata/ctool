@@ -36,8 +36,9 @@ init(Req, [Port, ConnectOptsFun] = State) ->
         <<"">> -> <<"">>;
         Bin -> <<"?", Bin/binary>>
     end,
-    URL = str_utils:format_bin("~s://~s:~B~s~s",
-        [cowboy_req:scheme(Req), cowboy_req:host(Req), Port, cowboy_req:path(Req), Qs]),
+    URL = str_utils:format_bin("~s://127.0.0.1:~B~s~s", [
+        cowboy_req:scheme(Req), Port, cowboy_req:path(Req), Qs
+    ]),
     Headers = add_forwarded_header(Req),
     MethodBin = cowboy_req:method(Req),
     {ok, Body, _} = cowboy_req:read_body(Req),
@@ -48,7 +49,7 @@ init(Req, [Port, ConnectOptsFun] = State) ->
         {ok, Code, RespHeaders, RespBody} ->
             {ok, cowboy_req:reply(Code, RespHeaders, RespBody, Req), State};
         {error, _} = Error ->
-            ?debug("Error in rest proxy: ~p", [Error]),
+            ?debug("Error in HTTP port forwarder: ~w", [Error]),
             {ok, cowboy_req:reply(?HTTP_503_SERVICE_UNAVAILABLE, Req), State}
     end.
 
