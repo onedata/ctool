@@ -11,30 +11,50 @@
 %%% AAI in Onedata assumes the approach of IBAC (Identity Based Access Control).
 %%% This means that authorization to perform certain operations is based on
 %%% the client's identity (represented by #subject{} in Onedata) and other
-%%% attributes of the resources (privileges, existing relations).
+%%% attributes of the resources (privileges, existing relations, token caveats).
+%%%
+%%% Onedata uses tokens to carry client's identity and possibly some contextual
+%%% confinements taken into account during authorization. They have the following
+%%% characteristics:
+%%%   * each token is issued for a certain subject - user or Oneprovider
+%%%   * delegated tokens allow to perform operations on behalf of the subject
+%%%   * tokens can have contextual confinements which all must be satisfied
+%%%     during request authorization
+%%%   * tokens are represented by the #token{} record
+%%%   * tokens are implemented using the macaroons library
+%%%
+%%% In order to verify a token, it is required to collect the request context,
+%%% against which the token caveats are checked. The context is expressed using
+%%% the #auth_ctx{} record.
+%%%
+%%% The #auth{} object is used universally as the successful result of client
+%%% *authentication*, not only regarding Onedata tokens, but also basic auth or
+%%% third party tokens. It carries the client's identity (#subject{}) and other
+%%% contextual information that is later used for *authorization*, for example
+%%% the IP of the client or contextual caveats that were included in the
+%%% presented token.
 %%%
 %%% Onedata uses the concept of audience (#audience{}) to confine authorization
 %%% to a specific requesting party (e.g. a specific op_worker service). In such
 %%% case, the requesting party must prove its identity during the request by
-%%% presenting a proper access token (aka audience token). In REST, it is done
+%%% presenting a valid access token (aka audience token). In REST, it is done
 %%% using the following headers:
-%%%     X-Auth-Token               <- subject's access token
-%%%                                   (Authorization: Bearer $TOKEN) is also supported
-%%%     X-Onedata-Audience-Token   <- requesting party's access token (aka audience token)
-%%% In GraphSync, the audience is inferred from the owner of GraphSync session.
 %%%
-%%% Tokens in Onedata have the following characteristics:
-%%%     * each token carries the subject's identity
-%%%     * delegated tokens allow to perform operation on behalf of the subject (token issuer)
-%%%     * tokens can have contextual confinements which all must be satisfied during verification
-%%%     * tokens are implemented using the macaroons library
+%%%               X-Auth-Token - subject's access token
+%%%                              (Authorization: Bearer $TOKEN) is also supported
+%%%   X-Onedata-Audience-Token - requesting party's access token
+%%%                              (aka audience token)
 %%%
-%%% Tokens and audience tokens are both represented by the #token{} record.
+%%% In GraphSync, the audience is inferred from the owner of GraphSync session,
+%%% however Oneprovider may use the auth_override to indicate other audience
+%%% for a request.
 %%%
 %%% ?ONEPROVIDER access tokens are a specific case where the serialized form can
 %%% have a three letter indicator of service type that is authorizing itself
 %%% (op-worker or op-panel), e.g. opw-MDax34Gh5TyOP032... It is added using the
-%%% tokens:build_service_access_token/2 function (consult for details).
+%%% tokens:build_service_access_token/2 function (consult for details). This
+%%% is merely an indication for Onezone which of the services has authenticated,
+%%% as both services use the same access token (known also as provider root token).
 %%% @end
 %%%-------------------------------------------------------------------
 -module(aai).

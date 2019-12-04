@@ -16,6 +16,8 @@
 -include("../onedata.hrl").
 -include("caveats.hrl").
 
+% Refer to aai.erl for description of below records
+
 -record(subject, {
     type = nobody :: aai:subject_type(),
     % Applicable only to ?ONEPROVIDER subject to differentiate between
@@ -37,7 +39,6 @@
     session_id = undefined :: aai:session_id()
 }).
 
-% Context carrying information required to verify a token
 -record(auth_ctx, {
     current_timestamp :: time_utils:seconds(),
     ip = undefined :: undefined | ip_utils:ip(),
