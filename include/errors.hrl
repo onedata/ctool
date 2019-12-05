@@ -67,9 +67,9 @@
 % Requested audience is forbidden to consume the token (e.g. user is not
 % supported by the provider specified in audience)
 -define(ERROR_TOKEN_AUDIENCE_FORBIDDEN(Audience), {error, {token_audience_forbidden, Audience}}).
--define(ERROR_INVITE_TOKEN_CREATOR_NOT_AUTHORIZED, {error, invite_token_creator_not_authorized}).
+-define(ERROR_INVITE_TOKEN_SUBJECT_NOT_AUTHORIZED, {error, invite_token_subject_not_authorized}).
 -define(ERROR_INVITE_TOKEN_USAGE_LIMIT_REACHED, {error, invite_token_usage_limit_exceeded}).
--define(ERROR_INVITE_TOKEN_CONSUMER_INVALID(Audience), {error, {invite_token_consumer_invalid, Audience}}).
+-define(ERROR_INVITE_TOKEN_CONSUMER_INVALID(Subject), {error, {invite_token_consumer_invalid, Subject}}).
 -define(ERROR_INVITE_TOKEN_TARGET_ID_INVALID(Id), {error, {invite_token_target_id_invalid, Id}}).
 -define(ERROR_TOKEN_SESSION_INVALID, {error, token_session_invalid}).
 
