@@ -13,6 +13,10 @@
 %%%-------------------------------------------------------------------
 -module(http_utils).
 
+%% Methods understood by rest handlers in Onedata applications.
+-type method() :: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE' | 'OPTIONS'.
+-export_type([method/0]).
+
 -define(EMAIL_VALIDATION_REGEXP,
     <<"^[a-zA-Z0-9!#$%&'*+\\/=?^_`{|}~-]+(?:\\.[a-zA-Z0-9!#$%&'*+\\/=?^_`{|}~-]+)*@(?"
     ":[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?\\.)+[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?$">>
@@ -20,6 +24,8 @@
 
 % According to RFC 5321
 -define(EMAIL_MAX_LENGTH, 254).
+
+-export([method_to_binary/1, binary_to_method/1]).
 
 % URL encoding/decoding
 -export([url_encode/1]).
@@ -143,3 +149,35 @@ normalize_email(Email) ->
         _ ->
             Email
     end.
+
+
+%%--------------------------------------------------------------------
+%% @private
+%% @doc
+%% Converts a binary representing a REST method to an atom representing
+%% the method. Handles methods
+%% @end
+%%--------------------------------------------------------------------
+-spec binary_to_method(BinMethod :: binary()) -> method().
+binary_to_method(<<"POST">>) -> 'POST';
+binary_to_method(<<"PUT">>) -> 'PUT';
+binary_to_method(<<"GET">>) -> 'GET';
+binary_to_method(<<"PATCH">>) -> 'PATCH';
+binary_to_method(<<"DELETE">>) -> 'DELETE';
+binary_to_method(<<"OPTIONS">>) -> 'OPTIONS'.
+
+
+%%--------------------------------------------------------------------
+%% @private
+%% @doc
+%% Converts an atom representing a REST method to a binary representing
+%% the method.
+%% @end
+%%--------------------------------------------------------------------
+-spec method_to_binary(Method :: method()) -> binary().
+method_to_binary('POST') -> <<"POST">>;
+method_to_binary('PUT') -> <<"PUT">>;
+method_to_binary('GET') -> <<"GET">>;
+method_to_binary('PATCH') -> <<"PATCH">>;
+method_to_binary('DELETE') -> <<"DELETE">>;
+method_to_binary('OPTIONS') -> <<"OPTIONS">>.
