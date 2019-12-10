@@ -220,6 +220,7 @@ testcases() -> [
     ?ERROR_NO_CONNECTION_TO_NEW_NODE(<<"onepanel@example.com">>),
     {different, ?ERROR_NO_SERVICE_NODES(op_worker), ?ERROR_NO_SERVICE_NODES(<<"op_worker">>)},
     ?ERROR_STORAGE_IMPORT_STARTED,
+    ?ERROR_USER_NOT_IN_CLUSTER,
 
     %% -----------------------------------------------------------------------------
     %% Unknown error

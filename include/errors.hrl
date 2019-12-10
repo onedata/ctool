@@ -179,6 +179,7 @@
 -define(ERROR_NO_CONNECTION_TO_NEW_NODE(HostnameBin), {error, {no_connection_to_new_node, HostnameBin}}).
 -define(ERROR_NO_SERVICE_NODES(Service), {error, {no_service_nodes, Service}}).
 -define(ERROR_STORAGE_IMPORT_STARTED, {error, storage_import_started}).
+-define(ERROR_USER_NOT_IN_CLUSTER, {error, user_not_in_cluster}).
 
 
 %%--------------------------------------------------------------------

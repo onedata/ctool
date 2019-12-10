@@ -100,7 +100,7 @@
 | {node_not_compatible, Hostname :: binary(), onedata:cluster_type()}
 | {no_connection_to_new_node, Hostname :: binary()}
 | {no_service_nodes, Service :: atom() | binary()}
-| storage_import_started.
+| storage_import_started | user_not_in_cluster.
 
 -type errno() :: ?OK | ?E2BIG | ?EACCES | ?EADDRINUSE | ?EADDRNOTAVAIL
 | ?EAFNOSUPPORT | ?EAGAIN | ?EALREADY | ?EBADF | ?EBADMSG | ?EBUSY
@@ -837,6 +837,9 @@ to_json(?ERROR_NO_SERVICE_NODES(Service)) -> #{
 to_json(?ERROR_STORAGE_IMPORT_STARTED) -> #{
     <<"id">> => <<"storageImportStarted">>,
     <<"description">> => <<"Modifying storageImport that has been already started.">>};
+to_json(?ERROR_USER_NOT_IN_CLUSTER) -> #{
+    <<"id">> => <<"userNotInCluster">>,
+    <<"description">> => <<"Authenticated user is not a member of this cluster.">>};
 
 %%--------------------------------------------------------------------
 %% Unknown / unexpected error
@@ -1240,6 +1243,9 @@ from_json(#{<<"id">> := <<"noServiceNodes">>, <<"details">> := #{<<"service">> :
 from_json(#{<<"id">> := <<"storageImportStarted">>}) ->
     ?ERROR_STORAGE_IMPORT_STARTED;
 
+from_json(#{<<"id">> := <<"userNotInCluster">>}) ->
+    ?ERROR_USER_NOT_IN_CLUSTER;
+
 %%--------------------------------------------------------------------
 %% Unknown / unexpected error
 %%--------------------------------------------------------------------
@@ -1392,6 +1398,7 @@ to_http_code(?ERROR_NODE_NOT_COMPATIBLE(_, _)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_NO_CONNECTION_TO_NEW_NODE(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_NO_SERVICE_NODES(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_STORAGE_IMPORT_STARTED) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_USER_NOT_IN_CLUSTER) -> ?HTTP_403_FORBIDDEN;
 
 %% -----------------------------------------------------------------------------
 %% Unknown / unexpected error
