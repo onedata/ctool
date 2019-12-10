@@ -22,18 +22,15 @@
 -define(EMAIL_MAX_LENGTH, 254).
 
 % URL encoding/decoding
--export([url_encode/1, url_decode/1]).
+-export([url_encode/1]).
 -export([last_url_part/1]).
-
-% Safe escaping
--export([js_escape/1, html_encode/1]).
 
 % base64url encoding/decoding
 -export([base64url_encode/1, base64url_decode/1]).
 
 % Miscellaneous convenience functions
 -export([encode_http_parameters/1, append_url_parameters/2]).
--export([fully_qualified_url/1, validate_email/1, normalize_email/1]).
+-export([validate_email/1, normalize_email/1]).
 
 %%%===================================================================
 %%% API
@@ -50,69 +47,12 @@ url_encode(Data) ->
 
 
 %%--------------------------------------------------------------------
-%% @doc Performs URL-encoded string decoding
-%% @end
-%%--------------------------------------------------------------------
--spec url_decode(Data :: binary() | string()) -> binary().
-url_decode(Data) ->
-    hackney_url:urldecode(Data).
-
-
-%%--------------------------------------------------------------------
 %% @doc Splits an URL on '/' and returns the last element.
 %% @end
 %%--------------------------------------------------------------------
 -spec last_url_part(URL :: binary()) -> binary().
 last_url_part(URL) ->
     lists:last(binary:split(URL, <<"/">>, [global, trim_all])).
-
-
-%%--------------------------------------------------------------------
-%% @doc Escapes all javascript - sensitive characters.
-%% @end
-%%--------------------------------------------------------------------
--spec js_escape(String :: binary() | string()) -> binary().
-js_escape(undefined) ->
-    <<"">>;
-js_escape(Value) when is_list(Value) ->
-    js_escape(iolist_to_binary(Value));
-js_escape(Value) ->
-    js_escape(Value, <<"">>).
-js_escape(<<"\\", Rest/binary>>, Acc) ->
-    js_escape(Rest, <<Acc/binary, "\\\\">>);
-js_escape(<<"\r", Rest/binary>>, Acc) ->
-    js_escape(Rest, <<Acc/binary, "\\r">>);
-js_escape(<<"\n", Rest/binary>>, Acc) ->
-    js_escape(Rest, <<Acc/binary, "\\n">>);
-js_escape(<<"\"", Rest/binary>>, Acc) ->
-    js_escape(Rest, <<Acc/binary, "\\\"">>);
-js_escape(<<"'", Rest/binary>>, Acc) ->
-    js_escape(Rest, <<Acc/binary, "\\'">>);
-js_escape(<<"<script", Rest/binary>>, Acc) ->
-    js_escape(Rest, <<Acc/binary, "&lt;script">>);
-js_escape(<<"script>", Rest/binary>>, Acc) ->
-    js_escape(Rest, <<Acc/binary, "script&gt;">>);
-js_escape(<<C, Rest/binary>>, Acc) ->
-    js_escape(Rest, <<Acc/binary, C>>);
-js_escape(<<"">>, Acc) ->
-    Acc.
-
-
-%%--------------------------------------------------------------------
-%% @doc Performs safe URL encoding.
-%% @end
-%%--------------------------------------------------------------------
--spec html_encode(String :: binary() | string()) -> binary().
-html_encode(List) when is_list(List) ->
-    html_encode(str_utils:to_binary(List));
-
-html_encode(<<"">>) -> <<"">>;
-html_encode(<<$<, Rest/binary>>) -> <<"&lt;", (html_encode(Rest))/binary>>;
-html_encode(<<$>, Rest/binary>>) -> <<"&gt;", (html_encode(Rest))/binary>>;
-html_encode(<<$", Rest/binary>>) -> <<"&quot;", (html_encode(Rest))/binary>>;
-html_encode(<<$', Rest/binary>>) -> <<"&#39;", (html_encode(Rest))/binary>>;
-html_encode(<<$&, Rest/binary>>) -> <<"&amp;", (html_encode(Rest))/binary>>;
-html_encode(<<H, Rest/binary>>) -> <<H, (html_encode(Rest))/binary>>.
 
 
 %%--------------------------------------------------------------------
@@ -174,20 +114,6 @@ append_url_parameters(Url, Params) ->
         _ -> <<Url/binary, "&", Params/binary>>
     end.
 
-
-%%--------------------------------------------------------------------
-%% @doc
-%% Converts the given URL to a fully qualified url, without leading www.
-%% @end
-%%--------------------------------------------------------------------
--spec fully_qualified_url(binary()) -> binary().
-fully_qualified_url(Binary) ->
-    case Binary of
-        <<"https://www.", Rest/binary>> -> <<"https://", Rest/binary>>;
-        <<"https://", _/binary>> -> Binary;
-        <<"www.", Rest/binary>> -> <<"https://", Rest/binary>>;
-        _ -> <<"https://", Binary/binary>>
-    end.
 
 
 %%--------------------------------------------------------------------
