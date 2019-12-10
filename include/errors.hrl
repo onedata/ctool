@@ -47,6 +47,7 @@
 %%--------------------------------------------------------------------
 %% Auth errors
 %%--------------------------------------------------------------------
+-define(ERROR_USER_NOT_SUPPORTED, {error, user_not_supported}).     % not supported on provider
 -define(ERROR_BAD_BASIC_CREDENTIALS, {error, bad_basic_credentials}).
 -define(ERROR_BAD_IDP_ACCESS_TOKEN(IdP), {error, {bad_idp_access_token, IdP}}).
 % The presented token cannot be understood by the server
