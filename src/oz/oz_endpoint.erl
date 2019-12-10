@@ -128,10 +128,9 @@ request(Auth, URN, Method, Body, Opts) ->
 -spec request(Auth :: auth(), URN :: urn(), Method :: method(),
     Headers :: headers(), Body :: request_body(), Opts :: opts()) -> Response :: response().
 request(Auth, URN, Method, Headers, Body, Opts) ->
-    SSLOpts = lists_utils:key_get(ssl_options, Opts, []),
-    Opts2 = lists_utils:key_store(ssl_options, [
-        {cacerts, get_cacerts()} | SSLOpts
-    ], Opts),
+    SSLOpts = proplists:get_value(ssl_options, Opts, []),
+    Opts2 = [{ssl_options, [{cacerts, get_cacerts()} | SSLOpts]}
+        | proplists:delete(ssl_options, Opts)],
     Headers2 = Headers#{?HDR_CONTENT_TYPE => <<"application/json">>},
     Headers3 = prepare_auth_headers(Auth, Headers2),
     URL = get_api_root(Opts) ++ URN,

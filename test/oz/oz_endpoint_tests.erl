@@ -225,8 +225,8 @@ should_send_request_3() ->
             Headers,
             body,
             [
-                opts,
-                {ssl_options, [{cacerts, _} | _]}
+                {ssl_options, [{cacerts, _} | _]},
+                opts
             ]
         ) ->
             case Headers of
@@ -246,7 +246,7 @@ should_send_request_3() ->
             "OZ_URL:9443/PREFIX/URN",
             Headers,
             body,
-            [opts | _]
+            [_SslOpts, opts | _]
         ) ->
             case Headers of
                 ExpectedTokenHeaders -> ok;
@@ -285,8 +285,8 @@ should_send_request_4() ->
             Headers,
             body,
             [
-                options,
-                {ssl_options, [{cacerts, _} | _]}
+                {ssl_options, [{cacerts, _} | _]},
+                options
             ]
         ) ->
             case Headers of
@@ -309,7 +309,7 @@ should_send_request_4() ->
             "OZ_URL:9443/PREFIX/URN",
             Headers,
             body,
-            [options | _]
+            [{ssl_options, _}, options | _]
         ) ->
             case Headers of
                 ExpectedTokenHeaders -> ok;

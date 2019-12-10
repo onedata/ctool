@@ -72,13 +72,13 @@ get_details(Auth, ShareId) ->
         Props = json_utils:decode_deprecated(ResponseBody),
         % Get default values of share_details record
         ShareDetails = #share_details{
-            id = lists_utils:key_get(<<"shareId">>, Props),
-            name = lists_utils:key_get(<<"name">>, Props),
-            public_url = lists_utils:key_get(
+            id = proplists:get_value(<<"shareId">>, Props),
+            name = proplists:get_value(<<"name">>, Props),
+            public_url = proplists:get_value(
                 <<"publicUrl">>, Props, undefined),
-            root_file = lists_utils:key_get(
+            root_file = proplists:get_value(
                 <<"rootFileId">>, Props, undefined),
-            space = lists_utils:key_get(
+            space = proplists:get_value(
                 <<"spaceId">>, Props, undefined)
         },
         {ok, ShareDetails}

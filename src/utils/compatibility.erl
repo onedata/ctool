@@ -109,7 +109,7 @@
 % A nested map acquired by parsing the JSON file
 -type registry() :: map().
 % Section is denoted by a list of nested keys in the registry map
--type section() :: [NestedKey :: binary()].
+-type section() :: kv_utils:path(binary()).
 % Entry can be a product version or GUI hash - there is a list of entries
 % specified per every version in the compatibility registry.
 -type entry() :: onedata:release_version() | onedata:gui_hash().
@@ -494,10 +494,8 @@ peek_revision(RegistryFile) ->
 
 %% @private
 -spec get_section(section(), registry()) -> map().
-get_section([], Map) ->
-    Map;
-get_section([Key | Rest], Map) ->
-    get_section(Rest, maps:get(Key, Map, #{})).
+get_section(Section, Map) ->
+    kv_utils:get(Section, Map, #{}).
 
 
 %% @private

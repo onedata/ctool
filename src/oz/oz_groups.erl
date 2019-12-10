@@ -74,9 +74,9 @@ get_details(Auth, GroupId) ->
             oz_endpoint:request(Auth, URN, get),
         Proplist = json_utils:decode_deprecated(ResponseBody),
         GroupDetails = #group_details{
-            id = lists_utils:key_get(<<"groupId">>, Proplist),
-            name = lists_utils:key_get(<<"name">>, Proplist),
-            type = binary_to_atom(lists_utils:key_get(<<"type">>, Proplist), utf8)
+            id = proplists:get_value(<<"groupId">>, Proplist),
+            name = proplists:get_value(<<"name">>, Proplist),
+            type = binary_to_atom(proplists:get_value(<<"type">>, Proplist), utf8)
         },
         {ok, GroupDetails}
     end).
@@ -109,7 +109,7 @@ get_create_space_token(Auth, GroupId) ->
         {ok, 200, _ResponseHeaders, ResponseBody} =
             oz_endpoint:request(Auth, URN, get),
         Proplist = json_utils:decode_deprecated(ResponseBody),
-        Token = lists_utils:key_get(<<"token">>, Proplist),
+        Token = proplists:get_value(<<"token">>, Proplist),
         {ok, Token}
     end).
 
@@ -125,7 +125,7 @@ get_invite_user_token(Auth, GroupId) ->
         {ok, 200, _ResponseHeaders, ResponseBody} =
             oz_endpoint:request(Auth, URN, get),
         Proplist = json_utils:decode_deprecated(ResponseBody),
-        Token = lists_utils:key_get(<<"token">>, Proplist),
+        Token = proplists:get_value(<<"token">>, Proplist),
         {ok, Token}
     end).
 
@@ -156,7 +156,7 @@ get_users(Auth, GroupId) ->
         {ok, 200, _ResponseHeaders, ResponseBody} =
             oz_endpoint:request(Auth, URN, get),
         Proplist = json_utils:decode_deprecated(ResponseBody),
-        UserIds = lists_utils:key_get(<<"users">>, Proplist),
+        UserIds = proplists:get_value(<<"users">>, Proplist),
         {ok, UserIds}
     end).
 
@@ -172,7 +172,7 @@ get_effective_users(Auth, GroupId) ->
         {ok, 200, _ResponseHeaders, ResponseBody} =
             oz_endpoint:request(Auth, URN, get),
         Proplist = json_utils:decode_deprecated(ResponseBody),
-        UserIds = lists_utils:key_get(<<"users">>, Proplist),
+        UserIds = proplists:get_value(<<"users">>, Proplist),
         {ok, UserIds}
     end).
 
@@ -188,7 +188,7 @@ get_parents(Auth, GroupId) ->
         {ok, 200, _ResponseHeaders, ResponseBody} =
             oz_endpoint:request(Auth, URN, get),
         Proplist = json_utils:decode_deprecated(ResponseBody),
-        UserIds = lists_utils:key_get(<<"parent_groups">>, Proplist),
+        UserIds = proplists:get_value(<<"parent_groups">>, Proplist),
         {ok, UserIds}
     end).
 
@@ -204,7 +204,7 @@ get_nested(Auth, GroupId) ->
         {ok, 200, _ResponseHeaders, ResponseBody} =
             oz_endpoint:request(Auth, URN, get),
         Proplist = json_utils:decode_deprecated(ResponseBody),
-        UserIds = lists_utils:key_get(<<"nested_groups">>, Proplist),
+        UserIds = proplists:get_value(<<"nested_groups">>, Proplist),
         {ok, UserIds}
     end).
 
@@ -223,8 +223,8 @@ get_user_details(Auth, GroupId, UserId) ->
             oz_endpoint:request(Auth, URN, get),
         Proplist = json_utils:decode_deprecated(ResponseBody),
         UserDetails = #user_details{
-            id = lists_utils:key_get(<<"userId">>, Proplist),
-            full_name = lists_utils:key_get(<<"name">>, Proplist)
+            id = proplists:get_value(<<"userId">>, Proplist),
+            full_name = proplists:get_value(<<"name">>, Proplist)
         },
         {ok, UserDetails}
     end).
@@ -243,7 +243,7 @@ get_user_privileges(Auth, GroupId, UserId) ->
         {ok, 200, _ResponseHeaders, ResponseBody} =
             oz_endpoint:request(Auth, URN, get),
         Proplist = json_utils:decode_deprecated(ResponseBody),
-        Privileges = lists_utils:key_get(<<"privileges">>, Proplist),
+        Privileges = proplists:get_value(<<"privileges">>, Proplist),
         {ok, lists:map(fun(Binary) ->
             binary_to_atom(Binary, latin1) end, Privileges)}
     end).
@@ -262,7 +262,7 @@ get_effective_user_privileges(Auth, GroupId, UserId) ->
         {ok, 200, _ResponseHeaders, ResponseBody} =
             oz_endpoint:request(Auth, URN, get),
         Proplist = json_utils:decode_deprecated(ResponseBody),
-        Privileges = lists_utils:key_get(<<"privileges">>, Proplist),
+        Privileges = proplists:get_value(<<"privileges">>, Proplist),
         {ok, lists:map(fun(Binary) ->
             binary_to_atom(Binary, latin1) end, Privileges)}
     end).
@@ -281,7 +281,7 @@ get_nested_privileges(Auth, GroupId, NestedGroupId) ->
         {ok, 200, _ResponseHeaders, ResponseBody} =
             oz_endpoint:request(Auth, URN, get),
         Proplist = json_utils:decode_deprecated(ResponseBody),
-        Privileges = lists_utils:key_get(<<"privileges">>, Proplist),
+        Privileges = proplists:get_value(<<"privileges">>, Proplist),
         {ok, lists:map(fun(Binary) ->
             binary_to_atom(Binary, latin1) end, Privileges)}
     end).
@@ -334,7 +334,7 @@ get_invite_group_token(Auth, GroupId) ->
         {ok, 200, _ResponseHeaders, ResponseBody} =
             oz_endpoint:request(Auth, URN, get),
         Proplist = json_utils:decode_deprecated(ResponseBody),
-        Token = lists_utils:key_get(<<"token">>, Proplist),
+        Token = proplists:get_value(<<"token">>, Proplist),
         {ok, Token}
     end).
 
@@ -434,7 +434,7 @@ get_spaces(Auth, GroupId) ->
         {ok, 200, _ResponseHeaders, ResponseBody} =
             oz_endpoint:request(Auth, URN, get),
         Proplist = json_utils:decode_deprecated(ResponseBody),
-        SpaceIds = lists_utils:key_get(<<"spaces">>, Proplist),
+        SpaceIds = proplists:get_value(<<"spaces">>, Proplist),
         {ok, SpaceIds}
     end).
 
@@ -453,9 +453,9 @@ get_space_details(Auth, GroupId, SpaceId) ->
             oz_endpoint:request(Auth, URN, get),
         Proplist = json_utils:decode_deprecated(ResponseBody),
         SpaceDetails = #space_details{
-            id = lists_utils:key_get(<<"spaceId">>, Proplist),
-            name = lists_utils:key_get(<<"name">>, Proplist),
-            providers_supports = lists_utils:key_get(<<"providers">>, Proplist)
+            id = proplists:get_value(<<"spaceId">>, Proplist),
+            name = proplists:get_value(<<"name">>, Proplist),
+            providers_supports = proplists:get_value(<<"providers">>, Proplist)
         },
         {ok, SpaceDetails}
     end).

@@ -36,12 +36,12 @@ get_details(Auth, HandleServiceId) ->
         Props = json_utils:decode_deprecated(ResponseBody),
         % Get default values of share_details record
         HandleServiceDetails = #handle_service_details{
-            id = lists_utils:key_get(<<"handleServiceId">>, Props),
-            name = lists_utils:key_get(
+            id = proplists:get_value(<<"handleServiceId">>, Props),
+            name = proplists:get_value(
                 <<"name">>, Props, undefined),
-            proxy_endpoint = lists_utils:key_get(
+            proxy_endpoint = proplists:get_value(
                 <<"proxyEndpoint">>, Props, undefined),
-            service_properties = lists_utils:key_get(
+            service_properties = proplists:get_value(
                 <<"serviceProperties">>, Props, [])
         },
         {ok, HandleServiceDetails}

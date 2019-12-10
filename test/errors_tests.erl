@@ -16,33 +16,37 @@
 -include("errors.hrl").
 -include("aai/aai.hrl").
 
-encode_decode_error_test() ->
-    lists:foreach(fun(Testcase) ->
-        {Before, After} = case Testcase of
-            {different, A, B} -> {A, B};
-            Err -> {Err, Err}
-        end,
-        Json = errors:to_json(Before),
-        ?assert(is_map(Json)),
-        ?assert(size(maps:get(<<"description">>, Json)) > 0),
-        EncodedJSON = json_utils:encode(Json),
-        DecodedJSON = json_utils:decode(EncodedJSON),
-        FromJson = errors:from_json(DecodedJSON),
-        ?assertMatch({error, _}, FromJson),
-        ?assertEqual(After, FromJson)
-    end, testcases()).
+encode_decode_error_test_() ->
+    lists:map(fun(Testcase) ->
+        {str_utils:to_binary(Testcase), fun() ->
+            {Before, After} = case Testcase of
+                {different, A, B} -> {A, B};
+                Err -> {Err, Err}
+            end,
+            Json = errors:to_json(Before),
+            ?assert(is_map(Json)),
+            ?assert(size(maps:get(<<"description">>, Json)) > 0),
+            % enforce description convention
+            ?assert(str_utils:binary_ends_with(maps:get(<<"description">>, Json), <<".">>)),
+            EncodedJSON = json_utils:encode(Json),
+            DecodedJSON = json_utils:decode(EncodedJSON),
+            FromJson = errors:from_json(DecodedJSON),
+            ?assertMatch({error, _}, FromJson),
+            ?assertEqual(After, FromJson)
+        end} end, testcases()).
 
 
-http_code_test() ->
-    lists:foreach(fun(Testcase) ->
-        Error = case Testcase of
-            {different, A, _B} -> A;
-            Err -> Err
-        end,
-        Code = errors:to_http_code(Error),
-        ?assert(Code >= 400),
-        ?assert(Code =< 503)
-    end, testcases()).
+http_code_test_() ->
+    lists:map(fun(Testcase) ->
+        {str_utils:to_binary(Testcase), fun() ->
+            Error = case Testcase of
+                {different, A, _B} -> A;
+                Err -> Err
+            end,
+            Code = errors:to_http_code(Error),
+            ?assert(Code >= 400),
+            ?assert(Code =< 503)
+        end} end, testcases()).
 
 
 unexpected_error_test() ->
@@ -66,12 +70,15 @@ testcases() -> [
     ?ERROR_INTERNAL_SERVER_ERROR,
     ?ERROR_NOT_IMPLEMENTED,
     ?ERROR_NOT_SUPPORTED,
+    ?ERROR_SERVICE_UNAVAILABLE,
     ?ERROR_TIMEOUT,
     ?ERROR_TEMPORARY_FAILURE,
     ?ERROR_UNAUTHORIZED,
     ?ERROR_FORBIDDEN,
     ?ERROR_NOT_FOUND,
     ?ERROR_ALREADY_EXISTS,
+    ?ERROR_FILE_ACCESS(<<"/etc/cert/web_key.pem">>, ?EROFS),
+    {different, ?ERROR_FILE_ACCESS(['./', ["name"]], ?EROFS), ?ERROR_FILE_ACCESS(<<"./name">>, ?EROFS)},
 
     %% -----------------------------------------------------------------------------
     %% POSIX errors
@@ -124,6 +131,7 @@ testcases() -> [
     ?ERROR_MISSING_AT_LEAST_ONE_VALUE([<<"name">>, <<"type">>]),
     ?ERROR_BAD_DATA(<<"spaceId">>),
     ?ERROR_BAD_VALUE_EMPTY(<<"spaceId">>),
+    % @TODO VFS-5838 Placeholder to plug into existing onepanel mechanism
     ?ERROR_BAD_VALUE_BOOLEAN(<<"subdomainDelegation">>),
     {different, ?ERROR_BAD_VALUE_ATOM(<<"spaceId">>), ?ERROR_BAD_VALUE_BINARY(<<"spaceId">>)},
     {different, ?ERROR_BAD_VALUE_LIST_OF_ATOMS(<<"privileges">>), ?ERROR_BAD_VALUE_LIST_OF_BINARIES(<<"privileges">>)},
@@ -165,7 +173,7 @@ testcases() -> [
     ?ERROR_INVALID_QOS_EXPRESSION,
 
     %% -----------------------------------------------------------------------------
-    %% State errors
+    %% oz_worker errors
     %% -----------------------------------------------------------------------------
     ?ERROR_BASIC_AUTH_NOT_SUPPORTED,
     ?ERROR_BASIC_AUTH_DISABLED,
@@ -176,11 +184,43 @@ testcases() -> [
     ?ERROR_CANNOT_ADD_RELATION_TO_SELF,
     ?ERROR_RELATION_DOES_NOT_EXIST(od_user, <<"user1">>, od_space, <<"space1">>),
     ?ERROR_RELATION_ALREADY_EXISTS(od_user, <<"user1">>, od_space, <<"space1">>),
+
+    %%--------------------------------------------------------------------
+    %% op_worker errors
+    %%--------------------------------------------------------------------
+    ?ERROR_AUTO_CLEANING_DISABLED,
+    ?ERROR_FILE_POPULARITY_DISABLED,
     ?ERROR_SPACE_NOT_SUPPORTED_BY(<<"providerId">>),
-    ?ERROR_VIEW_NOT_EXISTS_ON(<<"providerId">>),
+    ?ERROR_STORAGE_IN_USE,
+    ?ERROR_STORAGE_TEST_FAILED(read),
+    ?ERROR_STORAGE_TEST_FAILED(write),
+    ?ERROR_STORAGE_TEST_FAILED(remove),
     ?ERROR_TRANSFER_ALREADY_ENDED,
     ?ERROR_TRANSFER_NOT_ENDED,
-    ?ERROR_STORAGE_IN_USE,
+    ?ERROR_VIEW_NOT_EXISTS_ON(<<"providerId">>),
+    ?ERROR_DNS_SERVERS_UNREACHABLE([default, {1,2,3,4}]),
+    {different, ?ERROR_DNS_SERVERS_UNREACHABLE([<<"1.1.1.1">>, <<"8.8.8.8">>]),
+        ?ERROR_DNS_SERVERS_UNREACHABLE([{1,1,1,1}, {8,8,8,8}])},
+
+    %%--------------------------------------------------------------------
+    %% onepanel errors
+    %%--------------------------------------------------------------------
+    ?ERROR_ON_NODES(?ERROR_FILE_ACCESS(<<"/path">>, ?EACCES), [<<"node1.example.com">>]),
+    ?ERROR_DNS_SERVERS_UNREACHABLE([default, {1,2,3,4}]),
+    ?ERROR_FILE_ALLOCATION(1000, 2000),
+    ?ERROR_LETS_ENCRYPT_NOT_REACHABLE,
+    ?ERROR_LETS_ENCRYPT_RESPONSE(undefined, <<"Bad Let's Encrypt response">>),
+    ?ERROR_LETS_ENCRYPT_RESPONSE(
+        #{<<"type">> => <<"urn:ietf:params:acme:error:rateLimited">>,
+            <<"status">> => 429, <<"detail">> => <<"Error creating new order">>},
+        <<"Error creating new order">>),
+    ?ERROR_NODE_ALREADY_IN_CLUSTER(<<"onepanel@example.com">>),
+    ?ERROR_NODE_NOT_COMPATIBLE(<<"onepanel@example.com">>, ?ONEPROVIDER),
+    ?ERROR_NODE_NOT_COMPATIBLE(<<"onepanel@example.com">>, ?ONEZONE),
+    ?ERROR_NO_CONNECTION_TO_NEW_NODE(<<"onepanel@example.com">>),
+    {different, ?ERROR_NO_SERVICE_NODES(op_worker), ?ERROR_NO_SERVICE_NODES(<<"op_worker">>)},
+    ?ERROR_STORAGE_IMPORT_STARTED,
+    ?ERROR_USER_NOT_IN_CLUSTER,
 
     %% -----------------------------------------------------------------------------
     %% Unknown error

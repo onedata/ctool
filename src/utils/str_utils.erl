@@ -12,7 +12,8 @@
 
 % Conversion
 -export([to_list/1, to_binary/1]).
--export([join_binary/1, join_binary/2, reverse_binary/1, ensure_suffix/2]).
+-export([join_as_binaries/2, join_binary/1, join_binary/2,
+    reverse_binary/1, ensure_suffix/2]).
 -export([binary_starts_with/2, binary_ends_with/2]).
 
 % Conversion between unicode and binaries
@@ -37,7 +38,7 @@ to_list(List) when is_list(List) -> List;
 to_list(Binary) when is_binary(Binary) -> binary_to_list(Binary);
 to_list(Atom) when is_atom(Atom) -> atom_to_list(Atom);
 to_list(Integer) when is_integer(Integer) -> integer_to_list(Integer);
-to_list(Term) -> format("~p", [Term]).
+to_list(Term) -> format("~tp", [Term]).
 
 
 %%--------------------------------------------------------------------
@@ -49,7 +50,16 @@ to_binary(Binary) when is_binary(Binary) -> Binary;
 to_binary(List) when is_list(List) -> iolist_to_binary(List);
 to_binary(Atom) when is_atom(Atom) -> atom_to_binary(Atom, utf8);
 to_binary(Integer) when is_integer(Integer) -> integer_to_binary(Integer);
-to_binary(Term) -> list_to_binary(to_list(Term)).
+to_binary(Term) -> unicode_list_to_binary(to_list(Term)).
+
+
+%%--------------------------------------------------------------------
+%% @doc Joins a list of terms represented as binary into one binary.
+%% @end
+%%--------------------------------------------------------------------
+-spec join_as_binaries(Terms :: [term()], Separator :: term()) -> binary().
+join_as_binaries(Terms, Separator) ->
+    join_binary([to_binary(T) || T <- Terms], to_binary(Separator)).
 
 
 %%--------------------------------------------------------------------

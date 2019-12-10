@@ -140,10 +140,10 @@ run_test(SuiteName, CaseName, CaseArgs, Data) ->
 -spec run_stress_test(SuiteName :: atom(), CaseArgs :: term(),
     Data :: [term()]) -> any().
 run_stress_test(SuiteName, CaseArgs, Data) ->
-    CaseDescr = lists_utils:key_get(description, Data, ""),
+    CaseDescr = proplists:get_value(description, Data, ""),
     Configs = proplists:get_all_values(config, Data),
-    DefaultParams = parse_parameters(lists_utils:key_get(parameters, Data, [])),
-    DefaultSuccessRate = lists_utils:key_get(success_rate, Data, 100),
+    DefaultParams = parse_parameters(proplists:get_value(parameters, Data, [])),
+    DefaultSuccessRate = proplists:get_value(success_rate, Data, 100),
     Ans = exec_perf_configs(SuiteName, stress_test, CaseArgs, CaseDescr,
         Configs, 1, DefaultSuccessRate, DefaultParams),
     Ans.
@@ -253,12 +253,12 @@ get_stress_test_params(Suite) ->
 -spec run_testcase(SuiteName :: atom(), CaseName :: atom(), CaseArgs :: list(),
     Data :: list()) -> term().
 run_testcase(SuiteName, CaseName, CaseArgs, Data) ->
-    DefaultReps = lists_utils:key_get(repeats, Data, 1),
-    DefaultSuccessRate = lists_utils:key_get(success_rate, Data, 100),
-    DefaultParams = parse_parameters(lists_utils:key_get(parameters, Data, [])),
+    DefaultReps = proplists:get_value(repeats, Data, 1),
+    DefaultSuccessRate = proplists:get_value(success_rate, Data, 100),
+    DefaultParams = parse_parameters(proplists:get_value(parameters, Data, [])),
     case is_standard_test() of
         false ->
-            CaseDescr = lists_utils:key_get(description, Data, ""),
+            CaseDescr = proplists:get_value(description, Data, ""),
             Configs = proplists:get_all_values(config, Data),
             exec_perf_configs(SuiteName, CaseName, CaseArgs, CaseDescr,
                 Configs, DefaultReps, DefaultSuccessRate, DefaultParams);
@@ -325,7 +325,7 @@ save_suite_and_cases(Suite, Cases) ->
 %%--------------------------------------------------------------------
 -spec get_config_params(Data :: list()) -> list().
 get_config_params(Data) ->
-    DefaultParams = parse_parameters(lists_utils:key_get(parameters, Data, [])),
+    DefaultParams = parse_parameters(proplists:get_value(parameters, Data, [])),
     Config = case proplists:get_all_values(config, Data) of
                  [] ->
                      [];
@@ -333,7 +333,7 @@ get_config_params(Data) ->
                      C1
              end,
     merge_parameters(
-        parse_parameters(lists_utils:key_get(parameters, Config, [])),
+        parse_parameters(proplists:get_value(parameters, Config, [])),
         DefaultParams
     ).
 
@@ -373,7 +373,7 @@ exec_perf_configs(SuiteName, CaseName, CaseArgs, CaseDescr, Configs,
     DefaultReps, DefaultSuccessRate, DefaultParams) ->
     {Time, _Scale} = ct:get_timetrap_info(),
     Multiplier = lists:foldl(fun(Config, Sum) ->
-        Sum + lists_utils:key_get(repeats, Config, DefaultReps)
+        Sum + proplists:get_value(repeats, Config, DefaultReps)
     end, 0, Configs),
     ct:timetrap(Time * Multiplier),
     ?assertEqual(ok, lists:foldl(
@@ -399,13 +399,13 @@ exec_perf_config(SuiteName, CaseName, CaseArgs, CaseDescr, Config, DefaultReps,
     DefaultSuccessRate, DefaultParams) ->
 
     % Fetch and prepare test case configuration.
-    TestRoot = lists_utils:key_get(ct_test_root, CaseArgs),
-    ConfigName = lists_utils:key_get(name, Config),
-    ConfigDescr = lists_utils:key_get(description, Config, ""),
+    TestRoot = proplists:get_value(ct_test_root, CaseArgs),
+    ConfigName = proplists:get_value(name, Config),
+    ConfigDescr = proplists:get_value(description, Config, ""),
     % Merge specific configuration test case parameters with default test case
     % parameters, so that specific values overrider default ones.
     ConfigParams = merge_parameters(
-        parse_parameters(lists_utils:key_get(parameters, Config, [])),
+        parse_parameters(proplists:get_value(parameters, Config, [])),
         DefaultParams
     ),
     % Inject configuration parameters into common test cases configuration.
@@ -421,7 +421,7 @@ exec_perf_config(SuiteName, CaseName, CaseArgs, CaseDescr, Config, DefaultReps,
                          ets:insert(?STRESS_ETS_NAME, {timeout, Time}),
                          {timeout, Time};
                      _ ->
-                         lists_utils:key_get(repeats, Config, DefaultReps)
+                         proplists:get_value(repeats, Config, DefaultReps)
                  end,
 
     {RepeatsDone, RepsSummary0, RepsDetails0, FailedReps0} =
@@ -466,8 +466,8 @@ exec_perf_config(SuiteName, CaseName, CaseArgs, CaseDescr, Config, DefaultReps,
         end,
 
     % Fetch git repository metadata.
-    Repository = list_to_binary(lists_utils:key_get(git_repository, CaseArgs)),
-    BranchBeg = lists_utils:key_get(git_branch, CaseArgs),
+    Repository = list_to_binary(proplists:get_value(git_repository, CaseArgs)),
+    BranchBeg = proplists:get_value(git_branch, CaseArgs),
     Branch = case {os:getenv(?STRESS_ENV_VARIABLE), os:getenv(?STRESS_NO_CLEARING_ENV_VARIABLE)} of
                  {"true", _} ->
                      list_to_binary(BranchBeg ++ "/" ++ ?STRESS_ENV_VARIABLE);
@@ -476,7 +476,7 @@ exec_perf_config(SuiteName, CaseName, CaseArgs, CaseDescr, Config, DefaultReps,
                  _ ->
                      list_to_binary(BranchBeg)
              end,
-    Commit = list_to_binary(lists_utils:key_get(git_commit, CaseArgs)),
+    Commit = list_to_binary(proplists:get_value(git_commit, CaseArgs)),
 
     #{<<"performance">> := PerfResults} =
         case file:read_file(?PERFORMANCE_RESULT_FILE) of
@@ -536,7 +536,7 @@ exec_perf_config(SuiteName, CaseName, CaseArgs, CaseDescr, Config, DefaultReps,
 
     % Check whether performance/stress configuration execution has been successfully
     % completed.
-    SuccessRate = lists_utils:key_get(success_rate, Config, DefaultSuccessRate),
+    SuccessRate = proplists:get_value(success_rate, Config, DefaultSuccessRate),
     case is_stress_test() of
         true ->
             StressStatus = maps:fold(fun(Case, SReps, Acc) ->
@@ -770,10 +770,10 @@ exec_test_repeat(SuiteName, CaseName, CaseConfig) ->
 parse_parameters(Params) ->
     lists:sort(lists:map(fun(Param) ->
         #parameter{
-            name = lists_utils:key_get(name, Param),
-            value = lists_utils:key_get(value, Param),
-            unit = lists_utils:key_get(unit, Param, ""),
-            description = lists_utils:key_get(description, Param, "")
+            name = proplists:get_value(name, Param),
+            value = proplists:get_value(value, Param),
+            unit = proplists:get_value(unit, Param, ""),
+            description = proplists:get_value(description, Param, "")
         }
     end, Params)).
 

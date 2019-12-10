@@ -21,16 +21,21 @@
 -define(ERROR_BAD_MESSAGE(MessageBinOrJson), {error, {bad_message, MessageBinOrJson}}).
 -define(ERROR_NO_CONNECTION_TO_ONEZONE, {error, no_connection_to_onezone}).
 -define(ERROR_NO_CONNECTION_TO_PEER_ONEPROVIDER, {error, no_connection_to_peer_oneprovider}).
+-define(ERROR_NO_CONNECTION_TO_CLUSTER_NODE, {error, no_connection_to_cluster_node}).
 -define(ERROR_UNREGISTERED_ONEPROVIDER, {error, unregistered_oneprovider}).
 -define(ERROR_INTERNAL_SERVER_ERROR, {error, internal_server_error}).
+% feature not implemented yet, to be expected in the future
 -define(ERROR_NOT_IMPLEMENTED, {error, not_implemented}).
+% feature does not exist
 -define(ERROR_NOT_SUPPORTED, {error, not_supported}).
+-define(ERROR_SERVICE_UNAVAILABLE, {error, service_unavailable}).
 -define(ERROR_TIMEOUT, {error, timeout}).
 -define(ERROR_TEMPORARY_FAILURE, {error, temporary_failure}).
 -define(ERROR_UNAUTHORIZED, {error, unauthorized}).
 -define(ERROR_FORBIDDEN, {error, forbidden}).
 -define(ERROR_NOT_FOUND, {error, not_found}).
 -define(ERROR_ALREADY_EXISTS, {error, already_exists}).
+-define(ERROR_FILE_ACCESS(Path, Errno), {error, {file_access, Path, Errno}}).
 
 
 %%--------------------------------------------------------------------
@@ -126,7 +131,7 @@
 
 
 %%--------------------------------------------------------------------
-%% State errors
+%% oz_worker errors
 %%--------------------------------------------------------------------
 % Basic auth is not (currently) supported by this Onezone
 -define(ERROR_BASIC_AUTH_NOT_SUPPORTED, {error, basic_auth_not_supported}).
@@ -145,11 +150,36 @@
 -define(ERROR_RELATION_ALREADY_EXISTS(ChType, ChId, ParType, ParId),
     {error, {relation_already_exists, ChType, ChId, ParType, ParId}}
 ).
+
+
+%%--------------------------------------------------------------------
+%% op_worker errors
+%%--------------------------------------------------------------------
+-define(ERROR_AUTO_CLEANING_DISABLED, {error, auto_cleaning_disabled}).
+-define(ERROR_FILE_POPULARITY_DISABLED, {error, file_popularity_disabled}).
 -define(ERROR_SPACE_NOT_SUPPORTED_BY(ProviderId), {error, {space_not_supported_by, ProviderId}}).
--define(ERROR_VIEW_NOT_EXISTS_ON(ProviderId), {error, {view_not_exists_on, ProviderId}}).
+-define(ERROR_STORAGE_IN_USE, {error, storage_in_use}).
+-define(ERROR_STORAGE_TEST_FAILED(Operation), {error, {storage_test_failed, Operation}}).
 -define(ERROR_TRANSFER_ALREADY_ENDED, {error, transfer_already_ended}).
 -define(ERROR_TRANSFER_NOT_ENDED, {error, transfer_not_ended}).
--define(ERROR_STORAGE_IN_USE, {error, storage_in_use}).
+-define(ERROR_VIEW_NOT_EXISTS_ON(ProviderId), {error, {view_not_exists_on, ProviderId}}).
+
+
+%%--------------------------------------------------------------------
+%% onepanel errors
+%%--------------------------------------------------------------------
+% error wrapper to indicate nodes where error occured
+-define(ERROR_ON_NODES(Error, Hostnames), {error, {error_on_nodes, Error, Hostnames}}).
+-define(ERROR_DNS_SERVERS_UNREACHABLE(UsedServers), {error, {dns_servers_unreachable, UsedServers}}).
+-define(ERROR_FILE_ALLOCATION(ActualSize, TargetSize), {error, {file_allocation, ActualSize, TargetSize}}).
+-define(ERROR_LETS_ENCRYPT_NOT_REACHABLE, {error, lets_encrypt_not_reachable}).
+-define(ERROR_LETS_ENCRYPT_RESPONSE(ProblemDocument, ErrorMessage), {error, {lets_encrypt_response, ProblemDocument, ErrorMessage}}).
+-define(ERROR_NODE_ALREADY_IN_CLUSTER(HostnameBin), {error, {node_already_in_cluster, HostnameBin}}).
+-define(ERROR_NODE_NOT_COMPATIBLE(HostnameBin, ClusterType), {error, {node_not_compatible, HostnameBin, ClusterType}}).
+-define(ERROR_NO_CONNECTION_TO_NEW_NODE(HostnameBin), {error, {no_connection_to_new_node, HostnameBin}}).
+-define(ERROR_NO_SERVICE_NODES(Service), {error, {no_service_nodes, Service}}).
+-define(ERROR_STORAGE_IMPORT_STARTED, {error, storage_import_started}).
+-define(ERROR_USER_NOT_IN_CLUSTER, {error, user_not_in_cluster}).
 
 
 %%--------------------------------------------------------------------
