@@ -188,6 +188,7 @@ testcases() -> [
     %%--------------------------------------------------------------------
     %% op_worker errors
     %%--------------------------------------------------------------------
+    ?ERROR_USER_NOT_SUPPORTED,
     ?ERROR_AUTO_CLEANING_DISABLED,
     ?ERROR_FILE_POPULARITY_DISABLED,
     ?ERROR_SPACE_NOT_SUPPORTED_BY(<<"providerId">>),

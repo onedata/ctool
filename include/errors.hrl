@@ -155,6 +155,7 @@
 %%--------------------------------------------------------------------
 %% op_worker errors
 %%--------------------------------------------------------------------
+-define(ERROR_USER_NOT_SUPPORTED, {error, user_not_supported}).
 -define(ERROR_AUTO_CLEANING_DISABLED, {error, auto_cleaning_disabled}).
 -define(ERROR_FILE_POPULARITY_DISABLED, {error, file_popularity_disabled}).
 -define(ERROR_SPACE_NOT_SUPPORTED_BY(ProviderId), {error, {space_not_supported_by, ProviderId}}).

@@ -83,7 +83,7 @@
     ParId :: gri:entity_id()
 }.
 
--type op_worker() :: auto_cleaning_disabled
+-type op_worker() :: user_not_supported | auto_cleaning_disabled
 | file_popularity_disabled
 | {space_not_supported_by, ProviderId :: binary()}
 | storage_in_use
@@ -721,6 +721,10 @@ to_json(?ERROR_RELATION_ALREADY_EXISTS(ChType, ChId, ParType, ParId)) ->
 %%--------------------------------------------------------------------
 %% op_worker errors
 %%--------------------------------------------------------------------
+to_json(?ERROR_USER_NOT_SUPPORTED) -> #{
+    <<"id">> => <<"userNotSupported">>,
+    <<"description">> => <<"Authenticated user is not supported by this Oneprovider.">>
+};
 to_json(?ERROR_AUTO_CLEANING_DISABLED) -> #{
     <<"id">> => <<"autoCleaningDisabled">>,
     <<"description">> => <<"Auto-cleaning is disabled.">>
@@ -1173,6 +1177,9 @@ from_json(#{<<"id">> := <<"relationAlreadyExists">>, <<"details">> := #{
 %%--------------------------------------------------------------------
 %% op_worker errors
 %%--------------------------------------------------------------------
+from_json(#{<<"id">> := <<"userNotSupported">>}) ->
+    ?ERROR_USER_NOT_SUPPORTED;
+
 from_json(#{<<"id">> := <<"autoCleaningDisabled">>}) ->
     ?ERROR_AUTO_CLEANING_DISABLED;
 
@@ -1376,6 +1383,7 @@ to_http_code(?ERROR_RELATION_ALREADY_EXISTS(_, _, _, _)) -> ?HTTP_409_CONFLICT;
 %%--------------------------------------------------------------------
 %% op_worker errors
 %%--------------------------------------------------------------------
+to_http_code(?ERROR_USER_NOT_SUPPORTED) -> ?HTTP_403_FORBIDDEN;
 to_http_code(?ERROR_AUTO_CLEANING_DISABLED) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_FILE_POPULARITY_DISABLED) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_SPACE_NOT_SUPPORTED_BY(_)) -> ?HTTP_400_BAD_REQUEST;
