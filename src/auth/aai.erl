@@ -17,7 +17,8 @@
 %%% confinements taken into account during authorization. They have the following
 %%% characteristics:
 %%%   * each token is issued for a certain subject - user or Oneprovider
-%%%   * delegated tokens allow to perform operations on behalf of the subject
+%%%   * tokens allow to perform operations on behalf of the subject - authority
+%%%     delegation can be easily achieved by passing the token to another party
 %%%   * tokens can have contextual confinements which all must be satisfied
 %%%     during request authorization
 %%%   * tokens are represented by the #token{} record

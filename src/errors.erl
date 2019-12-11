@@ -64,7 +64,7 @@
 | {ambiguous_id, key()} | {bad_identifier, key()} | {identifier_occupied, key()}
 | bad_full_name | bad_username | bad_password | bad_value_email | bad_name
 | bad_value_domain | bad_value_subdomain
-| {bad_value_caveat, CaveatJson :: as_json()} | bad_gui_package
+| {bad_value_caveat, Caveat :: binary() | json_utils:json_map()} | bad_gui_package
 | gui_package_too_large | gui_package_unverified | invalid_qos_expression.
 
 -type oz_worker() :: basic_auth_not_supported | basic_auth_disabled
