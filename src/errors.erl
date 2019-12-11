@@ -29,8 +29,7 @@
 | unauthorized | forbidden | not_found | already_exists
 | {file_access, Path :: file:name_all(), Errno :: errno()}.
 
--type auth() :: user_not_supported | bad_basic_credentials
-| {bad_idp_access_token, IdP :: atom()}
+-type auth() :: bad_basic_credentials | {bad_idp_access_token, IdP :: atom()}
 | bad_token | bad_audience_token | token_invalid | token_revoked
 | not_an_access_token
 | {not_an_invite_token, ExpectedInviteTokenType :: any | tokens:invite_token_type(), Received :: tokens:type()}
@@ -84,7 +83,7 @@
     ParId :: gri:entity_id()
 }.
 
--type op_worker() :: auto_cleaning_disabled
+-type op_worker() :: user_not_supported | auto_cleaning_disabled
 | file_popularity_disabled
 | {space_not_supported_by, ProviderId :: binary()}
 | storage_in_use
@@ -235,10 +234,6 @@ to_json(?ERROR_POSIX(Errno)) -> #{
 %% -----------------------------------------------------------------------------
 %% Auth errors
 %% -----------------------------------------------------------------------------
-to_json(?ERROR_USER_NOT_SUPPORTED) -> #{
-    <<"id">> => <<"userNotSupported">>,
-    <<"description">> => <<"User is not supported by this Oneprovider.">>
-};
 to_json(?ERROR_BAD_BASIC_CREDENTIALS) -> #{
     <<"id">> => <<"badBasicCredentials">>,
     <<"description">> => <<"Invalid username or password.">>
@@ -726,6 +721,10 @@ to_json(?ERROR_RELATION_ALREADY_EXISTS(ChType, ChId, ParType, ParId)) ->
 %%--------------------------------------------------------------------
 %% op_worker errors
 %%--------------------------------------------------------------------
+to_json(?ERROR_USER_NOT_SUPPORTED) -> #{
+    <<"id">> => <<"userNotSupported">>,
+    <<"description">> => <<"Authenticated user is not supported by this Oneprovider.">>
+};
 to_json(?ERROR_AUTO_CLEANING_DISABLED) -> #{
     <<"id">> => <<"autoCleaningDisabled">>,
     <<"description">> => <<"Auto-cleaning is disabled.">>
@@ -936,9 +935,6 @@ from_json(#{<<"id">> := <<"posix">>, <<"details">> := #{<<"errno">> := Errno}}) 
 %% -----------------------------------------------------------------------------
 %% Auth errors
 %% -----------------------------------------------------------------------------
-from_json(#{<<"id">> := <<"userNotSupported">>}) ->
-    ?ERROR_USER_NOT_SUPPORTED;
-
 from_json(#{<<"id">> := <<"badBasicCredentials">>}) ->
     ?ERROR_BAD_BASIC_CREDENTIALS;
 
@@ -1181,6 +1177,9 @@ from_json(#{<<"id">> := <<"relationAlreadyExists">>, <<"details">> := #{
 %%--------------------------------------------------------------------
 %% op_worker errors
 %%--------------------------------------------------------------------
+from_json(#{<<"id">> := <<"userNotSupported">>}) ->
+    ?ERROR_USER_NOT_SUPPORTED;
+
 from_json(#{<<"id">> := <<"autoCleaningDisabled">>}) ->
     ?ERROR_AUTO_CLEANING_DISABLED;
 
@@ -1294,7 +1293,6 @@ to_http_code(?ERROR_POSIX(_)) -> ?HTTP_400_BAD_REQUEST;
 %% -----------------------------------------------------------------------------
 %% Auth errors
 %% -----------------------------------------------------------------------------
-to_http_code(?ERROR_USER_NOT_SUPPORTED) -> ?HTTP_403_FORBIDDEN;
 to_http_code(?ERROR_BAD_BASIC_CREDENTIALS) -> ?HTTP_401_UNAUTHORIZED;
 to_http_code(?ERROR_BAD_IDP_ACCESS_TOKEN(_)) -> ?HTTP_401_UNAUTHORIZED;
 to_http_code(?ERROR_BAD_TOKEN) -> ?HTTP_401_UNAUTHORIZED;
@@ -1385,6 +1383,7 @@ to_http_code(?ERROR_RELATION_ALREADY_EXISTS(_, _, _, _)) -> ?HTTP_409_CONFLICT;
 %%--------------------------------------------------------------------
 %% op_worker errors
 %%--------------------------------------------------------------------
+to_http_code(?ERROR_USER_NOT_SUPPORTED) -> ?HTTP_403_FORBIDDEN;
 to_http_code(?ERROR_AUTO_CLEANING_DISABLED) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_FILE_POPULARITY_DISABLED) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_SPACE_NOT_SUPPORTED_BY(_)) -> ?HTTP_400_BAD_REQUEST;

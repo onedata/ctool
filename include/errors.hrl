@@ -47,7 +47,6 @@
 %%--------------------------------------------------------------------
 %% Auth errors
 %%--------------------------------------------------------------------
--define(ERROR_USER_NOT_SUPPORTED, {error, user_not_supported}).     % not supported on provider
 -define(ERROR_BAD_BASIC_CREDENTIALS, {error, bad_basic_credentials}).
 -define(ERROR_BAD_IDP_ACCESS_TOKEN(IdP), {error, {bad_idp_access_token, IdP}}).
 % The presented token cannot be understood by the server
@@ -156,6 +155,7 @@
 %%--------------------------------------------------------------------
 %% op_worker errors
 %%--------------------------------------------------------------------
+-define(ERROR_USER_NOT_SUPPORTED, {error, user_not_supported}).
 -define(ERROR_AUTO_CLEANING_DISABLED, {error, auto_cleaning_disabled}).
 -define(ERROR_FILE_POPULARITY_DISABLED, {error, file_popularity_disabled}).
 -define(ERROR_SPACE_NOT_SUPPORTED_BY(ProviderId), {error, {space_not_supported_by, ProviderId}}).
