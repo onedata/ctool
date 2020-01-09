@@ -467,7 +467,7 @@ unverified_description(#cv_audience{whitelist = AllowedAudiences}) ->
     str_utils:format_bin(
         "unverified audience caveat: the consumer of this token must authorize as ~s "
         "(use the x-onedata-audience-token header)",
-        [?JOIN([aai:audience_to_printable(A) || A <- AllowedAudiences], <<" or ">>)]
+        [?JOIN([list_to_binary(aai:audience_to_printable(A)) || A <- AllowedAudiences], <<" or ">>)]
     );
 
 unverified_description(#cv_ip{whitelist = Whitelist}) ->
@@ -567,14 +567,20 @@ verify(#cv_ip{}, #auth_ctx{ip = undefined}) ->
 verify(#cv_ip{whitelist = Whitelist}, #auth_ctx{ip = IP}) ->
     is_allowed(whitelist, Whitelist, fun(Mask) -> ip_utils:matches_mask(IP, Mask) end);
 
+verify(#cv_asn{}, #auth_ctx{ip = undefined}) ->
+    false;
 verify(#cv_asn{whitelist = Whitelist}, #auth_ctx{ip = IP}) ->
     {ok, ASN} = ip_utils:lookup_asn(IP),
     is_allowed(whitelist, Whitelist, fun(Entry) -> ASN =:= Entry end);
 
+verify(#cv_country{}, #auth_ctx{ip = undefined}) ->
+    false;
 verify(#cv_country{type = Type, list = List}, #auth_ctx{ip = IP}) ->
     {ok, Country} = ip_utils:lookup_country(IP),
     is_allowed(Type, List, fun(Entry) -> Country =:= Entry end);
 
+verify(#cv_region{}, #auth_ctx{ip = undefined}) ->
+    false;
 verify(#cv_region{type = Type, list = List}, #auth_ctx{ip = IP}) ->
     {ok, Regions} = ip_utils:lookup_region(IP),
     is_allowed(Type, List, fun(Entry) -> lists:member(Entry, Regions) end);
