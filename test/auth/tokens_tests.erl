@@ -982,11 +982,6 @@ caveats_examples(cv_region, #auth_ctx{ip = Ip}) -> [
 caveats_examples(cv_interface, #auth_ctx{interface = undefined}) -> [
     {#cv_interface{interface = utils:random_element(cv_interface:valid_interfaces())}, failure}
 ];
-caveats_examples(cv_interface, #auth_ctx{interface = oneclient, data_access_caveats_policy = disallow_data_access_caveats}) -> [
-    % Oneclient interface should fail as it is allowed only when data_access_caveats are allowed.
-    % Other interfaces should fail too as they do not match the oneclient interface from auth_ctx.
-    {#cv_interface{interface = utils:random_element(cv_interface:valid_interfaces())}, failure}
-];
 caveats_examples(cv_interface, #auth_ctx{interface = Interface}) -> [
     {#cv_interface{interface = Interface}, success},
     {#cv_interface{interface = utils:random_element(cv_interface:valid_interfaces() -- [Interface])}, failure}
