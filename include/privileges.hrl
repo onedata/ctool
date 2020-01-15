@@ -68,6 +68,9 @@
 -define(SPACE_SCHEDULE_EVICTION, space_schedule_eviction).
 -define(SPACE_CANCEL_EVICTION, space_cancel_eviction).
 
+-define(SPACE_VIEW_QOS, space_view_qos).
+-define(SPACE_MANAGE_QOS, space_manage_qos).
+
 -define(SPACE_ADD_USER, space_add_user).
 -define(SPACE_REMOVE_USER, space_remove_user).
 

@@ -55,6 +55,8 @@
 ?SPACE_SCHEDULE_REPLICATION | ?SPACE_CANCEL_REPLICATION |
 ?SPACE_SCHEDULE_EVICTION | ?SPACE_CANCEL_EVICTION |
 
+?SPACE_VIEW_QOS | ?SPACE_MANAGE_QOS |
+
 ?SPACE_ADD_USER | ?SPACE_REMOVE_USER |
 
 ?SPACE_ADD_GROUP | ?SPACE_REMOVE_GROUP |
@@ -276,7 +278,8 @@ space_manager() ->
         ?SPACE_QUERY_VIEWS,
         ?SPACE_VIEW_STATISTICS,
         ?SPACE_VIEW_CHANGES_STREAM,
-        ?SPACE_SCHEDULE_REPLICATION
+        ?SPACE_SCHEDULE_REPLICATION,
+        ?SPACE_VIEW_QOS
     ]).
 
 %%--------------------------------------------------------------------
@@ -292,7 +295,8 @@ space_admin() ->
         ?SPACE_ADD_SUPPORT, ?SPACE_REMOVE_SUPPORT,
         ?SPACE_MANAGE_VIEWS,
         ?SPACE_CANCEL_REPLICATION,
-        ?SPACE_SCHEDULE_EVICTION, ?SPACE_CANCEL_EVICTION
+        ?SPACE_SCHEDULE_EVICTION, ?SPACE_CANCEL_EVICTION,
+        ?SPACE_MANAGE_QOS
     ]).
 
 %%--------------------------------------------------------------------
