@@ -25,7 +25,7 @@
 
 -define(RAND_STR, str_utils:rand_hex(6)).
 -define(RAND_PATH_IN_SPACE(SpaceId), filename:join(
-    [<<"/">>, SpaceId] ++ utils:random_sublist([?RAND_STR, ?RAND_STR, ?RAND_STR, ?RAND_STR])
+    [<<"/">>, SpaceId] ++ lists_utils:random_sublist([?RAND_STR, ?RAND_STR, ?RAND_STR, ?RAND_STR])
 )).
 -define(RAND_OBJECTID_IN_SPACE(SpaceId),
     element(2, {ok, _} = file_id:guid_to_objectid(file_id:pack_guid(?RAND_STR, SpaceId)))
@@ -55,8 +55,8 @@
 
 ensure_unlimited_test() ->
     lists:foreach(fun(_) ->
-        RandApiLimiting = utils:random_sublist(?API_LIMITING_CAVEATS_EXAMPLES),
-        RandIrrelevant = utils:random_sublist(?IRRELEVANT_CAVEATS_EXAMPLES),
+        RandApiLimiting = lists_utils:random_sublist(?API_LIMITING_CAVEATS_EXAMPLES),
+        RandIrrelevant = lists_utils:random_sublist(?IRRELEVANT_CAVEATS_EXAMPLES),
         RandCaveats = case rand:uniform(2) of
             1 -> RandApiLimiting ++ RandIrrelevant;
             _ -> RandIrrelevant ++ RandApiLimiting
@@ -100,7 +100,7 @@ check_authorization_test(#testcase{service = Service, operation = Operation, gri
     % Each combination includes a random subset of caveat examples
     lists:foreach(fun(CaveatExamplesSubset) ->
         ApiLimitingCaveats = [Example#caveat_example.caveat || Example <- CaveatExamplesSubset],
-        IrrelevantCaveats = utils:random_sublist(?IRRELEVANT_CAVEATS_EXAMPLES),
+        IrrelevantCaveats = lists_utils:random_sublist(?IRRELEVANT_CAVEATS_EXAMPLES),
         ExpUnverifiedCaveats = lists:filtermap(fun
             (#caveat_example{should_verify = false, caveat = Caveat}) ->
                 {true, Caveat};
@@ -109,7 +109,7 @@ check_authorization_test(#testcase{service = Service, operation = Operation, gri
         end, CaveatExamplesSubset),
         Auth = #auth{
             subject = ?SUB(user, <<"123">>),
-            caveats = utils:random_shuffle(ApiLimitingCaveats ++ IrrelevantCaveats)
+            caveats = lists_utils:shuffle(ApiLimitingCaveats ++ IrrelevantCaveats)
         },
         case ExpUnverifiedCaveats of
             [] ->

@@ -21,8 +21,10 @@
 
 %% API
 -export([hd/1]).
--export([union/1, union/2, intersect/2, subtract/2, foldl_while/3]).
+-export([union/1, union/2, intersect/2, subtract/2]).
 -export([ensure_length/2, number_items/1]).
+-export([shuffle/1, random_element/1, random_sublist/1, random_sublist/3]).
+-export([foldl_while/3]).
 
 
 %%%===================================================================
@@ -106,6 +108,41 @@ ensure_length(TargetLength, List) ->
 -spec number_items([T]) -> [{pos_integer(), T}].
 number_items(List) ->
     lists:zip(lists:seq(1, length(List)), List).
+
+
+-spec shuffle([T]) -> [T].
+shuffle(List) ->
+    [X || {_, X} <- lists:sort([{rand:uniform(), N} || N <- List])].
+
+
+-spec random_element([T]) -> T.
+random_element([]) ->
+    error(badarg);
+random_element(List) ->
+    lists:nth(rand:uniform(length(List)), List).
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%% @equiv random_sublist(List, 0, length(List))
+%% @end
+%%--------------------------------------------------------------------
+-spec random_sublist([T]) -> [T].
+random_sublist(List) ->
+    random_sublist(List, 0, length(List)).
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Returns a random sublist of a list, with random length within given limits.
+%% @end
+%%--------------------------------------------------------------------
+-spec random_sublist([T], MinLen :: non_neg_integer(), MaxLen :: all | non_neg_integer()) -> [T].
+random_sublist(List, MinLength, all) ->
+    random_sublist(List, MinLength, length(List));
+random_sublist(List, MinLength, MaxLength) ->
+    Shuffled = shuffle(List),
+    lists:sublist(Shuffled, MinLength + rand:uniform(MaxLength - MinLength + 1) - 1).
 
 
 %%--------------------------------------------------------------------

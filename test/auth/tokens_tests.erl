@@ -700,9 +700,9 @@ auth_ctx(Ip) ->
     #auth_ctx{
         current_timestamp = ?NOW(),
         ip = Ip,
-        interface = utils:random_element([undefined | cv_interface:valid_interfaces()]),
+        interface = lists_utils:random_element([undefined | cv_interface:valid_interfaces()]),
         audience = audience(Ip),
-        data_access_caveats_policy = utils:random_element([disallow_data_access_caveats, allow_data_access_caveats]),
+        data_access_caveats_policy = lists_utils:random_element([disallow_data_access_caveats, allow_data_access_caveats]),
         group_membership_checker = fun
             (?AUD_USR, ?DUMMY_GROUP) -> true;
             (_, _) -> false
@@ -724,14 +724,14 @@ to_regions(IpList) ->
     <<$/>>, <<"">>, [global]
 )).
 
--define(RAND_PATH, str_utils:join_binary([<<"">> | utils:random_sublist([
+-define(RAND_PATH, str_utils:join_binary([<<"">> | lists_utils:random_sublist([
     ?RAND_FILE_NAME, ?RAND_FILE_NAME, ?RAND_FILE_NAME, ?RAND_FILE_NAME
-], 1, 4)], <<"/">>)).
+], 1, all)], <<"/">>)).
 
 -define(IP_EXAMPLES, [
     ?IP_LH, ?IP_EG, ?IP_AQ, ?IP_IN, ?IP_PL, ?IP_MK, ?IP_US, ?IP_AU, ?IP_BR
 ]).
--define(RAND_IP, utils:random_element(?IP_EXAMPLES)).
+-define(RAND_IP, lists_utils:random_element(?IP_EXAMPLES)).
 
 -define(AUDIENCE_EXAMPLES, [
     ?AUD_USR, ?AUD_GRP, ?AUD_OZW, ?AUD_OZP, ?AUD_OPW, ?AUD_OPP
@@ -873,7 +873,7 @@ check_supported_caveats(Token, Secret, AuthCtx, Caveats, Unverified) ->
     CaveatTypeSubsets = case length(CaveatTypes) of
         0 -> [];
         1 -> [[]];
-        Len -> [utils:random_sublist(CaveatTypes, 0, Len - 1) || _ <- lists:seq(1, Len)]
+        Len -> [lists_utils:random_sublist(CaveatTypes, 0, Len - 1) || _ <- lists:seq(1, Len)]
     end,
     lists:foreach(fun(SupportedCaveats) ->
         MissingCaveats = lists:filter(fun(Caveat) ->
@@ -910,8 +910,8 @@ caveats_testcases(AuthCtx) ->
 % function creates two examples from each one by randomly cutting down the number of caveats.
 randomize_caveats_testcases(CaveatsTestcases) ->
     lists:flatmap(fun(Testcase = #caveats_testcase{caveats = Caveats, unverified = Unverified}) ->
-        RandA = utils:random_sublist(Caveats, 0, length(Caveats)),
-        RandB = utils:random_sublist(Caveats, 0, length(Caveats)),
+        RandA = lists_utils:random_sublist(Caveats, 0, all),
+        RandB = lists_utils:random_sublist(Caveats, 0, all),
         [
             Testcase#caveats_testcase{caveats = RandA, unverified = Unverified -- (Caveats -- RandA)},
             Testcase#caveats_testcase{caveats = RandB, unverified = Unverified -- (Caveats -- RandB)}
@@ -929,7 +929,7 @@ caveats_examples(cv_authorization_none, _AuthCtx) -> [
 ];
 
 caveats_examples(cv_audience, #auth_ctx{audience = undefined}) -> [
-    {#cv_audience{whitelist = utils:random_sublist(?AUDIENCE_EXAMPLES, 1, length(?AUDIENCE_EXAMPLES))}, failure}
+    {#cv_audience{whitelist = lists_utils:random_sublist(?AUDIENCE_EXAMPLES, 1, all)}, failure}
 ];
 caveats_examples(cv_audience, #auth_ctx{audience = ?AUD_USR}) -> [
     % The ?DUMMY_USER (?AUD_USR) belongs to the ?DUMMY_GROUP (?AUD_GRP), so
@@ -974,31 +974,31 @@ caveats_examples(cv_region, #auth_ctx{ip = ?IP_LH}) -> [
 caveats_examples(cv_region, #auth_ctx{ip = Ip}) -> [
     {#cv_region{type = whitelist, list = rand_regions_without(to_regions([Ip]))}, failure},
     {#cv_region{type = whitelist, list = to_regions(rand_ips_with([Ip]))}, success},
-    {#cv_region{type = whitelist, list = utils:random_sublist(to_regions([Ip]), 1, 1)}, success},
+    {#cv_region{type = whitelist, list = lists_utils:random_sublist(to_regions([Ip]), 1, 1)}, success},
     {#cv_region{type = blacklist, list = to_regions(rand_ips_with([Ip]))}, failure},
     {#cv_region{type = blacklist, list = rand_regions_without(to_regions([Ip]))}, success}
 ];
 
 caveats_examples(cv_interface, #auth_ctx{interface = undefined}) -> [
-    {#cv_interface{interface = utils:random_element(cv_interface:valid_interfaces())}, failure}
+    {#cv_interface{interface = lists_utils:random_element(cv_interface:valid_interfaces())}, failure}
 ];
 caveats_examples(cv_interface, #auth_ctx{interface = Interface}) -> [
     {#cv_interface{interface = Interface}, success},
-    {#cv_interface{interface = utils:random_element(cv_interface:valid_interfaces() -- [Interface])}, failure}
+    {#cv_interface{interface = lists_utils:random_element(cv_interface:valid_interfaces() -- [Interface])}, failure}
 ];
 
 % Below caveats are lazy - always true when verifying a token (still, they must
 % be explicitly supported). They are checked when the resulting aai:auth() object
 % is consumed to perform an operation.
 caveats_examples(cv_api, _AuthCtx) -> [
-    {#cv_api{whitelist = utils:random_sublist([
+    {#cv_api{whitelist = lists_utils:random_sublist([
         {all, create, ?GRI_PATTERN(od_space, '*', '*', private)},
         {?OZ_WORKER, get, ?GRI_PATTERN(od_user, ?RAND_STR, instance, '*')},
         {?OP_WORKER, all, ?GRI_PATTERN(od_user, ?RAND_STR, {group, ?RAND_STR}, private)},
         {?OP_PANEL, update, ?GRI_PATTERN(od_group, '*', {'*', '*'})},
         {?OZ_PANEL, delete, ?GRI_PATTERN('*', '*', users, '*')},
         {all, all, ?GRI_PATTERN(od_handle, '*', '*', '*')}
-    ], 1, 6)}, success}
+    ], 1, all)}, success}
 ];
 
 caveats_examples(cv_data_readonly, AuthCtx) -> [
@@ -1006,15 +1006,15 @@ caveats_examples(cv_data_readonly, AuthCtx) -> [
 ];
 
 caveats_examples(cv_data_path, AuthCtx) -> [
-    {#cv_data_path{whitelist = utils:random_sublist([
+    {#cv_data_path{whitelist = lists_utils:random_sublist([
         ?RAND_PATH, ?RAND_PATH, ?RAND_PATH, ?RAND_PATH, ?RAND_PATH
-    ], 1, 5)}, ?SUCCESS_IF_DATA_ACCESS_CAVEATS_ALLOWED(AuthCtx)}
+    ], 1, all)}, ?SUCCESS_IF_DATA_ACCESS_CAVEATS_ALLOWED(AuthCtx)}
 ];
 
 caveats_examples(cv_data_objectid, AuthCtx) -> [
-    {#cv_data_objectid{whitelist = utils:random_sublist([
+    {#cv_data_objectid{whitelist = lists_utils:random_sublist([
         ?RAND_STR, ?RAND_STR, ?RAND_STR, ?RAND_STR, ?RAND_STR
-    ], 1, 5)}, ?SUCCESS_IF_DATA_ACCESS_CAVEATS_ALLOWED(AuthCtx)}
+    ], 1, all)}, ?SUCCESS_IF_DATA_ACCESS_CAVEATS_ALLOWED(AuthCtx)}
 ].
 
 %%%===================================================================
@@ -1024,12 +1024,12 @@ caveats_examples(cv_data_objectid, AuthCtx) -> [
 rand_regions_without(Excludes) ->
     List = ?ALL_REGIONS -- Excludes,
     % Return at least one region
-    utils:random_sublist(List, 1, length(List)).
+    lists_utils:random_sublist(List, 1, all).
 
 
 rand_ips_with(Includes) ->
     % RandIps can be empty as we are adding Includes anyway
-    RandIps = utils:random_sublist(?IP_EXAMPLES, 0, length(?IP_EXAMPLES)),
+    RandIps = lists_utils:random_sublist(?IP_EXAMPLES, 0, all),
     % make sure Includes are not duplicated
     (RandIps -- Includes) ++ Includes.
 
@@ -1037,18 +1037,18 @@ rand_ips_with(Includes) ->
 rand_ips_without(Excludes) ->
     List = ?IP_EXAMPLES -- Excludes,
     % Return at least one IP
-    utils:random_sublist(List, 1, length(List)).
+    lists_utils:random_sublist(List, 1, all).
 
 
 rand_audiences_without(Excludes) ->
     List = ?AUDIENCE_EXAMPLES -- Excludes,
     % Return at least one region
-    utils:random_sublist(List, 1, length(List)).
+    lists_utils:random_sublist(List, 1, all).
 
 
 rand_audiences_with(Includes) ->
     % RandIps can be empty as we are adding Includes anyway
-    RandIps = utils:random_sublist(?AUDIENCE_EXAMPLES, 0, length(?AUDIENCE_EXAMPLES)),
+    RandIps = lists_utils:random_sublist(?AUDIENCE_EXAMPLES, 0, all),
     % make sure Includes are not duplicated
     (RandIps -- Includes) ++ Includes.
 
