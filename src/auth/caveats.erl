@@ -585,6 +585,8 @@ verify(#cv_region{type = Type, list = List}, #auth_ctx{ip = IP}) ->
     {ok, Regions} = ip_utils:lookup_region(IP),
     is_allowed(Type, List, fun(Entry) -> lists:member(Entry, Regions) end);
 
+% interface = oneclient caveat is treated as a data access caveat and limits the
+% available API, but does not require the allow_data_access_caveats policy.
 verify(#cv_interface{}, #auth_ctx{interface = undefined}) ->
     false;
 verify(#cv_interface{interface = Interface}, #auth_ctx{interface = Interface}) ->
