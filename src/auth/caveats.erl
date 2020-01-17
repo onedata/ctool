@@ -467,7 +467,7 @@ unverified_description(#cv_audience{whitelist = AllowedAudiences}) ->
     str_utils:format_bin(
         "unverified audience caveat: the consumer of this token must authorize as ~s "
         "(use the x-onedata-audience-token header)",
-        [?JOIN([aai:audience_to_printable(A) || A <- AllowedAudiences], <<" or ">>)]
+        [?JOIN([list_to_binary(aai:audience_to_printable(A)) || A <- AllowedAudiences], <<" or ">>)]
     );
 
 unverified_description(#cv_ip{whitelist = Whitelist}) ->
@@ -567,23 +567,28 @@ verify(#cv_ip{}, #auth_ctx{ip = undefined}) ->
 verify(#cv_ip{whitelist = Whitelist}, #auth_ctx{ip = IP}) ->
     is_allowed(whitelist, Whitelist, fun(Mask) -> ip_utils:matches_mask(IP, Mask) end);
 
+verify(#cv_asn{}, #auth_ctx{ip = undefined}) ->
+    false;
 verify(#cv_asn{whitelist = Whitelist}, #auth_ctx{ip = IP}) ->
     {ok, ASN} = ip_utils:lookup_asn(IP),
     is_allowed(whitelist, Whitelist, fun(Entry) -> ASN =:= Entry end);
 
+verify(#cv_country{}, #auth_ctx{ip = undefined}) ->
+    false;
 verify(#cv_country{type = Type, list = List}, #auth_ctx{ip = IP}) ->
     {ok, Country} = ip_utils:lookup_country(IP),
     is_allowed(Type, List, fun(Entry) -> Country =:= Entry end);
 
+verify(#cv_region{}, #auth_ctx{ip = undefined}) ->
+    false;
 verify(#cv_region{type = Type, list = List}, #auth_ctx{ip = IP}) ->
     {ok, Regions} = ip_utils:lookup_region(IP),
     is_allowed(Type, List, fun(Entry) -> lists:member(Entry, Regions) end);
 
+% interface = oneclient caveat is treated as a data access caveat and limits the
+% available API, but does not require the allow_data_access_caveats policy.
 verify(#cv_interface{}, #auth_ctx{interface = undefined}) ->
     false;
-% If oneclient interface is specified, this caveat is treated as a data access caveat
-verify(#cv_interface{interface = oneclient}, #auth_ctx{interface = oneclient} = AuthCtx) ->
-    AuthCtx#auth_ctx.data_access_caveats_policy == allow_data_access_caveats;
 verify(#cv_interface{interface = Interface}, #auth_ctx{interface = Interface}) ->
     true;
 verify(#cv_interface{}, _AuthCtx) ->
@@ -597,7 +602,6 @@ verify(#cv_api{}, _AuthCtx) ->
     true;
 
 % Data access caveats are allowed only if the authorizing party requested so.
-% Beside those below, cv_interface = oneclient is also considered as such.
 % These caveats are supported only in Oneprovider, on interfaces used for data
 % access. The proper verification of these caveats is performed in Oneprovider,
 % here only a general check is done.
