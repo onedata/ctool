@@ -18,7 +18,7 @@
 -export([unicode_list_to_binary/1, binary_to_unicode_list/1]).
 
 % String formatting
--export([format/2, format_bin/2, format_byte_size/1]).
+-export([format/1, format/2, format_bin/2, format_byte_size/1]).
 
 -export([rand_hex/1]).
 
@@ -122,9 +122,19 @@ binary_to_unicode_list(Binary) ->
 
 %%--------------------------------------------------------------------
 %% @doc Returns a formatted string.
+%% @equiv format(Format, []).
 %% @end
 %%--------------------------------------------------------------------
--spec format(Format :: string(), Args :: [term()]) -> list().
+-spec format(Format :: string()) -> string().
+format(Format) ->
+    format(Format, []).
+
+
+%%--------------------------------------------------------------------
+%% @doc Returns a formatted string.
+%% @end
+%%--------------------------------------------------------------------
+-spec format(Format :: string(), Args :: [term()]) -> string().
 format(Format, Args) ->
     lists:flatten(io_lib:format(Format, Args)).
 
