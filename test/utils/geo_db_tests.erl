@@ -18,8 +18,9 @@
 % Dummy query result that depends on timestamp (to verify if db is refreshed)
 -define(QUERY_RESULT(Timestamp), #{<<"dummy-result">> => Timestamp}).
 -define(DUMMY_DB_PATH(Dir, DbType), filename:join([Dir, atom_to_list(DbType) ++ "-geo-db.tar.gz"])).
--define(DUMMY_DB_MIRROR(DbType), <<"https://example.com/", (atom_to_binary(DbType, utf8))/binary>>).
+-define(DUMMY_DB_MIRROR(DbType), <<"https://example.com/dl?edition_id=", (atom_to_binary(DbType, utf8))/binary>>).
 -define(DUMMY_STATUS_FILE(Dir), filename:join([Dir, "geo-db-status.json"])).
+-define(DUMMY_LICENSE_KEY, <<"LiCeNsE12345">>).
 
 %%%===================================================================
 %%% Test cases
@@ -28,6 +29,7 @@
 -define(TEST_CASES, [
     {"Lookup GEO DB", fun lookup_geo_db/1},
     {"Refresh GEO DB", fun refresh_geo_db/1},
+    {"Absent or bad MaxMind licence key", fun absent_or_bad_maxmind_licence_key/1},
     {"Bad GEO DB path", fun bad_db_path/1},
     {"Bad GEO DB mirror", fun bad_db_mirror/1}
 ]).
@@ -87,6 +89,7 @@ setup() ->
 
     TmpDir = mochitemp:mkdtemp(),
 
+    ctool:set_env(maxmind_licence_key, ?DUMMY_LICENSE_KEY),
     ctool:set_env(geo_db_refresh_period_days, 3),
     ctool:set_env(geo_db_refresh_backoff_secs, 3600),
     % Dummy DB files hold the timestamp of their creation which is later
@@ -104,8 +107,12 @@ setup() ->
     }),
     meck:new(http_client, []),
     meck:expect(http_client, get, fun(Url) ->
-        AnsUrl = ?DUMMY_DB_MIRROR(asn),
-        CountryUrl = ?DUMMY_DB_MIRROR(country),
+        AnsUrl = http_utils:append_url_parameters(
+            ?DUMMY_DB_MIRROR(asn), #{<<"license_key">> => ?DUMMY_LICENSE_KEY}
+        ),
+        CountryUrl = http_utils:append_url_parameters(
+            ?DUMMY_DB_MIRROR(country), #{<<"license_key">> => ?DUMMY_LICENSE_KEY}
+        ),
         case Url of
             AnsUrl -> {ok, 200, #{}, integer_to_binary(get_mocked_time())};
             CountryUrl -> {ok, 200, #{}, integer_to_binary(get_mocked_time())};
@@ -227,6 +234,33 @@ refresh_geo_db(#{tmpDir := TmpDir}) ->
         }
     }),
     ?assertEqual({ok, ExpStatusOmega}, file:read_file(?DUMMY_STATUS_FILE(TmpDir))).
+
+
+absent_or_bad_maxmind_licence_key(_) ->
+    TimeAlpha = get_mocked_time(),
+    ?assertEqual({ok, ?QUERY_RESULT(TimeAlpha)}, geo_db:lookup(asn, "5.6.7.8")),
+    ?assertEqual({ok, ?QUERY_RESULT(TimeAlpha)}, geo_db:lookup(country, "9.6.7.8")),
+
+    % Databases should not be updated if license key is not given
+    ctool:set_env(maxmind_licence_key, undefined),
+    RefreshPeriod = 86400 * ctool:get_env(geo_db_refresh_period_days),
+    simulate_time_passing(RefreshPeriod + 1),
+    ?assertEqual({ok, ?QUERY_RESULT(TimeAlpha)}, geo_db:lookup(asn, "5.6.7.8")),
+    ?assertEqual({ok, ?QUERY_RESULT(TimeAlpha)}, geo_db:lookup(country, "9.6.7.8")),
+
+    % Databases should not be updated if a bad license key is given
+    ctool:set_env(maxmind_licence_key, <<"bad-key">>),
+    RefreshBackoff = ctool:get_env(geo_db_refresh_backoff_secs),
+    simulate_time_passing(RefreshBackoff + 1),
+    ?assertEqual({ok, ?QUERY_RESULT(TimeAlpha)}, geo_db:lookup(asn, "5.6.7.8")),
+    ?assertEqual({ok, ?QUERY_RESULT(TimeAlpha)}, geo_db:lookup(country, "9.6.7.8")),
+
+    % Set a correct license key - after the backoff, the databases should be updated
+    ctool:set_env(maxmind_licence_key, ?DUMMY_LICENSE_KEY),
+    simulate_time_passing(RefreshBackoff + 1),
+    TimeBeta = get_mocked_time(),
+    ?assertEqual({ok, ?QUERY_RESULT(TimeBeta)}, geo_db:lookup(asn, "5.6.7.8")),
+    ?assertEqual({ok, ?QUERY_RESULT(TimeBeta)}, geo_db:lookup(country, "9.6.7.8")).
 
 
 bad_db_path(#{tmpDir := TmpDir}) ->

@@ -31,9 +31,10 @@
 -define(LOAD_ATTEMPT_BACKOFF, 300000). % 5 minutes
 % Critical section (per node and db type) to avoid race conditions when
 % reading / refreshing the database.
--define(CRITICAL_SECTION(DbType, Fun), global:trans({{ensure_geo_db, DbType, node()}, self()}, Fun)).
+-define(CRITICAL_SECTION(DbType, Fun), global:trans({{geo_db, DbType, node()}, self()}, Fun)).
 -define(NOW(), time_utils:system_time_seconds()).
 % Configurable env variables
+-define(MAXMIND_LICENCE_KEY, ctool:get_env(maxmind_licence_key, undefined)).
 -define(GEO_DB_PATH(DbType), maps:get(DbType, ctool:get_env(geo_db_path))).
 -define(GEO_DB_MIRROR(DbType), maps:get(DbType, ctool:get_env(geo_db_mirror))).
 -define(GEO_DB_STATUS_FILE, ctool:get_env(geo_db_status_path)).
@@ -150,9 +151,23 @@ should_fetch_newer_db(DbType) ->
 
 -spec fetch_newer_db(db_type()) -> boolean().
 fetch_newer_db(DbType) ->
+    case ?MAXMIND_LICENCE_KEY of
+        undefined ->
+            ?warning(
+                "No MaxMind licence key found - skipping ~p GEO DB refresh. Next retry in ~B sec.",
+                [DbType, ?GEO_DB_REFRESH_BACKOFF_SEC]
+            ),
+            write_status(DbType, keep, ?NOW()),
+            false;
+        LicenceKey ->
+            fetch_newer_db(DbType, str_utils:to_binary(LicenceKey))
+    end.
+
+fetch_newer_db(DbType, LicenceKey) ->
     Now = ?NOW(),
-    Mirror = ?GEO_DB_MIRROR(DbType),
-    case http_client:get(Mirror) of
+    Mirror = str_utils:to_binary(?GEO_DB_MIRROR(DbType)),
+    Url = http_utils:append_url_parameters(Mirror, #{<<"license_key">> => LicenceKey}),
+    case http_client:get(Url) of
         {ok, 200, _, Data} ->
             file:write_file(?GEO_DB_PATH(DbType), Data),
             write_status(DbType, Now, Now),
