@@ -142,7 +142,7 @@ format_bin(Format, Args) ->
 %% @doc Returns a formatted byte size with corresponding unit.
 %% @end
 %%--------------------------------------------------------------------
--spec format_byte_size(non_neg_integer()) -> binary().
+-spec format_byte_size(non_neg_integer()) -> string().
 format_byte_size(Size) ->
     format_byte_size(Size, ["B", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB", "ZiB", "YiB"]).
 
@@ -150,8 +150,8 @@ format_byte_size(Size, [_ | Units]) when Size >= 1024 ->
     format_byte_size(Size / 1024, Units);
 format_byte_size(Size, [Unit | _]) ->
     case trunc(Size) == Size of
-        true -> format_bin("~B ~s", [trunc(Size), Unit]);
-        false -> format_bin("~.2f ~s", [Size, Unit])
+        true -> format("~B ~s", [trunc(Size), Unit]);
+        false -> format("~.2f ~s", [Size, Unit])
     end.
 
 
