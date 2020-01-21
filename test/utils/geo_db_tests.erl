@@ -107,12 +107,8 @@ setup() ->
     }),
     meck:new(http_client, []),
     meck:expect(http_client, get, fun(Url) ->
-        AnsUrl = http_utils:append_url_parameters(
-            ?DUMMY_DB_MIRROR(asn), #{<<"license_key">> => ?DUMMY_LICENSE_KEY}
-        ),
-        CountryUrl = http_utils:append_url_parameters(
-            ?DUMMY_DB_MIRROR(country), #{<<"license_key">> => ?DUMMY_LICENSE_KEY}
-        ),
+        AnsUrl = str_utils:format_bin("~s&license_key=~s", [?DUMMY_DB_MIRROR(asn), ?DUMMY_LICENSE_KEY]),
+        CountryUrl = str_utils:format_bin("~s&license_key=~s", [?DUMMY_DB_MIRROR(country), ?DUMMY_LICENSE_KEY]),
         case Url of
             AnsUrl -> {ok, 200, #{}, integer_to_binary(get_mocked_time())};
             CountryUrl -> {ok, 200, #{}, integer_to_binary(get_mocked_time())};

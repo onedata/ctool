@@ -175,7 +175,7 @@ fetch_newer_db(DbType, LicenceKey) ->
             true;
         OtherResult ->
             ?warning(
-                "Cannot fetch newer ~p GEO DB (~s), next retry in ~B sec, result was: ~p",
+                "Cannot fetch newer ~p GEO DB (~s), next retry in ~B sec~nresult was: ~p",
                 [DbType, Mirror, ?GEO_DB_REFRESH_BACKOFF_SEC, OtherResult]
             ),
             write_status(DbType, keep, Now),
