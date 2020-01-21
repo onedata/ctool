@@ -80,8 +80,14 @@
 
 
         %% ===================================================================
-        %% GEOLOCATION
+        %% GEOLOCATION - uses MaxMind GeoLite2 databases.
         %% ===================================================================
+
+        % To ensure that the Geo databases are up to date, you must set up an
+        % account on MaxMind homepage and enter your licence key in the config
+        % below. Onezone will automatically, periodically check for updates.
+        % If the licence key is not given, no checks will be performed.
+        {maxmind_licence_key, undefined},
 
         % NOTE: ALL PATHS should be overriden in the including project.
 
@@ -91,18 +97,20 @@
             asn =>     "./etc/geo-db/geo-db-asn.tar.gz",
             country => "./etc/geo-db/geo-db-country.tar.gz"
         }},
-        % Mirrors from which the MaxMind DBs download will be attempted in case
-        % the refresh period passes.
-        {geo_db_mirror, #{
-            asn =>     "https://geolite.maxmind.com/download/geoip/database/GeoLite2-ASN.tar.gz",
-            country => "https://geolite.maxmind.com/download/geoip/database/GeoLite2-Country.tar.gz"
-        }},
         % File that holds info about last successful and attempted updates
         % of the MaxMind DBs.
         {geo_db_status_path, "./etc/geo-db/geo-db-status.json"},
+
+        % Mirrors from which the MaxMind DBs download will be attempted in case
+        % the refresh period passes. Licence key will be concatenated as another
+        % query string param.
+        {geo_db_mirror, #{
+            asn =>     "https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-ASN&suffix=tar.gz",
+            country => "https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-Country&suffix=tar.gz"
+        }},
         % How often (in days) should MaxMind DB refresh be performed
         {geo_db_refresh_period_days, 3},
         % Backoff (in seconds) in case fetching a newer DB fails
-        {geo_db_refresh_backoff_secs, 3600}
+        {geo_db_refresh_backoff_secs, 43200} % 12 hours
     ]}
 ]}.

@@ -18,7 +18,7 @@
 -export([unicode_list_to_binary/1, binary_to_unicode_list/1]).
 
 % String formatting
--export([format/2, format_bin/2, format_byte_size/1]).
+-export([format/1, format/2, format_bin/2, format_byte_size/1]).
 
 -export([rand_hex/1]).
 
@@ -122,9 +122,19 @@ binary_to_unicode_list(Binary) ->
 
 %%--------------------------------------------------------------------
 %% @doc Returns a formatted string.
+%% @equiv format(Format, []).
 %% @end
 %%--------------------------------------------------------------------
--spec format(Format :: string(), Args :: [term()]) -> list().
+-spec format(Format :: string()) -> string().
+format(Format) ->
+    format(Format, []).
+
+
+%%--------------------------------------------------------------------
+%% @doc Returns a formatted string.
+%% @end
+%%--------------------------------------------------------------------
+-spec format(Format :: string(), Args :: [term()]) -> string().
 format(Format, Args) ->
     lists:flatten(io_lib:format(Format, Args)).
 
@@ -142,7 +152,7 @@ format_bin(Format, Args) ->
 %% @doc Returns a formatted byte size with corresponding unit.
 %% @end
 %%--------------------------------------------------------------------
--spec format_byte_size(non_neg_integer()) -> binary().
+-spec format_byte_size(non_neg_integer()) -> string().
 format_byte_size(Size) ->
     format_byte_size(Size, ["B", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB", "ZiB", "YiB"]).
 
@@ -150,8 +160,8 @@ format_byte_size(Size, [_ | Units]) when Size >= 1024 ->
     format_byte_size(Size / 1024, Units);
 format_byte_size(Size, [Unit | _]) ->
     case trunc(Size) == Size of
-        true -> format_bin("~B ~s", [trunc(Size), Unit]);
-        false -> format_bin("~.2f ~s", [Size, Unit])
+        true -> format("~B ~s", [trunc(Size), Unit]);
+        false -> format("~.2f ~s", [Size, Unit])
     end.
 
 

@@ -169,7 +169,10 @@ append_url_parameters(Url, Params) when is_map(Params) ->
 append_url_parameters(Url, <<"">>) ->
     Url;
 append_url_parameters(Url, Params) ->
-    <<Url/binary, "?", Params/binary>>.
+    case string:find(Url, <<"?">>) of
+        nomatch -> <<Url/binary, "?", Params/binary>>;
+        _ -> <<Url/binary, "&", Params/binary>>
+    end.
 
 
 %%--------------------------------------------------------------------
