@@ -155,7 +155,8 @@ normalize_email(Email) ->
 %% @private
 %% @doc
 %% Converts a binary representing a REST method to an atom representing
-%% the method. Handles methods
+%% the method. Handles methods which are relevant
+%% to a graph sync REST API.
 %% @end
 %%--------------------------------------------------------------------
 -spec binary_to_method(BinMethod :: binary()) -> method().
