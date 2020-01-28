@@ -7,13 +7,12 @@
 %%%-------------------------------------------------------------------
 %%% @doc
 %%% This module contains utility functions for measuring system, cluster and
-%%% zone time as well as some functions for timestamp conversion.
+%%% remote cluster time as well as time format conversion.
 %%% @end
 %%%-------------------------------------------------------------------
 -module(time_utils).
 -author("Lukasz Opiola").
 
-% Expressive types for better code readability
 -type seconds() :: integer().
 -type millis() :: integer().
 -export_type([seconds/0, millis/0]).
@@ -37,8 +36,9 @@
 -export([system_time_seconds/0, system_time_millis/0]).
 -export([cluster_time_seconds/0, cluster_time_millis/0]).
 -export([remote_timestamp/2]).
--export([datetime_to_datestamp/1, datestamp_to_datetime/1, epoch_to_iso8601/1,
-    datetime_to_epoch/1, iso8601_to_epoch/1]).
+-export([epoch_to_iso8601/1, iso8601_to_epoch/1]).
+-export([datetime_to_epoch/1, epoch_to_datetime/1]).
+-export([datetime_to_datestamp/1, datestamp_to_datetime/1]).
 
 %%%===================================================================
 %%% API
@@ -141,35 +141,25 @@ remote_timestamp(CacheKey, RemoteTimestampFun) ->
     end.
 
 
-%%--------------------------------------------------------------------
-%% @doc
-%% Convert unix epoch to iso8601 format.
-%% @end
-%%--------------------------------------------------------------------
--spec epoch_to_iso8601(Epoch :: seconds()) -> binary().
+-spec epoch_to_iso8601(seconds()) -> binary().
 epoch_to_iso8601(Epoch) ->
     iso8601:format({Epoch div 1000000, Epoch rem 1000000, 0}).
 
 
-%%--------------------------------------------------------------------
-%% @doc
-%% Convert iso8601 format to unix epoch time.
-%% @end
-%%--------------------------------------------------------------------
--spec iso8601_to_epoch(binary()) -> Epoch :: seconds().
+-spec iso8601_to_epoch(binary()) -> seconds().
 iso8601_to_epoch(Iso8601) ->
     DateTime = datestamp_to_datetime(Iso8601),
     datetime_to_epoch(DateTime).
 
 
-%%-------------------------------------------------------------------
-%% @doc
-%% Converts erlang datetime to unix epoch time.
-%% @end
-%%-------------------------------------------------------------------
--spec datetime_to_epoch(calendar:datetime()) -> Epoch :: seconds().
+-spec datetime_to_epoch(calendar:datetime()) -> seconds().
 datetime_to_epoch({{_, _, _}, {_, _, _}} = DateTime) ->
     calendar:datetime_to_gregorian_seconds(DateTime) - ?UNIX_EPOCH.
+
+
+-spec epoch_to_datetime(seconds()) -> calendar:datetime().
+epoch_to_datetime(TimestampSeconds) ->
+    calendar:gregorian_seconds_to_datetime(TimestampSeconds + ?UNIX_EPOCH).
 
 
 %%%--------------------------------------------------------------------
