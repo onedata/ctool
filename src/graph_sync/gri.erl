@@ -35,7 +35,7 @@
 -type entity_type() :: oz_worker | od_user | od_group | od_space | od_share
 | od_provider | od_handle_service | od_handle | od_cluster | od_harvester
 | od_storage | od_token | op_file | op_replica | op_transfer | op_user | op_group
-| op_space | op_share | op_provider | op_metrics.
+| op_space | op_share | op_provider | op_metrics | op_handle | op_handle_service.
 -type entity_type_pattern() :: '*' | entity_type().
 
 -type entity_id() :: undefined | binary().
@@ -194,6 +194,8 @@ serialize_type(op_space, _) -> <<"op_space">>;
 serialize_type(op_share, _) -> <<"op_share">>;
 serialize_type(op_provider, _) -> <<"op_provider">>;
 serialize_type(op_metrics, _) -> <<"op_metrics">>;
+serialize_type(op_handle, _) -> <<"op_handle">>;
+serialize_type(op_handle_service, _) -> <<"op_handle_service">>;
 
 serialize_type(_, _) -> throw(?ERROR_BAD_GRI).
 
@@ -225,6 +227,8 @@ deserialize_type(<<"op_space">>, _) -> op_space;
 deserialize_type(<<"op_share">>, _) -> op_share;
 deserialize_type(<<"op_provider">>, _) -> op_provider;
 deserialize_type(<<"op_metrics">>, _) -> op_metrics;
+deserialize_type(<<"op_handle">>, _) -> op_handle;
+deserialize_type(<<"op_handle_service">>, _) -> op_handle_service;
 
 deserialize_type(_, _) -> throw(?ERROR_BAD_GRI).
 
