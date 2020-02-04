@@ -73,7 +73,7 @@
     version = ?CURRENT_TOKEN_VERSION :: tokens:version(),
     onezone_domain :: tokens:onezone_domain(),
     id :: tokens:id(),
-    persistent :: tokens:persistent(),
+    persistence :: tokens:persistence(),
     subject = #subject{type = nobody} :: aai:subject(),
     type = ?ACCESS_TOKEN :: tokens:type(),
     macaroon = undefined :: undefined | macaroon:macaroon()
