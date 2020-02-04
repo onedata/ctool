@@ -1282,7 +1282,7 @@ to_http_code(?ERROR_TEMPORARY_FAILURE) -> ?HTTP_503_SERVICE_UNAVAILABLE;
 to_http_code(?ERROR_UNAUTHORIZED) -> ?HTTP_401_UNAUTHORIZED;
 to_http_code(?ERROR_FORBIDDEN) -> ?HTTP_403_FORBIDDEN;
 to_http_code(?ERROR_NOT_FOUND) -> ?HTTP_404_NOT_FOUND;
-to_http_code(?ERROR_ALREADY_EXISTS) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_ALREADY_EXISTS) -> ?HTTP_409_CONFLICT;
 to_http_code(?ERROR_FILE_ACCESS(_, _)) -> ?HTTP_500_INTERNAL_SERVER_ERROR;
 
 %% -----------------------------------------------------------------------------

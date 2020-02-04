@@ -13,6 +13,10 @@
 %%%-------------------------------------------------------------------
 -module(http_utils).
 
+%% Methods understood by rest handlers in Onedata applications.
+-type method() :: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE' | 'OPTIONS'.
+-export_type([method/0]).
+
 -define(EMAIL_VALIDATION_REGEXP,
     <<"^[a-zA-Z0-9!#$%&'*+\\/=?^_`{|}~-]+(?:\\.[a-zA-Z0-9!#$%&'*+\\/=?^_`{|}~-]+)*@(?"
     ":[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?\\.)+[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?$">>
@@ -21,19 +25,18 @@
 % According to RFC 5321
 -define(EMAIL_MAX_LENGTH, 254).
 
-% URL encoding/decoding
--export([url_encode/1, url_decode/1]).
--export([last_url_part/1]).
+-export([method_to_binary/1, binary_to_method/1]).
 
-% Safe escaping
--export([js_escape/1, html_encode/1]).
+% URL encoding/decoding
+-export([url_encode/1]).
+-export([last_url_part/1]).
 
 % base64url encoding/decoding
 -export([base64url_encode/1, base64url_decode/1]).
 
 % Miscellaneous convenience functions
 -export([encode_http_parameters/1, append_url_parameters/2]).
--export([fully_qualified_url/1, validate_email/1, normalize_email/1]).
+-export([validate_email/1, normalize_email/1]).
 
 %%%===================================================================
 %%% API
@@ -50,69 +53,12 @@ url_encode(Data) ->
 
 
 %%--------------------------------------------------------------------
-%% @doc Performs URL-encoded string decoding
-%% @end
-%%--------------------------------------------------------------------
--spec url_decode(Data :: binary() | string()) -> binary().
-url_decode(Data) ->
-    hackney_url:urldecode(Data).
-
-
-%%--------------------------------------------------------------------
 %% @doc Splits an URL on '/' and returns the last element.
 %% @end
 %%--------------------------------------------------------------------
 -spec last_url_part(URL :: binary()) -> binary().
 last_url_part(URL) ->
     lists:last(binary:split(URL, <<"/">>, [global, trim_all])).
-
-
-%%--------------------------------------------------------------------
-%% @doc Escapes all javascript - sensitive characters.
-%% @end
-%%--------------------------------------------------------------------
--spec js_escape(String :: binary() | string()) -> binary().
-js_escape(undefined) ->
-    <<"">>;
-js_escape(Value) when is_list(Value) ->
-    js_escape(iolist_to_binary(Value));
-js_escape(Value) ->
-    js_escape(Value, <<"">>).
-js_escape(<<"\\", Rest/binary>>, Acc) ->
-    js_escape(Rest, <<Acc/binary, "\\\\">>);
-js_escape(<<"\r", Rest/binary>>, Acc) ->
-    js_escape(Rest, <<Acc/binary, "\\r">>);
-js_escape(<<"\n", Rest/binary>>, Acc) ->
-    js_escape(Rest, <<Acc/binary, "\\n">>);
-js_escape(<<"\"", Rest/binary>>, Acc) ->
-    js_escape(Rest, <<Acc/binary, "\\\"">>);
-js_escape(<<"'", Rest/binary>>, Acc) ->
-    js_escape(Rest, <<Acc/binary, "\\'">>);
-js_escape(<<"<script", Rest/binary>>, Acc) ->
-    js_escape(Rest, <<Acc/binary, "&lt;script">>);
-js_escape(<<"script>", Rest/binary>>, Acc) ->
-    js_escape(Rest, <<Acc/binary, "script&gt;">>);
-js_escape(<<C, Rest/binary>>, Acc) ->
-    js_escape(Rest, <<Acc/binary, C>>);
-js_escape(<<"">>, Acc) ->
-    Acc.
-
-
-%%--------------------------------------------------------------------
-%% @doc Performs safe URL encoding.
-%% @end
-%%--------------------------------------------------------------------
--spec html_encode(String :: binary() | string()) -> binary().
-html_encode(List) when is_list(List) ->
-    html_encode(str_utils:to_binary(List));
-
-html_encode(<<"">>) -> <<"">>;
-html_encode(<<$<, Rest/binary>>) -> <<"&lt;", (html_encode(Rest))/binary>>;
-html_encode(<<$>, Rest/binary>>) -> <<"&gt;", (html_encode(Rest))/binary>>;
-html_encode(<<$", Rest/binary>>) -> <<"&quot;", (html_encode(Rest))/binary>>;
-html_encode(<<$', Rest/binary>>) -> <<"&#39;", (html_encode(Rest))/binary>>;
-html_encode(<<$&, Rest/binary>>) -> <<"&amp;", (html_encode(Rest))/binary>>;
-html_encode(<<H, Rest/binary>>) -> <<H, (html_encode(Rest))/binary>>.
 
 
 %%--------------------------------------------------------------------
@@ -175,20 +121,6 @@ append_url_parameters(Url, Params) ->
     end.
 
 
-%%--------------------------------------------------------------------
-%% @doc
-%% Converts the given URL to a fully qualified url, without leading www.
-%% @end
-%%--------------------------------------------------------------------
--spec fully_qualified_url(binary()) -> binary().
-fully_qualified_url(Binary) ->
-    case Binary of
-        <<"https://www.", Rest/binary>> -> <<"https://", Rest/binary>>;
-        <<"https://", _/binary>> -> Binary;
-        <<"www.", Rest/binary>> -> <<"https://", Rest/binary>>;
-        _ -> <<"https://", Binary/binary>>
-    end.
-
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -217,3 +149,36 @@ normalize_email(Email) ->
         _ ->
             Email
     end.
+
+
+%%--------------------------------------------------------------------
+%% @private
+%% @doc
+%% Converts a binary representing a REST method to an atom representing
+%% the method. Handles methods which are relevant
+%% to a graph sync REST API.
+%% @end
+%%--------------------------------------------------------------------
+-spec binary_to_method(BinMethod :: binary()) -> method().
+binary_to_method(<<"POST">>) -> 'POST';
+binary_to_method(<<"PUT">>) -> 'PUT';
+binary_to_method(<<"GET">>) -> 'GET';
+binary_to_method(<<"PATCH">>) -> 'PATCH';
+binary_to_method(<<"DELETE">>) -> 'DELETE';
+binary_to_method(<<"OPTIONS">>) -> 'OPTIONS'.
+
+
+%%--------------------------------------------------------------------
+%% @private
+%% @doc
+%% Converts an atom representing a REST method to a binary representing
+%% the method.
+%% @end
+%%--------------------------------------------------------------------
+-spec method_to_binary(Method :: method()) -> binary().
+method_to_binary('POST') -> <<"POST">>;
+method_to_binary('PUT') -> <<"PUT">>;
+method_to_binary('GET') -> <<"GET">>;
+method_to_binary('PATCH') -> <<"PATCH">>;
+method_to_binary('DELETE') -> <<"DELETE">>;
+method_to_binary('OPTIONS') -> <<"OPTIONS">>.

@@ -18,7 +18,7 @@
 -define(assertMatchFun(Guard, Expr),
     fun(__Print__) ->
         case (Expr) of
-            Guard = __Result__ -> __Result__;
+            __Result__ = Guard -> __Result__;
             __Value__ ->
                 __Args__ = [{module, ?MODULE},
                     {line, ?LINE},
