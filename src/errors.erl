@@ -30,14 +30,14 @@
 | {file_access, Path :: file:name_all(), Errno :: errno()}.
 
 -type auth() :: bad_basic_credentials | {bad_idp_access_token, IdP :: atom()}
-| bad_token | bad_audience_token | token_invalid | token_revoked
-| not_an_access_token
+| bad_token | bad_service_token | bad_consumer_token
+| token_invalid | token_revoked | not_an_access_token
 | {not_an_invite_token, ExpectedInviteTokenType :: any | tokens:invite_token_type(), Received :: tokens:type()}
 | {token_caveat_unverified, caveats:caveat()}
 | {token_time_caveat_required, time_utils:seconds()}
-| token_subject_invalid | {token_audience_forbidden, aai:audience()}
+| token_subject_invalid | {token_service_forbidden, aai:service_spec()}
 | invite_token_subject_not_authorized | invite_token_usage_limit_exceeded
-| {invite_token_consumer_invalid, aai:subject()}
+| {invite_token_consumer_invalid, aai:consumer_spec()}
 | {invite_token_target_id_invalid, Id :: binary()} | token_session_invalid.
 
 -type graph_sync() :: expected_handshake_message | handshake_already_done
@@ -249,12 +249,19 @@ to_json(?ERROR_BAD_TOKEN) -> #{
     <<"id">> => <<"badToken">>,
     <<"description">> => <<"Provided token could not be understood by the server.">>
 };
-to_json(?ERROR_BAD_AUDIENCE_TOKEN(TokenError)) -> #{
-    <<"id">> => <<"badAudienceToken">>,
+to_json(?ERROR_BAD_SERVICE_TOKEN(TokenError)) -> #{
+    <<"id">> => <<"badServiceToken">>,
     <<"details">> => #{
         <<"tokenError">> => to_json(TokenError)
     },
-    <<"description">> => <<"Provided audience token is not valid.">>
+    <<"description">> => <<"Provided service token is not valid.">>
+};
+to_json(?ERROR_BAD_CONSUMER_TOKEN(TokenError)) -> #{
+    <<"id">> => <<"badConsumerToken">>,
+    <<"details">> => #{
+        <<"tokenError">> => to_json(TokenError)
+    },
+    <<"description">> => <<"Provided consumer token is not valid.">>
 };
 to_json(?ERROR_TOKEN_INVALID) -> #{
     <<"id">> => <<"tokenInvalid">>,
@@ -319,12 +326,12 @@ to_json(?ERROR_TOKEN_SUBJECT_INVALID) -> #{
     <<"id">> => <<"tokenSubjectInvalid">>,
     <<"description">> => <<"The token subject is invalid (does not exist or is different than expected).">>
 };
-to_json(?ERROR_TOKEN_AUDIENCE_FORBIDDEN(Audience)) -> #{
-    <<"id">> => <<"tokenAudienceForbidden">>,
+to_json(?ERROR_TOKEN_SERVICE_FORBIDDEN(Service)) -> #{
+    <<"id">> => <<"tokenServiceForbidden">>,
     <<"details">> => #{
-        <<"audience">> => aai:audience_to_json(Audience)
+        <<"service">> => aai:service_to_json(Service)
     },
-    <<"description">> => ?FMT("The audience ~s is forbidden for this subject.", [aai:audience_to_printable(Audience)])
+    <<"description">> => ?FMT("The service ~s is forbidden for this subject.", [aai:service_to_printable(Service)])
 };
 to_json(?ERROR_INVITE_TOKEN_SUBJECT_NOT_AUTHORIZED) -> #{
     <<"id">> => <<"inviteTokenSubjectNotAuthorized">>,
@@ -334,12 +341,12 @@ to_json(?ERROR_INVITE_TOKEN_USAGE_LIMIT_REACHED) -> #{
     <<"id">> => <<"inviteTokenUsageLimitReached">>,
     <<"description">> => <<"The usage limit of this invite token has been reached.">>
 };
-to_json(?ERROR_INVITE_TOKEN_CONSUMER_INVALID(Subject)) -> #{
+to_json(?ERROR_INVITE_TOKEN_CONSUMER_INVALID(Consumer)) -> #{
     <<"id">> => <<"inviteTokenConsumerInvalid">>,
     <<"details">> => #{
-        <<"consumer">> => aai:subject_to_json(Subject)
+        <<"consumer">> => aai:subject_to_json(Consumer)
     },
-    <<"description">> => ?FMT("The consumer '~s' is invalid for this type of invite token.", [aai:subject_to_printable(Subject)])
+    <<"description">> => ?FMT("The consumer '~s' is invalid for this type of invite token.", [aai:subject_to_printable(Consumer)])
 };
 to_json(?ERROR_INVITE_TOKEN_TARGET_ID_INVALID(Id)) -> #{
     <<"id">> => <<"inviteTokenTargetIdInvalid">>,
@@ -944,8 +951,11 @@ from_json(#{<<"id">> := <<"badIdpAccessToken">>, <<"details">> := #{<<"idp">> :=
 from_json(#{<<"id">> := <<"badToken">>}) ->
     ?ERROR_BAD_TOKEN;
 
-from_json(#{<<"id">> := <<"badAudienceToken">>, <<"details">> := #{<<"tokenError">> := TokenError}}) ->
-    ?ERROR_BAD_AUDIENCE_TOKEN(from_json(TokenError));
+from_json(#{<<"id">> := <<"badServiceToken">>, <<"details">> := #{<<"tokenError">> := TokenError}}) ->
+    ?ERROR_BAD_SERVICE_TOKEN(from_json(TokenError));
+
+from_json(#{<<"id">> := <<"badConsumerToken">>, <<"details">> := #{<<"tokenError">> := TokenError}}) ->
+    ?ERROR_BAD_CONSUMER_TOKEN(from_json(TokenError));
 
 from_json(#{<<"id">> := <<"tokenInvalid">>}) ->
     ?ERROR_TOKEN_INVALID;
@@ -979,8 +989,8 @@ from_json(#{<<"id">> := <<"tokenTimeCaveatRequired">>, <<"details">> := #{<<"max
 from_json(#{<<"id">> := <<"tokenSubjectInvalid">>}) ->
     ?ERROR_TOKEN_SUBJECT_INVALID;
 
-from_json(#{<<"id">> := <<"tokenAudienceForbidden">>, <<"details">> := #{<<"audience">> := Audience}}) ->
-    ?ERROR_TOKEN_AUDIENCE_FORBIDDEN(aai:audience_from_json(Audience));
+from_json(#{<<"id">> := <<"tokenServiceForbidden">>, <<"details">> := #{<<"service">> := Service}}) ->
+    ?ERROR_TOKEN_SERVICE_FORBIDDEN(aai:service_from_json(Service));
 
 from_json(#{<<"id">> := <<"inviteTokenSubjectNotAuthorized">>}) ->
     ?ERROR_INVITE_TOKEN_SUBJECT_NOT_AUTHORIZED;
@@ -988,8 +998,8 @@ from_json(#{<<"id">> := <<"inviteTokenSubjectNotAuthorized">>}) ->
 from_json(#{<<"id">> := <<"inviteTokenUsageLimitReached">>}) ->
     ?ERROR_INVITE_TOKEN_USAGE_LIMIT_REACHED;
 
-from_json(#{<<"id">> := <<"inviteTokenConsumerInvalid">>, <<"details">> := #{<<"consumer">> := Audience}}) ->
-    ?ERROR_INVITE_TOKEN_CONSUMER_INVALID(aai:subject_from_json(Audience));
+from_json(#{<<"id">> := <<"inviteTokenConsumerInvalid">>, <<"details">> := #{<<"consumer">> := Consumer}}) ->
+    ?ERROR_INVITE_TOKEN_CONSUMER_INVALID(aai:subject_from_json(Consumer));
 
 from_json(#{<<"id">> := <<"inviteTokenTargetIdInvalid">>, <<"details">> := #{<<"id">> := Id}}) ->
     ?ERROR_INVITE_TOKEN_TARGET_ID_INVALID(Id);
@@ -1296,7 +1306,8 @@ to_http_code(?ERROR_POSIX(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_BAD_BASIC_CREDENTIALS) -> ?HTTP_401_UNAUTHORIZED;
 to_http_code(?ERROR_BAD_IDP_ACCESS_TOKEN(_)) -> ?HTTP_401_UNAUTHORIZED;
 to_http_code(?ERROR_BAD_TOKEN) -> ?HTTP_401_UNAUTHORIZED;
-to_http_code(?ERROR_BAD_AUDIENCE_TOKEN(_)) -> ?HTTP_401_UNAUTHORIZED;
+to_http_code(?ERROR_BAD_SERVICE_TOKEN(_)) -> ?HTTP_401_UNAUTHORIZED;
+to_http_code(?ERROR_BAD_CONSUMER_TOKEN(_)) -> ?HTTP_401_UNAUTHORIZED;
 to_http_code(?ERROR_TOKEN_INVALID) -> ?HTTP_401_UNAUTHORIZED;
 to_http_code(?ERROR_TOKEN_REVOKED) -> ?HTTP_401_UNAUTHORIZED;
 to_http_code(?ERROR_TOKEN_TOO_LARGE(_)) -> ?HTTP_401_UNAUTHORIZED;
@@ -1306,7 +1317,7 @@ to_http_code(?ERROR_TOKEN_CAVEAT_UNKNOWN(_)) -> ?HTTP_401_UNAUTHORIZED;
 to_http_code(?ERROR_TOKEN_CAVEAT_UNVERIFIED(_)) -> ?HTTP_401_UNAUTHORIZED;
 to_http_code(?ERROR_TOKEN_TIME_CAVEAT_REQUIRED(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_TOKEN_SUBJECT_INVALID) -> ?HTTP_401_UNAUTHORIZED;
-to_http_code(?ERROR_TOKEN_AUDIENCE_FORBIDDEN(_)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_TOKEN_SERVICE_FORBIDDEN(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_INVITE_TOKEN_USAGE_LIMIT_REACHED) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_INVITE_TOKEN_SUBJECT_NOT_AUTHORIZED) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_INVITE_TOKEN_CONSUMER_INVALID(_)) -> ?HTTP_400_BAD_REQUEST;

@@ -90,35 +90,35 @@ confine_test() ->
     },
     Secret = ?RAND_STR,
 
-    CvAud = #cv_audience{whitelist = [?AUD(user, <<"user-id">>), ?AUD(group, <<"group-id">>)]},
+    CvConsumer = #cv_consumer{whitelist = [?SUB(user, <<"user-id">>), ?SUB(group, <<"group-id">>)]},
     CvTime = #cv_time{valid_until = 8374891234},
-    CvAuthNone = #cv_authorization_none{},
+    CvScope = #cv_scope{scope = identity_token},
 
     % LimitedToken has 3 above caveats, create an empty token and check if adding
     % them gradually will eventually yield the same token. Check that confining
     % serialized tokens works the same.
 
-    LimitedToken = tokens:construct(Prototype, Secret, [CvAud, CvTime, CvAuthNone]),
+    LimitedToken = tokens:construct(Prototype, Secret, [CvConsumer, CvTime, CvScope]),
     TokenAlpha = tokens:construct(Prototype, Secret, []),
     {ok, SerializedAlpha} = tokens:serialize(TokenAlpha),
     ?assertNotEqual(LimitedToken, TokenAlpha),
 
-    TokenBeta = tokens:confine(TokenAlpha, CvAud),
+    TokenBeta = tokens:confine(TokenAlpha, CvConsumer),
     {ok, SerializedBeta} = tokens:serialize(TokenBeta),
     ?assertNotEqual(LimitedToken, TokenBeta),
-    ?assertEqual({ok, TokenBeta}, tokens:deserialize(tokens:confine(SerializedAlpha, CvAud))),
+    ?assertEqual({ok, TokenBeta}, tokens:deserialize(tokens:confine(SerializedAlpha, CvConsumer))),
 
     TokenGamma = tokens:confine(TokenBeta, CvTime),
     {ok, SerializedGamma} = tokens:serialize(TokenGamma),
     ?assertNotEqual(LimitedToken, TokenGamma),
     ?assertEqual({ok, TokenGamma}, tokens:deserialize(tokens:confine(SerializedBeta, CvTime))),
 
-    TokenDelta = tokens:confine(TokenGamma, CvAuthNone),
+    TokenDelta = tokens:confine(TokenGamma, CvScope),
     ?assertEqual(LimitedToken, TokenDelta),
-    ?assertEqual({ok, TokenDelta}, tokens:deserialize(tokens:confine(SerializedGamma, CvAuthNone))),
+    ?assertEqual({ok, TokenDelta}, tokens:deserialize(tokens:confine(SerializedGamma, CvScope))),
 
-    ?assertEqual(LimitedToken, tokens:confine(TokenAlpha, [CvAud, CvTime, CvAuthNone])),
-    ?assertEqual({ok, LimitedToken}, tokens:deserialize(tokens:confine(SerializedAlpha, [CvAud, CvTime, CvAuthNone]))).
+    ?assertEqual(LimitedToken, tokens:confine(TokenAlpha, [CvConsumer, CvTime, CvScope])),
+    ?assertEqual({ok, LimitedToken}, tokens:deserialize(tokens:confine(SerializedAlpha, [CvConsumer, CvTime, CvScope]))).
 
 
 is_token_or_invite_token_test() ->
@@ -303,7 +303,7 @@ secret_generation_test() ->
     ?assertNotEqual(tokens:generate_secret(), tokens:generate_secret()).
 
 
-service_access_tokens_test() ->
+oneprovider_access_tokens_test() ->
     ProviderId = <<"another-provider-id">>,
     Id = <<"z234xcvzasdfa0sd8fh7a8wesdd352a24">>,
     Secret = <<"secret-4">>,
@@ -317,7 +317,7 @@ service_access_tokens_test() ->
     },
 
     Verify = fun(Serialized) ->
-        AuthCtx = #auth_ctx{current_timestamp = ?NOW(), audience = ?AUD(?OZ_WORKER, ?ONEZONE_CLUSTER_ID)},
+        AuthCtx = #auth_ctx{current_timestamp = ?NOW(), service = ?SERVICE(?OZ_WORKER, ?ONEZONE_CLUSTER_ID)},
         tokens:verify(element(2, {ok, _} = tokens:deserialize(Serialized)), Secret, AuthCtx, [cv_time])
     end,
 
@@ -326,37 +326,34 @@ service_access_tokens_test() ->
     ]),
     {ok, Serialized} = tokens:serialize(Token),
 
-    % Service access tokens support only ONEPROVIDER services (op-worker and op-panel)
-    ?assertException(error, badarg, tokens:build_service_access_token(?OZ_WORKER, Serialized)),
-    ?assertException(error, badarg, tokens:build_service_access_token(?OZ_PANEL, Serialized)),
-    ?assertException(error, badarg, tokens:build_service_access_token(wait_what_this_is_not_a_valid_service, Serialized)),
-    OpwServiceAccessToken = tokens:build_service_access_token(?OP_WORKER, Serialized),
-    OppServiceAccessToken = tokens:build_service_access_token(?OP_PANEL, Serialized),
+    % Oneprovider access tokens support only ONEPROVIDER services (op-worker and op-panel)
+    ?assertException(error, badarg, tokens:build_oneprovider_access_token(?OZ_WORKER, Serialized)),
+    ?assertException(error, badarg, tokens:build_oneprovider_access_token(?OZ_PANEL, Serialized)),
+    ?assertException(error, badarg, tokens:build_oneprovider_access_token(wait_what_this_is_not_a_valid_service, Serialized)),
+    OpwAccessToken = tokens:build_oneprovider_access_token(?OP_WORKER, Serialized),
+    OppAccessToken = tokens:build_oneprovider_access_token(?OP_PANEL, Serialized),
 
     ?assertMatch(
         {ok, #token{subject = ?SUB(?ONEPROVIDER, ?OP_WORKER, ProviderId)}},
-        tokens:deserialize(OpwServiceAccessToken)
+        tokens:deserialize(OpwAccessToken)
     ),
     ?assertMatch(
         {ok, #auth{subject = ?SUB(?ONEPROVIDER, ?OP_WORKER, ProviderId)}},
-        Verify(OpwServiceAccessToken)
+        Verify(OpwAccessToken)
     ),
 
     ?assertMatch(
         {ok, #token{subject = ?SUB(?ONEPROVIDER, ?OP_PANEL, ProviderId)}},
-        tokens:deserialize(OppServiceAccessToken)
+        tokens:deserialize(OppAccessToken)
     ),
     ?assertMatch(
         {ok, #auth{subject = ?SUB(?ONEPROVIDER, ?OP_PANEL, ProviderId)}},
-        Verify(OppServiceAccessToken)
+        Verify(OppAccessToken)
     ),
 
-    % Service tokens that are not for op-worker or op-panel should be rejected
+    % Access tokens that are not for op-worker or op-panel should be rejected
     ?assertEqual(?ERROR_BAD_TOKEN, tokens:deserialize(<<"ozw-", Serialized/binary>>)),
-    ?assertEqual(?ERROR_BAD_TOKEN, tokens:deserialize(<<"ozp-", Serialized/binary>>)),
-    ?assertEqual(?ERROR_BAD_TOKEN, tokens:deserialize(<<"usr-", Serialized/binary>>)),
-    ?assertEqual(?ERROR_BAD_TOKEN, tokens:deserialize(<<"grp-", Serialized/binary>>)).
-
+    ?assertEqual(?ERROR_BAD_TOKEN, tokens:deserialize(<<"ozp-", Serialized/binary>>)).
 
 
 access_token_headers_manipulation_test() ->
@@ -367,7 +364,7 @@ access_token_headers_manipulation_test() ->
         <<"unsupported-header">> => AccessToken
     }))),
 
-    Headers = tokens:build_access_token_header(AccessToken),
+    Headers = tokens:access_token_header(AccessToken),
     ?assertEqual(AccessToken, tokens:parse_access_token_header(?MOCK_COWBOY_REQ(Headers))),
 
     lists:foreach(fun
@@ -382,16 +379,28 @@ access_token_headers_manipulation_test() ->
     end, tokens:supported_access_token_headers()).
 
 
-audience_token_headers_manipulation_test() ->
-    AudienceToken = <<"my-horse-is-amazing">>,
+service_token_headers_manipulation_test() ->
+    ServiceToken = <<"my-service-token">>,
 
-    ?assertEqual(undefined, tokens:parse_audience_token_header(?MOCK_COWBOY_REQ(#{}))),
-    ?assertEqual(undefined, tokens:parse_audience_token_header(?MOCK_COWBOY_REQ(#{
-        <<"unsupported-header">> => AudienceToken
+    ?assertEqual(undefined, tokens:parse_service_token_header(?MOCK_COWBOY_REQ(#{}))),
+    ?assertEqual(undefined, tokens:parse_service_token_header(?MOCK_COWBOY_REQ(#{
+        <<"unsupported-header">> => ServiceToken
     }))),
 
-    Headers = tokens:build_audience_token_header(AudienceToken),
-    ?assertEqual(AudienceToken, tokens:parse_audience_token_header(?MOCK_COWBOY_REQ(Headers))).
+    Headers = tokens:service_token_header(ServiceToken),
+    ?assertEqual(ServiceToken, tokens:parse_service_token_header(?MOCK_COWBOY_REQ(Headers))).
+
+
+consumer_token_headers_manipulation_test() ->
+    ConsumerToken = <<"my-consumer-token">>,
+
+    ?assertEqual(undefined, tokens:parse_consumer_token_header(?MOCK_COWBOY_REQ(#{}))),
+    ?assertEqual(undefined, tokens:parse_consumer_token_header(?MOCK_COWBOY_REQ(#{
+        <<"unsupported-header">> => ConsumerToken
+    }))),
+
+    Headers = tokens:consumer_token_header(ConsumerToken),
+    ?assertEqual(ConsumerToken, tokens:parse_consumer_token_header(?MOCK_COWBOY_REQ(Headers))).
 
 
 find_caveats_test() ->
@@ -404,7 +413,7 @@ find_caveats_test() ->
         false,
         F(cv_time, [
             #cv_asn{whitelist = [322]},
-            #cv_audience{whitelist = [?AUD(?OZ_WORKER, ?ONEZONE_CLUSTER_ID)]},
+            #cv_service{whitelist = [?SERVICE(?OZ_WORKER, ?ONEZONE_CLUSTER_ID)]},
             #cv_country{type = whitelist, list = [<<"PL">>, <<"FR">>]},
             #cv_api{whitelist = [{all, all, ?GRI_PATTERN('*', '*', '*', '*')}]}
         ])
@@ -418,7 +427,7 @@ find_caveats_test() ->
         F(cv_time, [
             #cv_time{valid_until = 123},
             #cv_asn{whitelist = [322]},
-            #cv_audience{whitelist = [?AUD(group, <<"123">>)]},
+            #cv_consumer{whitelist = [?SUB(group, <<"123">>)]},
             #cv_time{valid_until = 456},
             #cv_country{type = whitelist, list = [<<"PL">>, <<"FR">>]},
             #cv_time{valid_until = 789},
@@ -437,7 +446,7 @@ filter_caveats_test() ->
         [],
         F([cv_time], [
             #cv_asn{whitelist = [322]},
-            #cv_audience{whitelist = [?AUD(user, <<"567">>)]},
+            #cv_consumer{whitelist = [?SUB(user, <<"567">>)]},
             #cv_country{type = whitelist, list = [<<"PL">>, <<"FR">>]},
             #cv_api{whitelist = [{all, all, ?GRI_PATTERN('*', '*', '*', '*')}]}
         ])
@@ -457,7 +466,7 @@ filter_caveats_test() ->
         F([cv_asn, cv_api, cv_time], [
             #cv_time{valid_until = 123},
             #cv_asn{whitelist = [322]},
-            #cv_audience{whitelist = [?AUD(?OP_PANEL, <<"provider-id">>)]},
+            #cv_service{whitelist = [?SERVICE(?OP_PANEL, <<"provider-id">>)]},
             #cv_time{valid_until = 456},
             #cv_country{type = whitelist, list = [<<"PL">>, <<"FR">>]},
             #cv_time{valid_until = 789},
@@ -488,22 +497,6 @@ sanitize_caveats_test() ->
     ?BAD(S(#cv_time{valid_until = dsfdsf})),
     ?BAD(S(#{<<"type">> => <<"time">>, <<"validAfter">> => 1231231})),
     ?BAD(S(#{<<"type">> => <<"time">>, <<"validUntil">> => <<"infinity">>})),
-
-    ?OK(#cv_authorization_none{}, S(#cv_authorization_none{})),
-    ?OK(#cv_authorization_none{}, S(#{<<"type">> => <<"authorizationNone">>})),
-    ?BAD(S(#{<<"type">> => <<"authorizationFull">>})),
-
-
-    ?OK(#cv_audience{whitelist = [?AUD(?OP_PANEL, <<"123">>)]},
-        S(#cv_audience{whitelist = [?AUD(?OP_PANEL, <<"123">>)]})),
-    ?OK(#cv_audience{whitelist = [?AUD(?OP_PANEL, <<"123">>)]},
-        S(#{<<"type">> => <<"audience">>, <<"whitelist">> => [<<"opp-123">>]})),
-    ?BAD(S(#cv_audience{whitelist = []})),
-    ?BAD(S(#cv_audience{whitelist = dsfdsf})),
-    ?BAD(S(#{<<"type">> => <<"audience">>, <<"whitelist">> => []})),
-    ?BAD(S(#{<<"type">> => <<"audience">>, <<"whitelist">> => <<"opp-123">>})),
-    ?BAD(S(#{<<"type">> => <<"audience">>, <<"whitelist">> => [<<"xcvsdjuhfsdfh">>]})),
-    ?BAD(S(#{<<"type">> => <<"audience">>, <<"blacklist">> => [<<"opp-123">>]})),
 
     ?OK(#cv_ip{whitelist = [{{172, 98, 11, 23}, 32}]},
         S(#cv_ip{whitelist = [{{172, 98, 11, 23}, 32}]})),
@@ -554,6 +547,39 @@ sanitize_caveats_test() ->
     ?BAD(S(#{<<"type">> => <<"geo.region">>, <<"filter">> => <<"whitelist">>, <<"list">> => []})),
     ?BAD(S(#{<<"type">> => <<"geo.region">>, <<"filter">> => <<"badlist">>, <<"list">> => [<<"Asia">>, <<"EU">>]})),
     ?BAD(S(#{<<"type">> => <<"geo.region">>, <<"filter">> => <<"blacklist">>, <<"list">> => [1, 2, 3]})),
+
+    ?OK(#cv_scope{scope = identity_token}, S(#cv_scope{scope = identity_token})),
+    ?OK(#cv_scope{scope = identity_token}, S(#{<<"scope">> => <<"identityToken">>})),
+    ?BAD(S(#{<<"scope">> => <<"unlimited">>})),
+    ?BAD(S(#{<<"scope">> => <<"access_token">>})),
+
+    ?OK(#cv_service{whitelist = [?SERVICE(?OZ_WORKER, ?ONEZONE_CLUSTER_ID)]},
+        S(#cv_service{whitelist = [?SERVICE(?OZ_WORKER, ?ONEZONE_CLUSTER_ID)]})),
+    ?OK(#cv_service{whitelist = [?SERVICE(?OP_PANEL, <<"123">>)]},
+        S(#cv_service{whitelist = [?SERVICE(?OP_PANEL, <<"123">>)]})),
+    ?OK(#cv_service{whitelist = [?SERVICE(?OZ_PANEL, ?ONEZONE_CLUSTER_ID)]},
+        S(#{<<"type">> => <<"service">>, <<"whitelist">> => [<<"ozp-onezone">>]})),
+    ?OK(#cv_service{whitelist = [?SERVICE(?OP_WORKER, <<"123">>)]},
+        S(#{<<"type">> => <<"service">>, <<"whitelist">> => [<<"opw-123">>]})),
+    ?BAD(S(#cv_service{whitelist = []})),
+    ?BAD(S(#cv_service{whitelist = dsfdsf})),
+    ?BAD(S(#{<<"type">> => <<"service">>, <<"whitelist">> => []})),
+    ?BAD(S(#{<<"type">> => <<"service">>, <<"whitelist">> => <<"opp-123">>})),
+    ?BAD(S(#{<<"type">> => <<"service">>, <<"whitelist">> => [<<"xcvsdjuhfsdfh">>]})),
+    ?BAD(S(#{<<"type">> => <<"service">>, <<"blacklist">> => [<<"opp-123">>]})),
+
+    ?OK(#cv_consumer{whitelist = [?SUB(user, <<"user-id">>)]},
+        S(#cv_consumer{whitelist = [?SUB(user, <<"user-id">>)]})),
+    ?OK(#cv_consumer{whitelist = [?SUB(?ONEPROVIDER, <<"123">>)]},
+        S(#cv_consumer{whitelist = [?SUB(?ONEPROVIDER, <<"123">>)]})),
+    ?OK(#cv_consumer{whitelist = [?SUB(group, <<"group-id">>)]},
+        S(#{<<"type">> => <<"consumer">>, <<"whitelist">> => [<<"grp-group-id">>]})),
+    ?BAD(S(#cv_consumer{whitelist = []})),
+    ?BAD(S(#cv_consumer{whitelist = dsfdsf})),
+    ?BAD(S(#{<<"type">> => <<"consumer">>, <<"whitelist">> => []})),
+    ?BAD(S(#{<<"type">> => <<"consumer">>, <<"whitelist">> => <<"opp-123">>})),
+    ?BAD(S(#{<<"type">> => <<"consumer">>, <<"whitelist">> => [<<"xcvsdjuhfsdfh">>]})),
+    ?BAD(S(#{<<"type">> => <<"consumer">>, <<"blacklist">> => [<<"opp-123">>]})),
 
     ?OK(#cv_interface{interface = graphsync},
         S(#cv_interface{interface = graphsync})),
@@ -640,18 +666,22 @@ sanitize_caveats_test() ->
 -define(IP_AU, {100, 120, 41, 157}). % Australia     / Oceania
 -define(IP_BR, {213, 5, 9, 34}).     % Brazil        / SouthAmerica
 
-% Dummy group for checking the group audience. Only ?DUMMY_USER belongs to it
-% (this is covered in the group_membership_checker function).
 -define(DUMMY_USER, <<"user-id">>).
+% Dummy group for checking the group consumer caveat. Only ?DUMMY_USER belongs
+% to it (this is covered in the group_membership_checker function).
 -define(DUMMY_GROUP, <<"group-id">>).
+-define(DUMMY_PROVIDER, <<"provider-id">>).
 
-% Audience examples
--define(AUD_USR, ?AUD(user, ?DUMMY_USER)).
--define(AUD_GRP, ?AUD(group, ?DUMMY_GROUP)).
--define(AUD_OZW, ?AUD(?OZ_WORKER, ?ONEZONE_CLUSTER_ID)).
--define(AUD_OZP, ?AUD(?OZ_PANEL, ?ONEZONE_CLUSTER_ID)).
--define(AUD_OPW, ?AUD(?OP_WORKER, <<"provider-id">>)).
--define(AUD_OPP, ?AUD(?OP_PANEL, <<"provider-id">>)).
+% Service examples
+-define(OZW_SERVICE, ?SERVICE(?OZ_WORKER, ?ONEZONE_CLUSTER_ID)).
+-define(OZP_SERVICE, ?SERVICE(?OZ_PANEL, ?ONEZONE_CLUSTER_ID)).
+-define(OPW_SERVICE, ?SERVICE(?OP_WORKER, ?DUMMY_PROVIDER)).
+-define(OPP_SERVICE, ?SERVICE(?OP_PANEL, ?DUMMY_PROVIDER)).
+
+% Consumer examples
+-define(USER_CONSUMER, ?SUB(user, ?DUMMY_USER)).
+-define(GROUP_CONSUMER, ?SUB(group, ?DUMMY_GROUP)).
+-define(ONEPROVIDER_CONSUMER, ?SUB(?ONEPROVIDER, ?DUMMY_PROVIDER)).
 
 % Mapping of IP examples to ASN, country and regions (dummy examples)
 asn(?IP_LH) -> {error, not_found};
@@ -684,28 +714,45 @@ region(?IP_US) -> {ok, [<<"NorthAmerica">>]};
 region(?IP_AU) -> {ok, [<<"Oceania">>]};
 region(?IP_BR) -> {ok, [<<"SouthAmerica">>]}.
 
-% Example audiences - bound to the IP for easier test code
-audience(?IP_LH) -> undefined;
-audience(?IP_EG) -> ?AUD_USR;
-audience(?IP_AQ) -> ?AUD_OPW;
-audience(?IP_IN) -> undefined;
-audience(?IP_PL) -> ?AUD_OZW;
-audience(?IP_MK) -> ?AUD_OPP;
-audience(?IP_US) -> ?AUD_OPW;
-audience(?IP_AU) -> ?AUD_USR;
-audience(?IP_BR) -> ?AUD_OZP.
+% Example services and consumers - bound to the IP for easier test code
+service(?IP_LH) -> undefined;
+service(?IP_EG) -> ?OZW_SERVICE;
+service(?IP_AQ) -> ?OPW_SERVICE;
+service(?IP_IN) -> undefined;
+service(?IP_PL) -> ?OZW_SERVICE;
+service(?IP_MK) -> ?OPP_SERVICE;
+service(?IP_US) -> ?OPW_SERVICE;
+service(?IP_AU) -> ?OPP_SERVICE;
+service(?IP_BR) -> ?OZP_SERVICE.
+
+consumer(?IP_LH) -> ?ONEPROVIDER_CONSUMER;
+consumer(?IP_EG) -> ?ONEPROVIDER_CONSUMER;
+consumer(?IP_AQ) -> undefined;
+consumer(?IP_IN) -> ?USER_CONSUMER;
+consumer(?IP_PL) -> undefined;
+consumer(?IP_MK) -> ?USER_CONSUMER;
+consumer(?IP_US) -> ?USER_CONSUMER;
+consumer(?IP_AU) -> ?ONEPROVIDER_CONSUMER;
+consumer(?IP_BR) -> undefined.
 
 % Example auth_ctx's - bound to the IP for easier test code
 auth_ctx(Ip) ->
     #auth_ctx{
         current_timestamp = ?NOW(),
+        scope = lists_utils:random_element([unlimited, unlimited, unlimited, identity_token]),
         ip = Ip,
         interface = lists_utils:random_element([undefined | cv_interface:valid_interfaces()]),
-        audience = audience(Ip),
+        service = service(Ip),
+        consumer = consumer(Ip),
         data_access_caveats_policy = lists_utils:random_element([disallow_data_access_caveats, allow_data_access_caveats]),
-        group_membership_checker = fun
-            (?AUD_USR, ?DUMMY_GROUP) -> true;
-            (_, _) -> false
+        group_membership_checker = case rand:uniform(5) of
+            1 ->
+                undefined;
+            _ ->
+                fun
+                    (?USER_CONSUMER, ?DUMMY_GROUP) -> true;
+                    (_, _) -> false
+                end
         end
     }.
 
@@ -733,8 +780,12 @@ to_regions(IpList) ->
 ]).
 -define(RAND_IP, lists_utils:random_element(?IP_EXAMPLES)).
 
--define(AUDIENCE_EXAMPLES, [
-    ?AUD_USR, ?AUD_GRP, ?AUD_OZW, ?AUD_OZP, ?AUD_OPW, ?AUD_OPP
+-define(SERVICE_EXAMPLES, [
+    ?OZW_SERVICE, ?OZP_SERVICE, ?OPW_SERVICE, ?OPP_SERVICE
+]).
+
+-define(CONSUMER_EXAMPLES, [
+    ?USER_CONSUMER, ?GROUP_CONSUMER, ?ONEPROVIDER_CONSUMER
 ]).
 
 -define(AUTH_CTX_EXAMPLES, [
@@ -924,59 +975,75 @@ caveats_examples(cv_time, #auth_ctx{current_timestamp = Timestamp}) -> [
     {#cv_time{valid_until = Timestamp}, failure}
 ];
 
-caveats_examples(cv_authorization_none, _AuthCtx) -> [
-    {#cv_authorization_none{}, success}
-];
-
-caveats_examples(cv_audience, #auth_ctx{audience = undefined}) -> [
-    {#cv_audience{whitelist = lists_utils:random_sublist(?AUDIENCE_EXAMPLES, 1, all)}, failure}
-];
-caveats_examples(cv_audience, #auth_ctx{audience = ?AUD_USR}) -> [
-    % The ?DUMMY_USER (?AUD_USR) belongs to the ?DUMMY_GROUP (?AUD_GRP), so
-    % he should satisfy the group audience caveat.
-    {#cv_audience{whitelist = rand_audiences_without([?AUD_USR, ?AUD_GRP])}, failure},
-    {#cv_audience{whitelist = rand_audiences_with([?AUD_USR, ?AUD_GRP])}, success}
-];
-caveats_examples(cv_audience, #auth_ctx{audience = Audience}) -> [
-    {#cv_audience{whitelist = rand_audiences_without([Audience])}, failure},
-    {#cv_audience{whitelist = rand_audiences_with([Audience])}, success},
-    {#cv_audience{whitelist = [Audience#audience{id = ?ANY_AUDIENCE_ID}]}, success}
-];
-
 caveats_examples(cv_ip, #auth_ctx{ip = Ip}) -> [
-    {#cv_ip{whitelist = [{X, 32} || X <- rand_ips_without([Ip, ?IP_LH])]}, failure},
+    {#cv_ip{whitelist = [{X, 32} || X <- examples_without(ip, [Ip, ?IP_LH])]}, failure},
     % If the mask's ip is the same as in AuthCtx, any mask length should match
-    {#cv_ip{whitelist = [{X, rand:uniform(33) - 1} || X <- rand_ips_with([Ip])]}, success}
+    {#cv_ip{whitelist = [{X, rand:uniform(33) - 1} || X <- examples_with(ip, [Ip])]}, success}
 ];
 
 caveats_examples(cv_asn, #auth_ctx{ip = ?IP_LH}) -> [
-    {#cv_asn{whitelist = to_asns(rand_ips_without([?IP_LH]))}, failure}
+    {#cv_asn{whitelist = to_asns(examples_without(ip, [?IP_LH]))}, failure}
 ];
 caveats_examples(cv_asn, #auth_ctx{ip = Ip}) -> [
-    {#cv_asn{whitelist = to_asns(rand_ips_without([Ip, ?IP_LH]))}, failure},
-    {#cv_asn{whitelist = to_asns(rand_ips_with([Ip]))}, success}
+    {#cv_asn{whitelist = to_asns(examples_without(ip, [Ip, ?IP_LH]))}, failure},
+    {#cv_asn{whitelist = to_asns(examples_with(ip, [Ip]))}, success}
 ];
 
 caveats_examples(cv_country, #auth_ctx{ip = ?IP_LH}) -> [
-    {#cv_country{type = whitelist, list = to_countries(rand_ips_without([?IP_LH]))}, failure},
-    {#cv_country{type = blacklist, list = to_countries(rand_ips_without([?IP_LH]))}, failure}
+    {#cv_country{type = whitelist, list = to_countries(examples_without(ip, [?IP_LH]))}, failure},
+    {#cv_country{type = blacklist, list = to_countries(examples_without(ip, [?IP_LH]))}, failure}
 ];
 caveats_examples(cv_country, #auth_ctx{ip = Ip}) -> [
-    {#cv_country{type = whitelist, list = to_countries(rand_ips_without([Ip, ?IP_LH]))}, failure},
-    {#cv_country{type = whitelist, list = to_countries(rand_ips_with([Ip]))}, success},
-    {#cv_country{type = blacklist, list = to_countries(rand_ips_with([Ip]))}, failure},
-    {#cv_country{type = blacklist, list = to_countries(rand_ips_without([Ip, ?IP_LH]))}, success}
+    {#cv_country{type = whitelist, list = to_countries(examples_without(ip, [Ip, ?IP_LH]))}, failure},
+    {#cv_country{type = whitelist, list = to_countries(examples_with(ip, [Ip]))}, success},
+    {#cv_country{type = blacklist, list = to_countries(examples_with(ip, [Ip]))}, failure},
+    {#cv_country{type = blacklist, list = to_countries(examples_without(ip, [Ip, ?IP_LH]))}, success}
 ];
 
 caveats_examples(cv_region, #auth_ctx{ip = ?IP_LH}) -> [
-    {#cv_region{type = whitelist, list = to_regions(rand_ips_without([?IP_LH]))}, failure}
+    {#cv_region{type = whitelist, list = to_regions(examples_without(ip, [?IP_LH]))}, failure}
 ];
 caveats_examples(cv_region, #auth_ctx{ip = Ip}) -> [
-    {#cv_region{type = whitelist, list = rand_regions_without(to_regions([Ip]))}, failure},
-    {#cv_region{type = whitelist, list = to_regions(rand_ips_with([Ip]))}, success},
-    {#cv_region{type = whitelist, list = lists_utils:random_sublist(to_regions([Ip]), 1, 1)}, success},
-    {#cv_region{type = blacklist, list = to_regions(rand_ips_with([Ip]))}, failure},
-    {#cv_region{type = blacklist, list = rand_regions_without(to_regions([Ip]))}, success}
+    {#cv_region{type = whitelist, list = examples_without(region, to_regions([Ip]))}, failure},
+    {#cv_region{type = whitelist, list = to_regions(examples_with(ip, [Ip]))}, success},
+    {#cv_region{type = whitelist, list = [lists_utils:random_element(to_regions([Ip]))]}, success},
+    {#cv_region{type = blacklist, list = to_regions(examples_with(ip, [Ip]))}, failure},
+    {#cv_region{type = blacklist, list = examples_without(region, to_regions([Ip]))}, success}
+];
+
+caveats_examples(cv_scope, #auth_ctx{scope = identity_token}) -> [
+    {#cv_scope{scope = identity_token}, success}
+];
+caveats_examples(cv_scope, #auth_ctx{scope = unlimited}) -> [
+    {#cv_scope{scope = identity_token}, failure}
+];
+
+caveats_examples(cv_service, #auth_ctx{service = undefined}) -> [
+    {#cv_service{whitelist = lists_utils:random_sublist(?SERVICE_EXAMPLES, 1, all)}, failure}
+];
+caveats_examples(cv_service, #auth_ctx{service = Service}) -> [
+    {#cv_service{whitelist = examples_without(service, [Service])}, failure},
+    {#cv_service{whitelist = examples_with(service, [Service])}, success},
+    {#cv_service{whitelist = [Service#service_spec{id = ?ID_WILDCARD}]}, success}
+];
+
+caveats_examples(cv_consumer, #auth_ctx{consumer = undefined}) -> [
+    {#cv_consumer{whitelist = lists_utils:random_sublist(?CONSUMER_EXAMPLES, 1, all)}, failure}
+];
+caveats_examples(cv_consumer, #auth_ctx{consumer = ?USER_CONSUMER, group_membership_checker = undefined}) -> [
+    % If the group_membership_checker is undefined, GROUP_CONSUMER caveat will not be satisfied
+    {#cv_consumer{whitelist = examples_without(consumer, [?USER_CONSUMER])}, failure},
+    {#cv_consumer{whitelist = examples_with(consumer, [?USER_CONSUMER])}, success}
+];
+caveats_examples(cv_consumer, #auth_ctx{consumer = ?USER_CONSUMER}) -> [
+    % The exemplary group_membership_checker in this suite returns true for the
+    % ?DUMMY_USER (?USER_CONSUMER) and ?DUMMY_GROUP (?GROUP_CONSUMER)
+    {#cv_consumer{whitelist = examples_without(consumer, [?USER_CONSUMER, ?GROUP_CONSUMER])}, failure},
+    {#cv_consumer{whitelist = examples_with(consumer, [?USER_CONSUMER, ?GROUP_CONSUMER])}, success}
+];
+caveats_examples(cv_consumer, #auth_ctx{consumer = ?ONEPROVIDER_CONSUMER}) -> [
+    {#cv_consumer{whitelist = examples_without(consumer, [?ONEPROVIDER_CONSUMER])}, failure},
+    {#cv_consumer{whitelist = examples_with(consumer, [?ONEPROVIDER_CONSUMER])}, success}
 ];
 
 caveats_examples(cv_interface, #auth_ctx{interface = undefined}) -> [
@@ -987,9 +1054,8 @@ caveats_examples(cv_interface, #auth_ctx{interface = Interface}) -> [
     {#cv_interface{interface = lists_utils:random_element(cv_interface:valid_interfaces() -- [Interface])}, failure}
 ];
 
-% Below caveats are lazy - always true when verifying a token (still, they must
-% be explicitly supported). They are checked when the resulting aai:auth() object
-% is consumed to perform an operation.
+% API caveats are lazy - always true when verifying a token, but checked when
+% the resulting aai:auth() object is used to perform an operation.
 caveats_examples(cv_api, _AuthCtx) -> [
     {#cv_api{whitelist = lists_utils:random_sublist([
         {all, create, ?GRI_PATTERN(od_space, '*', '*', private)},
@@ -1001,6 +1067,10 @@ caveats_examples(cv_api, _AuthCtx) -> [
     ], 1, all)}, success}
 ];
 
+% Data access caveats are allowed only if the authorizing party requested so.
+% These caveats are supported only in Oneprovider, on interfaces used for data
+% access. The proper verification of these caveats is performed in Oneprovider,
+% here only a general check is done.
 caveats_examples(cv_data_readonly, AuthCtx) -> [
     {#cv_data_readonly{}, ?SUCCESS_IF_DATA_ACCESS_CAVEATS_ALLOWED(AuthCtx)}
 ];
@@ -1021,35 +1091,21 @@ caveats_examples(cv_data_objectid, AuthCtx) -> [
 %%% Helper functions
 %%%===================================================================
 
-rand_regions_without(Excludes) ->
-    List = ?ALL_REGIONS -- Excludes,
-    % Return at least one region
-    lists_utils:random_sublist(List, 1, all).
+examples_with(Type, Includes) ->
+    Examples = examples(Type),
+    RandExamples = lists_utils:random_sublist(Examples, 0, all),
+    RandIncludes = lists_utils:random_sublist(Includes, 1, all),
+    lists_utils:shuffle(lists_utils:union(RandExamples, RandIncludes)).
 
 
-rand_ips_with(Includes) ->
-    % RandIps can be empty as we are adding Includes anyway
-    RandIps = lists_utils:random_sublist(?IP_EXAMPLES, 0, all),
-    % make sure Includes are not duplicated
-    (RandIps -- Includes) ++ Includes.
+examples_without(Type, Excludes) ->
+    Examples = examples(Type),
+    lists_utils:random_sublist(Examples -- Excludes, 1, all).
 
 
-rand_ips_without(Excludes) ->
-    List = ?IP_EXAMPLES -- Excludes,
-    % Return at least one IP
-    lists_utils:random_sublist(List, 1, all).
-
-
-rand_audiences_without(Excludes) ->
-    List = ?AUDIENCE_EXAMPLES -- Excludes,
-    % Return at least one region
-    lists_utils:random_sublist(List, 1, all).
-
-
-rand_audiences_with(Includes) ->
-    % RandIps can be empty as we are adding Includes anyway
-    RandIps = lists_utils:random_sublist(?AUDIENCE_EXAMPLES, 0, all),
-    % make sure Includes are not duplicated
-    (RandIps -- Includes) ++ Includes.
+examples(ip) -> ?IP_EXAMPLES;
+examples(region) -> ?ALL_REGIONS;
+examples(service) -> ?SERVICE_EXAMPLES;
+examples(consumer) -> ?CONSUMER_EXAMPLES.
 
 -endif.

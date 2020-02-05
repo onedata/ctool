@@ -18,8 +18,11 @@
 -define(HDR_X_AUTH_TOKEN, <<"x-auth-token">>).
 -define(HDR_MACAROON, <<"macaroon">>). % @todo VFS-5554 Deprecated
 
-% Headers carrying audience token
--define(HDR_X_ONEDATA_AUDIENCE_TOKEN, <<"x-onedata-audience-token">>).
+% Headers carrying the consumer token - of party that consumes a token
+-define(HDR_X_ONEDATA_CONSUMER_TOKEN, <<"x-onedata-consumer-token">>).
+
+% Headers carrying the service token - authentication of a service in Onedata
+-define(HDR_X_ONEDATA_SERVICE_TOKEN, <<"x-onedata-service-token">>).
 
 % Header carrying original peer IP for request proxied by http_port_forwarder
 -define(HDR_X_ONEDATA_FORWARDED_FOR, <<"x-onedata-forwarded-for">>).
