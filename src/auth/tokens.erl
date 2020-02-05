@@ -33,14 +33,21 @@
 -type onezone_domain() :: binary().
 % A random string that uniquely identifies the token
 -type id() :: binary().
-% Indicates if given token is persistent:
-%   true -  the token's secret and possibly some additional information is
-%           stored by the issuer Onezone, retrievable by id - such tokens
-%           are revocable and traceable in the system
-%   false - the token uses a shared secret and is not persisted anywhere, which
-%           means it cannot be revoked or have any attached information apart
-%           from that carried by the token itself
--type persistent() :: boolean().
+% Token persistence can be one of:
+%   named - the token's secret and possibly some additional information is
+%       stored by the issuer Onezone, retrievable by id - such tokens are
+%       revocable and traceable in the system
+%   {temporary, Generation} - the token uses a shared secret and is not
+%       persisted anywhere, which means it cannot be revoked individually or
+%       have any attached information apart from that carried by the token
+%       itself. Temporary tokens can be revoked by changing the shared secret -
+%       in such case all temporary tokens sharing the secret become invalid.
+%       The Generation is an increasing number that denotes the generation of
+%       shared secret - if the secret changes, the generation is incremented.
+%       This information is inscribed in the token and can be used to detect
+%       revocation.
+-type temporary_token_generation() :: non_neg_integer().
+-type persistence() :: named | {temporary, temporary_token_generation()}.
 % Type of the token as recognized across Onedata components
 -type type() :: access_token | {gui_access_token, aai:session_id()} |
 {invite_token, invite_token_type(), gri:entity_id()}.
@@ -60,7 +67,8 @@
 -type token_identifier() :: binary().
 
 -export_type([token/0, serialized/0]).
--export_type([version/0, onezone_domain/0, persistent/0]).
+-export_type([version/0, onezone_domain/0]).
+-export_type([temporary_token_generation/0, persistence/0]).
 -export_type([type/0, invite_token_type/0]).
 -export_type([id/0, secret/0]).
 
@@ -481,7 +489,7 @@ to_identifier(Token = #token{version = 2}) ->
     <<
         "2",
         "/",
-        (serialize_persistence(Token#token.persistent))/binary,
+        (serialize_persistence(Token#token.persistence))/binary,
         "/",
         (aai:serialize_subject(Token#token.subject))/binary,
         "/",
@@ -513,7 +521,7 @@ from_identifier(1, [Identifier], OnezoneDomain) ->
         version = 1,
         onezone_domain = OnezoneDomain,
         id = Identifier,
-        persistent = true,
+        persistence = named,
         type = ?ACCESS_TOKEN
     };
 from_identifier(2, [Persistent, Subject, Type, Id], OnezoneDomain) ->
@@ -521,22 +529,22 @@ from_identifier(2, [Persistent, Subject, Type, Id], OnezoneDomain) ->
         version = 2,
         onezone_domain = OnezoneDomain,
         id = Id,
-        persistent = deserialize_persistence(Persistent),
+        persistence = deserialize_persistence(Persistent),
         subject = aai:deserialize_subject(Subject),
         type = deserialize_type(Type)
     }.
 
 
 %% @private
--spec serialize_persistence(boolean()) -> binary().
-serialize_persistence(true) -> <<"pst">>;
-serialize_persistence(false) -> <<"tmp">>.
+-spec serialize_persistence(persistence()) -> binary().
+serialize_persistence(named) -> <<"nmd">>;
+serialize_persistence({temporary, Generation}) -> <<"tmp-", (integer_to_binary(Generation))/binary>>.
 
 
 %% @private
--spec deserialize_persistence(binary()) -> boolean().
-deserialize_persistence(<<"pst">>) -> true;
-deserialize_persistence(<<"tmp">>) -> false.
+-spec deserialize_persistence(binary()) -> persistence().
+deserialize_persistence(<<"nmd">>) -> named;
+deserialize_persistence(<<"tmp-", Generation/binary>>) -> {temporary, binary_to_integer(Generation)}.
 
 
 %% @private

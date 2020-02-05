@@ -34,7 +34,7 @@
 
 -type entity_type() :: oz_worker | od_user | od_group | od_space | od_share
 | od_provider | od_handle_service | od_handle | od_cluster | od_harvester
-| od_storage | od_token
+| od_storage | od_token | temporary_token_secret
 | onp_ceph | onp_cluster | onp_host | onp_panel | onp_provider | onp_service
 | onp_space | onp_storage | onp_user | onp_zone
 | op_file | op_replica | op_transfer | op_user | op_group | op_space | op_share
@@ -188,6 +188,7 @@ serialize_type(od_cluster, _) -> <<"cluster">>;
 serialize_type(od_harvester, _) -> <<"harvester">>;
 serialize_type(od_storage, _) -> <<"storage">>;
 serialize_type(od_token, _) -> <<"token">>;
+serialize_type(temporary_token_secret, _) -> <<"temporary_token_secret">>;
 
 serialize_type(onp_ceph, _) -> <<"onp_ceph">>;
 serialize_type(onp_cluster, _) -> <<"onp_cluster">>;
@@ -232,6 +233,7 @@ deserialize_type(<<"cluster">>, _) -> od_cluster;
 deserialize_type(<<"harvester">>, _) -> od_harvester;
 deserialize_type(<<"storage">>, _) -> od_storage;
 deserialize_type(<<"token">>, _) -> od_token;
+deserialize_type(<<"temporary_token_secret">>, _) -> temporary_token_secret;
 
 deserialize_type(<<"onp_ceph">>, _) -> onp_ceph;
 deserialize_type(<<"onp_cluster">>, _) -> onp_cluster;

@@ -59,7 +59,7 @@ invalid_subject_test() ->
     Prototype = #token{
         onezone_domain = ?OZ_DOMAIN,
         id = ?RAND_STR,
-        persistent = false,
+        persistence = {temporary, rand:uniform(99999)},
         type = ?ACCESS_TOKEN
     },
     InvalidSubjects = [?SUB(nobody), ?SUB(root), ?SUB(invalid_sub)],
@@ -85,7 +85,7 @@ confine_test() ->
         onezone_domain = ?OZ_DOMAIN,
         id = ?RAND_STR,
         subject = ?SUB(user, <<"uid">>),
-        persistent = true,
+        persistence = named,
         type = ?GUI_ACCESS_TOKEN(?RAND_STR)
     },
     Secret = ?RAND_STR,
@@ -129,7 +129,7 @@ is_token_or_invite_token_test() ->
         onezone_domain = ?OZ_DOMAIN,
         id = ?RAND_STR,
         subject = ?SUB(?ONEPROVIDER, <<"pid">>),
-        persistent = true,
+        persistence = named,
         type = ?ACCESS_TOKEN
     },
 
@@ -137,7 +137,7 @@ is_token_or_invite_token_test() ->
         onezone_domain = ?OZ_DOMAIN,
         id = ?RAND_STR,
         subject = ?SUB(user, <<"uid">>),
-        persistent = false,
+        persistence = {temporary, rand:uniform(99999)},
         type = ?GUI_ACCESS_TOKEN(?RAND_STR)
     },
 
@@ -145,7 +145,7 @@ is_token_or_invite_token_test() ->
         onezone_domain = ?OZ_DOMAIN,
         id = ?RAND_STR,
         subject = ?SUB(user, <<"uid">>),
-        persistent = false,
+        persistence = {temporary, rand:uniform(99999)},
         type = ?INVITE_TOKEN(?USER_JOIN_SPACE, ?RAND_STR)
     },
 
@@ -311,7 +311,7 @@ service_access_tokens_test() ->
     Prototype = #token{
         onezone_domain = ?OZ_DOMAIN,
         id = Id,
-        persistent = false,
+        persistence = {temporary, rand:uniform(99999)},
         subject = Subject,
         type = ?ACCESS_TOKEN
     },
@@ -783,8 +783,8 @@ teardown(_) ->
 
 combinations() ->
     % Persistence combinations
-    combinations(true) ++
-    combinations(false).
+    combinations(named) ++
+    combinations({temporary, rand:uniform(99999)}).
 
 
 combinations(Persistence) ->
@@ -816,12 +816,12 @@ combinations(Persistence, Subject, Type, AuthCtx) -> [
     CaveatsTestcase <- randomize_caveats_testcases(caveats_testcases(AuthCtx))
 ].
 
-combinations(Persistent, Subject, Type, AuthCtx, #caveats_testcase{caveats = Caveats, unverified = Unverified}) ->
+combinations(Persistence, Subject, Type, AuthCtx, #caveats_testcase{caveats = Caveats, unverified = Unverified}) ->
     Secret = ?RAND_STR,
     Prototype = #token{
         onezone_domain = ?OZ_DOMAIN,
         id = ?RAND_STR,
-        persistent = Persistent,
+        persistence = Persistence,
         subject = Subject,
         type = Type
     },
