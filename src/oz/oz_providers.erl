@@ -21,7 +21,7 @@
 -export([register/2, register_with_uuid/2, unregister/1]).
 -export([get_details/1, get_details/2, modify_details/2]).
 -export([get_zone_time/1]).
--export([check_ip_address/1, check_port/4]).
+-export([check_ip_address/1]).
 -export([create_space/2, support_space/2, revoke_space_support/2, get_spaces/1,
     get_space_details/2]).
 
@@ -184,30 +184,6 @@ check_ip_address(Auth) ->
             oz_endpoint:request(Auth, URN, get, <<>>, [{endpoint, rest_no_auth}]),
         IpAddress = json_utils:decode_deprecated(ResponseBody),
         {ok, IpAddress}
-    end).
-
-%%--------------------------------------------------------------------
-%% @doc Checks port availability for OZ.
-%% @end
-%%--------------------------------------------------------------------
--spec check_port(Auth :: oz_endpoint:auth(), IpAddress :: binary(),
-    Port :: integer(), Type :: binary()) ->
-    ok | {error, Reason :: term()}.
-check_port(Auth, IpAddress, Port, Type) ->
-    ?run(fun() ->
-        URN = "/provider/public/check_my_ports",
-        Resource = case Type of
-            <<"gui">> -> <<"/connection_check">>;
-            <<"rest">> -> <<"/rest/latest/connection_check">>
-        end,
-        CheckURL = <<"https://", IpAddress/binary, ":",
-            (integer_to_binary(Port))/binary, Resource/binary>>,
-        Body = json_utils:encode_deprecated([{Type, CheckURL}]),
-        {ok, 200, _ResponseHeaders, ResponseBody} =
-            oz_endpoint:request(Auth, URN, post, Body, [{endpoint, rest_no_auth}]),
-        Proplist = json_utils:decode_deprecated(ResponseBody),
-        <<"ok">> = proplists:get_value(CheckURL, Proplist),
-        ok
     end).
 
 %%--------------------------------------------------------------------

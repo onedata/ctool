@@ -34,8 +34,6 @@ oz_providers_test_() ->
                 fun should_get_details_for_given_provider/0},
             {"modify details", fun should_modify_details/0},
             {"check ip address", fun should_check_ip_address/0},
-            {"check GUI port", fun should_check_https_server_port/0},
-            {"check REST port", fun should_check_rest_port/0},
             {"create space", fun should_create_space/0},
             {"support space", fun should_support_space/0},
             {"revoke space support", fun should_revoke_space_support/0},
@@ -77,8 +75,6 @@ setup() ->
         (client, "/providers", post, <<"body">>, [{endpoint, rest_no_auth}]) ->
             {ok, 200, response_headers, response_body};
         (client, "/provider/public/check_my_ip", get, <<>>, [{endpoint, rest_no_auth}]) ->
-            {ok, 200, response_headers, response_body};
-        (client, "/provider/public/check_my_ports", post, <<"body">>, [{endpoint, rest_no_auth}]) ->
             {ok, 200, response_headers, response_body}
     end).
 
@@ -190,39 +186,6 @@ should_check_ip_address() ->
     ?assert(meck:validate(json_utils)),
     ok = meck:unload(json_utils).
 
-
-should_check_https_server_port() ->
-    meck:new(json_utils, [passthrough]),
-    meck:expect(json_utils, encode_deprecated, fun
-        ([{<<"gui">>, <<"https://ipAddress:443/connection_check">>}]) ->
-            <<"body">>
-    end),
-    meck:expect(json_utils, decode_deprecated, fun(response_body) ->
-        [{<<"https://ipAddress:443/connection_check">>, <<"ok">>}]
-    end),
-
-    Answer = oz_providers:check_port(client, <<"ipAddress">>, 443, <<"gui">>),
-    ?assertEqual(ok, Answer),
-
-    ?assert(meck:validate(json_utils)),
-    ok = meck:unload(json_utils).
-
-
-should_check_rest_port() ->
-    meck:new(json_utils),
-    meck:expect(json_utils, encode_deprecated, fun([{<<"rest">>,
-        <<"https://ipAddress:8443/rest/latest/connection_check">>}]) ->
-        <<"body">>
-    end),
-    meck:expect(json_utils, decode_deprecated, fun(response_body) ->
-        [{<<"https://ipAddress:8443/rest/latest/connection_check">>, <<"ok">>}]
-    end),
-
-    Answer = oz_providers:check_port(client, <<"ipAddress">>, 8443, <<"rest">>),
-    ?assertEqual(ok, Answer),
-
-    ?assert(meck:validate(json_utils)),
-    ok = meck:unload(json_utils).
 
 should_create_space() ->
     meck:new(json_utils, [passthrough]),
