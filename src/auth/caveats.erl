@@ -227,7 +227,6 @@ deserialize(<<"api = ", SerializedEntries/binary>>) when size(SerializedEntries)
     Whitelist = lists:map(fun cv_api:deserialize_matchspec/1, ?SPLIT(SerializedEntries)),
     #cv_api{whitelist = Whitelist};
 
-
 deserialize(<<"data.readonly">>) ->
     #cv_data_readonly{};
 

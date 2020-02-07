@@ -39,7 +39,7 @@
 %%%     tokens, but not the other way around.
 %%%   * GUI access token - similar to regular access token, but tied to a
 %%%     specific user's session.
-%%%   * invite token - used to created relations in the system by inviting
+%%%   * invite token - used to create relations in the system by inviting
 %%%     users or providers to join an entity.
 %%%
 %%% In order to verify a token, it is required to collect the request context,
@@ -57,8 +57,8 @@
 %%%     * group_membership_checker - callback to check group membership
 %%%
 %%% The service in which the token was used (i.e. service which received the
-%%% request from a client) is denoted by the #service{} record. The service that
-%%% tries to authorize an operation with a token on behalf of a subject can
+%%% request from a client) is denoted by the #service_spec{} record. The service
+%%% that tries to authorize an operation with a token on behalf of a subject can
 %%% present its authentication by sending its identity token in the the
 %%% x-onedata-service-token header, or perform the operation on a private
 %%% channel (GraphSync). If the service does not authenticate itself, it defaults
@@ -178,6 +178,8 @@ subject_to_json(?SUB(root)) ->
     #{<<"type">> => <<"nobody">>, <<"id">> => null};
 subject_to_json(?SUB(user, UserId)) ->
     #{<<"type">> => <<"user">>, <<"id">> => UserId};
+subject_to_json(?SUB(group, GroupId)) ->
+    #{<<"type">> => <<"group">>, <<"id">> => GroupId};
 subject_to_json(?SUB(?ONEPROVIDER, PrId)) ->
     #{<<"type">> => <<"oneprovider">>, <<"id">> => PrId};
 subject_to_json(_) ->
@@ -189,6 +191,8 @@ subject_from_json(#{<<"type">> := <<"nobody">>, <<"id">> := null}) ->
     ?SUB(nobody);
 subject_from_json(#{<<"type">> := <<"user">>, <<"id">> := UserId}) ->
     ?SUB(user, UserId);
+subject_from_json(#{<<"type">> := <<"group">>, <<"id">> := GroupId}) ->
+    ?SUB(group, GroupId);
 subject_from_json(#{<<"type">> := <<"oneprovider">>, <<"id">> := PrId}) ->
     ?SUB(?ONEPROVIDER, PrId);
 subject_from_json(_) ->

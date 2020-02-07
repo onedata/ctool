@@ -25,7 +25,7 @@
 -type service() :: ?OZ_WORKER | ?OZ_PANEL | ?OP_WORKER | ?OP_PANEL.
 %% Types of services in Onedata
 -type service_type() :: ?WORKER | ?ONEPANEL.
-%% Identifier of a service instance
+%% Identifier of a service instance - either Oneprovider Id or ?ONEZONE_CLUSTER_ID
 -type service_id() :: binary().
 %% Graphical User Interfaces in Onedata
 -type gui() :: ?OZ_WORKER_GUI | ?OP_WORKER_GUI | ?ONEPANEL_GUI | ?HARVESTER_GUI.
