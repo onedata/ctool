@@ -65,7 +65,8 @@
 | bad_full_name | bad_username | bad_password | bad_value_email | bad_name
 | bad_value_domain | bad_value_subdomain
 | {bad_value_caveat, Caveat :: binary() | json_utils:json_map()} | bad_gui_package
-| gui_package_too_large | gui_package_unverified | invalid_qos_expression.
+| gui_package_too_large | {gui_package_unverified, onedata:gui_hash()}
+| invalid_qos_expression.
 
 -type oz_worker() :: basic_auth_not_supported | basic_auth_disabled
 | subdomain_delegation_not_supported | subdomain_delegation_disabled
@@ -618,7 +619,9 @@ to_json(?ERROR_BAD_VALUE_SUBDOMAIN) -> #{
 };
 to_json(?ERROR_BAD_VALUE_CAVEAT(CaveatJson)) -> #{
     <<"id">> => <<"badValueCaveat">>,
-    <<"caveat">> => CaveatJson,
+    <<"details">> => #{
+        <<"caveat">> => CaveatJson
+    },
     <<"description">> => ?FMT("Provided caveat is invalid: '~s'.", [json_utils:encode(CaveatJson)])
 };
 to_json(?ERROR_BAD_VALUE_QOS_PARAMETERS) -> #{
@@ -633,9 +636,12 @@ to_json(?ERROR_GUI_PACKAGE_TOO_LARGE) -> #{
     <<"id">> => <<"guiPackageTooLarge">>,
     <<"description">> => <<"Provider GUI package is too large.">>
 };
-to_json(?ERROR_GUI_PACKAGE_UNVERIFIED) -> #{
+to_json(?ERROR_GUI_PACKAGE_UNVERIFIED(ShaSum)) -> #{
     <<"id">> => <<"guiPackageUnverified">>,
-    <<"description">> => <<"Provider GUI package could not be verified.">>
+    <<"details">> => #{
+        <<"shaSum">> => ShaSum
+    },
+    <<"description">> => ?FMT("Provided GUI package could not be verified - unknown SHA sum '~s'.", [ShaSum])
 };
 to_json(?ERROR_INVALID_QOS_EXPRESSION) -> #{
     <<"id">> => <<"invalidQosExpression">>,
@@ -1118,7 +1124,7 @@ from_json(#{<<"id">> := <<"badValueDomain">>}) ->
 from_json(#{<<"id">> := <<"badValueSubdomain">>}) ->
     ?ERROR_BAD_VALUE_SUBDOMAIN;
 
-from_json(#{<<"id">> := <<"badValueCaveat">>, <<"caveat">> := CaveatJson}) ->
+from_json(#{<<"id">> := <<"badValueCaveat">>, <<"details">> := #{<<"caveat">> := CaveatJson}}) ->
     ?ERROR_BAD_VALUE_CAVEAT(CaveatJson);
 
 from_json(#{<<"id">> := <<"badValueQoSParameters">>}) ->
@@ -1130,8 +1136,8 @@ from_json(#{<<"id">> := <<"badGuiPackage">>}) ->
 from_json(#{<<"id">> := <<"guiPackageTooLarge">>}) ->
     ?ERROR_GUI_PACKAGE_TOO_LARGE;
 
-from_json(#{<<"id">> := <<"guiPackageUnverified">>}) ->
-    ?ERROR_GUI_PACKAGE_UNVERIFIED;
+from_json(#{<<"id">> := <<"guiPackageUnverified">>, <<"details">> := #{<<"shaSum">> := ShaSum}}) ->
+    ?ERROR_GUI_PACKAGE_UNVERIFIED(ShaSum);
 
 from_json(#{<<"id">> := <<"invalidQosExpression">>}) ->
     ?ERROR_INVALID_QOS_EXPRESSION;
@@ -1364,7 +1370,7 @@ to_http_code(?ERROR_BAD_VALUE_CAVEAT(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_BAD_VALUE_QOS_PARAMETERS) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_BAD_GUI_PACKAGE) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_GUI_PACKAGE_TOO_LARGE) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_GUI_PACKAGE_UNVERIFIED) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_GUI_PACKAGE_UNVERIFIED(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_INVALID_QOS_EXPRESSION) -> ?HTTP_400_BAD_REQUEST;
 
 %% -----------------------------------------------------------------------------
