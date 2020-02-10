@@ -126,7 +126,7 @@
 -define(ERROR_BAD_VALUE_QOS_PARAMETERS, {error, bad_qos_parameters}).
 -define(ERROR_BAD_GUI_PACKAGE, {error, bad_gui_package}).
 -define(ERROR_GUI_PACKAGE_TOO_LARGE, {error, gui_package_too_large}).
--define(ERROR_GUI_PACKAGE_UNVERIFIED, {error, gui_package_unverified}).
+-define(ERROR_GUI_PACKAGE_UNVERIFIED(ShaSum), {error, {gui_package_unverified, ShaSum}}).
 -define(ERROR_INVALID_QOS_EXPRESSION, {error, invalid_qos_expression}).
 
 

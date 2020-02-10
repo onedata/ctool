@@ -169,7 +169,7 @@ testcases() -> [
     ?ERROR_BAD_VALUE_QOS_PARAMETERS,
     ?ERROR_BAD_GUI_PACKAGE,
     ?ERROR_GUI_PACKAGE_TOO_LARGE,
-    ?ERROR_GUI_PACKAGE_UNVERIFIED,
+    ?ERROR_GUI_PACKAGE_UNVERIFIED(<<"5f38fb2e288be67bacc9c206e40f28ee42f9bba9c521f5d6036a4217abd146ba">>),
     ?ERROR_INVALID_QOS_EXPRESSION,
 
     %% -----------------------------------------------------------------------------
