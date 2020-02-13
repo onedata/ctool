@@ -25,6 +25,8 @@
 -type service() :: ?OZ_WORKER | ?OZ_PANEL | ?OP_WORKER | ?OP_PANEL.
 %% Types of services in Onedata
 -type service_type() :: ?WORKER | ?ONEPANEL.
+%% Identifier of a service instance - either Oneprovider Id or ?ONEZONE_CLUSTER_ID
+-type service_id() :: binary().
 %% Graphical User Interfaces in Onedata
 -type gui() :: ?OZ_WORKER_GUI | ?OP_WORKER_GUI | ?ONEPANEL_GUI | ?HARVESTER_GUI.
 %% SHA-256 checksum of a GUI package tarball, used for integrity checks
@@ -36,7 +38,7 @@
 
 -export_type([product/0, release_version/0]).
 -export_type([cluster_type/0]).
--export_type([service/0, service_type/0]).
+-export_type([service/0, service_type/0, service_id/0]).
 -export_type([gui/0, gui_hash/0, gui_mode/0]).
 
 %% API

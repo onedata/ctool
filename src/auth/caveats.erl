@@ -16,12 +16,16 @@
 -include("logging.hrl").
 -include("errors.hrl").
 
--type type() :: cv_time | cv_authorization_none | cv_audience
+-type type() :: cv_time
 | cv_ip | cv_asn | cv_country | cv_region
+| cv_scope
+| cv_service | cv_consumer
 | cv_interface | cv_api
 | cv_data_readonly | cv_data_path | cv_data_objectid.
--type caveat() :: #cv_time{} | #cv_authorization_none{} | #cv_audience{}
+-type caveat() :: #cv_time{}
 | #cv_ip{} | #cv_asn{} | #cv_country{} | #cv_region{}
+| #cv_scope{}
+| #cv_service{} | #cv_consumer{}
 | #cv_interface{} | #cv_api{}
 | #cv_data_readonly{} | #cv_data_path{} | #cv_data_objectid{}.
 -type serialized() :: binary().
@@ -83,14 +87,17 @@ type(Caveat) when is_tuple(Caveat) ->
 
 -spec all_types() -> [type()].
 all_types() -> [
-    cv_time, cv_authorization_none, cv_audience,
+    cv_time,
     cv_ip, cv_asn, cv_country, cv_region,
+    cv_scope,
+    cv_service, cv_consumer,
     cv_interface, cv_api,
     cv_data_readonly, cv_data_path, cv_data_objectid
 ].
 
 
--spec build_verifier(aai:auth_ctx(), [type()]) -> macaroon_verifier:verifier().
+-spec build_verifier(aai:auth_ctx(), SupportedCaveats :: [type()]) ->
+    macaroon_verifier:verifier().
 build_verifier(AuthCtx, SupportedCaveats) ->
     Verifier = macaroon_verifier:create(),
     macaroon_verifier:satisfy_general(Verifier, fun(SerializedCaveat) ->
@@ -113,14 +120,6 @@ build_verifier(AuthCtx, SupportedCaveats) ->
 -spec serialize(caveat()) -> serialized().
 serialize(#cv_time{valid_until = ValidUntil}) ->
     <<"time < ", (integer_to_binary(ValidUntil))/binary>>;
-
-serialize(#cv_authorization_none{}) ->
-    <<"authorization = none">>;
-
-serialize(#cv_audience{whitelist = []}) ->
-    error(badarg);
-serialize(#cv_audience{whitelist = Whitelist}) ->
-    <<"audience = ", (?JOIN([aai:serialize_audience(A) || A <- Whitelist]))/binary>>;
 
 serialize(#cv_ip{whitelist = []}) ->
     error(badarg);
@@ -147,6 +146,19 @@ serialize(#cv_region{type = whitelist, list = List}) ->
     <<"geo.region = ", (?JOIN(List))/binary>>;
 serialize(#cv_region{type = blacklist, list = List}) ->
     <<"geo.region != ", (?JOIN(List))/binary>>;
+
+serialize(#cv_scope{scope = identity_token}) ->
+    <<"scope = identity_token">>;
+
+serialize(#cv_service{whitelist = []}) ->
+    error(badarg);
+serialize(#cv_service{whitelist = Whitelist}) ->
+    <<"service = ", (?JOIN([aai:serialize_service(S) || S <- Whitelist]))/binary>>;
+
+serialize(#cv_consumer{whitelist = []}) ->
+    error(badarg);
+serialize(#cv_consumer{whitelist = Whitelist}) ->
+    <<"consumer = ", (?JOIN([aai:serialize_subject(C) || C <- Whitelist]))/binary>>;
 
 serialize(#cv_interface{interface = Interface}) ->
     <<"interface = ", (cv_interface:serialize_interface(Interface))/binary>>;
@@ -176,13 +188,6 @@ serialize(#cv_data_objectid{whitelist = Whitelist}) ->
 deserialize(<<"time < ", ValidUntil/binary>>) ->
     #cv_time{valid_until = binary_to_integer(ValidUntil)};
 
-deserialize(<<"authorization = none">>) ->
-    #cv_authorization_none{};
-
-deserialize(<<"audience = ", SerializedAudiences/binary>>) when size(SerializedAudiences) > 0 ->
-    Whitelist = lists:map(fun aai:deserialize_audience/1, ?SPLIT(SerializedAudiences)),
-    #cv_audience{whitelist = Whitelist};
-
 deserialize(<<"ip = ", SerializedMasks/binary>>) when size(SerializedMasks) > 0 ->
     Whitelist = [element(2, {ok, _} = ip_utils:parse_mask(M)) || M <- ?SPLIT(SerializedMasks)],
     #cv_ip{whitelist = Whitelist};
@@ -200,6 +205,20 @@ deserialize(<<"geo.region = ", List/binary>>) when size(List) > 0 ->
     #cv_region{type = whitelist, list = ?SPLIT(List)};
 deserialize(<<"geo.region != ", List/binary>>) when size(List) > 0 ->
     #cv_region{type = blacklist, list = ?SPLIT(List)};
+
+%% @todo VFS-6098 deprecated, kept for backward compatibility
+deserialize(<<"authorization = none">>) ->
+    #cv_scope{scope = identity_token};
+deserialize(<<"scope = identity_token">>) ->
+    #cv_scope{scope = identity_token};
+
+deserialize(<<"service = ", SerializedServices/binary>>) when size(SerializedServices) > 0 ->
+    Whitelist = lists:map(fun aai:deserialize_service/1, ?SPLIT(SerializedServices)),
+    #cv_service{whitelist = Whitelist};
+
+deserialize(<<"consumer = ", SerializedConsumers/binary>>) when size(SerializedConsumers) > 0 ->
+    Whitelist = lists:map(fun aai:deserialize_subject/1, ?SPLIT(SerializedConsumers)),
+    #cv_consumer{whitelist = Whitelist};
 
 deserialize(<<"interface = ", Interface/binary>>) ->
     #cv_interface{interface = cv_interface:deserialize_interface(Interface)};
@@ -224,19 +243,6 @@ to_json(#cv_time{valid_until = ValidUntil}) ->
     #{
         <<"type">> => <<"time">>,
         <<"validUntil">> => ValidUntil
-    };
-
-to_json(#cv_authorization_none{}) ->
-    #{
-        <<"type">> => <<"authorizationNone">>
-    };
-
-to_json(#cv_audience{whitelist = []}) ->
-    error(badarg);
-to_json(#cv_audience{whitelist = Whitelist}) ->
-    #{
-        <<"type">> => <<"audience">>,
-        <<"whitelist">> => [aai:serialize_audience(A) || A <- Whitelist]
     };
 
 to_json(#cv_ip{whitelist = []}) ->
@@ -272,6 +278,27 @@ to_json(#cv_region{type = FilterType, list = List}) ->
         <<"type">> => <<"geo.region">>,
         <<"filter">> => serialize_filter_type(FilterType),
         <<"list">> => List
+    };
+
+to_json(#cv_scope{scope = identity_token}) ->
+    #{
+        <<"scope">> => <<"identityToken">>
+    };
+
+to_json(#cv_service{whitelist = []}) ->
+    error(badarg);
+to_json(#cv_service{whitelist = Whitelist}) ->
+    #{
+        <<"type">> => <<"service">>,
+        <<"whitelist">> => [aai:serialize_service(A) || A <- Whitelist]
+    };
+
+to_json(#cv_consumer{whitelist = []}) ->
+    error(badarg);
+to_json(#cv_consumer{whitelist = Whitelist}) ->
+    #{
+        <<"type">> => <<"consumer">>,
+        <<"whitelist">> => [aai:serialize_subject(C) || C <- Whitelist]
     };
 
 to_json(#cv_interface{interface = Interface}) ->
@@ -314,13 +341,6 @@ to_json(#cv_data_objectid{whitelist = Whitelist}) ->
 from_json(#{<<"type">> := <<"time">>, <<"validUntil">> := ValidUntil}) ->
     #cv_time{valid_until = ValidUntil};
 
-from_json(#{<<"type">> := <<"authorizationNone">>}) ->
-    #cv_authorization_none{};
-
-from_json(#{<<"type">> := <<"audience">>, <<"whitelist">> := SerializedAudiences}) when length(SerializedAudiences) > 0 ->
-    Whitelist = lists:map(fun aai:deserialize_audience/1, SerializedAudiences),
-    #cv_audience{whitelist = Whitelist};
-
 from_json(#{<<"type">> := <<"ip">>, <<"whitelist">> := SerializedMasks}) when length(SerializedMasks) > 0 ->
     Whitelist = [element(2, {ok, _} = ip_utils:parse_mask(M)) || M <- SerializedMasks],
     #cv_ip{whitelist = Whitelist};
@@ -333,6 +353,17 @@ from_json(#{<<"type">> := <<"geo.country">>, <<"filter">> := FilterType, <<"list
 
 from_json(#{<<"type">> := <<"geo.region">>, <<"filter">> := FilterType, <<"list">> := List}) when length(List) > 0 ->
     #cv_region{type = deserialize_filter_type(FilterType), list = List};
+
+from_json(#{<<"scope">> := <<"identityToken">>}) ->
+    #cv_scope{scope = identity_token};
+
+from_json(#{<<"type">> := <<"service">>, <<"whitelist">> := SerializedServices}) when length(SerializedServices) > 0 ->
+    Whitelist = lists:map(fun aai:deserialize_service/1, SerializedServices),
+    #cv_service{whitelist = Whitelist};
+
+from_json(#{<<"type">> := <<"consumer">>, <<"whitelist">> := SerializedConsumers}) when length(SerializedConsumers) > 0 ->
+    Whitelist = lists:map(fun aai:deserialize_subject/1, SerializedConsumers),
+    #cv_consumer{whitelist = Whitelist};
 
 from_json(#{<<"type">> := <<"interface">>, <<"interface">> := Interface}) ->
     #cv_interface{interface = cv_interface:deserialize_interface(Interface)};
@@ -361,16 +392,6 @@ from_json(#{<<"type">> := <<"data.objectid">>, <<"whitelist">> := Whitelist}) wh
 -spec sanitize(caveat() | as_json()) -> {true, caveat()} | false.
 sanitize(C = #cv_time{valid_until = Int}) when is_integer(Int) -> {true, C};
 sanitize(_ = #cv_time{}) -> false;
-
-sanitize(C = #cv_authorization_none{}) -> {true, C};
-
-sanitize(C = #cv_audience{whitelist = Whitelist}) when Whitelist /= [] ->
-    try
-        [A = aai:deserialize_audience(aai:serialize_audience(A)) || A <- Whitelist],
-        {true, C}
-    catch _:_ ->
-        false
-    end;
 
 sanitize(C = #cv_ip{whitelist = Whitelist}) when Whitelist /= [] ->
     try
@@ -407,6 +428,31 @@ sanitize(C = #cv_region{type = Type, list = List}) when List /= [] ->
     try
         true = lists:member(Type, [whitelist, blacklist]),
         [true = ip_utils:is_region(Region) || Region <- List],
+        {true, C}
+    catch _:_ ->
+        false
+    end;
+
+sanitize(C = #cv_scope{scope = identity_token}) -> {true, C};
+
+sanitize(C = #cv_service{whitelist = Whitelist}) when Whitelist /= [] ->
+    try
+        [S = aai:deserialize_service(aai:serialize_service(S)) || S <- Whitelist],
+        {true, C}
+    catch _:_ ->
+        false
+    end;
+
+sanitize(C = #cv_consumer{whitelist = Whitelist}) when Whitelist /= [] ->
+    try
+        lists:foreach(fun(Subject) ->
+            Subject = aai:deserialize_subject(aai:serialize_subject(Subject)),
+            case Subject of
+                ?SUB(user, Id) when is_binary(Id) -> ok;
+                ?SUB(group, Id) when is_binary(Id) -> ok;
+                ?SUB(?ONEPROVIDER, Id) when is_binary(Id) -> ok
+            end
+        end, Whitelist),
         {true, C}
     catch _:_ ->
         false
@@ -460,16 +506,6 @@ unverified_description(#cv_time{valid_until = ValidUntil}) ->
         [time_utils:epoch_to_iso8601(ValidUntil)]
     );
 
-unverified_description(#cv_authorization_none{}) ->
-    <<"this token carries no authorization (can be used solely for identity verification)">>;
-
-unverified_description(#cv_audience{whitelist = AllowedAudiences}) ->
-    str_utils:format_bin(
-        "unverified audience caveat: the consumer of this token must authorize as ~s "
-        "(use the x-onedata-audience-token header)",
-        [?JOIN([list_to_binary(aai:audience_to_printable(A)) || A <- AllowedAudiences], <<" or ">>)]
-    );
-
 unverified_description(#cv_ip{whitelist = Whitelist}) ->
     str_utils:format_bin(
         "unverified IP caveat: this token can only be used from an IP address that matches: ~s",
@@ -505,6 +541,22 @@ unverified_description(#cv_region{type = Type, list = List}) ->
         [ComesStr, ?JOIN(List, <<" or ">>)]
     );
 
+unverified_description(#cv_service{whitelist = AllowedServices}) ->
+    str_utils:format_bin(
+        "unverified service caveat: the service using this token must authenticate as ~s "
+        "(use the x-onedata-service-token header)",
+        [?JOIN([list_to_binary(aai:service_to_printable(S)) || S <- AllowedServices], <<" or ">>)]
+    );
+
+unverified_description(#cv_consumer{whitelist = AllowedConsumers}) ->
+    str_utils:format_bin(
+        "unverified consumer caveat: the consumer of this token must authenticate as ~s - "
+        "you should probably provide your access token in one of the headers:~n"
+        "   * 'x-auth-token' if consuming an invite token or using token verification API~n"
+        "   * 'x-onedata-consumer-token' if performing an operation on behalf of somebody else with their access token",
+        [?JOIN([list_to_binary(aai:subject_to_printable(S)) || S <- AllowedConsumers], <<" or ">>)]
+    );
+
 unverified_description(#cv_interface{interface = Interface}) ->
     str_utils:format_bin(
         "unverified interface caveat: this token can only be used in the '~s' interface",
@@ -517,6 +569,9 @@ unverified_description(#cv_api{whitelist = Whitelist}) ->
         "the following spec: ~s",
         [?JOIN(lists:map(fun cv_api:serialize_matchspec/1, Whitelist), <<" or ">>)]
     );
+
+unverified_description(#cv_scope{scope = identity_token}) ->
+    <<"this token carries no authorization (can be used only for identity verification)">>;
 
 unverified_description(#cv_data_readonly{}) ->
     <<"unverified data access caveat: this token allows for readonly data access">>;
@@ -545,23 +600,6 @@ unverified_description(#cv_data_objectid{whitelist = Whitelist}) ->
 verify(#cv_time{valid_until = ValidUntil}, #auth_ctx{current_timestamp = Now}) ->
     Now < ValidUntil;
 
-verify(#cv_authorization_none{}, _AuthCtx) ->
-    % This caveat always verifies, but should not be listed in SupportedCaveats
-    % (see build_verifier/2) when verifying authorization. It is useful to
-    % verify the subject's identity alone.
-    true;
-
-verify(#cv_audience{whitelist = Whitelist}, #auth_ctx{audience = Audience} = AuthCtx) ->
-    is_allowed(whitelist, Whitelist, fun
-        (?AUD(group, GroupId)) ->
-            Checker = AuthCtx#auth_ctx.group_membership_checker,
-            Checker(Audience, GroupId);
-        (?AUD(Type, ?ANY_AUDIENCE_ID)) ->
-            Audience#audience.type =:= Type;
-        (Entry) ->
-            Audience =:= Entry
-    end);
-
 verify(#cv_ip{}, #auth_ctx{ip = undefined}) ->
     false;
 verify(#cv_ip{whitelist = Whitelist}, #auth_ctx{ip = IP}) ->
@@ -585,6 +623,27 @@ verify(#cv_region{type = Type, list = List}, #auth_ctx{ip = IP}) ->
     {ok, Regions} = ip_utils:lookup_region(IP),
     is_allowed(Type, List, fun(Entry) -> lists:member(Entry, Regions) end);
 
+verify(#cv_service{whitelist = Whitelist}, #auth_ctx{service = Service}) ->
+    is_allowed(whitelist, Whitelist, fun
+        (?SERVICE(Type, ?ID_WILDCARD)) ->
+            Service#service_spec.type =:= Type;
+        (Entry) ->
+            Service =:= Entry
+    end);
+
+verify(#cv_consumer{whitelist = Whitelist}, #auth_ctx{consumer = Consumer} = AuthCtx) ->
+    is_allowed(whitelist, Whitelist, fun
+        (?SUB(group, _)) when AuthCtx#auth_ctx.group_membership_checker == undefined ->
+            false;
+        (?SUB(group, GroupId)) ->
+            Checker = AuthCtx#auth_ctx.group_membership_checker,
+            Checker(Consumer, GroupId);
+        (?SUB(Type, ?ID_WILDCARD)) ->
+            Consumer#subject.type =:= Type;
+        (?SUB(Type, Id)) ->
+            Consumer#subject.id =:= Id andalso Consumer#subject.type =:= Type
+    end);
+
 % interface = oneclient caveat is treated as a data access caveat and limits the
 % available API, but does not require the allow_data_access_caveats policy.
 verify(#cv_interface{}, #auth_ctx{interface = undefined}) ->
@@ -600,6 +659,11 @@ verify(#cv_interface{}, _AuthCtx) ->
 % caveats in its internal logic.
 verify(#cv_api{}, _AuthCtx) ->
     true;
+
+verify(#cv_scope{scope = identity_token}, #auth_ctx{scope = identity_token}) ->
+    true;
+verify(#cv_scope{scope = identity_token}, #auth_ctx{scope = unlimited}) ->
+    false;
 
 % Data access caveats are allowed only if the authorizing party requested so.
 % These caveats are supported only in Oneprovider, on interfaces used for data

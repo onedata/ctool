@@ -43,8 +43,8 @@
 % Caveats that are not relevant in the context of API (do not cause limitations)
 -define(IRRELEVANT_CAVEATS_EXAMPLES, [
     #cv_time{valid_until = 923786110239},
-    #cv_authorization_none{},
-    #cv_audience{whitelist = [?AUD(?OP_WORKER, <<"123">>)]},
+    #cv_scope{scope = identity_token},
+    #cv_service{whitelist = [?SERVICE(?OP_WORKER, <<"123">>)]},
     #cv_ip{whitelist = [{34, 59, 102, 32}]},
     #cv_asn{whitelist = [9821, 56, 904]},
     #cv_country{type = whitelist, list = [<<"PL">>, <<"FR">>]},

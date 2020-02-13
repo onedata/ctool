@@ -60,6 +60,34 @@
 % A secret for verifying the token, known only to the issuing Onezone
 -type secret() :: binary().
 
+% Limits the scope in which the token can be used - if equal to identity_token,
+% the token can be used only to prove identity of the holder and carries no
+% authorization for any operations in the system.
+-type scope() :: unlimited | identity_token.
+
+% Covers regular access tokens and GUI access tokens
+-define(DEFAULT_SUPPORTED_ACCESS_TOKEN_CAVEATS, [
+    cv_time,
+    cv_ip, cv_asn, cv_country, cv_region,
+    cv_service, cv_consumer,
+    cv_interface, cv_api,
+    cv_data_readonly, cv_data_path, cv_data_objectid
+]).
+% Identity token is an access token that can have nullified authorization
+% (identity_token scope)
+-define(DEFAULT_SUPPORTED_IDENTITY_TOKEN_CAVEATS, [
+    cv_time,
+    cv_ip, cv_asn, cv_country, cv_region,
+    cv_scope,
+    cv_consumer,
+    cv_interface
+]).
+-define(DEFAULT_SUPPORTED_INVITE_TOKEN_CAVEATS, [
+    cv_time,
+    cv_ip, cv_asn, cv_country, cv_region,
+    cv_consumer
+]).
+
 % Internal type used for encoding basic information about the token (version,
 % id, persistence, subject and type), it is used as the identifier in the
 % underlying macaroon, which allows creating self contained tokens that do not
@@ -71,13 +99,14 @@
 -export_type([temporary_token_generation/0, persistence/0]).
 -export_type([type/0, invite_token_type/0]).
 -export_type([id/0, secret/0]).
+-export_type([scope/0]).
 
 %%% API
 -export([construct/3]).
--export([verify/4]).
+-export([verify/3, verify/4]).
 -export([get_caveats/1]).
 -export([confine/2]).
--export([serialize/1, build_service_access_token/2]).
+-export([serialize/1, build_oneprovider_access_token/2]).
 -export([deserialize/1]).
 -export([is_token/1]).
 -export([is_invite_token/2]).
@@ -87,9 +116,10 @@
 -export([type_to_json/1, json_to_type/1]).
 -export([invite_token_type_to_str/1, str_to_invite_token_type/1]).
 -export([generate_secret/0]).
--export([build_access_token_header/1, parse_access_token_header/1]).
+-export([access_token_header/1, parse_access_token_header/1]).
 -export([supported_access_token_headers/0]).
--export([build_audience_token_header/1, parse_audience_token_header/1]).
+-export([service_token_header/1, parse_service_token_header/1]).
+-export([consumer_token_header/1, parse_consumer_token_header/1]).
 
 -define(MAX_TOKEN_SIZE, ctool:get_env(max_token_size, 1048576)). % 1MiB
 
@@ -117,12 +147,32 @@ construct(Prototype = #token{onezone_domain = OzDomain}, Secret, Caveats) ->
 
 %%--------------------------------------------------------------------
 %% @doc
-%% Verifies given token against given secret and supported caveats.
+%% Verifies given token against given secret, context and default supported
+%% caveats for the token type and scope.
 %% Returns the resulting #auth{} object, expressing subject's authorization
 %% carried by the token.
 %% @end
 %%--------------------------------------------------------------------
--spec verify(token(), secret(), aai:auth_ctx(), [caveats:type()]) ->
+-spec verify(token(), secret(), aai:auth_ctx()) ->
+    {ok, aai:auth()} | errors:error().
+verify(#token{type = ?ACCESS_TOKEN} = Token, Secret, #auth_ctx{scope = unlimited} = AuthCtx) ->
+    verify(Token, Secret, AuthCtx, ?DEFAULT_SUPPORTED_ACCESS_TOKEN_CAVEATS);
+verify(#token{type = ?ACCESS_TOKEN} = Token, Secret, #auth_ctx{scope = identity_token} = AuthCtx) ->
+    verify(Token, Secret, AuthCtx, ?DEFAULT_SUPPORTED_IDENTITY_TOKEN_CAVEATS);
+verify(#token{type = ?GUI_ACCESS_TOKEN(_)} = Token, Secret, AuthCtx) ->
+    verify(Token, Secret, AuthCtx, ?DEFAULT_SUPPORTED_ACCESS_TOKEN_CAVEATS);
+verify(#token{type = ?INVITE_TOKEN(_, _)} = Token, Secret, AuthCtx) ->
+    verify(Token, Secret, AuthCtx, ?DEFAULT_SUPPORTED_INVITE_TOKEN_CAVEATS).
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Verifies given token against given secret, context and supported caveats.
+%% Returns the resulting #auth{} object, expressing subject's authorization
+%% carried by the token.
+%% @end
+%%--------------------------------------------------------------------
+-spec verify(token(), secret(), aai:auth_ctx(), SupportedCaveats :: [caveats:type()]) ->
     {ok, aai:auth()} | errors:error().
 verify(Token = #token{macaroon = Macaroon}, Secret, AuthCtx, SupportedCaveats) ->
     Verifier = caveats:build_verifier(AuthCtx, SupportedCaveats),
@@ -186,20 +236,20 @@ serialize(Token) ->
 
 %%--------------------------------------------------------------------
 %% @doc
-%% Builds a service access token based on service (op-worker or op-panel) and
-%% corresponding Oneprovider's access token. Service access token is essentially
-%% an access token with a hint which Oneprovider's service is authorizing
-%% itself. This hint is useful for Onezone, because both op-worker and op-panel
-%% use exactly the same access token. This way, Onezone is able to resolve the
-%% subject's subtype upon successful verification of the access token. The
-%% knowledge whether this is a op-worker or op-panel service is later used for
-%% example when specific audience is expected to verify another token.
+%% Builds a Oneprovider access token based on service (op-worker or op-panel)
+%% and corresponding Oneprovider's access token. Such access token includes a
+%% hint which Oneprovider's service is authenticating itself. This hint is
+%% useful for Onezone, because both op-worker and op-panel use exactly the same
+%% access token. This way, Onezone is able to resolve the subject's subtype upon
+%% successful verification of the access token. The knowledge whether this is a
+%% op-worker or op-panel service is later used for example when specific service
+%% is expected to verify another token.
 %% @end
 %%--------------------------------------------------------------------
--spec build_service_access_token(?OP_WORKER | ?OP_PANEL, serialized()) -> tokens:serialized().
-build_service_access_token(Service, Serialized) when Service == ?OP_WORKER orelse Service == ?OP_PANEL ->
+-spec build_oneprovider_access_token(?OP_WORKER | ?OP_PANEL, serialized()) -> tokens:serialized().
+build_oneprovider_access_token(Service, Serialized) when Service == ?OP_WORKER orelse Service == ?OP_PANEL ->
     <<(onedata:service_shortname(Service))/binary, "-", Serialized/binary>>;
-build_service_access_token(_, _) ->
+build_oneprovider_access_token(_, _) ->
     error(badarg).
 
 
@@ -449,8 +499,8 @@ generate_secret() ->
     str_utils:rand_hex(macaroon:suggested_secret_length()).
 
 
--spec build_access_token_header(serialized()) -> cowboy:http_headers().
-build_access_token_header(SerializedToken) ->
+-spec access_token_header(serialized()) -> cowboy:http_headers().
+access_token_header(SerializedToken) ->
     #{?HDR_X_AUTH_TOKEN => SerializedToken}.
 
 
@@ -467,14 +517,24 @@ supported_access_token_headers() ->
     [?HDR_X_AUTH_TOKEN, ?HDR_AUTHORIZATION, ?HDR_MACAROON].
 
 
--spec build_audience_token_header(serialized()) -> cowboy:http_headers().
-build_audience_token_header(SerializedToken) ->
-    #{?HDR_X_ONEDATA_AUDIENCE_TOKEN => SerializedToken}.
+-spec service_token_header(serialized()) -> cowboy:http_headers().
+service_token_header(SerializedToken) ->
+    #{?HDR_X_ONEDATA_SERVICE_TOKEN => SerializedToken}.
 
 
--spec parse_audience_token_header(cowboy_req:req()) -> undefined | serialized().
-parse_audience_token_header(#{headers := #{?HDR_X_ONEDATA_AUDIENCE_TOKEN := T}}) -> T;
-parse_audience_token_header(_) -> undefined.
+-spec parse_service_token_header(cowboy_req:req()) -> undefined | serialized().
+parse_service_token_header(#{headers := #{?HDR_X_ONEDATA_SERVICE_TOKEN := T}}) -> T;
+parse_service_token_header(_) -> undefined.
+
+
+-spec consumer_token_header(serialized()) -> cowboy:http_headers().
+consumer_token_header(SerializedToken) ->
+    #{?HDR_X_ONEDATA_CONSUMER_TOKEN => SerializedToken}.
+
+
+-spec parse_consumer_token_header(cowboy_req:req()) -> undefined | serialized().
+parse_consumer_token_header(#{headers := #{?HDR_X_ONEDATA_CONSUMER_TOKEN := T}}) -> T;
+parse_consumer_token_header(_) -> undefined.
 
 %%%===================================================================
 %%% Internal functions

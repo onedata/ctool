@@ -26,9 +26,9 @@
     id = undefined :: aai:subject_id()
 }).
 
--record(audience, {
-    type = user :: aai:audience_type(),
-    id :: aai:audience_id()
+-record(service_spec, {
+    type :: onedata:service(),
+    id :: onedata:service_id()
 }).
 
 -record(auth, {
@@ -40,12 +40,14 @@
 }).
 
 -record(auth_ctx, {
-    current_timestamp :: time_utils:seconds(),
+    current_timestamp = 0 :: time_utils:seconds(),
+    scope = unlimited :: unlimited | tokens:scope(),
     ip = undefined :: undefined | ip_utils:ip(),
     interface = undefined :: undefined | cv_interface:interface(),
-    audience :: aai:audience(),
+    service = undefined :: undefined | aai:service_spec(),
+    consumer = undefined :: undefined | aai:consumer_spec(),
     data_access_caveats_policy = disallow_data_access_caveats :: data_access_caveats:policy(),
-    group_membership_checker :: aai:group_membership_checker()
+    group_membership_checker = undefined :: undefined | aai:group_membership_checker()
 }).
 
 
@@ -84,7 +86,7 @@
 -define(SUB(Type, Id), #subject{type = Type, id = Id}).
 -define(SUB(Type, SubType, Id), #subject{type = Type, subtype = SubType, id = Id}).
 
--define(AUD(Type, Id), #audience{type = Type, id = Id}).
+-define(SERVICE(Type, Id), #service_spec{type = Type, id = Id}).
 
 -define(NOBODY, #auth{subject = #subject{type = nobody}}).
 -define(ROOT, #auth{subject = #subject{type = root}}).

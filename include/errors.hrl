@@ -51,8 +51,10 @@
 -define(ERROR_BAD_IDP_ACCESS_TOKEN(IdP), {error, {bad_idp_access_token, IdP}}).
 % The presented token cannot be understood by the server
 -define(ERROR_BAD_TOKEN, {error, bad_token}).
-% The presented audience token cannot be understood by the server
--define(ERROR_BAD_AUDIENCE_TOKEN(TokenError), {error, {bad_audience_token, TokenError}}).
+% The presented service token is not valid due to TokenError
+-define(ERROR_BAD_SERVICE_TOKEN(TokenError), {error, {bad_service_token, TokenError}}).
+% The presented consumer token is not valid due to TokenError
+-define(ERROR_BAD_CONSUMER_TOKEN(TokenError), {error, {bad_consumer_token, TokenError}}).
 % The token is comprehensible, but not valid
 -define(ERROR_TOKEN_INVALID, {error, token_invalid}).
 -define(ERROR_TOKEN_REVOKED, {error, token_revoked}).
@@ -64,12 +66,12 @@
 -define(ERROR_TOKEN_TIME_CAVEAT_REQUIRED(MaxTtl), {error, {token_time_caveat_required, MaxTtl}}).
 % Token cannot be created for requested subject as it is invalid
 -define(ERROR_TOKEN_SUBJECT_INVALID, {error, token_subject_invalid}).
-% Requested audience is forbidden to consume the token (e.g. user is not
-% supported by the provider specified in audience)
--define(ERROR_TOKEN_AUDIENCE_FORBIDDEN(Audience), {error, {token_audience_forbidden, Audience}}).
+% Requested service is forbidden to use the token on behalf of the subject
+% (e.g. subject user is not supported by the provider specified in service)
+-define(ERROR_TOKEN_SERVICE_FORBIDDEN(ServiceSpec), {error, {token_service_forbidden, ServiceSpec}}).
 -define(ERROR_INVITE_TOKEN_SUBJECT_NOT_AUTHORIZED, {error, invite_token_subject_not_authorized}).
 -define(ERROR_INVITE_TOKEN_USAGE_LIMIT_REACHED, {error, invite_token_usage_limit_exceeded}).
--define(ERROR_INVITE_TOKEN_CONSUMER_INVALID(Subject), {error, {invite_token_consumer_invalid, Subject}}).
+-define(ERROR_INVITE_TOKEN_CONSUMER_INVALID(Consumer), {error, {invite_token_consumer_invalid, Consumer}}).
 -define(ERROR_INVITE_TOKEN_TARGET_ID_INVALID(Id), {error, {invite_token_target_id_invalid, Id}}).
 -define(ERROR_TOKEN_SESSION_INVALID, {error, token_session_invalid}).
 

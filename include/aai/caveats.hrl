@@ -12,17 +12,14 @@
 -ifndef(CAVEATS_HRL).
 -define(CAVEATS_HRL, 1).
 
+-define(ID_WILDCARD, <<"*">>).
+% Special wildcard id <<"*">> can be used to match any id in a service or
+% consumer caveat, for example #service_spec{type = ?OP_WORKER, id = <<"*">>} will
+% match any op-worker service and #subject{type = user, id = <<"*">>} will match
+% any user.
+
 -record(cv_time, {
     valid_until = 0 :: time_utils:seconds()
-}).
-
--record(cv_authorization_none, {}).
-
--define(ANY_AUDIENCE_ID, <<"*">>).
-% Special audience id <<"*">> can be used to match any id, for example
-% #audience{type = ?OP_WORKER, id = <<"*">>} will match any op-worker service
--record(cv_audience, {
-    whitelist = [] :: [aai:audience()]
 }).
 
 -record(cv_ip, {
@@ -41,6 +38,18 @@
 -record(cv_region, {
     type = whitelist :: whitelist | blacklist,
     list = [] :: [ip_utils:region()]
+}).
+
+-record(cv_scope, {
+    scope = identity_token :: identity_token
+}).
+
+-record(cv_service, {
+    whitelist = [] :: [aai:service_spec()]
+}).
+
+-record(cv_consumer, {
+    whitelist = [] :: [aai:consumer_spec()]
 }).
 
 -record(cv_interface, {
