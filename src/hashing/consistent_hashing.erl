@@ -16,15 +16,16 @@
 -record(ring, {
     type :: single_node | multi_node | broken,
     chash :: chash:chash() | node(),
-    broken_nodes = [] :: [node()]
+    broken_nodes = [] :: [node()],
+    key_connected_nodes = 1 :: pos_integer()
 }).
 
 -type ring() :: #ring{}.
 
 %% API
 -export([init/1, cleanup/0, get_chash_ring/0, set_chash_ring/1,
-    set_broken_node/1, set_fixed_node/1,
-    get_node/1, get_nodes/2, get_alive_and_broken_nodes/2, get_all_nodes/0]).
+    set_broken_node/1, set_fixed_node/1, set_key_connected_nodes/1,
+    get_node/1, get_nodes/2, get_all_nodes/0]).
 
 %%%===================================================================
 %%% API
@@ -34,7 +35,7 @@
 %% @doc
 %% Initialize chash ring
 %% @end
-%%--------------------------------------------------------------------
+%%------------------------------------------`--------------------------
 -spec init([node()]) -> ok.
 init([Node]) ->
     set_chash_ring(#ring{type = single_node, chash = Node});
@@ -46,7 +47,8 @@ init(Nodes) ->
             CHash = lists:foldl(fun({I, Node}, CHashAcc) ->
                 chash:update(get_nth_index(I, CHashAcc), Node, CHashAcc)
             end, InitialCHash, lists:zip(lists:seq(1, length(Nodes)), Nodes)),
-            Ring = #ring{type = multi_node, chash = CHash},
+            KeyConnectedNodes = ctool:get_env(key_connected_nodes, 1),
+            Ring = #ring{type = multi_node, chash = CHash, key_connected_nodes = KeyConnectedNodes},
             set_chash_ring(Ring);
         _ ->
             ok
@@ -107,6 +109,17 @@ set_fixed_node(FixedNodes) ->
 
 %%--------------------------------------------------------------------
 %% @doc
+%% Sets information about number of nodes connected with key.
+%% @end
+%%--------------------------------------------------------------------
+-spec set_key_connected_nodes(pos_integer()) -> ok.
+set_key_connected_nodes(Num) ->
+    ctool:set_env(key_connected_nodes, Num),
+    Ring = get_chash_ring(),
+    set_chash_ring(Ring#ring{key_connected_nodes = Num}).
+
+%%--------------------------------------------------------------------
+%% @doc
 %% Get node that is responsible for the data labeled with given term.
 %% Throws error if node is broken.
 %% @end
@@ -134,49 +147,37 @@ get_node(Label) ->
 %%--------------------------------------------------------------------
 %% @doc
 %% Get nodes that are responsible for the data labeled with given term.
-%% @end
-%%--------------------------------------------------------------------
--spec get_nodes(term(), non_neg_integer()) -> [node()].
-get_nodes(Label, NodesNum) ->
-    case get_chash_ring() of
-        undefined ->
-            error(chash_ring_not_initialized);
-        #ring{type = single_node, chash = Node} ->
-            [Node];
-        #ring{type = multi_node, chash = CHash} ->
-            Index = chash:key_of(Label),
-            lists:map(fun({_, Node}) -> Node end, chash:successors(Index, CHash, NodesNum));
-        #ring{type = broken, chash = CHash, broken_nodes = BrokenNodes} ->
-            Index = chash:key_of(Label),
-            lists:map(fun({_, Node}) ->
-                case lists:member(Node, BrokenNodes) of
-                    true -> throw(broken_node);
-                    false -> Node
-                end
-            end, chash:successors(Index, CHash, NodesNum))
-    end.
-
-%%--------------------------------------------------------------------
-%% @doc
-%% Get nodes that are responsible for the data labeled with given term.
 %% Returns two lists: alvie and broken nodes.
 %% @end
 %%--------------------------------------------------------------------
--spec get_alive_and_broken_nodes(term(), non_neg_integer()) -> {AliveNodes :: [node()], BrokenNodes :: [node()]}.
-get_alive_and_broken_nodes(Label, NodesNum) ->
+-spec get_nodes(term(), non_neg_integer() | all) ->
+    {KeyConnectedNodes :: [node()], OtherRequestedNodes :: [node()], BrokenNodes :: [node()]}.
+get_nodes(Label, RequestedNodesNum) ->
     case get_chash_ring() of
         undefined ->
             error(chash_ring_not_initialized);
         #ring{type = single_node, chash = Node} ->
             {[Node], []};
-        #ring{type = multi_node, chash = CHash} ->
+        #ring{type = multi_node, chash = CHash, key_connected_nodes = KeyConnectedNodesNum} ->
             Index = chash:key_of(Label),
-            Nodes = lists:map(fun({_, Node}) -> Node end, chash:successors(Index, CHash, NodesNum)),
-            {Nodes, []};
-        #ring{type = broken, chash = CHash, broken_nodes = BrokenNodes} ->
+            Nodes = case RequestedNodesNum of
+                all -> get_all_nodes();
+                _ -> lists:map(fun({_, Node}) -> Node end,
+                    chash:successors(Index, CHash, max(KeyConnectedNodesNum, RequestedNodesNum)))
+            end,
+            {KeyConnectedNodes, OtherRequestedNodes} = lists:split(min(KeyConnectedNodesNum, length(Nodes)), Nodes),
+            {KeyConnectedNodes, OtherRequestedNodes, []};
+        #ring{type = broken, chash = CHash, broken_nodes = BrokenNodes,
+            key_connected_nodes = KeyConnectedNodesNum} ->
             Index = chash:key_of(Label),
-            Nodes = chash:successors(Index, CHash, NodesNum),
-            filter_nodes(Nodes, BrokenNodes)
+            Nodes = case RequestedNodesNum of
+                all -> get_all_nodes();
+                _ -> chash:successors(Index, CHash, max(KeyConnectedNodesNum, RequestedNodesNum))
+            end,
+            {KeyConnectedNodes, OtherRequestedNodes} = lists:split(min(KeyConnectedNodesNum, length(Nodes)), Nodes),
+            {AliveKeyConnectedNodes, BrokenKeyConnectedNodes} = filter_nodes(KeyConnectedNodes, BrokenNodes),
+            {AliveOtherRequestedNodes, BrokenOtherRequestedNodes} = filter_nodes(OtherRequestedNodes, BrokenNodes),
+            {AliveKeyConnectedNodes, AliveOtherRequestedNodes, BrokenKeyConnectedNodes ++ BrokenOtherRequestedNodes}
     end.
 
 %%--------------------------------------------------------------------
@@ -211,11 +212,18 @@ get_nth_index(N, CHash) ->
     {Index, _} = lists:nth(N, chash:nodes(CHash)),
     Index.
 
--spec filter_nodes(ResponsibleNodes :: [node()], AllBrokenNodes :: [node()]) ->
+-spec filter_nodes(ResponsibleNodes :: [node() | {integer(), node()}], AllBrokenNodes :: [node()]) ->
     {GoodNodes :: [node()], BrokenNodes :: [node()]}.
 filter_nodes([], _BrokenNodes) ->
     {[], []};
 filter_nodes([{_, Node} | Nodes], BrokenNodes) ->
+    filter_nodes(Node, Nodes, BrokenNodes) ;
+filter_nodes([Node | Nodes], BrokenNodes) ->
+    filter_nodes(Node, Nodes, BrokenNodes).
+
+-spec filter_nodes(CheckedNode :: node(), ResponsibleNodes :: [node() | {integer(), node()}],
+    AllBrokenNodes :: [node()]) -> {GoodNodes :: [node()], BrokenNodes :: [node()]}.
+filter_nodes(Node, Nodes, BrokenNodes) ->
     {AliveNodesAns, BrokenNodesAns} = filter_nodes(Nodes, BrokenNodes),
     case lists:member(Node, BrokenNodes) of
         true ->
