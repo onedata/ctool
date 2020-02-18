@@ -86,7 +86,7 @@ confine_test() ->
         id = ?RAND_STR,
         subject = ?SUB(user, <<"uid">>),
         persistence = named,
-        type = ?GUI_ACCESS_TOKEN(?RAND_STR)
+        type = ?ACCESS_TOKEN(?RAND_STR)
     },
     Secret = ?RAND_STR,
 
@@ -133,12 +133,20 @@ is_token_or_invite_token_test() ->
         type = ?ACCESS_TOKEN
     },
 
-    GuiAccessTokenPrototype = #token{
+    AccessTokenWithSessionPrototype = #token{
         onezone_domain = ?OZ_DOMAIN,
         id = ?RAND_STR,
         subject = ?SUB(user, <<"uid">>),
         persistence = {temporary, rand:uniform(99999)},
-        type = ?GUI_ACCESS_TOKEN(?RAND_STR)
+        type = ?ACCESS_TOKEN(?RAND_STR)
+    },
+
+    IdentityTokenPrototype = #token{
+        onezone_domain = ?OZ_DOMAIN,
+        id = ?RAND_STR,
+        subject = ?SUB(?ONEPROVIDER, <<"pid">>),
+        persistence = named,
+        type = ?IDENTITY_TOKEN
     },
 
     InviteTokenPrototype = #token{
@@ -154,10 +162,15 @@ is_token_or_invite_token_test() ->
     ?assertEqual(true, IsToken(tokens:construct(AccessTokenPrototype, <<"secret">>, []))),
     ?assertEqual(false, IsInviteToken(tokens:construct(AccessTokenPrototype, <<"secret">>, []), any)),
 
-    ?assertEqual(false, IsToken(GuiAccessTokenPrototype)),
-    ?assertEqual(false, IsInviteToken(GuiAccessTokenPrototype, any)),
-    ?assertEqual(true, IsToken(tokens:construct(GuiAccessTokenPrototype, <<"secret">>, []))),
-    ?assertEqual(false, IsInviteToken(tokens:construct(GuiAccessTokenPrototype, <<"secret">>, []), ?USER_JOIN_SPACE)),
+    ?assertEqual(false, IsToken(AccessTokenWithSessionPrototype)),
+    ?assertEqual(false, IsInviteToken(AccessTokenWithSessionPrototype, any)),
+    ?assertEqual(true, IsToken(tokens:construct(AccessTokenWithSessionPrototype, <<"secret">>, []))),
+    ?assertEqual(false, IsInviteToken(tokens:construct(AccessTokenWithSessionPrototype, <<"secret">>, []), ?USER_JOIN_SPACE)),
+
+    ?assertEqual(false, IsToken(IdentityTokenPrototype)),
+    ?assertEqual(false, IsInviteToken(IdentityTokenPrototype, ?GROUP_JOIN_HARVESTER)),
+    ?assertEqual(true, IsToken(tokens:construct(IdentityTokenPrototype, <<"secret">>, []))),
+    ?assertEqual(false, IsInviteToken(tokens:construct(IdentityTokenPrototype, <<"secret">>, []), any)),
 
     ?assertEqual(false, IsToken(InviteTokenPrototype)),
     ?assertEqual(false, IsInviteToken(InviteTokenPrototype, ?USER_JOIN_CLUSTER)),
@@ -178,71 +191,105 @@ is_token_or_invite_token_test() ->
 
 
 sanitize_type_test() ->
-    S = fun tokens:sanitize_type/1,
+    S = fun token_type:sanitize/1,
 
     ?assertEqual({true, ?ACCESS_TOKEN}, S(?ACCESS_TOKEN)),
     ?assertEqual({true, ?ACCESS_TOKEN}, S(#{<<"accessToken">> => #{}})),
     ?assertEqual(false, S(<<"access">>)),
 
-    ?assertEqual({true, ?GUI_ACCESS_TOKEN(<<"sess">>)}, S(?GUI_ACCESS_TOKEN(<<"sess">>))),
-    ?assertEqual({true, ?GUI_ACCESS_TOKEN(<<"sess">>)}, S(#{<<"guiAccessToken">> => #{<<"sessionId">> => <<"sess">>}})),
-    ?assertEqual(false, S(#{<<"guiAccessToken">> => #{}})),
-    ?assertEqual(false, S(<<"gui">>)),
-    ?assertEqual(false, S(<<"gui-">>)),
+    ?assertEqual({true, ?ACCESS_TOKEN(<<"sess">>)}, S(?ACCESS_TOKEN(<<"sess">>))),
+    ?assertEqual({true, ?ACCESS_TOKEN(<<"sess">>)}, S(#{<<"accessToken">> => #{<<"sessionId">> => <<"sess">>}})),
+    ?assertEqual(false, S(#{<<"accessToken">> => #{<<"bad">> => <<"data">>}})),
+    ?assertEqual(false, S(<<"act">>)),
+    ?assertEqual(false, S(<<"act-">>)),
+
+    ?assertEqual({true, ?IDENTITY_TOKEN}, S(?IDENTITY_TOKEN)),
+    ?assertEqual({true, ?IDENTITY_TOKEN}, S(#{<<"identityToken">> => #{}})),
+    ?assertEqual(false, S(<<"identity">>)),
 
     ?assertEqual({true, ?INVITE_TOKEN(?USER_JOIN_GROUP, <<"id">>)}, S(?INVITE_TOKEN(?USER_JOIN_GROUP, <<"id">>))),
     ?assertEqual({true, ?INVITE_TOKEN(?USER_JOIN_GROUP, <<"id">>)}, S(#{<<"inviteToken">> => #{
-        <<"subtype">> => <<"userJoinGroup">>, <<"groupId">> => <<"id">>
+        <<"inviteType">> => <<"userJoinGroup">>, <<"groupId">> => <<"id">>
     }})),
 
     ?assertEqual({true, ?INVITE_TOKEN(?GROUP_JOIN_GROUP, <<"id">>)}, S(?INVITE_TOKEN(?GROUP_JOIN_GROUP, <<"id">>))),
     ?assertEqual({true, ?INVITE_TOKEN(?GROUP_JOIN_GROUP, <<"id">>)}, S(#{<<"inviteToken">> => #{
-        <<"subtype">> => <<"groupJoinGroup">>, <<"groupId">> => <<"id">>
+        <<"inviteType">> => <<"groupJoinGroup">>, <<"groupId">> => <<"id">>
     }})),
 
     ?assertEqual({true, ?INVITE_TOKEN(?USER_JOIN_SPACE, <<"id">>)}, S(?INVITE_TOKEN(?USER_JOIN_SPACE, <<"id">>))),
     ?assertEqual({true, ?INVITE_TOKEN(?USER_JOIN_SPACE, <<"id">>)}, S(#{<<"inviteToken">> => #{
-        <<"subtype">> => <<"userJoinSpace">>, <<"spaceId">> => <<"id">>
+        <<"inviteType">> => <<"userJoinSpace">>, <<"spaceId">> => <<"id">>
     }})),
 
     ?assertEqual({true, ?INVITE_TOKEN(?GROUP_JOIN_SPACE, <<"id">>)}, S(?INVITE_TOKEN(?GROUP_JOIN_SPACE, <<"id">>))),
     ?assertEqual({true, ?INVITE_TOKEN(?GROUP_JOIN_SPACE, <<"id">>)}, S(#{<<"inviteToken">> => #{
-        <<"subtype">> => <<"groupJoinSpace">>, <<"spaceId">> => <<"id">>
+        <<"inviteType">> => <<"groupJoinSpace">>, <<"spaceId">> => <<"id">>
     }})),
 
-    ?assertEqual({true, ?INVITE_TOKEN(?SUPPORT_SPACE, <<"id">>)}, S(?INVITE_TOKEN(?SUPPORT_SPACE, <<"id">>))),
-    ?assertEqual({true, ?INVITE_TOKEN(?SUPPORT_SPACE, <<"id">>)}, S(#{<<"inviteToken">> => #{
-        <<"subtype">> => <<"supportSpace">>, <<"spaceId">> => <<"id">>
+    ?assertEqual(false, S(?INVITE_TOKEN(?SUPPORT_SPACE, <<"id">>, undefined))),
+    ?assertEqual({true, ?INVITE_TOKEN(?SUPPORT_SPACE, <<"id">>, #space_support_parameters{
+        data_write = none, metadata_replication = eager
+    })}, S(?INVITE_TOKEN(?SUPPORT_SPACE, <<"id">>, #space_support_parameters{
+        data_write = none, metadata_replication = eager
+    }))),
+    ?assertEqual({true, ?INVITE_TOKEN(?SUPPORT_SPACE, <<"id">>, #space_support_parameters{
+        data_write = global, metadata_replication = eager
+    })}, S(#{<<"inviteToken">> => #{
+        <<"inviteType">> => <<"supportSpace">>, <<"spaceId">> => <<"id">>
+    }})),
+    ?assertEqual({true, ?INVITE_TOKEN(?SUPPORT_SPACE, <<"id">>, #space_support_parameters{
+        data_write = global, metadata_replication = eager
+    })}, S(#{<<"inviteToken">> => #{
+        <<"inviteType">> => <<"supportSpace">>, <<"spaceId">> => <<"id">>,
+        <<"dataWrite">> => <<"global">>, <<"metadataReplication">> => <<"eager">>
+    }})),
+    ?assertEqual({true, ?INVITE_TOKEN(?SUPPORT_SPACE, <<"id">>, #space_support_parameters{
+        data_write = none, metadata_replication = lazy
+    })}, S(#{<<"inviteToken">> => #{
+        <<"inviteType">> => <<"supportSpace">>, <<"spaceId">> => <<"id">>,
+        <<"dataWrite">> => <<"none">>, <<"metadataReplication">> => <<"lazy">>
+    }})),
+    ?assertEqual({true, ?INVITE_TOKEN(?SUPPORT_SPACE, <<"id">>, #space_support_parameters{
+        data_write = global, metadata_replication = none
+    })}, S(#{<<"inviteToken">> => #{
+        <<"inviteType">> => <<"supportSpace">>, <<"spaceId">> => <<"id">>,
+        <<"dataWrite">> => <<"global">>, <<"metadataReplication">> => <<"none">>
+    }})),
+
+    ?assertEqual({true, ?INVITE_TOKEN(?HARVESTER_JOIN_SPACE, <<"id">>)}, S(?INVITE_TOKEN(?HARVESTER_JOIN_SPACE, <<"id">>))),
+    ?assertEqual({true, ?INVITE_TOKEN(?HARVESTER_JOIN_SPACE, <<"id">>)}, S(#{<<"inviteToken">> => #{
+        <<"inviteType">> => <<"harvesterJoinSpace">>, <<"spaceId">> => <<"id">>
     }})),
 
     ?assertEqual({true, ?INVITE_TOKEN(?REGISTER_ONEPROVIDER, <<"id">>)}, S(?INVITE_TOKEN(?REGISTER_ONEPROVIDER, <<"id">>))),
     ?assertEqual({true, ?INVITE_TOKEN(?REGISTER_ONEPROVIDER, <<"id">>)}, S(#{<<"inviteToken">> => #{
-        <<"subtype">> => <<"registerOneprovider">>, <<"adminUserId">> => <<"id">>
+        <<"inviteType">> => <<"registerOneprovider">>, <<"adminUserId">> => <<"id">>
     }})),
 
     ?assertEqual({true, ?INVITE_TOKEN(?USER_JOIN_CLUSTER, <<"id">>)}, S(?INVITE_TOKEN(?USER_JOIN_CLUSTER, <<"id">>))),
     ?assertEqual({true, ?INVITE_TOKEN(?USER_JOIN_CLUSTER, <<"id">>)}, S(#{<<"inviteToken">> => #{
-        <<"subtype">> => <<"userJoinCluster">>, <<"clusterId">> => <<"id">>
+        <<"inviteType">> => <<"userJoinCluster">>, <<"clusterId">> => <<"id">>
     }})),
 
     ?assertEqual({true, ?INVITE_TOKEN(?GROUP_JOIN_CLUSTER, <<"id">>)}, S(?INVITE_TOKEN(?GROUP_JOIN_CLUSTER, <<"id">>))),
     ?assertEqual({true, ?INVITE_TOKEN(?GROUP_JOIN_CLUSTER, <<"id">>)}, S(#{<<"inviteToken">> => #{
-        <<"subtype">> => <<"groupJoinCluster">>, <<"clusterId">> => <<"id">>
+        <<"inviteType">> => <<"groupJoinCluster">>, <<"clusterId">> => <<"id">>
     }})),
 
     ?assertEqual({true, ?INVITE_TOKEN(?USER_JOIN_HARVESTER, <<"id">>)}, S(?INVITE_TOKEN(?USER_JOIN_HARVESTER, <<"id">>))),
     ?assertEqual({true, ?INVITE_TOKEN(?USER_JOIN_HARVESTER, <<"id">>)}, S(#{<<"inviteToken">> => #{
-        <<"subtype">> => <<"userJoinHarvester">>, <<"harvesterId">> => <<"id">>
+        <<"inviteType">> => <<"userJoinHarvester">>, <<"harvesterId">> => <<"id">>
     }})),
 
     ?assertEqual({true, ?INVITE_TOKEN(?GROUP_JOIN_HARVESTER, <<"id">>)}, S(?INVITE_TOKEN(?GROUP_JOIN_HARVESTER, <<"id">>))),
     ?assertEqual({true, ?INVITE_TOKEN(?GROUP_JOIN_HARVESTER, <<"id">>)}, S(#{<<"inviteToken">> => #{
-        <<"subtype">> => <<"groupJoinHarvester">>, <<"harvesterId">> => <<"id">>
+        <<"inviteType">> => <<"groupJoinHarvester">>, <<"harvesterId">> => <<"id">>
     }})),
 
     ?assertEqual({true, ?INVITE_TOKEN(?SPACE_JOIN_HARVESTER, <<"id">>)}, S(?INVITE_TOKEN(?SPACE_JOIN_HARVESTER, <<"id">>))),
     ?assertEqual({true, ?INVITE_TOKEN(?SPACE_JOIN_HARVESTER, <<"id">>)}, S(#{<<"inviteToken">> => #{
-        <<"subtype">> => <<"spaceJoinHarvester">>, <<"harvesterId">> => <<"id">>
+        <<"inviteType">> => <<"spaceJoinHarvester">>, <<"harvesterId">> => <<"id">>
     }})),
 
     ?assertEqual(false, S(<<"giu-">>)),
@@ -250,8 +297,8 @@ sanitize_type_test() ->
     ?assertEqual(false, S(<<"h">>)).
 
 
-sanitize_invite_token_type_test() ->
-    S = fun tokens:sanitize_invite_token_type/1,
+sanitize_invite_type_test() ->
+    S = fun token_type:sanitize_invite_type/1,
 
     ?assertEqual({true, ?USER_JOIN_GROUP}, S(?USER_JOIN_GROUP)),
     ?assertEqual({true, ?USER_JOIN_GROUP}, S(<<"userJoinGroup">>)),
@@ -273,6 +320,10 @@ sanitize_invite_token_type_test() ->
     ?assertEqual({true, ?SUPPORT_SPACE}, S(<<"supportSpace">>)),
     ?assertEqual(false, S(<<"spaceSupport">>)),
 
+    ?assertEqual({true, ?HARVESTER_JOIN_SPACE}, S(?HARVESTER_JOIN_SPACE)),
+    ?assertEqual({true, ?HARVESTER_JOIN_SPACE}, S(<<"harvesterJoinSpace">>)),
+    ?assertEqual(false, S(<<"ha-sp">>)),
+
     ?assertEqual({true, ?REGISTER_ONEPROVIDER}, S(?REGISTER_ONEPROVIDER)),
     ?assertEqual({true, ?REGISTER_ONEPROVIDER}, S(<<"registerOneprovider">>)),
     ?assertEqual(false, S(<<"">>)),
@@ -283,7 +334,7 @@ sanitize_invite_token_type_test() ->
 
     ?assertEqual({true, ?GROUP_JOIN_CLUSTER}, S(?GROUP_JOIN_CLUSTER)),
     ?assertEqual({true, ?GROUP_JOIN_CLUSTER}, S(<<"groupJoinCluster">>)),
-    ?assertEqual(false, S(#{<<"inviteTokenType">> => <<"groupJoinCluster">>})),
+    ?assertEqual(false, S(#{<<"inviteType">> => <<"groupJoinCluster">>})),
 
     ?assertEqual({true, ?USER_JOIN_HARVESTER}, S(?USER_JOIN_HARVESTER)),
     ?assertEqual({true, ?USER_JOIN_HARVESTER}, S(<<"userJoinHarvester">>)),
@@ -327,11 +378,11 @@ oneprovider_access_tokens_test() ->
     {ok, Serialized} = tokens:serialize(Token),
 
     % Oneprovider access tokens support only ONEPROVIDER services (op-worker and op-panel)
-    ?assertException(error, badarg, tokens:build_oneprovider_access_token(?OZ_WORKER, Serialized)),
-    ?assertException(error, badarg, tokens:build_oneprovider_access_token(?OZ_PANEL, Serialized)),
-    ?assertException(error, badarg, tokens:build_oneprovider_access_token(wait_what_this_is_not_a_valid_service, Serialized)),
-    OpwAccessToken = tokens:build_oneprovider_access_token(?OP_WORKER, Serialized),
-    OppAccessToken = tokens:build_oneprovider_access_token(?OP_PANEL, Serialized),
+    ?assertException(error, badarg, tokens:add_oneprovider_service_indication(?OZ_WORKER, Serialized)),
+    ?assertException(error, badarg, tokens:add_oneprovider_service_indication(?OZ_PANEL, Serialized)),
+    ?assertException(error, badarg, tokens:add_oneprovider_service_indication(wait_what_this_is_not_a_valid_service, Serialized)),
+    OpwAccessToken = tokens:add_oneprovider_service_indication(?OP_WORKER, Serialized),
+    OppAccessToken = tokens:add_oneprovider_service_indication(?OP_PANEL, Serialized),
 
     ?assertMatch(
         {ok, #token{subject = ?SUB(?ONEPROVIDER, ?OP_WORKER, ProviderId)}},
@@ -845,8 +896,12 @@ combinations(Persistence) ->
 
 combinations(Persistence, Subject) ->
     % Token type combinations
-    combinations(Persistence, Subject, ?ACCESS_TOKEN) ++
-    combinations(Persistence, Subject, ?GUI_ACCESS_TOKEN(?RAND_STR)).
+    TokenTypes = [
+        ?ACCESS_TOKEN(lists_utils:random_element([undefined, ?RAND_STR])),
+        ?IDENTITY_TOKEN,
+        random_invite_token()
+    ],
+    lists:flatten([combinations(Persistence, Subject, Type) || Type <- TokenTypes]).
 
 combinations(Persistence, Subject, Type) -> [
     % AuthCtx combinations
@@ -1090,6 +1145,25 @@ caveats_examples(cv_data_objectid, AuthCtx) -> [
 %%%===================================================================
 %%% Helper functions
 %%%===================================================================
+
+random_invite_token() ->
+    case rand:uniform(12) of
+        01 -> ?INVITE_TOKEN(?USER_JOIN_GROUP, ?RAND_STR);
+        02 -> ?INVITE_TOKEN(?GROUP_JOIN_GROUP, ?RAND_STR);
+        03 -> ?INVITE_TOKEN(?USER_JOIN_SPACE, ?RAND_STR);
+        04 -> ?INVITE_TOKEN(?GROUP_JOIN_SPACE, ?RAND_STR);
+        05 -> ?INVITE_TOKEN(?SUPPORT_SPACE, ?RAND_STR, #space_support_parameters{
+            data_write = lists_utils:random_element([global, none]),
+            metadata_replication = lists_utils:random_element([eager, lazy, none])
+        });
+        06 -> ?INVITE_TOKEN(?HARVESTER_JOIN_SPACE, ?RAND_STR);
+        07 -> ?INVITE_TOKEN(?REGISTER_ONEPROVIDER, ?RAND_STR);
+        08 -> ?INVITE_TOKEN(?USER_JOIN_CLUSTER, ?RAND_STR);
+        09 -> ?INVITE_TOKEN(?GROUP_JOIN_CLUSTER, ?RAND_STR);
+        10 -> ?INVITE_TOKEN(?USER_JOIN_HARVESTER, ?RAND_STR);
+        11 -> ?INVITE_TOKEN(?GROUP_JOIN_HARVESTER, ?RAND_STR);
+        12 -> ?INVITE_TOKEN(?SPACE_JOIN_HARVESTER, ?RAND_STR)
+    end.
 
 examples_with(Type, Includes) ->
     Examples = examples(Type),

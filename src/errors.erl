@@ -31,8 +31,8 @@
 
 -type auth() :: bad_basic_credentials | {bad_idp_access_token, IdP :: atom()}
 | bad_token | bad_service_token | bad_consumer_token
-| token_invalid | token_revoked | not_an_access_token
-| {not_an_invite_token, ExpectedInviteTokenType :: any | tokens:invite_token_type(), Received :: tokens:type()}
+| token_invalid | token_revoked | not_an_access_token | not_an_identity_token
+| {not_an_invite_token, ExpectedInviteType :: any | token_type:invite_type(), Received :: tokens:type()}
 | {token_caveat_unverified, caveats:caveat()}
 | {token_time_caveat_required, time_utils:seconds()}
 | token_subject_invalid | {token_service_forbidden, aai:service_spec()}
@@ -54,7 +54,7 @@
 | {bad_value_integer, key()} | {bad_value_float, key()}
 | {bad_value_json, key()}
 | {bad_value_token, key(), auth()}
-| {bad_value_token_type, key()} | {bad_value_invite_token_type, key()}
+| {bad_value_token_type, key()} | {bad_value_invite_type, key()}
 | {bad_value_ipv4_address, key()} | {bad_value_list_of_ipv4_addresses, key()}
 | {value_too_low, key(), {min, integer()}}
 | {value_too_high, key(), {max, integer()}}
@@ -282,24 +282,33 @@ to_json(?ERROR_TOKEN_TOO_LARGE(SizeLimit)) -> #{
 to_json(?ERROR_NOT_AN_ACCESS_TOKEN(ReceivedTokenType)) -> #{
     <<"id">> => <<"notAnAccessToken">>,
     <<"details">> => #{
-        <<"received">> => tokens:type_to_json(ReceivedTokenType)
+        <<"received">> => token_type:to_json(ReceivedTokenType)
     },
     <<"description">> => ?FMT("Expected an access token, but received a(n) ~s.", [
-        tokens:type_to_printable(ReceivedTokenType)
+        token_type:to_printable(ReceivedTokenType)
     ])
 };
-to_json(?ERROR_NOT_AN_INVITE_TOKEN(ExpectedInviteTokenType, ReceivedTokenType)) -> #{
+to_json(?ERROR_NOT_AN_IDENTITY_TOKEN(ReceivedTokenType)) -> #{
+    <<"id">> => <<"notAnIdentityToken">>,
+    <<"details">> => #{
+        <<"received">> => token_type:to_json(ReceivedTokenType)
+    },
+    <<"description">> => ?FMT("Expected an identity token, but received a(n) ~s.", [
+        token_type:to_printable(ReceivedTokenType)
+    ])
+};
+to_json(?ERROR_NOT_AN_INVITE_TOKEN(ExpectedInviteType, ReceivedTokenType)) -> #{
     <<"id">> => <<"notAnInviteToken">>,
     <<"details">> => #{
-        <<"expectedInviteTokenType">> => case ExpectedInviteTokenType of
+        <<"expectedInviteType">> => case ExpectedInviteType of
             any -> <<"any">>;
-            _ -> tokens:invite_token_type_to_str(ExpectedInviteTokenType)
+            _ -> token_type:invite_type_to_str(ExpectedInviteType)
         end,
-        <<"received">> => tokens:type_to_json(ReceivedTokenType)
+        <<"received">> => token_type:to_json(ReceivedTokenType)
     },
     <<"description">> => ?FMT("Expected an invitation token of type '~s', but received a(n) ~s.", [
-        ExpectedInviteTokenType,
-        tokens:type_to_printable(ReceivedTokenType)
+        ExpectedInviteType,
+        token_type:to_printable(ReceivedTokenType)
     ])
 };
 to_json(?ERROR_TOKEN_CAVEAT_UNKNOWN(CaveatBinary)) -> #{
@@ -500,12 +509,12 @@ to_json(?ERROR_BAD_VALUE_TOKEN_TYPE(Key)) -> #{
     },
     <<"description">> => ?FMT("Bad value: provided \"~s\" is not a valid token type.", [Key])
 };
-to_json(?ERROR_BAD_VALUE_INVITE_TOKEN_TYPE(Key)) -> #{
-    <<"id">> => <<"badValueInviteTokenType">>,
+to_json(?ERROR_BAD_VALUE_INVITE_TYPE(Key)) -> #{
+    <<"id">> => <<"badValueInviteType">>,
     <<"details">> => #{
         <<"key">> => Key
     },
-    <<"description">> => ?FMT("Bad value: provided \"~s\" is not a valid invite token type.", [Key])
+    <<"description">> => ?FMT("Bad value: provided \"~s\" is not a valid invite type.", [Key])
 };
 to_json(?ERROR_BAD_VALUE_IPV4_ADDRESS(Key)) -> #{
     <<"id">> => <<"badValueIPv4Address">>,
@@ -973,15 +982,18 @@ from_json(#{<<"id">> := <<"tokenTooLarge">>, <<"details">> := #{<<"limit">> := S
     ?ERROR_TOKEN_TOO_LARGE(SizeLimit);
 
 from_json(#{<<"id">> := <<"notAnAccessToken">>, <<"details">> := #{<<"received">> := ReceivedTokenType}}) ->
-    ?ERROR_NOT_AN_ACCESS_TOKEN(tokens:json_to_type(ReceivedTokenType));
+    ?ERROR_NOT_AN_ACCESS_TOKEN(token_type:from_json(ReceivedTokenType));
+
+from_json(#{<<"id">> := <<"notAnIdentityToken">>, <<"details">> := #{<<"received">> := ReceivedTokenType}}) ->
+    ?ERROR_NOT_AN_IDENTITY_TOKEN(token_type:from_json(ReceivedTokenType));
 
 from_json(#{<<"id">> := <<"notAnInviteToken">>, <<"details">> := Details}) ->
-    #{<<"expectedInviteTokenType">> := ExpectedInviteTokenTypeStr, <<"received">> := RecvType} = Details,
-    ExpectedInviteTokenType = case ExpectedInviteTokenTypeStr of
+    #{<<"expectedInviteType">> := ExpectedInviteTypeStr, <<"received">> := RecvType} = Details,
+    ExpectedInviteType = case ExpectedInviteTypeStr of
         <<"any">> -> any;
-        _ -> tokens:str_to_invite_token_type(ExpectedInviteTokenTypeStr)
+        _ -> token_type:invite_type_from_str(ExpectedInviteTypeStr)
     end,
-    ?ERROR_NOT_AN_INVITE_TOKEN(ExpectedInviteTokenType, tokens:json_to_type(RecvType));
+    ?ERROR_NOT_AN_INVITE_TOKEN(ExpectedInviteType, token_type:from_json(RecvType));
 
 from_json(#{<<"id">> := <<"tokenCaveatUnknown">>, <<"details">> := #{<<"caveat">> := CaveatBinary}}) ->
     ?ERROR_TOKEN_CAVEAT_UNKNOWN(CaveatBinary);
@@ -1077,8 +1089,8 @@ from_json(#{<<"id">> := <<"badValueToken">>, <<"details">> := #{<<"key">> := Key
 from_json(#{<<"id">> := <<"badValueTokenType">>, <<"details">> := #{<<"key">> := Key}}) ->
     ?ERROR_BAD_VALUE_TOKEN_TYPE(Key);
 
-from_json(#{<<"id">> := <<"badValueInviteTokenType">>, <<"details">> := #{<<"key">> := Key}}) ->
-    ?ERROR_BAD_VALUE_INVITE_TOKEN_TYPE(Key);
+from_json(#{<<"id">> := <<"badValueInviteType">>, <<"details">> := #{<<"key">> := Key}}) ->
+    ?ERROR_BAD_VALUE_INVITE_TYPE(Key);
 
 from_json(#{<<"id">> := <<"badValueIPv4Address">>, <<"details">> := #{<<"key">> := Key}}) ->
     ?ERROR_BAD_VALUE_IPV4_ADDRESS(Key);
@@ -1318,6 +1330,7 @@ to_http_code(?ERROR_TOKEN_INVALID) -> ?HTTP_401_UNAUTHORIZED;
 to_http_code(?ERROR_TOKEN_REVOKED) -> ?HTTP_401_UNAUTHORIZED;
 to_http_code(?ERROR_TOKEN_TOO_LARGE(_)) -> ?HTTP_401_UNAUTHORIZED;
 to_http_code(?ERROR_NOT_AN_ACCESS_TOKEN(_)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_NOT_AN_IDENTITY_TOKEN(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_NOT_AN_INVITE_TOKEN(_, _)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_TOKEN_CAVEAT_UNKNOWN(_)) -> ?HTTP_401_UNAUTHORIZED;
 to_http_code(?ERROR_TOKEN_CAVEAT_UNVERIFIED(_)) -> ?HTTP_401_UNAUTHORIZED;
@@ -1358,7 +1371,7 @@ to_http_code(?ERROR_BAD_VALUE_FLOAT(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_BAD_VALUE_JSON(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_BAD_VALUE_TOKEN(_, _)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_BAD_VALUE_TOKEN_TYPE(_)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_BAD_VALUE_INVITE_TOKEN_TYPE(_)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_BAD_VALUE_INVITE_TYPE(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_BAD_VALUE_IPV4_ADDRESS(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_BAD_VALUE_LIST_OF_IPV4_ADDRESSES(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_BAD_VALUE_TOO_LOW(_, _)) -> ?HTTP_400_BAD_REQUEST;

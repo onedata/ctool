@@ -41,6 +41,7 @@
 
 -record(auth_ctx, {
     current_timestamp = 0 :: time_utils:seconds(),
+    %% @todo VFS-6098 deprecated, kept for backward compatibility
     scope = unlimited :: unlimited | tokens:scope(),
     ip = undefined :: undefined | ip_utils:ip(),
     interface = undefined :: undefined | cv_interface:interface(),
@@ -50,26 +51,8 @@
     group_membership_checker = undefined :: undefined | aai:group_membership_checker()
 }).
 
-
 % Current (newest) version of tokens used in Onedata
 -define(CURRENT_TOKEN_VERSION, 2).
-
-% Types of tokens
--define(ACCESS_TOKEN, access_token).
--define(GUI_ACCESS_TOKEN(SessionId), {gui_access_token, SessionId}).
--define(INVITE_TOKEN(SubType, EntityId), {invite_token, SubType, EntityId}).
-% Subtypes of invite tokens
--define(USER_JOIN_GROUP, user_join_group).
--define(GROUP_JOIN_GROUP, group_join_group).
--define(USER_JOIN_SPACE, user_join_space).
--define(GROUP_JOIN_SPACE, group_join_space).
--define(SUPPORT_SPACE, support_space).
--define(REGISTER_ONEPROVIDER, register_oneprovider).
--define(USER_JOIN_CLUSTER, user_join_cluster).
--define(GROUP_JOIN_CLUSTER, group_join_cluster).
--define(USER_JOIN_HARVESTER, user_join_harvester).
--define(GROUP_JOIN_HARVESTER, group_join_harvester).
--define(SPACE_JOIN_HARVESTER, space_join_harvester).
 
 -record(token, {
     version = ?CURRENT_TOKEN_VERSION :: tokens:version(),
@@ -77,8 +60,28 @@
     id :: tokens:id(),
     persistence :: tokens:persistence(),
     subject = #subject{type = nobody} :: aai:subject(),
-    type = ?ACCESS_TOKEN :: tokens:type(),
+    type :: tokens:type(),
     macaroon = undefined :: undefined | macaroon:macaroon()
+}).
+
+% Record for specifying parameterized token types
+-record(access_token_typespec, {
+    % (optional) session with which the token is linked
+    session = undefined :: undefined | aai:session_id()
+}).
+-record(identity_token_typespec, {
+    % identity tokens do not have any parameters
+}).
+-record(invite_token_typespec, {
+    invite_type :: token_type:invite_type(),
+    target_entity :: gri:entity_id(),
+    parameters :: token_type:invite_parameters()
+}).
+
+% Parameters of space support, inscribed in ?SUPPORT_SPACE tokens
+-record(space_support_parameters, {
+    data_write = global :: global | none,
+    metadata_replication = eager :: eager | lazy | none
 }).
 
 % Convenience macros for concise code
@@ -98,5 +101,33 @@
 }).
 -define(PROVIDER, #auth{subject = #subject{type = ?ONEPROVIDER}}).
 -define(PROVIDER(Id), #auth{subject = #subject{type = ?ONEPROVIDER, id = Id}}).
+
+-define(ACCESS_TOKEN, #access_token_typespec{}).
+-define(ACCESS_TOKEN(SessionId), #access_token_typespec{session = SessionId}).
+-define(IDENTITY_TOKEN, #identity_token_typespec{}).
+-define(INVITE_TOKEN, #invite_token_typespec{}).
+-define(INVITE_TOKEN(InviteType), #invite_token_typespec{
+    invite_type = InviteType
+}).
+-define(INVITE_TOKEN(InviteType, EntityId), #invite_token_typespec{
+    invite_type = InviteType, target_entity = EntityId
+}).
+-define(INVITE_TOKEN(InviteType, EntityId, Parameters), #invite_token_typespec{
+    invite_type = InviteType, target_entity = EntityId, parameters = Parameters
+}).
+
+% Subtypes of invite tokens
+-define(USER_JOIN_GROUP, user_join_group).
+-define(GROUP_JOIN_GROUP, group_join_group).
+-define(USER_JOIN_SPACE, user_join_space).
+-define(GROUP_JOIN_SPACE, group_join_space).
+-define(SUPPORT_SPACE, support_space).
+-define(HARVESTER_JOIN_SPACE, harvester_join_space).
+-define(REGISTER_ONEPROVIDER, register_oneprovider).
+-define(USER_JOIN_CLUSTER, user_join_cluster).
+-define(GROUP_JOIN_CLUSTER, group_join_cluster).
+-define(USER_JOIN_HARVESTER, user_join_harvester).
+-define(GROUP_JOIN_HARVESTER, group_join_harvester).
+-define(SPACE_JOIN_HARVESTER, space_join_harvester).
 
 -endif.

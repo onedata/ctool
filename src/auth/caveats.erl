@@ -18,13 +18,13 @@
 
 -type type() :: cv_time
 | cv_ip | cv_asn | cv_country | cv_region
-| cv_scope
+| cv_scope %% @todo VFS-6098 deprecated, kept for backward compatibility
 | cv_service | cv_consumer
 | cv_interface | cv_api
 | cv_data_readonly | cv_data_path | cv_data_objectid.
 -type caveat() :: #cv_time{}
 | #cv_ip{} | #cv_asn{} | #cv_country{} | #cv_region{}
-| #cv_scope{}
+| #cv_scope{} %% @todo VFS-6098 deprecated, kept for backward compatibility
 | #cv_service{} | #cv_consumer{}
 | #cv_interface{} | #cv_api{}
 | #cv_data_readonly{} | #cv_data_path{} | #cv_data_objectid{}.
@@ -148,7 +148,7 @@ serialize(#cv_region{type = blacklist, list = List}) ->
     <<"geo.region != ", (?JOIN(List))/binary>>;
 
 serialize(#cv_scope{scope = identity_token}) ->
-    <<"scope = identity_token">>;
+    <<"authorization = none">>;
 
 serialize(#cv_service{whitelist = []}) ->
     error(badarg);
@@ -208,8 +208,6 @@ deserialize(<<"geo.region != ", List/binary>>) when size(List) > 0 ->
 
 %% @todo VFS-6098 deprecated, kept for backward compatibility
 deserialize(<<"authorization = none">>) ->
-    #cv_scope{scope = identity_token};
-deserialize(<<"scope = identity_token">>) ->
     #cv_scope{scope = identity_token};
 
 deserialize(<<"service = ", SerializedServices/binary>>) when size(SerializedServices) > 0 ->
