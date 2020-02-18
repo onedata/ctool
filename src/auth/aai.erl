@@ -33,12 +33,9 @@
 %%%
 %%% There are three types of tokens:
 %%%   * access token - carries subject's authentication and authorization to
-%%%     perform certain operations. Its scope can be limited to 'identity_token'
-%%%     which nullifies the carried authorization - such token can be used only
-%%%     for identity verification. Regular access tokens can be used as identity
-%%%     tokens, but not the other way around.
-%%%   * GUI access token - similar to regular access token, but tied to a
-%%%     specific user's session.
+%%%     perform certain operations. Can be linked to specific user's session.
+%%%   * identity token - can be used only for identity verification (does not
+%%%     carry any authorization).
 %%%   * invite token - used to create relations in the system by inviting
 %%%     users or providers to join an entity.
 %%%
@@ -48,6 +45,7 @@
 %%%     * current timestamp
 %%%     * scope (unlimited or identity_token) stating what level of authorization
 %%%       is required from the token
+%%%       (@todo VFS-6098 to be removed in the next major version)
 %%%     * peer IP from which the request has been made
 %%%     * interface to which the client has connected
 %%%     * service in which the token was used (described below)
@@ -76,7 +74,7 @@
 %%% ?ONEPROVIDER access tokens are a specific case where the serialized form can
 %%% have a three letter indicator of service type that is authorizing itself
 %%% (op-worker or op-panel), e.g. opw-MDax34Gh5TyOP032... It is added using the
-%%% tokens:build_oneprovider_access_token/2 function (consult for details). This
+%%% tokens:add_oneprovider_service_indication/2 function (consult for details). This
 %%% is merely an indication for Onezone which of the services has authenticated,
 %%% as both services use the same access token.
 %%% @end

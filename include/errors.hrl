@@ -60,7 +60,8 @@
 -define(ERROR_TOKEN_REVOKED, {error, token_revoked}).
 -define(ERROR_TOKEN_TOO_LARGE(SizeLimit), {error, {token_too_large, {max, SizeLimit}}}).
 -define(ERROR_NOT_AN_ACCESS_TOKEN(ReceivedTokenType), {error, {not_an_access_token, ReceivedTokenType}}).
--define(ERROR_NOT_AN_INVITE_TOKEN(ExpInviteTokenType, RecvTokenType), {error, {not_an_invite_token, ExpInviteTokenType, RecvTokenType}}).
+-define(ERROR_NOT_AN_IDENTITY_TOKEN(ReceivedTokenType), {error, {not_an_identity_token, ReceivedTokenType}}).
+-define(ERROR_NOT_AN_INVITE_TOKEN(ExpInviteType, ReceivedTokenType), {error, {not_an_invite_token, ExpInviteType, ReceivedTokenType}}).
 -define(ERROR_TOKEN_CAVEAT_UNKNOWN(CaveatBinary), {error, {token_caveat_unknown, CaveatBinary}}).
 -define(ERROR_TOKEN_CAVEAT_UNVERIFIED(Caveat), {error, {token_caveat_unverified, Caveat}}).
 -define(ERROR_TOKEN_TIME_CAVEAT_REQUIRED(MaxTtl), {error, {token_time_caveat_required, MaxTtl}}).
@@ -105,7 +106,7 @@
 -define(ERROR_BAD_VALUE_JSON(Key), {error, {bad_value_json, Key}}).
 -define(ERROR_BAD_VALUE_TOKEN(Key, TokenError), {error, {bad_value_token, Key, TokenError}}).
 -define(ERROR_BAD_VALUE_TOKEN_TYPE(Key), {error, {bad_value_token_type, Key}}).
--define(ERROR_BAD_VALUE_INVITE_TOKEN_TYPE(Key), {error, {bad_value_invite_token_type, Key}}).
+-define(ERROR_BAD_VALUE_INVITE_TYPE(Key), {error, {bad_value_invite_type, Key}}).
 -define(ERROR_BAD_VALUE_IPV4_ADDRESS(Key), {error, {bad_value_ipv4_address, Key}}).
 -define(ERROR_BAD_VALUE_LIST_OF_IPV4_ADDRESSES(Key), {error, {bad_value_list_of_ipv4_addresses, Key}}).
 -define(ERROR_BAD_VALUE_TOO_LOW(Key, Threshold), {error, {value_too_low, Key, {min, Threshold}}}).

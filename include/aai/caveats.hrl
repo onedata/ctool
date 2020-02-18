@@ -40,6 +40,7 @@
     list = [] :: [ip_utils:region()]
 }).
 
+%% @todo VFS-6098 deprecated, kept for backward compatibility
 -record(cv_scope, {
     scope = identity_token :: identity_token
 }).
