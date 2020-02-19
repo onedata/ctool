@@ -548,10 +548,11 @@ unverified_description(#cv_service{whitelist = AllowedServices}) ->
 
 unverified_description(#cv_consumer{whitelist = AllowedConsumers}) ->
     str_utils:format_bin(
-        "unverified consumer caveat: the consumer of this token must authenticate as ~s - "
-        "you should probably provide your access token in one of the headers:~n"
-        "   * 'x-auth-token' if consuming an invite token or using token verification API~n"
-        "   * 'x-onedata-consumer-token' if performing an operation on behalf of somebody else with their access token",
+        "unverified consumer caveat: the consumer of this token must authenticate as ~s - if that's you, you should:~n"
+        "   * send your access token in 'x-auth-token' header if consuming an invite token~n"
+        "   * send your identity token in 'x-onedata-consumer-token' header if performing an "
+        "operation on behalf of somebody else with their access token~n"
+        "   * send your identity token in 'consumerToken' field if using token verification API",
         [?JOIN([list_to_binary(aai:subject_to_printable(S)) || S <- AllowedConsumers], <<" or ">>)]
     );
 
