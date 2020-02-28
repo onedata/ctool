@@ -103,9 +103,9 @@ set_broken_node(BrokenNode) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec set_fixed_node(node()) -> ok.
-set_fixed_node(FixedNodes) ->
+set_fixed_node(FixedNode) ->
     #ring{broken_nodes = BrokenNodes} = Ring = get_chash_ring(),
-    Ring2 = case BrokenNodes -- [FixedNodes] of
+    Ring2 = case BrokenNodes -- [FixedNode] of
         [] -> Ring#ring{type = multi_node, broken_nodes = []};
         BrokenNodes2 -> Ring#ring{broken_nodes = BrokenNodes2}
     end,
@@ -165,29 +165,30 @@ get_node(Label) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec get_nodes(term(), non_neg_integer() | all) ->
-    {KeyConnectedNodes :: [node()], OtherRequestedNodes :: [node()], BrokenNodes :: [node()]}.
+    {KeyConnectedNodes :: [node()], OtherRequestedNodes :: [node()], BrokenNodes :: [node()], BrokenMaster :: boolean()}.
 get_nodes(Label, RequestedNodesNum0) ->
     case get_chash_ring() of
         undefined ->
             error(chash_ring_not_initialized);
         #ring{type = single_node, chash = Node} ->
-            {[Node], [], []};
+            {[Node], [], [], false};
         #ring{type = multi_node, chash = CHash, key_connected_nodes = KeyConnectedNodesNum} = Ring ->
             Index = chash:key_of(Label),
             RequestedNodesNum = get_requested_nodes_num(RequestedNodesNum0, Ring),
             Nodes = lists:map(fun({_, Node}) -> Node end,
                     chash:successors(Index, CHash, max(KeyConnectedNodesNum, RequestedNodesNum))),
             {KeyConnectedNodes, OtherRequestedNodes} = lists:split(min(KeyConnectedNodesNum, length(Nodes)), Nodes),
-            {KeyConnectedNodes, OtherRequestedNodes, []};
+            {KeyConnectedNodes, OtherRequestedNodes, [], false};
         #ring{type = broken, chash = CHash, broken_nodes = BrokenNodes,
             key_connected_nodes = KeyConnectedNodesNum}  = Ring ->
             Index = chash:key_of(Label),
             RequestedNodesNum = get_requested_nodes_num(RequestedNodesNum0, Ring),
-            Nodes = chash:successors(Index, CHash, max(KeyConnectedNodesNum, RequestedNodesNum)),
+            [{_, Node1} | _] = Nodes = chash:successors(Index, CHash, max(KeyConnectedNodesNum, RequestedNodesNum)),
             {KeyConnectedNodes, OtherRequestedNodes} = lists:split(min(KeyConnectedNodesNum, length(Nodes)), Nodes),
             {AliveKeyConnectedNodes, BrokenKeyConnectedNodes} = filter_nodes(KeyConnectedNodes, BrokenNodes),
             {AliveOtherRequestedNodes, BrokenOtherRequestedNodes} = filter_nodes(OtherRequestedNodes, BrokenNodes),
-            {AliveKeyConnectedNodes, AliveOtherRequestedNodes, BrokenKeyConnectedNodes ++ BrokenOtherRequestedNodes}
+            {AliveKeyConnectedNodes, AliveOtherRequestedNodes, BrokenKeyConnectedNodes ++ BrokenOtherRequestedNodes,
+                lists:member(Node1, BrokenNodes)}
     end.
 
 %%--------------------------------------------------------------------
