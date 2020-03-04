@@ -18,13 +18,13 @@
 
 -type type() :: cv_time
 | cv_ip | cv_asn | cv_country | cv_region
-| cv_scope
+| cv_scope %% @todo VFS-6098 deprecated, kept for backward compatibility
 | cv_service | cv_consumer
 | cv_interface | cv_api
 | cv_data_readonly | cv_data_path | cv_data_objectid.
 -type caveat() :: #cv_time{}
 | #cv_ip{} | #cv_asn{} | #cv_country{} | #cv_region{}
-| #cv_scope{}
+| #cv_scope{} %% @todo VFS-6098 deprecated, kept for backward compatibility
 | #cv_service{} | #cv_consumer{}
 | #cv_interface{} | #cv_api{}
 | #cv_data_readonly{} | #cv_data_path{} | #cv_data_objectid{}.
@@ -148,7 +148,7 @@ serialize(#cv_region{type = blacklist, list = List}) ->
     <<"geo.region != ", (?JOIN(List))/binary>>;
 
 serialize(#cv_scope{scope = identity_token}) ->
-    <<"scope = identity_token">>;
+    <<"authorization = none">>;
 
 serialize(#cv_service{whitelist = []}) ->
     error(badarg);
@@ -208,8 +208,6 @@ deserialize(<<"geo.region != ", List/binary>>) when size(List) > 0 ->
 
 %% @todo VFS-6098 deprecated, kept for backward compatibility
 deserialize(<<"authorization = none">>) ->
-    #cv_scope{scope = identity_token};
-deserialize(<<"scope = identity_token">>) ->
     #cv_scope{scope = identity_token};
 
 deserialize(<<"service = ", SerializedServices/binary>>) when size(SerializedServices) > 0 ->
@@ -550,10 +548,11 @@ unverified_description(#cv_service{whitelist = AllowedServices}) ->
 
 unverified_description(#cv_consumer{whitelist = AllowedConsumers}) ->
     str_utils:format_bin(
-        "unverified consumer caveat: the consumer of this token must authenticate as ~s - "
-        "you should probably provide your access token in one of the headers:~n"
-        "   * 'x-auth-token' if consuming an invite token or using token verification API~n"
-        "   * 'x-onedata-consumer-token' if performing an operation on behalf of somebody else with their access token",
+        "unverified consumer caveat: the consumer of this token must authenticate as ~s - if that's you, you should:~n"
+        "   * send your access token in 'x-auth-token' header if consuming an invite token~n"
+        "   * send your identity token in 'x-onedata-consumer-token' header if performing an "
+        "operation on behalf of somebody else with their access token~n"
+        "   * send your identity token in 'consumerToken' field if using token verification API",
         [?JOIN([list_to_binary(aai:subject_to_printable(S)) || S <- AllowedConsumers], <<" or ">>)]
     );
 
