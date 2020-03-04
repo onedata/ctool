@@ -8,6 +8,9 @@
 %%% @doc
 %%% Auxiliary functions for managing consistent hashing ring and mapping
 %%% terms (usually UUIDs) to nodes in the ring.
+%%% Base for most functions is record ring that represents information about cluster.
+%%% It is assumed that particular number of nodes is associated with each key/label
+%%% but it is possible to request more.
 %%% @end
 %%%--------------------------------------------------------------------
 -module(consistent_hashing).
@@ -17,7 +20,7 @@
     type :: single_node | multi_node | broken,
     chash :: chash:chash() | node(),
     broken_nodes = [] :: [node()],
-    key_connected_nodes = 1 :: pos_integer(),
+    key_connected_nodes = 1 :: pos_integer(), % Number of nodes associated with each key
     nodes_num :: non_neg_integer()
 }).
 
@@ -160,8 +163,8 @@ get_node(Label) ->
 %%--------------------------------------------------------------------
 %% @doc
 %% Get nodes that are responsible for the data labeled with given term.
-%% Returns three lists: alvie connected nodes, other alive nodes and broken nodes.
-%% Sum of lists' length is equal to requested nodes' count.
+%% Returns three lists: alvie connected nodes, other alive nodes (if requested more that are connected with label
+%% by default) and broken nodes. Sum of lists' length is equal to requested nodes' count.
 %% @end
 %%--------------------------------------------------------------------
 -spec get_nodes(term(), non_neg_integer() | all) ->
