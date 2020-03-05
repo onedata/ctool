@@ -25,8 +25,7 @@
 | ?USER_JOIN_HARVESTER | ?GROUP_JOIN_HARVESTER | ?SPACE_JOIN_HARVESTER.
 % Parameters specific for given invite type - currently only ?SUPPORT_SPACE
 % tokens allow parameters
--type invite_parameters() :: undefined | #space_support_parameters{}.
-
+-type invite_parameters() :: undefined | space_support:parameters().
 
 -export_type([type/0, invite_type/0, invite_parameters/0]).
 
@@ -93,10 +92,10 @@ to_json(?IDENTITY_TOKEN) ->
     #{<<"identityToken">> => #{}};
 to_json(?INVITE_TOKEN(InviteType, EntityId, Parameters)) ->
     TargetJsonKey = invite_target_json_key(InviteType),
-    InviteParametersJson = invite_parameters_to_json(InviteType, Parameters),
-    #{<<"inviteToken">> => InviteParametersJson#{
+    #{<<"inviteToken">> => #{
         <<"inviteType">> => invite_type_to_str(InviteType),
-        TargetJsonKey => EntityId
+        TargetJsonKey => EntityId,
+        <<"parameters">> => invite_parameters_to_json(InviteType, Parameters)
     }}.
 
 
@@ -111,7 +110,8 @@ from_json(#{<<"inviteToken">> := InviteTokenTypeData = #{<<"inviteType">> := Inv
     InviteType = invite_type_from_str(InviteTypeStr),
     TargetJsonKey = invite_target_json_key(InviteType),
     EntityId = maps:get(TargetJsonKey, InviteTokenTypeData),
-    Parameters = invite_parameters_from_json(InviteType, InviteTokenTypeData),
+    ParametersJson = maps:get(<<"parameters">>, InviteTokenTypeData, #{}),
+    Parameters = invite_parameters_from_json(InviteType, ParametersJson),
     ?INVITE_TOKEN(InviteType, EntityId, Parameters).
 
 
@@ -204,7 +204,7 @@ to_printable(?INVITE_TOKEN(?GROUP_JOIN_SPACE, SpaceId)) ->
     str_utils:format("invite token for a group to join space \"~s\"", [SpaceId]);
 to_printable(?INVITE_TOKEN(?SUPPORT_SPACE, SpaceId, Params)) ->
     str_utils:format("invite token to grant support for space \"~s\" (dataWrite: ~s, metadataReplication: ~s)", [
-        SpaceId, Params#space_support_parameters.data_write, Params#space_support_parameters.metadata_replication
+        SpaceId, space_support:get_data_write(Params), space_support:get_metadata_replication(Params)
     ]);
 to_printable(?INVITE_TOKEN(?HARVESTER_JOIN_SPACE, SpaceId)) ->
     str_utils:format("invite token for a harvester to become a metadata sink for space \"~s\"", [SpaceId]);
@@ -278,16 +278,7 @@ deserialize_invite_type(<<"sjh">>) -> ?SPACE_JOIN_HARVESTER.
 %% @private
 -spec serialize_invite_parameters(invite_type(), invite_parameters()) -> binary().
 serialize_invite_parameters(?SUPPORT_SPACE, Parameters) ->
-    SerializedDW = case Parameters#space_support_parameters.data_write of
-        global -> <<"g">>;
-        none -> <<"n">>
-    end,
-    SerializedMR = case Parameters#space_support_parameters.metadata_replication of
-        eager -> <<"e">>;
-        lazy -> <<"l">>;
-        none -> <<"n">>
-    end,
-    <<SerializedDW/binary, SerializedMR/binary>>;
+    space_support:serialize_parameters(Parameters);
 serialize_invite_parameters(_, undefined) ->
     <<"">>.
 
@@ -295,55 +286,23 @@ serialize_invite_parameters(_, undefined) ->
 %% @private
 -spec deserialize_invite_parameters(invite_type(), binary()) -> invite_parameters().
 deserialize_invite_parameters(?SUPPORT_SPACE, SerializedParameters) ->
-    <<SerializedDW:1/binary, SerializedMR/binary>> = SerializedParameters,
-    DW = case SerializedDW of
-        <<"g">> -> global;
-        <<"n">> -> none
-    end,
-    MR = case SerializedMR of
-        <<"e">> -> eager;
-        <<"l">> -> lazy;
-        <<"n">> -> none
-    end,
-    #space_support_parameters{data_write = DW, metadata_replication = MR};
+    space_support:deserialize_parameters(SerializedParameters);
 deserialize_invite_parameters(_, _) ->
     undefined.
 
 
 %% @private
--spec invite_parameters_to_json(invite_type(), invite_parameters()) -> json_utils:json_term().
+-spec invite_parameters_to_json(invite_type(), invite_parameters()) -> json_utils:json_map().
 invite_parameters_to_json(?SUPPORT_SPACE, Parameters) ->
-    {DW, MR} = case Parameters of
-        #space_support_parameters{data_write = D, metadata_replication = M} -> {D, M};
-        _ -> {global, eager}
-    end,
-    DWStr = case DW of
-        global -> <<"global">>;
-        none -> <<"none">>
-    end,
-    MRStr = case MR of
-        eager -> <<"eager">>;
-        lazy -> <<"lazy">>;
-        none -> <<"none">>
-    end,
-    #{<<"dataWrite">> => DWStr, <<"metadataReplication">> => MRStr};
+    space_support:parameters_to_json(Parameters);
 invite_parameters_to_json(_, undefined) ->
     #{}.
 
 
 %% @private
--spec invite_parameters_from_json(invite_type(), json_utils:json_term()) -> invite_parameters().
-invite_parameters_from_json(?SUPPORT_SPACE, Parameters) ->
-    DW = case maps:get(<<"dataWrite">>, Parameters, <<"global">>) of
-        <<"global">> -> global;
-        <<"none">> -> none
-    end,
-    MR = case maps:get(<<"metadataReplication">>, Parameters, <<"eager">>) of
-        <<"eager">> -> eager;
-        <<"lazy">> -> lazy;
-        <<"none">> -> none
-    end,
-    #space_support_parameters{data_write = DW, metadata_replication = MR};
+-spec invite_parameters_from_json(invite_type(), json_utils:json_map()) -> invite_parameters().
+invite_parameters_from_json(?SUPPORT_SPACE, JsonParameters) ->
+    space_support:parameters_from_json(JsonParameters);
 invite_parameters_from_json(_, _) ->
     undefined.
 

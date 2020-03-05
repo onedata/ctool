@@ -592,7 +592,7 @@ to_json(?ERROR_BAD_VALUE_AMBIGUOUS_ID(Key)) -> #{
     <<"description">> => ?FMT("Bad value: provided ID (\"~s\") is ambiguous.", [Key])
 };
 to_json(?ERROR_BAD_VALUE_IDENTIFIER(Key)) -> #{
-    <<"id">> => <<"badValueIntentifier">>,
+    <<"id">> => <<"badValueIdentifier">>,
     <<"details">> => #{
         <<"key">> => Key
     },
@@ -1119,7 +1119,7 @@ from_json(#{<<"id">> := <<"badValueIdNotFound">>, <<"details">> := #{<<"key">> :
 from_json(#{<<"id">> := <<"badValueAmbiguousId">>, <<"details">> := #{<<"key">> := Key}}) ->
     ?ERROR_BAD_VALUE_AMBIGUOUS_ID(Key);
 
-from_json(#{<<"id">> := <<"badValueIntentifier">>, <<"details">> := #{<<"key">> := Key}}) ->
+from_json(#{<<"id">> := <<"badValueIdentifier">>, <<"details">> := #{<<"key">> := Key}}) ->
     ?ERROR_BAD_VALUE_IDENTIFIER(Key);
 
 from_json(#{<<"id">> := <<"badValueIdentifierOccupied">>, <<"details">> := #{<<"key">> := Key}}) ->
