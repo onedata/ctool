@@ -32,7 +32,7 @@
 % Each provider has its own dbsync_state, which allows checking if it is
 % up to date with other providers or falling behind.
 % Includes information about self, which is always up to date and used for
-% comparing with which sequence other providers know about about the provider.
+% comparing with which sequence other providers know about the provider.
 % Paired with timestamp of the last dbsync_state report that was posted.
 -type dbsync_state() :: {time_utils:seconds(), seq_per_provider()}.
 -export_type([dbsync_state/0, seq_per_provider/0]).
