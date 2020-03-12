@@ -11,6 +11,8 @@
 %%% Base for most functions is record ring that represents information about cluster.
 %%% It is assumed that particular number of nodes is associated with each key/label
 %%% but it is possible to request more.
+%%% Ring record is an internal structure of the module - cannot be only copied as indivisible whole between nodes.
+%%% Environment variable key_connected_nodes can be used to set initial value to be used in ring record.
 %%% @end
 %%%--------------------------------------------------------------------
 -module(consistent_hashing).
@@ -40,7 +42,7 @@
 %% @doc
 %% Initialize chash ring
 %% @end
-%%------------------------------------------`--------------------------
+%%--------------------------------------------------------------------
 -spec init([node()]) -> ok.
 init([Node]) ->
     set_chash_ring(#ring{type = single_node, chash = Node, nodes_num = 1});
@@ -52,7 +54,7 @@ init(Nodes) ->
             InitialCHash = chash:fresh(NodesNum, Node0),
             CHash = lists:foldl(fun({I, Node}, CHashAcc) ->
                 chash:update(get_nth_index(I, CHashAcc), Node, CHashAcc)
-            end, InitialCHash, lists:zip(lists:seq(1, length(Nodes)), Nodes)),
+            end, InitialCHash, lists:zip(lists:seq(1, NodesNum), Nodes)),
             KeyConnectedNodes = ctool:get_env(key_connected_nodes, 1),
             Ring = #ring{type = multi_node, chash = CHash,
                 key_connected_nodes = KeyConnectedNodes, nodes_num = NodesNum},
@@ -97,7 +99,7 @@ set_chash_ring(CHash) ->
 set_broken_node(BrokenNode) ->
     #ring{broken_nodes = BrokenNodes} = Ring = get_chash_ring(),
     Ring2 = Ring#ring{type = broken,
-        broken_nodes = lists:usort([BrokenNode | BrokenNodes -- [BrokenNode]])},
+        broken_nodes = lists:usort([BrokenNode | BrokenNodes])},
     ctool:set_env(chash, Ring2).
 
 %%--------------------------------------------------------------------
@@ -121,7 +123,7 @@ set_fixed_node(FixedNode) ->
 %%--------------------------------------------------------------------
 -spec set_key_connected_nodes(pos_integer()) -> ok.
 set_key_connected_nodes(Num) ->
-    ctool:set_env(key_connected_nodes, Num),
+    ctool:set_env(key_connected_nodes, Num), % set also environment variable used to config ring by the user
     Ring = get_chash_ring(),
     set_chash_ring(Ring#ring{key_connected_nodes = Num}).
 
@@ -138,6 +140,7 @@ get_key_connected_nodes() ->
 %% @doc
 %% Get node that is responsible for the data labeled with given term.
 %% Throws error if node is broken.
+%% Function to be used if label must be used only by chosen node (no HA available).
 %% @end
 %%--------------------------------------------------------------------
 -spec get_node(term()) -> node().
@@ -163,8 +166,9 @@ get_node(Label) ->
 %%--------------------------------------------------------------------
 %% @doc
 %% Get nodes that are responsible for the data labeled with given term.
-%% Returns three lists: alvie connected nodes, other alive nodes (if requested more that are connected with label
+%% Returns three lists: alive connected nodes, other alive nodes (if requested more that are connected with label
 %% by default) and broken nodes. Sum of lists' length is equal to requested nodes' count.
+%% Returns also information if master node (first node connected to key) is among broken nodes.
 %% @end
 %%--------------------------------------------------------------------
 -spec get_nodes(term(), non_neg_integer() | all) ->
