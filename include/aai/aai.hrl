@@ -78,12 +78,6 @@
     parameters :: token_type:invite_parameters()
 }).
 
-% Parameters of space support, inscribed in ?SUPPORT_SPACE tokens
--record(space_support_parameters, {
-    data_write = global :: global | none,
-    metadata_replication = eager :: eager | lazy | none
-}).
-
 % Convenience macros for concise code
 -define(SUB(Type), #subject{type = Type}).
 -define(SUB(Type, Id), #subject{type = Type, id = Id}).
