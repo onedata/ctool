@@ -102,6 +102,10 @@ serialize_deserialize_testcases() -> [
     {
         <<"op_handle_service.u987.instance:auto">>,
         #gri{type = op_handle_service, id = <<"u987">>, aspect = instance, scope = auto}
+    },
+    {
+        <<"op_qos.null.instance:private">>,
+        #gri{type = op_qos, id = undefined, aspect = instance, scope = private}
     }
 ].
 
