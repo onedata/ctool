@@ -8,31 +8,32 @@
 %%% @doc
 %%% Auxiliary functions for managing consistent hashing ring and mapping
 %%% terms (usually UUIDs) to nodes in the ring.
-%%% Base for most functions is record ring that represents information about cluster.
-%%% It is assumed that particular number of nodes is associated with each key/label
-%%% but it is possible to request more.
+%%% Most functions uses record ring (stored in environment variable) that represents information about cluster.
+%%% It is assumed that particular number of nodes is associated with each label.
 %%% Ring record is an internal structure of the module - cannot be only copied as indivisible whole between nodes.
-%%% Environment variable key_connected_nodes can be used to set initial value to be used in ring record.
 %%% @end
 %%%--------------------------------------------------------------------
 -module(consistent_hashing).
 -author("Tomasz Lichon").
 
+-include("logging.hrl").
+
 -record(ring, {
-    type :: single_node | multi_node | broken,
+    type :: single_node | multi_node, % single_node type is used to optimize calls (no chash operations needed)
     chash :: chash:chash() | node(),
-    broken_nodes = [] :: [node()],
-    key_connected_nodes = 1 :: pos_integer(), % Number of nodes associated with each key
-    nodes_num :: non_neg_integer()
+    failed_nodes = [] :: [node()],
+    label_associated_nodes_count = 1 :: pos_integer(), % Number of nodes associated with each label
+    all_nodes :: [node()] % cached list of nodes to return it faster (it is also possible to get all nodes from chash)
 }).
 
 -type ring() :: #ring{}.
 
 %% API
--export([init/1, cleanup/0, get_chash_ring/0, set_chash_ring/1,
-    set_broken_node/1, set_fixed_node/1,
-    set_key_connected_nodes/1, get_key_connected_nodes/0,
-    get_node/1, get_nodes/2, get_all_nodes/0]).
+-export([init/2, replicate_ring_to_nodes/1, cleanup/0, report_node_failure/1, report_node_recovery/1,
+    set_label_associated_nodes_count/1, get_label_associated_nodes_count/0,
+    get_node/1, get_full_node_info/1, get_all_nodes/0]).
+%% Export for internal rpc use
+-export([set_ring/1]).
 
 %%%===================================================================
 %%% API
@@ -40,211 +41,148 @@
 
 %%--------------------------------------------------------------------
 %% @doc
-%% Initialize chash ring
+%% Initialize ring. Requires nodes' list and information about number of nodes associated with each label.
 %% @end
 %%--------------------------------------------------------------------
--spec init([node()]) -> ok.
-init([Node]) ->
-    set_chash_ring(#ring{type = single_node, chash = Node, nodes_num = 1});
-init(Nodes) ->
-    case get_chash_ring() of
+-spec init([node()], pos_integer()) -> ok | {error, term()}.
+init([Node] = Nodes, LabelAssociatedNodesCount) ->
+    set_ring(#ring{type = single_node, chash = Node, 
+        label_associated_nodes_count = LabelAssociatedNodesCount, all_nodes = Nodes}),
+    ?MODULE:replicate_ring_to_nodes(Nodes);
+init(Nodes, LabelAssociatedNodesCount) ->
+    case get_ring() of
         undefined ->
-            NodesNum = length(Nodes),
+            NodeCount = length(Nodes),
             [Node0 | _] = Nodes,
-            InitialCHash = chash:fresh(NodesNum, Node0),
+            InitialCHash = chash:fresh(NodeCount, Node0),
             CHash = lists:foldl(fun({I, Node}, CHashAcc) ->
                 chash:update(get_nth_index(I, CHashAcc), Node, CHashAcc)
-            end, InitialCHash, lists:zip(lists:seq(1, NodesNum), Nodes)),
-            KeyConnectedNodes = ctool:get_env(key_connected_nodes, 1),
-            Ring = #ring{type = multi_node, chash = CHash,
-                key_connected_nodes = KeyConnectedNodes, nodes_num = NodesNum},
-            set_chash_ring(Ring);
+            end, InitialCHash, lists:zip(lists:seq(1, NodeCount), Nodes)),
+
+            set_ring(#ring{type = multi_node, chash = CHash,
+                label_associated_nodes_count = LabelAssociatedNodesCount, all_nodes = Nodes}),
+            ?MODULE:replicate_ring_to_nodes(Nodes);
         _ ->
             ok
     end.
 
-%%--------------------------------------------------------------------
-%% @doc
-%% Removes chash ring.
-%% @end
-%%--------------------------------------------------------------------
+
 -spec cleanup() -> ok.
 cleanup() ->
-    ctool:unset_env(chash).
+    ctool:unset_env(consistent_hashing_ring).
 
-%%--------------------------------------------------------------------
-%% @doc
-%% Returns consistent hashing ring.
-%% @end
-%%--------------------------------------------------------------------
--spec get_chash_ring() -> ring() | undefined.
-get_chash_ring() ->
-    ctool:get_env(chash, undefined).
 
-%%--------------------------------------------------------------------
-%% @doc
-%% Sets consistent hashing ring.
-%% @end
-%%--------------------------------------------------------------------
--spec set_chash_ring(ring()) -> ok.
-set_chash_ring(CHash) ->
-    ctool:set_env(chash, CHash).
+-spec replicate_ring_to_nodes([node()]) -> ok | {error, term()}.
+replicate_ring_to_nodes(Nodes) ->
+    {Ans, BadNodes} = FullAns = rpc:multicall(Nodes, ?MODULE, set_ring, [get_ring()]),
+    Errors = lists:filter(fun(NodeAns) -> NodeAns =/= ok end, Ans),
+    case {Errors, BadNodes} of
+        {[], []} ->
+            ok;
+        _ ->
+            ?error("Error error replicating ring to nodes ~p~nrpc ans: ~p", [Nodes, FullAns]),
+            {error, FullAns}
+    end.
 
-%%--------------------------------------------------------------------
-%% @doc
-%% Sets information about broken node.
-%% @end
-%%--------------------------------------------------------------------
--spec set_broken_node(node()) -> ok.
-set_broken_node(BrokenNode) ->
-    #ring{broken_nodes = BrokenNodes} = Ring = get_chash_ring(),
-    Ring2 = Ring#ring{type = broken,
-        broken_nodes = lists:usort([BrokenNode | BrokenNodes])},
-    ctool:set_env(chash, Ring2).
 
-%%--------------------------------------------------------------------
-%% @doc
-%% Sets information about fixed node.
-%% @end
-%%--------------------------------------------------------------------
--spec set_fixed_node(node()) -> ok.
-set_fixed_node(FixedNode) ->
-    #ring{broken_nodes = BrokenNodes} = Ring = get_chash_ring(),
-    Ring2 = case BrokenNodes -- [FixedNode] of
-        [] -> Ring#ring{type = multi_node, broken_nodes = []};
-        BrokenNodes2 -> Ring#ring{broken_nodes = BrokenNodes2}
-    end,
-    ctool:set_env(chash, Ring2).
+-spec report_node_failure(node()) -> ok.
+report_node_failure(FailedNode) ->
+    #ring{failed_nodes = FailedNodes} = Ring = get_ring(),
+    set_ring(Ring#ring{failed_nodes = lists:usort([FailedNode | FailedNodes])}).
 
-%%--------------------------------------------------------------------
-%% @doc
-%% Sets information about number of nodes connected with key.
-%% @end
-%%--------------------------------------------------------------------
--spec set_key_connected_nodes(pos_integer()) -> ok.
-set_key_connected_nodes(Num) ->
-    ctool:set_env(key_connected_nodes, Num), % set also environment variable used to config ring by the user
-    Ring = get_chash_ring(),
-    set_chash_ring(Ring#ring{key_connected_nodes = Num}).
 
-%%--------------------------------------------------------------------
-%% @doc
-%% Gets information about number of nodes connected with key.
-%% @end
-%%--------------------------------------------------------------------
--spec get_key_connected_nodes() -> pos_integer().
-get_key_connected_nodes() ->
-    ctool:get_env(key_connected_nodes, 1).
+-spec report_node_recovery(node()) -> ok.
+report_node_recovery(RecoveredNode) ->
+    #ring{failed_nodes = FailedNodes} = Ring = get_ring(),
+    set_ring(Ring#ring{failed_nodes = FailedNodes -- [RecoveredNode]}).
+
+
+-spec set_label_associated_nodes_count(pos_integer()) -> ok.
+set_label_associated_nodes_count(Count) ->
+    Ring = get_ring(),
+    set_ring(Ring#ring{label_associated_nodes_count = Count}).
+
+
+-spec get_label_associated_nodes_count() -> pos_integer().
+get_label_associated_nodes_count() ->
+    Ring = get_ring(),
+    Ring#ring.label_associated_nodes_count.
 
 %%--------------------------------------------------------------------
 %% @doc
 %% Get node that is responsible for the data labeled with given term.
-%% Throws error if node is broken.
+%% Crashes with error if node is failed.
 %% Function to be used if label must be used only by chosen node (no HA available).
 %% @end
 %%--------------------------------------------------------------------
 -spec get_node(term()) -> node().
 get_node(Label) ->
-    case get_chash_ring() of
+    case get_ring() of
         undefined ->
             error(chash_ring_not_initialized);
-        #ring{type = single_node, chash = Node} ->
+        #ring{type = single_node, failed_nodes = [], chash = Node} ->
             Node;
-        #ring{type = multi_node, chash = CHash} ->
+        #ring{type = single_node, failed_nodes = FailedNodes, chash = Node} ->
+            case lists:member(Node, FailedNodes) of
+                true -> error(failed_node);
+                false -> Node
+            end;
+        #ring{type = multi_node, failed_nodes = [], chash = CHash} ->
             Index = chash:key_of(Label),
             [{_, BestNode}] = chash:successors(Index, CHash, 1),
             BestNode;
-        #ring{type = broken, chash = CHash, broken_nodes = BrokenNodes} ->
+        #ring{type = multi_node, chash = CHash, failed_nodes = FailedNodes} ->
             Index = chash:key_of(Label),
             [{_, BestNode}] = chash:successors(Index, CHash, 1),
-            case lists:member(BestNode, BrokenNodes) of
-                true -> throw(broken_node);
+            case lists:member(BestNode, FailedNodes) of
+                true -> error(failed_node);
                 false -> BestNode
             end
     end.
 
 %%--------------------------------------------------------------------
 %% @doc
-%% Get nodes that are responsible for the data labeled with given term.
-%% Returns three lists: alive connected nodes, other alive nodes (if requested more that are connected with label
-%% by default) and broken nodes. Sum of lists' length is equal to requested nodes' count.
-%% Returns also information if master node (first node connected to key) is among broken nodes.
+%% Get full information about nodes, especially nodes that are responsible for the data labeled with given term.
+%% Returns three lists: nodes connected with label, failed nodes and all nodes.
 %% @end
 %%--------------------------------------------------------------------
--spec get_nodes(term(), non_neg_integer() | all) ->
-    {KeyConnectedNodes :: [node()], OtherRequestedNodes :: [node()], BrokenNodes :: [node()], BrokenMaster :: boolean()}.
-get_nodes(Label, RequestedNodesNum0) ->
-    case get_chash_ring() of
+-spec get_full_node_info(term()) -> {LabelAssociatedNodes :: [node()], FailedNodes :: [node()], AllNodes :: [node()]}.
+get_full_node_info(Label) ->
+    case get_ring() of
         undefined ->
             error(chash_ring_not_initialized);
-        #ring{type = single_node, chash = Node} ->
-            {[Node], [], [], false};
-        #ring{type = multi_node, chash = CHash, key_connected_nodes = KeyConnectedNodesNum} = Ring ->
+        #ring{type = single_node, chash = Node, failed_nodes = FailedNodes, all_nodes = AllNodes} ->
+            {[Node], FailedNodes, AllNodes};
+        #ring{chash = CHash, label_associated_nodes_count = NodeCount,
+            failed_nodes = FailedNodes , all_nodes = AllNodes} ->
             Index = chash:key_of(Label),
-            RequestedNodesNum = get_requested_nodes_num(RequestedNodesNum0, Ring),
-            Nodes = lists:map(fun({_, Node}) -> Node end,
-                    chash:successors(Index, CHash, max(KeyConnectedNodesNum, RequestedNodesNum))),
-            {KeyConnectedNodes, OtherRequestedNodes} = lists:split(min(KeyConnectedNodesNum, length(Nodes)), Nodes),
-            {KeyConnectedNodes, OtherRequestedNodes, [], false};
-        #ring{type = broken, chash = CHash, broken_nodes = BrokenNodes,
-            key_connected_nodes = KeyConnectedNodesNum}  = Ring ->
-            Index = chash:key_of(Label),
-            RequestedNodesNum = get_requested_nodes_num(RequestedNodesNum0, Ring),
-            [{_, Node1} | _] = Nodes = chash:successors(Index, CHash, max(KeyConnectedNodesNum, RequestedNodesNum)),
-            {KeyConnectedNodes, OtherRequestedNodes} = lists:split(min(KeyConnectedNodesNum, length(Nodes)), Nodes),
-            {AliveKeyConnectedNodes, BrokenKeyConnectedNodes} = filter_nodes(KeyConnectedNodes, BrokenNodes),
-            {AliveOtherRequestedNodes, BrokenOtherRequestedNodes} = filter_nodes(OtherRequestedNodes, BrokenNodes),
-            {AliveKeyConnectedNodes, AliveOtherRequestedNodes, BrokenKeyConnectedNodes ++ BrokenOtherRequestedNodes,
-                lists:member(Node1, BrokenNodes)}
+            Nodes = lists:map(fun({_, Node}) -> Node end, chash:successors(Index, CHash, NodeCount)),
+            {Nodes, FailedNodes, AllNodes}
     end.
 
-%%--------------------------------------------------------------------
-%% @doc
-%% Get all nodes in ring.
-%% @end
-%%--------------------------------------------------------------------
+
 -spec get_all_nodes() -> [node()].
 get_all_nodes() ->
-    case get_chash_ring() of
+    case get_ring() of
         undefined ->
             error(chash_ring_not_initialized);
-        #ring{type = single_node, chash = Node} ->
-            [Node];
-        #ring{chash = CHash} ->
-            NodesWithIndices = chash:nodes(CHash),
-            {_, Nodes} = lists:unzip(NodesWithIndices),
-            lists:usort(Nodes)
+        #ring{all_nodes = AllNodes} ->
+            AllNodes
     end.
 
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
 
-%%--------------------------------------------------------------------
-%% @doc
-%% Get hash index of nth node in ring.
-%% @end
-%%--------------------------------------------------------------------
+-spec get_ring() -> ring() | undefined.
+get_ring() ->
+    ctool:get_env(consistent_hashing_ring, undefined).
+
+-spec set_ring(ring()) -> ok.
+set_ring(Ring) ->
+    ctool:set_env(consistent_hashing_ring, Ring).
+
 -spec get_nth_index(non_neg_integer(), chash:chash()) -> non_neg_integer().
 get_nth_index(N, CHash) ->
     {Index, _} = lists:nth(N, chash:nodes(CHash)),
     Index.
-
--spec filter_nodes(ResponsibleNodes :: [{integer(), node()}], AllBrokenNodes :: [node()]) ->
-    {GoodNodes :: [node()], BrokenNodes :: [node()]}.
-filter_nodes([], _BrokenNodes) ->
-    {[], []};
-filter_nodes([{_, Node} | Nodes], BrokenNodes) ->
-    {AliveNodesAns, BrokenNodesAns} = filter_nodes(Nodes, BrokenNodes),
-    case lists:member(Node, BrokenNodes) of
-        true ->
-            {AliveNodesAns, [Node | BrokenNodesAns]};
-        _ ->
-            {[Node | AliveNodesAns], BrokenNodesAns}
-    end.
-
--spec get_requested_nodes_num(non_neg_integer() | all, ring()) -> non_neg_integer().
-get_requested_nodes_num(all, #ring{nodes_num = NodesNum}) ->
-    NodesNum;
-get_requested_nodes_num(Requested, _) ->
-    Requested.
