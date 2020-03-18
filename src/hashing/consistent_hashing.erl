@@ -8,9 +8,9 @@
 %%% @doc
 %%% Auxiliary functions for managing consistent hashing ring and mapping
 %%% terms (usually UUIDs) to nodes in the ring.
-%%% Most functions uses record ring (stored in environment variable) that represents information about cluster.
+%%% Most functions use record ring (stored in environment variable) that represents information about cluster.
 %%% It is assumed that particular number of nodes is associated with each label.
-%%% Ring record is an internal structure of the module - cannot be only copied as indivisible whole between nodes.
+%%% Ring record is an internal structure of the module - it can only be copied as indivisible whole between nodes.
 %%% @end
 %%%--------------------------------------------------------------------
 -module(consistent_hashing).
@@ -32,7 +32,7 @@
 -export([init/2, replicate_ring_to_nodes/1, cleanup/0, report_node_failure/1, report_node_recovery/1,
     set_label_associated_nodes_count/1, get_label_associated_nodes_count/0,
     get_node/1, get_full_node_info/1, get_all_nodes/0]).
-%% Export for internal rpc use
+%% Export for internal rpc usage
 -export([set_ring/1]).
 
 %%%===================================================================
@@ -112,7 +112,7 @@ get_label_associated_nodes_count() ->
 %% @doc
 %% Get node that is responsible for the data labeled with given term.
 %% Crashes with error if node is failed.
-%% Function to be used if label must be used only by chosen node (no HA available).
+%% Function to be used if label is associated only with particular node (no HA available).
 %% @end
 %%--------------------------------------------------------------------
 -spec get_node(term()) -> node().
