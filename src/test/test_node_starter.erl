@@ -62,15 +62,16 @@ prepare_test_environment(Config, TestModule, Apps) ->
 
     try
         DataDir = ?config(data_dir, Config),
-        PrivDir = ?config(priv_dir, Config),
         CtTestRoot = filename:join(DataDir, ".."),
-        ProjectRoot = filename:join(CtTestRoot, ".."),
+        ProjectRoot = filename:join(lists:takewhile(fun(Token) ->
+            Token /= "test_distributed"
+        end, filename:split(DataDir))),
         AppmockRoot = filename:join(ProjectRoot, "appmock"),
         CmRoot = filename:join(ProjectRoot, "cluster_manager"),
 
-        ConfigWithPaths =
-            [{ct_test_root, CtTestRoot}, {project_root, ProjectRoot} | Config],
+        ConfigWithPaths = [{ct_test_root, CtTestRoot}, {project_root, ProjectRoot} | Config],
 
+        PrivDir = ?config(priv_dir, Config),
         LogsDir = filename:join(PrivDir, atom_to_list(TestModule) ++ "_logs"),
         os:cmd("mkdir -p " ++ LogsDir),
 
