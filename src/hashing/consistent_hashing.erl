@@ -46,9 +46,14 @@
 %%--------------------------------------------------------------------
 -spec init([node()], pos_integer()) -> ok | {error, term()}.
 init([Node] = Nodes, LabelAssociatedNodesCount) ->
-    set_ring(#ring{type = single_node, chash = Node, 
-        label_associated_nodes_count = LabelAssociatedNodesCount, all_nodes = Nodes}),
-    ?MODULE:replicate_ring_to_nodes(Nodes);
+    case get_ring() of
+        undefined ->
+            set_ring(#ring{type = single_node, chash = Node,
+                label_associated_nodes_count = LabelAssociatedNodesCount, all_nodes = Nodes}),
+            ?MODULE:replicate_ring_to_nodes(Nodes);
+        _ ->
+            ok
+    end;
 init(Nodes, LabelAssociatedNodesCount) ->
     case get_ring() of
         undefined ->
@@ -80,7 +85,7 @@ replicate_ring_to_nodes(Nodes) ->
         {[], []} ->
             ok;
         _ ->
-            ?error("Error error replicating ring to nodes ~p~nrpc ans: ~p", [Nodes, FullAns]),
+            ?error("Error replicating ring to nodes ~p~nrpc ans: ~p", [Nodes, FullAns]),
             {error, FullAns}
     end.
 
