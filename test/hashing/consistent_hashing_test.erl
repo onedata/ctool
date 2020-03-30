@@ -12,6 +12,7 @@
 -module(consistent_hashing_test).
 -author("Tomasz Lichon").
 
+-include("hashing/consistent_hashing.hrl").
 -include_lib("eunit/include/eunit.hrl").
 
 helpers_test_() ->
@@ -50,18 +51,18 @@ chash_should_lookup_single_node_ring() ->
     ?assertEqual(ok, consistent_hashing:init([node()], 1)),
 
     %then
-    ?assertEqual(node(), consistent_hashing:get_node(key1)),
-    ?assertEqual(node(), consistent_hashing:get_node(key2)).
+    ?assertEqual(node(), consistent_hashing:get_associated_node(key1)),
+    ?assertEqual(node(), consistent_hashing:get_associated_node(key2)).
 
 chash_should_lookup_multi_node_ring() ->
     Nodes = [node1, node2, node3, node4, node5],
     ?assertEqual(ok, consistent_hashing:init(Nodes, 1)),
 
     %when
-    Key1NodeFirst = consistent_hashing:get_node(key1),
-    Key1NodeSecond = consistent_hashing:get_node(key1),
-    Key2NodeFirst = consistent_hashing:get_node(key2),
-    Key2NodeSecond = consistent_hashing:get_node(key2),
+    Key1NodeFirst = consistent_hashing:get_associated_node(key1),
+    Key1NodeSecond = consistent_hashing:get_associated_node(key1),
+    Key2NodeFirst = consistent_hashing:get_associated_node(key2),
+    Key2NodeSecond = consistent_hashing:get_associated_node(key2),
 
     %then
     ?assertEqual(Key1NodeFirst, Key1NodeSecond),
@@ -93,29 +94,20 @@ should_get_node_info_single_node_ring() ->
     ?assertEqual(ok, consistent_hashing:init([node()], 1)),
 
     %then
-    ?assertEqual({[node()], [], [node()]}, consistent_hashing:get_full_node_info(key1)),
-    ?assertEqual({[node()], [], [node()]}, consistent_hashing:get_full_node_info(key2)).
+    ?assertEqual(#node_routing_info{label_associated_nodes = [node()], failed_nodes = [], all_nodes = [node()]},
+        consistent_hashing:get_routing_info(key1)),
+    ?assertEqual(#node_routing_info{label_associated_nodes = [node()], failed_nodes = [], all_nodes = [node()]},
+        consistent_hashing:get_routing_info(key2)).
 
 should_get_node_info_multi_node_ring() ->
     Nodes = [node1, node2, node3, node4, node5],
     ?assertEqual(ok, consistent_hashing:init(Nodes, 1)),
 
     %when
-    Test1 = consistent_hashing:get_full_node_info(key1),
-    ?assertMatch({[_], [], Nodes}, Test1),
-    {Key1NodesFirst, _, _} = Test1,
-
-    Test2 = consistent_hashing:get_full_node_info(key1),
-    ?assertMatch({[_], [], Nodes}, Test2),
-    {Key1NodesSecond, _, _} = Test2,
-
-    Test3 = consistent_hashing:get_full_node_info(key2),
-    ?assertMatch({[_], [], Nodes}, Test3),
-    {Key2NodesFirst, _, _} = Test3,
-
-    Test4 = consistent_hashing:get_full_node_info(key2),
-    ?assertMatch({[_], [], Nodes}, Test4),
-    {Key2NodesSecond, _, _} = Test4,
+    Key1NodesFirst = check_routing_info(key1, 1, 0, Nodes),
+    Key1NodesSecond = check_routing_info(key1, 1, 0, Nodes),
+    Key2NodesFirst = check_routing_info(key2, 1, 0, Nodes),
+    Key2NodesSecond = check_routing_info(key2, 1, 0, Nodes),
 
     %then
     ?assertEqual(Key1NodesFirst, Key1NodesSecond),
@@ -126,25 +118,23 @@ should_return_many_nodes() ->
     Nodes = [node1, node2, node3, node4, node5],
     ?assertEqual(ok, consistent_hashing:init(Nodes, 3)),
 
-    Test = consistent_hashing:get_full_node_info(key1),
-    ?assertMatch({_, [], Nodes}, Test),
-    {Nodes1, _, _} = Test,
-    ?assertEqual(3, length(Nodes1)).
+    KeyNodes = check_routing_info(key1, 3, 0, Nodes),
+    ?assertEqual(3, length(KeyNodes)).
 
 should_handle_failed_nodes() ->
     Nodes = [node1, node2, node3, node4],
     ?assertEqual(ok, consistent_hashing:init(Nodes, 4)),
 
     ?assertEqual(ok, consistent_hashing:report_node_failure(node3)),
-
-    Test1 = consistent_hashing:get_full_node_info(key1),
-    ?assertMatch({_, [_], Nodes}, Test1),
-    {Nodes1, _, _} = Test1,
-    ?assertEqual(4, length(Nodes1)),
+    check_routing_info(key1, 4, 1, Nodes),
 
     ?assertEqual(ok, consistent_hashing:report_node_recovery(node3)),
+    check_routing_info(key1, 4, 0, Nodes).
 
-    Test2 = consistent_hashing:get_full_node_info(key1),
-    ?assertMatch({_, [], Nodes}, Test2),
-    {Nodes2, _, _} = Test2,
-    ?assertEqual(4, length(Nodes2)).
+check_routing_info(Key, KeyNodesNum, FailedNodesNum, Nodes) ->
+    Test = consistent_hashing:get_routing_info(Key),
+    ?assertMatch(#node_routing_info{all_nodes = Nodes}, Test),
+    #node_routing_info{label_associated_nodes = KeyNodes, failed_nodes = FailedNodes} = Test,
+    ?assertEqual(KeyNodesNum, length(KeyNodes)),
+    ?assertEqual(FailedNodesNum, length(FailedNodes)),
+    KeyNodes.
