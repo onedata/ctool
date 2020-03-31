@@ -9,7 +9,7 @@
 %%% Auxiliary functions for managing consistent hashing ring and mapping
 %%% terms (usually UUIDs) to nodes in the ring.
 %%% Most functions use record ring (stored in environment variable) that represents information about cluster.
-%%% It is assumed that particular number of nodes is associated with each label.
+%%% It is assumed that particular number of nodes is assigned to each label.
 %%% Ring record is an internal structure of the module - it can only be copied as indivisible whole between nodes.
 %%% @end
 %%%--------------------------------------------------------------------
@@ -22,7 +22,7 @@
 -record(ring, {
     chash :: chash:chash() | undefined,
     failed_nodes = [] :: [node()],
-    nodes_assigned_per_label = 1 :: pos_integer(), % Number of nodes associated with each label
+    nodes_assigned_per_label = 1 :: pos_integer(), % Number of nodes assigned to each label
     all_nodes :: [node()] % cached list of nodes to return it faster (it is also possible to get all nodes from chash)
 }).
 
@@ -43,14 +43,14 @@
 
 %%--------------------------------------------------------------------
 %% @doc
-%% Initialize ring. Requires nodes' list and information about number of nodes associated with each label.
+%% Initialize ring. Requires nodes' list and information about number of nodes assigned to each label.
 %% @end
 %%--------------------------------------------------------------------
 -spec init([node()], pos_integer()) -> ok | {error, term()}.
-init(Nodes, LabelAssociatedNodesCount) ->
+init(Nodes, NodesAssignedPerLabel) ->
     case is_ring_initialized() of
         false ->
-            Ring = init_ring(Nodes, LabelAssociatedNodesCount),
+            Ring = init_ring(Nodes, NodesAssignedPerLabel),
             set_ring(Ring),
             replicate_ring_to_nodes(Nodes);
         _ ->
@@ -66,7 +66,7 @@ cleanup() ->
 %% @doc
 %% Get node that is responsible for the data labeled with given term.
 %% Crashes with error if node is failed.
-%% Function to be used if label is associated only with particular node (no HA available).
+%% Function to be used if label is assigned only to particular node (no HA available).
 %% @end
 %%--------------------------------------------------------------------
 -spec get_assigned_node(term()) -> node().
@@ -172,9 +172,9 @@ get_nth_index(N, CHash) ->
     Index.
 
 -spec init_ring([node()], pos_integer()) -> ring().
-init_ring([_] = Nodes, LabelAssociatedNodesCount) ->
-    #ring{nodes_assigned_per_label = LabelAssociatedNodesCount, all_nodes = Nodes};
-init_ring(Nodes, LabelAssociatedNodesCount) ->
+init_ring([_] = Nodes, NodesAssignedPerLabel) ->
+    #ring{nodes_assigned_per_label = NodesAssignedPerLabel, all_nodes = Nodes};
+init_ring(Nodes, NodesAssignedPerLabel) ->
     NodeCount = length(Nodes),
     [Node0 | _] = Nodes,
     InitialCHash = chash:fresh(NodeCount, Node0),
@@ -182,7 +182,7 @@ init_ring(Nodes, LabelAssociatedNodesCount) ->
         chash:update(get_nth_index(I, CHashAcc), Node, CHashAcc)
     end, InitialCHash, lists:zip(lists:seq(1, NodeCount), Nodes)),
 
-    #ring{chash = CHash, nodes_assigned_per_label = LabelAssociatedNodesCount, all_nodes = Nodes}.
+    #ring{chash = CHash, nodes_assigned_per_label = NodesAssignedPerLabel, all_nodes = Nodes}.
 
 -spec replicate_ring_to_nodes([node()]) -> ok | {error, term()}.
 replicate_ring_to_nodes(Nodes) ->
