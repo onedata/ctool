@@ -41,7 +41,7 @@
 %% Export for internal rpc usage
 -export([set_ring/2, finish_cluster_reconfiguration/0]).
 %% Export for tests
--export([replicate_ring_to_nodes/3]).
+-export([replicate_ring_to_nodes/1, replicate_ring_to_nodes/3]).
 
 -define(RING_ENV, consistent_hashing_ring).
 -define(RECONFIGURATION_RING_ENV, reconfiguration_consistent_hashing_ring).
@@ -227,6 +227,10 @@ init_ring(Nodes, LabelAssociatedNodesCount) ->
     end, InitialCHash, lists:zip(lists:seq(1, NodeCount), Nodes)),
 
     #ring{chash = CHash, label_associated_nodes_count = LabelAssociatedNodesCount, all_nodes = Nodes}.
+
+-spec replicate_ring_to_nodes([node()]) -> ok | {error, term()}.
+replicate_ring_to_nodes(Nodes) ->
+    replicate_ring_to_nodes(Nodes, ?RING_ENV, get_ring()).
 
 -spec replicate_ring_to_nodes([node()], ring_name(), ring()) -> ok | {error, term()}.
 replicate_ring_to_nodes(Nodes, RingName, Ring) ->
