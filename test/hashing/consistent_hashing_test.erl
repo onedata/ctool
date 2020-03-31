@@ -36,7 +36,7 @@ helpers_test_() ->
 start() ->
     consistent_hashing:cleanup(),
     meck:new(consistent_hashing, [passthrough]),
-    meck:expect(consistent_hashing, replicate_ring_to_nodes, fun(_) -> ok end).
+    meck:expect(consistent_hashing, replicate_ring_to_nodes, fun(_, _, _) -> ok end).
 
 stop(_) ->
     meck:unload(consistent_hashing).
