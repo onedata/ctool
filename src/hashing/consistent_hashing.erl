@@ -36,6 +36,8 @@
     set_nodes_assigned_per_label/1, get_nodes_assigned_per_label/0]).
 %% Export for internal rpc usage
 -export([set_ring/1]).
+%% Export for tests
+-export([replicate_ring_to_nodes/1]).
 
 %%%===================================================================
 %%% Basic API
