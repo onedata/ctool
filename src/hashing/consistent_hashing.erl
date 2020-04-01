@@ -153,7 +153,7 @@ get_nodes_assigned_per_label() ->
 -spec init_cluster_reconfiguration([node()]) -> ok | no_return().
 init_cluster_reconfiguration(Nodes) ->
     CurrentRing = get_ring(),
-    Ring = init_ring(Nodes, CurrentRing#ring.label_associated_nodes_count),
+    Ring = init_ring(Nodes, CurrentRing#ring.nodes_assigned_per_label),
     set_ring(?RECONFIGURATION_RING_ENV, Ring),
     ok = ?MODULE:replicate_ring_to_nodes(Nodes, ?RECONFIGURATION_RING_ENV, Ring).
 
