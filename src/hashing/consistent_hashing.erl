@@ -36,8 +36,8 @@
 -export([report_node_failure/1, report_node_recovery/1,
     set_nodes_assigned_per_label/1, get_nodes_assigned_per_label/0]).
 %% Cluster reconfiguration API
--export([init_cluster_reconfiguration/1, finish_cluster_reconfiguration/1, get_reconfiguration_nodes/0,
-    get_prev_nodes/0, get_reconfigured_routing_info/1]).
+-export([init_cluster_reconfiguration/1, finish_cluster_reconfiguration/1,
+    get_reconfiguration_nodes/0, get_reconfigured_routing_info/1]).
 %% Export for internal rpc usage
 -export([set_ring/2, finish_cluster_reconfiguration/0]).
 %% Export for tests
@@ -45,7 +45,6 @@
 
 -define(RING_ENV, consistent_hashing_ring).
 -define(RECONFIGURATION_RING_ENV, reconfiguration_consistent_hashing_ring).
--define(PREV_RING_ENV, prev_consistent_hashing_ring).
 
 %%%===================================================================
 %%% Basic API
@@ -70,7 +69,8 @@ init(Nodes, NodesAssignedPerLabel) ->
 
 -spec cleanup() -> ok.
 cleanup() ->
-    ctool:unset_env(?RING_ENV).
+    ctool:unset_env(?RING_ENV),
+    ctool:unset_env(?RECONFIGURATION_RING_ENV).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -173,10 +173,6 @@ finish_cluster_reconfiguration(Nodes) ->
 get_reconfiguration_nodes() ->
     get_all_nodes(?RECONFIGURATION_RING_ENV).
 
--spec get_prev_nodes() -> [node()].
-get_prev_nodes() ->
-    get_all_nodes(?PREV_RING_ENV).
-
 %%--------------------------------------------------------------------
 %% @doc
 %% @equiv get_routing_info(?RECONFIGURATION_RING_ENV, Label).
@@ -275,6 +271,7 @@ get_all_nodes(RingName) ->
 -spec finish_cluster_reconfiguration() -> ok.
 finish_cluster_reconfiguration() ->
     Ring = get_ring(),
-    set_ring(?PREV_RING_ENV, Ring),
     NewRing = get_ring(?RECONFIGURATION_RING_ENV),
-    set_ring(NewRing).
+    set_ring(NewRing),
+    % Remember old ring
+    set_ring(?RECONFIGURATION_RING_ENV, Ring).
