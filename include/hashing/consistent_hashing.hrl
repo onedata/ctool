@@ -15,7 +15,7 @@
 
 % Record representing information about routing
 -record(node_routing_info, {
-    label_associated_nodes :: [node()],
+    assigned_nodes :: [node()],
     failed_nodes :: [node()],
     all_nodes :: [node()]
 }).

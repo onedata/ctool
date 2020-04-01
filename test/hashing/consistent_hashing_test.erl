@@ -35,11 +35,11 @@ helpers_test_() ->
 
 start() ->
     consistent_hashing:cleanup(),
-    meck:new(consistent_hashing, [passthrough]),
-    meck:expect(consistent_hashing, replicate_ring_to_nodes, fun(_, _, _) -> ok end).
+    meck:new(rpc, [passthrough, unstick]),
+    meck:expect(rpc, multicall, fun(_, consistent_hashing, set_ring, _) -> {[ok], []} end).
 
 stop(_) ->
-    meck:unload(consistent_hashing).
+    meck:unload(rpc).
 
 chash_should_create_single_node_ring() ->
     ?assertEqual(ok, consistent_hashing:init([node()], 1)).
@@ -51,18 +51,18 @@ chash_should_lookup_single_node_ring() ->
     ?assertEqual(ok, consistent_hashing:init([node()], 1)),
 
     %then
-    ?assertEqual(node(), consistent_hashing:get_associated_node(key1)),
-    ?assertEqual(node(), consistent_hashing:get_associated_node(key2)).
+    ?assertEqual(node(), consistent_hashing:get_assigned_node(key1)),
+    ?assertEqual(node(), consistent_hashing:get_assigned_node(key2)).
 
 chash_should_lookup_multi_node_ring() ->
     Nodes = [node1, node2, node3, node4, node5],
     ?assertEqual(ok, consistent_hashing:init(Nodes, 1)),
 
     %when
-    Key1NodeFirst = consistent_hashing:get_associated_node(key1),
-    Key1NodeSecond = consistent_hashing:get_associated_node(key1),
-    Key2NodeFirst = consistent_hashing:get_associated_node(key2),
-    Key2NodeSecond = consistent_hashing:get_associated_node(key2),
+    Key1NodeFirst = consistent_hashing:get_assigned_node(key1),
+    Key1NodeSecond = consistent_hashing:get_assigned_node(key1),
+    Key2NodeFirst = consistent_hashing:get_assigned_node(key2),
+    Key2NodeSecond = consistent_hashing:get_assigned_node(key2),
 
     %then
     ?assertEqual(Key1NodeFirst, Key1NodeSecond),
@@ -94,9 +94,9 @@ should_get_node_info_single_node_ring() ->
     ?assertEqual(ok, consistent_hashing:init([node()], 1)),
 
     %then
-    ?assertEqual(#node_routing_info{label_associated_nodes = [node()], failed_nodes = [], all_nodes = [node()]},
+    ?assertEqual(#node_routing_info{assigned_nodes = [node()], failed_nodes = [], all_nodes = [node()]},
         consistent_hashing:get_routing_info(key1)),
-    ?assertEqual(#node_routing_info{label_associated_nodes = [node()], failed_nodes = [], all_nodes = [node()]},
+    ?assertEqual(#node_routing_info{assigned_nodes = [node()], failed_nodes = [], all_nodes = [node()]},
         consistent_hashing:get_routing_info(key2)).
 
 should_get_node_info_multi_node_ring() ->
@@ -134,7 +134,7 @@ should_handle_failed_nodes() ->
 check_routing_info(Key, KeyNodesNum, FailedNodesNum, Nodes) ->
     Test = consistent_hashing:get_routing_info(Key),
     ?assertMatch(#node_routing_info{all_nodes = Nodes}, Test),
-    #node_routing_info{label_associated_nodes = KeyNodes, failed_nodes = FailedNodes} = Test,
+    #node_routing_info{assigned_nodes = KeyNodes, failed_nodes = FailedNodes} = Test,
     ?assertEqual(KeyNodesNum, length(KeyNodes)),
     ?assertEqual(FailedNodesNum, length(FailedNodes)),
     KeyNodes.
