@@ -36,15 +36,16 @@
 -export([report_node_failure/1, report_node_recovery/1,
     set_nodes_assigned_per_label/1, get_nodes_assigned_per_label/0]).
 %% Cluster reconfiguration API
--export([init_cluster_reconfiguration/1, finish_cluster_reconfiguration/1,
-    get_reconfiguration_nodes/0, get_reconfigured_routing_info/1]).
+-export([init_cluster_reconfiguration/1, finish_cluster_reconfiguration/0,
+    get_all_ring_nodes/0, get_reconfigured_routing_info/1]).
 %% Export for internal rpc usage
--export([set_ring/2, finish_cluster_reconfiguration/0]).
+-export([set_ring/2, finish_cluster_reconfiguration_internal/0]).
 %% Export for tests
--export([replicate_ring_to_nodes/1, replicate_ring_to_nodes/3]).
+-export([init_ring/2, replicate_ring_to_nodes/1, replicate_ring_to_nodes/3]).
 
 -define(RING_ENV, consistent_hashing_ring).
 -define(RECONFIGURATION_RING_ENV, reconfiguration_consistent_hashing_ring).
+-define(TMP_RING, tmp_ring). % ring used to swap two other rings
 
 %%%===================================================================
 %%% Basic API
@@ -70,7 +71,8 @@ init(Nodes, NodesAssignedPerLabel) ->
 -spec cleanup() -> ok.
 cleanup() ->
     ctool:unset_env(?RING_ENV),
-    ctool:unset_env(?RECONFIGURATION_RING_ENV).
+    ctool:unset_env(?RECONFIGURATION_RING_ENV),
+    ctool:unset_env(?TMP_RING).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -154,12 +156,12 @@ get_nodes_assigned_per_label() ->
 init_cluster_reconfiguration(Nodes) ->
     CurrentRing = get_ring(),
     Ring = init_ring(Nodes, CurrentRing#ring.nodes_assigned_per_label),
-    set_ring(?RECONFIGURATION_RING_ENV, Ring),
-    ok = ?MODULE:replicate_ring_to_nodes(Nodes, ?RECONFIGURATION_RING_ENV, Ring).
+    ok = replicate_ring_to_nodes(lists:usort(Nodes ++ get_all_nodes()), ?RECONFIGURATION_RING_ENV, Ring).
 
--spec finish_cluster_reconfiguration([node()]) -> ok | no_return().
-finish_cluster_reconfiguration(Nodes) ->
-    {Ans, BadNodes} = FullAns = rpc:multicall(Nodes, ?MODULE, finish_cluster_reconfiguration, []),
+-spec finish_cluster_reconfiguration() -> ok | no_return().
+finish_cluster_reconfiguration() ->
+    Nodes = lists:usort(get_all_nodes() ++ get_all_nodes(?RECONFIGURATION_RING_ENV)),
+    {Ans, BadNodes} = FullAns = rpc:multicall(Nodes, ?MODULE, finish_cluster_reconfiguration_internal, []),
     Errors = lists:filter(fun(NodeAns) -> NodeAns =/= ok end, Ans),
     case {Errors, BadNodes} of
         {[], []} ->
@@ -169,9 +171,10 @@ finish_cluster_reconfiguration(Nodes) ->
             throw({error, FullAns})
     end.
 
--spec get_reconfiguration_nodes() -> [node()].
-get_reconfiguration_nodes() ->
-    get_all_nodes(?RECONFIGURATION_RING_ENV).
+-spec get_all_ring_nodes() -> [[node()]].
+get_all_ring_nodes() ->
+    lists:usort([get_all_nodes_no_error(?RING_ENV), get_all_nodes_no_error(?RECONFIGURATION_RING_ENV),
+        get_all_nodes_no_error(?TMP_RING)]) -- [[]].
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -214,7 +217,8 @@ get_nth_index(N, CHash) ->
 -spec init_ring([node()], pos_integer()) -> ring().
 init_ring([_] = Nodes, NodesAssignedPerLabel) ->
     #ring{nodes_assigned_per_label = NodesAssignedPerLabel, all_nodes = Nodes};
-init_ring(Nodes, NodesAssignedPerLabel) ->
+init_ring(Nodes0, NodesAssignedPerLabel) ->
+    Nodes = lists:usort(Nodes0),
     NodeCount = length(Nodes),
     [Node0 | _] = Nodes,
     InitialCHash = chash:fresh(NodeCount, Node0),
@@ -268,10 +272,21 @@ get_all_nodes(RingName) ->
             error(Error)
     end.
 
--spec finish_cluster_reconfiguration() -> ok.
-finish_cluster_reconfiguration() ->
+-spec get_all_nodes_no_error(ring_name()) -> [node()].
+get_all_nodes_no_error(RingName) ->
+    case get_ring(RingName) of
+        #ring{all_nodes = AllNodes} ->
+            AllNodes;
+        {error, _} ->
+            []
+    end.
+
+-spec finish_cluster_reconfiguration_internal() -> ok.
+finish_cluster_reconfiguration_internal() ->
     Ring = get_ring(),
     NewRing = get_ring(?RECONFIGURATION_RING_ENV),
+    set_ring(?TMP_RING, Ring),
     set_ring(NewRing),
     % Remember old ring
-    set_ring(?RECONFIGURATION_RING_ENV, Ring).
+    set_ring(?RECONFIGURATION_RING_ENV, Ring),
+    ctool:unset_env(?TMP_RING).
