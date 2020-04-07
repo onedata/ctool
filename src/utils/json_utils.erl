@@ -21,6 +21,9 @@
 % binaries in maps intended for JSON serialization.
 -type json_map() :: #{binary() => json_term()}.
 
+% List of binaries pointing to sub-json of a json, e.g
+% [<<"attr1">>, <<"[2]">>] points to element <<"a">> in
+% #{<<"attr1">> => [1, null, <<"a">>], <<"attr2">> => <<"val2">>}
 -type filter() :: [binary()].
 
 -export_type([json_term/0, json_map/0, filter/0]).
@@ -156,7 +159,11 @@ list_to_map(Value) ->
 
 %%--------------------------------------------------------------------
 %% @doc
-%% Find sub-json in json tree
+%% Find sub-json in json tree specified by filter, eg.g:
+%%
+%% find(#{<<"a">> => #{<<"b">> => 1}}, [<<"a">>, <<"b">>]) -> 1
+%% find(#{<<"a">> => [1, 2, <<"a">>}, [<<"a">>, <<"[2]">>]) -> <<"a">>
+%%
 %% @end
 %%--------------------------------------------------------------------
 -spec find(json_term(), filter()) -> json_term() | no_return().
@@ -191,7 +198,13 @@ find(Json, [Name | Rest]) ->
 
 %%--------------------------------------------------------------------
 %% @doc
-%% Insert sub-json to json tree
+%% Insert sub-json to json tree under specified by filter path, e.g:
+%%
+%% insert(#{<<"a">> => #{<<"b">> => 1}}, <<"val">>, [<<"a">>, <<"c">>]) ->
+%%      #{<<"a">> => #{<<"b">> => 1, <<"c">> => <<"val">>}}
+%% insert(#{<<"a">> => [1, 2, <<"a">>}, 5, [<<"a">>, <<"[3]">>]) ->
+%%      #{<<"a">> => [1, 2, <<"a">>, 5}
+%%
 %% @end
 %%--------------------------------------------------------------------
 -spec insert(undefined | json_term(), JsonToInsert :: json_term(), filter()) ->
@@ -230,9 +243,10 @@ insert(Json, JsonToInsert, [Name | Rest]) ->
                             ++ [null || _ <- lists:seq(Length + 1, Index - 1)]
                             ++ [insert(undefined, JsonToInsert, Rest)];
                         false ->
-                            setnth(
-                                Index, Json,
-                                insert(lists:nth(Index, Json), JsonToInsert, Rest)
+                            replace_element(
+                                Index,
+                                insert(lists:nth(Index, Json), JsonToInsert, Rest),
+                                Json
                             )
                     end
             end;
@@ -244,26 +258,19 @@ insert(Json, JsonToInsert, [Name | Rest]) ->
     end.
 
 
-%% @private
 -spec merge([json_term()]) -> json_term().
 merge(JsonTerms) ->
     lists:foldl(fun
-        (Json, ParentJson) when is_map(Json) andalso is_map(ParentJson) ->
-            ChildKeys = maps:keys(Json),
-            ParentKeys = maps:keys(ParentJson),
-            ChildOnlyKey = ChildKeys -- ParentKeys,
-            CommonKeys = ChildKeys -- ChildOnlyKey,
+        (ChildJson, ParentJson) when is_map(ChildJson) andalso is_map(ParentJson) ->
 
-            ResultingJson = maps:merge(
-                ParentJson,
-                maps:with(ChildOnlyKey, Json)
-            ),
-
-            lists:foldl(fun(Key, Acc) ->
-                ChildValue = maps:get(Key, Json),
-                ParentValue = maps:get(Key, ParentJson),
-                Acc#{Key => merge([ParentValue, ChildValue])}
-            end, ResultingJson, CommonKeys);
+            maps:fold(fun(ChildKey, ChildValue, Acc) ->
+                case maps:find(ChildKey, ParentJson) of
+                    {ok, ParentValue} ->
+                        Acc#{ChildKey => merge([ParentValue, ChildValue])};
+                    error ->
+                        Acc#{ChildKey => ChildValue}
+                end
+            end, ParentJson, ChildJson);
 
         (Json, _ParentJson) ->
             Json
@@ -275,15 +282,12 @@ merge(JsonTerms) ->
 %%%===================================================================
 
 
-%%--------------------------------------------------------------------
 %% @private
-%% @doc
-%% Set nth element of list
-%% @end
-%%--------------------------------------------------------------------
--spec setnth(non_neg_integer(), list(), term()) -> list().
-setnth(1, [_ | Rest], New) -> [New | Rest];
-setnth(I, [E | Rest], New) -> [E | setnth(I - 1, Rest, New)].
+-spec replace_element(non_neg_integer(), term(), list()) -> list().
+replace_element(1, New, [_ | Rest]) ->
+    [New | Rest];
+replace_element(Index, New, [Elem | Rest]) ->
+    [Elem | replace_element(Index - 1, New, Rest)].
 
 
 %% @private
