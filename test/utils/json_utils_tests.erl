@@ -17,7 +17,7 @@
 -include("errors.hrl").
 -include_lib("eunit/include/eunit.hrl").
 
--define(SAMPLE_METADATA_BINARY, #{
+-define(SAMPLE_JSON, #{
     <<"name">> => <<"examplecorp-mymodule">>,
     <<"version">> => 1,
     <<"author">> => <<"Pat">>,
@@ -95,165 +95,165 @@ decode_proplist_test() ->
 
 find_test_() ->
     [
-        ?_assertEqual(?SAMPLE_METADATA_BINARY, json_utils:find(?SAMPLE_METADATA_BINARY, [])),
+        ?_assertEqual({ok, ?SAMPLE_JSON}, json_utils:find(?SAMPLE_JSON, [])),
 
         % GET LEVEL 0 ITEMS
-        ?_assertEqual(1, json_utils:find(?SAMPLE_METADATA_BINARY, [<<"version">>])),
-        ?_assertEqual(<<"Pat">>, json_utils:find(?SAMPLE_METADATA_BINARY, [<<"author">>])),
+        ?_assertEqual({ok, 1}, json_utils:find(?SAMPLE_JSON, [<<"version">>])),
+        ?_assertEqual({ok, <<"Pat">>}, json_utils:find(?SAMPLE_JSON, [<<"author">>])),
         ?_assertEqual(
-            [<<"things">>, <<"stuff">>],
-            json_utils:find(?SAMPLE_METADATA_BINARY, [<<"tags">>])
+            {ok, [<<"things">>, <<"stuff">>]},
+            json_utils:find(?SAMPLE_JSON, [<<"tags">>])
         ),
         ?_assertEqual(
-            #{<<"operatingsystem">> => <<"RedHat">>, <<"operatingsystemrelease">> => [<<"5.0">>, <<"6.0">>]},
-            json_utils:find(?SAMPLE_METADATA_BINARY, [<<"operatingsystem_support">>])
+            {ok, #{<<"operatingsystem">> => <<"RedHat">>, <<"operatingsystemrelease">> => [<<"5.0">>, <<"6.0">>]}},
+            json_utils:find(?SAMPLE_JSON, [<<"operatingsystem_support">>])
         ),
-        ?_assertThrow(
-            {error, ?ENOATTR},
-            json_utils:find(?SAMPLE_METADATA_BINARY, [<<"missing">>])
+        ?_assertEqual(
+            ?ERROR_NOT_FOUND,
+            json_utils:find(?SAMPLE_JSON, [<<"missing">>])
         ),
 
         % GET LEVEL 1 ITEMS
         ?_assertEqual(
-            <<"RedHat">>,
-            json_utils:find(?SAMPLE_METADATA_BINARY, [<<"operatingsystem_support">>, <<"operatingsystem">>])
+            {ok, <<"RedHat">>},
+            json_utils:find(?SAMPLE_JSON, [<<"operatingsystem_support">>, <<"operatingsystem">>])
         ),
         ?_assertEqual(
-            [<<"5.0">>, <<"6.0">>],
-            json_utils:find(?SAMPLE_METADATA_BINARY, [<<"operatingsystem_support">>, <<"operatingsystemrelease">>])
+            {ok, [<<"5.0">>, <<"6.0">>]},
+            json_utils:find(?SAMPLE_JSON, [<<"operatingsystem_support">>, <<"operatingsystemrelease">>])
         ),
-        ?_assertThrow(
-            {error, ?ENOATTR},
-            json_utils:find(?SAMPLE_METADATA_BINARY, [<<"operatingsystem_support">>, <<"missing">>])
+        ?_assertEqual(
+            ?ERROR_NOT_FOUND,
+            json_utils:find(?SAMPLE_JSON, [<<"operatingsystem_support">>, <<"missing">>])
         ),
-        ?_assertThrow(
-            {error, ?ENOATTR},
-            json_utils:find(?SAMPLE_METADATA_BINARY, [<<"version">>, <<"missing">>])
+        ?_assertEqual(
+            ?ERROR_NOT_FOUND,
+            json_utils:find(?SAMPLE_JSON, [<<"version">>, <<"missing">>])
         ),
 
         % GET LEVEL 2 ITEMS
         ?_assertEqual(
-            <<"5.0">>,
-            json_utils:find(?SAMPLE_METADATA_BINARY, [<<"operatingsystem_support">>, <<"operatingsystemrelease">>, <<"[0]">>])
+            {ok, <<"5.0">>},
+            json_utils:find(?SAMPLE_JSON, [<<"operatingsystem_support">>, <<"operatingsystemrelease">>, <<"[0]">>])
         ),
         ?_assertEqual(
-            <<"6.0">>,
-            json_utils:find(?SAMPLE_METADATA_BINARY, [<<"operatingsystem_support">>, <<"operatingsystemrelease">>, <<"[1]">>])
+            {ok, <<"6.0">>},
+            json_utils:find(?SAMPLE_JSON, [<<"operatingsystem_support">>, <<"operatingsystemrelease">>, <<"[1]">>])
         ),
-        ?_assertThrow(
-            {error, ?ENOATTR},
-            json_utils:find(?SAMPLE_METADATA_BINARY, [<<"operatingsystem_support">>, <<"operatingsystemrelease">>, <<"[2]">>])
+        ?_assertEqual(
+            ?ERROR_NOT_FOUND,
+            json_utils:find(?SAMPLE_JSON, [<<"operatingsystem_support">>, <<"operatingsystemrelease">>, <<"[2]">>])
         ),
-        ?_assertThrow(
-            {error, ?ENOATTR},
-            json_utils:find(?SAMPLE_METADATA_BINARY, [<<"operatingsystem_support">>, <<"operatingsystemrelease">>, <<"[NaN]">>])
+        ?_assertEqual(
+            ?ERROR_NOT_FOUND,
+            json_utils:find(?SAMPLE_JSON, [<<"operatingsystem_support">>, <<"operatingsystemrelease">>, <<"[NaN]">>])
         )
     ].
 
 
 insert_test_() ->
-    Json = ?SAMPLE_METADATA_BINARY,
+    Json = ?SAMPLE_JSON,
 
     [
         % ADD LEVEL 0 ITEMS
         ?_assertEqual(
-            Json#{<<"second_author">> => <<"Tom">>},
+            {ok, Json#{<<"second_author">> => <<"Tom">>}},
             json_utils:insert(Json, <<"Tom">>, [<<"second_author">>])
         ),
         ?_assertEqual(
-            Json#{<<"new_author">> => #{<<"first">> => <<"Tom">>, <<"second">> => <<"Pat">>}},
+            {ok, Json#{<<"new_author">> => #{<<"first">> => <<"Tom">>, <<"second">> => <<"Pat">>}}},
             json_utils:insert(Json, #{<<"first">> => <<"Tom">>, <<"second">> => <<"Pat">>}, [<<"new_author">>])
         ),
         ?_assertEqual(
-            Json#{<<"new_author">> => [<<"Tom">>, <<"Pat">>]},
+            {ok, Json#{<<"new_author">> => [<<"Tom">>, <<"Pat">>]}},
             json_utils:insert(Json, [<<"Tom">>, <<"Pat">>], [<<"new_author">>])
         ),
 
         % OVERRIDE LEVEL 0 ITEMS
         ?_assertEqual(
-            Json#{<<"author">> => [<<"Tom">>, <<"Pat">>]},
+            {ok, Json#{<<"author">> => [<<"Tom">>, <<"Pat">>]}},
             json_utils:insert(Json, [<<"Tom">>, <<"Pat">>], [<<"author">>])
         ),
 
         % ADD LEVEL 1 ITEMS
         ?_assertEqual(
-            Json#{<<"operatingsystem_support">> => #{
+            {ok, Json#{<<"operatingsystem_support">> => #{
                 <<"repo_type">> => <<"yum">>,
                 <<"operatingsystem">> => <<"RedHat">>,
                 <<"operatingsystemrelease">> => [<<"5.0">>, <<"6.0">>]}
-            },
+            }},
             json_utils:insert(Json, <<"yum">>, [<<"operatingsystem_support">>, <<"repo_type">>])
         ),
-        ?_assertThrow(
-            {error, ?ENOATTR},
+        ?_assertEqual(
+            ?ERROR_NOT_FOUND,
             json_utils:insert(Json, <<"val">>, [<<"version">>, <<"attr">>])
         ),
 
         % OVERRIDE LEVEL 1 ITEMS
         ?_assertEqual(
-            Json#{<<"operatingsystem_support">> => #{
+            {ok, Json#{<<"operatingsystem_support">> => #{
                 <<"operatingsystem">> => <<"Ubuntu">>,
                 <<"operatingsystemrelease">> => [<<"5.0">>, <<"6.0">>]}
-            },
+            }},
             json_utils:insert(Json, <<"Ubuntu">>, [<<"operatingsystem_support">>, <<"operatingsystem">>])
         ),
 
         % OVERRIDE LEVEL 2 ITEMS
         ?_assertEqual(
-            Json#{<<"operatingsystem_support">> => #{
+            {ok, Json#{<<"operatingsystem_support">> => #{
                 <<"operatingsystem">> => <<"RedHat">>,
                 <<"operatingsystemrelease">> => [<<"4.0">>, <<"6.0">>]}
-            },
+            }},
             json_utils:insert(Json, <<"4.0">>, [<<"operatingsystem_support">>, <<"operatingsystemrelease">>, <<"[0]">>])
         ),
         ?_assertEqual(
-            Json#{<<"operatingsystem_support">> => #{
+            {ok, Json#{<<"operatingsystem_support">> => #{
                 <<"operatingsystem">> => <<"RedHat">>,
                 <<"operatingsystemrelease">> => [<<"5.0">>, <<"7.0">>]}
-            },
+            }},
             json_utils:insert(Json, <<"7.0">>, [<<"operatingsystem_support">>, <<"operatingsystemrelease">>, <<"[1]">>])
         ),
 
         % ADD LEVEL 2 ITEMS
         ?_assertEqual(
-            Json#{<<"operatingsystem_support">> => #{
+            {ok, Json#{<<"operatingsystem_support">> => #{
                 <<"operatingsystem">> => <<"RedHat">>,
                 <<"operatingsystemrelease">> => [<<"5.0">>, <<"6.0">>, <<"7.0">>]}
-            },
+            }},
             json_utils:insert(Json, <<"7.0">>, [<<"operatingsystem_support">>, <<"operatingsystemrelease">>, <<"[2]">>])
         ),
         ?_assertEqual(
-            Json#{<<"operatingsystem_support">> => #{
+            {ok, Json#{<<"operatingsystem_support">> => #{
                 <<"operatingsystem">> => <<"RedHat">>,
                 <<"operatingsystemrelease">> => [<<"5.0">>, <<"6.0">>, null, null, <<"7.0">>]}
-            },
+            }},
             json_utils:insert(Json, <<"7.0">>, [<<"operatingsystem_support">>, <<"operatingsystemrelease">>, <<"[4]">>])
         ),
-        ?_assertThrow(
-            {error, ?ENOATTR},
+        ?_assertEqual(
+            ?ERROR_NOT_FOUND,
             json_utils:insert(Json, <<"7.0">>, [<<"operatingsystem_support">>, <<"operatingsystemrelease">>, <<"[NaN]">>])
         ),
 
         % ADD LEVEL 3 ITEMS
         ?_assertEqual(
-            Json#{<<"operatingsystem_support">> => #{
+            {ok, Json#{<<"operatingsystem_support">> => #{
                 <<"operatingsystem">> => <<"RedHat">>,
                 <<"operatingsystemrelease">> => [<<"5.0">>, <<"6.0">>, [null, <<"7.1">>]]}
-            },
+            }},
             json_utils:insert(Json, <<"7.1">>, [<<"operatingsystem_support">>, <<"operatingsystemrelease">>, <<"[2]">>, <<"[1]">>])
         ),
         ?_assertEqual(
-            Json#{<<"operatingsystem_support">> => #{
+            {ok, Json#{<<"operatingsystem_support">> => #{
                 <<"operatingsystem">> => <<"RedHat">>,
                 <<"operatingsystemrelease">> => [<<"5.0">>, <<"6.0">>, #{<<"[NaN]">> => <<"7.1">>}]}
-            },
+            }},
             json_utils:insert(Json, <<"7.1">>, [<<"operatingsystem_support">>, <<"operatingsystemrelease">>, <<"[2]">>, <<"[NaN]">>])
         ),
         ?_assertEqual(
-            Json#{<<"operatingsystem_support">> => #{
+            {ok, Json#{<<"operatingsystem_support">> => #{
                 <<"operatingsystem">> => <<"RedHat">>,
                 <<"operatingsystemrelease">> => [<<"5.0">>, <<"6.0">>, #{<<"attr">> => <<"7.1">>}]}
-            },
+            }},
             json_utils:insert(Json, <<"7.1">>, [<<"operatingsystem_support">>, <<"operatingsystemrelease">>, <<"[2]">>, <<"attr">>])
         )
     ].

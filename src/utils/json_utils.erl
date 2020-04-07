@@ -161,25 +161,25 @@ list_to_map(Value) ->
 %% @doc
 %% Find sub-json in json tree specified by filter, eg.g:
 %%
-%% find(#{<<"a">> => #{<<"b">> => 1}}, [<<"a">>, <<"b">>]) -> 1
-%% find(#{<<"a">> => [1, 2, <<"a">>}, [<<"a">>, <<"[2]">>]) -> <<"a">>
+%% find(#{<<"a">> => #{<<"b">> => 1}}, [<<"a">>, <<"b">>]) -> {ok, 1}
+%% find(#{<<"a">> => [1, 2, <<"a">>}, [<<"a">>, <<"[2]">>]) -> {ok, <<"a">>}
 %%
 %% @end
 %%--------------------------------------------------------------------
--spec find(json_term(), filter()) -> json_term() | no_return().
+-spec find(json_term(), filter()) -> {ok, json_term()} | errors:error().
 find(Json, []) ->
-    Json;
+    {ok, Json};
 find(Json, [Name | Rest]) ->
     IndexSize = ?INDEX_SIZE(Name),
     case Name of
         <<"[", Element:IndexSize/binary, "]">> when is_list(Json) ->
             case catch (binary_to_integer(Element) + 1) of
                 {'EXIT', _} ->
-                    throw({error, ?ENOATTR});
+                    ?ERROR_NOT_FOUND;
                 Index ->
                     case length(Json) < Index of
                         true ->
-                            throw({error, ?ENOATTR});
+                            ?ERROR_NOT_FOUND;
                         false ->
                             find(lists:nth(Index, Json), Rest)
                     end
@@ -187,12 +187,12 @@ find(Json, [Name | Rest]) ->
         _ when is_map(Json) ->
             case maps:find(Name, Json) of
                 error ->
-                    throw({error, ?ENOATTR});
+                    ?ERROR_NOT_FOUND;
                 {ok, SubJson} ->
                     find(SubJson, Rest)
             end;
         _ ->
-            throw({error, ?ENOATTR})
+            ?ERROR_NOT_FOUND
     end.
 
 
@@ -201,60 +201,19 @@ find(Json, [Name | Rest]) ->
 %% Insert sub-json to json tree under specified by filter path, e.g:
 %%
 %% insert(#{<<"a">> => #{<<"b">> => 1}}, <<"val">>, [<<"a">>, <<"c">>]) ->
-%%      #{<<"a">> => #{<<"b">> => 1, <<"c">> => <<"val">>}}
+%%      {ok, #{<<"a">> => #{<<"b">> => 1, <<"c">> => <<"val">>}}}
 %% insert(#{<<"a">> => [1, 2, <<"a">>}, 5, [<<"a">>, <<"[3]">>]) ->
-%%      #{<<"a">> => [1, 2, <<"a">>, 5}
+%%      {ok, #{<<"a">> => [1, 2, <<"a">>, 5}}
 %%
 %% @end
 %%--------------------------------------------------------------------
 -spec insert(undefined | json_term(), JsonToInsert :: json_term(), filter()) ->
-    map() | no_return().
-insert(_Json, JsonToInsert, []) ->
-    JsonToInsert;
-insert(undefined, JsonToInsert, [Name | Rest]) ->
-    IndexSize = ?INDEX_SIZE(Name),
-    case Name of
-        <<"[", Element:IndexSize/binary, "]">> ->
-            case catch (binary_to_integer(Element) + 1) of
-                {'EXIT', _} ->
-                    #{Name => insert(undefined, JsonToInsert, Rest)};
-                Index ->
-                    lists:foldl(
-                        fun(_, Acc) -> [null | Acc] end,
-                        [insert(undefined, JsonToInsert, Rest)],
-                        lists:seq(1, Index - 1)
-                    )
-            end;
-        _ ->
-            #{Name => insert(undefined, JsonToInsert, Rest)}
-    end;
-insert(Json, JsonToInsert, [Name | Rest]) ->
-    IndexSize = ?INDEX_SIZE(Name),
-    case Name of
-        <<"[", Element:IndexSize/binary, "]">> when is_list(Json) ->
-            case catch (binary_to_integer(Element) + 1) of
-                {'EXIT', _} ->
-                    throw({error, ?ENOATTR});
-                Index ->
-                    Length = length(Json),
-                    case Length < Index of
-                        true ->
-                            Json
-                            ++ [null || _ <- lists:seq(Length + 1, Index - 1)]
-                            ++ [insert(undefined, JsonToInsert, Rest)];
-                        false ->
-                            replace_element(
-                                Index,
-                                insert(lists:nth(Index, Json), JsonToInsert, Rest),
-                                Json
-                            )
-                    end
-            end;
-        _ when is_map(Json) ->
-            SubJson = maps:get(Name, Json, undefined),
-            Json#{Name => insert(SubJson, JsonToInsert, Rest)};
-        _ ->
-            throw({error, ?ENOATTR})
+    {ok, json_term()} | errors:error().
+insert(Json, JsonToInsert, Filter) ->
+    try
+        {ok, insert_internal(Json, JsonToInsert, Filter)}
+    catch throw:Error ->
+        Error
     end.
 
 
@@ -280,6 +239,59 @@ merge(JsonTerms) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
+
+
+%% @private
+-spec insert_internal(undefined | json_term(), JsonToInsert :: json_term(), filter()) ->
+    json_term() | no_return().
+insert_internal(_Json, JsonToInsert, []) ->
+    JsonToInsert;
+insert_internal(undefined, JsonToInsert, [Name | Rest]) ->
+    IndexSize = ?INDEX_SIZE(Name),
+    case Name of
+        <<"[", Element:IndexSize/binary, "]">> ->
+            case catch (binary_to_integer(Element) + 1) of
+                {'EXIT', _} ->
+                    #{Name => insert_internal(undefined, JsonToInsert, Rest)};
+                Index ->
+                    lists:foldl(
+                        fun(_, Acc) -> [null | Acc] end,
+                        [insert_internal(undefined, JsonToInsert, Rest)],
+                        lists:seq(1, Index - 1)
+                    )
+            end;
+        _ ->
+            #{Name => insert_internal(undefined, JsonToInsert, Rest)}
+    end;
+insert_internal(Json, JsonToInsert, [Name | Rest]) ->
+    IndexSize = ?INDEX_SIZE(Name),
+    case Name of
+        <<"[", Element:IndexSize/binary, "]">> when is_list(Json) ->
+            case catch (binary_to_integer(Element) + 1) of
+                {'EXIT', _} ->
+                    throw(?ERROR_NOT_FOUND);
+                Index ->
+                    Length = length(Json),
+                    case Length < Index of
+                        true ->
+                            Json
+                            ++ [null || _ <- lists:seq(Length + 1, Index - 1)]
+                            ++ [insert_internal(undefined, JsonToInsert, Rest)];
+                        false ->
+                            SubJson = lists:nth(Index, Json),
+                            replace_element(
+                                Index,
+                                insert_internal(SubJson, JsonToInsert, Rest),
+                                Json
+                            )
+                    end
+            end;
+        _ when is_map(Json) ->
+            SubJson = maps:get(Name, Json, undefined),
+            Json#{Name => insert_internal(SubJson, JsonToInsert, Rest)};
+        _ ->
+            throw(?ERROR_NOT_FOUND)
+    end.
 
 
 %% @private
