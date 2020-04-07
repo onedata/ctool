@@ -1,16 +1,18 @@
 %%%--------------------------------------------------------------------
 %%% @author Tomasz Lichon
-%%% @copyright (C) 2015 ACK CYFRONET AGH
+%%% @copyright (C) 2015-2020 ACK CYFRONET AGH
 %%% This software is released under the MIT license
 %%% cited in 'LICENSE.txt'.
 %%% @end
 %%%--------------------------------------------------------------------
 %%% @doc
-%%% Json parser utility functions
+%%% Json utility functions
 %%% @end
 %%%--------------------------------------------------------------------
 -module(json_utils).
 -author("Tomasz Lichon").
+
+-include("errors.hrl").
 
 % Representation of any valid JSON term in erlang
 -type json_term() :: jiffy:json_value().
@@ -19,16 +21,24 @@
 % binaries in maps intended for JSON serialization.
 -type json_map() :: #{binary() => json_term()}.
 
--export_type([json_term/0, json_map/0]).
+-type filter() :: [binary()].
+
+-export_type([json_term/0, json_map/0, filter/0]).
 
 %% API
 -export([encode/1, encode/2, decode/1, decode/2]).
 -export([encode_deprecated/1, decode_deprecated/1]).
 -export([map_to_list/1, list_to_map/1]).
+-export([find/2, insert/3, merge/1]).
+
+%% Get byte size of json array index stored in binary: e. g. "[12]" -> 2
+-define(INDEX_SIZE(__BINARY), (byte_size(__BINARY) - 2)).
+
 
 %%%===================================================================
 %%% API
 %%%===================================================================
+
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -142,6 +152,138 @@ list_to_map(Value) ->
                     false -> Value
                  end
     end.
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Find sub-json in json tree
+%% @end
+%%--------------------------------------------------------------------
+-spec find(json_term(), filter()) -> json_term() | no_return().
+find(Json, []) ->
+    Json;
+find(Json, [Name | Rest]) ->
+    IndexSize = ?INDEX_SIZE(Name),
+    case Name of
+        <<"[", Element:IndexSize/binary, "]">> when is_list(Json) ->
+            case catch (binary_to_integer(Element) + 1) of
+                {'EXIT', _} ->
+                    throw({error, ?ENOATTR});
+                Index ->
+                    case length(Json) < Index of
+                        true ->
+                            throw({error, ?ENOATTR});
+                        false ->
+                            find(lists:nth(Index, Json), Rest)
+                    end
+            end;
+        _ when is_map(Json) ->
+            case maps:find(Name, Json) of
+                error ->
+                    throw({error, ?ENOATTR});
+                {ok, SubJson} ->
+                    find(SubJson, Rest)
+            end;
+        _ ->
+            throw({error, ?ENOATTR})
+    end.
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Insert sub-json to json tree
+%% @end
+%%--------------------------------------------------------------------
+-spec insert(undefined | json_term(), JsonToInsert :: json_term(), filter()) ->
+    map() | no_return().
+insert(_Json, JsonToInsert, []) ->
+    JsonToInsert;
+insert(undefined, JsonToInsert, [Name | Rest]) ->
+    IndexSize = ?INDEX_SIZE(Name),
+    case Name of
+        <<"[", Element:IndexSize/binary, "]">> ->
+            case catch (binary_to_integer(Element) + 1) of
+                {'EXIT', _} ->
+                    #{Name => insert(undefined, JsonToInsert, Rest)};
+                Index ->
+                    lists:foldl(
+                        fun(_, Acc) -> [null | Acc] end,
+                        [insert(undefined, JsonToInsert, Rest)],
+                        lists:seq(1, Index - 1)
+                    )
+            end;
+        _ ->
+            #{Name => insert(undefined, JsonToInsert, Rest)}
+    end;
+insert(Json, JsonToInsert, [Name | Rest]) ->
+    IndexSize = ?INDEX_SIZE(Name),
+    case Name of
+        <<"[", Element:IndexSize/binary, "]">> when is_list(Json) ->
+            case catch (binary_to_integer(Element) + 1) of
+                {'EXIT', _} ->
+                    throw({error, ?ENOATTR});
+                Index ->
+                    Length = length(Json),
+                    case Length < Index of
+                        true ->
+                            Json
+                            ++ [null || _ <- lists:seq(Length + 1, Index - 1)]
+                            ++ [insert(undefined, JsonToInsert, Rest)];
+                        false ->
+                            setnth(
+                                Index, Json,
+                                insert(lists:nth(Index, Json), JsonToInsert, Rest)
+                            )
+                    end
+            end;
+        _ when is_map(Json) ->
+            SubJson = maps:get(Name, Json, undefined),
+            Json#{Name => insert(SubJson, JsonToInsert, Rest)};
+        _ ->
+            throw({error, ?ENOATTR})
+    end.
+
+
+%% @private
+-spec merge([json_term()]) -> json_term().
+merge(JsonTerms) ->
+    lists:foldl(fun
+        (Json, ParentJson) when is_map(Json) andalso is_map(ParentJson) ->
+            ChildKeys = maps:keys(Json),
+            ParentKeys = maps:keys(ParentJson),
+            ChildOnlyKey = ChildKeys -- ParentKeys,
+            CommonKeys = ChildKeys -- ChildOnlyKey,
+
+            ResultingJson = maps:merge(
+                ParentJson,
+                maps:with(ChildOnlyKey, Json)
+            ),
+
+            lists:foldl(fun(Key, Acc) ->
+                ChildValue = maps:get(Key, Json),
+                ParentValue = maps:get(Key, ParentJson),
+                Acc#{Key => merge([ParentValue, ChildValue])}
+            end, ResultingJson, CommonKeys);
+
+        (Json, _ParentJson) ->
+            Json
+    end, #{}, JsonTerms).
+
+
+%%%===================================================================
+%%% Internal functions
+%%%===================================================================
+
+
+%%--------------------------------------------------------------------
+%% @private
+%% @doc
+%% Set nth element of list
+%% @end
+%%--------------------------------------------------------------------
+-spec setnth(non_neg_integer(), list(), term()) -> list().
+setnth(1, [_ | Rest], New) -> [New | Rest];
+setnth(I, [E | Rest], New) -> [E | setnth(I - 1, Rest, New)].
 
 
 %% @private
