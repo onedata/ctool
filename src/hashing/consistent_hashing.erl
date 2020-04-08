@@ -11,6 +11,10 @@
 %%% Most functions use record ring (stored in environment variable) that represents information about cluster.
 %%% It is assumed that particular number of nodes is assigned to each label.
 %%% Ring record is an internal structure of the module - it can only be copied as indivisible whole between nodes.
+%%% 3 generations of ring can be used: current, future and previous. The generations are connected with cluster
+%%% resizing. Normally, current ring is used. When number of nodes is changing, future ring is first initialized
+%%% showing ring structure after resize. When resize is ready, future ring becomes current ring and current ring
+%%% is persisted as previous ring to deliver information about past ring structure if needed.
 %%% @end
 %%%--------------------------------------------------------------------
 -module(consistent_hashing).
@@ -27,25 +31,27 @@
 }).
 
 -type ring() :: #ring{}.
--type ring_name() :: atom().
+-type ring_generation() :: ?CURRENT_RING | ?FUTURE_RING | ?PREVIOUS_RING.
 -type routing_info() :: #node_routing_info{}.
 
+-export_type([ring_generation/0]).
+
 %% Basic API
--export([init/2, cleanup/0, get_assigned_node/1, get_routing_info/1, get_all_nodes/0]).
+-export([init/2, cleanup/0, get_assigned_node/1, get_routing_info/1, get_routing_info/2,
+    get_all_nodes/0, get_all_nodes/1]).
 %% Changes of initialized ring
 -export([report_node_failure/1, report_node_recovery/1,
     set_nodes_assigned_per_label/1, get_nodes_assigned_per_label/0]).
-%% Cluster reconfiguration API
--export([init_cluster_reconfiguration/1, finish_cluster_reconfiguration/0,
-    get_all_ring_nodes/0, get_reconfigured_routing_info/1]).
+%% Cluster resizing API
+-export([init_cluster_resizing/1, finish_cluster_resizing/0]).
 %% Export for internal rpc usage
--export([set_ring/2, finish_cluster_reconfiguration_internal/0]).
+-export([set_ring/2, finish_cluster_resizing_internal/0]).
 %% Export for tests
 -export([init_ring/2, replicate_ring_to_nodes/1, replicate_ring_to_nodes/3]).
 
--define(RING_ENV, consistent_hashing_ring).
 -define(RECONFIGURATION_RING_ENV, reconfiguration_consistent_hashing_ring).
--define(TMP_RING, tmp_ring). % ring used to swap two other rings
+
+-define(INIT_ERROR, {error, chash_ring_not_initialized}).
 
 %%%===================================================================
 %%% Basic API
@@ -62,7 +68,7 @@ init(Nodes, NodesAssignedPerLabel) ->
         false ->
             Ring = init_ring(Nodes, NodesAssignedPerLabel),
             set_ring(Ring),
-            ok = replicate_ring_to_nodes(Nodes, ?RING_ENV, Ring);
+            ok = replicate_ring_to_nodes(Nodes, ?CURRENT_RING, Ring);
         _ ->
             ok
     end.
@@ -70,9 +76,9 @@ init(Nodes, NodesAssignedPerLabel) ->
 
 -spec cleanup() -> ok.
 cleanup() ->
-    ctool:unset_env(?RING_ENV),
-    ctool:unset_env(?RECONFIGURATION_RING_ENV),
-    ctool:unset_env(?TMP_RING).
+    ctool:unset_env(?CURRENT_RING),
+    ctool:unset_env(?FUTURE_RING),
+    ctool:unset_env(?PREVIOUS_RING).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -108,17 +114,45 @@ get_assigned_node(Label) ->
 
 %%--------------------------------------------------------------------
 %% @doc
-%% @equiv get_full_node_info(?RING_ENV, Label).
+%% @equiv get_routing_info(?CURRENT_RING, Label).
 %% @end
 %%--------------------------------------------------------------------
 -spec get_routing_info(term()) -> routing_info().
 get_routing_info(Label) ->
-    get_routing_info(?RING_ENV, Label).
+    get_routing_info(?CURRENT_RING, Label).
 
+%%--------------------------------------------------------------------
+%% @doc
+%% Get full information about nodes, especially nodes
+%% that are responsible for the data labeled with given term.
+%% @end
+%%--------------------------------------------------------------------
+-spec get_routing_info(ring_generation(), term()) -> routing_info().
+get_routing_info(RingGeneration, Label) ->
+    case get_ring(RingGeneration) of
+        #ring{all_nodes = [_] = AllNodes, failed_nodes = FailedNodes} ->
+            #node_routing_info{assigned_nodes = AllNodes, failed_nodes = FailedNodes, all_nodes = AllNodes};
+        #ring{chash = CHash, nodes_assigned_per_label = NodeCount,
+            failed_nodes = FailedNodes , all_nodes = AllNodes} ->
+            Index = chash:key_of(Label),
+            Nodes = lists:map(fun({_, Node}) -> Node end, chash:successors(Index, CHash, NodeCount)),
+            #node_routing_info{assigned_nodes = Nodes, failed_nodes = FailedNodes, all_nodes = AllNodes};
+        {error, Error} ->
+            error(Error)
+    end.
 
 -spec get_all_nodes() -> [node()].
 get_all_nodes() ->
-    get_all_nodes(?RING_ENV).
+    get_all_nodes(?CURRENT_RING).
+
+-spec get_all_nodes(ring_generation()) -> [node()].
+get_all_nodes(RingGeneration) ->
+    case get_ring(RingGeneration) of
+        #ring{all_nodes = AllNodes} ->
+            AllNodes;
+        {error, Error} ->
+            error(Error)
+    end.
 
 %%%===================================================================
 %%% Changes of initialized ring
@@ -148,20 +182,22 @@ get_nodes_assigned_per_label() ->
     Ring#ring.nodes_assigned_per_label.
 
 %%%===================================================================
-%%% Cluster reconfiguration API
+%%% Cluster resizing API
 %%%===================================================================
 
-% TODO - do funkcji musza wchodzic posortowane node'y
--spec init_cluster_reconfiguration([node()]) -> ok | no_return().
-init_cluster_reconfiguration(Nodes) ->
+-spec init_cluster_resizing([node()]) -> ok | no_return().
+init_cluster_resizing(AllNodes) ->
     CurrentRing = get_ring(),
-    Ring = init_ring(Nodes, CurrentRing#ring.nodes_assigned_per_label),
-    ok = replicate_ring_to_nodes(lists:usort(Nodes ++ get_all_nodes()), ?RECONFIGURATION_RING_ENV, Ring).
+    Ring = init_ring(AllNodes, CurrentRing#ring.nodes_assigned_per_label),
+    % Replicate future ring to all nodes. Use nodes from argument and current ring as they can differ.
+    NodesToSync = lists:usort(AllNodes ++ get_all_nodes()), % usort to remove duplicates
+    ok = replicate_ring_to_nodes(NodesToSync, ?FUTURE_RING, Ring).
 
--spec finish_cluster_reconfiguration() -> ok | no_return().
-finish_cluster_reconfiguration() ->
-    Nodes = lists:usort(get_all_nodes() ++ get_all_nodes(?RECONFIGURATION_RING_ENV)),
-    {Ans, BadNodes} = FullAns = rpc:multicall(Nodes, ?MODULE, finish_cluster_reconfiguration_internal, []),
+-spec finish_cluster_resizing() -> ok | no_return().
+finish_cluster_resizing() ->
+    % Finish on all nodes. Use nodes from current and future rings as they can differ.
+    Nodes = lists:usort(get_all_nodes() ++ get_all_nodes(?FUTURE_RING)), % usort to remove duplicates
+    {Ans, BadNodes} = FullAns = rpc:multicall(Nodes, ?MODULE, finish_cluster_resizing_internal, []),
     Errors = lists:filter(fun(NodeAns) -> NodeAns =/= ok end, Ans),
     case {Errors, BadNodes} of
         {[], []} ->
@@ -171,43 +207,29 @@ finish_cluster_reconfiguration() ->
             throw({error, FullAns})
     end.
 
--spec get_all_ring_nodes() -> [[node()]].
-get_all_ring_nodes() ->
-    lists:usort([get_all_nodes_no_error(?RING_ENV), get_all_nodes_no_error(?RECONFIGURATION_RING_ENV),
-        get_all_nodes_no_error(?TMP_RING)]) -- [[]].
-
-%%--------------------------------------------------------------------
-%% @doc
-%% @equiv get_routing_info(?RECONFIGURATION_RING_ENV, Label).
-%% @end
-%%--------------------------------------------------------------------
--spec get_reconfigured_routing_info(term()) -> routing_info().
-get_reconfigured_routing_info(Label) ->
-    get_routing_info(?RECONFIGURATION_RING_ENV, Label).
-
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
 
--spec get_ring() -> ring() | {error, chash_ring_not_initialized}.
+-spec get_ring() -> ring() | ?INIT_ERROR.
 get_ring() ->
-    get_ring(?RING_ENV).
+    get_ring(?CURRENT_RING).
 
--spec get_ring(ring_name()) -> ring() | {error, chash_ring_not_initialized}.
-get_ring(RingName) ->
-    ctool:get_env(RingName, {error, chash_ring_not_initialized}).
+-spec get_ring(ring_generation()) -> ring() | ?INIT_ERROR.
+get_ring(RingGeneration) ->
+    ctool:get_env(RingGeneration, ?INIT_ERROR).
 
 -spec is_ring_initialized() -> boolean().
 is_ring_initialized() ->
-    get_ring() =/= {error, chash_ring_not_initialized}.
+    get_ring() =/= ?INIT_ERROR.
 
 -spec set_ring(ring()) -> ok.
 set_ring(Ring) ->
-    set_ring(?RING_ENV, Ring).
+    set_ring(?CURRENT_RING, Ring).
 
--spec set_ring(ring_name(), ring()) -> ok.
-set_ring(RingName, Ring) ->
-    ctool:set_env(RingName, Ring).
+-spec set_ring(ring_generation(), ring()) -> ok.
+set_ring(RingGeneration, Ring) ->
+    ctool:set_env(RingGeneration, Ring).
 
 -spec get_nth_index(non_neg_integer(), chash:chash()) -> non_neg_integer().
 get_nth_index(N, CHash) ->
@@ -230,11 +252,11 @@ init_ring(Nodes0, NodesAssignedPerLabel) ->
 
 -spec replicate_ring_to_nodes([node()]) -> ok | {error, term()}.
 replicate_ring_to_nodes(Nodes) ->
-    replicate_ring_to_nodes(Nodes, ?RING_ENV, get_ring()).
+    replicate_ring_to_nodes(Nodes, ?CURRENT_RING, get_ring()).
 
--spec replicate_ring_to_nodes([node()], ring_name(), ring()) -> ok | {error, term()}.
-replicate_ring_to_nodes(Nodes, RingName, Ring) ->
-    {Ans, BadNodes} = FullAns = rpc:multicall(Nodes, ?MODULE, set_ring, [RingName, Ring]),
+-spec replicate_ring_to_nodes([node()], ring_generation(), ring()) -> ok | {error, term()}.
+replicate_ring_to_nodes(Nodes, RingGeneration, Ring) ->
+    {Ans, BadNodes} = FullAns = rpc:multicall(Nodes, ?MODULE, set_ring, [RingGeneration, Ring]),
     Errors = lists:filter(fun(NodeAns) -> NodeAns =/= ok end, Ans),
     case {Errors, BadNodes} of
         {[], []} ->
@@ -244,49 +266,7 @@ replicate_ring_to_nodes(Nodes, RingName, Ring) ->
             {error, FullAns}
     end.
 
-%%--------------------------------------------------------------------
-%% @doc
-%% Get full information about nodes, especially nodes that are responsible for the data labeled with given term.
-%% @end
-%%--------------------------------------------------------------------
--spec get_routing_info(ring_name(), term()) -> routing_info().
-get_routing_info(RingName, Label) ->
-    case get_ring(RingName) of
-        #ring{all_nodes = [_] = AllNodes, failed_nodes = FailedNodes} ->
-            #node_routing_info{assigned_nodes = AllNodes, failed_nodes = FailedNodes, all_nodes = AllNodes};
-        #ring{chash = CHash, nodes_assigned_per_label = NodeCount,
-            failed_nodes = FailedNodes , all_nodes = AllNodes} ->
-            Index = chash:key_of(Label),
-            Nodes = lists:map(fun({_, Node}) -> Node end, chash:successors(Index, CHash, NodeCount)),
-            #node_routing_info{assigned_nodes = Nodes, failed_nodes = FailedNodes, all_nodes = AllNodes};
-        {error, Error} ->
-            error(Error)
-    end.
-
--spec get_all_nodes(ring_name()) -> [node()].
-get_all_nodes(RingName) ->
-    case get_ring(RingName) of
-        #ring{all_nodes = AllNodes} ->
-            AllNodes;
-        {error, Error} ->
-            error(Error)
-    end.
-
--spec get_all_nodes_no_error(ring_name()) -> [node()].
-get_all_nodes_no_error(RingName) ->
-    case get_ring(RingName) of
-        #ring{all_nodes = AllNodes} ->
-            AllNodes;
-        {error, _} ->
-            []
-    end.
-
--spec finish_cluster_reconfiguration_internal() -> ok.
-finish_cluster_reconfiguration_internal() ->
-    Ring = get_ring(),
-    NewRing = get_ring(?RECONFIGURATION_RING_ENV),
-    set_ring(?TMP_RING, Ring),
-    set_ring(NewRing),
-    % Remember old ring
-    set_ring(?RECONFIGURATION_RING_ENV, Ring),
-    ctool:unset_env(?TMP_RING).
+-spec finish_cluster_resizing_internal() -> ok.
+finish_cluster_resizing_internal() ->
+    set_ring(?PREVIOUS_RING, get_ring()),
+    set_ring(get_ring(?FUTURE_RING)).
