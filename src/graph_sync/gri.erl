@@ -38,7 +38,7 @@
 | onp_ceph | onp_cluster | onp_host | onp_panel | onp_provider | onp_service
 | onp_space | onp_storage | onp_user | onp_zone
 | op_file | op_replica | op_transfer | op_user | op_group | op_space | op_share
-| op_provider | op_metrics | op_handle | op_handle_service.
+| op_provider | op_metrics | op_handle | op_handle_service | op_qos.
 
 -type entity_type_pattern() :: '*' | entity_type().
 
@@ -212,6 +212,7 @@ serialize_type(op_provider, _) -> <<"op_provider">>;
 serialize_type(op_metrics, _) -> <<"op_metrics">>;
 serialize_type(op_handle, _) -> <<"op_handle">>;
 serialize_type(op_handle_service, _) -> <<"op_handle_service">>;
+serialize_type(op_qos, _) -> <<"op_qos">>;
 
 serialize_type(_, _) -> throw(?ERROR_BAD_GRI).
 
@@ -257,6 +258,7 @@ deserialize_type(<<"op_provider">>, _) -> op_provider;
 deserialize_type(<<"op_metrics">>, _) -> op_metrics;
 deserialize_type(<<"op_handle">>, _) -> op_handle;
 deserialize_type(<<"op_handle_service">>, _) -> op_handle_service;
+deserialize_type(<<"op_qos">>, _) -> op_qos;
 
 deserialize_type(_, _) -> throw(?ERROR_BAD_GRI).
 
