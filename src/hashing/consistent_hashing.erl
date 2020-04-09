@@ -224,7 +224,7 @@ init_ring(Nodes, NodesAssignedPerLabel) ->
         chash:update(get_nth_index(I, CHashAcc), Node, CHashAcc)
     end, InitialCHash, lists:zip(lists:seq(1, NodeCount), SortedUniqueNodes)),
 
-    #ring{chash = CHash, nodes_assigned_per_label = NodesAssignedPerLabel, all_nodes = Nodes}.
+    #ring{chash = CHash, nodes_assigned_per_label = NodesAssignedPerLabel, all_nodes = SortedUniqueNodes}.
 
 -spec replicate_ring_to_nodes([node()], ring_generation(), ring()) -> ok | {error, term()}.
 replicate_ring_to_nodes(Nodes, RingGeneration, Ring) ->
