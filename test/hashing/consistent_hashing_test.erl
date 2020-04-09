@@ -30,13 +30,16 @@ helpers_test_() ->
             fun should_get_node_info_single_node_ring/0,
             fun should_get_node_info_multi_node_ring/0,
             fun should_return_many_nodes/0,
-            fun should_handle_failed_nodes/0
+            fun should_handle_failed_nodes/0,
+            fun should_resize_ring/0
         ]}.
 
 start() ->
     consistent_hashing:cleanup(),
     meck:new(rpc, [passthrough, unstick]),
-    meck:expect(rpc, multicall, fun(_, consistent_hashing, set_ring, _) -> {[ok], []} end).
+    meck:expect(rpc, multicall, fun(_, consistent_hashing, Fun, Args) ->
+        {[apply(consistent_hashing, Fun, Args)], []}
+    end).
 
 stop(_) ->
     meck:unload(rpc).
@@ -131,8 +134,30 @@ should_handle_failed_nodes() ->
     ?assertEqual(ok, consistent_hashing:report_node_recovery(node3)),
     check_routing_info(key1, 4, 0, Nodes).
 
+should_resize_ring() ->
+    Nodes = [node1, node2, node3, node4, node5],
+    NewNodes = [node1, node2, node3, node4, node5],
+    ?assertEqual(ok, consistent_hashing:init(Nodes, 3)),
+
+    ?assertEqual(ok, consistent_hashing:init_cluster_resizing(Nodes)),
+    KeyNodes = check_routing_info(key1, 3, 0, NewNodes, ?FUTURE_RING),
+    ?assertEqual(3, length(KeyNodes)),
+    KeyNodes2 = check_routing_info(key1, 3, 0, Nodes),
+    ?assertEqual(3, length(KeyNodes2)),
+    ?assertEqual(undefined, ctool:get_env(?PREVIOUS_RING, undefined)),
+
+    ?assertEqual(ok, consistent_hashing:finalize_cluster_resizing()),
+    KeyNodes3 = check_routing_info(key1, 3, 0, NewNodes),
+    ?assertEqual(3, length(KeyNodes3)),
+    KeyNodes4 = check_routing_info(key1, 3, 0, Nodes, ?PREVIOUS_RING),
+    ?assertEqual(3, length(KeyNodes4)),
+    ?assertEqual(undefined, ctool:get_env(?FUTURE_RING, undefined)).
+
 check_routing_info(Key, KeyNodesNum, FailedNodesNum, Nodes) ->
-    Test = consistent_hashing:get_routing_info(Key),
+    check_routing_info(Key, KeyNodesNum, FailedNodesNum, Nodes, ?CURRENT_RING).
+
+check_routing_info(Key, KeyNodesNum, FailedNodesNum, Nodes, RingGeneration) ->
+    Test = consistent_hashing:get_routing_info(RingGeneration, Key),
     ?assertMatch(#node_routing_info{all_nodes = Nodes}, Test),
     #node_routing_info{assigned_nodes = KeyNodes, failed_nodes = FailedNodes} = Test,
     ?assertEqual(KeyNodesNum, length(KeyNodes)),

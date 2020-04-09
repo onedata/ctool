@@ -11,7 +11,7 @@
 %%% Most functions use record ring (stored in environment variable) that represents information about cluster.
 %%% It is assumed that particular number of nodes is assigned to each label.
 %%% Ring record is an internal structure of the module - it can only be copied as indivisible whole between nodes.
-%%% 3 generations of ring can be used: current, future and previous. The generations are connected with cluster
+%%% 3 generations of ring can be used: current, future and previous. The generations are associated with cluster
 %%% resizing. Normally, current ring is used. When number of nodes is changing, future ring is first initialized
 %%% showing ring structure after resize. When resize is ready, future ring becomes current ring and current ring
 %%% is persisted as previous ring to deliver information about past ring structure if needed.
@@ -43,13 +43,11 @@
 -export([report_node_failure/1, report_node_recovery/1,
     set_nodes_assigned_per_label/1, get_nodes_assigned_per_label/0]).
 %% Cluster resizing API
--export([init_cluster_resizing/1, finish_cluster_resizing/0]).
+-export([init_cluster_resizing/1, finalize_cluster_resizing/0]).
 %% Export for internal rpc usage
--export([set_ring/2, finish_cluster_resizing_internal/0]).
+-export([set_ring/2, finalize_cluster_resizing_internal/0]).
 %% Export for tests
--export([init_ring/2, replicate_ring_to_nodes/1, replicate_ring_to_nodes/3]).
-
--define(RECONFIGURATION_RING_ENV, reconfiguration_consistent_hashing_ring).
+-export([init_ring/2, replicate_ring_to_nodes/3]).
 
 -define(INIT_ERROR, {error, chash_ring_not_initialized}).
 
@@ -67,18 +65,16 @@ init(Nodes, NodesAssignedPerLabel) ->
     case is_ring_initialized() of
         false ->
             Ring = init_ring(Nodes, NodesAssignedPerLabel),
-            set_ring(Ring),
             ok = replicate_ring_to_nodes(Nodes, ?CURRENT_RING, Ring);
         _ ->
             ok
     end.
 
-
 -spec cleanup() -> ok.
 cleanup() ->
-    ctool:unset_env(?CURRENT_RING),
-    ctool:unset_env(?FUTURE_RING),
-    ctool:unset_env(?PREVIOUS_RING).
+    unset_ring(?CURRENT_RING),
+    unset_ring(?FUTURE_RING),
+    unset_ring(?PREVIOUS_RING).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -190,25 +186,66 @@ init_cluster_resizing(AllNodes) ->
     CurrentRing = get_ring(),
     Ring = init_ring(AllNodes, CurrentRing#ring.nodes_assigned_per_label),
     % Replicate future ring to all nodes. Use nodes from argument and current ring as they can differ.
-    NodesToSync = lists:usort(AllNodes ++ get_all_nodes()), % usort to remove duplicates
+    NodesToSync = lists:usort(AllNodes ++ get_all_nodes()),
     ok = replicate_ring_to_nodes(NodesToSync, ?FUTURE_RING, Ring).
 
--spec finish_cluster_resizing() -> ok | no_return().
-finish_cluster_resizing() ->
+-spec finalize_cluster_resizing() -> ok | no_return().
+finalize_cluster_resizing() ->
     % Finish on all nodes. Use nodes from current and future rings as they can differ.
-    Nodes = lists:usort(get_all_nodes() ++ get_all_nodes(?FUTURE_RING)), % usort to remove duplicates
-    {Ans, BadNodes} = FullAns = rpc:multicall(Nodes, ?MODULE, finish_cluster_resizing_internal, []),
+    Nodes = lists:usort(get_all_nodes() ++ get_all_nodes(?FUTURE_RING)),
+    {Ans, BadNodes} = FullAns = rpc:multicall(Nodes, ?MODULE, finalize_cluster_resizing_internal, []),
     Errors = lists:filter(fun(NodeAns) -> NodeAns =/= ok end, Ans),
     case {Errors, BadNodes} of
         {[], []} ->
             ok;
         _ ->
-            ?error("Error finishing cluster reconfiguiration for nodes ~p~nrpc ans: ~p", [Nodes, FullAns]),
+            ?error("Error finishing cluster resizing for nodes ~p~nrpc ans: ~p", [Nodes, FullAns]),
             throw({error, FullAns})
     end.
 
 %%%===================================================================
 %%% Internal functions
+%%%===================================================================
+
+-spec get_nth_index(non_neg_integer(), chash:chash()) -> non_neg_integer().
+get_nth_index(N, CHash) ->
+    {Index, _} = lists:nth(N, chash:nodes(CHash)),
+    Index.
+
+-spec init_ring([node()], pos_integer()) -> ring().
+init_ring([_] = Nodes, NodesAssignedPerLabel) ->
+    #ring{nodes_assigned_per_label = NodesAssignedPerLabel, all_nodes = Nodes};
+init_ring(Nodes, NodesAssignedPerLabel) ->
+    SortedUniqueNodes = lists:usort(Nodes),
+    NodeCount = length(SortedUniqueNodes),
+    [Node0 | _] = SortedUniqueNodes,
+    InitialCHash = chash:fresh(NodeCount, Node0),
+    CHash = lists:foldl(fun({I, Node}, CHashAcc) ->
+        chash:update(get_nth_index(I, CHashAcc), Node, CHashAcc)
+    end, InitialCHash, lists:zip(lists:seq(1, NodeCount), SortedUniqueNodes)),
+
+    #ring{chash = CHash, nodes_assigned_per_label = NodesAssignedPerLabel, all_nodes = Nodes}.
+
+-spec replicate_ring_to_nodes([node()], ring_generation(), ring()) -> ok | {error, term()}.
+replicate_ring_to_nodes(Nodes, RingGeneration, Ring) ->
+    {Ans, BadNodes} = FullAns = rpc:multicall(Nodes, ?MODULE, set_ring, [RingGeneration, Ring]),
+    Errors = lists:filter(fun(NodeAns) -> NodeAns =/= ok end, Ans),
+    case {Errors, BadNodes} of
+        {[], []} ->
+            ok;
+        _ ->
+            ?error("Error replicating ring to nodes ~p~nrpc ans: ~p", [Nodes, FullAns]),
+            {error, FullAns}
+    end.
+
+-spec finalize_cluster_resizing_internal() -> ok.
+finalize_cluster_resizing_internal() ->
+    set_ring(?PREVIOUS_RING, get_ring()),
+    set_ring(get_ring(?FUTURE_RING)),
+    unset_ring(?FUTURE_RING).
+
+%%%===================================================================
+%%% Getters/setters
 %%%===================================================================
 
 -spec get_ring() -> ring() | ?INIT_ERROR.
@@ -231,42 +268,6 @@ set_ring(Ring) ->
 set_ring(RingGeneration, Ring) ->
     ctool:set_env(RingGeneration, Ring).
 
--spec get_nth_index(non_neg_integer(), chash:chash()) -> non_neg_integer().
-get_nth_index(N, CHash) ->
-    {Index, _} = lists:nth(N, chash:nodes(CHash)),
-    Index.
-
--spec init_ring([node()], pos_integer()) -> ring().
-init_ring([_] = Nodes, NodesAssignedPerLabel) ->
-    #ring{nodes_assigned_per_label = NodesAssignedPerLabel, all_nodes = Nodes};
-init_ring(Nodes0, NodesAssignedPerLabel) ->
-    Nodes = lists:usort(Nodes0),
-    NodeCount = length(Nodes),
-    [Node0 | _] = Nodes,
-    InitialCHash = chash:fresh(NodeCount, Node0),
-    CHash = lists:foldl(fun({I, Node}, CHashAcc) ->
-        chash:update(get_nth_index(I, CHashAcc), Node, CHashAcc)
-    end, InitialCHash, lists:zip(lists:seq(1, NodeCount), Nodes)),
-
-    #ring{chash = CHash, nodes_assigned_per_label = NodesAssignedPerLabel, all_nodes = Nodes}.
-
--spec replicate_ring_to_nodes([node()]) -> ok | {error, term()}.
-replicate_ring_to_nodes(Nodes) ->
-    replicate_ring_to_nodes(Nodes, ?CURRENT_RING, get_ring()).
-
--spec replicate_ring_to_nodes([node()], ring_generation(), ring()) -> ok | {error, term()}.
-replicate_ring_to_nodes(Nodes, RingGeneration, Ring) ->
-    {Ans, BadNodes} = FullAns = rpc:multicall(Nodes, ?MODULE, set_ring, [RingGeneration, Ring]),
-    Errors = lists:filter(fun(NodeAns) -> NodeAns =/= ok end, Ans),
-    case {Errors, BadNodes} of
-        {[], []} ->
-            ok;
-        _ ->
-            ?error("Error replicating ring to nodes ~p~nrpc ans: ~p", [Nodes, FullAns]),
-            {error, FullAns}
-    end.
-
--spec finish_cluster_resizing_internal() -> ok.
-finish_cluster_resizing_internal() ->
-    set_ring(?PREVIOUS_RING, get_ring()),
-    set_ring(get_ring(?FUTURE_RING)).
+-spec unset_ring(ring_generation()) -> ok.
+unset_ring(RingGeneration) ->
+    ctool:unset_env(RingGeneration).
