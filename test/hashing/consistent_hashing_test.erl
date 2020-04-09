@@ -136,10 +136,10 @@ should_handle_failed_nodes() ->
 
 should_resize_ring() ->
     Nodes = [node1, node2, node3, node4, node5],
-    NewNodes = [node1, node2, node3, node4, node5],
+    NewNodes = [node1, node2, node3, node4, node5, node6],
     ?assertEqual(ok, consistent_hashing:init(Nodes, 3)),
 
-    ?assertEqual(ok, consistent_hashing:init_cluster_resizing(Nodes)),
+    ?assertEqual(ok, consistent_hashing:init_cluster_resizing(NewNodes)),
     KeyNodes = check_routing_info(key1, 3, 0, NewNodes, ?FUTURE_RING),
     ?assertEqual(3, length(KeyNodes)),
     KeyNodes2 = check_routing_info(key1, 3, 0, Nodes),

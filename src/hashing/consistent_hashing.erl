@@ -45,7 +45,7 @@
 %% Cluster resizing API
 -export([init_cluster_resizing/1, finalize_cluster_resizing/0]).
 %% Export for internal rpc usage
--export([set_ring/2, finalize_cluster_resizing_internal/0]).
+-export([set_ring/2, finalize_cluster_resizing_locally/0]).
 %% Export for tests
 -export([init_ring/2, replicate_ring_to_nodes/3]).
 
@@ -191,15 +191,15 @@ init_cluster_resizing(AllNodes) ->
 
 -spec finalize_cluster_resizing() -> ok | no_return().
 finalize_cluster_resizing() ->
-    % Finish on all nodes. Use nodes from current and future rings as they can differ.
+    % Finalize on all nodes. Use nodes from current and future rings as they can differ.
     Nodes = lists:usort(get_all_nodes() ++ get_all_nodes(?FUTURE_RING)),
-    {Ans, BadNodes} = FullAns = rpc:multicall(Nodes, ?MODULE, finalize_cluster_resizing_internal, []),
+    {Ans, BadNodes} = FullAns = rpc:multicall(Nodes, ?MODULE, finalize_cluster_resizing_locally, []),
     Errors = lists:filter(fun(NodeAns) -> NodeAns =/= ok end, Ans),
     case {Errors, BadNodes} of
         {[], []} ->
             ok;
         _ ->
-            ?error("Error finishing cluster resizing for nodes ~p~nrpc ans: ~p", [Nodes, FullAns]),
+            ?error("Error finalizing cluster resizing for nodes ~p~nrpc ans: ~p", [Nodes, FullAns]),
             throw({error, FullAns})
     end.
 
@@ -238,8 +238,8 @@ replicate_ring_to_nodes(Nodes, RingGeneration, Ring) ->
             {error, FullAns}
     end.
 
--spec finalize_cluster_resizing_internal() -> ok.
-finalize_cluster_resizing_internal() ->
+-spec finalize_cluster_resizing_locally() -> ok.
+finalize_cluster_resizing_locally() ->
     set_ring(?PREVIOUS_RING, get_ring()),
     set_ring(get_ring(?FUTURE_RING)),
     unset_ring(?FUTURE_RING).
