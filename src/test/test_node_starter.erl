@@ -296,6 +296,8 @@ stop_applications(Config, Apps) ->
                 try
                     ok = rpc:call(Node, application, stop, [AppName])
                 catch
+                    _:{badmatch, {badrpc, nodedown}} ->
+                        ok; % Test can kill nodes
                     Type:Reason ->
                         ct:print(
                             "WARNING: Stopping application ~p on node ~p failed - ~p:~p~n"

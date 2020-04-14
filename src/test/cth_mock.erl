@@ -58,6 +58,8 @@ post_end_per_suite(_Suite, Config, Return, State) ->
         try
             ok = rpc:call(Node, mock_manager, stop, [])
         catch
+            _:{badmatch, {badrpc, nodedown}} ->
+                ok; % Test can kill nodes
             Type:Reason ->
                 ct:print(
                     "WARNING: Stopping mock manager on node ~p failed - ~p:~p~n"
