@@ -20,4 +20,9 @@
     all_nodes :: [node()]
 }).
 
+% Ring generations (see consistent_hashing.erl)
+-define(CURRENT_RING, current_consistent_hashing_ring).
+-define(FUTURE_RING, future_consistent_hashing_ring).
+-define(PREVIOUS_RING, previous_consistent_hashing_ring).
+
 -endif.
