@@ -1,6 +1,6 @@
 %%%--------------------------------------------------------------------
 %%% @author Lukasz Opiola
-%%% @copyright (C) 2019 ACK CYFRONET AGH
+%%% @copyright (C) 2020 ACK CYFRONET AGH
 %%% This software is released under the MIT license
 %%% cited in 'LICENSE.txt'.
 %%% @end
@@ -67,7 +67,8 @@ allowed_api_by_service_type(?OZ_WORKER) -> [
 allowed_api_by_service_type(?OZ_PANEL) -> [
     {?OZ_PANEL, all, ?GRI_PATTERN('*', '*', '*', '*')},
     {?OZ_WORKER, get, ?GRI_PATTERN(od_user, '*', '*', '*')},
-    {?OZ_WORKER, get, ?GRI_PATTERN(od_cluster, '*', '*', '*')}
+    {?OZ_WORKER, get, ?GRI_PATTERN(od_cluster, '*', '*', '*')},
+    {?OZ_WORKER, get, ?GRI_PATTERN(od_provider, '*', '*', '*')}
 ];
 allowed_api_by_service_type(?OP_WORKER) -> [
     {?OP_WORKER, all, ?GRI_PATTERN('*', '*', '*', '*')},
@@ -76,6 +77,7 @@ allowed_api_by_service_type(?OP_WORKER) -> [
     {?OZ_WORKER, get, ?GRI_PATTERN(od_group, '*', '*', '*')},
     {?OZ_WORKER, get, ?GRI_PATTERN(od_space, '*', '*', '*')},
     {?OZ_WORKER, all, ?GRI_PATTERN(od_share, '*', '*', '*')},
+    {?OZ_WORKER, get, ?GRI_PATTERN(od_provider, '*', '*', '*')},
     {?OZ_WORKER, all, ?GRI_PATTERN(od_handle, '*', '*', '*')},
     {?OZ_WORKER, get, ?GRI_PATTERN(od_handle_service, '*', '*', '*')}
 ];
