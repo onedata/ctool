@@ -37,44 +37,19 @@
     #cv_data_path{whitelist = [?RAND_PATH_IN_SPACE(?SPACE_ALPHA), ?RAND_PATH_IN_SPACE(?SPACE_GAMMA)]},
     #cv_data_objectid{whitelist = [?RAND_OBJECTID_IN_SPACE(?SPACE_DELTA)]}
 ]).
--define(API_LIMITING_CAVEATS_EXAMPLES, ?DATA_ACCESS_CAVEATS_EXAMPLES ++ [
-    #cv_api{whitelist = [{all, all, ?GRI_PATTERN('*', '*', '*', '*')}]}
-]).
+
+
 % Caveats that are not relevant in the context of API (do not cause limitations)
--define(IRRELEVANT_CAVEATS_EXAMPLES, [
+-define(IRRELEVANT_CAVEATS_EXAMPLES, lists:flatten([
     #cv_time{valid_until = 923786110239},
     #cv_scope{scope = identity_token},
-    #cv_service{whitelist = [?SERVICE(?OP_WORKER, <<"123">>)]},
     #cv_ip{whitelist = [{34, 59, 102, 32}]},
     #cv_asn{whitelist = [9821, 56, 904]},
     #cv_country{type = whitelist, list = [<<"PL">>, <<"FR">>]},
     #cv_region{type = blacklist, list = [<<"Europe">>, <<"Oceania">>]},
     #cv_interface{interface = rest},
     #cv_interface{interface = graphsync}
-]).
-
-ensure_unlimited_test() ->
-    lists:foreach(fun(_) ->
-        RandApiLimiting = lists_utils:random_sublist(?API_LIMITING_CAVEATS_EXAMPLES),
-        RandIrrelevant = lists_utils:random_sublist(?IRRELEVANT_CAVEATS_EXAMPLES),
-        RandCaveats = case rand:uniform(2) of
-            1 -> RandApiLimiting ++ RandIrrelevant;
-            _ -> RandIrrelevant ++ RandApiLimiting
-        end,
-        Auth = #auth{subject = ?SUB(user, <<"123">>), caveats = RandCaveats},
-        case RandApiLimiting of
-            [] ->
-                ?assertEqual(ok, api_auth:ensure_unlimited(Auth));
-            [_ | _] ->
-                ?assertMatch(
-                    ?ERROR_TOKEN_CAVEAT_UNVERIFIED(_),
-                    api_auth:ensure_unlimited(Auth)
-                ),
-                ?ERROR_TOKEN_CAVEAT_UNVERIFIED(Cv) = api_auth:ensure_unlimited(Auth),
-                ?assert(lists:member(Cv, RandApiLimiting))
-        end
-    end, lists:seq(1, 1000)).
-
+])).
 
 -record(caveat_example, {
     should_verify :: true | false,
@@ -95,7 +70,7 @@ check_authorization_test() ->
 
 % For each testcase, generates possible combination of caveats (based on caveat_examples)
 % and checks if the result of check_authorization function is as expected.
-check_authorization_test(#testcase{service = Service, operation = Operation, gri = GRI, caveat_examples = CaveatExamples}) ->
+check_authorization_test(T = #testcase{service = Service, operation = Operation, gri = GRI, caveat_examples = CaveatExamples}) ->
     TestCombinations = powerset(CaveatExamples),
     % Each combination includes a random subset of caveat examples
     lists:foreach(fun(CaveatExamplesSubset) ->
@@ -132,7 +107,7 @@ testcases() -> [
         service = ?OZ_WORKER,
         operation = get,
         gri = ?GRI(od_user, <<"123">>, instance, private),
-        caveat_examples = [
+        caveat_examples = lists:flatten([
             #caveat_example{
                 should_verify = true,
                 caveat = #cv_api{whitelist = [
@@ -147,15 +122,51 @@ testcases() -> [
                     {?OZ_PANEL, all, ?GRI_PATTERN('*', '*', '*', '*')},
                     {?OZ_WORKER, create, ?GRI_PATTERN(od_user, <<"123">>, instance, private)}
                 ]}
-            }
-        ] ++ caveats_to_examples(?DATA_ACCESS_CAVEATS_EXAMPLES, true)
+            },
+            gen_data_access_caveat_examples(true),
+            gen_service_caveat_examples([?OZ_WORKER, ?OZ_PANEL, ?OP_WORKER, ?OP_PANEL], true)
+        ])
+    },
+
+    #testcase{
+        service = ?OZ_WORKER,
+        operation = delete,
+        gri = ?GRI(od_user, <<"123">>, instance, private),
+        caveat_examples = lists:flatten([
+            #caveat_example{
+                should_verify = true,
+                caveat = #cv_api{whitelist = [
+                    {all, delete, ?GRI_PATTERN(od_user, '*', '*', private)}
+                ]}
+            },
+            gen_data_access_caveat_examples(false),
+            gen_service_caveat_examples([?OZ_WORKER], true),
+            gen_service_caveat_examples([?OZ_PANEL, ?OP_WORKER, ?OP_PANEL], false)
+        ])
+    },
+
+    #testcase{
+        service = ?OZ_WORKER,
+        operation = update,
+        gri = ?GRI(od_user, <<"123">>, instance, private),
+        caveat_examples = lists:flatten([
+            #caveat_example{
+                should_verify = false,
+                caveat = #cv_api{whitelist = [
+                    {?OP_WORKER, all, ?GRI_PATTERN('*', '*', '*', '*')}
+                ]}
+            },
+            gen_data_access_caveat_examples(false),
+            gen_service_caveat_examples([?OZ_WORKER], true),
+            gen_service_caveat_examples([?OZ_PANEL, ?OP_WORKER, ?OP_PANEL], false)
+        ])
     },
 
     #testcase{
         service = ?OZ_WORKER,
         operation = get,
         gri = ?GRI(od_space, <<"ghj">>, instance, private),
-        caveat_examples = [
+        caveat_examples = lists:flatten([
             #caveat_example{
                 should_verify = false,
                 caveat = #cv_api{whitelist = [
@@ -182,15 +193,17 @@ testcases() -> [
             #caveat_example{
                 should_verify = false,
                 caveat = #cv_data_objectid{whitelist = [?RAND_OBJECTID_IN_SPACE(?SPACE_ALPHA)]}
-            }
-        ]
+            },
+            gen_service_caveat_examples([?OZ_WORKER, ?OP_WORKER], true),
+            gen_service_caveat_examples([?OZ_PANEL, ?OP_PANEL], false)
+        ])
     },
 
     #testcase{
         service = ?OZ_WORKER,
         operation = get,
         gri = ?GRI(od_space, ?SPACE_ALPHA, instance, protected),
-        caveat_examples = [
+        caveat_examples = lists:flatten([
             % Only caveats that have paths / objectids including the
             % SPACE_ALPHA should be verified
             #caveat_example{
@@ -251,15 +264,17 @@ testcases() -> [
                     ?RAND_OBJECTID_IN_SPACE(?SPACE_DELTA),
                     ?RAND_OBJECTID_IN_SPACE(?SPACE_ALPHA)
                 ]}
-            }
-        ]
+            },
+            gen_service_caveat_examples([?OZ_WORKER, ?OP_WORKER], true),
+            gen_service_caveat_examples([?OZ_PANEL, ?OP_PANEL], false)
+        ])
     },
 
     #testcase{
         service = ?OZ_WORKER,
         operation = create,
         gri = ?GRI(od_user, undefined, instance, shared),
-        caveat_examples = [
+        caveat_examples = lists:flatten([
             #caveat_example{
                 should_verify = true,
                 caveat = #cv_api{whitelist = [
@@ -283,15 +298,18 @@ testcases() -> [
                     {?OZ_PANEL, all, ?GRI_PATTERN('*', '*', '*', '*')},
                     {?OZ_WORKER, create, ?GRI_PATTERN(od_user, '*', instance, shared)}
                 ]}
-            }
-        ] ++ caveats_to_examples(?DATA_ACCESS_CAVEATS_EXAMPLES, false)
+            },
+            gen_data_access_caveat_examples(false),
+            gen_service_caveat_examples([?OZ_WORKER], true),
+            gen_service_caveat_examples([?OZ_PANEL, ?OP_WORKER, ?OP_PANEL], false)
+        ])
     },
 
     #testcase{
         service = ?OP_WORKER,
         operation = create,
         gri = ?GRI(op_file, <<"fileid">>, metadata, private),
-        caveat_examples = [
+        caveat_examples = lists:flatten([
             #caveat_example{
                 should_verify = false,
                 caveat = #cv_api{whitelist = [
@@ -314,15 +332,18 @@ testcases() -> [
                     {all, all, ?GRI_PATTERN(op_file, <<"fileid">>, {'*', '*'}, '*')},
                     {?OP_WORKER, get, ?GRI_PATTERN('*', <<"badid">>, '*', protected)}
                 ]}
-            }
-        ] ++ caveats_to_examples(?DATA_ACCESS_CAVEATS_EXAMPLES, true)
+            },
+            gen_data_access_caveat_examples(true),
+            gen_service_caveat_examples([?OP_WORKER], true),
+            gen_service_caveat_examples([?OZ_WORKER, ?OZ_PANEL, ?OP_PANEL], false)
+        ])
     },
 
     #testcase{
         service = ?OP_WORKER,
         operation = get,
         gri = ?GRI(op_replica, <<"replicaid">>, instance, private),
-        caveat_examples = [
+        caveat_examples = lists:flatten([
             #caveat_example{
                 should_verify = false,
                 caveat = #cv_api{whitelist = [
@@ -338,15 +359,18 @@ testcases() -> [
                     {?OP_PANEL, update, ?GRI_PATTERN('*', '*', '*', '*')},
                     {?OP_WORKER, delete, ?GRI_PATTERN('*', '*', '*', '*')}
                 ]}
-            }
-        ] ++ caveats_to_examples(?DATA_ACCESS_CAVEATS_EXAMPLES, false)
+            },
+            gen_data_access_caveat_examples(false),
+            gen_service_caveat_examples([?OP_WORKER], true),
+            gen_service_caveat_examples([?OZ_WORKER, ?OZ_PANEL, ?OP_PANEL], false)
+        ])
     },
 
     #testcase{
         service = ?OZ_PANEL,
         operation = delete,
-        gri = ?GRI(od_cluster, <<"abc">>, {user, <<"123">>}, private),
-        caveat_examples = [
+        gri = ?GRI(onp_host, undefined, instance, private),
+        caveat_examples = lists:flatten([
             #caveat_example{
                 should_verify = false,
                 caveat = #cv_api{whitelist = [
@@ -360,19 +384,22 @@ testcases() -> [
                 should_verify = true,
                 caveat = #cv_api{whitelist = [
                     {?OZ_PANEL, all, ?GRI_PATTERN(od_space, '*', '*', '*')},
-                    {all, delete, ?GRI_PATTERN('*', '*', {user, '*'}, private)},
+                    {all, delete, ?GRI_PATTERN('*', '*', instance, private)},
                     {?OZ_PANEL, delete, ?GRI_PATTERN('*', '*', {'*', <<"456">>}, '*')},
-                    {all, all, ?GRI_PATTERN(od_space, <<"123">>, {user, <<"123">>}, private)}
+                    {all, all, ?GRI_PATTERN(od_space, <<"123">>, instance, private)}
                 ]}
-            }
-        ] ++ caveats_to_examples(?DATA_ACCESS_CAVEATS_EXAMPLES, false)
+            },
+            gen_data_access_caveat_examples(false),
+            gen_service_caveat_examples([?OZ_PANEL], true),
+            gen_service_caveat_examples([?OZ_WORKER, ?OP_WORKER, ?OP_PANEL], false)
+        ])
     },
 
     #testcase{
         service = ?OP_PANEL,
         operation = update,
-        gri = ?GRI(od_provider, <<"provid">>, spaces, auto),
-        caveat_examples = [
+        gri = ?GRI(onp_ceph, undefined, {pool, <<"default">>}, auto),
+        caveat_examples = lists:flatten([
             #caveat_example{
                 should_verify = false,
                 caveat = #cv_api{whitelist = [
@@ -381,7 +408,7 @@ testcases() -> [
                     {?OP_PANEL, all, ?GRI_PATTERN('*', '*', '*', private)},
                     {?OP_PANEL, update, ?GRI_PATTERN(od_space, '*', '*', '*')},
                     {all, update, ?GRI_PATTERN('*', <<"123">>, '*', '*')},
-                    {?OP_PANEL, all, ?GRI_PATTERN(od_provider, <<"provid">>, spaces, public)}
+                    {?OP_PANEL, all, ?GRI_PATTERN(onp_ceph, undefined, {pool, <<"default">>}, public)}
                 ]}
             },
             #caveat_example{
@@ -394,8 +421,11 @@ testcases() -> [
                     {?OP_PANEL, update, ?GRI_PATTERN(od_space, '*', '*', '*')},
                     {all, update, ?GRI_PATTERN('*', <<"123">>, '*', '*')}
                 ]}
-            }
-        ] ++ caveats_to_examples(?DATA_ACCESS_CAVEATS_EXAMPLES, false)
+            },
+            gen_data_access_caveat_examples(false),
+            gen_service_caveat_examples([?OP_PANEL], true),
+            gen_service_caveat_examples([?OZ_WORKER, ?OZ_PANEL, ?OP_WORKER], false)
+        ])
     }
 ].
 
@@ -408,10 +438,29 @@ powerset([H | T]) ->
     [[H | X] || X <- PT] ++ PT.
 
 
-caveats_to_examples(Caveats, ShouldVerify) ->
+gen_data_access_caveat_examples(ShouldVerify) ->
     lists:map(fun(Caveat) ->
         #caveat_example{should_verify = ShouldVerify, caveat = Caveat}
-    end, Caveats).
+    end, ?DATA_ACCESS_CAVEATS_EXAMPLES).
+
+
+gen_service_caveat_examples(ServiceTypes, ShouldVerify) ->
+    lists:map(fun(ServiceType) ->
+        TypesOnWhitelist = [ServiceType] ++ lists_utils:random_sublist(ServiceTypes),
+        #caveat_example{should_verify = ShouldVerify, caveat = #cv_service{
+            whitelist = [gen_service_spec(Type) || Type <- TypesOnWhitelist]
+        }}
+    end, ServiceTypes).
+
+
+gen_service_spec(?OZ_WORKER) ->
+    ?SERVICE(?OZ_WORKER, lists_utils:random_sublist([?ONEZONE_CLUSTER_ID, ?ID_WILDCARD]));
+gen_service_spec(?OZ_PANEL) ->
+    ?SERVICE(?OZ_PANEL, lists_utils:random_sublist([?ONEZONE_CLUSTER_ID, ?ID_WILDCARD]));
+gen_service_spec(?OP_WORKER) ->
+    ?SERVICE(?OP_WORKER, lists_utils:random_sublist([<<"providerId">>, ?ID_WILDCARD]));
+gen_service_spec(?OP_PANEL) ->
+    ?SERVICE(?OP_PANEL, lists_utils:random_sublist([<<"providerId">>, ?ID_WILDCARD])).
 
 
 -endif.

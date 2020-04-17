@@ -55,7 +55,7 @@
 %% API
 -export([sanitize_path_caveat/1]).
 -export([sanitize_objectid_caveat/1]).
--export([filter/1, find_any/1]).
+-export([filter/1]).
 -export([to_allowed_api/2]).
 
 %%%===================================================================
@@ -92,11 +92,6 @@ sanitize_objectid_caveat(#cv_data_objectid{whitelist = Whitelist}) ->
     end.
 
 
-%%--------------------------------------------------------------------
-%% @doc
-%% Filters a list of caveats and returns included data access caveats only.
-%% @end
-%%--------------------------------------------------------------------
 -spec filter([caveats:caveat()]) -> [caveats:caveat()].
 filter(Caveats) ->
     Filtered = caveats:filter(?DATA_ACCESS_CAVEATS, Caveats),
@@ -105,20 +100,6 @@ filter(Caveats) ->
         (#cv_interface{interface = _}) -> false;
         (Cv) -> {true, Cv}
     end, Filtered).
-
-
-%%--------------------------------------------------------------------
-%% @doc
-%% Looks through a list of caveats and returns any data access caveat that was
-%% found or false.
-%% @end
-%%--------------------------------------------------------------------
--spec find_any([caveats:caveat()]) -> false | {true, caveats:caveat()}.
-find_any(Caveats) ->
-    case filter(Caveats) of
-        [] -> false;
-        [Cv | _] -> {true, Cv}
-    end.
 
 
 %%--------------------------------------------------------------------
