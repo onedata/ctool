@@ -542,7 +542,8 @@ unverified_description(#cv_region{type = Type, list = List}) ->
 unverified_description(#cv_service{whitelist = AllowedServices}) ->
     str_utils:format_bin(
         "unverified service caveat: the service using this token must authenticate as ~s "
-        "(use the x-onedata-service-token header)",
+        "(use the x-onedata-service-token header), or the requested API operation "
+        "is disallowed for the whitelisted services",
         [?JOIN([list_to_binary(aai:service_to_printable(S)) || S <- AllowedServices], <<" or ">>)]
     );
 
