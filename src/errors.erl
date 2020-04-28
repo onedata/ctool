@@ -786,6 +786,14 @@ to_json(?ERROR_VIEW_NOT_EXISTS_ON(ProviderId)) -> #{
     },
     <<"description">> => ?FMT("Specified view does not exist on provider ~s.", [ProviderId])
 };
+to_json(?ERROR_VIEW_QUERY_FAILED(Category, Description)) -> #{
+    <<"id">> => <<"viewQueryFailed">>,
+    <<"details">> => #{
+        <<"category">> => Category,
+        <<"description">> => Description
+    },
+    <<"description">> => ?FMT("Query on view failed. Error category ~s. Description: ~s.", [Category, Description])
+};
 
 %%--------------------------------------------------------------------
 %% onepanel errors
@@ -1233,6 +1241,12 @@ from_json(#{<<"id">> := <<"transferNotEnded">>}) ->
 from_json(#{<<"id">> := <<"viewNotExistsOn">>, <<"details">> := #{<<"providerId">> := ProviderId}}) ->
     ?ERROR_VIEW_NOT_EXISTS_ON(ProviderId);
 
+from_json(#{<<"id">> := <<"viewQueryFailed">>, <<"details">> := #{
+    <<"category">> := Category,
+    <<"description">> := Description
+}}) ->
+    ?ERROR_VIEW_QUERY_FAILED(Category, Description);
+
 
 %%--------------------------------------------------------------------
 %% onepanel errors
@@ -1422,6 +1436,7 @@ to_http_code(?ERROR_STORAGE_TEST_FAILED(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_TRANSFER_ALREADY_ENDED) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_TRANSFER_NOT_ENDED) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_VIEW_NOT_EXISTS_ON(_)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_VIEW_QUERY_FAILED(_, _)) -> ?HTTP_400_BAD_REQUEST;
 
 %%--------------------------------------------------------------------
 %% onepanel errors
