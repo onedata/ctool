@@ -65,6 +65,7 @@ init(Nodes, NodesAssignedPerLabel) ->
     case is_ring_initialized() of
         false ->
             Ring = init_ring(Nodes, NodesAssignedPerLabel),
+            ok = set_ring(Ring),
             ok = replicate_ring_to_nodes(Nodes, ?CURRENT_RING, Ring);
         _ ->
             ok
