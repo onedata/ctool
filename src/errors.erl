@@ -90,7 +90,8 @@
 | storage_in_use
 | transfer_already_ended | transfer_not_ended
 | {storage_test_failed, read | write | remove}
-| {view_not_exists_on, ProviderId :: binary()}.
+| {view_not_exists_on, ProviderId :: binary()}
+| {view_query_failed, Category :: binary(), Description :: binary()}.
 
 -type onepanel() :: {error_on_nodes, error(), Hostnames :: [binary()]}
 | {dns_servers_unreachable, [ip_utils:ip() | default]}
@@ -792,7 +793,7 @@ to_json(?ERROR_VIEW_QUERY_FAILED(Category, Description)) -> #{
         <<"category">> => Category,
         <<"description">> => Description
     },
-    <<"description">> => ?FMT("Query on view failed. Error category ~s. Description: ~s.", [Category, Description])
+    <<"description">> => ?FMT("Query on view failed. Error category: ~s. Description: ~s.", [Category, Description])
 };
 
 %%--------------------------------------------------------------------
