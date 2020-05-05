@@ -94,7 +94,8 @@
 -export([verify/3, verify/4]).
 -export([get_caveats/1]).
 -export([confine/2]).
--export([serialize/1, add_oneprovider_service_indication/2]).
+-export([serialize/1]).
+-export([add_oneprovider_service_indication/2, check_for_oneprovider_service_indication/1]).
 -export([deserialize/1]).
 -export([is_token/1]).
 -export([is_invite_token/2]).
@@ -236,7 +237,6 @@ add_oneprovider_service_indication(_, _) ->
     error(badarg).
 
 
-%% @private
 -spec check_for_oneprovider_service_indication(serialized()) ->
     {undefined | ?OP_WORKER | ?OP_PANEL, serialized()}.
 check_for_oneprovider_service_indication(<<Shortname:3/binary, "-", ProperToken/binary>>) ->
