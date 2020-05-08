@@ -173,6 +173,8 @@ testcases() -> [
     ?ERROR_GUI_PACKAGE_TOO_LARGE,
     ?ERROR_GUI_PACKAGE_UNVERIFIED(<<"5f38fb2e288be67bacc9c206e40f28ee42f9bba9c521f5d6036a4217abd146ba">>),
     ?ERROR_INVALID_QOS_EXPRESSION,
+    ?ERROR_ILLEGAL_SUPPORT_STAGE_TRANSITION(none, none),
+    ?ERROR_ILLEGAL_SUPPORT_STAGE_TRANSITION(evicting_replicas, {resizing, 0}),
 
     %% -----------------------------------------------------------------------------
     %% oz_worker errors

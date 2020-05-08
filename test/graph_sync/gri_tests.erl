@@ -84,6 +84,14 @@ serialize_deserialize_testcases() -> [
         #gri{type = od_token, id = <<"tok9876">>, aspect = instance, scope = public}
     },
     {
+        <<"space_stats.spaceABC.provider_sync_progress,provider12345:private">>,
+        #gri{type = space_stats, id = <<"spaceABC">>, aspect = {provider_sync_progress, <<"provider12345">>}, scope = private}
+    },
+    {
+        <<"temporary_token_secret.tts123.user:private">>,
+        #gri{type = temporary_token_secret, id = <<"tts123">>, aspect = user, scope = private}
+    },
+    {
         <<"file.891234718246113331.attrs:protected">>,
         #gri{type = op_file, id = <<"891234718246113331">>, aspect = attrs, scope = protected}
     },
