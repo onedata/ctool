@@ -25,7 +25,7 @@
 | ?USER_JOIN_HARVESTER | ?GROUP_JOIN_HARVESTER | ?SPACE_JOIN_HARVESTER.
 % Parameters specific for given invite type - currently only ?SUPPORT_SPACE
 % tokens allow parameters
--type invite_parameters() :: undefined | space_support:parameters().
+-type invite_parameters() :: undefined | support_parameters:parameters().
 
 -export_type([type/0, invite_type/0, invite_parameters/0]).
 
@@ -204,7 +204,7 @@ to_printable(?INVITE_TOKEN(?GROUP_JOIN_SPACE, SpaceId)) ->
     str_utils:format("invite token for a group to join space \"~s\"", [SpaceId]);
 to_printable(?INVITE_TOKEN(?SUPPORT_SPACE, SpaceId, Params)) ->
     str_utils:format("invite token to grant support for space \"~s\" (dataWrite: ~s, metadataReplication: ~s)", [
-        SpaceId, space_support:get_data_write(Params), space_support:get_metadata_replication(Params)
+        SpaceId, support_parameters:get_data_write(Params), support_parameters:get_metadata_replication(Params)
     ]);
 to_printable(?INVITE_TOKEN(?HARVESTER_JOIN_SPACE, SpaceId)) ->
     str_utils:format("invite token for a harvester to become a metadata sink for space \"~s\"", [SpaceId]);
@@ -278,7 +278,7 @@ deserialize_invite_type(<<"sjh">>) -> ?SPACE_JOIN_HARVESTER.
 %% @private
 -spec serialize_invite_parameters(invite_type(), invite_parameters()) -> binary().
 serialize_invite_parameters(?SUPPORT_SPACE, Parameters) ->
-    space_support:serialize_parameters(Parameters);
+    support_parameters:serialize(Parameters);
 serialize_invite_parameters(_, undefined) ->
     <<"">>.
 
@@ -286,7 +286,7 @@ serialize_invite_parameters(_, undefined) ->
 %% @private
 -spec deserialize_invite_parameters(invite_type(), binary()) -> invite_parameters().
 deserialize_invite_parameters(?SUPPORT_SPACE, SerializedParameters) ->
-    space_support:deserialize_parameters(SerializedParameters);
+    support_parameters:deserialize(SerializedParameters);
 deserialize_invite_parameters(_, _) ->
     undefined.
 
@@ -294,7 +294,7 @@ deserialize_invite_parameters(_, _) ->
 %% @private
 -spec invite_parameters_to_json(invite_type(), invite_parameters()) -> json_utils:json_map().
 invite_parameters_to_json(?SUPPORT_SPACE, Parameters) ->
-    space_support:parameters_to_json(Parameters);
+    support_parameters:to_json(Parameters);
 invite_parameters_to_json(_, undefined) ->
     #{}.
 
@@ -302,7 +302,7 @@ invite_parameters_to_json(_, undefined) ->
 %% @private
 -spec invite_parameters_from_json(invite_type(), json_utils:json_map()) -> invite_parameters().
 invite_parameters_from_json(?SUPPORT_SPACE, JsonParameters) ->
-    space_support:parameters_from_json(JsonParameters);
+    support_parameters:from_json(JsonParameters);
 invite_parameters_from_json(_, _) ->
     undefined.
 
