@@ -16,8 +16,9 @@
 %%% always inferred from the storage stages and cannot be modified directly -
 %%% serves as a summary of the provider's support in the space.
 %%%
-%%% NOTE: consult ./support_stage.jpg for broader descriptions and a diagram
-%%% with possible transitions, which is essentially implemented in this module.
+%%% NOTE: consult "support stages" on Confluence for broader descriptions and a
+%%% diagram with possible transitions, which is essentially implemented in this
+%%% module.
 %%% @end
 %%%-------------------------------------------------------------------
 -module(support_stage).

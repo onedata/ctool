@@ -6,7 +6,7 @@
 %%% @end
 %%%-------------------------------------------------------------------
 %%% @doc
-%%% Eunit tests of space_support module.
+%%% Eunit tests of provider_sync_progress module.
 %%% @end
 %%%-------------------------------------------------------------------
 -module(provider_sync_progress_tests).
