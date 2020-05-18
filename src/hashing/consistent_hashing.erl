@@ -48,7 +48,7 @@
 %% Export for internal rpc usage
 -export([set_ring/2, finalize_cluster_resizing_locally/0]).
 %% Export for tests
--export([init_ring/2, replicate_ring_to_nodes/3]).
+-export([init_ring/2]).
 
 -define(INIT_ERROR, {error, chash_ring_not_initialized}).
 
@@ -161,6 +161,7 @@ get_all_nodes(RingGeneration) ->
             error(Error)
     end.
 
+-spec get_failed_nodes() -> [node()].
 get_failed_nodes() ->
     #ring{failed_nodes = FailedNodes} = get_ring(?CURRENT_RING),
     FailedNodes.
