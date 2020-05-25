@@ -43,12 +43,12 @@
     get_custom_envs/1
 ]).
 
+-opaque config() :: kv_utils:nested(key(), any()).
 -type key() :: atom() | binary() | any().
 -type service_as_list() :: string(). % "op_worker" | "oz_worker" | "op_panel" | "oz_panel" | "cluster_manager"
 -type service() :: onedata:service() | cluster_manager.
--opaque config() :: kv_utils:nested(key(), any()).
 
--export_type([config/0, service_as_list/0]).
+-export_type([config/0, key/0, service_as_list/0]).
 
 %%%===================================================================
 %%% Init per suite config setters
@@ -72,7 +72,7 @@ set_posthook(Config, Posthook) ->
 %%% Test config getters
 %%%===================================================================
 
--spec get_providers(config()) -> [od_provider:id()].
+-spec get_providers(config()) -> [ProviderId :: binary()].
 get_providers(Config) ->
     get_custom(Config, providers).
 
@@ -84,19 +84,20 @@ get_all_op_worker_nodes(Config) ->
 get_all_oz_worker_nodes(Config) ->
     get_custom(Config, oz_worker_nodes, []).
 
--spec get_provider_nodes(config(), od_provider:id()) -> [node()].
+-spec get_provider_nodes(config(), ProviderId :: binary()) -> [node()].
 get_provider_nodes(Config, ProviderId) ->
     get_custom(Config, [provider_nodes, ProviderId]).
 
--spec get_provider_spaces(config(), od_provider:id()) -> [od_space:id()].
+-spec get_provider_spaces(config(), ProviderId :: binary()) -> [SpaceId :: binary()].
 get_provider_spaces(Config, ProviderId) ->
     get_custom(Config, [provider_spaces, ProviderId]).
 
--spec get_provider_users(config(), od_provider:id()) -> [od_user:id()].
+-spec get_provider_users(config(), ProviderId :: binary()) -> [UserId :: binary()].
 get_provider_users(Config, ProviderId) ->
     get_custom(Config, [users, ProviderId]).
 
--spec get_user_session_id_on_provider(config(), od_user:id(), od_provider:id()) -> session:id().
+-spec get_user_session_id_on_provider(config(), UserId :: binary(), ProviderId :: binary()) -> 
+    SessionId :: binary().
 get_user_session_id_on_provider(Config, User, ProviderId) ->
     get_custom(Config, [sess_id, ProviderId, User]).
 
@@ -119,12 +120,15 @@ get_custom(Config, Key, Default) ->
 %% When FunctionName is omitted `set_custom` is assumed.
 %% @end
 %%--------------------------------------------------------------------
--spec set_many(config(), [{FunctionName :: atom(), Args :: [any()]}]) -> config().
+-spec set_many(config(), [{FunctionName :: atom(), Args :: [any()]}] | [key() | any()]) -> config().
 set_many(Config, FunsAndArgs) ->
     lists:foldl(fun
-        ({FunName, Args}, TmpConfig) when is_list(Args)-> erlang:apply(?MODULE, FunName, [TmpConfig | Args]);
-        ({FunName, Arg}, TmpConfig) when not is_list(Arg)-> erlang:apply(?MODULE, FunName, [TmpConfig, Arg]);
-        ([Key, Value], TmpConfig) -> erlang:apply(?MODULE, set_custom, [TmpConfig, Key, Value]) 
+        ({FunName, Args}, TmpConfig) when is_list(Args) -> 
+            erlang:apply(?MODULE, FunName, [TmpConfig | Args]);
+        ({FunName, Arg}, TmpConfig) when not is_list(Arg) -> 
+            erlang:apply(?MODULE, FunName, [TmpConfig, Arg]);
+        ([Key, Value], TmpConfig) -> 
+            ?MODULE:set_custom(TmpConfig, Key, Value) 
     end, Config, FunsAndArgs).
 
 -spec set_custom(config(), key() | [key()], any()) -> config().

@@ -54,7 +54,8 @@
        {ref,"55c2a9d623454f372a15e99721a37093d8773b48"}},
   1},
  {<<"ssl_verify_fun">>,{pkg,<<"ssl_verify_fun">>,<<"1.1.1">>},1},
- {<<"stacktrace_compat">>,{pkg,<<"stacktrace_compat">>,<<"1.0.2">>},1}]}.
+ {<<"stacktrace_compat">>,{pkg,<<"stacktrace_compat">>,<<"1.0.2">>},1},
+ {<<"yamerl">>,{pkg,<<"yamerl">>,<<"0.7.0">>},0}]}.
 [
 {pkg_hash,[
  {<<"certifi">>, <<"861A57F3808F7EB0C2D1802AFEAAE0FA5DE813B0DF0979153CBAFCD853ABABAF">>},
@@ -64,5 +65,6 @@
  {<<"metrics">>, <<"25F094DEA2CDA98213CECC3AEFF09E940299D950904393B2A29D191C346A8486">>},
  {<<"mimerl">>, <<"993F9B0E084083405ED8252B99460C4F0563E41729AB42D9074FD5E52439BE88">>},
  {<<"ssl_verify_fun">>, <<"28A4D65B7F59893BC2C7DE786DEC1E1555BD742D336043FE644AE956C3497FBE">>},
- {<<"stacktrace_compat">>, <<"8AD31C32C9A0EADB1EB298F04DC8B0C8D79BCC6233A638B02791FFCA4F331275">>}]}
+ {<<"stacktrace_compat">>, <<"8AD31C32C9A0EADB1EB298F04DC8B0C8D79BCC6233A638B02791FFCA4F331275">>},
+ {<<"yamerl">>, <<"E51DBA652DCE74C20A88294130B48051EBBBB0BE7D76F22DE064F0F3CCF0AAF5">>}]}
 ].

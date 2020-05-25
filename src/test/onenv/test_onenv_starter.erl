@@ -15,15 +15,19 @@
 -include_lib("ctool/include/test/test_utils.hrl").
 
 %% API
--export([prepare_test_environment/2, clean_environment/1]).
+-export([prepare_test_environment/1, clean_environment/1]).
 
 -define(DEFAULT_COOKIE, cluster_node).
 
 -type path() :: string().
 -type component() :: worker | onepanel | cluster_manager.
 
--spec prepare_test_environment(test_config:config(), string()) -> test_config:config().
-prepare_test_environment(Config0, _Suite) ->
+%%%===================================================================
+%%% API
+%%%===================================================================
+
+-spec prepare_test_environment(test_config:config()) -> test_config:config().
+prepare_test_environment(Config0) ->
     application:start(yamerl),
     DataDir = test_config:get_custom(Config0, data_dir),
     ProjectRoot = filename:join(lists:takewhile(fun(Token) ->
@@ -55,6 +59,20 @@ prepare_test_environment(Config0, _Suite) ->
     ]).
 
 
+-spec clean_environment(test_config:config()) -> ok.
+clean_environment(Config) ->
+    OnenvScript = test_config:get_onenv_script_path(Config),
+    PrivDir = test_config:get_custom(Config, priv_dir),
+    
+    utils:cmd([OnenvScript, "export", PrivDir]),
+    utils:cmd([OnenvScript, "clean", "--all", "--persistent-volumes"]),
+    ok.
+
+
+%%%===================================================================
+%%% Internal functions
+%%%===================================================================
+
 %% @private
 -spec start_environment(test_config:config()) -> proplists:proplist().
 start_environment(Config) ->
@@ -84,16 +102,6 @@ start_environment(Config) ->
         true -> ok
     end,
     proplists:get_value("pods", StatusProplist).
-
-
--spec clean_environment(test_config:config()) -> ok.
-clean_environment(Config) ->
-    OnenvScript = test_config:get_onenv_script_path(Config),
-    PrivDir = test_config:get_custom(Config, priv_dir),
-    
-    utils:cmd([OnenvScript, "export", PrivDir]),
-    utils:cmd([OnenvScript, "clean", "--all", "--persistent-volumes"]),
-    ok.
 
 
 %% @private
@@ -152,7 +160,7 @@ connect_nodes(Config) ->
 
 
 %% @private
--spec add_entries_to_etc_hosts(test_config:config()) -> ok.
+-spec add_entries_to_etc_hosts(proplists:proplist()) -> ok.
 add_entries_to_etc_hosts(PodsConfig) ->
     HostsEntries = lists:foldl(fun({_ServiceName, ServiceConfig}, Acc0) ->
         ServiceType = proplists:get_value("service-type", ServiceConfig),
