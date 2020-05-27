@@ -37,16 +37,17 @@ init(_Id, _Opts) ->
 %% @doc
 %% CTH callback called after `init_per_suite`. Starts test environment.
 %% Name of test environment yaml file should be provided in Config 
-%% by calling test_config:set_onenv_scenario/2 in init_per_suite. 
+%% by calling test_config:set_onenv_scenario/2 in `init_per_suite`. 
 %% Given file must exist in test_distributed/onenv_scenarios.
 %% If you intend to perform some initialization after environment is up,
-%% pass fun(Config) -> ...end under key ?ENV_UP_POSTHOOK to Config.
-%% Config returned from `init_per_suite` is stored in Return.
+%% pass fun(Config) -> ... end to test_config:set_posthook/2 in `init_per_suite`.
+%%
+%% Config returned from `init_per_suite` is stored in Return variable.
 %% @end
 %%--------------------------------------------------------------------
 -spec post_init_per_suite(Suite :: atom(), test_config:config(), Return :: test_config:config(),
     State :: state()) -> {test_config:config(), state()}.
-post_init_per_suite(Suite, _Config, Return, State) ->
+post_init_per_suite(Suite, _, Return, State) ->
     ct:pal("Environment initialization in ~p", [Suite]),
     NewConfig = test_onenv_starter:prepare_test_environment(Return),
     {NewConfig, State}.
