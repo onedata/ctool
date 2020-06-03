@@ -66,7 +66,8 @@
 | bad_value_domain | bad_value_subdomain
 | {bad_value_caveat, Caveat :: binary() | json_utils:json_map()} | bad_gui_package
 | gui_package_too_large | {gui_package_unverified, onedata:gui_hash()}
-| invalid_qos_expression.
+| invalid_qos_expression
+| {illegal_support_stage_transition, support_stage:provider_support_stage(), support_stage:storage_support_stage()}.
 
 -type oz_worker() :: basic_auth_not_supported | basic_auth_disabled
 | subdomain_delegation_not_supported | subdomain_delegation_disabled
@@ -664,6 +665,18 @@ to_json(?ERROR_INVALID_QOS_EXPRESSION) -> #{
     <<"id">> => <<"invalidQosExpression">>,
     <<"description">> => <<"Invalid QoS expression.">>
 };
+to_json(?ERROR_ILLEGAL_SUPPORT_STAGE_TRANSITION(ProviderStage, StorageStage)) -> #{
+    <<"id">> => <<"illegalSupportStageTransition">>,
+    <<"details">> => #{
+        <<"currentProviderStage">> => support_stage:serialize(provider, ProviderStage),
+        <<"currentStorageStage">> => support_stage:serialize(storage, StorageStage)
+    },
+    <<"description">> => ?FMT(
+        "Illegal support stage transition: this operation cannot be performed while "
+        "the storage is in stage '~w' and provider is in stage '~w'.",
+        [StorageStage, ProviderStage]
+    )
+};
 
 %%--------------------------------------------------------------------
 %% oz_worker error
@@ -729,9 +742,9 @@ to_json(?ERROR_RELATION_ALREADY_EXISTS(ChType, ChId, ParType, ParId)) ->
     #{
         <<"id">> => <<"relationAlreadyExists">>,
         <<"details">> => #{
-            <<"childType">> => ChType,
+            <<"childType">> => gri:serialize_type(ChType),
             <<"childId">> => ChId,
-            <<"parentType">> => ParType,
+            <<"parentType">> => gri:serialize_type(ParType),
             <<"parentId">> => ParId
         },
         <<"description">> => ?FMT("Bad value: ~s:~s ~s ~s:~s.", [
@@ -1173,6 +1186,14 @@ from_json(#{<<"id">> := <<"guiPackageUnverified">>, <<"details">> := #{<<"shaSum
 from_json(#{<<"id">> := <<"invalidQosExpression">>}) ->
     ?ERROR_INVALID_QOS_EXPRESSION;
 
+from_json(#{<<"id">> := <<"illegalSupportStageTransition">>, <<"details">> := #{
+    <<"currentProviderStage">> := ProviderStageJson,
+    <<"currentStorageStage">> := StorageStageJson
+}}) ->
+    ProviderStage = support_stage:deserialize(provider, ProviderStageJson),
+    StorageStage = support_stage:deserialize(storage, StorageStageJson),
+    ?ERROR_ILLEGAL_SUPPORT_STAGE_TRANSITION(ProviderStage, StorageStage);
+
 %% -----------------------------------------------------------------------------
 %% oz_worker errors
 %% -----------------------------------------------------------------------------
@@ -1207,8 +1228,8 @@ from_json(#{<<"id">> := <<"relationDoesNotExist">>, <<"details">> := #{
 from_json(#{<<"id">> := <<"relationAlreadyExists">>, <<"details">> := #{
     <<"childType">> := ChType, <<"childId">> := ChId, <<"parentType">> := ParType, <<"parentId">> := ParId}
 }) ->
-    ChTypeAtom = binary_to_existing_atom(ChType, utf8),
-    ParTypeAtom = binary_to_existing_atom(ParType, utf8),
+    ChTypeAtom = gri:deserialize_type(ChType),
+    ParTypeAtom = gri:deserialize_type(ParType),
     ?ERROR_RELATION_ALREADY_EXISTS(ChTypeAtom, ChId, ParTypeAtom, ParId);
 
 %%--------------------------------------------------------------------
@@ -1411,6 +1432,7 @@ to_http_code(?ERROR_BAD_GUI_PACKAGE) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_GUI_PACKAGE_TOO_LARGE) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_GUI_PACKAGE_UNVERIFIED(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_INVALID_QOS_EXPRESSION) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_ILLEGAL_SUPPORT_STAGE_TRANSITION(_, _)) -> ?HTTP_400_BAD_REQUEST;
 
 %% -----------------------------------------------------------------------------
 %% oz_worker errors

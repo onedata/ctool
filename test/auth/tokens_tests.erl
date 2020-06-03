@@ -229,15 +229,15 @@ sanitize_type_test() ->
 
     ?assertEqual(false, S(?INVITE_TOKEN(?SUPPORT_SPACE, <<"id">>, undefined))),
     ?assertEqual(
-        {true, ?INVITE_TOKEN(?SUPPORT_SPACE, <<"id">>, space_support:build_parameters(none, eager))},
-        S(?INVITE_TOKEN(?SUPPORT_SPACE, <<"id">>, space_support:build_parameters(none, eager)))
+        {true, ?INVITE_TOKEN(?SUPPORT_SPACE, <<"id">>, support_parameters:build(none, eager))},
+        S(?INVITE_TOKEN(?SUPPORT_SPACE, <<"id">>, support_parameters:build(none, eager)))
     ),
     ?assertEqual(
-        {true, ?INVITE_TOKEN(?SUPPORT_SPACE, <<"id">>, space_support:build_parameters(global, eager))},
+        {true, ?INVITE_TOKEN(?SUPPORT_SPACE, <<"id">>, support_parameters:build(global, eager))},
         S(#{<<"inviteToken">> => #{<<"inviteType">> => <<"supportSpace">>, <<"spaceId">> => <<"id">>}})
     ),
     ?assertEqual(
-        {true, ?INVITE_TOKEN(?SUPPORT_SPACE, <<"id">>, space_support:build_parameters(global, eager))},
+        {true, ?INVITE_TOKEN(?SUPPORT_SPACE, <<"id">>, support_parameters:build(global, eager))},
         S(#{<<"inviteToken">> => #{
             <<"inviteType">> => <<"supportSpace">>,
             <<"spaceId">> => <<"id">>,
@@ -245,7 +245,7 @@ sanitize_type_test() ->
         }})
     ),
     ?assertEqual(
-        {true, ?INVITE_TOKEN(?SUPPORT_SPACE, <<"id">>, space_support:build_parameters(none, lazy))},
+        {true, ?INVITE_TOKEN(?SUPPORT_SPACE, <<"id">>, support_parameters:build(none, lazy))},
         S(#{<<"inviteToken">> => #{
             <<"inviteType">> => <<"supportSpace">>,
             <<"spaceId">> => <<"id">>,
@@ -253,7 +253,7 @@ sanitize_type_test() ->
         }})
     ),
     ?assertEqual(
-        {true, ?INVITE_TOKEN(?SUPPORT_SPACE, <<"id">>, space_support:build_parameters(global, none))},
+        {true, ?INVITE_TOKEN(?SUPPORT_SPACE, <<"id">>, support_parameters:build(global, none))},
         S(#{<<"inviteToken">> => #{
             <<"inviteType">> => <<"supportSpace">>,
             <<"spaceId">> => <<"id">>,
@@ -1156,7 +1156,7 @@ random_invite_token() ->
         02 -> ?INVITE_TOKEN(?GROUP_JOIN_GROUP, ?RAND_STR);
         03 -> ?INVITE_TOKEN(?USER_JOIN_SPACE, ?RAND_STR);
         04 -> ?INVITE_TOKEN(?GROUP_JOIN_SPACE, ?RAND_STR);
-        05 -> ?INVITE_TOKEN(?SUPPORT_SPACE, ?RAND_STR, space_support:build_parameters(
+        05 -> ?INVITE_TOKEN(?SUPPORT_SPACE, ?RAND_STR, support_parameters:build(
             lists_utils:random_element([global, none]), lists_utils:random_element([eager, lazy, none])
         ));
         06 -> ?INVITE_TOKEN(?HARVESTER_JOIN_SPACE, ?RAND_STR);
