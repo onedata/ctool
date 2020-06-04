@@ -154,6 +154,9 @@
 -define(ERROR_RELATION_ALREADY_EXISTS(ChType, ChId, ParType, ParId),
     {error, {relation_already_exists, ChType, ChId, ParType, ParId}}
 ).
+-define(ERROR_SPACE_ALREADY_SUPPORTED_WITH_IMPORTED_STORAGE(SpaceId, StorageId), 
+    {error, {space_already_supported_with_imported_storage, SpaceId, StorageId}}
+).
 
 
 %%--------------------------------------------------------------------

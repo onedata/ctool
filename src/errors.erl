@@ -753,6 +753,15 @@ to_json(?ERROR_RELATION_ALREADY_EXISTS(ChType, ChId, ParType, ParId)) ->
             gri:serialize_type(ParType), ParId
         ])
     };
+to_json(?ERROR_SPACE_ALREADY_SUPPORTED_WITH_IMPORTED_STORAGE(SpaceId, StorageId)) ->
+    #{
+        <<"id">> => <<"spaceAlreadySupportedByImportedStorage">>,
+        <<"details">> => #{
+            <<"spaceId">> => SpaceId,
+            <<"storageId">> => StorageId
+        },
+        <<"description">> => ?FMT("Space ~p is already supported by imported storage ~p.", [SpaceId, StorageId])
+    };
 
 %%--------------------------------------------------------------------
 %% op_worker errors
@@ -1231,6 +1240,10 @@ from_json(#{<<"id">> := <<"relationAlreadyExists">>, <<"details">> := #{
     ChTypeAtom = gri:deserialize_type(ChType),
     ParTypeAtom = gri:deserialize_type(ParType),
     ?ERROR_RELATION_ALREADY_EXISTS(ChTypeAtom, ChId, ParTypeAtom, ParId);
+from_json(#{<<"id">> := <<"spaceAlreadySupportedByImportedStorage">>, <<"details">> := #{
+    <<"spaceId">> := SpaceId, <<"storageId">> := StorageId}
+}) ->
+    ?ERROR_SPACE_ALREADY_SUPPORTED_WITH_IMPORTED_STORAGE(SpaceId, StorageId);
 
 %%--------------------------------------------------------------------
 %% op_worker errors
@@ -1446,6 +1459,7 @@ to_http_code(?ERROR_CANNOT_DELETE_ENTITY(_, _)) -> ?HTTP_500_INTERNAL_SERVER_ERR
 to_http_code(?ERROR_CANNOT_ADD_RELATION_TO_SELF) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_RELATION_DOES_NOT_EXIST(_, _, _, _)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_RELATION_ALREADY_EXISTS(_, _, _, _)) -> ?HTTP_409_CONFLICT;
+to_http_code(?ERROR_SPACE_ALREADY_SUPPORTED_WITH_IMPORTED_STORAGE(_,_)) -> ?HTTP_409_CONFLICT;
 
 %%--------------------------------------------------------------------
 %% op_worker errors
