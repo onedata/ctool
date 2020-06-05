@@ -83,7 +83,7 @@
     ChId :: gri:entity_id(),
     ParType :: gri:entity_type(),
     ParId :: gri:entity_id()
-}.
+} | {space_already_supported_with_imported_storage, SpaceId :: binary(), StorageId :: binary()}.
 
 -type op_worker() :: user_not_supported | auto_cleaning_disabled
 | file_popularity_disabled
@@ -755,12 +755,12 @@ to_json(?ERROR_RELATION_ALREADY_EXISTS(ChType, ChId, ParType, ParId)) ->
     };
 to_json(?ERROR_SPACE_ALREADY_SUPPORTED_WITH_IMPORTED_STORAGE(SpaceId, StorageId)) ->
     #{
-        <<"id">> => <<"spaceAlreadySupportedByImportedStorage">>,
+        <<"id">> => <<"spaceAlreadySupportedWithImportedStorage">>,
         <<"details">> => #{
             <<"spaceId">> => SpaceId,
             <<"storageId">> => StorageId
         },
-        <<"description">> => ?FMT("Space ~p is already supported by imported storage ~p.", [SpaceId, StorageId])
+        <<"description">> => ?FMT("Space ~p is already supported with an imported storage ~p.", [SpaceId, StorageId])
     };
 
 %%--------------------------------------------------------------------
@@ -1240,7 +1240,7 @@ from_json(#{<<"id">> := <<"relationAlreadyExists">>, <<"details">> := #{
     ChTypeAtom = gri:deserialize_type(ChType),
     ParTypeAtom = gri:deserialize_type(ParType),
     ?ERROR_RELATION_ALREADY_EXISTS(ChTypeAtom, ChId, ParTypeAtom, ParId);
-from_json(#{<<"id">> := <<"spaceAlreadySupportedByImportedStorage">>, <<"details">> := #{
+from_json(#{<<"id">> := <<"spaceAlreadySupportedWithImportedStorage">>, <<"details">> := #{
     <<"spaceId">> := SpaceId, <<"storageId">> := StorageId}
 }) ->
     ?ERROR_SPACE_ALREADY_SUPPORTED_WITH_IMPORTED_STORAGE(SpaceId, StorageId);
