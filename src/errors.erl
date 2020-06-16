@@ -760,7 +760,7 @@ to_json(?ERROR_SPACE_ALREADY_SUPPORTED_WITH_IMPORTED_STORAGE(SpaceId, StorageId)
             <<"spaceId">> => SpaceId,
             <<"storageId">> => StorageId
         },
-        <<"description">> => ?FMT("Space ~p is already supported with an imported storage ~p.", [SpaceId, StorageId])
+        <<"description">> => ?FMT("Space ~s is already supported with an imported storage ~s.", [SpaceId, StorageId])
     };
 
 %%--------------------------------------------------------------------
