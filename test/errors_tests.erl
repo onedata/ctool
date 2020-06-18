@@ -188,6 +188,7 @@ testcases() -> [
     ?ERROR_CANNOT_ADD_RELATION_TO_SELF,
     ?ERROR_RELATION_DOES_NOT_EXIST(od_user, <<"user1">>, od_space, <<"space1">>),
     ?ERROR_RELATION_ALREADY_EXISTS(od_user, <<"user1">>, od_space, <<"space1">>),
+    ?ERROR_SPACE_ALREADY_SUPPORTED_WITH_IMPORTED_STORAGE(<<"spaceId">>, <<"storageId">>),
 
     %%--------------------------------------------------------------------
     %% op_worker errors
