@@ -500,20 +500,20 @@ sanitize(_) ->
 -spec unverified_description(caveat()) -> binary().
 unverified_description(#cv_time{valid_until = ValidUntil}) ->
     str_utils:format_bin(
-        "unverified time caveat: this token has expired at ~s",
+        "unverified time caveat: this token has expired at '~s'",
         [time_utils:epoch_to_iso8601(ValidUntil)]
     );
 
 unverified_description(#cv_ip{whitelist = Whitelist}) ->
     str_utils:format_bin(
-        "unverified IP caveat: this token can only be used from an IP address that matches: ~s",
+        "unverified IP caveat: this token can only be used from an IP address that matches: '~s'",
         [?JOIN([element(2, {ok, _} = ip_utils:serialize_mask(M)) || M <- Whitelist], <<" or ">>)]
     );
 
 unverified_description(#cv_asn{whitelist = Whitelist}) ->
     str_utils:format_bin(
         "unverified ASN caveat: this token can only be used from an IP address that "
-        "maps to the following Autonomous System Number: ~s",
+        "maps to the following Autonomous System Number: '~s'",
         [?JOIN(lists:map(fun integer_to_binary/1, Whitelist), <<" or ">>)]
     );
 
@@ -524,7 +524,7 @@ unverified_description(#cv_country{type = Type, list = List}) ->
     end,
     str_utils:format_bin(
         "unverified country caveat: this token can only be used from an IP address that "
-        "~s from the following country: ~s",
+        "~s from the following country: '~s'",
         [ComesStr, ?JOIN(List, <<" or ">>)]
     );
 
@@ -535,13 +535,13 @@ unverified_description(#cv_region{type = Type, list = List}) ->
     end,
     str_utils:format_bin(
         "unverified region caveat: this token can only be used from an IP address that "
-        "~s from the following region: ~s",
+        "~s from the following region: '~s'",
         [ComesStr, ?JOIN(List, <<" or ">>)]
     );
 
 unverified_description(#cv_service{whitelist = AllowedServices}) ->
     str_utils:format_bin(
-        "unverified service caveat: the service using this token must authenticate as ~s "
+        "unverified service caveat: the service using this token must authenticate as '~s' "
         "(use the x-onedata-service-token header), or the requested API operation "
         "is disallowed for the whitelisted services",
         [?JOIN([list_to_binary(aai:service_to_printable(S)) || S <- AllowedServices], <<" or ">>)]
@@ -549,7 +549,7 @@ unverified_description(#cv_service{whitelist = AllowedServices}) ->
 
 unverified_description(#cv_consumer{whitelist = AllowedConsumers}) ->
     str_utils:format_bin(
-        "unverified consumer caveat: the consumer of this token must authenticate as ~s - if that's you, you should:~n"
+        "unverified consumer caveat: the consumer of this token must authenticate as '~s' - if that's you, you should:~n"
         "   * send your access token in 'x-auth-token' header if consuming an invite token~n"
         "   * send your identity token in 'x-onedata-consumer-token' header if performing an "
         "operation on behalf of somebody else with their access token~n"
@@ -566,7 +566,7 @@ unverified_description(#cv_interface{interface = Interface}) ->
 unverified_description(#cv_api{whitelist = Whitelist}) ->
     str_utils:format_bin(
         "unverified API caveat: this token can only be used for API calls that match "
-        "the following spec: ~s",
+        "the following spec: '~s'",
         [?JOIN(lists:map(fun cv_api:serialize_matchspec/1, Whitelist), <<" or ">>)]
     );
 
@@ -579,14 +579,14 @@ unverified_description(#cv_data_readonly{}) ->
 unverified_description(#cv_data_path{whitelist = Whitelist}) ->
     str_utils:format_bin(
         "unverified data path caveat: this token can only be used to access data "
-        "under the following paths (and nested directories): ~ts",
+        "under the following paths (and nested directories): '~ts'",
         [?JOIN(Whitelist, <<" or ">>)]
     );
 
 unverified_description(#cv_data_objectid{whitelist = Whitelist}) ->
     str_utils:format_bin(
         "unverified data path caveat: this token can only be used to access data "
-        "with the following FILE_ID (and nested directories): ~ts",
+        "with the following FILE_ID (and nested directories): '~ts'",
         [?JOIN(Whitelist, <<" or ">>)]
     ).
 
