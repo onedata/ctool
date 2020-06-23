@@ -133,7 +133,7 @@
 -define(ERROR_BAD_GUI_PACKAGE, {error, bad_gui_package}).
 -define(ERROR_GUI_PACKAGE_TOO_LARGE, {error, gui_package_too_large}).
 -define(ERROR_GUI_PACKAGE_UNVERIFIED(ShaSum), {error, {gui_package_unverified, ShaSum}}).
--define(ERROR_INVALID_QOS_EXPRESSION, {error, invalid_qos_expression}).
+-define(ERROR_INVALID_QOS_EXPRESSION(Reason), {error, {invalid_qos_expression, Reason}}).
 -define(ERROR_ILLEGAL_SUPPORT_STAGE_TRANSITION(ProviderStage, StorageStage), {error, {illegal_support_stage_transition, ProviderStage, StorageStage}}).
 
 

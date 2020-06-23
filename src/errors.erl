@@ -79,7 +79,7 @@
 | bad_value_domain | bad_value_subdomain
 | {bad_value_caveat, Caveat :: binary() | json_utils:json_map()} | bad_gui_package
 | gui_package_too_large | {gui_package_unverified, onedata:gui_hash()}
-| invalid_qos_expression
+| {invalid_qos_expression, Reason :: binary()}
 | {illegal_support_stage_transition, support_stage:provider_support_stage(), support_stage:storage_support_stage()}.
 
 -type oz_worker() :: basic_auth_not_supported | basic_auth_disabled
@@ -703,9 +703,12 @@ to_json(?ERROR_GUI_PACKAGE_UNVERIFIED(ShaSum)) -> #{
     },
     <<"description">> => ?FMT("Provided GUI package could not be verified - unknown SHA sum '~s'.", [ShaSum])
 };
-to_json(?ERROR_INVALID_QOS_EXPRESSION) -> #{
+to_json(?ERROR_INVALID_QOS_EXPRESSION(Reason)) -> #{
     <<"id">> => <<"invalidQosExpression">>,
-    <<"description">> => <<"Invalid QoS expression.">>
+    <<"details">> => #{
+        <<"reason">> => Reason
+    },
+    <<"description">> => ?FMT("Invalid QoS expression: ~ts.", [Reason])
 };
 to_json(?ERROR_ILLEGAL_SUPPORT_STAGE_TRANSITION(ProviderStage, StorageStage)) -> #{
     <<"id">> => <<"illegalSupportStageTransition">>,
@@ -1312,8 +1315,8 @@ from_json(#{<<"id">> := <<"guiPackageTooLarge">>}) ->
 from_json(#{<<"id">> := <<"guiPackageUnverified">>, <<"details">> := #{<<"shaSum">> := ShaSum}}) ->
     ?ERROR_GUI_PACKAGE_UNVERIFIED(ShaSum);
 
-from_json(#{<<"id">> := <<"invalidQosExpression">>}) ->
-    ?ERROR_INVALID_QOS_EXPRESSION;
+from_json(#{<<"id">> := <<"invalidQosExpression">>, <<"details">> := #{<<"reason">> := Reason}}) ->
+    ?ERROR_INVALID_QOS_EXPRESSION(Reason);
 
 from_json(#{<<"id">> := <<"illegalSupportStageTransition">>, <<"details">> := #{
     <<"currentProviderStage">> := ProviderStageJson,
@@ -1603,7 +1606,7 @@ to_http_code(?ERROR_BAD_VALUE_QOS_PARAMETERS) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_BAD_GUI_PACKAGE) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_GUI_PACKAGE_TOO_LARGE) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_GUI_PACKAGE_UNVERIFIED(_)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_INVALID_QOS_EXPRESSION) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_INVALID_QOS_EXPRESSION(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_ILLEGAL_SUPPORT_STAGE_TRANSITION(_, _)) -> ?HTTP_400_BAD_REQUEST;
 
 %% -----------------------------------------------------------------------------
