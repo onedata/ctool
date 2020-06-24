@@ -92,6 +92,7 @@
 | transfer_already_ended | transfer_not_ended
 | {storage_test_failed, read | write | remove}
 | {requires_non_imported_storage, StorageId :: binary()}
+| {requires_imported_storage, StorageId :: binary()}
 | {requires_posix_compatible_storage, StorageId :: binary()}
 | {view_not_exists_on, ProviderId :: binary()}
 | {view_query_failed, Category :: binary(), Description :: binary()}.
@@ -799,7 +800,16 @@ to_json(?ERROR_STORAGE_TEST_FAILED(Operation)) -> #{
 to_json(?ERROR_REQUIRES_NON_IMPORTED_STORAGE(StorageId)) -> #{
     <<"id">> => <<"requiresNonImportedStorage">>,
     <<"details">> => #{<<"storageId">> => StorageId},
-    <<"description">> => ?FMT("Storage ~s is an imported storage.", [StorageId])
+    <<"description">> => ?FMT(
+        "Operation requires a non-imported storage. "
+        "Storage ~s is imported.", [StorageId])
+};
+to_json(?ERROR_REQUIRES_IMPORTED_STORAGE(StorageId)) -> #{
+    <<"id">> => <<"requiresImportedStorage">>,
+    <<"details">> => #{<<"storageId">> => StorageId},
+    <<"description">> => ?FMT(
+        "Operation requires an imported storage. "
+        "Storage ~s is not imported.", [StorageId])
 };
 to_json(?ERROR_REQUIRES_POSIX_COMPATIBLE_STORAGE(StorageId)) -> #{
     <<"id">> => <<"requiresPosixCompatibleStorage">>,
@@ -1284,6 +1294,9 @@ from_json(#{<<"id">> := <<"storageTestFailed">>, <<"details">> := #{<<"operation
 from_json(#{<<"id">> := <<"requiresNonImportedStorage">>, <<"details">> := #{<<"storageId">> := StorageId}}) ->
     ?ERROR_REQUIRES_NON_IMPORTED_STORAGE(StorageId);
 
+from_json(#{<<"id">> := <<"requiresImportedStorage">>, <<"details">> := #{<<"storageId">> := StorageId}}) ->
+    ?ERROR_REQUIRES_IMPORTED_STORAGE(StorageId);
+
 from_json(#{<<"id">> := <<"requiresPosixCompatibleStorage">>, <<"details">> := #{<<"storageId">> := StorageId}}) ->
     ?ERROR_REQUIRES_POSIX_COMPATIBLE_STORAGE(StorageId);
 
@@ -1491,6 +1504,7 @@ to_http_code(?ERROR_SPACE_NOT_SUPPORTED_BY(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_STORAGE_IN_USE) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_STORAGE_TEST_FAILED(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_REQUIRES_NON_IMPORTED_STORAGE(_)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_REQUIRES_IMPORTED_STORAGE(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_REQUIRES_POSIX_COMPATIBLE_STORAGE(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_TRANSFER_ALREADY_ENDED) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_TRANSFER_NOT_ENDED) -> ?HTTP_400_BAD_REQUEST;
