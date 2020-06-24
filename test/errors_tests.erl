@@ -13,6 +13,7 @@
 
 -ifdef(TEST).
 -include_lib("eunit/include/eunit.hrl").
+-include("graph_sync/gri.hrl").
 -include("errors.hrl").
 -include("aai/aai.hrl").
 
@@ -73,6 +74,7 @@ testcases() -> [
     ?ERROR_SERVICE_UNAVAILABLE,
     ?ERROR_TIMEOUT,
     ?ERROR_TEMPORARY_FAILURE,
+    ?ERROR_UNAUTHORIZED(?ERROR_NOT_AN_ACCESS_TOKEN(?IDENTITY_TOKEN)),
     ?ERROR_UNAUTHORIZED,
     ?ERROR_FORBIDDEN,
     ?ERROR_NOT_FOUND,
@@ -188,6 +190,7 @@ testcases() -> [
     ?ERROR_CANNOT_ADD_RELATION_TO_SELF,
     ?ERROR_RELATION_DOES_NOT_EXIST(od_user, <<"user1">>, od_space, <<"space1">>),
     ?ERROR_RELATION_ALREADY_EXISTS(od_user, <<"user1">>, od_space, <<"space1">>),
+    ?ERROR_SPACE_ALREADY_SUPPORTED_WITH_IMPORTED_STORAGE(<<"spaceId">>, <<"storageId">>),
 
     %%--------------------------------------------------------------------
     %% op_worker errors

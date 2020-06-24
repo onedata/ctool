@@ -22,15 +22,26 @@
 -include("onedata.hrl").
 -include("validation.hrl").
 
+% The *unauthorized* error is emphasized as a separate type because it should be
+% used universally for all errors related to authentication, understood as in
+% the HTTP 401 code (https://httpstatuses.com/401):
+%   > The request has not been applied because it lacks
+%   > valid authentication credentials for the target resource.
+% The unauthorized error has a variant for when a more detailed error that
+% caused authentication failure is known.
+-type unauthorized() :: unauthorized | {unauthorized, error()}.
+-type unauthorized_error() :: {error, unauthorized()}.
+-export_type([unauthorized_error/0]).
+
 -type general() :: {bad_message, json_utils:json_term()} | no_connection_to_oz
 | no_connection_to_peer_provider | no_connection_to_cluster_node
 | unregistered_provider | internal_server_error | not_implemented
 | not_supported | service_unavailable |  timeout | temporary_failure
-| unauthorized | forbidden | not_found | already_exists
-| {file_access, Path :: file:name_all(), Errno :: errno()}.
+| unauthorized() | forbidden | not_found | already_exists
+| {file_access, Path :: file:name_all(), errno()}.
 
 -type auth() :: bad_basic_credentials | {bad_idp_access_token, IdP :: atom()}
-| bad_token | bad_service_token | bad_consumer_token
+| bad_token | {bad_service_token, auth()} | {bad_consumer_token, auth()}
 | token_invalid | token_revoked | not_an_access_token | not_an_identity_token
 | {not_an_invite_token, ExpectedInviteType :: any | token_type:invite_type(), Received :: tokens:type()}
 | {token_caveat_unverified, caveats:caveat()}
@@ -83,7 +94,7 @@
     ChId :: gri:entity_id(),
     ParType :: gri:entity_type(),
     ParId :: gri:entity_id()
-}.
+} | {space_already_supported_with_imported_storage, SpaceId :: binary(), StorageId :: binary()}.
 
 -type op_worker() :: user_not_supported | auto_cleaning_disabled
 | file_popularity_disabled
@@ -198,6 +209,13 @@ to_json(?ERROR_TEMPORARY_FAILURE) -> #{
     <<"id">> => <<"temporaryFailure">>,
     <<"description">> => <<"Temporary failure - please try again later.">>
 };
+to_json(?ERROR_UNAUTHORIZED(AuthError)) -> #{
+    <<"id">> => <<"unauthorized">>,
+    <<"details">> => #{
+        <<"authError">> => to_json(AuthError)
+    },
+    <<"description">> => <<"Provided authentication is not valid (see details).">>
+};
 to_json(?ERROR_UNAUTHORIZED) -> #{
     <<"id">> => <<"unauthorized">>,
     <<"description">> => <<"You must authenticate yourself to perform this operation.">>
@@ -257,14 +275,14 @@ to_json(?ERROR_BAD_SERVICE_TOKEN(TokenError)) -> #{
     <<"details">> => #{
         <<"tokenError">> => to_json(TokenError)
     },
-    <<"description">> => <<"Provided service token is not valid.">>
+    <<"description">> => <<"Provided service token is not valid (see details).">>
 };
 to_json(?ERROR_BAD_CONSUMER_TOKEN(TokenError)) -> #{
     <<"id">> => <<"badConsumerToken">>,
     <<"details">> => #{
         <<"tokenError">> => to_json(TokenError)
     },
-    <<"description">> => <<"Provided consumer token is not valid.">>
+    <<"description">> => <<"Provided consumer token is not valid (see details).">>
 };
 to_json(?ERROR_TOKEN_INVALID) -> #{
     <<"id">> => <<"tokenInvalid">>,
@@ -502,7 +520,7 @@ to_json(?ERROR_BAD_VALUE_TOKEN(Key, TokenError)) -> #{
         <<"key">> => Key,
         <<"tokenError">> => to_json(TokenError)
     },
-    <<"description">> => ?FMT("Bad value: provided \"~s\" is not a valid token.", [Key])
+    <<"description">> => ?FMT("Bad value: provided \"~s\" is not a valid token (see details).", [Key])
 };
 to_json(?ERROR_BAD_VALUE_TOKEN_TYPE(Key)) -> #{
     <<"id">> => <<"badValueTokenType">>,
@@ -753,6 +771,15 @@ to_json(?ERROR_RELATION_ALREADY_EXISTS(ChType, ChId, ParType, ParId)) ->
             gri:serialize_type(ParType), ParId
         ])
     };
+to_json(?ERROR_SPACE_ALREADY_SUPPORTED_WITH_IMPORTED_STORAGE(SpaceId, StorageId)) ->
+    #{
+        <<"id">> => <<"spaceAlreadySupportedWithImportedStorage">>,
+        <<"details">> => #{
+            <<"spaceId">> => SpaceId,
+            <<"storageId">> => StorageId
+        },
+        <<"description">> => ?FMT("Space ~s is already supported with an imported storage ~s.", [SpaceId, StorageId])
+    };
 
 %%--------------------------------------------------------------------
 %% op_worker errors
@@ -954,6 +981,9 @@ from_json(#{<<"id">> := <<"timeout">>}) ->
 
 from_json(#{<<"id">> := <<"temporaryFailure">>}) ->
     ?ERROR_TEMPORARY_FAILURE;
+
+from_json(#{<<"id">> := <<"unauthorized">>, <<"details">> := #{<<"authError">> := AuthError}}) ->
+    ?ERROR_UNAUTHORIZED(from_json(AuthError));
 
 from_json(#{<<"id">> := <<"unauthorized">>}) ->
     ?ERROR_UNAUTHORIZED;
@@ -1231,6 +1261,10 @@ from_json(#{<<"id">> := <<"relationAlreadyExists">>, <<"details">> := #{
     ChTypeAtom = gri:deserialize_type(ChType),
     ParTypeAtom = gri:deserialize_type(ParType),
     ?ERROR_RELATION_ALREADY_EXISTS(ChTypeAtom, ChId, ParTypeAtom, ParId);
+from_json(#{<<"id">> := <<"spaceAlreadySupportedWithImportedStorage">>, <<"details">> := #{
+    <<"spaceId">> := SpaceId, <<"storageId">> := StorageId}
+}) ->
+    ?ERROR_SPACE_ALREADY_SUPPORTED_WITH_IMPORTED_STORAGE(SpaceId, StorageId);
 
 %%--------------------------------------------------------------------
 %% op_worker errors
@@ -1343,6 +1377,7 @@ to_http_code(?ERROR_NOT_SUPPORTED) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_SERVICE_UNAVAILABLE) -> ?HTTP_503_SERVICE_UNAVAILABLE;
 to_http_code(?ERROR_TIMEOUT) -> ?HTTP_503_SERVICE_UNAVAILABLE;
 to_http_code(?ERROR_TEMPORARY_FAILURE) -> ?HTTP_503_SERVICE_UNAVAILABLE;
+to_http_code(?ERROR_UNAUTHORIZED(_)) -> ?HTTP_401_UNAUTHORIZED;
 to_http_code(?ERROR_UNAUTHORIZED) -> ?HTTP_401_UNAUTHORIZED;
 to_http_code(?ERROR_FORBIDDEN) -> ?HTTP_403_FORBIDDEN;
 to_http_code(?ERROR_NOT_FOUND) -> ?HTTP_404_NOT_FOUND;
@@ -1357,27 +1392,27 @@ to_http_code(?ERROR_POSIX(_)) -> ?HTTP_400_BAD_REQUEST;
 %% -----------------------------------------------------------------------------
 %% Auth errors
 %% -----------------------------------------------------------------------------
-to_http_code(?ERROR_BAD_BASIC_CREDENTIALS) -> ?HTTP_401_UNAUTHORIZED;
-to_http_code(?ERROR_BAD_IDP_ACCESS_TOKEN(_)) -> ?HTTP_401_UNAUTHORIZED;
-to_http_code(?ERROR_BAD_TOKEN) -> ?HTTP_401_UNAUTHORIZED;
-to_http_code(?ERROR_BAD_SERVICE_TOKEN(_)) -> ?HTTP_401_UNAUTHORIZED;
-to_http_code(?ERROR_BAD_CONSUMER_TOKEN(_)) -> ?HTTP_401_UNAUTHORIZED;
-to_http_code(?ERROR_TOKEN_INVALID) -> ?HTTP_401_UNAUTHORIZED;
-to_http_code(?ERROR_TOKEN_REVOKED) -> ?HTTP_401_UNAUTHORIZED;
-to_http_code(?ERROR_TOKEN_TOO_LARGE(_)) -> ?HTTP_401_UNAUTHORIZED;
+to_http_code(?ERROR_BAD_BASIC_CREDENTIALS) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_BAD_IDP_ACCESS_TOKEN(_)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_BAD_TOKEN) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_BAD_SERVICE_TOKEN(_)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_BAD_CONSUMER_TOKEN(_)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_TOKEN_INVALID) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_TOKEN_REVOKED) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_TOKEN_TOO_LARGE(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_NOT_AN_ACCESS_TOKEN(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_NOT_AN_IDENTITY_TOKEN(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_NOT_AN_INVITE_TOKEN(_, _)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_TOKEN_CAVEAT_UNKNOWN(_)) -> ?HTTP_401_UNAUTHORIZED;
-to_http_code(?ERROR_TOKEN_CAVEAT_UNVERIFIED(_)) -> ?HTTP_401_UNAUTHORIZED;
+to_http_code(?ERROR_TOKEN_CAVEAT_UNKNOWN(_)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_TOKEN_CAVEAT_UNVERIFIED(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_TOKEN_TIME_CAVEAT_REQUIRED(_)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_TOKEN_SUBJECT_INVALID) -> ?HTTP_401_UNAUTHORIZED;
+to_http_code(?ERROR_TOKEN_SUBJECT_INVALID) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_TOKEN_SERVICE_FORBIDDEN(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_INVITE_TOKEN_USAGE_LIMIT_REACHED) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_INVITE_TOKEN_SUBJECT_NOT_AUTHORIZED) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_INVITE_TOKEN_CONSUMER_INVALID(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_INVITE_TOKEN_TARGET_ID_INVALID(_)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_TOKEN_SESSION_INVALID) -> ?HTTP_401_UNAUTHORIZED;
+to_http_code(?ERROR_TOKEN_SESSION_INVALID) -> ?HTTP_400_BAD_REQUEST;
 
 %% -----------------------------------------------------------------------------
 %% Graph Sync errors
@@ -1437,7 +1472,7 @@ to_http_code(?ERROR_ILLEGAL_SUPPORT_STAGE_TRANSITION(_, _)) -> ?HTTP_400_BAD_REQ
 %% -----------------------------------------------------------------------------
 %% oz_worker errors
 %% -----------------------------------------------------------------------------
-to_http_code(?ERROR_BASIC_AUTH_NOT_SUPPORTED) -> ?HTTP_401_UNAUTHORIZED;
+to_http_code(?ERROR_BASIC_AUTH_NOT_SUPPORTED) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_BASIC_AUTH_DISABLED) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_SUBDOMAIN_DELEGATION_NOT_SUPPORTED) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_SUBDOMAIN_DELEGATION_DISABLED) -> ?HTTP_400_BAD_REQUEST;
@@ -1446,6 +1481,7 @@ to_http_code(?ERROR_CANNOT_DELETE_ENTITY(_, _)) -> ?HTTP_500_INTERNAL_SERVER_ERR
 to_http_code(?ERROR_CANNOT_ADD_RELATION_TO_SELF) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_RELATION_DOES_NOT_EXIST(_, _, _, _)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_RELATION_ALREADY_EXISTS(_, _, _, _)) -> ?HTTP_409_CONFLICT;
+to_http_code(?ERROR_SPACE_ALREADY_SUPPORTED_WITH_IMPORTED_STORAGE(_,_)) -> ?HTTP_409_CONFLICT;
 
 %%--------------------------------------------------------------------
 %% op_worker errors

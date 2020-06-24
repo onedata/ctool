@@ -31,6 +31,7 @@
 -define(ERROR_SERVICE_UNAVAILABLE, {error, service_unavailable}).
 -define(ERROR_TIMEOUT, {error, timeout}).
 -define(ERROR_TEMPORARY_FAILURE, {error, temporary_failure}).
+-define(ERROR_UNAUTHORIZED(AuthError), {error, {unauthorized, AuthError}}).
 -define(ERROR_UNAUTHORIZED, {error, unauthorized}).
 -define(ERROR_FORBIDDEN, {error, forbidden}).
 -define(ERROR_NOT_FOUND, {error, not_found}).
@@ -153,6 +154,9 @@
 ).
 -define(ERROR_RELATION_ALREADY_EXISTS(ChType, ChId, ParType, ParId),
     {error, {relation_already_exists, ChType, ChId, ParType, ParId}}
+).
+-define(ERROR_SPACE_ALREADY_SUPPORTED_WITH_IMPORTED_STORAGE(SpaceId, StorageId), 
+    {error, {space_already_supported_with_imported_storage, SpaceId, StorageId}}
 ).
 
 
