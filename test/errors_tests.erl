@@ -13,6 +13,7 @@
 
 -ifdef(TEST).
 -include_lib("eunit/include/eunit.hrl").
+-include("graph_sync/gri.hrl").
 -include("errors.hrl").
 -include("aai/aai.hrl").
 
@@ -73,6 +74,7 @@ testcases() -> [
     ?ERROR_SERVICE_UNAVAILABLE,
     ?ERROR_TIMEOUT,
     ?ERROR_TEMPORARY_FAILURE,
+    ?ERROR_UNAUTHORIZED(?ERROR_NOT_AN_ACCESS_TOKEN(?IDENTITY_TOKEN)),
     ?ERROR_UNAUTHORIZED,
     ?ERROR_FORBIDDEN,
     ?ERROR_NOT_FOUND,

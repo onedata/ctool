@@ -91,10 +91,10 @@ check_authorization_test(T = #testcase{service = Service, operation = Operation,
                 ?assertEqual(ok, api_auth:check_authorization(Auth, Service, Operation, GRI));
             _ ->
                 ?assertMatch(
-                    ?ERROR_TOKEN_CAVEAT_UNVERIFIED(_),
+                    ?ERROR_UNAUTHORIZED(?ERROR_TOKEN_CAVEAT_UNVERIFIED(_)),
                     api_auth:check_authorization(Auth, Service, Operation, GRI)
                 ),
-                ?ERROR_TOKEN_CAVEAT_UNVERIFIED(UnverifiedCaveat) = api_auth:check_authorization(
+                ?ERROR_UNAUTHORIZED(?ERROR_TOKEN_CAVEAT_UNVERIFIED(UnverifiedCaveat)) = api_auth:check_authorization(
                     Auth, Service, Operation, GRI
                 ),
                 ?assert(lists:member(UnverifiedCaveat, ExpUnverifiedCaveats))
