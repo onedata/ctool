@@ -35,6 +35,7 @@
 -define(ERROR_NOT_SUPPORTED, {error, not_supported}).
 -define(ERROR_TIMEOUT, {error, timeout}).
 -define(ERROR_NOT_FOUND, {error, not_found}).
+-define(ERROR_UNAUTHORIZED(__AuthError), {error, {unauthorized, __AuthError}}).
 -define(ERROR_UNAUTHORIZED, {error, unauthorized}).
 -define(ERROR_FORBIDDEN, {error, forbidden}).
 -define(ERROR_ALREADY_EXISTS, {error, already_exists}).
