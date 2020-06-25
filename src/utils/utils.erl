@@ -255,12 +255,12 @@ run_with_tempdir(Fun) ->
 
 %%--------------------------------------------------------------------
 %% @doc
-%% @equiv ensure_defined(UndefinedValue, undefined, DefaultValue).
+%% @equiv ensure_defined(Value, undefined, DefaultValue).
 %% @end
 %%--------------------------------------------------------------------
 -spec ensure_defined(Value, DefaultValue) -> Value | DefaultValue.
-ensure_defined(UndefinedValue, DefaultValue) ->
-    ensure_defined(UndefinedValue, undefined, DefaultValue).
+ensure_defined(Value, DefaultValue) ->
+    ensure_defined(Value, undefined, DefaultValue).
 
 
 %%--------------------------------------------------------------------
