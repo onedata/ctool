@@ -836,8 +836,8 @@ to_json(?ERROR_REQUIRES_POSIX_COMPATIBLE_STORAGE(StorageId, PosixCompatibleStora
     <<"details">> => #{<<"storageId">> => StorageId, <<"posixCompatibleStorages">> => PosixCompatibleStorages},
     <<"description">> => ?FMT(
         "Cannot apply for storage ~s - this operation requires a POSIX-compatible storage "
-        "(any of: ~p).",
-        [StorageId, PosixCompatibleStorages]
+        "(any of: ~s).",
+        [StorageId, join_values_with_commas(PosixCompatibleStorages)]
     )
 };
 to_json(?ERROR_TRANSFER_ALREADY_ENDED) -> #{
