@@ -37,8 +37,9 @@
 -export_type([ring_generation/0]).
 
 %% Basic API
--export([init/2, cleanup/0, get_assigned_node/1, get_routing_info/1, get_routing_info/2,
-    get_all_nodes/0, get_all_nodes/1]).
+-export([init/2, replicate_ring_to_nodes/1, cleanup/0,
+    get_assigned_node/1, get_routing_info/1, get_routing_info/2,
+    get_all_nodes/0, get_all_nodes/1, get_failed_nodes/0]).
 %% Changes of initialized ring
 -export([report_node_failure/1, report_node_recovery/1,
     set_nodes_assigned_per_label/1, get_nodes_assigned_per_label/0]).
@@ -47,7 +48,7 @@
 %% Export for internal rpc usage
 -export([set_ring/2, finalize_cluster_resizing_locally/0]).
 %% Export for tests
--export([init_ring/2, replicate_ring_to_nodes/3]).
+-export([init_ring/2]).
 
 -define(INIT_ERROR, {error, chash_ring_not_initialized}).
 
@@ -65,10 +66,20 @@ init(Nodes, NodesAssignedPerLabel) ->
     case is_ring_initialized() of
         false ->
             Ring = init_ring(Nodes, NodesAssignedPerLabel),
-            ok = replicate_ring_to_nodes(Nodes, ?CURRENT_RING, Ring);
+            ok = set_ring(Ring),
+            ok = replicate_ring_to_nodes(Nodes);
         _ ->
             ok
     end.
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Replicates current generation ring to nodes.
+%% @end
+%%--------------------------------------------------------------------
+-spec replicate_ring_to_nodes([node()]) -> ok | no_return().
+replicate_ring_to_nodes(Nodes) ->
+    replicate_ring_to_nodes(Nodes, ?CURRENT_RING, get_ring()).
 
 -spec cleanup() -> ok.
 cleanup() ->
@@ -149,6 +160,11 @@ get_all_nodes(RingGeneration) ->
         {error, Error} ->
             error(Error)
     end.
+
+-spec get_failed_nodes() -> [node()].
+get_failed_nodes() ->
+    #ring{failed_nodes = FailedNodes} = get_ring(?CURRENT_RING),
+    FailedNodes.
 
 %%%===================================================================
 %%% Changes of initialized ring
