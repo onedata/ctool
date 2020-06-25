@@ -53,18 +53,22 @@
 %% @end
 %%--------------------------------------------------------------------
 -spec check_authorization(aai:auth(), onedata:service(), cv_api:operation(), gri:gri()) ->
-    ok | errors:error().
+    ok | errors:unauthorized_error().
 check_authorization(#auth{caveats = Caveats}, Service, Operation, GRI) ->
-    case verify_api_caveats_against_operation(Caveats, Service, Operation, GRI) of
+    Result = case verify_api_caveats_against_operation(Caveats, Service, Operation, GRI) of
         ok ->
             case verify_service_caveats_against_operation(Caveats, Service, Operation, GRI) of
                 ok ->
                     verify_data_access_caveats_against_operation(Caveats, Service, Operation, GRI);
-                {error, _} = Error2 ->
-                    Error2
+                {error, _} = Err1 ->
+                    Err1
             end;
-        {error, _} = Error1 ->
-            Error1
+        {error, _} = Err2 ->
+            Err2
+    end,
+    case Result of
+        ok -> ok;
+        {error, _} = Error -> ?ERROR_UNAUTHORIZED(Error)
     end.
 
 %%%===================================================================
