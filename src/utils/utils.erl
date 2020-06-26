@@ -16,7 +16,7 @@
 -export([record_type/1, trim_spaces/1, ceil/1, average/1]).
 -export([get_host/1, get_host_as_atom/1, cmd/1]).
 -export([process_info/1, process_info/2]).
--export([ensure_defined/3, undefined_to_null/1, null_to_undefined/1]).
+-export([ensure_defined/2, ensure_defined/3, undefined_to_null/1, null_to_undefined/1]).
 -export([timeout/2, timeout/4]).
 -export([duration/1, adjust_duration/2]).
 -export([mkdtemp/0, mkdtemp/3, rmtempdir/1, run_with_tempdir/1]).
@@ -251,6 +251,16 @@ run_with_tempdir(Fun) ->
     after
         catch rmtempdir(TempDir)
     end.
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%% @equiv ensure_defined(Value, undefined, DefaultValue).
+%% @end
+%%--------------------------------------------------------------------
+-spec ensure_defined(Value, DefaultValue) -> Value | DefaultValue.
+ensure_defined(Value, DefaultValue) ->
+    ensure_defined(Value, undefined, DefaultValue).
 
 
 %%--------------------------------------------------------------------
