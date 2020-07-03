@@ -123,6 +123,7 @@
 
 %%% API
 -export([root_auth/0, nobody_auth/0, user_auth/1]).
+-export([normalize_subject/1]).
 -export([subject_to_json/1, subject_from_json/1]).
 -export([serialize_subject/1, deserialize_subject/1]).
 -export([service_to_json/1, service_from_json/1]).
@@ -159,13 +160,26 @@ nobody_auth() ->
 
 %%--------------------------------------------------------------------
 %% @doc
-%% Returns the Auth object representing NOBODY authorization
-%% (allowed only to perform publicly available operations).
+%% Returns the Auth object representing USER authorization for given UserId.
 %% @end
 %%--------------------------------------------------------------------
 -spec user_auth(UserId :: subject_id()) -> auth().
 user_auth(UserId) ->
     ?USER(UserId).
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Ensures that the subject represents an identity of an external actor in the
+%% system - user, Oneprovider or nobody (a.k.a. guest or anonymous). Transforms
+%% other subjects that are valid only in internal application logic
+%% (root, group) to nobody.
+%% @end
+%%--------------------------------------------------------------------
+-spec normalize_subject(aai:subject()) -> aai:subject().
+normalize_subject(?SUB(user, UserId)) -> ?SUB(user, UserId);
+normalize_subject(?SUB(?ONEPROVIDER, PrId)) -> ?SUB(?ONEPROVIDER, PrId);
+normalize_subject(_) -> ?SUB(nobody).
 
 
 -spec subject_to_json(subject()) -> json_utils:json_term().

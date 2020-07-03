@@ -61,7 +61,8 @@
 | {missing_at_least_one_value, [key()]} | {bad_data, key()}
 | {empty_value, key()} | {bad_value_atom, key()}
 | {bad_value_list_of_atoms, key()} | {bad_value_boolean, key()}
-| {bad_value_binary, key()} | {bad_value_list_of_binaries, key()}
+| {bad_value_binary, key()} | {bad_value_binary_too_long, key(), {max, integer()}}
+| {bad_value_list_of_binaries, key()}
 | {bad_value_integer, key()} | {bad_value_float, key()}
 | {bad_value_json, key()}
 | {bad_value_token, key(), auth()}
@@ -300,7 +301,7 @@ to_json(?ERROR_TOKEN_TOO_LARGE(SizeLimit)) -> #{
     <<"details">> => #{
         <<"limit">> => SizeLimit
     },
-    <<"description">> => ?FMT("Provided token exceeds the allowed size (~B bytes).", [SizeLimit])
+    <<"description">> => ?FMT("Provided token exceeds the allowed size (~B characters).", [SizeLimit])
 };
 to_json(?ERROR_NOT_AN_ACCESS_TOKEN(ReceivedTokenType)) -> #{
     <<"id">> => <<"notAnAccessToken">>,
@@ -488,6 +489,14 @@ to_json(?ERROR_BAD_VALUE_BINARY(Key)) -> #{
         <<"key">> => Key
     },
     <<"description">> => ?FMT("Bad value: provided \"~s\" must be a string.", [Key])
+};
+to_json(?ERROR_BAD_VALUE_BINARY_TOO_LARGE(Key, SizeLimit)) -> #{
+    <<"id">> => <<"badValueStringTooLarge">>,
+    <<"details">> => #{
+        <<"key">> => Key,
+        <<"limit">> => SizeLimit
+    },
+    <<"description">> => ?FMT("Bad value: provided \"~s\" cannot be larger than ~B characters.", [Key, SizeLimit])
 };
 to_json(?ERROR_BAD_VALUE_LIST_OF_BINARIES(Key)) -> #{
     <<"id">> => <<"badValueListOfStrings">>,
@@ -1151,6 +1160,9 @@ from_json(#{<<"id">> := <<"badValueBoolean">>, <<"details">> := #{<<"key">> := K
 from_json(#{<<"id">> := <<"badValueString">>, <<"details">> := #{<<"key">> := Key}}) ->
     ?ERROR_BAD_VALUE_BINARY(Key);
 
+from_json(#{<<"id">> := <<"badValueStringTooLarge">>, <<"details">> := #{<<"key">> := Key, <<"limit">> := SizeLimit}}) ->
+    ?ERROR_BAD_VALUE_BINARY_TOO_LARGE(Key, SizeLimit);
+
 from_json(#{<<"id">> := <<"badValueListOfStrings">>, <<"details">> := #{<<"key">> := Key}}) ->
     ?ERROR_BAD_VALUE_LIST_OF_BINARIES(Key);
 
@@ -1476,6 +1488,7 @@ to_http_code(?ERROR_BAD_VALUE_BOOLEAN(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_BAD_VALUE_ATOM(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_BAD_VALUE_LIST_OF_ATOMS(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_BAD_VALUE_BINARY(_)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_BAD_VALUE_BINARY_TOO_LARGE(_, _)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_BAD_VALUE_LIST_OF_BINARIES(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_BAD_VALUE_INTEGER(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_BAD_VALUE_FLOAT(_)) -> ?HTTP_400_BAD_REQUEST;
