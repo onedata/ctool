@@ -140,6 +140,7 @@ testcases() -> [
     {different, ?ERROR_BAD_VALUE_ATOM(<<"spaceId">>), ?ERROR_BAD_VALUE_BINARY(<<"spaceId">>)},
     {different, ?ERROR_BAD_VALUE_LIST_OF_ATOMS(<<"privileges">>), ?ERROR_BAD_VALUE_LIST_OF_BINARIES(<<"privileges">>)},
     ?ERROR_BAD_VALUE_BINARY(<<"spaceId">>),
+    ?ERROR_BAD_VALUE_BINARY_TOO_LARGE(<<"description">>, 1000),
     ?ERROR_BAD_VALUE_LIST_OF_BINARIES(<<"urls">>),
     ?ERROR_BAD_VALUE_INTEGER(<<"size">>),
     ?ERROR_BAD_VALUE_FLOAT(<<"latitude">>),
