@@ -100,6 +100,7 @@
 -type op_worker() :: user_not_supported | auto_cleaning_disabled
 | file_popularity_disabled
 | {space_not_supported_by, ProviderId :: binary()}
+| {space_not_supported_with, StorageId :: binary()}
 | storage_in_use
 | transfer_already_ended | transfer_not_ended
 | {storage_test_failed, read | write | remove}
@@ -815,6 +816,13 @@ to_json(?ERROR_SPACE_NOT_SUPPORTED_BY(ProviderId)) -> #{
     },
     <<"description">> => ?FMT("Specified space is not supported by provider ~s.", [ProviderId])
 };
+to_json(?ERROR_SPACE_NOT_SUPPORTED_WITH(StorageId)) -> #{
+    <<"id">> => <<"spaceNotSupportedWith">>,
+    <<"details">> => #{
+        <<"storageId">> => StorageId
+    },
+    <<"description">> => ?FMT("Specified space is not supported with storage ~s.", [StorageId])
+};
 to_json(?ERROR_STORAGE_IN_USE) -> #{
     <<"id">> => <<"storageInUse">>,
     <<"description">> => <<"Specified storage supports a space.">>
@@ -1321,6 +1329,9 @@ from_json(#{<<"id">> := <<"filePopularityDisabled">>}) ->
 from_json(#{<<"id">> := <<"spaceNotSupportedBy">>, <<"details">> := #{<<"providerId">> := ProviderId}}) ->
     ?ERROR_SPACE_NOT_SUPPORTED_BY(ProviderId);
 
+from_json(#{<<"id">> := <<"spaceNotSupportedWith">>, <<"details">> := #{<<"storageId">> := StorageId}}) ->
+    ?ERROR_SPACE_NOT_SUPPORTED_WITH(StorageId);
+
 from_json(#{<<"id">> := <<"storageInUse">>}) ->
     ?ERROR_STORAGE_IN_USE;
 
@@ -1543,6 +1554,7 @@ to_http_code(?ERROR_USER_NOT_SUPPORTED) -> ?HTTP_403_FORBIDDEN;
 to_http_code(?ERROR_AUTO_CLEANING_DISABLED) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_FILE_POPULARITY_DISABLED) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_SPACE_NOT_SUPPORTED_BY(_)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_SPACE_NOT_SUPPORTED_WITH(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_STORAGE_IN_USE) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_STORAGE_TEST_FAILED(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_REQUIRES_NON_IMPORTED_STORAGE(_)) -> ?HTTP_400_BAD_REQUEST;
