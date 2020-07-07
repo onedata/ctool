@@ -113,6 +113,11 @@
 % Entry can be a product version or GUI hash - there is a list of entries
 % specified per every version in the compatibility registry.
 -type entry() :: onedata:release_version() | onedata:gui_hash().
+% A positive integer denoting the revision of the compatibility registry,
+% incremented upon every update.
+-type revision() :: pos_integer().
+% Verbose error returned when the version queried for does not exist in the registry
+-type unknown_version_error() :: {unknown_version, onedata:release_version(), {revision, revision()}}.
 
 -define(REGISTRY_PATH, ctool:get_env(compatibility_registry_path)).
 -define(REGISTRY_CACHE_TTL, ctool:get_env(compatibility_registry_cache_ttl, 900)). % 15 minutes
@@ -137,7 +142,7 @@
     ProductA :: onedata:product(), VersionA :: onedata:release_version(),
     ProductB :: onedata:product(), VersionB :: onedata:release_version()) ->
     true | {false, CompatibleVersions :: [onedata:release_version()]} |
-    {error, unknown_version | cannot_parse_registry}.
+    {error, unknown_version_error() | cannot_parse_registry}.
 check_products_compatibility(?ONEZONE, VersionA, ?ONEPROVIDER, VersionB) ->
     check_entry([<<"compatibility">>, <<"onezone:oneprovider">>], VersionA, VersionB);
 check_products_compatibility(?ONEPROVIDER, VersionA, ?ONEZONE, VersionB) ->
@@ -153,23 +158,22 @@ check_products_compatibility(_, _, _, _) ->
 
 %%--------------------------------------------------------------------
 %% @doc
-%% Returns the list of product versions compatible with another product in given
-%% version. The list is always taken from the local registry (no fetch is attempted).
+%% Returns the list of product versions compatible with another product in given version.
 %% @end
 %%--------------------------------------------------------------------
 -spec get_compatible_versions(
     ProductA :: onedata:product(), VersionA :: onedata:release_version(),
     ProductB :: onedata:product()) ->
     {ok, CompatibleVersions :: [onedata:release_version()]} |
-    {error, unknown_version | cannot_parse_registry}.
+    {error, unknown_version_error() | cannot_parse_registry}.
 get_compatible_versions(?ONEZONE, VersionA, ?ONEPROVIDER) ->
-    get_entries([<<"compatibility">>, <<"onezone:oneprovider">>], VersionA, local);
+    get_entries([<<"compatibility">>, <<"onezone:oneprovider">>], VersionA);
 get_compatible_versions(?ONEPROVIDER, VersionA, ?ONEZONE) ->
-    get_entries([<<"compatibility">>, <<"oneprovider:onezone">>], VersionA, local);
+    get_entries([<<"compatibility">>, <<"oneprovider:onezone">>], VersionA);
 get_compatible_versions(?ONEPROVIDER, VersionA, ?ONEPROVIDER) ->
-    get_entries([<<"compatibility">>, <<"oneprovider:oneprovider">>], VersionA, local);
+    get_entries([<<"compatibility">>, <<"oneprovider:oneprovider">>], VersionA);
 get_compatible_versions(?ONEPROVIDER, VersionA, ?ONECLIENT) ->
-    get_entries([<<"compatibility">>, <<"oneprovider:oneclient">>], VersionA, local);
+    get_entries([<<"compatibility">>, <<"oneprovider:oneclient">>], VersionA);
 get_compatible_versions(_, _, _) ->
     error(badarg).
 
@@ -182,7 +186,7 @@ get_compatible_versions(_, _, _) ->
 -spec verify_gui_hash(?OP_WORKER_GUI | ?ONEPANEL_GUI | ?HARVESTER_GUI,
     onedata:release_version(), onedata:gui_hash()) ->
     true | {false, CorrectHashes :: [onedata:gui_hash()]} |
-    {error, unknown_version | cannot_parse_registry}.
+    {error, unknown_version_error() | cannot_parse_registry}.
 verify_gui_hash(?OP_WORKER_GUI, Version, GuiHash) ->
     check_entry([<<"gui-sha256">>, <<"op-worker">>], Version, GuiHash);
 verify_gui_hash(?ONEPANEL_GUI, Version, GuiHash) ->
@@ -213,12 +217,13 @@ clear_registry_cache() ->
 %% @private
 %% @doc
 %% Checks if given entry is on the list of all valid entries for given
-%% registry section and version.
+%% registry section and version. May attempt fetching a newer registry in case
+%% of a negative result.
 %% @end
 %%--------------------------------------------------------------------
 -spec check_entry(section(), onedata:release_version(), entry()) ->
     true | {false, ValidEntries :: [entry()]} |
-    {error, unknown_version | cannot_parse_registry}.
+    {error, unknown_version_error() | cannot_parse_registry}.
 check_entry(Section, Version, Entry) ->
     case check_entry(Section, Version, Entry, local) of
         true ->
@@ -241,7 +246,7 @@ check_entry(Section, Version, Entry) ->
 %% @private
 -spec check_entry(section(), onedata:release_version(), entry(), Strategy :: local | fetch) ->
     true | {false, ValidEntries :: [entry()]} |
-    {error, unknown_version | cannot_parse_registry | cannot_fetch_registry}.
+    {error, unknown_version_error() | cannot_parse_registry | cannot_fetch_registry}.
 check_entry(Section, Version, Entry, Strategy) ->
     case get_entries(Section, Version, Strategy) of
         {error, _} = Error ->
@@ -254,10 +259,39 @@ check_entry(Section, Version, Entry, Strategy) ->
     end.
 
 
+%%--------------------------------------------------------------------
+%% @private
+%% @doc
+%% Returns the list of all valid entries for given registry section and version.
+%% May attempt fetching a newer registry in case of a negative result.
+%% @end
+%%--------------------------------------------------------------------
+-spec get_entries(section(), onedata:release_version()) ->
+    {ok, [entry()]} |
+    {error, unknown_version_error() | cannot_parse_registry | cannot_fetch_registry}.
+get_entries(Section, Version) ->
+    case get_entries(Section, Version, local) of
+        {ok, Entries} ->
+            {ok, Entries};
+        FailureResult ->
+            case should_fetch_registry() of
+                true ->
+                    case get_entries(Section, Version, fetch) of
+                        {error, cannot_fetch_registry} ->
+                            FailureResult;
+                        Result ->
+                            Result
+                    end;
+                false ->
+                    FailureResult
+            end
+    end.
+
+
 %% @private
 -spec get_entries(section(), onedata:release_version(), Strategy :: local | fetch) ->
     {ok, [entry()]} |
-    {error, unknown_version | cannot_parse_registry | cannot_fetch_registry}.
+    {error, unknown_version_error() | cannot_parse_registry | cannot_fetch_registry}.
 get_entries(Section, Version, Strategy) ->
     case get_registry(Strategy) of
         {error, _} = Error ->
@@ -266,7 +300,7 @@ get_entries(Section, Version, Strategy) ->
             AllVersions = get_section(Section, Registry),
             case maps:find(Version, AllVersions) of
                 error ->
-                    {error, unknown_version};
+                    {error, {unknown_version, Version, {revision, revision(Registry)}}};
                 {ok, Entries} ->
                     {ok, Entries}
             end
@@ -474,7 +508,7 @@ take_default_registry_if_newer() ->
 
 
 %% @private
--spec peek_revision(file:name_all()) -> {ok, pos_integer()} | {error, cannot_parse_registry}.
+-spec peek_revision(file:name_all()) -> {ok, revision()} | {error, cannot_parse_registry}.
 peek_revision(RegistryFile) ->
     case file:read_file(RegistryFile) of
         {ok, Binary} ->
@@ -499,7 +533,7 @@ get_section(Section, Map) ->
 
 
 %% @private
--spec revision(registry()) -> pos_integer().
+-spec revision(registry()) -> revision().
 revision(#{<<"revision">> := Revision}) ->
     Revision.
 

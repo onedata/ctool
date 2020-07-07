@@ -74,6 +74,9 @@
         % is a chance that the static registry is outdated. The URLs are tried
         % in the order up to the first successful mirror.
         {compatibility_registry_mirrors, [
+            "https://onedata.org/compatibility.json",
+            "https://raw.githubusercontent.com/onedata/compatibility-reference/develop/compatibility.json",
+            % deprecated mirrors, to be removed in next major releases
             "https://onedata.org/docs/doc/compatibility_reference/compatibility.json",
             "https://raw.githubusercontent.com/onedata/onedata-documentation/master/doc/compatibility_reference/compatibility.json"
         ]},

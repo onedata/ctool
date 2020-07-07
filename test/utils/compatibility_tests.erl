@@ -185,10 +185,10 @@ simulate_time_passing(Seconds) ->
 )).
 
 oz_op_compatibility_check() ->
-    ?assertEqual({error, unknown_version}, ?OZvsOP(<<"18.02.1">>, <<"17.06.3">>)),
-    ?assertEqual({error, unknown_version}, ?OZvsOP(<<"18.02.2">>, <<"17.06.3">>)),
-    ?assertEqual({error, unknown_version}, ?OZvsOP(<<"17.06.3">>, <<"18.02.1">>)),
-    ?assertEqual({error, unknown_version}, ?OZvsOP(<<"17.06.4">>, <<"18.02.1">>)),
+    ?assertEqual({error, {unknown_version, <<"18.02.1">>, {revision, 2019010100}}}, ?OZvsOP(<<"18.02.1">>, <<"17.06.3">>)),
+    ?assertEqual({error, {unknown_version, <<"18.02.2">>, {revision, 2019010100}}}, ?OZvsOP(<<"18.02.2">>, <<"17.06.3">>)),
+    ?assertEqual({error, {unknown_version, <<"17.06.3">>, {revision, 2019010100}}}, ?OZvsOP(<<"17.06.3">>, <<"18.02.1">>)),
+    ?assertEqual({error, {unknown_version, <<"17.06.4">>, {revision, 2019010100}}}, ?OZvsOP(<<"17.06.4">>, <<"18.02.1">>)),
 
     mock_compatibility_file(#{
         <<"revision">> => 2019010100,
@@ -215,22 +215,22 @@ oz_op_compatibility_check() ->
     ?assertEqual({false, [<<"17.06.1">>, <<"17.06.2">>, <<"17.06.3">>]}, ?OZvsOP(<<"17.06.3">>, <<"18.02.1">>)),
     ?assertEqual({false, [<<"17.06.3">>, <<"18.02.1">>]}, ?OZvsOP(<<"18.02.1">>, <<"17.06.1">>)),
 
-    ?assertEqual({error, unknown_version}, ?OZvsOP(<<"17.06.1">>, <<"18.02.1">>)),
-    ?assertEqual({error, unknown_version}, ?OZvsOP(<<"17.06.2">>, <<"18.02.1">>)),
-    ?assertEqual({error, unknown_version}, ?OZvsOP(<<"17.06.4">>, <<"18.02.1">>)),
-    ?assertEqual({error, unknown_version}, ?OZvsOP(<<"18.02.2">>, <<"18.02.1">>)),
+    ?assertEqual({error, {unknown_version, <<"17.06.1">>, {revision, 2019010100}}}, ?OZvsOP(<<"17.06.1">>, <<"18.02.1">>)),
+    ?assertEqual({error, {unknown_version, <<"17.06.2">>, {revision, 2019010100}}}, ?OZvsOP(<<"17.06.2">>, <<"18.02.1">>)),
+    ?assertEqual({error, {unknown_version, <<"17.06.4">>, {revision, 2019010100}}}, ?OZvsOP(<<"17.06.4">>, <<"18.02.1">>)),
+    ?assertEqual({error, {unknown_version, <<"18.02.2">>, {revision, 2019010100}}}, ?OZvsOP(<<"18.02.2">>, <<"18.02.1">>)),
 
     ?assertEqual({ok, [<<"17.06.1">>, <<"17.06.2">>, <<"17.06.3">>]}, ?OZvsOPVersions(<<"17.06.3">>)),
     ?assertEqual({ok, [<<"17.06.3">>, <<"18.02.1">>]}, ?OZvsOPVersions(<<"18.02.1">>)),
-    ?assertEqual({error, unknown_version}, ?OZvsOPVersions(<<"18.02.2">>)),
+    ?assertEqual({error, {unknown_version, <<"18.02.2">>, {revision, 2019010100}}}, ?OZvsOPVersions(<<"18.02.2">>)),
 
     ok.
 
 op_oz_compatibility_check() ->
-    ?assertEqual({error, unknown_version}, ?OPvsOZ(<<"18.02.1">>, <<"17.06.3">>)),
-    ?assertEqual({error, unknown_version}, ?OPvsOZ(<<"18.02.2">>, <<"17.06.3">>)),
-    ?assertEqual({error, unknown_version}, ?OPvsOZ(<<"17.06.3">>, <<"18.02.1">>)),
-    ?assertEqual({error, unknown_version}, ?OPvsOZ(<<"17.06.4">>, <<"18.02.1">>)),
+    ?assertEqual({error, {unknown_version, <<"18.02.1">>, {revision, 2019010100}}}, ?OPvsOZ(<<"18.02.1">>, <<"17.06.3">>)),
+    ?assertEqual({error, {unknown_version, <<"18.02.2">>, {revision, 2019010100}}}, ?OPvsOZ(<<"18.02.2">>, <<"17.06.3">>)),
+    ?assertEqual({error, {unknown_version, <<"17.06.3">>, {revision, 2019010100}}}, ?OPvsOZ(<<"17.06.3">>, <<"18.02.1">>)),
+    ?assertEqual({error, {unknown_version, <<"17.06.4">>, {revision, 2019010100}}}, ?OPvsOZ(<<"17.06.4">>, <<"18.02.1">>)),
 
     mock_compatibility_file(#{
         <<"revision">> => 2019010100,
@@ -261,22 +261,22 @@ op_oz_compatibility_check() ->
     ?assertEqual({false, [<<"17.06.3">>, <<"17.06.2">>, <<"17.06.1">>]}, ?OPvsOZ(<<"17.06.3">>, <<"18.02.1">>)),
     ?assertEqual({false, [<<"18.02.1">>, <<"17.06.3">>]}, ?OPvsOZ(<<"18.02.1">>, <<"17.06.1">>)),
 
-    ?assertEqual({error, unknown_version}, ?OPvsOZ(<<"17.06.1">>, <<"18.02.1">>)),
-    ?assertEqual({error, unknown_version}, ?OPvsOZ(<<"17.06.2">>, <<"18.02.1">>)),
-    ?assertEqual({error, unknown_version}, ?OPvsOZ(<<"17.06.4">>, <<"18.02.1">>)),
-    ?assertEqual({error, unknown_version}, ?OPvsOZ(<<"18.02.2">>, <<"18.02.1">>)),
+    ?assertEqual({error, {unknown_version, <<"17.06.1">>, {revision, 2019010100}}}, ?OPvsOZ(<<"17.06.1">>, <<"18.02.1">>)),
+    ?assertEqual({error, {unknown_version, <<"17.06.2">>, {revision, 2019010100}}}, ?OPvsOZ(<<"17.06.2">>, <<"18.02.1">>)),
+    ?assertEqual({error, {unknown_version, <<"17.06.4">>, {revision, 2019010100}}}, ?OPvsOZ(<<"17.06.4">>, <<"18.02.1">>)),
+    ?assertEqual({error, {unknown_version, <<"18.02.2">>, {revision, 2019010100}}}, ?OPvsOZ(<<"18.02.2">>, <<"18.02.1">>)),
 
     ?assertEqual({ok, [<<"17.06.3">>, <<"17.06.2">>, <<"17.06.1">>]}, ?OPvsOZVersions(<<"17.06.3">>)),
     ?assertEqual({ok, [<<"18.02.1">>, <<"17.06.3">>]}, ?OPvsOZVersions(<<"18.02.1">>)),
-    ?assertEqual({error, unknown_version}, ?OPvsOZVersions(<<"18.02.2">>)),
+    ?assertEqual({error, {unknown_version, <<"18.02.2">>, {revision, 2019010100}}}, ?OPvsOZVersions(<<"18.02.2">>)),
 
     ok.
 
 op_op_compatibility_check() ->
-    ?assertEqual({error, unknown_version}, ?OPvsOP(<<"19.02.1">>, <<"18.02.4">>)),
-    ?assertEqual({error, unknown_version}, ?OPvsOP(<<"19.02.2">>, <<"20.02.1">>)),
-    ?assertEqual({error, unknown_version}, ?OPvsOP(<<"20.02.1">>, <<"19.02.2">>)),
-    ?assertEqual({error, unknown_version}, ?OPvsOP(<<"20.02.2">>, <<"18.02.4">>)),
+    ?assertEqual({error, {unknown_version, <<"19.02.1">>, {revision, 2019010100}}}, ?OPvsOP(<<"19.02.1">>, <<"18.02.4">>)),
+    ?assertEqual({error, {unknown_version, <<"19.02.2">>, {revision, 2019010100}}}, ?OPvsOP(<<"19.02.2">>, <<"20.02.1">>)),
+    ?assertEqual({error, {unknown_version, <<"20.02.1">>, {revision, 2019010100}}}, ?OPvsOP(<<"20.02.1">>, <<"19.02.2">>)),
+    ?assertEqual({error, {unknown_version, <<"20.02.2">>, {revision, 2019010100}}}, ?OPvsOP(<<"20.02.2">>, <<"18.02.4">>)),
 
     %% In case of compatibility between providers, the relation is symmetrical,
     %% but the registry file might not have symmetrical entries
@@ -322,24 +322,24 @@ op_op_compatibility_check() ->
     ?assertEqual({false, [<<"19.02.1">>, <<"19.02.2">>, <<"20.02.1">>]}, ?OPvsOP(<<"19.02.2">>, <<"19.02.3">>)),
     ?assertEqual({false, [<<"19.02.1">>, <<"19.02.2">>, <<"20.02.1">>]}, ?OPvsOP(<<"20.02.1">>, <<"18.02.4">>)),
 
-    ?assertEqual({error, unknown_version}, ?OPvsOP(<<"20.02.2">>, <<"18.02.4">>)),
-    ?assertEqual({error, unknown_version}, ?OPvsOP(<<"18.02.3">>, <<"18.02.1">>)),
+    ?assertEqual({error, {unknown_version, <<"20.02.2">>, {revision, 2019011700}}}, ?OPvsOP(<<"20.02.2">>, <<"18.02.4">>)),
+    ?assertEqual({error, {unknown_version, <<"18.02.3">>, {revision, 2019011700}}}, ?OPvsOP(<<"18.02.3">>, <<"18.02.1">>)),
 
     ?assertEqual({ok, [<<"19.02.1">>]}, ?OPvsOPVersions(<<"18.02.4">>)),
     ?assertEqual({ok, [<<"18.02.4">>, <<"19.02.1">>, <<"19.02.2">>, <<"20.02.1">>]}, ?OPvsOPVersions(<<"19.02.1">>)),
     ?assertEqual({ok, [<<"19.02.1">>, <<"19.02.2">>, <<"20.02.1">>]}, ?OPvsOPVersions(<<"19.02.2">>)),
     ?assertEqual({ok, [<<"19.02.1">>, <<"19.02.2">>, <<"20.02.1">>]}, ?OPvsOPVersions(<<"20.02.1">>)),
-    ?assertEqual({error, unknown_version}, ?OPvsOPVersions(<<"20.02.2">>)),
+    ?assertEqual({error, {unknown_version, <<"20.02.2">>, {revision, 2019011700}}}, ?OPvsOPVersions(<<"20.02.2">>)),
 
     ok.
 
 
 op_oc_compatibility_check() ->
-    ?assertEqual({error, unknown_version}, ?OPvsOC(<<"20.08.1">>, <<"20.08.1">>)),
-    ?assertEqual({error, unknown_version}, ?OPvsOC(<<"20.08.2">>, <<"19.02.1">>)),
-    ?assertEqual({error, unknown_version}, ?OPvsOC(<<"20.08.2">>, <<"20.08.1">>)),
-    ?assertEqual({error, unknown_version}, ?OPvsOC(<<"20.08.2">>, <<"20.08.2">>)),
-    ?assertEqual({error, unknown_version}, ?OPvsOC(<<"20.08.3">>, <<"20.08.2">>)),
+    ?assertEqual({error, {unknown_version, <<"20.08.1">>, {revision, 2019010100}}}, ?OPvsOC(<<"20.08.1">>, <<"20.08.1">>)),
+    ?assertEqual({error, {unknown_version, <<"20.08.2">>, {revision, 2019010100}}}, ?OPvsOC(<<"20.08.2">>, <<"19.02.1">>)),
+    ?assertEqual({error, {unknown_version, <<"20.08.2">>, {revision, 2019010100}}}, ?OPvsOC(<<"20.08.2">>, <<"20.08.1">>)),
+    ?assertEqual({error, {unknown_version, <<"20.08.2">>, {revision, 2019010100}}}, ?OPvsOC(<<"20.08.2">>, <<"20.08.2">>)),
+    ?assertEqual({error, {unknown_version, <<"20.08.3">>, {revision, 2019010100}}}, ?OPvsOC(<<"20.08.3">>, <<"20.08.2">>)),
 
     mock_compatibility_file(#{
         <<"revision">> => 2019112300,
@@ -369,12 +369,12 @@ op_oc_compatibility_check() ->
     ?assertEqual({false, [<<"19.02.1-rc11">>, <<"20.08.1">>, <<"20.08.2">>]}, ?OPvsOC(<<"20.08.2">>, <<"19.02.0">>)),
     ?assertEqual({false, [<<"19.02.1-rc11">>, <<"20.08.1">>, <<"20.08.2">>]}, ?OPvsOC(<<"20.08.2">>, <<"19.02.1-rc1">>)),
 
-    ?assertEqual({error, unknown_version}, ?OPvsOC(<<"20.08.3">>, <<"20.08.2">>)),
-    ?assertEqual({error, unknown_version}, ?OPvsOC(<<"19.02.1-rc11">>, <<"20.08.2">>)),
+    ?assertEqual({error, {unknown_version, <<"20.08.3">>, {revision, 2019112300}}}, ?OPvsOC(<<"20.08.3">>, <<"20.08.2">>)),
+    ?assertEqual({error, {unknown_version, <<"19.02.1-rc11">>, {revision, 2019112300}}}, ?OPvsOC(<<"19.02.1-rc11">>, <<"20.08.2">>)),
 
     ?assertEqual({ok, [<<"20.08.1">>]}, ?OPvsOCVersions(<<"20.08.1">>)),
     ?assertEqual({ok, [<<"19.02.1-rc11">>, <<"20.08.1">>, <<"20.08.2">>]}, ?OPvsOCVersions(<<"20.08.2">>)),
-    ?assertEqual({error, unknown_version}, ?OPvsOCVersions(<<"20.08.3">>)),
+    ?assertEqual({error, {unknown_version, <<"20.08.3">>, {revision, 2019112300}}}, ?OPvsOCVersions(<<"20.08.3">>)),
 
     ok.
 
@@ -420,11 +420,11 @@ caching_local_registry_content() ->
 
 
 gui_hash_verification() ->
-    ?assertEqual({error, unknown_version}, ?VerifyGUI(?OP_WORKER_GUI, <<"18.02.2">>, ?SHA_BETA)),
-    ?assertEqual({error, unknown_version}, ?VerifyGUI(?ONEPANEL_GUI, <<"19.02.1">>, ?SHA_DELTA)),
-    ?assertEqual({error, unknown_version}, ?VerifyGUI(?ONEPANEL_GUI, <<"19.02.2">>, ?SHA_GAMMA)),
-    ?assertEqual({error, unknown_version}, ?VerifyGUI(?ONEPANEL_GUI, <<"19.02.2">>, ?SHA_GAMMA)),
-    ?assertEqual({error, unknown_version}, ?VerifyGUI(?HARVESTER_GUI, <<"18.02.1">>, ?SHA_ALPHA)),
+    ?assertEqual({error, {unknown_version, <<"18.02.2">>, {revision, 2019010100}}}, ?VerifyGUI(?OP_WORKER_GUI, <<"18.02.2">>, ?SHA_BETA)),
+    ?assertEqual({error, {unknown_version, <<"19.02.1">>, {revision, 2019010100}}}, ?VerifyGUI(?ONEPANEL_GUI, <<"19.02.1">>, ?SHA_DELTA)),
+    ?assertEqual({error, {unknown_version, <<"19.02.2">>, {revision, 2019010100}}}, ?VerifyGUI(?ONEPANEL_GUI, <<"19.02.2">>, ?SHA_GAMMA)),
+    ?assertEqual({error, {unknown_version, <<"19.02.2">>, {revision, 2019010100}}}, ?VerifyGUI(?ONEPANEL_GUI, <<"19.02.2">>, ?SHA_GAMMA)),
+    ?assertEqual({error, {unknown_version, <<"18.02.1">>, {revision, 2019010100}}}, ?VerifyGUI(?HARVESTER_GUI, <<"18.02.1">>, ?SHA_ALPHA)),
 
     mock_compatibility_file(#{
         <<"revision">> => 2019071900,
@@ -474,10 +474,10 @@ gui_hash_verification() ->
     ?assertEqual({false, [?SHA_GAMMA]}, ?VerifyGUI(?ONEPANEL_GUI, <<"19.02.2">>, ?SHA_ALPHA)),
     ?assertEqual({false, [?SHA_KAPPA, ?SHA_SIGMA]}, ?VerifyGUI(?HARVESTER_GUI, <<"19.02.1">>, ?SHA_ALPHA)),
 
-    ?assertEqual({error, unknown_version}, ?VerifyGUI(?OP_WORKER_GUI, <<"18.02.3">>, ?SHA_OMEGA)),
-    ?assertEqual({error, unknown_version}, ?VerifyGUI(?ONEPANEL_GUI, <<"18.02.3">>, ?SHA_DELTA)),
-    ?assertEqual({error, unknown_version}, ?VerifyGUI(?ONEPANEL_GUI, <<"18.02.3">>, ?SHA_GAMMA)),
-    ?assertEqual({error, unknown_version}, ?VerifyGUI(?HARVESTER_GUI, <<"18.02.3">>, ?SHA_KAPPA)),
+    ?assertEqual({error, {unknown_version, <<"18.02.3">>, {revision, 2019071900}}}, ?VerifyGUI(?OP_WORKER_GUI, <<"18.02.3">>, ?SHA_OMEGA)),
+    ?assertEqual({error, {unknown_version, <<"18.02.3">>, {revision, 2019071900}}}, ?VerifyGUI(?ONEPANEL_GUI, <<"18.02.3">>, ?SHA_DELTA)),
+    ?assertEqual({error, {unknown_version, <<"18.02.3">>, {revision, 2019071900}}}, ?VerifyGUI(?ONEPANEL_GUI, <<"18.02.3">>, ?SHA_GAMMA)),
+    ?assertEqual({error, {unknown_version, <<"18.02.3">>, {revision, 2019071900}}}, ?VerifyGUI(?HARVESTER_GUI, <<"18.02.3">>, ?SHA_KAPPA)),
 
     ok.
 
@@ -535,7 +535,7 @@ taking_default_registry_if_newer() ->
     compatibility:clear_registry_cache(),
 
     ?assertEqual({ok, [<<"18.02.1">>]}, ?OZvsOPVersions(<<"18.02.1">>)),
-    ?assertEqual({error, unknown_version}, ?OZvsOPVersions(<<"20.02.1">>)),
+    ?assertEqual({error, {unknown_version, <<"20.02.1">>, {revision, 2019010100}}}, ?OZvsOPVersions(<<"20.02.1">>)),
 
     % Newer revision should be taken and overwrite the registry
     DefaultRegistry = #{
@@ -552,7 +552,7 @@ taking_default_registry_if_newer() ->
     compatibility:clear_registry_cache(),
 
     ?assertEqual({ok, [<<"20.02.1">>]}, ?OZvsOPVersions(<<"20.02.1">>)),
-    ?assertEqual({error, unknown_version}, ?OZvsOPVersions(<<"18.02.1">>)),
+    ?assertEqual({error, {unknown_version, <<"18.02.1">>, {revision, 2019020304}}}, ?OZvsOPVersions(<<"18.02.1">>)),
 
     CurrentRegistry = get_compatibility_file(),
     ?assertEqual(CurrentRegistry, DefaultRegistry).
@@ -590,9 +590,13 @@ fetching_newer_registry() ->
     % requested just yet
     ?assertEqual({false, [<<"18.02.1">>]}, ?OZvsOP(<<"18.02.1">>, <<"18.02.2">>)),
 
-    % But should requested be after clearing the cache
+    % But should be requested after clearing the cache
     compatibility:clear_registry_cache(),
+    %   if a query can returns a successful result, no fetch attempt is made
+    ?assertEqual({ok, [<<"18.02.1">>]}, ?OZvsOPVersions(<<"18.02.1">>)),
+    %   otherwise, the registry should be fetched
     ?assertEqual(true, ?OZvsOP(<<"18.02.1">>, <<"18.02.2">>)),
+    ?assertEqual({ok, [<<"18.02.1">>, <<"18.02.2">>]}, ?OZvsOPVersions(<<"18.02.1">>)),
 
     % ... and should overwrite the old one
     clear_mocked_mirrors(),
@@ -699,7 +703,7 @@ trying_multiple_mirrors() ->
     compatibility:clear_registry_cache(),
 
     % Mirrors are tried in order up to the first successful hit
-    ?assertEqual({error, unknown_version}, ?OPvsOC(<<"18.02.1">>, <<"17.06.3">>)),
+    ?assertEqual({error, {unknown_version, <<"18.02.1">>, {revision, 2019020100}}}, ?OPvsOC(<<"18.02.1">>, <<"17.06.3">>)),
     ?assertMatch(#{<<"revision">> := 2019020100}, get_compatibility_file()),
 
     % If a mirror returns an incomprehensible answer, it is ignored
@@ -707,31 +711,31 @@ trying_multiple_mirrors() ->
     mock_mirror_result(Alpha, {ok, 200, <<"wait:\"what'this'isnot-a-json,17">>}),
     mock_mirror_result(Beta, {ok, 200, #{<<"revision">> => 2019060100}}),
     compatibility:clear_registry_cache(),
-    ?assertEqual({error, unknown_version}, ?OPvsOC(<<"18.02.1">>, <<"17.06.3">>)),
+    ?assertEqual({error, {unknown_version, <<"18.02.1">>, {revision, 2019060100}}}, ?OPvsOC(<<"18.02.1">>, <<"17.06.3">>)),
     ?assertMatch(#{<<"revision">> := 2019060100}, get_compatibility_file()),
 
     % If all mirrors fail, local compatibility file is used for the check and
-    % {error, unknown_version} is returned
+    % unknown version error is returned
     mock_compatibility_file(#{<<"revision">> => 2019010100}),
     mock_mirror_result(Alpha, {ok, 307, <<"">>}),
     mock_mirror_result(Beta, {ok, 204, <<"">>}),
     mock_mirror_result(Gamma, {ok, 200, #{<<"revision">> => -1}}),
     mock_mirror_result(Delta, {ok, 200, <<"wait:\"what'this'isnot-a-json,17">>}),
     compatibility:clear_registry_cache(),
-    ?assertEqual({error, unknown_version}, ?OPvsOC(<<"18.02.1">>, <<"17.06.3">>)),
+    ?assertEqual({error, {unknown_version, <<"18.02.1">>, {revision, 2019010100}}}, ?OPvsOC(<<"18.02.1">>, <<"17.06.3">>)),
     ?assertMatch(#{<<"revision">> := 2019010100}, get_compatibility_file()),
 
     mock_compatibility_file(#{<<"revision">> => 2019010100}),
     [mock_mirror_result(M, {error, nxdomain}) || M <- [Alpha, Beta, Gamma, Delta]],
     compatibility:clear_registry_cache(),
-    ?assertEqual({error, unknown_version}, ?OPvsOC(<<"18.02.1">>, <<"17.06.3">>)),
+    ?assertEqual({error, {unknown_version, <<"18.02.1">>, {revision, 2019010100}}}, ?OPvsOC(<<"18.02.1">>, <<"17.06.3">>)),
     ?assertMatch(#{<<"revision">> := 2019010100}, get_compatibility_file()),
 
     % The same if there are no mirrors specified at all
     mock_compatibility_file(#{<<"revision">> => 2019010100}),
     mock_mirror_list([]),
     compatibility:clear_registry_cache(),
-    ?assertEqual({error, unknown_version}, ?OPvsOC(<<"18.02.1">>, <<"17.06.3">>)),
+    ?assertEqual({error, {unknown_version, <<"18.02.1">>, {revision, 2019010100}}}, ?OPvsOC(<<"18.02.1">>, <<"17.06.3">>)),
     ?assertMatch(#{<<"revision">> := 2019010100}, get_compatibility_file()),
 
     ok.
