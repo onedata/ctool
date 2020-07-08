@@ -107,6 +107,7 @@
 | {requires_non_imported_storage, StorageId :: binary()}
 | {requires_imported_storage, StorageId :: binary()}
 | {requires_posix_compatible_storage, StorageId :: binary(), PosixCompatibleStorages :: [binary()]}
+| {file_registration_not_supported, StorageId :: binary(), ObjectStorages :: [binary()]}
 | {view_not_exists_on, ProviderId :: binary()}
 | {view_query_failed, Category :: binary(), Description :: binary()}.
 
@@ -857,6 +858,15 @@ to_json(?ERROR_REQUIRES_POSIX_COMPATIBLE_STORAGE(StorageId, PosixCompatibleStora
         [StorageId, join_values_with_commas(PosixCompatibleStorages)]
     )
 };
+to_json(?ERROR_FILE_REGISTRATION_NOT_SUPPORTED(StorageId, ObjectStorages)) -> #{
+    <<"id">> => <<"fileRegistrationNotSupported">>,
+    <<"details">> => #{<<"storageId">> => StorageId, <<"objectStorages">> => ObjectStorages},
+    <<"description">> => ?FMT(
+        "Cannot perform file registration on storage ~s - this operation requires storage with canonical path type and on "
+        "object storages (any of: ~s) it requires blockSize = 0.",
+        [StorageId, join_values_with_commas(ObjectStorages)]
+    )
+};
 to_json(?ERROR_TRANSFER_ALREADY_ENDED) -> #{
     <<"id">> => <<"transferAlreadyEnded">>,
     <<"description">> => <<"Specified transfer has already ended.">>
@@ -1351,6 +1361,12 @@ from_json(#{<<"id">> := <<"requiresPosixCompatibleStorage">>, <<"details">> := #
 }}) ->
     ?ERROR_REQUIRES_POSIX_COMPATIBLE_STORAGE(StorageId, PosixCompatibleStorages);
 
+from_json(#{<<"id">> := <<"fileRegistrationNotSupported">>, <<"details">> := #{
+    <<"storageId">> := StorageId,
+    <<"objectStorages">> := ObjectStorages
+}}) ->
+    ?ERROR_FILE_REGISTRATION_NOT_SUPPORTED(StorageId, ObjectStorages);
+
 from_json(#{<<"id">> := <<"transferAlreadyEnded">>}) ->
     ?ERROR_TRANSFER_ALREADY_ENDED;
 
@@ -1560,6 +1576,7 @@ to_http_code(?ERROR_STORAGE_TEST_FAILED(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_REQUIRES_NON_IMPORTED_STORAGE(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_REQUIRES_IMPORTED_STORAGE(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_REQUIRES_POSIX_COMPATIBLE_STORAGE(_, _)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_FILE_REGISTRATION_NOT_SUPPORTED(_, _)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_TRANSFER_ALREADY_ENDED) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_TRANSFER_NOT_ENDED) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_VIEW_NOT_EXISTS_ON(_)) -> ?HTTP_400_BAD_REQUEST;
