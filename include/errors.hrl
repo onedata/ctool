@@ -170,6 +170,7 @@
 -define(ERROR_SPACE_NOT_SUPPORTED_BY(ProviderId), {error, {space_not_supported_by, ProviderId}}).
 -define(ERROR_SPACE_NOT_SUPPORTED_WITH(StorageId), {error, {space_not_supported_with, StorageId}}).
 -define(ERROR_STORAGE_IN_USE, {error, storage_in_use}).
+-define(ERROR_STORAGE_NOT_SUPPORTING_STAT, {error, storage_not_supporting_stat}).
 -define(ERROR_STORAGE_TEST_FAILED(Operation), {error, {storage_test_failed, Operation}}).
 -define(ERROR_REQUIRES_NON_IMPORTED_STORAGE(StorageId), {error, {requires_non_imported_storage, StorageId}}).
 -define(ERROR_REQUIRES_IMPORTED_STORAGE(StorageId), {error, {requires_imported_storage, StorageId}}).

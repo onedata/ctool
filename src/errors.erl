@@ -102,6 +102,7 @@
 | {space_not_supported_by, ProviderId :: binary()}
 | {space_not_supported_with, StorageId :: binary()}
 | storage_in_use
+| storage_not_supporting_stat
 | transfer_already_ended | transfer_not_ended
 | {storage_test_failed, read | write | remove}
 | {requires_non_imported_storage, StorageId :: binary()}
@@ -828,6 +829,10 @@ to_json(?ERROR_STORAGE_IN_USE) -> #{
     <<"id">> => <<"storageInUse">>,
     <<"description">> => <<"Specified storage supports a space.">>
 };
+to_json(?ERROR_STORAGE_NOT_SUPPORTING_STAT) -> #{
+    <<"id">> => <<"storageNotSupportingStat">>,
+    <<"description">> => <<"Specified storage does not supports a stat operation.">>
+};
 to_json(?ERROR_STORAGE_TEST_FAILED(Operation)) -> #{
     <<"id">> => <<"storageTestFailed">>,
     <<"details">> => #{<<"operation">> => str_utils:to_binary(Operation)},
@@ -1345,6 +1350,9 @@ from_json(#{<<"id">> := <<"spaceNotSupportedWith">>, <<"details">> := #{<<"stora
 from_json(#{<<"id">> := <<"storageInUse">>}) ->
     ?ERROR_STORAGE_IN_USE;
 
+from_json(#{<<"id">> := <<"storageNotSupportingStat">>}) ->
+    ?ERROR_STORAGE_NOT_SUPPORTING_STAT;
+
 from_json(#{<<"id">> := <<"storageTestFailed">>, <<"details">> := #{<<"operation">> := Operation}})
     when Operation == <<"read">>; Operation == <<"write">>; Operation == <<"remove">> ->
     ?ERROR_STORAGE_TEST_FAILED(binary_to_atom(Operation, utf8));
@@ -1572,6 +1580,7 @@ to_http_code(?ERROR_FILE_POPULARITY_DISABLED) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_SPACE_NOT_SUPPORTED_BY(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_SPACE_NOT_SUPPORTED_WITH(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_STORAGE_IN_USE) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_STORAGE_NOT_SUPPORTING_STAT) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_STORAGE_TEST_FAILED(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_REQUIRES_NON_IMPORTED_STORAGE(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_REQUIRES_IMPORTED_STORAGE(_)) -> ?HTTP_400_BAD_REQUEST;
