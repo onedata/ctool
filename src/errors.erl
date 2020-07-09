@@ -102,6 +102,7 @@
 | {space_not_supported_by, ProviderId :: binary()}
 | {space_not_supported_with, StorageId :: binary()}
 | storage_in_use
+| storage_import_enabled
 | storage_not_supporting_stat
 | transfer_already_ended | transfer_not_ended
 | {storage_test_failed, read | write | remove}
@@ -829,6 +830,10 @@ to_json(?ERROR_STORAGE_IN_USE) -> #{
     <<"id">> => <<"storageInUse">>,
     <<"description">> => <<"Specified storage supports a space.">>
 };
+to_json(?ERROR_STORAGE_IMPORT_ENABLED) -> #{
+    <<"id">> => <<"storageImportEnabled">>,
+    <<"description">> => <<"Operation cannot be performed in space with enabled storage import mechanism.">>
+};
 to_json(?ERROR_STORAGE_NOT_SUPPORTING_STAT) -> #{
     <<"id">> => <<"storageNotSupportingStat">>,
     <<"description">> => <<"Specified storage does not supports a stat operation.">>
@@ -1350,6 +1355,9 @@ from_json(#{<<"id">> := <<"spaceNotSupportedWith">>, <<"details">> := #{<<"stora
 from_json(#{<<"id">> := <<"storageInUse">>}) ->
     ?ERROR_STORAGE_IN_USE;
 
+from_json(#{<<"id">> := <<"storageImportEnabled">>}) ->
+    ?ERROR_STORAGE_IMPORT_ENABLED;
+
 from_json(#{<<"id">> := <<"storageNotSupportingStat">>}) ->
     ?ERROR_STORAGE_NOT_SUPPORTING_STAT;
 
@@ -1580,6 +1588,7 @@ to_http_code(?ERROR_FILE_POPULARITY_DISABLED) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_SPACE_NOT_SUPPORTED_BY(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_SPACE_NOT_SUPPORTED_WITH(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_STORAGE_IN_USE) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_STORAGE_IMPORT_ENABLED) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_STORAGE_NOT_SUPPORTING_STAT) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_STORAGE_TEST_FAILED(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_REQUIRES_NON_IMPORTED_STORAGE(_)) -> ?HTTP_400_BAD_REQUEST;
