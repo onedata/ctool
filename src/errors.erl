@@ -100,16 +100,16 @@
 -type op_worker() :: user_not_supported | auto_cleaning_disabled
 | file_popularity_disabled
 | {space_not_supported_by, ProviderId :: binary()}
-| {space_not_supported_with, StorageId :: binary()}
+| {not_a_local_storage_supporting_space, ProviderId :: binary(), StorageId :: binary(), SpaceId :: binary()}
 | storage_in_use
 | storage_import_enabled
-| storage_not_supporting_stat
 | transfer_already_ended | transfer_not_ended
 | {storage_test_failed, read | write | remove}
 | {requires_non_imported_storage, StorageId :: binary()}
 | {requires_imported_storage, StorageId :: binary()}
 | {requires_posix_compatible_storage, StorageId :: binary(), PosixCompatibleStorages :: [binary()]}
 | {file_registration_not_supported, StorageId :: binary(), ObjectStorages :: [binary()]}
+| {stat_operation_not_supported, StorageId :: binary}
 | {view_not_exists_on, ProviderId :: binary()}
 | {view_query_failed, Category :: binary(), Description :: binary()}.
 
@@ -819,12 +819,17 @@ to_json(?ERROR_SPACE_NOT_SUPPORTED_BY(ProviderId)) -> #{
     },
     <<"description">> => ?FMT("Specified space is not supported by provider ~s.", [ProviderId])
 };
-to_json(?ERROR_SPACE_NOT_SUPPORTED_WITH(StorageId)) -> #{
-    <<"id">> => <<"spaceNotSupportedWith">>,
+to_json(?ERROR_NOT_A_LOCAL_STORAGE_SUPPORTING_SPACE(ProviderId, StorageId, SpaceId)) -> #{
+    <<"id">> => <<"notALocalStorageSupportingSpace">>,
     <<"details">> => #{
-        <<"storageId">> => StorageId
+        <<"providerId">> => ProviderId,
+        <<"storageId">> => StorageId,
+        <<"spaceId">> => SpaceId
     },
-    <<"description">> => ?FMT("Specified space is not supported with storage ~s.", [StorageId])
+    <<"description">> => ?FMT(
+        "Storage ~s does not belong to this Oneprovider (~s) and/or does not support the space ~s.",
+        [StorageId, ProviderId, SpaceId]
+    )
 };
 to_json(?ERROR_STORAGE_IN_USE) -> #{
     <<"id">> => <<"storageInUse">>,
@@ -833,10 +838,6 @@ to_json(?ERROR_STORAGE_IN_USE) -> #{
 to_json(?ERROR_STORAGE_IMPORT_ENABLED) -> #{
     <<"id">> => <<"storageImportEnabled">>,
     <<"description">> => <<"Operation cannot be performed in space with enabled storage import mechanism.">>
-};
-to_json(?ERROR_STORAGE_NOT_SUPPORTING_STAT) -> #{
-    <<"id">> => <<"storageNotSupportingStat">>,
-    <<"description">> => <<"Specified storage does not supports a stat operation.">>
 };
 to_json(?ERROR_STORAGE_TEST_FAILED(Operation)) -> #{
     <<"id">> => <<"storageTestFailed">>,
@@ -875,6 +876,14 @@ to_json(?ERROR_FILE_REGISTRATION_NOT_SUPPORTED(StorageId, ObjectStorages)) -> #{
         "Cannot perform file registration on storage ~s - this operation requires storage with canonical path type and on "
         "object storages (any of: ~s) it requires blockSize = 0.",
         [StorageId, join_values_with_commas(ObjectStorages)]
+    )
+};
+to_json(?ERROR_STAT_OPERATION_NOT_SUPPORTED(StorageId)) -> #{
+    <<"id">> => <<"statOperationNotSupported">>,
+    <<"details">> => #{<<"storageId">> => StorageId},
+    <<"description">> => ?FMT(
+        "Storage ~s does not support the `stat` operation or equivalent used for acquiring files metadata.",
+        [StorageId]
     )
 };
 to_json(?ERROR_TRANSFER_ALREADY_ENDED) -> #{
@@ -1349,17 +1358,18 @@ from_json(#{<<"id">> := <<"filePopularityDisabled">>}) ->
 from_json(#{<<"id">> := <<"spaceNotSupportedBy">>, <<"details">> := #{<<"providerId">> := ProviderId}}) ->
     ?ERROR_SPACE_NOT_SUPPORTED_BY(ProviderId);
 
-from_json(#{<<"id">> := <<"spaceNotSupportedWith">>, <<"details">> := #{<<"storageId">> := StorageId}}) ->
-    ?ERROR_SPACE_NOT_SUPPORTED_WITH(StorageId);
+from_json(#{<<"id">> := <<"notALocalStorageSupportingSpace">>, <<"details">> := #{
+    <<"providerId">> := ProviderId,
+    <<"storageId">> := StorageId,
+    <<"spaceId">> := SpaceId
+}}) ->
+    ?ERROR_NOT_A_LOCAL_STORAGE_SUPPORTING_SPACE(ProviderId, StorageId, SpaceId);
 
 from_json(#{<<"id">> := <<"storageInUse">>}) ->
     ?ERROR_STORAGE_IN_USE;
 
 from_json(#{<<"id">> := <<"storageImportEnabled">>}) ->
     ?ERROR_STORAGE_IMPORT_ENABLED;
-
-from_json(#{<<"id">> := <<"storageNotSupportingStat">>}) ->
-    ?ERROR_STORAGE_NOT_SUPPORTING_STAT;
 
 from_json(#{<<"id">> := <<"storageTestFailed">>, <<"details">> := #{<<"operation">> := Operation}})
     when Operation == <<"read">>; Operation == <<"write">>; Operation == <<"remove">> ->
@@ -1382,6 +1392,11 @@ from_json(#{<<"id">> := <<"fileRegistrationNotSupported">>, <<"details">> := #{
     <<"objectStorages">> := ObjectStorages
 }}) ->
     ?ERROR_FILE_REGISTRATION_NOT_SUPPORTED(StorageId, ObjectStorages);
+
+from_json(#{<<"id">> := <<"statOperationNotSupported">>, <<"details">> := #{
+    <<"storageId">> := StorageId
+}}) ->
+    ?ERROR_STAT_OPERATION_NOT_SUPPORTED(StorageId);
 
 from_json(#{<<"id">> := <<"transferAlreadyEnded">>}) ->
     ?ERROR_TRANSFER_ALREADY_ENDED;
@@ -1586,15 +1601,15 @@ to_http_code(?ERROR_USER_NOT_SUPPORTED) -> ?HTTP_403_FORBIDDEN;
 to_http_code(?ERROR_AUTO_CLEANING_DISABLED) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_FILE_POPULARITY_DISABLED) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_SPACE_NOT_SUPPORTED_BY(_)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_SPACE_NOT_SUPPORTED_WITH(_)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_NOT_A_LOCAL_STORAGE_SUPPORTING_SPACE(_, _, _)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_STORAGE_IN_USE) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_STORAGE_IMPORT_ENABLED) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_STORAGE_NOT_SUPPORTING_STAT) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_STORAGE_TEST_FAILED(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_REQUIRES_NON_IMPORTED_STORAGE(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_REQUIRES_IMPORTED_STORAGE(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_REQUIRES_POSIX_COMPATIBLE_STORAGE(_, _)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_FILE_REGISTRATION_NOT_SUPPORTED(_, _)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_STAT_OPERATION_NOT_SUPPORTED(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_TRANSFER_ALREADY_ENDED) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_TRANSFER_NOT_ENDED) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_VIEW_NOT_EXISTS_ON(_)) -> ?HTTP_400_BAD_REQUEST;
