@@ -74,7 +74,7 @@
 | {value_not_allowed, key(), {allowed, [term()]}}
 | {values_not_allowed, key(), {allowed, [term()]}} | {id_not_found, key()}
 | {ambiguous_id, key()} | {bad_identifier, key()} | {identifier_occupied, key()}
-| {bad_octal, Key :: key()}
+| {bad_value_octal, Key :: key()}
 | bad_full_name | bad_username | bad_password | bad_value_email | bad_name
 | bad_value_domain | bad_value_subdomain
 | {bad_value_caveat, Caveat :: binary() | json_utils:json_map()} | bad_gui_package
