@@ -43,7 +43,7 @@
 -define(HDR_COOKIE, <<"cookie">>).
 -define(HDR_LOCATION, <<"location">>).
 -define(HDR_UPGRADE, <<"upgrade">>).
--define(HDR_X_FRAME_OPTIONS, <<"x-frame-options">>).
+-define(HDR_CONTENT_SECURITY_POLICY, <<"content-security-policy">>).
 -define(HDR_CACHE_CONTROL, <<"cache-control">>).
 
 -endif.
