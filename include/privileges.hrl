@@ -53,6 +53,7 @@
 
 -define(SPACE_READ_DATA, space_read_data).
 -define(SPACE_WRITE_DATA, space_write_data).
+-define(SPACE_REGISTER_FILES, space_register_files).
 -define(SPACE_MANAGE_SHARES, space_manage_shares).
 
 -define(SPACE_VIEW_VIEWS, space_view_views).
