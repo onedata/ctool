@@ -11,8 +11,10 @@
 %%%-------------------------------------------------------------------
 -module(utils).
 
+-include("logging.hrl").
+
 %% API
--export([ensure_running/1, pmap/2, pforeach/2]).
+-export([ensure_running/1]).
 -export([record_type/1, trim_spaces/1, ceil/1, average/1]).
 -export([get_host/1, get_host_as_atom/1, cmd/1]).
 -export([process_info/1, process_info/2]).
@@ -25,8 +27,6 @@
 -export([ensure_list/1]).
 
 -type time_unit() :: us | ms | s | min | h.
-
--define(TIMEOUT, 60000).
 
 %%%===================================================================
 %%% API
@@ -43,39 +43,6 @@ ensure_running(Application) ->
         {error, {already_started, Application}} -> ok;
         EverythingElse -> EverythingElse
     end.
-
-%%--------------------------------------------------------------------
-%% @doc
-%% A  parallel version of lists:map/2. See {@link lists:map/2}
-%% @end
-%%--------------------------------------------------------------------
--spec pmap(Fun :: fun((X :: A) -> B), L :: [A]) -> [B].
-pmap(Fun, [X]) ->
-    [catch Fun(X)];
-pmap(Fun, L) ->
-    Self = self(),
-    Ref = erlang:make_ref(),
-    PIDs = lists:map(fun(X) ->
-        spawn(fun() -> pmap_f(Self, Ref, Fun, X) end)
-    end, L),
-    pmap_gather(PIDs, Ref, []).
-
-%%--------------------------------------------------------------------
-%% @doc
-%% A parallel version of lists:foreach/2. See {@link lists:foreach/2}
-%% @end
-%%--------------------------------------------------------------------
--spec pforeach(Fun :: fun((X :: A) -> any()), L :: [A]) -> ok | error.
-pforeach(Fun, [X]) ->
-    catch Fun(X),
-    ok;
-pforeach(Fun, L) ->
-    Self = self(),
-    Ref = erlang:make_ref(),
-    Pids = lists:map(fun(X) ->
-        spawn(fun() -> pforeach_f(Self, Ref, Fun, X) end)
-    end, L),
-    pforeach_gather(Pids, Ref).
 
 
 %%--------------------------------------------------------------------
@@ -408,79 +375,3 @@ next_time_unit(ms) -> {s, 1000};
 next_time_unit(s) -> {min, 60};
 next_time_unit(min) -> {h, 60};
 next_time_unit(h) -> {undefined, undefiend}.
-
-%%--------------------------------------------------------------------
-%% @private
-%% @doc
-%% Runs a function on X and returns its result to parent.
-%% @end
-%%--------------------------------------------------------------------
--spec pmap_f(Parent :: pid(), Ref :: reference(), Fun :: fun((E :: A) -> any()), X :: A) -> {pid(), reference(), term()}.
-pmap_f(Parent, Ref, Fun, X) -> Parent ! {self(), Ref, (catch Fun(X))}.
-
-%%--------------------------------------------------------------------
-%% @private
-%% @doc
-%% Gathers the results of pmap.
-%% @end
-%%--------------------------------------------------------------------
--spec pmap_gather(PIDs :: [pid()], Ref :: reference(), Acc :: list()) ->
-    list().
-pmap_gather([], _Ref, Acc) -> lists:reverse(Acc);
-pmap_gather([PID | T] = Pids, Ref, Acc) ->
-    receive
-        {PID, Ref, Result} -> pmap_gather(T, Ref, [Result | Acc])
-    after
-        ?TIMEOUT ->
-            IsAnyAlive = lists:foldl(fun
-                (_, true) ->
-                    true;
-                (Pid, _Acc) ->
-                    erlang:is_process_alive(Pid)
-            end, false, Pids),
-            case IsAnyAlive of
-                true ->
-                    pmap_gather(Pids, Ref, Acc);
-                false ->
-                    Errors = lists:map(fun(_) -> {error, slave_error} end, Pids),
-                    lists:reverse(Acc) ++ Errors
-            end
-    end.
-
-%%--------------------------------------------------------------------
-%% @private
-%% @doc
-%% Runs a function on X and signals parent that it's done.
-%% @end
-%%--------------------------------------------------------------------
--spec pforeach_f(Parent :: pid(), Ref :: reference(),
-    Fun :: fun((E :: A) -> any()), X :: A) -> {reference(), pid()}.
-pforeach_f(Parent, Ref, Fun, X) -> catch Fun(X), Parent ! {Ref, self()}.
-
-%%--------------------------------------------------------------------
-%% @private
-%% @doc
-%% Joins pforeach processes.
-%% @end
-%%--------------------------------------------------------------------
--spec pforeach_gather([pid()], Ref :: reference()) -> ok | error.
-pforeach_gather([], _Ref) -> ok;
-pforeach_gather(Pids, Ref) ->
-    receive
-        {Ref, Pid} -> pforeach_gather(Pids -- [Pid], Ref)
-    after
-        ?TIMEOUT ->
-            IsAnyAlive = lists:foldl(fun
-                (_, true) ->
-                    true;
-                (Pid, _Acc) ->
-                    erlang:is_process_alive(Pid)
-            end, false, Pids),
-            case IsAnyAlive of
-                true ->
-                    pforeach_gather(Pids, Ref);
-                false ->
-                    error
-            end
-    end.
-

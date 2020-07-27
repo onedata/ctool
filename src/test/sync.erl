@@ -414,10 +414,9 @@ update_erl_files(ProjectDir, DirsToRecompile, Includes) ->
     FilesToCheck = FilesInDirs ++ ets_lookup(files, []),
 
     % Do the recompilation
-    CompilationResults = utils:pmap(
-        fun(File) ->
-            update_erl_file(File, AllIncludes ++ [report])
-        end, FilesToCheck),
+    CompilationResults = lists_utils:pmap(fun(File) ->
+        update_erl_file(File, AllIncludes ++ [report])
+    end, FilesToCheck),
 
     % Count number of successful updates, files that were up to data and
     % fiels that were failed to update.
