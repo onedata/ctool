@@ -24,7 +24,7 @@
 %% API
 -export([hd/1]).
 -export([union/1, union/2, intersect/2, subtract/2]).
--export([has_all_members/2]).
+-export([is_subset/2]).
 -export([replace/3]).
 -export([ensure_length/2, number_items/1]).
 -export([shuffle/1, random_element/1, random_sublist/1, random_sublist/3]).
@@ -88,9 +88,10 @@ subtract(List1, List2) ->
     )).
 
 
--spec has_all_members(ElementsToCheck :: list(), List :: list()) -> boolean().
-has_all_members(ElementsToCheck, List) ->
-    lists:all(fun(X) -> lists:member(X, List) end, ElementsToCheck).
+-spec is_subset(Subset :: list(), AllElements :: list()) -> boolean().
+is_subset(Subset, AllElements) ->
+    lists:all(fun(X) -> lists:member(X, AllElements) end, Subset).
+
 
 %%--------------------------------------------------------------------
 %% @doc Replaces the first occurrence of Element with Replacement (if any).
@@ -101,7 +102,7 @@ replace(Element, Replacement, [Element | T]) ->
     [Replacement | T];
 replace(Element, Replacement, [H | T]) ->
     [H | replace(Element, Replacement, T)];
-replace(_Pattern, _Replacement, []) ->
+replace(_Element, _Replacement, []) ->
     [].
 
 
@@ -188,34 +189,34 @@ pmap(Fun, Elements) ->
         end)
     end, Elements),
 
-    % ResultsAcc is initially the list of pids, gradually replaced by corresponding results
     Gather = fun
-        F([], ResultsAcc) ->
-            % wait for all pids and then look for errors
+        % PidsOrResults is initially the list of pids, gradually replaced by corresponding results
+        F(PendingPids = [_ | _], PidsOrResults) ->
+            receive
+                {Ref, Pid, Result} ->
+                    NewPidsOrResults = lists_utils:replace(Pid, Result, PidsOrResults),
+                    F(lists:delete(Pid, PendingPids), NewPidsOrResults)
+            after 5000 ->
+                case lists:any(fun erlang:is_process_alive/1, PendingPids) of
+                    true ->
+                        F(PendingPids, PidsOrResults);
+                    false ->
+                        error({parallel_call_failed, {processes_dead, Pids}})
+                end
+            end;
+        % wait for all pids to report back and then look for errors
+        F([], AllResults) ->
             Errors = lists:filtermap(fun
                 ({'$pmap_error', Pid, Type, Reason, Stacktrace}) ->
                     {true, {Pid, Type, Reason, Stacktrace}};
                 (_) ->
                     false
-            end, ResultsAcc),
+            end, AllResults),
             case Errors of
                 [] ->
-                    ResultsAcc;
+                    AllResults;
                 _ ->
                     error({parallel_call_failed, {failed_processes, Errors}})
-            end;
-        F(PendingPids, ResultsAcc) ->
-            receive
-                {Ref, Pid, Result} ->
-                    NewResultsAcc = lists_utils:replace(Pid, Result, ResultsAcc),
-                    F(lists:delete(Pid, PendingPids), NewResultsAcc)
-            after 5000 ->
-                case lists:any(fun erlang:is_process_alive/1, PendingPids) of
-                    true ->
-                        F(PendingPids, ResultsAcc);
-                    false ->
-                        error({parallel_call_failed, {processes_dead, Pids}})
-                end
             end
     end,
     Gather(Pids, Pids).

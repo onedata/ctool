@@ -13,11 +13,11 @@
 
 -include_lib("eunit/include/eunit.hrl").
 
-has_all_members_test() ->
-    ?assert(lists_utils:has_all_members([1, 5, 9], [9, 8, 4, 1, 1, 6, 5])),
-    ?assert(not lists_utils:has_all_members([1, 5, 9], [9, 8, 4, 6, 5])),
-    ?assert(lists_utils:has_all_members([], [9, 8, 4, 6, 5])),
-    ?assert(not lists_utils:has_all_members([1, 5, 9], [])).
+is_subset_test() ->
+    ?assert(lists_utils:is_subset([1, 5, 9], [9, 8, 4, 1, 1, 6, 5])),
+    ?assert(not lists_utils:is_subset([1, 5, 9], [9, 8, 4, 6, 5])),
+    ?assert(lists_utils:is_subset([], [9, 8, 4, 6, 5])),
+    ?assert(not lists_utils:is_subset([1, 5, 9], [])).
 
 
 replace_test() ->
@@ -37,9 +37,10 @@ pmap_pforeach_test_() ->
         ?assertEqual(lists:map(SimpleFun, List), lists_utils:pmap(SimpleFun, List)),
         ?assertEqual(lists:foreach(SimpleFun, List), lists_utils:pforeach(SimpleFun, List)),
 
-        LongLastingFun = fun(X) -> timer:sleep(5000 + rand:uniform(1000)), 8 / X end,
-        ?assertMatch([_ | _], lists_utils:pmap(LongLastingFun, List)),
-        ?assertEqual(ok, lists_utils:pforeach(LongLastingFun, List)),
+        AnotherFun = fun(X) -> 8 / X end,
+        AnotherFunLongLasting = fun(X) -> timer:sleep(5000 + rand:uniform(1000)), AnotherFun(X) end,
+        ?assertEqual(lists:map(AnotherFun, List), lists_utils:pmap(AnotherFunLongLasting, List)),
+        ?assertEqual(lists:foreach(AnotherFun, List), lists_utils:pforeach(AnotherFunLongLasting, List)),
 
         CrashingFun = fun(X) ->
             case rand:uniform(4) of

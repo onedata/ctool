@@ -749,7 +749,10 @@ to_json(?ERROR_CANNOT_REMOVE_LAST_OWNER(EntityType, EntityId)) -> #{
         <<"entityType">> => EntityType,
         <<"entityId">> => EntityId
     },
-    <<"description">> => <<"Cannot remove the last owner - another owner must be assigned first.">>
+    <<"description">> => <<
+        "Cannot remove the last owner - another owner must be assigned first. "
+        "Ownership can be granted to any direct or effective member."
+    >>
 };
 to_json(?ERROR_CANNOT_DELETE_ENTITY(EntityType, EntityId)) -> #{
     <<"id">> => <<"cannotDeleteEntity">>,
