@@ -11,6 +11,8 @@
 -module(lists_utils).
 -author("Krzysztof Trzepla").
 
+-include("logging.hrl").
+
 -type key() :: term().
 -type value() :: term().
 -type kvlist(Key, Value) :: [{Key, Value}].
@@ -22,15 +24,17 @@
 %% API
 -export([hd/1]).
 -export([union/1, union/2, intersect/2, subtract/2]).
+-export([is_subset/2]).
+-export([replace/3]).
 -export([ensure_length/2, number_items/1]).
 -export([shuffle/1, random_element/1, random_sublist/1, random_sublist/3]).
+-export([pmap/2, pforeach/2]).
 -export([foldl_while/3]).
 
 
 %%%===================================================================
 %%% API functions
 %%%===================================================================
-
 
 %%--------------------------------------------------------------------
 %% @doc Returns head of the list or 'undefined' if the lists is empty.
@@ -55,10 +59,9 @@ union(List1, List2) ->
 %%--------------------------------------------------------------------
 -spec union(ListOfLists :: [[T]]) -> [T].
 union(ListOfLists) ->
-    Union = ordsets:union(
+    ordsets:to_list(ordsets:union(
         lists:map(fun ordsets:from_list/1, ListOfLists)
-    ),
-    ordsets:to_list(Union).
+    )).
 
 
 %%--------------------------------------------------------------------
@@ -83,6 +86,24 @@ subtract(List1, List2) ->
     ordsets:to_list(ordsets:subtract(
         ordsets:from_list(List1), ordsets:from_list(List2)
     )).
+
+
+-spec is_subset(Subset :: list(), AllElements :: list()) -> boolean().
+is_subset(Subset, AllElements) ->
+    lists:all(fun(X) -> lists:member(X, AllElements) end, Subset).
+
+
+%%--------------------------------------------------------------------
+%% @doc Replaces the first occurrence of Element with Replacement (if any).
+%% @end
+%%--------------------------------------------------------------------
+-spec replace(T, T, [T]) -> [T].
+replace(Element, Replacement, [Element | T]) ->
+    [Replacement | T];
+replace(Element, Replacement, [H | T]) ->
+    [H | replace(Element, Replacement, T)];
+replace(_Element, _Replacement, []) ->
+    [].
 
 
 %%--------------------------------------------------------------------
@@ -147,6 +168,75 @@ random_sublist(List, MinLength, MaxLength) ->
 
 %%--------------------------------------------------------------------
 %% @doc
+%% A parallel version of lists:map/2 - each element is processed by
+%% a new async process. Raises an error if any of the processes crash
+%% or a process somehow dies without reporting back.
+%% @end
+%%--------------------------------------------------------------------
+-spec pmap(fun((X) -> Y), [X]) -> [Y] | no_return().
+pmap(Fun, Elements) ->
+    Parent = self(),
+    Ref = erlang:make_ref(),
+
+    Pids = lists:map(fun(Element) ->
+        spawn(fun() ->
+            Result = try
+                Fun(Element)
+            catch Type:Reason ->
+                {'$pmap_error', self(), Type, Reason, erlang:get_stacktrace()}
+            end,
+            Parent ! {Ref, self(), Result}
+        end)
+    end, Elements),
+
+    Gather = fun
+        % PidsOrResults is initially the list of pids, gradually replaced by corresponding results
+        F(PendingPids = [_ | _], PidsOrResults) ->
+            receive
+                {Ref, Pid, Result} ->
+                    NewPidsOrResults = lists_utils:replace(Pid, Result, PidsOrResults),
+                    F(lists:delete(Pid, PendingPids), NewPidsOrResults)
+            after 5000 ->
+                case lists:any(fun erlang:is_process_alive/1, PendingPids) of
+                    true ->
+                        F(PendingPids, PidsOrResults);
+                    false ->
+                        error({parallel_call_failed, {processes_dead, Pids}})
+                end
+            end;
+        % wait for all pids to report back and then look for errors
+        F([], AllResults) ->
+            Errors = lists:filtermap(fun
+                ({'$pmap_error', Pid, Type, Reason, Stacktrace}) ->
+                    {true, {Pid, Type, Reason, Stacktrace}};
+                (_) ->
+                    false
+            end, AllResults),
+            case Errors of
+                [] ->
+                    AllResults;
+                _ ->
+                    error({parallel_call_failed, {failed_processes, Errors}})
+            end
+    end,
+    Gather(Pids, Pids).
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%% A parallel version of lists:foreach/2 - each element is processed by
+%% a new async process. Raises an error if any of the processes crash
+%% or a process somehow dies without reporting back.
+%% @end
+%%--------------------------------------------------------------------
+-spec pforeach(fun((X) -> term()), [X]) -> ok | no_return().
+pforeach(Fun, Elements) ->
+    pmap(Fun, Elements),
+    ok.
+
+
+%%--------------------------------------------------------------------
+%% @doc
 %% Foldls the list until Fun returns {halt, Term}.
 %% The return value for Fun is expected to be
 %% {cont, Acc} to continue the fold with Acc as the new accumulator or
@@ -160,7 +250,6 @@ random_sublist(List, MinLength, MaxLength) ->
     List :: [T], T :: term().
 foldl_while(F, Accu, List) ->
     do_foldl(F, {cont, Accu}, List).
-
 
 %%%===================================================================
 %%% Internal functions
