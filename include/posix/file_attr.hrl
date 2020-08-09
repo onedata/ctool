@@ -32,7 +32,8 @@
     size = 0 :: undefined | non_neg_integer(),
     shares = [] :: [binary()],
     provider_id :: binary(),
-    owner_id :: binary()
+    owner_id :: binary(),
+    fully_replicated :: undefined | boolean()
 }).
 
 -record(xattr, {
