@@ -60,22 +60,12 @@ prepare_base_test_config(Config) ->
         Acc#{ProviderId => Users}
     end, #{}, ProvidersList),
     
-    [OzNode | _ ] = test_config:get_all_oz_worker_nodes(Config),
-    Sessions = maps:map(fun(ProviderId, Users) ->
-        [Node | _] = maps:get(ProviderId, NodesPerProvider),
-        lists:map(fun(UserId) ->
-            {ok, SessId} = setup_user_session(UserId, OzNode, Node),
-            {UserId, SessId}
-        end, Users)
-    end, ProviderUsers),
-    
     test_config:set_many(Config, [
         [provider_nodes, NodesPerProvider],
         [providers, ProvidersList],
         [provider_panels, ProviderPanels],
         [primary_cm, PrimaryCm],
         [users, ProviderUsers],
-        [sess_id, Sessions],
         [provider_spaces, ProviderSpaces]
     ]).
 
@@ -117,23 +107,6 @@ start_node(Config, Node) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
-
-%% @private
--spec setup_user_session(UserId :: binary(), OzwNode :: node(), OpwNode :: node()) ->
-    {ok, SessId :: binary()}.
-setup_user_session(UserId, OzwNode, OpwNode) ->
-    TimeCaveat = #cv_time{valid_until = rpc:call(OzwNode, time_utils, cluster_time_seconds, []) + 100000},
-    {ok, AccessToken} =
-        rpc:call(OzwNode, token_logic, create_user_temporary_token,
-            [?ROOT, UserId, #{<<"caveats">> => [TimeCaveat]}]),
-    {ok, SerializedAccessToken} = rpc:call(OzwNode, tokens, serialize, [AccessToken]),
-    Nonce = base64:encode(crypto:strong_rand_bytes(8)),
-    Identity = ?SUB(user, UserId),
-    Credentials =
-        rpc:call(OpwNode, auth_manager, build_token_credentials,
-            [SerializedAccessToken, undefined, undefined, undefined, allow_data_access_caveats]),
-    
-    rpc:call(OpwNode, session_manager, reuse_or_create_fuse_session, [Nonce, Identity, Credentials]).
 
 %% @private
 -spec get_service(node()) -> test_config:service_as_list().
