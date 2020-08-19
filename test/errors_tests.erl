@@ -204,13 +204,14 @@ testcases() -> [
     ?ERROR_SPACE_NOT_SUPPORTED_BY(<<"providerId">>),
     ?ERROR_NOT_A_LOCAL_STORAGE_SUPPORTING_SPACE(<<"providerId">>, <<"storageId">>, <<"spaceId">>),
     ?ERROR_STORAGE_IN_USE,
-    ?ERROR_STORAGE_IMPORT_ENABLED,
+    ?ERROR_AUTO_STORAGE_IMPORT_ENABLED,
     ?ERROR_STORAGE_TEST_FAILED(read),
     ?ERROR_STORAGE_TEST_FAILED(write),
     ?ERROR_STORAGE_TEST_FAILED(remove),
     ?ERROR_REQUIRES_NON_IMPORTED_STORAGE(<<"storageId">>),
     ?ERROR_REQUIRES_IMPORTED_STORAGE(<<"storageId">>),
     ?ERROR_REQUIRES_POSIX_COMPATIBLE_STORAGE(<<"storageId">>, [<<"posix">>, <<"glusterfs">>, <<"nulldevice">>]),
+    ?ERROR_STORAGE_IMPORT_MODE_CANNOT_BE_CHANGED(<<"spaceId">>),
     ?ERROR_FILE_REGISTRATION_NOT_SUPPORTED(<<"storageId">>, [<<"swift">>, <<"s3">>, <<"cephrados">>]),
     ?ERROR_STAT_OPERATION_NOT_SUPPORTED(<<"storageId">>),
     ?ERROR_TRANSFER_ALREADY_ENDED,
@@ -238,7 +239,6 @@ testcases() -> [
     ?ERROR_NODE_NOT_COMPATIBLE(<<"onepanel@example.com">>, ?ONEZONE),
     ?ERROR_NO_CONNECTION_TO_NEW_NODE(<<"onepanel@example.com">>),
     {different, ?ERROR_NO_SERVICE_NODES(op_worker), ?ERROR_NO_SERVICE_NODES(<<"op_worker">>)},
-    ?ERROR_STORAGE_IMPORT_STARTED,
     ?ERROR_USER_NOT_IN_CLUSTER,
 
     %% -----------------------------------------------------------------------------
