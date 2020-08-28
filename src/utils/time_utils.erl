@@ -134,7 +134,8 @@ remote_timestamp(CacheKey, RemoteTimestampFun) ->
                         true ->
                             ok;
                         false ->
-                            simple_cache:put(CacheKey, Bias, ?REMOTE_TIMESTAMP_CACHE_TTL)
+                            % Catch as function can throw error when application is stopping
+                            catch simple_cache:put(CacheKey, Bias, ?REMOTE_TIMESTAMP_CACHE_TTL)
                     end,
                     After + Bias
             end
