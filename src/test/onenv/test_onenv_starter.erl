@@ -65,7 +65,7 @@ prepare_test_environment(Config0) ->
 clean_environment(Config) ->
     OnenvScript = test_config:get_onenv_script_path(Config),
     PrivDir = test_config:get_custom(Config, priv_dir),
-    CleanEnv = test_config:get_custom(Config, clean_env),
+    CleanEnv = test_config:get_custom(Config, clean_env, true),
     
     utils:cmd([OnenvScript, "export", PrivDir]),
     CleanEnv andalso utils:cmd([OnenvScript, "clean", "--all", "--persistent-volumes"]),
