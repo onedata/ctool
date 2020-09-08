@@ -67,5 +67,5 @@ merge(ListOfMaps) ->
 %%-------------------------------------------------------------------
 -spec is_component
     (#{Key => Value}, #{Key => Value}) -> boolean().
-is_component(Map_A, Map_B) ->
-    (Map_A =:= maps:with(maps:keys(Map_A), Map_B)).
+is_component(MapA, MapB) ->
+    MapA =:= maps:with(maps:keys(MapA), MapB).
