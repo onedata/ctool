@@ -180,6 +180,8 @@
 -define(ERROR_REQUIRES_IMPORTED_STORAGE(StorageId), {error, {requires_imported_storage, StorageId}}).
 -define(ERROR_REQUIRES_POSIX_COMPATIBLE_STORAGE(StorageId, PosixCompatibleStorages), {error, {requires_posix_compatible_storage, StorageId, PosixCompatibleStorages}}).
 -define(ERROR_STORAGE_IMPORT_MODE_CANNOT_BE_CHANGED(SpaceId), {error, {storage_import_mode_cannot_be_changed, SpaceId}}).
+-define(ERROR_AUTO_STORAGE_IMPORT_NOT_SUPPORTED(StorageId, SupportedStorages, SupportedObjectStorages),
+    {error, {auto_storage_import_not_supported, StorageId, SupportedStorages, SupportedObjectStorages}}).
 -define(ERROR_FILE_REGISTRATION_NOT_SUPPORTED(StorageId, ObjectStorages), {error, {file_registration_not_supported, StorageId, ObjectStorages}}).
 -define(ERROR_STAT_OPERATION_NOT_SUPPORTED(StorageId), {error, {stat_operation_not_supported, StorageId}}).
 -define(ERROR_TRANSFER_ALREADY_ENDED, {error, transfer_already_ended}).

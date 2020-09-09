@@ -213,6 +213,7 @@ testcases() -> [
     ?ERROR_REQUIRES_IMPORTED_STORAGE(<<"storageId">>),
     ?ERROR_REQUIRES_POSIX_COMPATIBLE_STORAGE(<<"storageId">>, [<<"posix">>, <<"glusterfs">>, <<"nulldevice">>]),
     ?ERROR_STORAGE_IMPORT_MODE_CANNOT_BE_CHANGED(<<"spaceId">>),
+    ?ERROR_AUTO_STORAGE_IMPORT_NOT_SUPPORTED(<<"storageId">>, [<<"posix">>, <<"glusterfs">>, <<"nulldevice">>, <<"s3">>], [<<"s3">>]),
     ?ERROR_FILE_REGISTRATION_NOT_SUPPORTED(<<"storageId">>, [<<"swift">>, <<"s3">>, <<"cephrados">>]),
     ?ERROR_STAT_OPERATION_NOT_SUPPORTED(<<"storageId">>),
     ?ERROR_TRANSFER_ALREADY_ENDED,

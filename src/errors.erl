@@ -114,6 +114,7 @@
 | {requires_posix_compatible_storage, StorageId :: binary(), PosixCompatibleStorages :: [binary()]}
 | {storage_import_mode_cannot_be_changed, SpaceId :: binary()}
 | {file_registration_not_supported, StorageId :: binary(), ObjectStorages :: [binary()]}
+| {auto_storage_import_not_supported, StorageId :: binary(), SupportedStorages :: [binary()], SupportedObjectStorages :: [binary()]}
 | {stat_operation_not_supported, StorageId :: binary}
 | {view_not_exists_on, ProviderId :: binary()}
 | {view_query_failed, Category :: binary(), Description :: binary()}.
@@ -902,6 +903,19 @@ to_json(?ERROR_STORAGE_IMPORT_MODE_CANNOT_BE_CHANGED(SpaceId)) -> #{
         [SpaceId]
     )
 };
+to_json(?ERROR_AUTO_STORAGE_IMPORT_NOT_SUPPORTED(StorageId, SupportedStorages, SupportedObjectStorages)) -> #{
+    <<"id">> => <<"autoStorageImportNotSupported">>,
+    <<"details">> => #{
+        <<"storageId">> => StorageId,
+        <<"supportedStorages">> => SupportedStorages,
+        <<"supportedObjectStorages">> => SupportedObjectStorages
+    },
+    <<"description">> => ?FMT(
+        "Cannot configure auto storage import on storage ~s - this operation requires any of: ~s storage with canonical path type and on "
+        "object storages (any of: ~s) it requires blockSize = 0.",
+        [StorageId, join_values_with_commas(SupportedStorages), join_values_with_commas(SupportedObjectStorages)]
+    )
+};
 to_json(?ERROR_FILE_REGISTRATION_NOT_SUPPORTED(StorageId, ObjectStorages)) -> #{
     <<"id">> => <<"fileRegistrationNotSupported">>,
     <<"details">> => #{<<"storageId">> => StorageId, <<"objectStorages">> => ObjectStorages},
@@ -1431,6 +1445,13 @@ from_json(#{<<"id">> := <<"storageImportModeCannotBeChanged">>, <<"details">> :=
 }}) ->
     ?ERROR_STORAGE_IMPORT_MODE_CANNOT_BE_CHANGED(SpaceId);
 
+from_json(#{<<"id">> := <<"autoStorageImportNotSupported">>, <<"details">> := #{
+    <<"storageId">> := StorageId,
+    <<"supportedStorages">> := SupportedStorages,
+    <<"supportedObjectStorages">> := SupportedObjectStorages
+}}) ->
+    ?ERROR_AUTO_STORAGE_IMPORT_NOT_SUPPORTED(StorageId, SupportedStorages, SupportedObjectStorages);
+
 
 from_json(#{<<"id">> := <<"fileRegistrationNotSupported">>, <<"details">> := #{
     <<"storageId">> := StorageId,
@@ -1654,6 +1675,7 @@ to_http_code(?ERROR_REQUIRES_NON_IMPORTED_STORAGE(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_REQUIRES_IMPORTED_STORAGE(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_REQUIRES_POSIX_COMPATIBLE_STORAGE(_, _)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_STORAGE_IMPORT_MODE_CANNOT_BE_CHANGED(_)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_AUTO_STORAGE_IMPORT_NOT_SUPPORTED(_, _, _)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_FILE_REGISTRATION_NOT_SUPPORTED(_, _)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_STAT_OPERATION_NOT_SUPPORTED(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_TRANSFER_ALREADY_ENDED) -> ?HTTP_400_BAD_REQUEST;
