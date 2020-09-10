@@ -112,7 +112,6 @@
 | {requires_non_imported_storage, StorageId :: binary()}
 | {requires_imported_storage, StorageId :: binary()}
 | {requires_posix_compatible_storage, StorageId :: binary(), PosixCompatibleStorages :: [binary()]}
-| {storage_import_mode_cannot_be_changed, SpaceId :: binary()}
 | {file_registration_not_supported, StorageId :: binary(), ObjectStorages :: [binary()]}
 | {auto_storage_import_not_supported, StorageId :: binary(), SupportedStorages :: [binary()], SupportedObjectStorages :: [binary()]}
 | {stat_operation_not_supported, StorageId :: binary}
@@ -898,14 +897,6 @@ to_json(?ERROR_REQUIRES_POSIX_COMPATIBLE_STORAGE(StorageId, PosixCompatibleStora
         [StorageId, join_values_with_commas(PosixCompatibleStorages)]
     )
 };
-to_json(?ERROR_STORAGE_IMPORT_MODE_CANNOT_BE_CHANGED(SpaceId)) -> #{
-    <<"id">> => <<"storageImportModeCannotBeChanged">>,
-    <<"details">> => #{<<"spaceId">> => SpaceId},
-    <<"description">> => ?FMT(
-        "Cannot change storage import mode in space ~s - mode can only be set during support procedure.",
-        [SpaceId]
-    )
-};
 to_json(?ERROR_AUTO_STORAGE_IMPORT_NOT_SUPPORTED(StorageId, SupportedStorages, SupportedObjectStorages)) -> #{
     <<"id">> => <<"autoStorageImportNotSupported">>,
     <<"details">> => #{
@@ -1443,11 +1434,6 @@ from_json(#{<<"id">> := <<"requiresPosixCompatibleStorage">>, <<"details">> := #
 }}) ->
     ?ERROR_REQUIRES_POSIX_COMPATIBLE_STORAGE(StorageId, PosixCompatibleStorages);
 
-from_json(#{<<"id">> := <<"storageImportModeCannotBeChanged">>, <<"details">> := #{
-    <<"spaceId">> := SpaceId
-}}) ->
-    ?ERROR_STORAGE_IMPORT_MODE_CANNOT_BE_CHANGED(SpaceId);
-
 from_json(#{<<"id">> := <<"autoStorageImportNotSupported">>, <<"details">> := #{
     <<"storageId">> := StorageId,
     <<"supportedStorages">> := SupportedStorages,
@@ -1677,7 +1663,6 @@ to_http_code(?ERROR_STORAGE_TEST_FAILED(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_REQUIRES_NON_IMPORTED_STORAGE(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_REQUIRES_IMPORTED_STORAGE(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_REQUIRES_POSIX_COMPATIBLE_STORAGE(_, _)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_STORAGE_IMPORT_MODE_CANNOT_BE_CHANGED(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_AUTO_STORAGE_IMPORT_NOT_SUPPORTED(_, _, _)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_FILE_REGISTRATION_NOT_SUPPORTED(_, _)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_STAT_OPERATION_NOT_SUPPORTED(_)) -> ?HTTP_400_BAD_REQUEST;
