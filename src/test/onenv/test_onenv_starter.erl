@@ -35,8 +35,11 @@ prepare_test_environment(Config0) ->
     end, filename:split(DataDir))),
     OnenvScript = filename:join([ProjectRoot, "one-env", "onenv"]),
     PathToSources = os:getenv("path_to_sources"),
-    CleanEnv = os:getenv("clean_env"), % string "true" or "false"
     AbsPathToSources = filename:join([ProjectRoot, PathToSources]),
+    
+    % strings "true" or "false"
+    CleanEnv = os:getenv("clean_env"),
+    Cover = os:getenv("cover"),
     
     % Dummy first call to onenv to setup configs. 
     % Path to sources must be proivided in first onenv call that creates one-env docker
@@ -49,7 +52,21 @@ prepare_test_environment(Config0) ->
         {set_project_root_path, [ProjectRoot]}
     ]),
     
-    PodsProplist = start_environment(Config),
+    ConfigWithCover = case Cover of
+        "true" ->
+            {ok, CoverSpec} = file:consult(filename:join(ProjectRoot, "test_distributed/cover_tmp.spec")),
+            CoveredDirs = lists:map(fun(DirRelPath) ->
+                list_to_atom(filename:join(ProjectRoot, DirRelPath))
+            end, test_config:get_custom(CoverSpec, incl_dirs_r)),
+            
+            ExcludedModules = test_config:get_custom(CoverSpec, excl_mods),
+            test_config:add_envs(Config, op_worker, op_worker,
+                [{covered_dirs, CoveredDirs}, {covered_excluded_modules, ExcludedModules}]);
+        "false" ->
+            Config
+    end,
+    
+    PodsProplist = start_environment(ConfigWithCover),
     add_entries_to_etc_hosts(PodsProplist),
     NodesConfig = prepare_nodes_config(Config, PodsProplist),
     connect_nodes(NodesConfig),
@@ -68,6 +85,7 @@ clean_environment(Config) ->
     CleanEnv = test_config:get_custom(Config, clean_env, true),
     
     utils:cmd([OnenvScript, "export", PrivDir]),
+    test_node_starter:clean_environment(Config),
     CleanEnv andalso utils:cmd([OnenvScript, "clean", "--all", "--persistent-volumes"]),
     ok.
 
