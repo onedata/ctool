@@ -57,9 +57,9 @@ prepare_test_environment(Config0) ->
             {ok, CoverSpec} = file:consult(filename:join(ProjectRoot, "test_distributed/cover_tmp.spec")),
             CoveredDirs = lists:map(fun(DirRelPath) ->
                 list_to_atom(filename:join(ProjectRoot, DirRelPath))
-            end, test_config:get_custom(CoverSpec, incl_dirs_r)),
+            end, kv_utils:get(incl_dirs_r, CoverSpec)),
             
-            ExcludedModules = test_config:get_custom(CoverSpec, excl_mods),
+            ExcludedModules = kv_utils:get(excl_mods, CoverSpec),
             test_config:add_envs(Config, op_worker, op_worker,
                 [{covered_dirs, CoveredDirs}, {covered_excluded_modules, ExcludedModules}]);
         "false" ->

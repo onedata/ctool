@@ -131,7 +131,7 @@ prepare_test_environment(Config, TestModule, Apps) ->
 %% Afterwards, cleans environment by running 'cleanup.py' script.
 %% @end
 %%--------------------------------------------------------------------
--spec clean_environment(Config :: list()) -> ok.
+-spec clean_environment(Config :: list() | test_config:config()) -> ok.
 clean_environment(Config) ->
     clean_environment(Config, ?ALL_POSSIBLE_APPS).
 
@@ -142,7 +142,8 @@ clean_environment(Config) ->
 %% Afterwards, cleans environment by running 'cleanup.py' script.
 %% @end
 %%--------------------------------------------------------------------
--spec clean_environment(Config :: list(), Apps :: [{AppName :: atom(), ConfigName :: atom()}]) -> ok.
+-spec clean_environment(Config :: list() | test_config:config(), 
+    Apps :: [{AppName :: atom(), ConfigName :: atom()}]) -> ok.
 clean_environment(Config, Apps) ->
     StopStatus = try
         case cover:modules() of
@@ -290,7 +291,8 @@ maybe_stop_cover() ->
 %% Stops all started applications
 %% @end
 %%--------------------------------------------------------------------
--spec stop_applications(Config :: list(), Apps :: [{AppName :: atom(), ConfigName :: atom()}]) -> ok.
+-spec stop_applications(Config :: list() | test_config:config(), 
+    Apps :: [{AppName :: atom(), ConfigName :: atom()}]) -> ok.
 stop_applications(Config, Apps) ->
     lists:foreach(
         fun({AppName, ConfigName}) ->
