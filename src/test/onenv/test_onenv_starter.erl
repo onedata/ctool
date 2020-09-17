@@ -85,7 +85,7 @@ clean_environment(Config) ->
     CleanEnv = test_config:get_custom(Config, clean_env, true),
     
     utils:cmd([OnenvScript, "export", PrivDir]),
-    test_node_starter:clean_environment(Config),
+    test_node_starter:maybe_gather_cover(Config),
     CleanEnv andalso utils:cmd([OnenvScript, "clean", "--all", "--persistent-volumes"]),
     ok.
 
