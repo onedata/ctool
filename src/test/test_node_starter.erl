@@ -142,11 +142,10 @@ clean_environment(Config) ->
 %% Afterwards, cleans environment by running 'cleanup.py' script.
 %% @end
 %%--------------------------------------------------------------------
--spec clean_environment(Config :: list() | test_config:config(), 
+-spec clean_environment(Config :: list() | test_config:config(),
     Apps :: [{AppName :: atom(), ConfigName :: atom()}]) -> ok.
 clean_environment(Config, Apps) ->
     StopStatus = try
-        stop_applications(Config, Apps),
         maybe_gather_cover(Config, Apps)
     catch
         E1:E2 ->
@@ -167,6 +166,7 @@ clean_environment(Config, Apps) ->
             throw(StopStatus)
     end.
 
+
 -spec maybe_gather_cover(Config :: list() | test_config:config()) -> ok.
 maybe_gather_cover(Config) ->
     maybe_gather_cover(Config, ?ALL_POSSIBLE_APPS).
@@ -180,13 +180,18 @@ maybe_gather_cover(Config, Apps) ->
             ok;
         _ ->
             erlang:register(?CLEANING_PROC_NAME, self()),
-            
-            AllNodes = lists:flatmap(fun({_, ConfigName}) ->
-                test_config:get_custom(Config, ConfigName, [])
+    
+            NodesWithCover = lists:flatmap(fun({AppName, ConfigName}) ->
+                Nodes = test_config:get_custom(Config, ConfigName, []),
+                lists:filter(fun(Node) ->
+                    case rpc:call(Node, application, get_env, [AppName, covered_dirs]) of
+                        {ok, []} -> false;
+                        {ok, _} -> true;
+                        _ -> false
+                    end
+                end, Nodes)
             end, Apps),
-            lists:foreach(fun(Node) ->
-                rpc:call(Node, test_node_starter, maybe_stop_cover, [])
-            end, AllNodes),
+            stop_applications(Config, Apps),
             
             lists:foreach(fun(Node) ->
                 receive
@@ -206,9 +211,9 @@ maybe_gather_cover(Config, Apps) ->
                                 Node
                             ])
                 end
-            end, AllNodes)
-        end,
-    ok.
+            end, NodesWithCover),
+            ok
+    end.
 
 %%--------------------------------------------------------------------
 %% @doc

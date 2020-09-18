@@ -48,7 +48,7 @@
 -type service_as_list() :: string(). % "op_worker" | "oz_worker" | "op_panel" | "oz_panel" | "cluster_manager"
 -type service() :: onedata:service() | cluster_manager.
 
--export_type([config/0, key/0, service_as_list/0]).
+-export_type([config/0, key/0, service/0, service_as_list/0]).
 
 %%%===================================================================
 %%% Init per suite config setters
