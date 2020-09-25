@@ -105,13 +105,15 @@
 | {space_not_supported_by, ProviderId :: binary()}
 | {not_a_local_storage_supporting_space, ProviderId :: binary(), StorageId :: binary(), SpaceId :: binary()}
 | storage_in_use
-| storage_import_enabled
+| requires_manual_storage_import_mode
+| requires_auto_storage_import_mode
 | transfer_already_ended | transfer_not_ended
 | {storage_test_failed, read | write | remove}
 | {requires_non_imported_storage, StorageId :: binary()}
 | {requires_imported_storage, StorageId :: binary()}
 | {requires_posix_compatible_storage, StorageId :: binary(), PosixCompatibleStorages :: [binary()]}
 | {file_registration_not_supported, StorageId :: binary(), ObjectStorages :: [binary()]}
+| {auto_storage_import_not_supported, StorageId :: binary(), SupportedStorages :: [binary()], SupportedObjectStorages :: [binary()]}
 | {stat_operation_not_supported, StorageId :: binary}
 | {view_not_exists_on, ProviderId :: binary()}
 | {view_query_failed, Category :: binary(), Description :: binary()}.
@@ -125,7 +127,7 @@
 | {node_not_compatible, Hostname :: binary(), onedata:cluster_type()}
 | {no_connection_to_new_node, Hostname :: binary()}
 | {no_service_nodes, Service :: atom() | binary()}
-| storage_import_started | user_not_in_cluster.
+| user_not_in_cluster.
 
 -type errno() :: ?OK | ?E2BIG | ?EACCES | ?EADDRINUSE | ?EADDRNOTAVAIL
 | ?EAFNOSUPPORT | ?EAGAIN | ?EALREADY | ?EBADF | ?EBADMSG | ?EBUSY
@@ -857,9 +859,13 @@ to_json(?ERROR_STORAGE_IN_USE) -> #{
     <<"id">> => <<"storageInUse">>,
     <<"description">> => <<"Specified storage supports a space.">>
 };
-to_json(?ERROR_STORAGE_IMPORT_ENABLED) -> #{
-    <<"id">> => <<"storageImportEnabled">>,
-    <<"description">> => <<"Operation cannot be performed in space with enabled storage import mechanism.">>
+to_json(?ERROR_REQUIRES_MANUAL_STORAGE_IMPORT_MODE) -> #{
+    <<"id">> => <<"requiresManualStorageImportMode">>,
+    <<"description">> => <<"Operation requires space with manual storage import mode.">>
+};
+to_json(?ERROR_REQUIRES_AUTO_STORAGE_IMPORT_MODE) -> #{
+    <<"id">> => <<"requiresAutoStorageImportMode">>,
+    <<"description">> => <<"Operation requires space with auto storage import mode.">>
 };
 to_json(?ERROR_STORAGE_TEST_FAILED(Operation)) -> #{
     <<"id">> => <<"storageTestFailed">>,
@@ -889,6 +895,19 @@ to_json(?ERROR_REQUIRES_POSIX_COMPATIBLE_STORAGE(StorageId, PosixCompatibleStora
         "Cannot apply for storage ~s - this operation requires a POSIX-compatible storage "
         "(any of: ~s).",
         [StorageId, join_values_with_commas(PosixCompatibleStorages)]
+    )
+};
+to_json(?ERROR_AUTO_STORAGE_IMPORT_NOT_SUPPORTED(StorageId, SupportedStorages, SupportedObjectStorages)) -> #{
+    <<"id">> => <<"autoStorageImportNotSupported">>,
+    <<"details">> => #{
+        <<"storageId">> => StorageId,
+        <<"supportedStorages">> => SupportedStorages,
+        <<"supportedObjectStorages">> => SupportedObjectStorages
+    },
+    <<"description">> => ?FMT(
+        "Cannot configure auto storage import on storage ~s - this operation requires any of: ~s storage with canonical path type and on "
+        "object storages (any of: ~s) it requires blockSize = 0.",
+        [StorageId, join_values_with_commas(SupportedStorages), join_values_with_commas(SupportedObjectStorages)]
     )
 };
 to_json(?ERROR_FILE_REGISTRATION_NOT_SUPPORTED(StorageId, ObjectStorages)) -> #{
@@ -1005,9 +1024,6 @@ to_json(?ERROR_NO_SERVICE_NODES(Service)) -> #{
         <<"service">> => Service
     }
 };
-to_json(?ERROR_STORAGE_IMPORT_STARTED) -> #{
-    <<"id">> => <<"storageImportStarted">>,
-    <<"description">> => <<"Modifying storageImport that has been already started.">>};
 to_json(?ERROR_USER_NOT_IN_CLUSTER) -> #{
     <<"id">> => <<"userNotInCluster">>,
     <<"description">> => <<"Authenticated user is not a member of this cluster.">>};
@@ -1396,8 +1412,11 @@ from_json(#{<<"id">> := <<"notALocalStorageSupportingSpace">>, <<"details">> := 
 from_json(#{<<"id">> := <<"storageInUse">>}) ->
     ?ERROR_STORAGE_IN_USE;
 
-from_json(#{<<"id">> := <<"storageImportEnabled">>}) ->
-    ?ERROR_STORAGE_IMPORT_ENABLED;
+from_json(#{<<"id">> := <<"requiresManualStorageImportMode">>}) ->
+    ?ERROR_REQUIRES_MANUAL_STORAGE_IMPORT_MODE;
+
+from_json(#{<<"id">> := <<"requiresAutoStorageImportMode">>}) ->
+    ?ERROR_REQUIRES_AUTO_STORAGE_IMPORT_MODE;
 
 from_json(#{<<"id">> := <<"storageTestFailed">>, <<"details">> := #{<<"operation">> := Operation}})
     when Operation == <<"read">>; Operation == <<"write">>; Operation == <<"remove">> ->
@@ -1414,6 +1433,14 @@ from_json(#{<<"id">> := <<"requiresPosixCompatibleStorage">>, <<"details">> := #
     <<"posixCompatibleStorages">> := PosixCompatibleStorages
 }}) ->
     ?ERROR_REQUIRES_POSIX_COMPATIBLE_STORAGE(StorageId, PosixCompatibleStorages);
+
+from_json(#{<<"id">> := <<"autoStorageImportNotSupported">>, <<"details">> := #{
+    <<"storageId">> := StorageId,
+    <<"supportedStorages">> := SupportedStorages,
+    <<"supportedObjectStorages">> := SupportedObjectStorages
+}}) ->
+    ?ERROR_AUTO_STORAGE_IMPORT_NOT_SUPPORTED(StorageId, SupportedStorages, SupportedObjectStorages);
+
 
 from_json(#{<<"id">> := <<"fileRegistrationNotSupported">>, <<"details">> := #{
     <<"storageId">> := StorageId,
@@ -1482,9 +1509,6 @@ from_json(#{<<"id">> := <<"noConnectionToNewNode">>,
 
 from_json(#{<<"id">> := <<"noServiceNodes">>, <<"details">> := #{<<"service">> := Service}}) ->
     ?ERROR_NO_SERVICE_NODES(Service);
-
-from_json(#{<<"id">> := <<"storageImportStarted">>}) ->
-    ?ERROR_STORAGE_IMPORT_STARTED;
 
 from_json(#{<<"id">> := <<"userNotInCluster">>}) ->
     ?ERROR_USER_NOT_IN_CLUSTER;
@@ -1633,11 +1657,13 @@ to_http_code(?ERROR_FILE_POPULARITY_DISABLED) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_SPACE_NOT_SUPPORTED_BY(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_NOT_A_LOCAL_STORAGE_SUPPORTING_SPACE(_, _, _)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_STORAGE_IN_USE) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_STORAGE_IMPORT_ENABLED) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_REQUIRES_MANUAL_STORAGE_IMPORT_MODE) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_REQUIRES_AUTO_STORAGE_IMPORT_MODE) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_STORAGE_TEST_FAILED(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_REQUIRES_NON_IMPORTED_STORAGE(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_REQUIRES_IMPORTED_STORAGE(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_REQUIRES_POSIX_COMPATIBLE_STORAGE(_, _)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_AUTO_STORAGE_IMPORT_NOT_SUPPORTED(_, _, _)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_FILE_REGISTRATION_NOT_SUPPORTED(_, _)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_STAT_OPERATION_NOT_SUPPORTED(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_TRANSFER_ALREADY_ENDED) -> ?HTTP_400_BAD_REQUEST;
@@ -1657,7 +1683,6 @@ to_http_code(?ERROR_NODE_ALREADY_IN_CLUSTER(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_NODE_NOT_COMPATIBLE(_, _)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_NO_CONNECTION_TO_NEW_NODE(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_NO_SERVICE_NODES(_)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_STORAGE_IMPORT_STARTED) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_USER_NOT_IN_CLUSTER) -> ?HTTP_403_FORBIDDEN;
 
 %% -----------------------------------------------------------------------------

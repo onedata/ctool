@@ -173,11 +173,14 @@
 -define(ERROR_NOT_A_LOCAL_STORAGE_SUPPORTING_SPACE(ProviderId, StorageId, SpaceId),
     {error, {not_a_local_storage_supporting_space, ProviderId, StorageId, SpaceId}}).
 -define(ERROR_STORAGE_IN_USE, {error, storage_in_use}).
--define(ERROR_STORAGE_IMPORT_ENABLED, {error, storage_import_enabled}).
+-define(ERROR_REQUIRES_MANUAL_STORAGE_IMPORT_MODE, {error, requires_manual_storage_import_mode}).
+-define(ERROR_REQUIRES_AUTO_STORAGE_IMPORT_MODE, {error, requires_auto_storage_import_mode}).
 -define(ERROR_STORAGE_TEST_FAILED(Operation), {error, {storage_test_failed, Operation}}).
 -define(ERROR_REQUIRES_NON_IMPORTED_STORAGE(StorageId), {error, {requires_non_imported_storage, StorageId}}).
 -define(ERROR_REQUIRES_IMPORTED_STORAGE(StorageId), {error, {requires_imported_storage, StorageId}}).
 -define(ERROR_REQUIRES_POSIX_COMPATIBLE_STORAGE(StorageId, PosixCompatibleStorages), {error, {requires_posix_compatible_storage, StorageId, PosixCompatibleStorages}}).
+-define(ERROR_AUTO_STORAGE_IMPORT_NOT_SUPPORTED(StorageId, SupportedStorages, SupportedObjectStorages),
+    {error, {auto_storage_import_not_supported, StorageId, SupportedStorages, SupportedObjectStorages}}).
 -define(ERROR_FILE_REGISTRATION_NOT_SUPPORTED(StorageId, ObjectStorages), {error, {file_registration_not_supported, StorageId, ObjectStorages}}).
 -define(ERROR_STAT_OPERATION_NOT_SUPPORTED(StorageId), {error, {stat_operation_not_supported, StorageId}}).
 -define(ERROR_TRANSFER_ALREADY_ENDED, {error, transfer_already_ended}).
@@ -199,7 +202,6 @@
 -define(ERROR_NODE_NOT_COMPATIBLE(HostnameBin, ClusterType), {error, {node_not_compatible, HostnameBin, ClusterType}}).
 -define(ERROR_NO_CONNECTION_TO_NEW_NODE(HostnameBin), {error, {no_connection_to_new_node, HostnameBin}}).
 -define(ERROR_NO_SERVICE_NODES(Service), {error, {no_service_nodes, Service}}).
--define(ERROR_STORAGE_IMPORT_STARTED, {error, storage_import_started}).
 -define(ERROR_USER_NOT_IN_CLUSTER, {error, user_not_in_cluster}).
 
 
