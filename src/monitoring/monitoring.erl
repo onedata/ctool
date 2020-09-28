@@ -47,6 +47,7 @@
 -define(NET_STATS_FILE(_Interface, _Type), "/sys/class/net/" ++ _Interface ++ "/statistics/" ++ _Type).
 -define(NET_SPEED_FILE(_Interface), "/sys/class/net/" ++ _Interface ++ "/speed").
 -define(NET_DUPLEX_FILE(_Interface), "/sys/class/net/" ++ _Interface ++ "/duplex").
+-define(NOW(), time_utils:timestamp_millis()).
 
 %% API
 -export([start/0, update/1]).
@@ -65,8 +66,7 @@
 %%--------------------------------------------------------------------
 -spec start() -> #node_monitoring_state{}.
 start() ->
-    _InitialRecord = update(#node_monitoring_state{
-        last_update = time_utils:system_time_millis()}).
+    update(#node_monitoring_state{last_update = ?NOW()}).
 
 
 %%--------------------------------------------------------------------
@@ -80,7 +80,7 @@ update(MonitoringState) ->
         last_update = LastUpdate,
         cpu_last = CPULast,
         net_last = NetLast} = MonitoringState,
-    Now = time_utils:system_time_millis(),
+    Now = ?NOW(),
     % Time difference is in seconds, float is required for better accuracy
     TimeDiff = (Now - LastUpdate) / 1000,
     {CPUStats, NewCPULast} = get_cpu_stats(CPULast),

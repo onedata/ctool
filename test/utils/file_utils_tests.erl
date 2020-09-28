@@ -35,7 +35,8 @@ onepanel_env_test_() ->
             fun remove_nonempty_dir_test/1,
             fun rename_directory_test/1,
             fun rename_file_test/1,
-            fun rename_fails_when_target_exists_test/1
+            fun rename_fails_when_target_exists_test/1,
+            fun seconds_since_modification_test/1
         ]
     }.
 
@@ -152,6 +153,24 @@ rename_fails_when_target_exists_test(Config) ->
         ?assert(filelib:is_dir(From)),
         ?assert(filelib:is_dir(To))
     end}.
+
+
+seconds_since_modification_test(Config) ->
+    Dir = path(Config, "testdir"),
+    File = filename:join(Dir, "new-file"),
+    ok = file:make_dir(Dir),
+
+    ok = touch(File),
+    CreationTime = time_utils:datetime_to_seconds(filelib:last_modified(File)),
+    timer:sleep(rand:uniform(1250)),
+    ?assertEqual({ok, time_utils:timestamp_seconds() - CreationTime}, file_utils:seconds_since_modification(File)),
+
+    timer:sleep(rand:uniform(1250)),
+    ok = touch(File),
+    ModificationTime = time_utils:datetime_to_seconds(filelib:last_modified(File)),
+    timer:sleep(rand:uniform(1250)),
+    ?_assertEqual({ok, time_utils:timestamp_seconds() - ModificationTime}, file_utils:seconds_since_modification(File)).
+
 
 
 %%%===================================================================

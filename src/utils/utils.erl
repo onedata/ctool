@@ -155,9 +155,9 @@ cmd(Command) ->
     AdjustedDuration :: integer() | float(), TimeUnit :: string()} when
     Result :: term().
 duration(Function) ->
-    T1 = erlang:monotonic_time(micro_seconds),
+    T1 = time_utils:timestamp_micros(),
     Result = Function(),
-    T2 = erlang:monotonic_time(micro_seconds),
+    T2 = time_utils:timestamp_micros(),
     UsDuration = T2 - T1,
     {AdjustedDuration, TimeUnit} = adjust_duration(UsDuration, us),
     {Result, UsDuration, AdjustedDuration, TimeUnit}.

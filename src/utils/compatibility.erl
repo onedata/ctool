@@ -123,6 +123,7 @@
 -define(REGISTRY_CACHE_TTL, ctool:get_env(compatibility_registry_cache_ttl, 900)). % 15 minutes
 -define(REGISTRY_MIRRORS, ctool:get_env(compatibility_registry_mirrors, [])).
 -define(DEFAULT_REGISTRY, ctool:get_env(default_compatibility_registry)).
+-define(NOW(), time_utils:timestamp_seconds()).
 
 -export([check_products_compatibility/4]).
 -export([get_compatible_versions/3]).
@@ -310,9 +311,8 @@ get_entries(Section, Version, Strategy) ->
 %% @private
 -spec should_fetch_registry() -> boolean().
 should_fetch_registry() ->
-    Now = time_utils:system_time_seconds(),
     case simple_cache:get(compatibility_registry_fetch_backoff) of
-        {ok, BackoffUntil} -> BackoffUntil < Now;
+        {ok, BackoffUntil} -> BackoffUntil < ?NOW();
         {error, not_found} -> true
     end.
 
@@ -320,10 +320,7 @@ should_fetch_registry() ->
 %% @private
 -spec reset_fetch_backoff() -> ok.
 reset_fetch_backoff() ->
-    simple_cache:put(
-        compatibility_registry_fetch_backoff,
-        time_utils:system_time_seconds() + ?REGISTRY_CACHE_TTL
-    ).
+    simple_cache:put(compatibility_registry_fetch_backoff, ?NOW() + ?REGISTRY_CACHE_TTL).
 
 
 %% @private

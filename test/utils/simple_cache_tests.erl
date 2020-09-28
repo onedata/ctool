@@ -154,11 +154,9 @@ single_value_and_map() ->
     ?assertEqual({ok, ?VALUE}, simple_cache:get({key, childkey1})).
     
     
-    
-
 setup() ->
     meck:new(time_utils, [non_strict]),
-    meck:expect(time_utils, system_time_millis, fun timestamp_mock/0).
+    meck:expect(time_utils, timestamp_millis, fun timestamp_mock/0).
 
 teardown(_) ->
     ?assert(meck:validate([time_utils])),
