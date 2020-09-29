@@ -43,8 +43,9 @@
 %% does not make sense in environments based on network communication.
 -define(CLOCK_BIAS_CACHE_MILLIS, time_utils_clock_bias_millis).
 
--define(SYNCHRONIZATION_REQUEST_REPEATS, 5).
--define(SYNCHRONIZATION_TIMEOUT_MILLIS, 2000).
+-define(SYNC_REQUEST_REPEATS, 5).
+-define(SATISFYING_SYNC_DELAY_MILLIS, 1000).
+-define(MAX_ALLOWED_SYNC_DELAY_MILLIS, 10000).
 
 %%%===================================================================
 %%% API
@@ -79,8 +80,8 @@ timestamp_nanos() ->
 %% (node-wide) and uses it to adjust all consecutive timestamps so that they
 %% return measurements as close as possible to the actual remote time. It is
 %% recommended to periodically repeat the synchronization procedure to ensure
-%% that the clocks don't desynchronize over a longer period. If synchronization
-%% is not performed, the local system clock is used for timestamps.
+%% that the clocks don't become desynchronized over a longer period. If
+%% synchronization is not performed, the local system clock is used for timestamps.
 %% @end
 %%--------------------------------------------------------------------
 -spec synchronize_with_remote_clock(fun(() -> time_utils:millis())) -> ok | error.
@@ -93,14 +94,15 @@ synchronize_with_remote_clock(FetchRemoteTimestamp) ->
             EstimatedMeasurementMoment = (Before + After) div 2,
             Bias = RemoteTimestamp - EstimatedMeasurementMoment,
             {BiasAcc + Bias, DelayAcc + After - Before}
-        end, {0, 0}, lists:seq(1, ?SYNCHRONIZATION_REQUEST_REPEATS)),
-        case DelaySum / ?SYNCHRONIZATION_REQUEST_REPEATS of
-            Allowed when Allowed < ?SYNCHRONIZATION_TIMEOUT_MILLIS ->
-                AverageBiasMillis = round(BiasSum / ?SYNCHRONIZATION_REQUEST_REPEATS),
+        end, {0, 0}, lists:seq(1, ?SYNC_REQUEST_REPEATS)),
+        AverageBiasMillis = round(BiasSum / ?SYNC_REQUEST_REPEATS),
+        AverageDelayMillis = round(DelaySum / ?SYNC_REQUEST_REPEATS),
+        case is_delay_acceptable(AverageDelayMillis, AverageBiasMillis) of
+            true ->
                 ctool:set_env(?CLOCK_BIAS_CACHE_MILLIS, AverageBiasMillis);
-            TooLong ->
-                ?error("Failed to synchronize with remote clock - average delay (~p) exceeded the allowed ~p", [
-                    TooLong, ?SYNCHRONIZATION_TIMEOUT_MILLIS
+            false ->
+                ?error("Failed to synchronize with remote clock - delay too high (~Bms at bias=~Bms)", [
+                    AverageDelayMillis, AverageBiasMillis
                 ]),
                 error
         end
@@ -159,3 +161,13 @@ iso8601_to_datetime(Iso8601) ->
 -spec local_timestamp_nanos() -> nanos().
 local_timestamp_nanos() ->
     erlang:system_time(nanosecond).
+
+
+%% @private
+-spec is_delay_acceptable(millis(), millis()) -> boolean().
+is_delay_acceptable(Delay, _Bias) when Delay < ?SATISFYING_SYNC_DELAY_MILLIS ->
+    true;
+is_delay_acceptable(Delay, _Bias) when Delay > ?MAX_ALLOWED_SYNC_DELAY_MILLIS ->
+    false;
+is_delay_acceptable(Delay, Bias) ->
+    Delay < Bias / 2.

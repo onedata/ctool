@@ -17,15 +17,19 @@
 -define(FAKE_REMOTE_TIMESTAMP, 1000000000000).
 -define(SYSTEM_TIMESTAMP(), erlang:system_time(millisecond)).
 
+%%%===================================================================
+%%% Eunit tests
+%%%===================================================================
+
 successful_synchronization_test() ->
     time_utils:reset_to_local_time(),
     StartingLocalTimestamp = ?SYSTEM_TIMESTAMP(),
     % before synchronization, the clock should show the local time
-    ?assert(are_within_one_second(time_utils:timestamp_millis(), StartingLocalTimestamp)),
-    ?assertNot(are_within_one_second(time_utils:timestamp_millis(), ?FAKE_REMOTE_TIMESTAMP)),
+    ?assert(is_clock_in_sync(StartingLocalTimestamp)),
+    ?assertNot(is_clock_in_sync(?FAKE_REMOTE_TIMESTAMP)),
 
     FetchRemoteTimestamp = fun() ->
-        RandDelay = rand:uniform(500),
+        RandDelay = rand:uniform(900),
         timer:sleep(RandDelay div 2),
         Result = ?FAKE_REMOTE_TIMESTAMP + ?SYSTEM_TIMESTAMP() - StartingLocalTimestamp,
         timer:sleep(RandDelay div 2),
@@ -33,19 +37,17 @@ successful_synchronization_test() ->
     end,
 
     ?assertEqual(ok, time_utils:synchronize_with_remote_clock(FetchRemoteTimestamp)),
-    TimePassedSinceStart = ?SYSTEM_TIMESTAMP() - StartingLocalTimestamp,
-    MeasuredTimestamp = time_utils:timestamp_millis(),
+    TimeSinceStart = ?SYSTEM_TIMESTAMP() - StartingLocalTimestamp,
     % after synchronization, the clock should show the remote time
-    ?assertNot(are_within_one_second(MeasuredTimestamp, StartingLocalTimestamp + TimePassedSinceStart)),
-    ?assert(are_within_one_second(MeasuredTimestamp, ?FAKE_REMOTE_TIMESTAMP + TimePassedSinceStart)),
+    ?assertNot(is_clock_in_sync(StartingLocalTimestamp + TimeSinceStart)),
+    ?assert(is_clock_in_sync(?FAKE_REMOTE_TIMESTAMP + TimeSinceStart)),
     % the clock can be reset to the local time
     time_utils:reset_to_local_time(),
-    NewMeasuredTimestamp = time_utils:timestamp_millis(),
-    ?assert(are_within_one_second(NewMeasuredTimestamp, StartingLocalTimestamp + TimePassedSinceStart)),
-    ?assertNot(are_within_one_second(NewMeasuredTimestamp, ?FAKE_REMOTE_TIMESTAMP + TimePassedSinceStart)).
+    ?assert(is_clock_in_sync(StartingLocalTimestamp + TimeSinceStart)),
+    ?assertNot(is_clock_in_sync(?FAKE_REMOTE_TIMESTAMP + TimeSinceStart)).
 
 
-failed_synchronization_test() ->
+crashed_synchronization_test() ->
     time_utils:reset_to_local_time(),
     StartingLocalTimestamp = ?SYSTEM_TIMESTAMP(),
 
@@ -54,20 +56,19 @@ failed_synchronization_test() ->
     end,
 
     ?assertEqual(error, time_utils:synchronize_with_remote_clock(FetchRemoteTimestamp)),
-    TimePassedSinceStart = ?SYSTEM_TIMESTAMP() - StartingLocalTimestamp,
-    MeasuredTimestamp = time_utils:timestamp_millis(),
+    TimeSinceStart = ?SYSTEM_TIMESTAMP() - StartingLocalTimestamp,
     % as the synchronization failed, the clock should continue to show the local time
-    ?assert(are_within_one_second(MeasuredTimestamp, StartingLocalTimestamp + TimePassedSinceStart)),
-    ?assertNot(are_within_one_second(MeasuredTimestamp, ?FAKE_REMOTE_TIMESTAMP + TimePassedSinceStart)).
+    ?assert(is_clock_in_sync(StartingLocalTimestamp + TimeSinceStart)),
+    ?assertNot(is_clock_in_sync(?FAKE_REMOTE_TIMESTAMP + TimeSinceStart)).
 
 
-timed_out_synchronization_test_() ->
-    {timeout, 60, fun() ->
+timed_out_synchronization_test() ->
+    {timeout, 100, fun() ->
         time_utils:reset_to_local_time(),
         StartingLocalTimestamp = ?SYSTEM_TIMESTAMP(),
 
         FetchRemoteTimestamp = fun() ->
-            RandDelay = 2000 + rand:uniform(200),
+            RandDelay = 10000 + rand:uniform(500),
             timer:sleep(RandDelay div 2),
             Result = ?FAKE_REMOTE_TIMESTAMP + ?SYSTEM_TIMESTAMP() - StartingLocalTimestamp,
             timer:sleep(RandDelay div 2),
@@ -75,17 +76,85 @@ timed_out_synchronization_test_() ->
         end,
 
         ?assertEqual(error, time_utils:synchronize_with_remote_clock(FetchRemoteTimestamp)),
-        TimePassedSinceStart = ?SYSTEM_TIMESTAMP() - StartingLocalTimestamp,
-        MeasuredTimestamp = time_utils:timestamp_millis(),
+        TimeSinceStart = ?SYSTEM_TIMESTAMP() - StartingLocalTimestamp,
         % as the synchronization failed, the clock should continue to show the local time
-        ?assert(are_within_one_second(MeasuredTimestamp, StartingLocalTimestamp + TimePassedSinceStart)),
-        ?assertNot(are_within_one_second(MeasuredTimestamp, ?FAKE_REMOTE_TIMESTAMP + TimePassedSinceStart))
+        ?assert(is_clock_in_sync(StartingLocalTimestamp + TimeSinceStart)),
+        ?assertNot(is_clock_in_sync(?FAKE_REMOTE_TIMESTAMP + TimeSinceStart))
     end}.
 
 
-%% @private helper
-are_within_one_second(MillisA, MillisB) ->
-    MillisA - MillisB > -1000 andalso MillisA - MillisB < 1000.
+delay_too_high_synchronization_test() ->
+    {timeout, 100, fun() ->
+        time_utils:reset_to_local_time(),
+        StartingLocalTimestamp = ?SYSTEM_TIMESTAMP(),
+
+        % if the delay is higher than 1000ms and higher than half the bias, it is
+        % deemed to high - in this case delay is ~1100-1300ms, while the bias is ~2000ms
+        FetchRemoteTimestamp = fun() ->
+            RandDelay = 1100 + rand:uniform(200),
+            timer:sleep(RandDelay div 2),
+            Result = 2000 + ?SYSTEM_TIMESTAMP() + ?SYSTEM_TIMESTAMP() - StartingLocalTimestamp,
+            timer:sleep(RandDelay div 2),
+            Result
+        end,
+
+        ?assertEqual(error, time_utils:synchronize_with_remote_clock(FetchRemoteTimestamp)),
+        TimeSinceStart = ?SYSTEM_TIMESTAMP() - StartingLocalTimestamp,
+        % as the synchronization failed, the clock should continue to show the local time
+        ?assert(is_clock_in_sync(StartingLocalTimestamp + TimeSinceStart)),
+        ?assertNot(is_clock_in_sync(?FAKE_REMOTE_TIMESTAMP + TimeSinceStart))
+    end}.
+
+
+failed_synchronization_does_not_change_previous_bias_test() ->
+    {timeout, 100, fun() ->
+        time_utils:reset_to_local_time(),
+        StartingLocalTimestamp = ?SYSTEM_TIMESTAMP(),
+
+        SuccessfulFetchRemoteTimestamp = fun() ->
+            ?FAKE_REMOTE_TIMESTAMP + ?SYSTEM_TIMESTAMP() - StartingLocalTimestamp
+        end,
+
+        CrashingFetchRemoteTimestamp = fun() ->
+            error(this_is_not_good)
+        end,
+
+        TimingOutFetchRemoteTimestamp = fun() ->
+            timer:sleep(11000),
+            ?FAKE_REMOTE_TIMESTAMP + ?SYSTEM_TIMESTAMP() - StartingLocalTimestamp
+        end,
+
+        DelayTooHighFetchRemoteTimestamp = fun() ->
+            timer:sleep(500),
+            Result = 1500 + ?SYSTEM_TIMESTAMP() + ?SYSTEM_TIMESTAMP() - StartingLocalTimestamp,
+            timer:sleep(500),
+            Result
+        end,
+
+        ?assertEqual(ok, time_utils:synchronize_with_remote_clock(SuccessfulFetchRemoteTimestamp)),
+        TimeSinceStartA = ?SYSTEM_TIMESTAMP() - StartingLocalTimestamp,
+        % after synchronization, the clock should show the remote time
+        ?assertNot(is_clock_in_sync(StartingLocalTimestamp + TimeSinceStartA)),
+        ?assert(is_clock_in_sync(?FAKE_REMOTE_TIMESTAMP + TimeSinceStartA)),
+
+        % crashed attempt to synchronize should not change the previous bias
+        ?assertEqual(error, time_utils:synchronize_with_remote_clock(CrashingFetchRemoteTimestamp)),
+        TimeSinceStartB = ?SYSTEM_TIMESTAMP() - StartingLocalTimestamp,
+        ?assertNot(is_clock_in_sync(StartingLocalTimestamp + TimeSinceStartB)),
+        ?assert(is_clock_in_sync(?FAKE_REMOTE_TIMESTAMP + TimeSinceStartB)),
+
+        % timed out attempt to synchronize should not change the previous bias
+        ?assertEqual(error, time_utils:synchronize_with_remote_clock(TimingOutFetchRemoteTimestamp)),
+        TimeSinceStartC = ?SYSTEM_TIMESTAMP() - StartingLocalTimestamp,
+        ?assertNot(is_clock_in_sync(StartingLocalTimestamp + TimeSinceStartC)),
+        ?assert(is_clock_in_sync(?FAKE_REMOTE_TIMESTAMP + TimeSinceStartC)),
+
+        % attempt to synchronize with too high delay should not change the previous bias
+        ?assertEqual(error, time_utils:synchronize_with_remote_clock(DelayTooHighFetchRemoteTimestamp)),
+        TimeSinceStartD = ?SYSTEM_TIMESTAMP() - StartingLocalTimestamp,
+        ?assertNot(is_clock_in_sync(StartingLocalTimestamp + TimeSinceStartD)),
+        ?assert(is_clock_in_sync(?FAKE_REMOTE_TIMESTAMP + TimeSinceStartD))
+    end}.
 
 
 general_conversion_test() ->
@@ -122,6 +191,16 @@ specific_conversion_test() ->
 
     ?assertEqual(SecondsMidnight, time_utils:iso8601_to_seconds(Iso8601DateOnly)),
     ?assertEqual(DateTimeMidnight, time_utils:iso8601_to_datetime(Iso8601DateOnly)).
+
+%%%===================================================================
+%%% Helper functions
+%%%===================================================================
+
+%% @private
+is_clock_in_sync(ExpectedTime) ->
+    MeasuredTime = time_utils:timestamp_millis(),
+    % assume the clock is synchronized if the time read is less than 1s apart from expected
+    MeasuredTime - ExpectedTime > -1000 andalso MeasuredTime - ExpectedTime < 1000.
 
 
 -endif.
