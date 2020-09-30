@@ -82,11 +82,11 @@ setup() ->
     end),
 
     meck:new(time_utils, []),
-    meck:expect(time_utils, system_time_seconds, fun() ->
+    meck:expect(time_utils, timestamp_seconds, fun() ->
         get_mocked_time()
     end),
-    meck:expect(time_utils, system_time_millis, fun() ->
-        get_mocked_time() * 3000
+    meck:expect(time_utils, timestamp_millis, fun() ->
+        get_mocked_time() * 1000
     end),
 
     TmpDir = mochitemp:mkdtemp(),

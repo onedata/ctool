@@ -14,13 +14,14 @@
 %% API
 -export([get/1, get/2, put/2, put/3, clear/1]).
 
--define(APP_NAME, simple_cache).
-
 -type key() :: atom() | {atom(), term()}.
-%% TTL in milliseconds
--type ttl() :: non_neg_integer() | infinity.
 -type value() :: term().
+-type ttl() :: time_utils:millis() | infinity.
 
+-define(APP_NAME, simple_cache).
+-define(NOW(), time_utils:timestamp_millis()).
+
+-compile([{no_auto_import, [get/1]}]).
 
 %%%===================================================================
 %%% API
@@ -28,7 +29,7 @@
 
 %%--------------------------------------------------------------------
 %% @doc
-%% If cache exists and is not expired returns cached value. 
+%% If cache exists and is not expired returns cached value.
 %% @end
 %%--------------------------------------------------------------------
 -spec get(key()) -> {ok, value()} | {error, not_found}.
@@ -42,11 +43,10 @@ get(Key) ->
 
 %%--------------------------------------------------------------------
 %% @doc
-%% Returns cached or calculated value.
-%% ValueProvider function is used for calculation of value if cache does
-%% not exist or is expired. 
-%% This function should return a tuple {true, Value} or {true, Value, TTL} 
-%% if Value is to be stored in cache otherwise it should return {false, Value}.
+%% Returns cached or calculated value. ValueProvider function is used if
+%% the cache does not exist or is expired to calculate the value and caching
+%% time. The function should return a tuple {true, Value} or {true, Value, TTL}
+%% if Value is to be stored in the cache, otherwise {false, Value}.
 %% {true, Value} is equivalent to {true, Value, infinity}.
 %% @end
 %%--------------------------------------------------------------------
@@ -59,7 +59,7 @@ get(Key) ->
         Error
     ).
 get(Key, ValueProvider) ->
-    case ?MODULE:get(Key) of
+    case get(Key) of
         {ok, Value} ->
             {ok, Value};
         {error, not_found} ->
@@ -95,7 +95,7 @@ put(Key, Value) ->
 put(Key, Value, TTL) ->
     ValidUntil = case TTL of
         infinity -> infinity;
-        _ -> time_utils:system_time_millis() + TTL
+        _ -> ?NOW() + TTL
     end,
     do_put(Key, Value, ValidUntil).
 
@@ -108,12 +108,12 @@ put(Key, Value, TTL) ->
 -spec clear(key()) -> ok.
 clear({Key, ChildKey}) ->
     case application:get_env(?APP_NAME, Key) of
-        {ok, CacheMap} -> 
+        {ok, CacheMap} ->
             case maps:find(map, CacheMap) of
                 {ok, Map} -> application:set_env(?APP_NAME, Key, maps:put(map, maps:remove(ChildKey, Map), CacheMap));
                 _ -> ok
             end;
-        _ -> 
+        _ ->
             ok
     end;
 clear(Key) ->
@@ -124,25 +124,29 @@ clear(Key) ->
             ok
     end.
 
-
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
+
 %%--------------------------------------------------------------------
 %% @private
 %% @doc
-%% Returns cached value if given record is valid.
+%% Returns cached value if given entry is valid (has not expired).
 %% @end
 %%--------------------------------------------------------------------
 -spec check_validity({ok, {value(), ttl()}} | error) -> {ok, value()} | {error, not_found}.
-check_validity(Record) ->
-    Now = time_utils:system_time_millis(),
-    case Record of
-        {ok, {Value, infinity}} -> {ok, Value};
-        {ok, {Value, ValidUntil}} when ValidUntil > Now -> {ok, Value};
-        _ -> {error, not_found}
-    end.
+check_validity({ok, {Value, infinity}}) ->
+    {ok, Value};
+check_validity({ok, {Value, ValidUntil}}) ->
+    case ValidUntil > ?NOW() of
+        true -> {ok, Value};
+        false -> {error, not_found}
+    end;
+check_validity(_) ->
+    {error, not_found}.
 
+
+%% @private
 -spec do_put(Key :: key(), Value :: value(), ValidUntil :: ttl()) -> ok.
 do_put({Key, ChildKey}, Value, ValidUntil) ->
     CacheMap = application:get_env(?APP_NAME, Key, #{}),
