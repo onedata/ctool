@@ -37,9 +37,13 @@ prepare_test_environment(Config0) ->
     PathToSources = os:getenv("path_to_sources"),
     AbsPathToSources = filename:join([ProjectRoot, PathToSources]),
     
+    % strings "true" or "false"
+    CleanEnv = os:getenv("clean_env"),
+    Cover = os:getenv("cover"),
+    
     % Dummy first call to onenv to setup configs. 
     % Path to sources must be proivided in first onenv call that creates one-env docker
-    utils:cmd([OnenvScript, "status", "--path-to-sources", AbsPathToSources]), 
+    utils:cmd([OnenvScript, "status", "--path-to-sources", AbsPathToSources]),
     Sources = utils:cmd(["cd", ProjectRoot, "&&", OnenvScript, "find_sources"]),
     ct:pal("~nUsing sources from:~n~n~s", [Sources]),
     
@@ -48,13 +52,28 @@ prepare_test_environment(Config0) ->
         {set_project_root_path, [ProjectRoot]}
     ]),
     
-    PodsProplist = start_environment(Config),
+    ConfigWithCover = case Cover of
+        "true" ->
+            {ok, CoverSpec} = file:consult(filename:join(ProjectRoot, "test_distributed/cover_tmp.spec")),
+            CoveredDirs = lists:map(fun(DirRelPath) ->
+                list_to_atom(filename:join(ProjectRoot, DirRelPath))
+            end, kv_utils:get(incl_dirs_r, CoverSpec)),
+            
+            ExcludedModules = kv_utils:get(excl_mods, CoverSpec),
+            test_config:add_envs(Config, op_worker, op_worker,
+                [{covered_dirs, CoveredDirs}, {covered_excluded_modules, ExcludedModules}]);
+        "false" ->
+            Config
+    end,
+    
+    PodsProplist = start_environment(ConfigWithCover),
     add_entries_to_etc_hosts(PodsProplist),
     NodesConfig = prepare_nodes_config(Config, PodsProplist),
     connect_nodes(NodesConfig),
     
     test_config:set_many(NodesConfig, [
-        [op_worker_script, script_path(NodesConfig, "op_worker")], 
+        [clean_env, CleanEnv == "true"],
+        [op_worker_script, script_path(NodesConfig, "op_worker")],
         [cluster_manager_script, script_path(NodesConfig, "cluster_manager")]
     ]).
 
@@ -63,9 +82,11 @@ prepare_test_environment(Config0) ->
 clean_environment(Config) ->
     OnenvScript = test_config:get_onenv_script_path(Config),
     PrivDir = test_config:get_custom(Config, priv_dir),
+    CleanEnv = test_config:get_custom(Config, clean_env, true),
     
     utils:cmd([OnenvScript, "export", PrivDir]),
-    utils:cmd([OnenvScript, "clean", "--all", "--persistent-volumes"]),
+    test_node_starter:clean_environment(Config),
+    CleanEnv andalso utils:cmd([OnenvScript, "clean", "--all", "--persistent-volumes"]),
     ok.
 
 
@@ -88,7 +109,7 @@ start_environment(Config) ->
     StartCmd = ["cd", ProjectRoot, "&&", OnenvScript, "up", ScenarioPath],
     OnenvStartLogs = utils:cmd(StartCmd),
     ct:pal("~s", [OnenvStartLogs]),
-
+    
     lists:foreach(fun file:delete/1, CustomConfigsPaths),
     utils:cmd([OnenvScript, "wait", "--timeout", "900"]),
     
@@ -107,18 +128,18 @@ start_environment(Config) ->
 %% @private
 -spec prepare_nodes_config(test_config:config(), proplists:proplist()) -> test_config:config().
 prepare_nodes_config(Config, PodsProplist) ->
-    lists:foldl(fun({PodName, X}, TmpConfig) -> 
-        Hostname = proplists:get_value("hostname", X), 
-        case proplists:get_value("service-type", X) of 
-            "oneprovider" -> 
+    lists:foldl(fun({PodName, X}, TmpConfig) ->
+        Hostname = proplists:get_value("hostname", X),
+        case proplists:get_value("service-type", X) of
+            "oneprovider" ->
                 NodesAndKeys = prepare_nodes(op, Hostname),
                 add_nodes_to_config(NodesAndKeys, PodName, TmpConfig);
             "onezone" ->
                 NodesAndKeys = prepare_nodes(oz, Hostname),
                 add_nodes_to_config(NodesAndKeys, PodName, TmpConfig);
-            _ -> 
+            _ ->
                 TmpConfig
-        end 
+        end
     end, Config, PodsProplist).
 
 
@@ -167,7 +188,7 @@ add_entries_to_etc_hosts(PodsConfig) ->
         case lists:member(ServiceType, ["onezone", "oneprovider"]) of
             true ->
                 Ip = proplists:get_value("ip", ServiceConfig),
-
+                
                 Acc1 = case proplists:get_value("domain", ServiceConfig, undefined) of
                     undefined -> Acc0;
                     Domain -> [{Domain, Ip} | Acc0]
@@ -180,13 +201,13 @@ add_entries_to_etc_hosts(PodsConfig) ->
                 Acc0
         end
     end, [], PodsConfig),
-
+    
     {ok, File} = file:open("/etc/hosts", [append]),
-
+    
     lists:foreach(fun({DomainOrHostname, Ip}) ->
         io:fwrite(File, "~s ~s~n", [Ip, DomainOrHostname])
     end, HostsEntries),
-
+    
     file:close(File).
 
 

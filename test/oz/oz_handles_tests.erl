@@ -71,7 +71,7 @@ should_create() ->
 
 should_get_details() ->
     Datestamp = <<"2016-01-01T10:00:00Z">>,
-    Datetime = time_utils:datestamp_to_datetime(Datestamp),
+    Datetime = time_utils:iso8601_to_datetime(Datestamp),
     meck:new(json_utils, [passthrough]),
     meck:expect(json_utils, decode_deprecated, fun(response_body) ->
         [

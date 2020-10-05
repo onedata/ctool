@@ -101,13 +101,11 @@ move(From, To) ->
 %% given file.
 %% @end
 %%--------------------------------------------------------------------
--spec seconds_since_modification(file:name_all()) -> {ok, integer()} | {error, enoent}.
+-spec seconds_since_modification(file:name_all()) -> {ok, time_utils:seconds()} | {error, enoent}.
 seconds_since_modification(Path) ->
     case filelib:last_modified(Path) of
         0 ->
             {error, enoent};
         LastModified ->
-            CurrentDateTime = calendar:now_to_local_time(erlang:timestamp()),
-            {ok, calendar:datetime_to_gregorian_seconds(CurrentDateTime) -
-                calendar:datetime_to_gregorian_seconds(LastModified)}
+            {ok, time_utils:timestamp_seconds() - time_utils:datetime_to_seconds(LastModified)}
     end.

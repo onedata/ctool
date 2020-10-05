@@ -6,8 +6,14 @@
 %%% @end
 %%%-------------------------------------------------------------------
 %%% @doc
-%%% This module contains utility functions for measuring system, cluster and
-%%% remote cluster time as well as time format conversion.
+%%% This module contains utility functions for measuring time and format
+%%% conversion. It SHOULD be used universally across all services to ensure
+%%% unified time management and synchronized clocks between deployments.
+%%% The timestamp_*/0 functions are the only recommended way of acquiring a
+%%% timestamp.
+%%%
+%%% At any time, the local clock can be synchronized with a remote clock and all
+%%% consecutive timestamps will be adjusted to the remote clock (best effort).
 %%% @end
 %%%-------------------------------------------------------------------
 -module(time_utils).
@@ -15,189 +21,153 @@
 
 -type seconds() :: integer().
 -type millis() :: integer().
--export_type([seconds/0, millis/0]).
+-type micros() :: integer().
+-type nanos() :: integer().
+-type iso8601() :: binary(). % YYYY-MM-DDThh:mm:ssZ
+-export_type([seconds/0, millis/0, micros/0, nanos/0, iso8601/0]).
+
+-export([timestamp_seconds/0, timestamp_millis/0, timestamp_micros/0, timestamp_nanos/0]).
+-export([synchronize_with_remote_clock/1, reset_to_local_time/0]).
+-export([datetime_to_seconds/1, seconds_to_datetime/1]).
+-export([seconds_to_iso8601/1, iso8601_to_seconds/1]).
+-export([datetime_to_iso8601/1, iso8601_to_datetime/1]).
 
 -include("logging.hrl").
 -include("global_definitions.hrl").
 
--define(REMOTE_TIMESTAMP_CACHE_TTL, timer:hours(1)).
--define(MAX_LATENCY_TO_CACHE_REMOTE_TIMESTAMP, 500).
-
-%% Macro with regex matching allowed datestamps
-%%  * YYYY-MM-DDThh:mm:ssZ
-%%  * YYYY-MM-DD
--define(DATESTAMP_REGEX,
-    "(\\d{4})-(\\d{2})-(\\d{2})(?:$|(?:T(\\d{2}):(\\d{2}):(\\d{2})(?:.\\d{3})?Z){1})").
-
 %% calendar:datetime_to_gregorian_seconds({{1970,1,1},{0,0,0}}).
 -define(UNIX_EPOCH, 62167219200).
 
-%% API
--export([system_time_seconds/0, system_time_millis/0]).
--export([cluster_time_seconds/0, cluster_time_millis/0]).
--export([remote_timestamp/2]).
--export([epoch_to_iso8601/1, iso8601_to_epoch/1]).
--export([datetime_to_epoch/1, epoch_to_datetime/1]).
--export([datetime_to_datestamp/1, datestamp_to_datetime/1]).
+%% The clocks bias is cached using am application env and defaults to 0 unless a
+%% synchronization is done. It is expressed in milliseconds as finer resolution
+%% does not make sense in environments based on network communication.
+-define(CLOCK_BIAS_CACHE_MILLIS, time_utils_clock_bias_millis).
+
+-define(SYNC_REQUEST_REPEATS, 5).
+-define(SATISFYING_SYNC_DELAY_MILLIS, 1000).
+-define(MAX_ALLOWED_SYNC_DELAY_MILLIS, 10000).
 
 %%%===================================================================
 %%% API
 %%%===================================================================
 
-%%--------------------------------------------------------------------
-%% @doc
-%% @equiv erlang:system_time(seconds).
-%% @end
-%%--------------------------------------------------------------------
--spec system_time_seconds() -> seconds().
-system_time_seconds() ->
-    erlang:system_time(seconds).
-
-%%--------------------------------------------------------------------
-%% @doc
-%% @equiv erlang:system_time(milli_seconds).
-%% @end
-%%--------------------------------------------------------------------
--spec system_time_millis() -> millis().
-system_time_millis() ->
-    erlang:system_time(milli_seconds).
+-spec timestamp_seconds() -> seconds().
+timestamp_seconds() ->
+    timestamp_nanos() div 1000000000.
 
 
-%%--------------------------------------------------------------------
-%% @doc
-%% @equiv cluster_time_milli_seconds() div 1000
-%% @end
-%%--------------------------------------------------------------------
--spec cluster_time_seconds() -> seconds().
-cluster_time_seconds() ->
-    cluster_time_millis() div 1000.
+-spec timestamp_millis() -> millis().
+timestamp_millis() ->
+    timestamp_nanos() div 1000000.
+
+
+-spec timestamp_micros() -> micros().
+timestamp_micros() ->
+    timestamp_nanos() div 1000.
+
+
+-spec timestamp_nanos() -> nanos().
+timestamp_nanos() ->
+    ClockBiasMillis = ctool:get_env(?CLOCK_BIAS_CACHE_MILLIS, 0),
+    local_timestamp_nanos() + ClockBiasMillis * 1000000.
 
 
 %%--------------------------------------------------------------------
 %% @doc
-%% Returns current timestamp that is synchronized with cluster manager.
-%% It has the accuracy of 1 second in most cases, but this might be worse under
-%% very high load. When evaluated on different nodes of a cluster
-%% simultaneously, it should yield times at most one second apart from each
-%% other.
+%% Performs a series of requests to fetch a remote timestamp. Calculates the
+%% approximate communication delay with the remote server and difference of the
+%% clocks (called "bias" in this module). Caches the bias using an app env
+%% (node-wide) and uses it to adjust all consecutive timestamps so that they
+%% return measurements as close as possible to the actual remote time. It is
+%% recommended to periodically repeat the synchronization procedure to ensure
+%% that the clocks don't become desynchronized over a longer period. If
+%% synchronization is not performed, the local system clock is used for timestamps.
 %% @end
 %%--------------------------------------------------------------------
--spec cluster_time_millis() -> millis() | no_return().
-cluster_time_millis() ->
-    remote_timestamp(cluster_time_bias, fun() ->
-        try
-            {ok, gen_server:call({global, ?CLUSTER_MANAGER}, get_current_time)}
-        catch
-            exit:{Reason, _} ->
-                ?warning("Cannot get cluster time due to: ~p", [Reason]),
+-spec synchronize_with_remote_clock(fun(() -> time_utils:millis())) -> ok | error.
+synchronize_with_remote_clock(FetchRemoteTimestamp) ->
+    try
+        {BiasSum, DelaySum} = lists:foldl(fun(_, {BiasAcc, DelayAcc}) ->
+            Before = local_timestamp_nanos() div 1000000,
+            RemoteTimestamp = FetchRemoteTimestamp(),
+            After = local_timestamp_nanos() div 1000000,
+            EstimatedMeasurementMoment = (Before + After) div 2,
+            Bias = RemoteTimestamp - EstimatedMeasurementMoment,
+            {BiasAcc + Bias, DelayAcc + After - Before}
+        end, {0, 0}, lists:seq(1, ?SYNC_REQUEST_REPEATS)),
+        AverageBiasMillis = round(BiasSum / ?SYNC_REQUEST_REPEATS),
+        AverageDelayMillis = round(DelaySum / ?SYNC_REQUEST_REPEATS),
+        case is_delay_acceptable(AverageDelayMillis, AverageBiasMillis) of
+            true ->
+                ctool:set_env(?CLOCK_BIAS_CACHE_MILLIS, AverageBiasMillis);
+            false ->
+                ?error("Failed to synchronize with remote clock - delay too high (~Bms at bias=~Bms)", [
+                    AverageDelayMillis, AverageBiasMillis
+                ]),
                 error
         end
-    end).
-
-
-%%--------------------------------------------------------------------
-%% @doc
-%% Synchronizes time with a remote server (procedure to get the timestamp should
-%% be given as RemoteTimestampFun). Calculates estimated bias between local and
-%% remote clock and caches it for some time, hence limiting number of remote
-%% API calls. The time is returned in milliseconds, and in most cases it has one
-%% second accuracy.
-%% Cache key is used to allow different caches for different remote servers.
-%% Any errors should be logged inside the RemoteTimestampFun fun and 'error'
-%% should be returned.
-%% @end
-%%--------------------------------------------------------------------
--spec remote_timestamp(CacheKey :: atom(), fun(() -> {ok, millis()} | error)) ->
-    millis() | no_return().
-remote_timestamp(CacheKey, RemoteTimestampFun) ->
-    Now = system_time_millis(),
-    % If possible, use cached bias (clocks difference between this node and
-    % remote server where timestamp is measured).
-    case simple_cache:get(CacheKey) of
-        {ok, Bias} ->
-            Now + Bias;
-        {error, not_found} ->
-            case RemoteTimestampFun() of
-                error ->
-                    throw({error, remote_timestamp_failed});
-                {ok, RemoteTimestamp} ->
-                    After = system_time_millis(),
-                    % Request to the remote server can take some time, so we need to
-                    % slightly adjust the result. Estimate local time when measurement
-                    % on the remote server was done - roughly in about the middle of the
-                    % time taken by the request. Given that the request should take less
-                    % then a second in total, we get 1 second accuracy.
-                    EstimatedMeasurementTime = (Now + After) div 2,
-                    Bias = RemoteTimestamp - EstimatedMeasurementTime,
-                    % Cache measured bias if the latency was not too big.
-                    case After - Now > ?MAX_LATENCY_TO_CACHE_REMOTE_TIMESTAMP of
-                        true ->
-                            ok;
-                        false ->
-                            simple_cache:put(CacheKey, Bias, ?REMOTE_TIMESTAMP_CACHE_TTL)
-                    end,
-                    After + Bias
-            end
+    catch Class:Reason ->
+        ?error_stacktrace("Failed to synchronize with remote clock - ~w:~p", [Class, Reason]),
+        error
     end.
 
 
--spec epoch_to_iso8601(seconds()) -> binary().
-epoch_to_iso8601(Epoch) ->
-    iso8601:format({Epoch div 1000000, Epoch rem 1000000, 0}).
+%%--------------------------------------------------------------------
+%% @doc
+%% Resets the clock bias caused by synchronization, making the timestamps return
+%% local system time. If the synchronization has not been performed beforehand,
+%% it has no effect.
+%% @end
+%%--------------------------------------------------------------------
+-spec reset_to_local_time() -> ok.
+reset_to_local_time() ->
+    ctool:unset_env(?CLOCK_BIAS_CACHE_MILLIS).
 
 
--spec iso8601_to_epoch(binary()) -> seconds().
-iso8601_to_epoch(Iso8601) ->
-    DateTime = datestamp_to_datetime(Iso8601),
-    datetime_to_epoch(DateTime).
+-spec seconds_to_iso8601(seconds()) -> iso8601().
+seconds_to_iso8601(Seconds) ->
+    datetime_to_iso8601(seconds_to_datetime(Seconds)).
 
 
--spec datetime_to_epoch(calendar:datetime()) -> seconds().
-datetime_to_epoch({{_, _, _}, {_, _, _}} = DateTime) ->
+-spec iso8601_to_seconds(iso8601()) -> seconds().
+iso8601_to_seconds(Iso8601) ->
+    datetime_to_seconds(iso8601_to_datetime(Iso8601)).
+
+
+-spec datetime_to_seconds(calendar:datetime()) -> seconds().
+datetime_to_seconds(DateTime) ->
     calendar:datetime_to_gregorian_seconds(DateTime) - ?UNIX_EPOCH.
 
 
--spec epoch_to_datetime(seconds()) -> calendar:datetime().
-epoch_to_datetime(TimestampSeconds) ->
+-spec seconds_to_datetime(seconds()) -> calendar:datetime().
+seconds_to_datetime(TimestampSeconds) ->
     calendar:gregorian_seconds_to_datetime(TimestampSeconds + ?UNIX_EPOCH).
 
 
-%%%--------------------------------------------------------------------
-%%% @doc
-%%% Converts DateTime to format accepted by OAI-PMH which is in form
-%%  YYYY-MM-DDThh:mm:ssZ
-%%% @end
-%%%--------------------------------------------------------------------
--spec datetime_to_datestamp(DateTime :: calendar:datetime()) -> binary().
-datetime_to_datestamp(DateTime) ->
-    {{Year, Month, Day}, {Hour, Minute, Second}} = DateTime,
-    str_utils:format_bin(
-        "~4..0B-~2..0B-~2..0BT~2..0B:~2..0B:~2..0BZ",
-        [Year, Month, Day, Hour, Minute, Second]).
+-spec datetime_to_iso8601(calendar:datetime()) -> iso8601().
+datetime_to_iso8601(DateTime) ->
+    iso8601:format(DateTime).
 
 
-%%%--------------------------------------------------------------------
-%%% @doc
-%%% Converts datestamp from format defined by OAI-PMH to
-%%% erlang:datetime() or erlang:date().
-%%% Converts:
-%%%     * YYYY-MM-DDT:hh:mm:ssZ to {{Year, Month, Day},{Hour, Minutes, Seconds}}
-%%%     * YYYY-MM-DD to {Year, Month, Day}
-%%% @end
-%%%--------------------------------------------------------------------
--spec datestamp_to_datetime(undefined | binary()) ->
-    calendar:datetime() | calendar:date() | undefined | {error, invalid_date_format}.
-datestamp_to_datetime(undefined) -> undefined;
-datestamp_to_datetime(Datestamp) ->
-    {ok, Regex} = re:compile(?DATESTAMP_REGEX),
-    case re:run(Datestamp, Regex, [{capture, all_but_first, list}]) of
-        {match, Matched} ->
-            case [list_to_integer(E) || E <- Matched] of
-                [Y, M, D, H, Min, S] ->
-                    {{Y, M, D}, {H, Min, S}};
-                [Y, M, D] ->
-                    {Y, M, D};
-                _ -> {error, invalid_date_format}
-            end;
-        nomatch -> {error, invalid_date_format}
-    end.
+-spec iso8601_to_datetime(iso8601()) -> calendar:datetime().
+iso8601_to_datetime(Iso8601) ->
+    iso8601:parse(binary_to_list(Iso8601)).
+
+%%%===================================================================
+%%% Internal functions
+%%%===================================================================
+
+%% @private
+-spec local_timestamp_nanos() -> nanos().
+local_timestamp_nanos() ->
+    erlang:system_time(nanosecond).
+
+
+%% @private
+-spec is_delay_acceptable(millis(), millis()) -> boolean().
+is_delay_acceptable(Delay, _Bias) when Delay < ?SATISFYING_SYNC_DELAY_MILLIS ->
+    true;
+is_delay_acceptable(Delay, _Bias) when Delay > ?MAX_ALLOWED_SYNC_DELAY_MILLIS ->
+    false;
+is_delay_acceptable(Delay, Bias) ->
+    Delay < Bias / 2.

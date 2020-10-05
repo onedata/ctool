@@ -45,5 +45,7 @@
 -define(HDR_UPGRADE, <<"upgrade">>).
 -define(HDR_CONTENT_SECURITY_POLICY, <<"content-security-policy">>).
 -define(HDR_CACHE_CONTROL, <<"cache-control">>).
+-define(HDR_PRAGMA, <<"pragma">>).
+-define(HDR_EXPIRES, <<"expires">>).
 
 -endif.

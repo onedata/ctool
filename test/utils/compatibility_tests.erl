@@ -64,8 +64,8 @@ setup() ->
     meck:expect(http_client, get, fun get_mocked_mirror_result/1),
 
     meck:new(time_utils, [passthrough]),
-    meck:expect(time_utils, system_time_seconds, fun get_mocked_time_seconds/0),
-    meck:expect(time_utils, system_time_millis, fun get_mocked_time_millis/0),
+    meck:expect(time_utils, timestamp_seconds, fun get_mocked_time_seconds/0),
+    meck:expect(time_utils, timestamp_millis, fun get_mocked_time_millis/0),
 
     ok.
 
