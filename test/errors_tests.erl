@@ -211,6 +211,7 @@ testcases() -> [
     ?ERROR_STORAGE_TEST_FAILED(remove),
     ?ERROR_REQUIRES_NON_IMPORTED_STORAGE(<<"storageId">>),
     ?ERROR_REQUIRES_IMPORTED_STORAGE(<<"storageId">>),
+    ?ERROR_REQUIRES_READONLY_STORAGE(<<"storageType">>),
     ?ERROR_REQUIRES_POSIX_COMPATIBLE_STORAGE(<<"storageId">>, [<<"posix">>, <<"glusterfs">>, <<"nulldevice">>]),
     ?ERROR_AUTO_STORAGE_IMPORT_NOT_SUPPORTED(<<"storageId">>, [<<"posix">>, <<"glusterfs">>, <<"nulldevice">>, <<"s3">>], [<<"s3">>]),
     ?ERROR_FILE_REGISTRATION_NOT_SUPPORTED(<<"storageId">>, [<<"swift">>, <<"s3">>, <<"cephrados">>]),

@@ -178,6 +178,7 @@
 -define(ERROR_STORAGE_TEST_FAILED(Operation), {error, {storage_test_failed, Operation}}).
 -define(ERROR_REQUIRES_NON_IMPORTED_STORAGE(StorageId), {error, {requires_non_imported_storage, StorageId}}).
 -define(ERROR_REQUIRES_IMPORTED_STORAGE(StorageId), {error, {requires_imported_storage, StorageId}}).
+-define(ERROR_REQUIRES_READONLY_STORAGE(StorageIdOrType), {error, {requires_readonly_storage, StorageIdOrType}}).
 -define(ERROR_REQUIRES_POSIX_COMPATIBLE_STORAGE(StorageId, PosixCompatibleStorages), {error, {requires_posix_compatible_storage, StorageId, PosixCompatibleStorages}}).
 -define(ERROR_AUTO_STORAGE_IMPORT_NOT_SUPPORTED(StorageId, SupportedStorages, SupportedObjectStorages),
     {error, {auto_storage_import_not_supported, StorageId, SupportedStorages, SupportedObjectStorages}}).
