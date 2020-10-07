@@ -964,7 +964,7 @@ check_verification_result(Token, Secret, Subject, AuthCtx, Caveats, [] = _Unveri
     CaveatTypes = [caveats:type(C) || C <- Caveats],
     ?assertMatch(?ERROR_TOKEN_INVALID, tokens:verify(Token, <<"bad-secret">>, AuthCtx, CaveatTypes)),
     ?assertMatch(?ERROR_TOKEN_INVALID, tokens:verify(Token, ?RAND_STR, AuthCtx, CaveatTypes)),
-    ?assertMatch({ok, #auth{subject = Subject}}, tokens:verify(Token, Secret, AuthCtx, CaveatTypes));
+    check_verification_against_session_ctx(Token, Secret, Subject, AuthCtx, CaveatTypes);
 % If there are any caveats expected to fail verification, make sure that token verification
 % fails and indicates one of the bad caveats.
 check_verification_result(Token, Secret, _Subject, AuthCtx, Caveats, Unverified) ->
@@ -973,6 +973,28 @@ check_verification_result(Token, Secret, _Subject, AuthCtx, Caveats, Unverified)
     ?assertMatch(?ERROR_TOKEN_CAVEAT_UNVERIFIED(_), VerifyResult),
     ?ERROR_TOKEN_CAVEAT_UNVERIFIED(UnverifiedCaveat) = VerifyResult,
     ?assert(lists:member(UnverifiedCaveat, Unverified)).
+
+
+% Session context is checked last, upon successful caveats verification. For access tokens
+% bound to a specific session, the session spec in auth_ctx should determine if the token
+% is accepted.
+check_verification_against_session_ctx(#token{type = ?ACCESS_TOKEN(SessId)} = Token, Secret, Subject, AuthCtx, CaveatTypes) ->
+    ?assertMatch(
+        {ok, #auth{subject = Subject}},
+        tokens:verify(Token, Secret, AuthCtx#auth_ctx{session_id = any}, CaveatTypes)
+    ),
+    InvalidSessionCtx = lists_utils:random_element([undefined, ?RAND_STR] -- [SessId]),
+    ?assertMatch(
+        ?ERROR_TOKEN_SESSION_INVALID,
+        tokens:verify(Token, Secret, AuthCtx#auth_ctx{session_id = InvalidSessionCtx}, CaveatTypes)
+    );
+% For other types than access token, the session context should not change anything
+check_verification_against_session_ctx(Token, Secret, Subject, AuthCtx, CaveatTypes) ->
+    SessionCtx = lists_utils:random_element([undefined, any, ?RAND_STR]),
+    ?assertMatch(
+        {ok, #auth{subject = Subject}},
+        tokens:verify(Token, Secret, AuthCtx#auth_ctx{session_id = SessionCtx}, CaveatTypes)
+    ).
 
 
 % Make sures that if any of the caveats inscribed in the Token is not supported,
