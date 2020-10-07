@@ -891,7 +891,7 @@ to_json(?ERROR_REQUIRES_IMPORTED_STORAGE(StorageId)) -> #{
 };
 to_json(?ERROR_REQUIRES_READONLY_STORAGE(StorageIdOrType)) -> #{
     <<"id">> => <<"requiresReadonlyStorage">>,
-    <<"details">> => #{<<"storageId">> => StorageIdOrType},
+    <<"details">> => #{<<"storageIdOrType">> => StorageIdOrType},
     <<"description">> => ?FMT(
         "Cannot apply for storage ~s - this operation requires a readonly storage.",
         [StorageIdOrType]
@@ -1437,7 +1437,7 @@ from_json(#{<<"id">> := <<"requiresNonImportedStorage">>, <<"details">> := #{<<"
 from_json(#{<<"id">> := <<"requiresImportedStorage">>, <<"details">> := #{<<"storageId">> := StorageId}}) ->
     ?ERROR_REQUIRES_IMPORTED_STORAGE(StorageId);
 
-from_json(#{<<"id">> := <<"requiresReadonlyStorage">>, <<"details">> := #{<<"storageId">> := StorageIdOrType}}) ->
+from_json(#{<<"id">> := <<"requiresReadonlyStorage">>, <<"details">> := #{<<"storageIdOrType">> := StorageIdOrType}}) ->
     ?ERROR_REQUIRES_READONLY_STORAGE(StorageIdOrType);
 
 from_json(#{<<"id">> := <<"requiresPosixCompatibleStorage">>, <<"details">> := #{
