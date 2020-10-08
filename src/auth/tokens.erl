@@ -161,21 +161,20 @@ verify(#token{type = ?INVITE_TOKEN} = Token, Secret, AuthCtx) ->
     {ok, aai:auth()} | errors:error().
 verify(Token = #token{macaroon = Macaroon}, Secret, AuthCtx, SupportedCaveats) ->
     Verifier = caveats:build_verifier(AuthCtx, SupportedCaveats),
-    try macaroon_verifier:verify(Verifier, Macaroon, Secret) of
-        ok ->
-            {ok, #auth{
-                subject = Token#token.subject,
-                caveats = caveats:get_caveats(Macaroon),
-                peer_ip = AuthCtx#auth_ctx.ip,
-                session_id = case Token#token.type of
-                    ?ACCESS_TOKEN(SessionId) -> SessionId;
-                    _ -> undefined
-                end
-            }};
-        {error, {unverified_caveat, Serialized}} ->
-            ?ERROR_TOKEN_CAVEAT_UNVERIFIED(caveats:deserialize(Serialized));
-        _ ->
-            ?ERROR_TOKEN_INVALID
+    try
+        case macaroon_verifier:verify(Verifier, Macaroon, Secret) of
+            ok ->
+                {ok, #auth{
+                    subject = Token#token.subject,
+                    caveats = caveats:get_caveats(Macaroon),
+                    peer_ip = AuthCtx#auth_ctx.ip,
+                    session_id = examine_session_id(Token, AuthCtx)
+                }};
+            {error, {unverified_caveat, Serialized}} ->
+                ?ERROR_TOKEN_CAVEAT_UNVERIFIED(caveats:deserialize(Serialized));
+            _ ->
+                ?ERROR_TOKEN_INVALID
+        end
     catch
         throw:{error, _} = Error ->
             Error;
@@ -261,7 +260,7 @@ deserialize(Serialized) when is_binary(Serialized) ->
             true ->
                 ?ERROR_TOKEN_TOO_LARGE(MaxTokenSize);
             false ->
-                {SubjectSubtype, ProperToken} = check_for_oneprovider_service_indication(Serialized) ,
+                {SubjectSubtype, ProperToken} = check_for_oneprovider_service_indication(Serialized),
                 {ok, Macaroon} = macaroon:deserialize(base62:to_base64(ProperToken)),
                 Identifier = macaroon:identifier(Macaroon),
                 OnezoneDomain = macaroon:location(Macaroon),
@@ -351,6 +350,18 @@ parse_consumer_token_header(_) -> undefined.
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
+
+%% @private
+-spec examine_session_id(token(), aai:auth_ctx()) -> aai:session_id() | no_return().
+examine_session_id(#token{type = ?ACCESS_TOKEN(SessId)}, #auth_ctx{session_id = any}) ->
+    SessId;
+examine_session_id(#token{type = ?ACCESS_TOKEN(SessId)}, #auth_ctx{session_id = SessId}) ->
+    SessId;
+examine_session_id(#token{type = ?ACCESS_TOKEN(_SessA)}, #auth_ctx{session_id = _SessB}) ->
+    throw(?ERROR_TOKEN_SESSION_INVALID);
+examine_session_id(#token{type = _}, #auth_ctx{session_id = _}) ->
+    undefined.
+
 
 %% @private
 -spec to_identifier(token()) -> token_identifier().

@@ -250,8 +250,7 @@ to_json(?ERROR_FILE_ACCESS(Path, Errno)) ->
     #{
         <<"id">> => <<"fileAccess">>,
         <<"details">> => #{<<"path">> => PathBin, <<"errno">> => Errno},
-        <<"description">> => ?FMT("Cannot access file \"~ts\": ~p.",
-            [PathBin, Errno])
+        <<"description">> => ?FMT("Cannot access file \"~ts\": ~p.", [PathBin, Errno])
     };
 
 %% -----------------------------------------------------------------------------
@@ -389,7 +388,9 @@ to_json(?ERROR_INVITE_TOKEN_CONSUMER_INVALID(Consumer)) -> #{
     <<"details">> => #{
         <<"consumer">> => aai:subject_to_json(Consumer)
     },
-    <<"description">> => ?FMT("The consumer '~s' is invalid for this type of invite token.", [aai:subject_to_printable(Consumer)])
+    <<"description">> => ?FMT("The consumer '~s' is invalid for this type of invite token.", [
+        aai:subject_to_printable(Consumer)
+    ])
 };
 to_json(?ERROR_INVITE_TOKEN_TARGET_ID_INVALID(Id)) -> #{
     <<"id">> => <<"inviteTokenTargetIdInvalid">>,
@@ -400,7 +401,7 @@ to_json(?ERROR_INVITE_TOKEN_TARGET_ID_INVALID(Id)) -> #{
 };
 to_json(?ERROR_TOKEN_SESSION_INVALID) -> #{
     <<"id">> => <<"tokenSessionInvalid">>,
-    <<"description">> => <<"This token was issued for a session that no longer exists.">>
+    <<"description">> => <<"This token is bound to a session different than presented by the client or no longer existent.">>
 };
 
 %% -----------------------------------------------------------------------------
