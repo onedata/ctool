@@ -51,6 +51,22 @@
 
 
         %% ===================================================================
+        %% CLOCK SYNCHRONIZATION
+        %% ===================================================================
+
+        % How many times a synchronization request is repeated to
+        % estimate clocks bias and communication delay.
+        {clock_sync_request_repeats, 5},
+        % Communication delay considered satisfying. Below this value, clock
+        % synchronization always succeeds. Above this value, it depends if the
+        % delay is proportionally lower than the clocks bias.
+        {clock_sync_satisfying_delay, 1000},
+        % Maximum communication delay, higher values causes clock
+        % synchronization to immediately fail.
+        {clock_sync_max_allowed_delay, 10000},
+
+
+        %% ===================================================================
         %% TOKENS
         %% ===================================================================
 

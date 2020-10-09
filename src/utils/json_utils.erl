@@ -12,6 +12,7 @@
 -module(json_utils).
 -author("Tomasz Lichon").
 
+-include("logging.hrl").
 
 % Representation of any valid JSON term in erlang
 -type json_term() :: jiffy:json_value().
@@ -84,8 +85,9 @@ decode(<<"">>, _) -> maps:new();
 decode(JSON, JiffyOpts) ->
     try
         jiffy:decode(JSON, [return_maps | JiffyOpts])
-    catch _:_ ->
-        throw(invalid_json)
+    catch Class:Reason ->
+        ?debug("Failed to decode invalid json (~w:~p), payload:~n~p", [Class, Reason, JSON]),
+        error(invalid_json)
     end.
 
 
@@ -112,7 +114,7 @@ encode_deprecated(Term) ->
 decode_deprecated(<<"">>) -> [];
 decode_deprecated(JSON) ->
     try map_to_list(jiffy:decode(JSON, [return_maps])) 
-    catch _:_ -> throw(invalid_json) end.
+    catch _:_ -> error(invalid_json) end.
 
 
 %%--------------------------------------------------------------------
