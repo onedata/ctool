@@ -35,7 +35,7 @@
     subject = #subject{} :: aai:subject(),
     caveats = [] :: [caveats:caveat()],
     peer_ip = undefined :: undefined | ip_utils:ip(),
-    % Can be undefined if the auth object is not related to any session
+    % can be undefined if the auth object is not related to any session
     session_id = undefined :: aai:session_id()
 }).
 
@@ -47,6 +47,12 @@
     interface = undefined :: undefined | cv_interface:interface(),
     service = undefined :: undefined | aai:service_spec(),
     consumer = undefined :: undefined | aai:consumer_spec(),
+    % indicates that the auth should be checked in the context of a specific session, can be:
+    %   'any' - the token can be coupled with any session (including undefined)
+    %   'undefined' - the context requires that the token is not coupled with any session
+    %   SessionId - the token must be coupled exactly with given SessionId
+    % all these cases apply to the ?ACCESS_TOKEN(SessionId) type only, otherwise this field is ignored
+    session_id = undefined :: any | aai:session_id(),
     data_access_caveats_policy = disallow_data_access_caveats :: data_access_caveats:policy(),
     group_membership_checker = undefined :: undefined | aai:group_membership_checker()
 }).
