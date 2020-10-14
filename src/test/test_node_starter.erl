@@ -175,45 +175,48 @@ maybe_gather_cover(Config) ->
 -spec maybe_gather_cover(Config :: list() | test_config:config(),
     Apps :: [{AppName :: atom(), ConfigName :: atom()}]) -> ok.
 maybe_gather_cover(Config, Apps) ->
-    case cover:modules() of
-        [] ->
-            ok;
-        _ ->
-            erlang:register(?CLEANING_PROC_NAME, self()),
+    maybe_gather_cover(Config, Apps, cover:modules()).
+
+
+-spec maybe_gather_cover(Config :: list() | test_config:config(),
+    Apps :: [{AppName :: atom(), ConfigName :: atom()}], [module()]) -> ok.
+maybe_gather_cover(_Config, _Apps, []) ->
+    ok;
+maybe_gather_cover(Config, Apps, _) ->
+    erlang:register(?CLEANING_PROC_NAME, self()),
+
+    NodesWithCover = lists:flatmap(fun({AppName, ConfigName}) ->
+        Nodes = test_config:get_custom(Config, ConfigName, []),
+        lists:filter(fun(Node) ->
+            case rpc:call(Node, application, get_env, [AppName, covered_dirs]) of
+                {ok, []} -> false;
+                {ok, _} -> true;
+                _ -> false
+            end
+        end, Nodes)
+    end, Apps),
+    stop_applications(Config, Apps),
     
-            NodesWithCover = lists:flatmap(fun({AppName, ConfigName}) ->
-                Nodes = test_config:get_custom(Config, ConfigName, []),
-                lists:filter(fun(Node) ->
-                    case rpc:call(Node, application, get_env, [AppName, covered_dirs]) of
-                        {ok, []} -> false;
-                        {ok, _} -> true;
-                        _ -> false
-                    end
-                end, Nodes)
-            end, Apps),
-            stop_applications(Config, Apps),
-            
-            lists:foreach(fun(Node) ->
-                receive
-                    {app_ended, CoverNode, FileData} ->
-                        {Mega, Sec, Micro} = os:timestamp(),
-                        CoverFile = atom_to_list(CoverNode) ++
-                            integer_to_list(
-                                (Mega * 1000000 + Sec) * 1000000 + Micro) ++
-                            ".coverdata",
-                        ok = file:write_file(CoverFile, FileData),
-                        cover:import(CoverFile),
-                        file:delete(CoverFile)
-                after
-                    ?TIMEOUT ->
-                        ct:print(
-                            "WARNING: Could not collect cover data from node: ~p", [
-                                Node
-                            ])
-                end
-            end, NodesWithCover),
-            ok
-    end.
+    lists:foreach(fun(Node) ->
+        receive
+            {app_ended, CoverNode, FileData} ->
+                {Mega, Sec, Micro} = os:timestamp(),
+                CoverFile = atom_to_list(CoverNode) ++
+                    integer_to_list(
+                        (Mega * 1000000 + Sec) * 1000000 + Micro) ++
+                    ".coverdata",
+                ok = file:write_file(CoverFile, FileData),
+                cover:import(CoverFile),
+                file:delete(CoverFile)
+        after
+            ?TIMEOUT ->
+                ct:print(
+                    "WARNING: Could not collect cover data from node: ~p", [
+                        Node
+                    ])
+        end
+    end, NodesWithCover),
+    ok.
 
 %%--------------------------------------------------------------------
 %% @doc
