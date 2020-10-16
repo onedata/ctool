@@ -39,6 +39,7 @@
 -define(HDR_CONNECTION, <<"connection">>).
 -define(HDR_CONTENT_DISPOSITION, <<"content-disposition">>).
 -define(HDR_CONTENT_LENGTH, <<"content-length">>).
+-define(HDR_CONTENT_RANGE, <<"content-range">>).
 -define(HDR_CONTENT_TYPE, <<"content-type">>).
 -define(HDR_SET_COOKIE, <<"set-cookie">>).
 -define(HDR_COOKIE, <<"cookie">>).
