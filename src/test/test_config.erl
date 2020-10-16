@@ -60,7 +60,8 @@ set_onenv_scenario(Config, ScenarioName) ->
 
 -spec add_envs(config(), service(), atom(), proplists:proplist()) -> config().
 add_envs(Config, Service, Application, Envs) ->
-    set_custom(Config, [custom_envs, Service, Application], Envs).
+    CurrentEnvs = get_custom(Config, [custom_envs, Service, Application], []),
+    set_custom(Config, [custom_envs, Service, Application], lists:usort(CurrentEnvs ++ Envs)).
 
 -spec set_posthook(test_config:config(), fun((test_config:config()) -> test_config:config())) -> 
     test_config:config().
