@@ -34,6 +34,11 @@
 %%% Synchronization is discarded if the communication delay exceeds
 %%% ?MAX_ALLOWED_SYNC_DELAY_MILLIS or is high compared to the bias.
 %%%
+%%% Every time a synchronization succeeds, the measured bias is stored in a
+%%% file on disk, along with the information when it was measured. It can be
+%%% later used to restore the previous synchronization, given that it is not
+%%% outdated. This procedure is dedicated for nodes recovering after a failure.
+%%%
 %%% The following names are used across this module and eunit tests:
 %%%     * system_clock - the native clock on the machine
 %%%     * local_clock  - the clock on this node used to get timestamps,
@@ -53,8 +58,8 @@
 -type iso8601() :: binary(). % YYYY-MM-DDThh:mm:ssZ
 -export_type([seconds/0, millis/0, micros/0, nanos/0, iso8601/0]).
 
-% difference between readings of two clocks
--type bias() :: millis().
+% difference between readings of two clocks, expressed in given unit
+-type bias(Unit) :: Unit.
 % communication delay with a remote server/node
 -type delay() :: millis().
 % see module's description
@@ -63,10 +68,15 @@
 -export([timestamp_seconds/0, timestamp_millis/0, timestamp_micros/0, timestamp_nanos/0]).
 -export([synchronize_local_clock_with_remote/1]).
 -export([synchronize_node_clock_with_local/1]).
+-export([is_clock_synchronized/0]).
+-export([try_to_restore_previous_synchronization/0]).
 -export([reset_to_system_time/0]).
 -export([datetime_to_seconds/1, seconds_to_datetime/1]).
 -export([seconds_to_iso8601/1, iso8601_to_seconds/1]).
 -export([datetime_to_iso8601/1, iso8601_to_datetime/1]).
+% internal RPC
+-export([store_bias_millis/2]).
+-export([read_time_millis/1]).
 
 -include("logging.hrl").
 -include("global_definitions.hrl").
@@ -83,8 +93,11 @@
 -define(CLOCK_BIAS_CACHE_NANOS, time_utils_clock_bias_nanos).
 
 -define(SYNC_REQUEST_REPEATS, ctool:get_env(clock_sync_request_repeats, 5)).
--define(SATISFYING_SYNC_DELAY_MILLIS, ctool:get_env(clock_sync_satisfying_delay, 1000)).
+-define(SATISFYING_SYNC_DELAY_MILLIS, ctool:get_env(clock_sync_satisfying_delay, 2000)).
 -define(MAX_ALLOWED_SYNC_DELAY_MILLIS, ctool:get_env(clock_sync_max_allowed_delay, 10000)).
+
+-define(BIAS_BACKUP_FILE, ctool:get_env(clock_sync_backup_file)).
+-define(BIAS_BACKUP_VALIDITY_SECONDS, ctool:get_env(clock_sync_backup_validity_secs, 900)).
 
 %%%===================================================================
 %%% API
@@ -92,22 +105,22 @@
 
 -spec timestamp_seconds() -> seconds().
 timestamp_seconds() ->
-    timestamp_nanos(local_clock) div 1000000000.
+    read_time_nanos(local_clock) div 1000000000.
 
 
 -spec timestamp_millis() -> millis().
 timestamp_millis() ->
-    timestamp_nanos(local_clock) div 1000000.
+    read_time_nanos(local_clock) div 1000000.
 
 
 -spec timestamp_micros() -> micros().
 timestamp_micros() ->
-    timestamp_nanos(local_clock) div 1000.
+    read_time_nanos(local_clock) div 1000.
 
 
 -spec timestamp_nanos() -> nanos().
 timestamp_nanos() ->
-    timestamp_nanos(local_clock).
+    read_time_nanos(local_clock).
 
 
 -spec synchronize_local_clock_with_remote(fun(() -> millis())) -> ok | error.
@@ -133,11 +146,12 @@ synchronize_local_clock_with_remote(FetchRemoteTimestamp) ->
 synchronize_node_clock_with_local(Node) ->
     try
         FetchRemoteTimestamp = fun() ->
-            case rpc:call(Node, ?MODULE, timestamp_millis, []) of
-                I when is_integer(I) -> I
+            case rpc:call(Node, ?MODULE, read_time_millis, [system_clock]) of
+                I when is_integer(I) -> I;
+                {badrpc, nodedown} -> throw(nodedown)
             end
         end,
-        % use local_clock as reference to adjust the remote_clock (remote node's local_clock)
+        % use local_clock as reference to adjust the remote clock (remote node's local_clock)
         case estimate_bias_and_delay(FetchRemoteTimestamp, local_clock) of
             {delay_ok, AverageBiasMillis, _} ->
                 store_bias_millis({remote_clock, Node}, -AverageBiasMillis);
@@ -147,9 +161,40 @@ synchronize_node_clock_with_local(Node) ->
                 ]),
                 error
         end
-    catch Class:Reason ->
-        ?error_stacktrace("Failed to synchronize node's clock (~p) with local - ~w:~p", [Node, Class, Reason]),
-        error
+    catch
+        throw:nodedown ->
+            ?error("Failed to synchronize node's clock (~p) with local - the node is down", [Node]),
+            error;
+        Class:Reason ->
+            ?error_stacktrace("Failed to synchronize node's clock (~p) with local - ~w:~p", [Node, Class, Reason]),
+            error
+    end.
+
+
+-spec is_clock_synchronized() -> boolean().
+is_clock_synchronized() ->
+    is_integer(ctool:get_env(?CLOCK_BIAS_CACHE_NANOS, undefined)).
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Attempts to restore the bias that was previously stored on disk,
+%% returns a boolean indicating success. See the module's description for more.
+%% @end
+%%--------------------------------------------------------------------
+-spec try_to_restore_previous_synchronization() -> boolean().
+try_to_restore_previous_synchronization() ->
+    case recover_bias_millis_from_disk() of
+        {up_to_date, BiasMillis} ->
+            ?info("Restored the previous time synchronization from backup"),
+            store_bias_millis_in_cache(BiasMillis),
+            true;
+        stale ->
+            ?info("Discarded a stale time synchronization backup"),
+            false;
+        not_found ->
+            ?info("Time synchronization backup not found - skipping restoration"),
+            false
     end.
 
 
@@ -162,7 +207,7 @@ synchronize_node_clock_with_local(Node) ->
 %%--------------------------------------------------------------------
 -spec reset_to_system_time() -> ok.
 reset_to_system_time() ->
-    ctool:set_env(?CLOCK_BIAS_CACHE_NANOS, 0).
+    ctool:unset_env(?CLOCK_BIAS_CACHE_NANOS).
 
 
 -spec seconds_to_iso8601(seconds()) -> iso8601().
@@ -199,38 +244,27 @@ iso8601_to_datetime(Iso8601) ->
 %%%===================================================================
 
 %% @private
--spec timestamp_millis(clock()) -> millis().
-timestamp_millis(Clock) ->
-    timestamp_nanos(Clock) div 1000000.
+%% exported for internal RPC
+-spec read_time_millis(clock()) -> millis().
+read_time_millis(Clock) ->
+    read_time_nanos(Clock) div 1000000.
 
 
 %% @private
--spec timestamp_nanos(clock()) -> nanos().
-timestamp_nanos(system_clock) ->
+-spec read_time_nanos(clock()) -> nanos().
+read_time_nanos(system_clock) ->
     erlang:system_time(nanosecond);
-timestamp_nanos(local_clock) ->
-    erlang:system_time(nanosecond) + get_bias_nanos().
-
-
--spec store_bias_millis(clock(), millis()) -> ok.
-store_bias_millis(local_clock, BiasMillis) ->
-    ok = ctool:set_env(?CLOCK_BIAS_CACHE_NANOS, BiasMillis * 1000000);
-store_bias_millis({remote_clock, Node}, BiasMillis) ->
-    ok = rpc:call(Node, ctool, set_env, [?CLOCK_BIAS_CACHE_NANOS, BiasMillis * 1000000]).
-
-
--spec get_bias_nanos() -> nanos().
-get_bias_nanos() ->
-    ctool:get_env(?CLOCK_BIAS_CACHE_NANOS, 0).
+read_time_nanos(local_clock) ->
+    erlang:system_time(nanosecond) + get_bias_nanos_from_cache().
 
 
 %% @private
--spec estimate_bias_and_delay(fun(() -> millis()), clock()) -> {delay_ok | delay_too_high, bias(), delay()}.
+-spec estimate_bias_and_delay(fun(() -> millis()), clock()) -> {delay_ok | delay_too_high, bias(millis()), delay()}.
 estimate_bias_and_delay(FetchRemoteTimestamp, ReferenceClock) ->
     {BiasSum, DelaySum} = lists:foldl(fun(_, {BiasAcc, DelayAcc}) ->
-        Before = timestamp_millis(ReferenceClock),
+        Before = read_time_millis(ReferenceClock),
         RemoteTimestamp = FetchRemoteTimestamp(),
-        After = timestamp_millis(ReferenceClock),
+        After = read_time_millis(ReferenceClock),
         EstimatedMeasurementMoment = (Before + After) div 2,
         Bias = RemoteTimestamp - EstimatedMeasurementMoment,
         {BiasAcc + Bias, DelayAcc + After - Before}
@@ -241,13 +275,69 @@ estimate_bias_and_delay(FetchRemoteTimestamp, ReferenceClock) ->
 
 
 %% @private
--spec examine_delay(delay(), bias()) -> delay_ok | delay_too_high.
+-spec examine_delay(delay(), bias(millis())) -> delay_ok | delay_too_high.
 examine_delay(Delay, Bias) ->
     SatisfyingDelay = ?SATISFYING_SYNC_DELAY_MILLIS,
     MaxAllowedDelay = ?MAX_ALLOWED_SYNC_DELAY_MILLIS,
     if
         Delay < SatisfyingDelay -> delay_ok;
         Delay > MaxAllowedDelay -> delay_too_high;
-        Delay < Bias / 2 -> delay_ok;
+        Delay < abs(Bias) / 2 -> delay_ok;
         true -> delay_too_high
+    end.
+
+
+%% @private
+%% exported for internal RPC
+-spec store_bias_millis(clock(), millis()) -> ok.
+store_bias_millis({remote_clock, Node}, BiasMillis) ->
+    ok = rpc:call(Node, ?MODULE, store_bias_millis, [local_clock, BiasMillis]);
+store_bias_millis(local_clock, BiasMillis) ->
+    store_bias_millis_in_cache(BiasMillis),
+    store_bias_millis_on_disk(BiasMillis).
+
+
+%% @private
+-spec store_bias_millis_in_cache(bias(millis())) -> ok | no_return().
+store_bias_millis_in_cache(BiasMillis) ->
+    ok = ctool:set_env(?CLOCK_BIAS_CACHE_NANOS, BiasMillis * 1000000).
+
+
+%% @private
+-spec get_bias_nanos_from_cache() -> bias(nanos()).
+get_bias_nanos_from_cache() ->
+    ctool:get_env(?CLOCK_BIAS_CACHE_NANOS, 0).
+
+
+%% @private
+-spec store_bias_millis_on_disk(bias(millis())) -> ok | no_return().
+store_bias_millis_on_disk(BiasMillis) ->
+    ok = file:write_file(?BIAS_BACKUP_FILE, json_utils:encode(#{
+        <<"biasMilliseconds">> => BiasMillis,
+        <<"backupTimestampMilliseconds">> => read_time_millis(system_clock)
+    })).
+
+
+%% @private
+-spec recover_bias_millis_from_disk() -> {up_to_date, bias(millis())} | stale | not_found.
+recover_bias_millis_from_disk() ->
+    case file:read_file(?BIAS_BACKUP_FILE) of
+        {ok, Binary} ->
+            try
+                #{
+                    <<"biasMilliseconds">> := BiasMillis,
+                    <<"backupTimestampMilliseconds">> := BackupTimestampMillis
+                } = json_utils:decode(Binary),
+                MaxValidity = BackupTimestampMillis + timer:seconds(?BIAS_BACKUP_VALIDITY_SECONDS),
+                case MaxValidity > read_time_millis(system_clock) of
+                    true -> {up_to_date, BiasMillis};
+                    false -> stale
+                end
+            catch Class:Reason ->
+                ?debug_stacktrace("Cannot parse the time synchronization backup file - ~w:~p", [Class, Reason]),
+                not_found
+            end;
+        Other ->
+            ?debug("Cannot read the time synchronization backup file - ~p", [Other]),
+            not_found
     end.

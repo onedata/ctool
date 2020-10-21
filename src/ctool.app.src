@@ -60,11 +60,17 @@
         % Communication delay considered satisfying. Below this value, clock
         % synchronization always succeeds. Above this value, it depends if the
         % delay is proportionally lower than the clocks bias.
-        {clock_sync_satisfying_delay, 1000},
+        {clock_sync_satisfying_delay, 2000},
         % Maximum communication delay, higher values causes clock
         % synchronization to immediately fail.
         {clock_sync_max_allowed_delay, 10000},
-
+        % Backup file that stores the information needed to restore the previous
+        % clock synchronization.
+        % NOTE: Must be overriden in the including project.
+        {clock_sync_backup_file, "./etc/time_synchronization_data.json"},
+        % For how long the synchronization backup is valid and can be used for
+        % restoring the previous state.
+        {clock_sync_backup_validity_secs, 900},  % 15 minutes
 
         %% ===================================================================
         %% TOKENS
