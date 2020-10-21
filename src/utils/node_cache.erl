@@ -5,21 +5,28 @@
 %%% cited in 'LICENSE.txt'.
 %%% @end
 %%%-------------------------------------------------------------------
-%%% @doc This module contains functions for simple cache operations.
+%%% @doc 
+%%% This module implements node cache based on ets.
 %%% @end
 %%%-------------------------------------------------------------------
--module(simple_cache).
+-module(node_cache).
 -author("Michal Stanisz").
 
+-include("errors.hrl").
+
 %% API
+-export([init/0]).
 -export([get/1, get/2, put/2, put/3, clear/1]).
+% for mocking in tests
+-export([now/0]).
 
 -type key() :: atom() | {atom(), term()}.
 -type value() :: term().
 -type ttl() :: time_utils:millis() | infinity.
+-type cache_map() :: #{map => map(), single_value => term()}.
 
--define(APP_NAME, simple_cache).
--define(NOW(), time_utils:timestamp_millis()).
+% call using module for mocking in tests
+-define(NOW(), ?MODULE:now()).
 
 -compile([{no_auto_import, [get/1]}]).
 
@@ -27,19 +34,23 @@
 %%% API
 %%%===================================================================
 
+init() ->
+    node_cache = ets:new(node_cache, [set, public, named_table]),
+    ok.
+
 %%--------------------------------------------------------------------
 %% @doc
 %% If cache exists and is not expired returns cached value.
 %% @end
 %%--------------------------------------------------------------------
--spec get(key()) -> {ok, value()} | {error, not_found}.
+-spec get(key()) -> {ok, value()} | ?ERROR_NOT_FOUND.
 get({Key, ChildKey}) ->
-    case maps:find(map, application:get_env(?APP_NAME, Key, #{})) of
+    case maps:find(map, get_cache_map(Key)) of
         {ok, Map} -> check_validity(maps:find(ChildKey, Map));
         _ -> {error, not_found}
     end;
 get(Key) ->
-    check_validity(maps:find(single_value, application:get_env(?APP_NAME, Key, #{}))).
+    check_validity(maps:find(single_value, get_cache_map(Key))).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -58,7 +69,7 @@ get(Key) ->
         {false, value()} |
         Error
     ).
-get(Key, ValueProvider) ->
+get(Key, ValueProvider) when is_function(ValueProvider, 0)->
     case get(Key) of
         {ok, Value} ->
             {ok, Value};
@@ -67,10 +78,10 @@ get(Key, ValueProvider) ->
                 {false, Value} ->
                     {ok, Value};
                 {true, Value, TTL} ->
-                    ?MODULE:put(Key, Value, TTL),
+                    put(Key, Value, TTL),
                     {ok, Value};
                 {true, Value} ->
-                    ?MODULE:put(Key, Value, infinity),
+                    put(Key, Value, infinity),
                     {ok, Value};
                 Error ->
                     Error
@@ -106,23 +117,12 @@ put(Key, Value, TTL) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec clear(key()) -> ok.
-clear({Key, ChildKey}) ->
-    case application:get_env(?APP_NAME, Key) of
-        {ok, CacheMap} ->
-            case maps:find(map, CacheMap) of
-                {ok, Map} -> application:set_env(?APP_NAME, Key, maps:put(map, maps:remove(ChildKey, Map), CacheMap));
-                _ -> ok
-            end;
-        _ ->
-            ok
-    end;
 clear(Key) ->
-    case application:get_env(?APP_NAME, Key) of
-        {ok, CacheMap} ->
-            application:set_env(?APP_NAME, Key, maps:remove(single_value, CacheMap));
-        _ ->
-            ok
+    case get_cache_map(Key) of
+        CacheMap when is_map(CacheMap) -> clear_value(Key, CacheMap);
+        _ -> ok
     end.
+    
 
 %%%===================================================================
 %%% Internal functions
@@ -134,7 +134,7 @@ clear(Key) ->
 %% Returns cached value if given entry is valid (has not expired).
 %% @end
 %%--------------------------------------------------------------------
--spec check_validity({ok, {value(), ttl()}} | error) -> {ok, value()} | {error, not_found}.
+-spec check_validity({ok, {value(), ttl()}} | error) -> {ok, value()} | ?ERROR_NOT_FOUND.
 check_validity({ok, {Value, infinity}}) ->
     {ok, Value};
 check_validity({ok, {Value, ValidUntil}}) ->
@@ -147,13 +147,48 @@ check_validity(_) ->
 
 
 %% @private
+-spec clear_value(key(), cache_map()) -> ok.
+clear_value({Key, ChildKey}, CacheMap) ->
+    case maps:find(map, CacheMap) of
+        {ok, Map} -> set_cache_map(Key, maps:put(map, maps:remove(ChildKey, Map), CacheMap));
+        _ -> ok
+    end;
+clear_value(Key, CacheMap) ->
+    set_cache_map(Key, maps:remove(single_value, CacheMap)).
+
+
+%% @private
 -spec do_put(Key :: key(), Value :: value(), ValidUntil :: ttl()) -> ok.
 do_put({Key, ChildKey}, Value, ValidUntil) ->
-    CacheMap = application:get_env(?APP_NAME, Key, #{}),
+    CacheMap = get_cache_map(Key),
     Map = maps:get(map, CacheMap, #{}),
     NewCacheMap = maps:put(map, maps:put(ChildKey, {Value, ValidUntil}, Map), CacheMap),
-    application:set_env(?APP_NAME, Key, NewCacheMap);
+    set_cache_map(Key, NewCacheMap);
 do_put(Key, Value, ValidUntil) ->
-    CacheMap = application:get_env(?APP_NAME, Key, #{}),
+    CacheMap = get_cache_map(Key),
     NewCacheMap = maps:put(single_value, {Value, ValidUntil}, CacheMap),
-    application:set_env(?APP_NAME, Key, NewCacheMap).
+    set_cache_map(Key, NewCacheMap).
+
+
+%% @private
+-spec get_cache_map(key()) -> cache_map().
+get_cache_map({Key, _}) ->
+    get_cache_map(Key);
+get_cache_map(Key) ->
+    case ets:lookup(?MODULE, Key) of
+        [{Key, Value}] -> Value;
+        [] -> #{}
+    end.
+
+
+%% @private
+-spec set_cache_map(key(), cache_map()) -> ok.
+set_cache_map(Key, CacheMap) ->
+    true = ets:insert(?MODULE, {Key, CacheMap}),
+    ok.
+
+
+%% @private
+-spec now() -> time_utils:millis().
+now() ->
+    erlang:system_time(millisecond).

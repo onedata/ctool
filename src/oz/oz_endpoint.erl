@@ -81,7 +81,7 @@ get_api_root(Opts) ->
 %%--------------------------------------------------------------------
 -spec get_cacerts() -> CaCerts :: [public_key:der_encoded()].
 get_cacerts() ->
-    {ok, CaCerts} = simple_cache:get(cacerts_cache, fun() ->
+    {ok, CaCerts} = node_cache:get(cacerts_cache, fun() ->
         {true, cert_utils:load_ders_in_dir(?OZ_PLUGIN:get_cacerts_dir())}
     end),
     CaCerts.
@@ -92,7 +92,7 @@ get_cacerts() ->
 %%--------------------------------------------------------------------
 -spec reset_cacerts() -> ok.
 reset_cacerts() ->
-    simple_cache:clear(cacerts_cache).
+    node_cache:clear(cacerts_cache).
 
 %%--------------------------------------------------------------------
 %% @doc @equiv request(Auth, URN, Method, <<>>)

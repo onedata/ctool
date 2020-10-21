@@ -90,7 +90,7 @@ ensure_db_loaded(DbType) ->
             end
         end)
     end,
-    case simple_cache:get({db_loaded, DbType}, EnsureDb) of
+    case node_cache:get({db_loaded, DbType}, EnsureDb) of
         {ok, loaded} -> true;
         {ok, not_loaded} -> false
     end.

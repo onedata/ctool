@@ -21,6 +21,10 @@
 %%% Eunit tests
 %%%===================================================================
 
+time_utils_test_() ->
+    {setup, fun node_cache:init/0, []}.
+
+
 successful_synchronization_test() ->
     time_utils:reset_to_local_time(),
     StartingLocalTimestamp = ?SYSTEM_TIMESTAMP(),

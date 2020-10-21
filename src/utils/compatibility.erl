@@ -206,8 +206,8 @@ verify_gui_hash(_, _, _) ->
 %%--------------------------------------------------------------------
 -spec clear_registry_cache() -> ok.
 clear_registry_cache() ->
-    simple_cache:clear(compatibility_registry),
-    simple_cache:clear(compatibility_registry_fetch_backoff),
+    node_cache:clear(compatibility_registry),
+    node_cache:clear(compatibility_registry_fetch_backoff),
     ok.
 
 %%%===================================================================
@@ -311,7 +311,7 @@ get_entries(Section, Version, Strategy) ->
 %% @private
 -spec should_fetch_registry() -> boolean().
 should_fetch_registry() ->
-    case simple_cache:get(compatibility_registry_fetch_backoff) of
+    case node_cache:get(compatibility_registry_fetch_backoff) of
         {ok, BackoffUntil} -> BackoffUntil < ?NOW();
         {error, not_found} -> true
     end.
@@ -320,14 +320,14 @@ should_fetch_registry() ->
 %% @private
 -spec reset_fetch_backoff() -> ok.
 reset_fetch_backoff() ->
-    simple_cache:put(compatibility_registry_fetch_backoff, ?NOW() + ?REGISTRY_CACHE_TTL).
+    node_cache:put(compatibility_registry_fetch_backoff, ?NOW() + ?REGISTRY_CACHE_TTL).
 
 
 %% @private
 -spec get_registry(Strategy :: local | fetch) ->
     {ok, registry()} | {error, cannot_parse_registry | cannot_fetch_registry}.
 get_registry(local) ->
-    simple_cache:get(compatibility_registry, fun() ->
+    node_cache:get(compatibility_registry, fun() ->
         take_default_registry_if_newer(),
         case file:read_file(?REGISTRY_PATH) of
             {ok, Binary} ->

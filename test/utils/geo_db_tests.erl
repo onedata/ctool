@@ -131,8 +131,8 @@ setup() ->
     })),
 
     % Clean loaded DB cache
-    simple_cache:clear({db_loaded, asn}),
-    simple_cache:clear({db_loaded, country}),
+    node_cache:clear({db_loaded, asn}),
+    node_cache:clear({db_loaded, country}),
     mock_unload_db(asn),
     mock_unload_db(country),
 

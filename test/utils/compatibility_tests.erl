@@ -104,9 +104,9 @@ get_compatibility_file() ->
     Result :: {ok, Code :: integer(), Body :: binary() | map()} | {error, term()}) ->
     ok.
 mock_mirror_result(Url, Result) ->
-    simple_cache:put({mocked_mirror, Url}, Result),
-    {ok, Mirrors} = simple_cache:get(mocked_mirrors, fun() -> {false, []} end),
-    simple_cache:put(mocked_mirrors, [Url | Mirrors]).
+    node_cache:put({mocked_mirror, Url}, Result),
+    {ok, Mirrors} = node_cache:get(mocked_mirrors, fun() -> {false, []} end),
+    node_cache:put(mocked_mirrors, [Url | Mirrors]).
 
 
 mock_mirror_list(Mirrors) ->
@@ -114,7 +114,7 @@ mock_mirror_list(Mirrors) ->
 
 
 get_mocked_mirror_result(Url) ->
-    {ok, Result} = simple_cache:get({mocked_mirror, Url}, fun() ->
+    {ok, Result} = node_cache:get({mocked_mirror, Url}, fun() ->
         {false, {error, nxdomain}}
     end),
     case Result of
@@ -129,8 +129,8 @@ get_mocked_mirror_result(Url) ->
 
 clear_mocked_mirrors() ->
     mock_mirror_list([]),
-    {ok, Mirrors} = simple_cache:get(mocked_mirrors, fun() -> {false, []} end),
-    [simple_cache:clear({mocked_mirror, M}) || M <- Mirrors].
+    {ok, Mirrors} = node_cache:get(mocked_mirrors, fun() -> {false, []} end),
+    [node_cache:clear({mocked_mirror, M}) || M <- Mirrors].
 
 
 get_mocked_time_seconds() ->

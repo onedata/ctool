@@ -270,7 +270,10 @@ get_ring() ->
 
 -spec get_ring(ring_generation()) -> ring() | ?INIT_ERROR.
 get_ring(RingGeneration) ->
-    ctool:get_env(RingGeneration, ?INIT_ERROR).
+    case node_cache:get(RingGeneration, fun() -> {false, ?INIT_ERROR} end) of
+        {ok, Ring} -> Ring;
+        {error, _} = Error -> Error
+    end.
 
 -spec is_ring_initialized() -> boolean().
 is_ring_initialized() ->
@@ -282,8 +285,8 @@ set_ring(Ring) ->
 
 -spec set_ring(ring_generation(), ring()) -> ok.
 set_ring(RingGeneration, Ring) ->
-    ctool:set_env(RingGeneration, Ring).
+    node_cache:put(RingGeneration, Ring).
 
 -spec unset_ring(ring_generation()) -> ok.
 unset_ring(RingGeneration) ->
-    ctool:unset_env(RingGeneration).
+    node_cache:clear(RingGeneration).

@@ -68,7 +68,7 @@ timestamp_micros() ->
 
 -spec timestamp_nanos() -> nanos().
 timestamp_nanos() ->
-    ClockBiasMillis = ctool:get_env(?CLOCK_BIAS_CACHE_MILLIS, 0),
+    {ok, ClockBiasMillis} = node_cache:get(?CLOCK_BIAS_CACHE_MILLIS, fun() -> {false, 0} end),
     local_timestamp_nanos() + ClockBiasMillis * 1000000.
 
 
@@ -99,7 +99,7 @@ synchronize_with_remote_clock(FetchRemoteTimestamp) ->
         AverageDelayMillis = round(DelaySum / ?SYNC_REQUEST_REPEATS),
         case is_delay_acceptable(AverageDelayMillis, AverageBiasMillis) of
             true ->
-                ctool:set_env(?CLOCK_BIAS_CACHE_MILLIS, AverageBiasMillis);
+                node_cache:put(?CLOCK_BIAS_CACHE_MILLIS, AverageBiasMillis);
             false ->
                 ?error("Failed to synchronize with remote clock - delay too high (~Bms at bias=~Bms)", [
                     AverageDelayMillis, AverageBiasMillis
@@ -121,7 +121,7 @@ synchronize_with_remote_clock(FetchRemoteTimestamp) ->
 %%--------------------------------------------------------------------
 -spec reset_to_local_time() -> ok.
 reset_to_local_time() ->
-    ctool:unset_env(?CLOCK_BIAS_CACHE_MILLIS).
+    node_cache:clear(?CLOCK_BIAS_CACHE_MILLIS).
 
 
 -spec seconds_to_iso8601(seconds()) -> iso8601().
