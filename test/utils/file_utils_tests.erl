@@ -178,10 +178,12 @@ seconds_since_modification_test(Config) ->
 %%%===================================================================
 
 start() ->
+    node_cache:init(),
     Workdir = mochitemp:mkdtemp(),
     #{cwd => Workdir}.
 
 stop(#{cwd := Workdir}) ->
+    ets:delete(node_cache),
     mochitemp:rmtempdir(Workdir).
 
 reset_dir(#{cwd := Workdir}) ->

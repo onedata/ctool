@@ -22,10 +22,18 @@
 %%%===================================================================
 
 time_utils_test_() ->
-    {setup, fun node_cache:init/0, []}.
+    {setup, fun node_cache:init/0, fun(_) -> ets:delete(node_cache) end, [
+        {"successful_synchronization", fun successful_synchronization/0},
+        {"crashed_synchronization", fun crashed_synchronization/0},
+        {"timed_out_synchronization", fun timed_out_synchronization/0}, 
+        {"delay_too_high_synchronization", fun delay_too_high_synchronization/0},
+        {"failed_synchronization_does_not_change_previous_bias", fun failed_synchronization_does_not_change_previous_bias/0},
+        {"general_conversion", fun general_conversion/0},
+        {"specific_conversion", fun specific_conversion/0}
+    ]}.
 
 
-successful_synchronization_test() ->
+successful_synchronization() ->
     time_utils:reset_to_local_time(),
     StartingLocalTimestamp = ?SYSTEM_TIMESTAMP(),
     % before synchronization, the clock should show the local time
@@ -51,7 +59,7 @@ successful_synchronization_test() ->
     ?assertNot(is_clock_in_sync(?FAKE_REMOTE_TIMESTAMP + TimeSinceStart)).
 
 
-crashed_synchronization_test() ->
+crashed_synchronization() ->
     time_utils:reset_to_local_time(),
     StartingLocalTimestamp = ?SYSTEM_TIMESTAMP(),
 
@@ -66,7 +74,7 @@ crashed_synchronization_test() ->
     ?assertNot(is_clock_in_sync(?FAKE_REMOTE_TIMESTAMP + TimeSinceStart)).
 
 
-timed_out_synchronization_test() ->
+timed_out_synchronization() ->
     {timeout, 100, fun() ->
         time_utils:reset_to_local_time(),
         StartingLocalTimestamp = ?SYSTEM_TIMESTAMP(),
@@ -87,7 +95,7 @@ timed_out_synchronization_test() ->
     end}.
 
 
-delay_too_high_synchronization_test() ->
+delay_too_high_synchronization() ->
     {timeout, 100, fun() ->
         time_utils:reset_to_local_time(),
         StartingLocalTimestamp = ?SYSTEM_TIMESTAMP(),
@@ -110,7 +118,7 @@ delay_too_high_synchronization_test() ->
     end}.
 
 
-failed_synchronization_does_not_change_previous_bias_test() ->
+failed_synchronization_does_not_change_previous_bias() ->
     {timeout, 100, fun() ->
         time_utils:reset_to_local_time(),
         StartingLocalTimestamp = ?SYSTEM_TIMESTAMP(),
@@ -161,7 +169,7 @@ failed_synchronization_does_not_change_previous_bias_test() ->
     end}.
 
 
-general_conversion_test() ->
+general_conversion() ->
     Seconds = time_utils:timestamp_seconds(),
     DateTime = time_utils:seconds_to_datetime(Seconds),
     Iso8601 = time_utils:datetime_to_iso8601(DateTime),
@@ -176,7 +184,7 @@ general_conversion_test() ->
     ?assertEqual(Iso8601, time_utils:datetime_to_iso8601(DateTime)).
 
 
-specific_conversion_test() ->
+specific_conversion() ->
     Seconds = 1600956903,
     SecondsMidnight = 1600905600,
     Iso8601 = <<"2020-09-24T14:15:03Z">>,

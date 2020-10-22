@@ -37,14 +37,16 @@
 ]).
 
 geo_db_test_() ->
-    {foreach,
-        fun setup/0,
-        fun teardown/1,
-        lists:map(fun({Desc, TestFun}) ->
-            fun(Ctx) ->
-                {Desc, ?_test(TestFun(Ctx))}
-            end
-        end, ?TEST_CASES)
+    {setup, fun node_cache:init/0, fun(_) -> ets:delete(node_cache) end,
+        {foreach,
+            fun setup/0,
+            fun teardown/1,
+            lists:map(fun({Desc, TestFun}) ->
+                fun(Ctx) ->
+                    {Desc, ?_test(TestFun(Ctx))}
+                end
+            end, ?TEST_CASES)
+        }
     }.
 
 %%%===================================================================
@@ -86,6 +88,11 @@ setup() ->
         get_mocked_time()
     end),
     meck:expect(time_utils, timestamp_millis, fun() ->
+        get_mocked_time() * 1000
+    end),
+    
+    meck:new(node_cache, [passthrough]),
+    meck:expect(node_cache, now, fun() ->
         get_mocked_time() * 1000
     end),
 
@@ -144,6 +151,8 @@ teardown(#{tmpDir := TmpDir}) ->
     ok = meck:unload(locus),
     ?assert(meck:validate(time_utils)),
     ok = meck:unload(time_utils),
+    ?assert(meck:validate(node_cache)),
+    ok = meck:unload(node_cache),
     ?assert(meck:validate(http_client)),
     ok = meck:unload(http_client),
 

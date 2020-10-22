@@ -35,6 +35,7 @@ helpers_test_() ->
         ]}.
 
 start() ->
+    node_cache:init(),
     consistent_hashing:cleanup(),
     meck:new(rpc, [passthrough, unstick]),
     meck:expect(rpc, multicall, fun(_, consistent_hashing, Fun, Args) ->
@@ -42,6 +43,7 @@ start() ->
     end).
 
 stop(_) ->
+    ets:delete(node_cache),
     meck:unload(rpc).
 
 chash_should_create_single_node_ring() ->

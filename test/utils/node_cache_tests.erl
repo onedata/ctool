@@ -23,7 +23,7 @@
 %%% Tests functions
 %%%===================================================================
 
-simple_cache_test_() ->
+node_cache_test_() ->
     {foreach,
         fun init_per_testcase/0,
         fun end_per_testcase/1,
