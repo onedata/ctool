@@ -118,11 +118,8 @@ put(Key, Value, TTL) ->
 %%--------------------------------------------------------------------
 -spec clear(key()) -> ok.
 clear(Key) ->
-    case get_cache_map(Key) of
-        CacheMap when is_map(CacheMap) -> clear_value(Key, CacheMap);
-        _ -> ok
-    end.
-    
+    CacheMap =  get_cache_map(Key),
+    clear_value(Key, CacheMap).
 
 %%%===================================================================
 %%% Internal functions
