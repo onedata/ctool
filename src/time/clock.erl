@@ -1,35 +1,34 @@
 %%%-------------------------------------------------------------------
 %%% @author Lukasz Opiola
-%%% @copyright (C) 2017 ACK CYFRONET AGH
+%%% @copyright (C) 2020 ACK CYFRONET AGH
 %%% This software is released under the MIT license
 %%% cited in 'LICENSE.txt'.
 %%% @end
 %%%-------------------------------------------------------------------
 %%% @doc
-%%% This module contains utility functions for measuring time and format
-%%% conversion. It SHOULD be used universally across all services to ensure
-%%% unified time management and synchronized clocks between deployments.
-%%% The timestamp_*/0 functions are the only recommended way of acquiring a
-%%% timestamp.
+%%% This module contains functions for measuring time and clock synchronization.
+%%% It MUST be used universally across all services to ensure unified time
+%%% management and synchronized clocks between deployments. The timestamp_*/0
+%%% functions are the only recommended way of acquiring a timestamp.
 %%%
 %%% Clocks can be synchronized by calling the corresponding procedures:
 %%%   * the local clock with a remote clock
 %%%     (can be any service providing timestamps)
-%%%   * the clock on a remote cluster node with the local clock
-%%%     (requires that the node has the same version of time_utils module)
+%%%   * the clock on a remote node in the cluster with the local clock
+%%%     (requires that the other node has the same version of this module)
 %%%
 %%% Clock synchronization performs a series of requests to fetch a remote
 %%% timestamp. It calculates the approximate communication delay with the remote
 %%% node/server and difference of the clocks (called "bias" in this module).
-%%% Finally, it sets the bias using an app env (node-wide) on the local or
-%%% remote node (depending which clock is being synchronized). All consecutive
-%%% timestamps are adjusted using the bias so that they return measurements as
-%%% close as possible to the target clock's time. It is recommended to
-%%% periodically repeat the synchronization procedure to ensure that the clocks
-%%% don't become desynchronized over a longer period. If synchronization is not
-%%% performed, the local system clock is used for timestamps.
+%%% Finally, it stores the bias on the local or remote node (depending which
+%%% clock is being synchronized). All consecutive timestamps are adjusted using
+%%% the bias so that they return measurements as close as possible to the target
+%%% clock's time. It is recommended to periodically repeat the synchronization
+%%% procedure to ensure that the clocks don't become desynchronized over a
+%%% longer period. If synchronization is not performed, the local system clock
+%%% is used for timestamps.
 %%%
-%%% The expected synchronization error can be expected to be below a second,
+%%% The typical synchronization error can be expected to be below a second,
 %%% but for highly utilized machines it can grow to a couple of seconds.
 %%% Synchronization is discarded if the communication delay exceeds
 %%% ?MAX_ALLOWED_SYNC_DELAY_MILLIS or is high compared to the bias.
@@ -38,18 +37,12 @@
 %%% file on disk, along with the information when it was measured. It can be
 %%% later used to restore the previous synchronization, given that it is not
 %%% outdated. This procedure is dedicated for nodes recovering after a failure.
-%%%
-%%% The following names are used across this module and eunit tests:
-%%%     * system_clock - the native clock on the machine
-%%%     * local_clock  - the clock on this node used to get timestamps,
-%%%                      essentially the system_clock adjusted with bias
-%%%     * remote_clock - the clock on a remote node, behaving like local_clock
-%%%                      (remote node's system clock adjusted with bias)
-%%%     * (system/local/remote)_time - time shown by (system/local/remote)_clock
 %%% @end
 %%%-------------------------------------------------------------------
--module(time_utils).
+-module(clock).
 -author("Lukasz Opiola").
+
+-include("logging.hrl").
 
 -type seconds() :: integer().
 -type millis() :: integer().
@@ -60,29 +53,25 @@
 
 % difference between readings of two clocks, expressed in given unit
 -type bias(Unit) :: Unit.
-% communication delay with a remote server/node
+% communication delay with a remote server/node (round trip time)
 -type delay() :: millis().
-% see module's description
+% Specific clock, as seen by the current erlang node:
+%   * system_clock - the native clock on the machine
+%   * local_clock  - the clock on this node used to get timestamps,
+%                    essentially the system_clock adjusted with bias
+%   * remote_clock - the local_clock on a remote node
+%                    (remote node's system clock adjusted with bias)
 -type clock() :: system_clock | local_clock | {remote_clock, node()}.
 
 -export([timestamp_seconds/0, timestamp_millis/0, timestamp_micros/0, timestamp_nanos/0]).
--export([synchronize_local_clock_with_remote/1]).
--export([synchronize_node_clock_with_local/1]).
--export([is_clock_synchronized/0]).
--export([try_to_restore_previous_synchronization/0]).
+-export([synchronize_local_with_remote_server/1]).
+-export([synchronize_remote_with_local/1]).
+-export([is_synchronized/0]).
 -export([reset_to_system_time/0]).
--export([datetime_to_seconds/1, seconds_to_datetime/1]).
--export([seconds_to_iso8601/1, iso8601_to_seconds/1]).
--export([datetime_to_iso8601/1, iso8601_to_datetime/1]).
+-export([try_to_restore_previous_synchronization/0]).
 % internal RPC
 -export([store_bias_millis/2]).
--export([read_time_millis/1]).
-
--include("logging.hrl").
--include("global_definitions.hrl").
-
-%% calendar:datetime_to_gregorian_seconds({{1970,1,1},{0,0,0}}).
--define(UNIX_EPOCH, 62167219200).
+-export([read_clock_time/2]).
 
 %% The clocks bias is cached using a application env and defaults to 0 unless a
 %% synchronization is done. It is expressed in nanoseconds to simplify the
@@ -90,7 +79,7 @@
 %% nanoseconds and then converted to a bigger unit). However, the bias is
 %% measured in milliseconds, as finer resolution does not make sense in
 %% environments based on network communication.
--define(CLOCK_BIAS_CACHE_NANOS, time_utils_clock_bias_nanos).
+-define(CLOCK_BIAS_CACHE_NANOS, clock_bias_nanos).
 
 -define(SYNC_REQUEST_REPEATS, ctool:get_env(clock_sync_request_repeats, 5)).
 -define(SATISFYING_SYNC_DELAY_MILLIS, ctool:get_env(clock_sync_satisfying_delay, 2000)).
@@ -105,26 +94,26 @@
 
 -spec timestamp_seconds() -> seconds().
 timestamp_seconds() ->
-    read_time_nanos(local_clock) div 1000000000.
+    ?MODULE:read_clock_time(local_clock, nanos) div 1000000000.
 
 
 -spec timestamp_millis() -> millis().
 timestamp_millis() ->
-    read_time_nanos(local_clock) div 1000000.
+    ?MODULE:read_clock_time(local_clock, nanos) div 1000000.
 
 
 -spec timestamp_micros() -> micros().
 timestamp_micros() ->
-    read_time_nanos(local_clock) div 1000.
+    ?MODULE:read_clock_time(local_clock, nanos) div 1000.
 
 
 -spec timestamp_nanos() -> nanos().
 timestamp_nanos() ->
-    read_time_nanos(local_clock).
+    ?MODULE:read_clock_time(local_clock, nanos).
 
 
--spec synchronize_local_clock_with_remote(fun(() -> millis())) -> ok | error.
-synchronize_local_clock_with_remote(FetchRemoteTimestamp) ->
+-spec synchronize_local_with_remote_server(fun(() -> millis())) -> ok | error.
+synchronize_local_with_remote_server(FetchRemoteTimestamp) ->
     try
         % use system_clock as reference, as it will be adjusted by measured bias
         case estimate_bias_and_delay(FetchRemoteTimestamp, system_clock) of
@@ -142,11 +131,11 @@ synchronize_local_clock_with_remote(FetchRemoteTimestamp) ->
     end.
 
 
--spec synchronize_node_clock_with_local(node()) -> ok | error.
-synchronize_node_clock_with_local(Node) ->
+-spec synchronize_remote_with_local(node()) -> ok | error.
+synchronize_remote_with_local(Node) ->
     try
         FetchRemoteTimestamp = fun() ->
-            case rpc:call(Node, ?MODULE, read_time_millis, [system_clock]) of
+            case rpc:call(Node, ?MODULE, read_clock_time, [system_clock, millis]) of
                 I when is_integer(I) -> I;
                 {badrpc, nodedown} -> throw(nodedown)
             end
@@ -171,9 +160,21 @@ synchronize_node_clock_with_local(Node) ->
     end.
 
 
--spec is_clock_synchronized() -> boolean().
-is_clock_synchronized() ->
+-spec is_synchronized() -> boolean().
+is_synchronized() ->
     is_integer(ctool:get_env(?CLOCK_BIAS_CACHE_NANOS, undefined)).
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Resets the clock bias caused by synchronization, making the timestamps return
+%% local system time. If the synchronization has not been performed beforehand,
+%% it has no effect.
+%% @end
+%%--------------------------------------------------------------------
+-spec reset_to_system_time() -> ok.
+reset_to_system_time() ->
+    ctool:unset_env(?CLOCK_BIAS_CACHE_NANOS).
 
 
 %%--------------------------------------------------------------------
@@ -197,64 +198,19 @@ try_to_restore_previous_synchronization() ->
             false
     end.
 
-
-%%--------------------------------------------------------------------
-%% @doc
-%% Resets the clock bias caused by synchronization, making the timestamps return
-%% local system time. If the synchronization has not been performed beforehand,
-%% it has no effect.
-%% @end
-%%--------------------------------------------------------------------
--spec reset_to_system_time() -> ok.
-reset_to_system_time() ->
-    ctool:unset_env(?CLOCK_BIAS_CACHE_NANOS).
-
-
--spec seconds_to_iso8601(seconds()) -> iso8601().
-seconds_to_iso8601(Seconds) ->
-    datetime_to_iso8601(seconds_to_datetime(Seconds)).
-
-
--spec iso8601_to_seconds(iso8601()) -> seconds().
-iso8601_to_seconds(Iso8601) ->
-    datetime_to_seconds(iso8601_to_datetime(Iso8601)).
-
-
--spec datetime_to_seconds(calendar:datetime()) -> seconds().
-datetime_to_seconds(DateTime) ->
-    calendar:datetime_to_gregorian_seconds(DateTime) - ?UNIX_EPOCH.
-
-
--spec seconds_to_datetime(seconds()) -> calendar:datetime().
-seconds_to_datetime(TimestampSeconds) ->
-    calendar:gregorian_seconds_to_datetime(TimestampSeconds + ?UNIX_EPOCH).
-
-
--spec datetime_to_iso8601(calendar:datetime()) -> iso8601().
-datetime_to_iso8601(DateTime) ->
-    iso8601:format(DateTime).
-
-
--spec iso8601_to_datetime(iso8601()) -> calendar:datetime().
-iso8601_to_datetime(Iso8601) ->
-    iso8601:parse(binary_to_list(Iso8601)).
-
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
 
 %% @private
 %% exported for internal RPC
--spec read_time_millis(clock()) -> millis().
-read_time_millis(Clock) ->
-    read_time_nanos(Clock) div 1000000.
-
-
-%% @private
--spec read_time_nanos(clock()) -> nanos().
-read_time_nanos(system_clock) ->
+%% exported for eunit tests - called by ?MODULE for that reason
+-spec read_clock_time(clock(), millis | nanos) -> millis() | nanos().
+read_clock_time(Clock, millis) ->
+    read_clock_time(Clock, nanos) div 1000000;
+read_clock_time(system_clock, nanos) ->
     erlang:system_time(nanosecond);
-read_time_nanos(local_clock) ->
+read_clock_time(local_clock, nanos) ->
     erlang:system_time(nanosecond) + get_bias_nanos_from_cache().
 
 
@@ -262,9 +218,9 @@ read_time_nanos(local_clock) ->
 -spec estimate_bias_and_delay(fun(() -> millis()), clock()) -> {delay_ok | delay_too_high, bias(millis()), delay()}.
 estimate_bias_and_delay(FetchRemoteTimestamp, ReferenceClock) ->
     {BiasSum, DelaySum} = lists:foldl(fun(_, {BiasAcc, DelayAcc}) ->
-        Before = read_time_millis(ReferenceClock),
+        Before = ?MODULE:read_clock_time(ReferenceClock, millis),
         RemoteTimestamp = FetchRemoteTimestamp(),
-        After = read_time_millis(ReferenceClock),
+        After = ?MODULE:read_clock_time(ReferenceClock, millis),
         EstimatedMeasurementMoment = (Before + After) div 2,
         Bias = RemoteTimestamp - EstimatedMeasurementMoment,
         {BiasAcc + Bias, DelayAcc + After - Before}
@@ -291,8 +247,9 @@ examine_delay(Delay, Bias) ->
 %% exported for internal RPC
 -spec store_bias_millis(clock(), millis()) -> ok.
 store_bias_millis({remote_clock, Node}, BiasMillis) ->
-    ok = rpc:call(Node, ?MODULE, store_bias_millis, [local_clock, BiasMillis]);
+    ok = rpc:call(Node, ?MODULE, ?FUNCTION_NAME, [local_clock, BiasMillis]);
 store_bias_millis(local_clock, BiasMillis) ->
+    ?debug("Local clock has been synchronized, current bias: ~Bms", [BiasMillis]),
     store_bias_millis_in_cache(BiasMillis),
     store_bias_millis_on_disk(BiasMillis).
 
@@ -314,7 +271,7 @@ get_bias_nanos_from_cache() ->
 store_bias_millis_on_disk(BiasMillis) ->
     ok = file:write_file(?BIAS_BACKUP_FILE, json_utils:encode(#{
         <<"biasMilliseconds">> => BiasMillis,
-        <<"backupTimestampMilliseconds">> => read_time_millis(system_clock)
+        <<"backupTimestampMilliseconds">> => ?MODULE:read_clock_time(system_clock, millis)
     })).
 
 
@@ -329,7 +286,7 @@ recover_bias_millis_from_disk() ->
                     <<"backupTimestampMilliseconds">> := BackupTimestampMillis
                 } = json_utils:decode(Binary),
                 MaxValidity = BackupTimestampMillis + timer:seconds(?BIAS_BACKUP_VALIDITY_SECONDS),
-                case MaxValidity > read_time_millis(system_clock) of
+                case MaxValidity > ?MODULE:read_clock_time(system_clock, millis) of
                     true -> {up_to_date, BiasMillis};
                     false -> stale
                 end

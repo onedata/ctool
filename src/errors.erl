@@ -45,7 +45,7 @@
 | token_invalid | token_revoked | not_an_access_token | not_an_identity_token
 | {not_an_invite_token, ExpectedInviteType :: any | token_type:invite_type(), Received :: tokens:type()}
 | {token_caveat_unverified, caveats:caveat()}
-| {token_time_caveat_required, time_utils:seconds()}
+| {token_time_caveat_required, clock:seconds()}
 | token_subject_invalid | {token_service_forbidden, aai:service_spec()}
 | invite_token_subject_not_authorized | invite_token_usage_limit_exceeded
 | {invite_token_consumer_invalid, aai:consumer_spec()}

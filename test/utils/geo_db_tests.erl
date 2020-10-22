@@ -16,7 +16,6 @@
 
 -include_lib("eunit/include/eunit.hrl").
 
--define(TIME_MOCK_STARTING_TIMESTAMP, 1500000000).
 % Dummy query result that depends on timestamp (to verify if db is refreshed)
 -define(QUERY_RESULT(Timestamp), #{<<"dummy-result">> => Timestamp}).
 -define(DUMMY_DB_PATH(Dir, DbType), filename:join([Dir, atom_to_list(DbType) ++ "-geo-db.tar.gz"])).
@@ -52,6 +51,8 @@ geo_db_test_() ->
 %%%===================================================================
 
 setup() ->
+    clock_freezer_mock:setup(),
+
     meck:new(locus),
     meck:expect(locus, lookup, fun(DbType, _IP) ->
         case mock_is_db_loaded(DbType) of
@@ -81,14 +82,6 @@ setup() ->
         end
     end),
 
-    meck:new(time_utils, []),
-    meck:expect(time_utils, timestamp_seconds, fun() ->
-        get_mocked_time()
-    end),
-    meck:expect(time_utils, timestamp_millis, fun() ->
-        get_mocked_time() * 1000
-    end),
-
     TmpDir = mochitemp:mkdtemp(),
 
     ctool:set_env(maxmind_licence_key, ?DUMMY_LICENSE_KEY),
@@ -100,8 +93,8 @@ setup() ->
         asn =>     ?DUMMY_DB_PATH(TmpDir, asn),
         country => ?DUMMY_DB_PATH(TmpDir, country)
     }),
-    file:write_file(?DUMMY_DB_PATH(TmpDir, asn), integer_to_binary(get_mocked_time())),
-    file:write_file(?DUMMY_DB_PATH(TmpDir, country), integer_to_binary(get_mocked_time())),
+    file:write_file(?DUMMY_DB_PATH(TmpDir, asn), integer_to_binary(get_frozen_time())),
+    file:write_file(?DUMMY_DB_PATH(TmpDir, country), integer_to_binary(get_frozen_time())),
 
     ctool:set_env(geo_db_mirror, #{
         asn =>     ?DUMMY_DB_MIRROR(asn),
@@ -112,8 +105,8 @@ setup() ->
         AnsUrl = str_utils:format_bin("~s&license_key=~s", [?DUMMY_DB_MIRROR(asn), ?DUMMY_LICENSE_KEY]),
         CountryUrl = str_utils:format_bin("~s&license_key=~s", [?DUMMY_DB_MIRROR(country), ?DUMMY_LICENSE_KEY]),
         case Url of
-            AnsUrl -> {ok, 200, #{}, integer_to_binary(get_mocked_time())};
-            CountryUrl -> {ok, 200, #{}, integer_to_binary(get_mocked_time())};
+            AnsUrl -> {ok, 200, #{}, integer_to_binary(get_frozen_time())};
+            CountryUrl -> {ok, 200, #{}, integer_to_binary(get_frozen_time())};
             _ -> {ok, 404, #{}, <<>>}
         end
     end),
@@ -121,12 +114,12 @@ setup() ->
     ctool:set_env(geo_db_status_path, ?DUMMY_STATUS_FILE(TmpDir)),
     file:write_file(?DUMMY_STATUS_FILE(TmpDir), json_utils:encode(#{
         <<"asn">> => #{
-            <<"last-refresh">> => get_mocked_time(),
-            <<"last-refresh-attempt">> => get_mocked_time()
+            <<"last-refresh">> => get_frozen_time(),
+            <<"last-refresh-attempt">> => get_frozen_time()
         },
         <<"country">> => #{
-            <<"last-refresh">> => get_mocked_time(),
-            <<"last-refresh-attempt">> => get_mocked_time()
+            <<"last-refresh">> => get_frozen_time(),
+            <<"last-refresh-attempt">> => get_frozen_time()
         }
     })),
 
@@ -140,21 +133,21 @@ setup() ->
 
 
 teardown(#{tmpDir := TmpDir}) ->
+    clock_freezer_mock:teardown(),
+
     ?assert(meck:validate(locus)),
     ok = meck:unload(locus),
-    ?assert(meck:validate(time_utils)),
-    ok = meck:unload(time_utils),
     ?assert(meck:validate(http_client)),
     ok = meck:unload(http_client),
 
     mochitemp:rmtempdir(TmpDir).
 
 
-get_mocked_time() ->
-    ctool:get_env(mocked_time, ?TIME_MOCK_STARTING_TIMESTAMP).
+get_frozen_time() ->
+    clock_freezer_mock:current_time_seconds().
 
 simulate_time_passing(Seconds) ->
-    ctool:set_env(mocked_time, get_mocked_time() + Seconds).
+    clock_freezer_mock:simulate_time_passing(Seconds * 1000).
 
 -define(DUMMY_ENV(DbType),
     binary_to_atom(str_utils:format_bin("db_loaded_~p", [DbType]), utf8)
@@ -174,7 +167,7 @@ mock_unload_db(DbType) ->
 %%%===================================================================
 
 lookup_geo_db(_) ->
-    TimeAlpha = get_mocked_time(),
+    TimeAlpha = get_frozen_time(),
     ?assertEqual({ok, ?QUERY_RESULT(TimeAlpha)}, geo_db:lookup(asn, "5.6.7.8")),
     ?assertEqual({ok, ?QUERY_RESULT(TimeAlpha)}, geo_db:lookup(country, "9.6.7.8")),
 
@@ -182,7 +175,7 @@ lookup_geo_db(_) ->
 
 
 refresh_geo_db(#{tmpDir := TmpDir}) ->
-    TimeAlpha = get_mocked_time(),
+    TimeAlpha = get_frozen_time(),
     ?assertEqual({ok, ?QUERY_RESULT(TimeAlpha)}, geo_db:lookup(asn, "5.6.7.8")),
     ?assertEqual({ok, ?QUERY_RESULT(TimeAlpha)}, geo_db:lookup(country, "9.6.7.8")),
 
@@ -195,12 +188,12 @@ refresh_geo_db(#{tmpDir := TmpDir}) ->
     % After the refresh period, newer GEO DB should be fetched
     % (which will cause dummy query results to include a newer timestamp)
     simulate_time_passing(RefreshPeriod + 1 - 314),
-    TimeBeta = get_mocked_time(),
+    TimeBeta = get_frozen_time(),
     ?assertEqual({ok, ?QUERY_RESULT(TimeBeta)}, geo_db:lookup(asn, "5.6.7.8")),
 
     % ASN and country DBs are refreshed separately
     simulate_time_passing(13),
-    TimeGamma = get_mocked_time(),
+    TimeGamma = get_frozen_time(),
     ?assertEqual({ok, ?QUERY_RESULT(TimeGamma)}, geo_db:lookup(country, "9.6.7.8")),
 
     % Make sure the status file is updated accordingly
@@ -217,7 +210,7 @@ refresh_geo_db(#{tmpDir := TmpDir}) ->
     ?assertEqual({ok, ExpStatus}, file:read_file(?DUMMY_STATUS_FILE(TmpDir))),
 
     simulate_time_passing(RefreshPeriod + 1),
-    TimeOmega = get_mocked_time(),
+    TimeOmega = get_frozen_time(),
     ?assertEqual({ok, ?QUERY_RESULT(TimeOmega)}, geo_db:lookup(asn, "5.6.7.8")),
     ?assertEqual({ok, ?QUERY_RESULT(TimeOmega)}, geo_db:lookup(country, "9.6.7.8")),
     ExpStatusOmega = json_utils:encode(#{
@@ -234,7 +227,7 @@ refresh_geo_db(#{tmpDir := TmpDir}) ->
 
 
 absent_or_bad_maxmind_licence_key(_) ->
-    TimeAlpha = get_mocked_time(),
+    TimeAlpha = get_frozen_time(),
     ?assertEqual({ok, ?QUERY_RESULT(TimeAlpha)}, geo_db:lookup(asn, "5.6.7.8")),
     ?assertEqual({ok, ?QUERY_RESULT(TimeAlpha)}, geo_db:lookup(country, "9.6.7.8")),
 
@@ -255,13 +248,13 @@ absent_or_bad_maxmind_licence_key(_) ->
     % Set a correct license key - after the backoff, the databases should be updated
     ctool:set_env(maxmind_licence_key, ?DUMMY_LICENSE_KEY),
     simulate_time_passing(RefreshBackoff + 1),
-    TimeBeta = get_mocked_time(),
+    TimeBeta = get_frozen_time(),
     ?assertEqual({ok, ?QUERY_RESULT(TimeBeta)}, geo_db:lookup(asn, "5.6.7.8")),
     ?assertEqual({ok, ?QUERY_RESULT(TimeBeta)}, geo_db:lookup(country, "9.6.7.8")).
 
 
 bad_db_path(#{tmpDir := TmpDir}) ->
-    TimeAlpha = get_mocked_time(),
+    TimeAlpha = get_frozen_time(),
 
     ctool:set_env(geo_db_path, #{
         asn =>     "/a/b/c/d/e/asn",
@@ -285,7 +278,7 @@ bad_db_path(#{tmpDir := TmpDir}) ->
 
 
 bad_db_mirror(#{tmpDir := TmpDir}) ->
-    TimeAlpha = get_mocked_time(),
+    TimeAlpha = get_frozen_time(),
     ?assertEqual({ok, ?QUERY_RESULT(TimeAlpha)}, geo_db:lookup(asn, "5.6.7.8")),
 
     simulate_time_passing(7),
@@ -298,12 +291,12 @@ bad_db_mirror(#{tmpDir := TmpDir}) ->
 
     RefreshPeriod = 86400 * ctool:get_env(geo_db_refresh_period_days),
     simulate_time_passing(RefreshPeriod + 1),
-    TimeGamma = get_mocked_time(),
+    TimeGamma = get_frozen_time(),
     % Refresh should fail, causing the old DB to be still used
     ?assertEqual({ok, ?QUERY_RESULT(TimeAlpha)}, geo_db:lookup(asn, "5.6.7.8")),
 
     simulate_time_passing(9),
-    TimeDelta = get_mocked_time(),
+    TimeDelta = get_frozen_time(),
     ?assertEqual({ok, ?QUERY_RESULT(TimeAlpha)}, geo_db:lookup(country, "9.6.7.8")),
 
     % Make sure the status file is updated accordingly
@@ -332,11 +325,11 @@ bad_db_mirror(#{tmpDir := TmpDir}) ->
     % Wait until the backoff passes
     RefreshBackoff = ctool:get_env(geo_db_refresh_backoff_secs),
     simulate_time_passing(RefreshBackoff + 1 - 17 - 4),
-    TimeTheta = get_mocked_time(),
+    TimeTheta = get_frozen_time(),
     ?assertEqual({ok, ?QUERY_RESULT(TimeTheta)}, geo_db:lookup(asn, "5.6.7.8")),
 
     simulate_time_passing(19),
-    TimeOmega = get_mocked_time(),
+    TimeOmega = get_frozen_time(),
     ?assertEqual({ok, ?QUERY_RESULT(TimeOmega)}, geo_db:lookup(country, "9.6.7.8")),
 
     ExpStatusOmega = json_utils:encode(#{

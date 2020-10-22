@@ -47,7 +47,7 @@
 -define(NET_STATS_FILE(_Interface, _Type), "/sys/class/net/" ++ _Interface ++ "/statistics/" ++ _Type).
 -define(NET_SPEED_FILE(_Interface), "/sys/class/net/" ++ _Interface ++ "/speed").
 -define(NET_DUPLEX_FILE(_Interface), "/sys/class/net/" ++ _Interface ++ "/duplex").
--define(NOW(), time_utils:timestamp_millis()).
+-define(NOW(), clock:timestamp_millis()).
 
 %% API
 -export([start/0, update/1]).
@@ -79,23 +79,29 @@ update(MonitoringState) ->
     #node_monitoring_state{
         last_update = LastUpdate,
         cpu_last = CPULast,
-        net_last = NetLast} = MonitoringState,
-    Now = ?NOW(),
-    % Time difference is in seconds, float is required for better accuracy
-    TimeDiff = (Now - LastUpdate) / 1000,
-    {CPUStats, NewCPULast} = get_cpu_stats(CPULast),
-    {NetStats, NewNetLast} = get_network_stats(NetLast, TimeDiff),
-    MemStats = get_memory_stats(),
-    MonitoringState#node_monitoring_state{
-        last_update = Now,
-        cpu_stats = CPUStats,
-        cpu_last = NewCPULast,
-        mem_stats = MemStats,
-        net_stats = NetStats,
-        net_last = NewNetLast,
-        erlang_vm_cpu = cpu_sup:util(),
-        erlang_vm_mem = erlang:memory(),
-        erlang_vm_processes_num = length(erlang:processes())}.
+        net_last = NetLast
+    } = MonitoringState,
+    case ?NOW() of
+        LastUpdate ->
+            % time difference is zero - two updates were called within a millisecond
+            MonitoringState;
+        Now ->
+            % Time difference is in seconds, float is required for better accuracy
+            TimeDiff = (Now - LastUpdate) / 1000,
+            {CPUStats, NewCPULast} = get_cpu_stats(CPULast),
+            {NetStats, NewNetLast} = get_network_stats(NetLast, TimeDiff),
+            MemStats = get_memory_stats(),
+            MonitoringState#node_monitoring_state{
+                last_update = Now,
+                cpu_stats = CPUStats,
+                cpu_last = NewCPULast,
+                mem_stats = MemStats,
+                net_stats = NetStats,
+                net_last = NewNetLast,
+                erlang_vm_cpu = cpu_sup:util(),
+                erlang_vm_mem = erlang:memory(),
+                erlang_vm_processes_num = length(erlang:processes())}
+    end.
 
 
 %%--------------------------------------------------------------------
@@ -145,12 +151,12 @@ net_usage(#node_monitoring_state{net_stats = NetStats}) ->
     {NetUsage, MaxThroughput} = lists:foldl(
         fun({Name, Value}, {AccNU, AccMS}) ->
             case Name of
-            % Sum bytes sent and received
+                % Sum bytes sent and received
                 <<"net_rx_b_eth", _/binary>> ->
                     {AccNU + Value, AccMS};
                 <<"net_tx_b_eth", _/binary>> ->
                     {AccNU + Value, AccMS};
-            % Sum throughputs
+                % Sum throughputs
                 <<"net_maxthp_eth", _/binary>> ->
                     {AccNU, AccMS + Value};
                 _ ->
@@ -226,9 +232,9 @@ read_cpu_stats(Fd, Stats) ->
         {ok, "cpu" ++ _ = Line} ->
             ["cpu" ++ ID | Values] = string:tokens(string:strip(Line, right, $\n), " "),
             Name = case ID of
-                       "" -> <<"cpu">>;
-                       _ -> <<"core", (list_to_binary(ID))/binary>>
-                   end,
+                "" -> <<"cpu">>;
+                _ -> <<"core", (list_to_binary(ID))/binary>>
+            end,
             case is_valid_name(Name, 0) of
                 true ->
                     [User, Nice, System | Rest] = lists:map(fun(Value) -> list_to_integer(Value) end, Values),
@@ -340,9 +346,9 @@ get_network_stats(NetworkStats, TimeElapsed) ->
             {ok, Interfaces} ->
                 ValidInterfaces = lists:filter(fun(Interface) ->
                     IsEthernetIf = case Interface of
-                                       "eth" ++ _ -> true;
-                                       _ -> false
-                                   end,
+                        "eth" ++ _ -> true;
+                        _ -> false
+                    end,
                     IsEthernetIf andalso is_valid_name(Interface, 11)
                 end, Interfaces),
                 CurrentNetworkStats = lists:foldl(
@@ -417,9 +423,9 @@ get_interface_stats(Interface, Type) ->
     case file:open(Filename, [raw]) of
         {ok, Fd} ->
             InterfaceStats = case file:read_line(Fd) of
-                                 {ok, Value} -> list_to_integer(string:strip(Value, right, $\n));
-                                 _ -> 0
-                             end,
+                {ok, Value} -> list_to_integer(string:strip(Value, right, $\n));
+                _ -> 0
+            end,
             file:close(Fd),
             InterfaceStats;
         Other ->
@@ -439,15 +445,15 @@ get_interface_stats(Interface, Type) ->
 -spec get_interface_max_throughput(Interface :: string(), TimeElapsed :: float()) -> integer() | float().
 get_interface_max_throughput(Interface, TimeElapsed) ->
     DuplexRatio = case file:read_file(?NET_DUPLEX_FILE(Interface)) of
-                      {ok, <<"full\n">>} -> 2;
-                      _ -> 1
-                  end,
+        {ok, <<"full\n">>} -> 2;
+        _ -> 1
+    end,
     IntSpeedMbps = case file:read_file(?NET_SPEED_FILE(Interface)) of
-                       {ok, SpeedBin} ->
-                           binary_to_integer(binary:part(SpeedBin, 0, byte_size(SpeedBin) - 1));
-                       _ ->
-                           10
-                   end,
+        {ok, SpeedBin} ->
+            binary_to_integer(binary:part(SpeedBin, 0, byte_size(SpeedBin) - 1));
+        _ ->
+            10
+    end,
     % IntSpeedMbps is in Mbps so (IntSpeedMbps * 131072) is in Bytes/s
     IntSpeedMbps * 131072 * DuplexRatio * TimeElapsed.
 

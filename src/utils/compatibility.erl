@@ -123,7 +123,7 @@
 -define(REGISTRY_CACHE_TTL, ctool:get_env(compatibility_registry_cache_ttl, 900)). % 15 minutes
 -define(REGISTRY_MIRRORS, ctool:get_env(compatibility_registry_mirrors, [])).
 -define(DEFAULT_REGISTRY, ctool:get_env(default_compatibility_registry)).
--define(NOW(), time_utils:timestamp_seconds()).
+-define(NOW(), clock:timestamp_seconds()).
 
 -export([check_products_compatibility/4]).
 -export([get_compatible_versions/3]).

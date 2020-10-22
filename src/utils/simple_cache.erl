@@ -16,10 +16,10 @@
 
 -type key() :: atom() | {atom(), term()}.
 -type value() :: term().
--type ttl() :: time_utils:millis() | infinity.
+-type ttl() :: clock:millis() | infinity.
 
 -define(APP_NAME, simple_cache).
--define(NOW(), time_utils:timestamp_millis()).
+-define(NOW(), clock:timestamp_millis()).
 
 -compile([{no_auto_import, [get/1]}]).
 

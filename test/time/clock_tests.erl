@@ -5,9 +5,9 @@
 %%% cited in 'LICENSE.txt'.
 %%% @end
 %%%--------------------------------------------------------------------
-%%% @doc Eunit tests for time_utils module.
+%%% @doc Eunit tests for clock module.
 %%%--------------------------------------------------------------------
--module(time_utils_tests).
+-module(clock_tests).
 
 -ifdef(TEST).
 
@@ -16,9 +16,9 @@
 % initial difference between the local time and the time shown by the remote server/node clock (millis)
 -define(INITIAL_REMOTE_TIME_SHIFT, 1000000000).
 -define(DUMMY_REMOTE_NODE, 'dummy@example.com').
-% times shown by the local and remote *system* clocks - not to be confused with time shown by
-% time_utils:timestamp_*/1, which is adjusted with bias.
--define(LOCAL_SYSTEM_TIMESTAMP(), erlang:system_time(millisecond)).
+% Times shown by the local and remote *system* clocks, which are frozen and manually adjusted in these tests.
+% Not to be confused with time shown by clock:timestamp_*/1, which is adjusted with bias.
+-define(LOCAL_SYSTEM_TIMESTAMP(), get_frozen_system_time_millis()).
 -define(REMOTE_SYSTEM_TIMESTAMP(), ?LOCAL_SYSTEM_TIMESTAMP() + ?INITIAL_REMOTE_TIME_SHIFT).
 
 % overrides of the env variables to make the tests faster, without changing the tested logic
@@ -48,13 +48,13 @@ local_clock_sync_test_() ->
 
 successful_synchronize_local_clock_with_remote() ->
     ?assert(are_clocks_in_sync(local_clock, local_system_clock)),
-    ?assertNot(time_utils:is_clock_synchronized()),
+    ?assertNot(clock:is_synchronized()),
 
-    ?assertEqual(ok, time_utils:synchronize_local_clock_with_remote(gen_delayed_timestamp_callback(
+    ?assertEqual(ok, clock:synchronize_local_with_remote_server(gen_delayed_timestamp_callback(
         rand:uniform(90), fun() -> ?REMOTE_SYSTEM_TIMESTAMP() end)
     )),
     ?assert(are_clocks_in_sync(local_clock, remote_system_clock)),
-    ?assert(time_utils:is_clock_synchronized()).
+    ?assert(clock:is_synchronized()).
 
 
 crashed_synchronize_local_clock_with_remote() ->
@@ -70,11 +70,11 @@ timed_out_synchronize_local_clock_with_remote() ->
 
 delay_ok_synchronize_local_clock_with_remote() ->
     % if the delay is higher than ?SATISFYING_SYNC_DELAY_MILLIS, but lower than half the bias, it is accepted
-    ?assertEqual(ok, time_utils:synchronize_local_clock_with_remote(gen_delayed_timestamp_callback(
+    ?assertEqual(ok, clock:synchronize_local_with_remote_server(gen_delayed_timestamp_callback(
         110 + rand:uniform(20),
         fun() -> -300 + ?LOCAL_SYSTEM_TIMESTAMP() end
     ))),
-    ?assertEqual(ok, time_utils:synchronize_local_clock_with_remote(gen_delayed_timestamp_callback(
+    ?assertEqual(ok, clock:synchronize_local_with_remote_server(gen_delayed_timestamp_callback(
         110 + rand:uniform(20),
         fun() -> 300 + ?LOCAL_SYSTEM_TIMESTAMP() end
     ))).
@@ -91,7 +91,7 @@ delay_too_high_synchronize_local_clock_with_remote() ->
 
 failed_synchronize_local_clock_with_remote_does_not_change_previous_bias() ->
     {timeout, 100, fun() ->
-        ?assertEqual(ok, time_utils:synchronize_local_clock_with_remote(fun() -> ?REMOTE_SYSTEM_TIMESTAMP() end)),
+        ?assertEqual(ok, clock:synchronize_local_with_remote_server(fun() -> ?REMOTE_SYSTEM_TIMESTAMP() end)),
         ?assert(are_clocks_in_sync(local_clock, remote_system_clock)),
 
         assert_local_clock_time_does_not_change_upon_sync_fail(fun crash_with_random_reason/0),
@@ -110,14 +110,14 @@ failed_synchronize_local_clock_with_remote_does_not_change_previous_bias() ->
 
 assert_local_clock_time_does_not_change_upon_sync_fail(FetchRemoteTimestamp) ->
     % check the clock sync before the attempt
-    WasClockSynchronized = time_utils:is_clock_synchronized(),
+    WasClockSynchronized = clock:is_synchronized(),
     PreviousReferenceClock = case are_clocks_in_sync(local_clock, local_system_clock) of
         true -> local_system_clock;
         false -> remote_system_clock
     end,
-    ?assertEqual(error, time_utils:synchronize_local_clock_with_remote(FetchRemoteTimestamp)),
+    ?assertEqual(error, clock:synchronize_local_with_remote_server(FetchRemoteTimestamp)),
     % as the synchronization failed, the clock should continue to show the same time as before
-    ?assertEqual(WasClockSynchronized, time_utils:is_clock_synchronized()),
+    ?assertEqual(WasClockSynchronized, clock:is_synchronized()),
     ?assert(are_clocks_in_sync(local_clock, PreviousReferenceClock)).
 
 %%%===================================================================
@@ -126,13 +126,7 @@ assert_local_clock_time_does_not_change_upon_sync_fail(FetchRemoteTimestamp) ->
 
 remote_node_clock_sync_test_() ->
     {foreach,
-        fun() ->
-            setup(),
-            % remote node clock synchronization should converge to the local_clock (rather than system_clock)
-            % randomize some initial local bias to make sure this works as expected
-            RandomBiasSeconds = lists_utils:random_element([0, (60 + rand:uniform(1000))]),
-            ctool:set_env(time_utils_clock_bias_nanos, RandomBiasSeconds * 1000000000000)
-        end,
+        fun setup/0,
         fun teardown/1,
         [
             {"successful", fun successful_synchronize_node_clock_with_local/0},
@@ -147,6 +141,11 @@ remote_node_clock_sync_test_() ->
 
 
 successful_synchronize_node_clock_with_local() ->
+    % remote node clock synchronization should converge to the local_clock (rather than system_clock)
+    % randomize some initial local bias to make sure this works as expected
+    RandomBiasSeconds = lists_utils:random_element([0, (60 + rand:uniform(1000))]),
+    ctool:set_env(clock_bias_nanos, RandomBiasSeconds * 1000 * 1000 * 1000 * 1000),
+
     ?assert(are_clocks_in_sync(remote_clock, remote_system_clock)),
     ?assertNot(is_clock_synchronized_on_remote_node()),
 
@@ -154,7 +153,7 @@ successful_synchronize_node_clock_with_local() ->
         rand:uniform(?TEST_SATISFYING_SYNC_DELAY_MILLIS - 10),
         fun() -> ?REMOTE_SYSTEM_TIMESTAMP() end
     )),
-    ?assertEqual(ok, time_utils:synchronize_node_clock_with_local(?DUMMY_REMOTE_NODE)),
+    ?assertEqual(ok, clock:synchronize_remote_with_local(?DUMMY_REMOTE_NODE)),
     ?assert(is_clock_synchronized_on_remote_node()),
     ?assert(are_clocks_in_sync(remote_clock, local_clock)).
 
@@ -180,13 +179,13 @@ delay_ok_synchronize_node_clock_with_local() ->
         110 + rand:uniform(20),
         fun() -> -300 + ?LOCAL_SYSTEM_TIMESTAMP() end
     )),
-    ?assertEqual(ok, time_utils:synchronize_node_clock_with_local(?DUMMY_REMOTE_NODE)),
+    ?assertEqual(ok, clock:synchronize_remote_with_local(?DUMMY_REMOTE_NODE)),
 
     mock_next_remote_timestamp_rpc_response(gen_delayed_timestamp_callback(
         110 + rand:uniform(20),
         fun() -> 300 + ?LOCAL_SYSTEM_TIMESTAMP() end
     )),
-    ?assertEqual(ok, time_utils:synchronize_node_clock_with_local(?DUMMY_REMOTE_NODE)).
+    ?assertEqual(ok, clock:synchronize_remote_with_local(?DUMMY_REMOTE_NODE)).
 
 
 delay_too_high_synchronize_node_clock_with_local() ->
@@ -200,7 +199,7 @@ delay_too_high_synchronize_node_clock_with_local() ->
 
 failed_synchronize_node_clock_with_local_does_not_change_previous_bias() ->
     mock_next_remote_timestamp_rpc_response(fun() -> ?REMOTE_SYSTEM_TIMESTAMP() end),
-    ?assertEqual(ok, time_utils:synchronize_node_clock_with_local(?DUMMY_REMOTE_NODE)),
+    ?assertEqual(ok, clock:synchronize_remote_with_local(?DUMMY_REMOTE_NODE)),
     ?assert(are_clocks_in_sync(remote_clock, local_clock)),
 
     % check that failed synchronizations does not change the remote clock
@@ -227,7 +226,7 @@ assert_remote_clock_time_does_not_change_upon_sync_fail(MockedTimestampResponse)
         false -> remote_system_clock
     end,
     mock_next_remote_timestamp_rpc_response(MockedTimestampResponse),
-    ?assertEqual(error, time_utils:synchronize_node_clock_with_local(?DUMMY_REMOTE_NODE)),
+    ?assertEqual(error, clock:synchronize_remote_with_local(?DUMMY_REMOTE_NODE)),
     % as the synchronization failed, the clock should continue to show the same time as before
     ?assertEqual(WasClockSynchronized, is_clock_synchronized_on_remote_node()),
     ?assert(are_clocks_in_sync(remote_clock, PreviousReferenceClock)).
@@ -236,7 +235,7 @@ assert_remote_clock_time_does_not_change_upon_sync_fail(MockedTimestampResponse)
 %%% Eunit tests - time sync backup
 %%%===================================================================
 
-% Both local an remote procedures rely on time_utils:store_bias_millis/2 function
+% Both local an remote procedures rely on clock:store_bias_millis/2 function
 % to store the bias in cache and on disk (it is executed with RPC for the remote),
 % so it is enough to test the local procedure.
 time_sync_backup_test_() ->
@@ -254,15 +253,15 @@ time_sync_backup_test_() ->
 
 
 reset_and_restore() ->
-    ?assertEqual(ok, time_utils:synchronize_local_clock_with_remote(fun() -> ?REMOTE_SYSTEM_TIMESTAMP() end)),
+    ?assertEqual(ok, clock:synchronize_local_with_remote_server(fun() -> ?REMOTE_SYSTEM_TIMESTAMP() end)),
 
-    time_utils:reset_to_system_time(),
+    clock:reset_to_system_time(),
     ?assert(are_clocks_in_sync(local_clock, local_system_clock)),
-    ?assertNot(time_utils:is_clock_synchronized()),
+    ?assertNot(clock:is_synchronized()),
 
-    ?assertEqual(true, time_utils:try_to_restore_previous_synchronization()),
+    ?assertEqual(true, clock:try_to_restore_previous_synchronization()),
     ?assert(are_clocks_in_sync(local_clock, remote_system_clock)),
-    ?assert(time_utils:is_clock_synchronized()).
+    ?assert(clock:is_synchronized()).
 
 
 successful_restore_from_disc() ->
@@ -272,7 +271,7 @@ successful_restore_from_disc() ->
         <<"biasMilliseconds">> => ?INITIAL_REMOTE_TIME_SHIFT,
         <<"backupTimestampMilliseconds">> => current_system_time_minus_seconds(?TEST_BIAS_BACKUP_VALIDITY_SECONDS - 50)
     })),
-    ?assertEqual(true, time_utils:try_to_restore_previous_synchronization()),
+    ?assertEqual(true, clock:try_to_restore_previous_synchronization()),
     ?assert(are_clocks_in_sync(local_clock, remote_system_clock)).
 
 
@@ -281,62 +280,52 @@ failed_restore_from_disc_due_to_stale_backup() ->
         <<"biasMilliseconds">> => ?INITIAL_REMOTE_TIME_SHIFT,
         <<"backupTimestampMilliseconds">> => current_system_time_minus_seconds(?TEST_BIAS_BACKUP_VALIDITY_SECONDS + 1)
     })),
-    ?assertEqual(false, time_utils:try_to_restore_previous_synchronization()),
+    ?assertEqual(false, clock:try_to_restore_previous_synchronization()),
     ?assert(are_clocks_in_sync(local_clock, local_system_clock)).
 
 
 failed_restore_from_disc_due_to_inexistent_backup() ->
-    ?assertEqual(false, time_utils:try_to_restore_previous_synchronization()),
+    ?assertEqual(false, clock:try_to_restore_previous_synchronization()),
     ?assert(are_clocks_in_sync(local_clock, local_system_clock)).
 
 
 failed_restore_from_disc_due_to_backup_parsing_error() ->
     mock_existing_backup_file(json_utils:encode(#{<<"unfonformant">> => <<"json">>})),
-    ?assertEqual(false, time_utils:try_to_restore_previous_synchronization()),
+    ?assertEqual(false, clock:try_to_restore_previous_synchronization()),
     ?assert(are_clocks_in_sync(local_clock, local_system_clock)),
 
     mock_existing_backup_file(<<"gibberish">>),
-    ?assertEqual(false, time_utils:try_to_restore_previous_synchronization()),
+    ?assertEqual(false, clock:try_to_restore_previous_synchronization()),
     ?assert(are_clocks_in_sync(local_clock, local_system_clock)).
 
 %%%===================================================================
-%%% Eunit tests - format conversion
+%%% System time mocks
 %%%===================================================================
 
-general_conversion_test() ->
-    Seconds = time_utils:timestamp_seconds(),
-    DateTime = time_utils:seconds_to_datetime(Seconds),
-    Iso8601 = time_utils:datetime_to_iso8601(DateTime),
+% for the sake of the tests in this module, the system clock is frozen, in order
+% to be able to accurately mock delays and biases
+freeze_system_time() ->
+    meck:new(clock, [passthrough]),
+    meck:expect(clock, read_clock_time, fun
+        F(Clock, millis) ->
+            F(Clock, nanos) div 1000000;
+        F(system_clock, nanos) ->
+            get_frozen_system_time_millis() * 1000000;
+        F(local_clock, nanos) ->
+            get_frozen_system_time_millis() * 1000000 + ctool:get_env(clock_bias_nanos, 0)
+    end).
 
-    ?assertEqual(Seconds, time_utils:datetime_to_seconds(DateTime)),
-    ?assertEqual(Seconds, time_utils:iso8601_to_seconds(Iso8601)),
 
-    ?assertEqual(DateTime, time_utils:seconds_to_datetime(Seconds)),
-    ?assertEqual(DateTime, time_utils:iso8601_to_datetime(Iso8601)),
-
-    ?assertEqual(Iso8601, time_utils:seconds_to_iso8601(Seconds)),
-    ?assertEqual(Iso8601, time_utils:datetime_to_iso8601(DateTime)).
+unfreeze_system_time() ->
+    ok = meck:unload(clock).
 
 
-specific_conversion_test() ->
-    Seconds = 1600956903,
-    SecondsMidnight = 1600905600,
-    Iso8601 = <<"2020-09-24T14:15:03Z">>,
-    Iso8601DateOnly = <<"2020-09-24">>,
-    DateTime = {{2020, 9, 24}, {14, 15, 3}},
-    DateTimeMidnight = {{2020, 9, 24}, {0, 0, 0}},
+get_frozen_system_time_millis() ->
+    ctool:get_env(frozen_system_time_millis, 1500000000).
 
-    ?assertEqual(Seconds, time_utils:datetime_to_seconds(DateTime)),
-    ?assertEqual(Seconds, time_utils:iso8601_to_seconds(Iso8601)),
 
-    ?assertEqual(DateTime, time_utils:seconds_to_datetime(Seconds)),
-    ?assertEqual(DateTime, time_utils:iso8601_to_datetime(Iso8601)),
-
-    ?assertEqual(Iso8601, time_utils:seconds_to_iso8601(Seconds)),
-    ?assertEqual(Iso8601, time_utils:datetime_to_iso8601(DateTime)),
-
-    ?assertEqual(SecondsMidnight, time_utils:iso8601_to_seconds(Iso8601DateOnly)),
-    ?assertEqual(DateTimeMidnight, time_utils:iso8601_to_datetime(Iso8601DateOnly)).
+simulate_time_passing(Millis) ->
+    ctool:set_env(frozen_system_time_millis, get_frozen_system_time_millis() + Millis).
 
 %%%===================================================================
 %%% Helper functions
@@ -344,12 +333,14 @@ specific_conversion_test() ->
 
 %% @private
 setup() ->
-    time_utils:reset_to_system_time(),
+    clock:reset_to_system_time(),
     ctool:set_env(clock_sync_request_repeats, ?TEST_SYNC_REQUEST_REPEATS),
     ctool:set_env(clock_sync_satisfying_delay, ?TEST_SATISFYING_SYNC_DELAY_MILLIS),
     ctool:set_env(clock_sync_max_allowed_delay, ?TEST_MAX_ALLOWED_SYNC_DELAY_MILLIS),
     ctool:set_env(clock_sync_backup_validity_secs, ?TEST_BIAS_BACKUP_VALIDITY_SECONDS),
     unset_bias_nanos_at_remote_node(),
+
+    freeze_system_time(),
 
     TmpPath = mochitemp:mkdtemp(),
     BackupFile = filename:join(TmpPath, "time_synchronization_data.json"),
@@ -357,9 +348,9 @@ setup() ->
 
     meck:new(rpc, [unstick, passthrough]),
     meck:expect(rpc, call, fun
-        (?DUMMY_REMOTE_NODE, time_utils, read_time_millis, [system_clock]) ->
+        (?DUMMY_REMOTE_NODE, clock, read_clock_time, [system_clock, millis]) ->
             eval_mocked_remote_timestamp_rpc_response();
-        (?DUMMY_REMOTE_NODE, time_utils, store_bias_millis, [local_clock, BiasMillis]) ->
+        (?DUMMY_REMOTE_NODE, clock, store_bias_millis, [local_clock, BiasMillis]) ->
             set_bias_nanos_at_remote_node(BiasMillis * 1000000)
     end).
 
@@ -370,6 +361,7 @@ teardown(_) ->
     TmpPath = filename:dirname(BackupFile),
     mochitemp:rmtempdir(TmpPath),
 
+    unfreeze_system_time(),
     ok = meck:unload(rpc).
 
 
@@ -431,7 +423,7 @@ get_timestamp(local_system_clock) ->
 get_timestamp(remote_system_clock) ->
     ?REMOTE_SYSTEM_TIMESTAMP();
 get_timestamp(local_clock) ->
-    time_utils:timestamp_millis();
+    clock:timestamp_millis();
 get_timestamp(remote_clock) ->
     ?REMOTE_SYSTEM_TIMESTAMP() + get_bias_nanos_at_remote_node() div 1000000.
 
@@ -440,7 +432,7 @@ get_timestamp(remote_clock) ->
 crash_with_random_reason() ->
     case rand:uniform(3) of
         1 -> error(crashed);
-        2 -> throw(thrown);
+        2 -> throw(hot_potato);
         3 -> exit(goodbye)
     end.
 
@@ -448,9 +440,9 @@ crash_with_random_reason() ->
 %% @private
 gen_delayed_timestamp_callback(Delay, Fun) ->
     fun() ->
-        timer:sleep(Delay div 2),
+        simulate_time_passing(Delay div 2),
         Result = Fun(),  % evaluate the Fun in the middle of simulated delay
-        timer:sleep(Delay div 2),
+        simulate_time_passing(Delay div 2),
         Result
     end.
 

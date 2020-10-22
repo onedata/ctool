@@ -101,11 +101,11 @@ move(From, To) ->
 %% given file.
 %% @end
 %%--------------------------------------------------------------------
--spec seconds_since_modification(file:name_all()) -> {ok, time_utils:seconds()} | {error, enoent}.
+-spec seconds_since_modification(file:name_all()) -> {ok, clock:seconds()} | {error, enoent}.
 seconds_since_modification(Path) ->
     case filelib:last_modified(Path) of
         0 ->
             {error, enoent};
         LastModified ->
-            {ok, time_utils:timestamp_seconds() - time_utils:datetime_to_seconds(LastModified)}
+            {ok, clock:timestamp_seconds() - time_format:datetime_to_seconds(LastModified)}
     end.
