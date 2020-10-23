@@ -28,15 +28,13 @@
 -export([current_time_micros/0]).
 -export([current_time_nanos/0]).
 
--define(FREEZE_STARTING_TIMESTAMP, 1500000000000).
-
 %%%===================================================================
 %%% API
 %%%===================================================================
 
 -spec setup() -> ok.
 setup() ->
-    set_current_time_millis(?FREEZE_STARTING_TIMESTAMP),
+    set_current_time_millis(starting_frozen_time()),
     ok = meck:new(clock, [passthrough]),
     ok = meck:expect(clock, timestamp_seconds, fun current_time_seconds/0),
     ok = meck:expect(clock, timestamp_millis, fun current_time_millis/0),
@@ -51,7 +49,7 @@ teardown() ->
 
 -spec setup(node() | [node()]) -> ok.
 setup(NodeOrNodes) ->
-    set_current_time_millis(NodeOrNodes, ?FREEZE_STARTING_TIMESTAMP),
+    set_current_time_millis(NodeOrNodes, starting_frozen_time()),
     ok = test_utils:mock_new(NodeOrNodes, clock, [passthrough]),
     ok = test_utils:mock_expect(NodeOrNodes, clock, timestamp_seconds, fun current_time_seconds/0),
     ok = test_utils:mock_expect(NodeOrNodes, clock, timestamp_millis, fun current_time_millis/0),
@@ -121,3 +119,22 @@ rpc_call_each_node(Nodes, Module, Function, Args) ->
     lists:foreach(fun(Node) ->
         ok = rpc:call(Node, Module, Function, Args)
     end, Nodes).
+
+
+%%--------------------------------------------------------------------
+%% @private
+%% @doc
+%% This is to make sure that tests using multiple instances of freezer mock do
+%% not experience going back in time. If the time was frozen previously, the
+%% ending timestamp might be much higher than the actual system timestamp (due
+%% to simulation of passing time). This returns the bigger of the two times.
+%% @end
+%%--------------------------------------------------------------------
+-spec starting_frozen_time() -> clock:millis().
+starting_frozen_time() ->
+    PreviousFrozenTime = try
+        current_time_millis()
+    catch _:_ ->
+        0
+    end,
+    max(clock:timestamp_millis(), PreviousFrozenTime).

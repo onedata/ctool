@@ -48,8 +48,7 @@
 -type millis() :: integer().
 -type micros() :: integer().
 -type nanos() :: integer().
--type iso8601() :: binary(). % YYYY-MM-DDThh:mm:ssZ
--export_type([seconds/0, millis/0, micros/0, nanos/0, iso8601/0]).
+-export_type([seconds/0, millis/0, micros/0, nanos/0]).
 
 % difference between readings of two clocks, expressed in given unit
 -type bias(Unit) :: Unit.
