@@ -26,24 +26,22 @@
 -define(SHA_OMEGA, <<"8e741fa13536aad50dff4c81a29217fb7437cd5511ac7fcf8f0de05884d5768b">>).
 
 compatibility_verification_test_() ->
-    {setup, fun node_cache:init/0, fun(_) -> ets:delete(node_cache) end,
-        {foreach, local, % 'local' runs setup/teardown and the test in the same process
-            fun setup/0,
-            fun teardown/1,
-            [
-                {"OZ:OP compatibility check", fun oz_op_compatibility_check/0},
-                {"OP:OZ compatibility check", fun op_oz_compatibility_check/0},
-                {"OP:OP compatibility check", fun op_op_compatibility_check/0},
-                {"OP:OC compatibility check", fun op_oc_compatibility_check/0},
-                {"Registry parsing error", fun registry_parsing_error/0},
-                {"GUI hash verification", fun gui_hash_verification/0},
-                {"Caching local registry content", fun caching_local_registry_content/0},
-                {"Taking default registry if newer", fun taking_default_registry_if_newer/0},
-                {"Fetching newer registry", fun fetching_newer_registry/0},
-                {"Fetching older registry", fun fetching_older_registry/0},
-                {"Trying multiple mirrors", fun trying_multiple_mirrors/0}
-            ]
-        }
+    {foreach, local, % 'local' runs setup/teardown and the test in the same process
+        fun setup/0,
+        fun teardown/1,
+        [
+            {"OZ:OP compatibility check", fun oz_op_compatibility_check/0},
+            {"OP:OZ compatibility check", fun op_oz_compatibility_check/0},
+            {"OP:OP compatibility check", fun op_op_compatibility_check/0},
+            {"OP:OC compatibility check", fun op_oc_compatibility_check/0},
+            {"Registry parsing error", fun registry_parsing_error/0},
+            {"GUI hash verification", fun gui_hash_verification/0},
+            {"Caching local registry content", fun caching_local_registry_content/0},
+            {"Taking default registry if newer", fun taking_default_registry_if_newer/0},
+            {"Fetching newer registry", fun fetching_newer_registry/0},
+            {"Fetching older registry", fun fetching_older_registry/0},
+            {"Trying multiple mirrors", fun trying_multiple_mirrors/0}
+        ]
     }.
 
 
@@ -52,6 +50,7 @@ compatibility_verification_test_() ->
 %%%===================================================================
 
 setup() ->
+    node_cache:init(),
     TmpPath = mochitemp:mkdtemp(),
     RegistryPath = filename:join(TmpPath, "compatibility.json"),
     DefaultRegistryPath = filename:join(TmpPath, "compatibility.default.json"),
@@ -83,7 +82,8 @@ teardown(_) ->
     ?assert(meck:validate(time_utils)),
     ok = meck:unload(time_utils),
     ?assert(meck:validate(node_cache)),
-    ok = meck:unload(node_cache).
+    ok = meck:unload(node_cache),
+    node_cache:destroy().
 
 
 mock_compatibility_file(JsonMap) when is_map(JsonMap) ->

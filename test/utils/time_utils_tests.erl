@@ -22,15 +22,18 @@
 %%%===================================================================
 
 time_utils_test_() ->
-    {setup, fun node_cache:init/0, fun(_) -> ets:delete(node_cache) end, [
-        {"successful_synchronization", fun successful_synchronization/0},
-        {"crashed_synchronization", fun crashed_synchronization/0},
-        {"timed_out_synchronization", fun timed_out_synchronization/0}, 
-        {"delay_too_high_synchronization", fun delay_too_high_synchronization/0},
-        {"failed_synchronization_does_not_change_previous_bias", fun failed_synchronization_does_not_change_previous_bias/0},
-        {"general_conversion", fun general_conversion/0},
-        {"specific_conversion", fun specific_conversion/0}
-    ]}.
+    {setup, 
+        fun setup/0, 
+        fun teardown/1, [
+            {"successful_synchronization", fun successful_synchronization/0},
+            {"crashed_synchronization", fun crashed_synchronization/0},
+            {"timed_out_synchronization", fun timed_out_synchronization/0}, 
+            {"delay_too_high_synchronization", fun delay_too_high_synchronization/0},
+            {"failed_synchronization_does_not_change_previous_bias", fun failed_synchronization_does_not_change_previous_bias/0},
+            {"general_conversion", fun general_conversion/0},
+            {"specific_conversion", fun specific_conversion/0}
+        ]
+    }.
 
 
 successful_synchronization() ->
@@ -207,6 +210,12 @@ specific_conversion() ->
 %%%===================================================================
 %%% Helper functions
 %%%===================================================================
+
+setup() ->
+    node_cache:init().
+
+teardown(_) ->
+    node_cache:destroy().
 
 %% @private
 is_clock_in_sync(ExpectedTime) ->

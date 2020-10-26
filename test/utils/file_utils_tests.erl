@@ -183,7 +183,7 @@ start() ->
     #{cwd => Workdir}.
 
 stop(#{cwd := Workdir}) ->
-    ets:delete(node_cache),
+    node_cache:destroy(),
     mochitemp:rmtempdir(Workdir).
 
 reset_dir(#{cwd := Workdir}) ->

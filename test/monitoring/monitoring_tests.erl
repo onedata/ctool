@@ -157,7 +157,7 @@ file_open_error_test_() ->
             meck:expect(file, open, fun(_, _) -> error end)
         end,
         fun(_) ->
-            ets:delete(node_cache),
+            node_cache:destroy(),
             unmock_file()
         end,
         [

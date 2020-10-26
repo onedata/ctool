@@ -43,7 +43,7 @@ start() ->
     end).
 
 stop(_) ->
-    ets:delete(node_cache),
+    node_cache:destroy(),
     meck:unload(rpc).
 
 chash_should_create_single_node_ring() ->

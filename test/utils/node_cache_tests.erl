@@ -18,153 +18,94 @@
 -define(TTL, 8).
 -define(FUN_FALSE, fun() -> {false, ?VALUE} end).
 -define(FUN_TRUE(TTL), fun() -> {true, ?VALUE, TTL} end).
+-define(KEYS, [
+    atom_key,
+    23467234,
+    {tuple, key},
+    <<"binary_key">>
+]).
 
 %%%===================================================================
 %%% Tests functions
 %%%===================================================================
 
+-define(TEST_CASES, [
+    {"with_ttl", fun with_ttl/1},
+    {"infinity", fun infinity/1},
+    {"expired", fun expired/1},
+    {"clear", fun clear/1},
+    {"default_without_put", fun default_without_put/1},
+    {"default_with_put_ttl", fun default_with_put_ttl/1},
+    {"default_with_put_infinity", fun default_with_put_infinity/1},
+    {"get_non_existing", fun get_non_existing/1}
+]).
+
 node_cache_test_() ->
     {foreach,
-        fun init_per_testcase/0,
-        fun end_per_testcase/1,
-        [
-            {"with_ttl", fun with_ttl/0},
-            {"infinity", fun infinity/0},
-            {"expired", fun expired/0},
-            {"clear", fun clear/0},
-            {"get_non_existing", fun get_non_existing/0},
-            {"default_without_put", fun default_without_put/0},
-            {"default_with_put_ttl", fun default_with_put_ttl/0},
-            {"default_with_put_infinity", fun default_with_put_infinity/0},
-            
-            {"map_with_ttl", fun map_with_ttl/0},
-            {"map_infinity", fun map_infinity/0},
-            {"map_expired", fun map_expired/0},
-            {"map_clear", fun map_clear/0},
-            {"map_get_non_existing", fun map_get_non_existing/0},
-            {"map_default_without_put", fun map_default_without_put/0},
-            {"map_default_with_put_ttl", fun map_default_with_put_ttl/0},
-            {"map_default_with_put_infinity", fun map_default_with_put_infinity/0},
-            {"map_multi", fun map_multi/0},
-            {"single_value_and_map", fun single_value_and_map/0}
-        ]
+        fun setup/0,
+        fun teardown/1,
+        lists:flatten(
+            lists:map(fun({TestDescription, Fun}) ->
+                lists:map(fun(Key) ->
+                    {TestDescription, fun() -> ?_test(Fun(Key)) end}
+                end, ?KEYS)
+            end, ?TEST_CASES)
+        )
     }.
 
-with_ttl() ->
-    ok = node_cache:put(key, ?VALUE, ?TTL),
-    ?assertEqual({ok, ?VALUE}, node_cache:get(key)).
+with_ttl(Key) ->
+    ok = node_cache:put(Key, ?VALUE, ?TTL),
+    ?assertEqual({ok, ?VALUE}, node_cache:get(Key)).
 
-infinity() ->
-    ok = node_cache:put(key, ?VALUE),
-    ?assertEqual({ok, ?VALUE}, node_cache:get(key)),
+infinity(Key) ->
+    ok = node_cache:put(Key, ?VALUE),
+    ?assertEqual({ok, ?VALUE}, node_cache:get(Key)),
     simulate_time_passing(?TTL),
-    ?assertEqual({ok, ?VALUE}, node_cache:get(key)).
+    ?assertEqual({ok, ?VALUE}, node_cache:get(Key)).
 
-expired() ->
-    node_cache:put(key, ?VALUE, ?TTL),
+expired(Key) ->
+    node_cache:put(Key, ?VALUE, ?TTL),
     simulate_time_passing(?TTL),
-    ?assertEqual({error, not_found}, node_cache:get(key)).
+    ?assertEqual({error, not_found}, node_cache:get(Key)).
 
-clear() ->
-    node_cache:put(key, ?VALUE),
-    node_cache:clear(key),
-    ?assertEqual({error, not_found}, node_cache:get(key)).
+clear(Key) ->
+    node_cache:put(Key, ?VALUE),
+    node_cache:clear(Key),
+    ?assertEqual({error, not_found}, node_cache:get(Key)).
 
-default_without_put() ->
-    ?assertEqual({ok, ?VALUE}, node_cache:get(key, ?FUN_FALSE)),
-    ?assertEqual({error, not_found}, node_cache:get(key)).
+default_without_put(Key) ->
+    ?assertEqual({ok, ?VALUE}, node_cache:get(Key, ?FUN_FALSE)),
+    ?assertEqual({error, not_found}, node_cache:get(Key)).
     
-default_with_put_ttl() ->
-    ?assertEqual({ok, ?VALUE}, node_cache:get(key, ?FUN_TRUE(?TTL))),
-    ?assertEqual({ok, ?VALUE}, node_cache:get(key)),
+default_with_put_ttl(Key) ->
+    ?assertEqual({ok, ?VALUE}, node_cache:get(Key, ?FUN_TRUE(?TTL))),
+    ?assertEqual({ok, ?VALUE}, node_cache:get(Key)),
     simulate_time_passing(?TTL),
-    ?assertEqual({error, not_found}, node_cache:get(key)).
+    ?assertEqual({error, not_found}, node_cache:get(Key)).
 
-default_with_put_infinity() ->
-    ?assertEqual({ok, ?VALUE}, node_cache:get(key, ?FUN_TRUE(infinity))),
-    ?assertEqual({ok, ?VALUE}, node_cache:get(key)),
+default_with_put_infinity(Key) ->
+    ?assertEqual({ok, ?VALUE}, node_cache:get(Key, ?FUN_TRUE(infinity))),
+    ?assertEqual({ok, ?VALUE}, node_cache:get(Key)),
     simulate_time_passing(?TTL),
-    ?assertEqual({ok, ?VALUE}, node_cache:get(key)).
+    ?assertEqual({ok, ?VALUE}, node_cache:get(Key)).
 
-get_non_existing() ->
-    ?assertEqual({error, not_found}, node_cache:get(key)).
-    
-
-map_with_ttl() ->
-    ok = node_cache:put({key, childkey}, ?VALUE, ?TTL),
-    ?assertEqual({ok, ?VALUE}, node_cache:get({key, childkey})).
-
-map_infinity() ->
-    ok = node_cache:put({key, childkey}, ?VALUE),
-    ?assertEqual({ok, ?VALUE}, node_cache:get({key, childkey})),
-    simulate_time_passing(?TTL),
-    ?assertEqual({ok, ?VALUE}, node_cache:get({key, childkey})).
-
-map_expired() ->
-    node_cache:put({key, childkey}, ?VALUE, ?TTL),
-    simulate_time_passing(?TTL),
-    ?assertEqual({error, not_found}, node_cache:get({key, childkey})).
-
-map_clear() ->
-    node_cache:put({key, childkey}, ?VALUE),
-    node_cache:clear({key, childkey}),
-    ?assertEqual({error, not_found}, node_cache:get({key, childkey})).
-
-map_default_without_put() ->
-    ?assertEqual({ok, ?VALUE}, node_cache:get({key, childkey}, ?FUN_FALSE)),
-    ?assertEqual({error, not_found}, node_cache:get({key, childkey})).
-
-map_default_with_put_ttl() ->
-    ?assertEqual({ok, ?VALUE}, node_cache:get({key, childkey}, ?FUN_TRUE(?TTL))),
-    ?assertEqual({ok, ?VALUE}, node_cache:get({key, childkey})),
-    simulate_time_passing(?TTL),
-    ?assertEqual({error, not_found}, node_cache:get({key, childkey})).
-
-map_default_with_put_infinity() ->
-    ?assertEqual({ok, ?VALUE}, node_cache:get({key, childkey}, ?FUN_TRUE(infinity))),
-    ?assertEqual({ok, ?VALUE}, node_cache:get({key, childkey})),
-    simulate_time_passing(?TTL),
-    ?assertEqual({ok, ?VALUE}, node_cache:get({key, childkey})).
-
-map_get_non_existing() ->
-    ?assertEqual({error, not_found}, node_cache:get({key, childkey})).
-
-map_multi() ->
-    ok = node_cache:put({key, childkey}, ?VALUE, ?TTL),
-    simulate_time_passing(?TTL-1),
-    ok = node_cache:put({key, childkey1}, ?VALUE, ?TTL),
-    ?assertEqual({ok, ?VALUE}, node_cache:get({key, childkey})),
-    simulate_time_passing(1),
-    ?assertEqual({error, not_found}, node_cache:get({key, childkey})),
-    ?assertEqual({ok, ?VALUE}, node_cache:get({key, childkey1})).
-
-single_value_and_map() ->
-    ok = node_cache:put({key, childkey}, ?VALUE, ?TTL),
-    ok = node_cache:put({key, childkey1}, ?VALUE, ?TTL),
-    ok = node_cache:put(key, ?VALUE, ?TTL),
-    ?assertEqual({ok, ?VALUE}, node_cache:get({key, childkey})),
-    ?assertEqual({ok, ?VALUE}, node_cache:get({key, childkey1})),
-    ?assertEqual({ok, ?VALUE}, node_cache:get(key)),
-    node_cache:clear({key, childkey}),
-    ?assertEqual({ok, ?VALUE}, node_cache:get({key, childkey1})),
-    ?assertEqual({ok, ?VALUE}, node_cache:get(key)),
-    node_cache:clear(key),
-    ?assertEqual({ok, ?VALUE}, node_cache:get({key, childkey1})).
+get_non_existing(Key) ->
+    ?assertEqual({error, not_found}, node_cache:get(Key)).
 
 
 %%%===================================================================
 %%% Helper functions
 %%%===================================================================
     
-init_per_testcase() ->
+setup() ->
     node_cache:init(),
     meck:new(node_cache, [passthrough]),
     meck:expect(node_cache, now, fun timestamp_mock/0).
 
-end_per_testcase(_) ->
+teardown(_) ->
     ?assert(meck:validate([node_cache])),
     meck:unload(),
-    ets:delete(node_cache).
+    node_cache:destroy().
 
 timestamp_mock() ->
     case get(mocked_time) of
@@ -174,6 +115,5 @@ timestamp_mock() ->
 
 simulate_time_passing(Milliseconds) ->
     put(mocked_time, timestamp_mock() + Milliseconds).   
-
 
 -endif.

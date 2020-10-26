@@ -37,16 +37,14 @@
 ]).
 
 geo_db_test_() ->
-    {setup, fun node_cache:init/0, fun(_) -> ets:delete(node_cache) end,
-        {foreach,
-            fun setup/0,
-            fun teardown/1,
-            lists:map(fun({Desc, TestFun}) ->
-                fun(Ctx) ->
-                    {Desc, ?_test(TestFun(Ctx))}
-                end
-            end, ?TEST_CASES)
-        }
+    {foreach,
+        fun setup/0,
+        fun teardown/1,
+        lists:map(fun({Desc, TestFun}) ->
+            fun(Ctx) ->
+                {Desc, ?_test(TestFun(Ctx))}
+            end
+        end, ?TEST_CASES)
     }.
 
 %%%===================================================================
@@ -54,6 +52,7 @@ geo_db_test_() ->
 %%%===================================================================
 
 setup() ->
+    node_cache:init(),
     meck:new(locus),
     meck:expect(locus, lookup, fun(DbType, _IP) ->
         case mock_is_db_loaded(DbType) of
@@ -147,6 +146,7 @@ setup() ->
 
 
 teardown(#{tmpDir := TmpDir}) ->
+    node_cache:destroy(),
     ?assert(meck:validate(locus)),
     ok = meck:unload(locus),
     ?assert(meck:validate(time_utils)),
