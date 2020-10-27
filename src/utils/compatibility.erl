@@ -311,9 +311,9 @@ get_entries(Section, Version, Strategy) ->
 %% @private
 -spec should_fetch_registry() -> boolean().
 should_fetch_registry() ->
-    case node_cache:get(compatibility_registry_fetch_backoff) of
-        {ok, BackoffUntil} -> BackoffUntil < ?NOW();
-        {error, not_found} -> true
+    case node_cache:get(compatibility_registry_fetch_backoff, undefined) of
+        undefined -> true;
+        BackoffUntil -> BackoffUntil < ?NOW()
     end.
 
 
@@ -327,7 +327,7 @@ reset_fetch_backoff() ->
 -spec get_registry(Strategy :: local | fetch) ->
     {ok, registry()} | {error, cannot_parse_registry | cannot_fetch_registry}.
 get_registry(local) ->
-    node_cache:get(compatibility_registry, fun() ->
+    node_cache:acquire(compatibility_registry, fun() ->
         take_default_registry_if_newer(),
         case file:read_file(?REGISTRY_PATH) of
             {ok, Binary} ->
@@ -335,7 +335,7 @@ get_registry(local) ->
                     {error, cannot_parse_registry} ->
                         {error, cannot_parse_registry};
                     {ok, Registry} ->
-                        {true, Registry, timer:seconds(?REGISTRY_CACHE_TTL)}
+                        {ok, Registry, timer:seconds(?REGISTRY_CACHE_TTL)}
                 end;
             Other ->
                 ?error("Cannot parse compatibility registry (~s) due to ~w", [

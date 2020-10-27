@@ -74,23 +74,23 @@ ensure_db_loaded(DbType) ->
         ?CRITICAL_SECTION(DbType, fun() ->
             try ensure_db_loaded_unsafe(DbType) of
                 ok ->
-                    {true, loaded, ?VALIDITY_CHECK_INTERVAL};
+                    {ok, loaded, ?VALIDITY_CHECK_INTERVAL};
                 {error, _} = Error ->
                     ?error(
                         "GEO DB could not be loaded due to ~w, next attempt in ~B seconds",
                         [Error, ?LOAD_ATTEMPT_BACKOFF div 1000]
                     ),
-                    {true, not_loaded, ?LOAD_ATTEMPT_BACKOFF}
+                    {ok, not_loaded, ?LOAD_ATTEMPT_BACKOFF}
             catch Type:Reason ->
                 ?error_stacktrace(
                     "Unexpected error when loading GEO DB (~p) - ~p:~p, next attempt in ~B seconds",
                     [DbType, Type, Reason, ?LOAD_ATTEMPT_BACKOFF div 1000]
                 ),
-                {true, not_loaded, ?LOAD_ATTEMPT_BACKOFF}
+                {ok, not_loaded, ?LOAD_ATTEMPT_BACKOFF}
             end
         end)
     end,
-    case node_cache:get({db_loaded, DbType}, EnsureDb) of
+    case node_cache:acquire({db_loaded, DbType}, EnsureDb) of
         {ok, loaded} -> true;
         {ok, not_loaded} -> false
     end.

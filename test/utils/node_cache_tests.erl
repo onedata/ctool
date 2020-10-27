@@ -16,8 +16,7 @@
 
 -define(VALUE, value).
 -define(TTL, 8).
--define(FUN_FALSE, fun() -> {false, ?VALUE} end).
--define(FUN_TRUE(TTL), fun() -> {true, ?VALUE, TTL} end).
+-define(FUN_TRUE(TTL), fun() -> {ok, ?VALUE, TTL} end).
 -define(KEYS, [
     atom_key,
     23467234,
@@ -30,14 +29,14 @@
 %%%===================================================================
 
 -define(TEST_CASES, [
-    {"with_ttl", fun with_ttl/1},
-    {"infinity", fun infinity/1},
-    {"expired", fun expired/1},
+    {"put_with_ttl", fun put_with_ttl/1},
+    {"put_infinity", fun put_infinity/1},
+    {"get_expired", fun get_expired/1},
+    {"get_non_existing", fun get_non_existing/1},
+    {"get_default", fun get_default/1},
     {"clear", fun clear/1},
-    {"default_without_put", fun default_without_put/1},
-    {"default_with_put_ttl", fun default_with_put_ttl/1},
-    {"default_with_put_infinity", fun default_with_put_infinity/1},
-    {"get_non_existing", fun get_non_existing/1}
+    {"acquire_with_put_ttl", fun acquire_with_put_ttl/1},
+    {"acquire_with_put_infinity", fun acquire_with_put_infinity/1}
 ]).
 
 node_cache_test_() ->
@@ -47,50 +46,49 @@ node_cache_test_() ->
         lists:flatten(
             lists:map(fun({TestDescription, Fun}) ->
                 lists:map(fun(Key) ->
-                    {TestDescription, fun() -> ?_test(Fun(Key)) end}
+                    {TestDescription, fun() -> Fun(Key) end}
                 end, ?KEYS)
             end, ?TEST_CASES)
         )
     }.
 
-with_ttl(Key) ->
+put_with_ttl(Key) ->
     ok = node_cache:put(Key, ?VALUE, ?TTL),
-    ?assertEqual({ok, ?VALUE}, node_cache:get(Key)).
+    ?assertEqual(?VALUE, node_cache:get(Key)).
 
-infinity(Key) ->
+put_infinity(Key) ->
     ok = node_cache:put(Key, ?VALUE),
-    ?assertEqual({ok, ?VALUE}, node_cache:get(Key)),
+    ?assertEqual(?VALUE, node_cache:get(Key)),
     simulate_time_passing(?TTL),
-    ?assertEqual({ok, ?VALUE}, node_cache:get(Key)).
+    ?assertEqual(?VALUE, node_cache:get(Key)).
 
-expired(Key) ->
+get_expired(Key) ->
     node_cache:put(Key, ?VALUE, ?TTL),
     simulate_time_passing(?TTL),
-    ?assertEqual({error, not_found}, node_cache:get(Key)).
+    ?assertError({badkey, Key}, node_cache:get(Key)).
+
+get_non_existing(Key) ->
+    ?assertError({badkey, Key}, node_cache:get(Key)).
+
+get_default(Key) ->
+    ?assertEqual(default, node_cache:get(Key, default)).
 
 clear(Key) ->
     node_cache:put(Key, ?VALUE),
     node_cache:clear(Key),
-    ?assertEqual({error, not_found}, node_cache:get(Key)).
-
-default_without_put(Key) ->
-    ?assertEqual({ok, ?VALUE}, node_cache:get(Key, ?FUN_FALSE)),
-    ?assertEqual({error, not_found}, node_cache:get(Key)).
+    ?assertError({badkey, Key}, node_cache:get(Key)).
     
-default_with_put_ttl(Key) ->
-    ?assertEqual({ok, ?VALUE}, node_cache:get(Key, ?FUN_TRUE(?TTL))),
-    ?assertEqual({ok, ?VALUE}, node_cache:get(Key)),
+acquire_with_put_ttl(Key) ->
+    ?assertEqual({ok, ?VALUE}, node_cache:acquire(Key, ?FUN_TRUE(?TTL))),
+    ?assertEqual(?VALUE, node_cache:get(Key)),
     simulate_time_passing(?TTL),
-    ?assertEqual({error, not_found}, node_cache:get(Key)).
+    ?assertError({badkey, Key}, node_cache:get(Key)).
 
-default_with_put_infinity(Key) ->
-    ?assertEqual({ok, ?VALUE}, node_cache:get(Key, ?FUN_TRUE(infinity))),
-    ?assertEqual({ok, ?VALUE}, node_cache:get(Key)),
+acquire_with_put_infinity(Key) ->
+    ?assertEqual({ok, ?VALUE}, node_cache:acquire(Key, ?FUN_TRUE(infinity))),
+    ?assertEqual(?VALUE, node_cache:get(Key)),
     simulate_time_passing(?TTL),
-    ?assertEqual({ok, ?VALUE}, node_cache:get(Key)).
-
-get_non_existing(Key) ->
-    ?assertEqual({error, not_found}, node_cache:get(Key)).
+    ?assertEqual(?VALUE, node_cache:get(Key)).
 
 
 %%%===================================================================
@@ -103,9 +101,8 @@ setup() ->
     meck:expect(node_cache, now, fun timestamp_mock/0).
 
 teardown(_) ->
-    ?assert(meck:validate([node_cache])),
-    meck:unload(),
-    node_cache:destroy().
+    node_cache:destroy(),
+    meck:unload().
 
 timestamp_mock() ->
     case get(mocked_time) of

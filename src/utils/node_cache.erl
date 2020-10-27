@@ -16,18 +16,18 @@
 
 %% API
 -export([init/0, destroy/0]).
--export([get/1, get/2, put/2, put/3, clear/1]).
+-export([get/1, get/2, acquire/2, put/2, put/3, clear/1]).
 % for mocking in tests
 -export([now/0]).
 
 -type key() :: term().
 -type value() :: term().
--type ttl() :: time_utils:millis() | infinity.
--type value_provider() :: fun(() ->
-        {true, value()} |
-        {true, value(), ttl()} |
-        {false, value()} |
-        {error, term()}).
+-type ttl() :: time_utils:seconds() | infinity.
+
+%% function called by acquire/2 when there is no valid value in cache
+-type acquire_callback() :: fun(() ->
+        {ok, value(), ttl()} |
+        {error, Reason :: term()}).
 
 % call using module for mocking in tests
 -define(NOW(), ?MODULE:now()).
@@ -47,7 +47,7 @@
 %%--------------------------------------------------------------------
 -spec init() -> ok.
 init() ->
-    node_cache = ets:new(node_cache, [set, public, named_table]),
+    node_cache = ets:new(node_cache, [set, public, named_table, {read_concurrency, true}]),
     ok.
 
 -spec destroy() -> ok.
@@ -60,9 +60,9 @@ destroy() ->
 %% If cache exists and is not expired returns cached value.
 %% @end
 %%--------------------------------------------------------------------
--spec get(key()) -> {ok, value()} | ?ERROR_NOT_FOUND.
+-spec get(key()) -> value() | no_return().
 get(Key) ->
-    check_validity(
+    check_validity(Key, 
         case ets:lookup(?MODULE, Key) of
             [{Key, Value}] -> {ok, Value};
             [] -> ?ERROR_NOT_FOUND
@@ -71,31 +71,43 @@ get(Key) ->
 
 %%--------------------------------------------------------------------
 %% @doc
-%% Returns cached or calculated value. ValueProvider function is used if
-%% the cache does not exist or is expired to calculate the value and caching
-%% time. The function should return a tuple {true, Value} or {true, Value, TTL}
-%% if Value is to be stored in the cache, otherwise {false, Value}.
-%% {true, Value} is equivalent to {true, Value, infinity}.
+%% If cache exists and is not expired returns cached value otherwise 
+%% returns provided default value.
 %% @end
 %%--------------------------------------------------------------------
--spec get(key(), value_provider()) -> {ok, value()} | {error, term()}.
-get(Key, ValueProvider) when is_function(ValueProvider, 0) ->
-    case get(Key) of
-        {ok, Value} ->
-            {ok, Value};
+-spec get(key(), Default) -> value() | Default.
+get(Key, Default) ->
+    try 
+        get(Key)
+    catch error:{badkey, Key} ->
+        Default
+    end.
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%% If cache exists and is not expired returns cached value. 
+%% Otherwise AcquireCallback is executed and returned value 
+%% is cached for provided time (unless error was returned).
+%% 
+%% NOTE: This function is NOT atomic so calling it in parallel 
+%% might result in multiple AcquireCallback executions.
+%% In that case only one value will be stored in cache.
+%% @end
+%%--------------------------------------------------------------------
+-spec acquire(key(), acquire_callback()) -> {ok, value()} | {error, term()}.
+acquire(Key, AcquireCallback) when is_function(AcquireCallback, 0) ->
+    case get(Key, ?ERROR_NOT_FOUND) of
         ?ERROR_NOT_FOUND ->
-            case ValueProvider() of
-                {false, Value} ->
-                    {ok, Value};
-                {true, Value, TTL} ->
+            case AcquireCallback() of
+                {ok, Value, TTL} ->
                     put(Key, Value, TTL, new),
                     {ok, Value};
-                {true, Value} ->
-                    put(Key, Value, infinity, new),
-                    {ok, Value};
-                Error ->
+                {error, _} = Error ->
                     Error
-            end
+            end;
+        Value ->
+            {ok, Value}
     end.
 
 %%--------------------------------------------------------------------
@@ -135,7 +147,7 @@ put(Key, Value, TTL, Mode) ->
 
 -spec clear(key()) -> ok.
 clear(Key) ->
-    true == ets:delete(?MODULE, Key),
+    true = ets:delete(?MODULE, Key),
     ok.
 
 %%%===================================================================
@@ -145,7 +157,7 @@ clear(Key) ->
 %%--------------------------------------------------------------------
 %% @private
 %% @doc
-%% Insert given value to ets.
+%% Inserts given value to ets.
 %% Distinction for new and replace is introduced only to appease dialyzer 
 %% which does not allow for calling ets:insert directly after ets:lookup.
 %% @end
@@ -162,20 +174,21 @@ do_put(Key, Value, _) ->
 %% Returns cached value if given entry is valid (has not expired).
 %% @end
 %%--------------------------------------------------------------------
--spec check_validity({ok, {value(), ttl()}} | error) -> {ok, value()} | ?ERROR_NOT_FOUND.
-check_validity({ok, {Value, infinity}}) ->
-    {ok, Value};
-check_validity({ok, {Value, ValidUntil}}) ->
+-spec check_validity(key(), {ok, {value(), ttl()}} | ?ERROR_NOT_FOUND) -> 
+    value() | no_return(). 
+check_validity(_Key, {ok, {Value, infinity}}) ->
+    Value;
+check_validity(Key, {ok, {Value, ValidUntil}}) ->
     case ValidUntil > ?NOW() of
-        true -> {ok, Value};
-        false -> ?ERROR_NOT_FOUND
+        true -> Value;
+        false -> error({badkey, Key})
     end;
-check_validity(_) ->
-    ?ERROR_NOT_FOUND.
+check_validity(Key, _) ->
+    error({badkey, Key}).
 
 
 %% @private
 %% Exported for eunit tests and called by ?MODULE
 -spec now() -> time_utils:millis().
 now() ->
-    erlang:system_time(millisecond).
+    erlang:system_time(second).

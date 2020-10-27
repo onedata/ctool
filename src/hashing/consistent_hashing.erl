@@ -270,10 +270,7 @@ get_ring() ->
 
 -spec get_ring(ring_generation()) -> ring() | ?INIT_ERROR.
 get_ring(RingGeneration) ->
-    case node_cache:get(RingGeneration, fun() -> {false, ?INIT_ERROR} end) of
-        {ok, Ring} -> Ring;
-        {error, _} = Error -> Error
-    end.
+    node_cache:get(RingGeneration, ?INIT_ERROR).
 
 -spec is_ring_initialized() -> boolean().
 is_ring_initialized() ->

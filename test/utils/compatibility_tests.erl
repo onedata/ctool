@@ -111,7 +111,7 @@ get_compatibility_file() ->
     ok.
 mock_mirror_result(Url, Result) ->
     node_cache:put({mocked_mirror, Url}, Result),
-    {ok, Mirrors} = node_cache:get(mocked_mirrors, fun() -> {false, []} end),
+    {ok, Mirrors} = node_cache:acquire(mocked_mirrors, fun() -> {ok, [], 0} end),
     node_cache:put(mocked_mirrors, [Url | Mirrors]).
 
 
@@ -120,8 +120,8 @@ mock_mirror_list(Mirrors) ->
 
 
 get_mocked_mirror_result(Url) ->
-    {ok, Result} = node_cache:get({mocked_mirror, Url}, fun() ->
-        {false, {error, nxdomain}}
+    {ok, Result} = node_cache:acquire({mocked_mirror, Url}, fun() ->
+        {ok, {error, nxdomain}, 0}
     end),
     case Result of
         {ok, Code, JsonMap} when is_map(JsonMap) ->
@@ -135,7 +135,7 @@ get_mocked_mirror_result(Url) ->
 
 clear_mocked_mirrors() ->
     mock_mirror_list([]),
-    {ok, Mirrors} = node_cache:get(mocked_mirrors, fun() -> {false, []} end),
+    {ok, Mirrors} = node_cache:acquire(mocked_mirrors, fun() -> {ok, [], 0} end),
     [node_cache:clear({mocked_mirror, M}) || M <- Mirrors].
 
 

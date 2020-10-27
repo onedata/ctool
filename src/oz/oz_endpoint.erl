@@ -81,8 +81,8 @@ get_api_root(Opts) ->
 %%--------------------------------------------------------------------
 -spec get_cacerts() -> CaCerts :: [public_key:der_encoded()].
 get_cacerts() ->
-    {ok, CaCerts} = node_cache:get(cacerts_cache, fun() ->
-        {true, cert_utils:load_ders_in_dir(?OZ_PLUGIN:get_cacerts_dir())}
+    {ok, CaCerts} = node_cache:acquire(cacerts_cache, fun() ->
+        {ok, cert_utils:load_ders_in_dir(?OZ_PLUGIN:get_cacerts_dir()), infinity}
     end),
     CaCerts.
 

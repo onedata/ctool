@@ -68,7 +68,7 @@ timestamp_micros() ->
 
 -spec timestamp_nanos() -> nanos().
 timestamp_nanos() ->
-    {ok, ClockBiasMillis} = node_cache:get(?CLOCK_BIAS_CACHE_MILLIS, fun() -> {false, 0} end),
+    ClockBiasMillis = node_cache:get(?CLOCK_BIAS_CACHE_MILLIS, 0),
     local_timestamp_nanos() + ClockBiasMillis * 1000000.
 
 
