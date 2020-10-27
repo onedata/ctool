@@ -12,7 +12,9 @@
 %%% the clock module internally). Uses meck under the hood.
 %%%
 %%% The API has two version - for the local node and for specific nodes(s).
-%%% In the latter case, it uses the mock manager for mocking (via test_utils).
+%%% In the latter case, it uses the mock manager for mocking (via test_utils)
+%%% and stores the frozen time on the calling node so that it is possible
+%%% to track the time using current_time_* functions.
 %%% @end
 %%%-------------------------------------------------------------------
 -module(clock_freezer_mock).

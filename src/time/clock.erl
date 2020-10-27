@@ -44,11 +44,14 @@
 
 -include("logging.hrl").
 
+-type hours() :: integer().
 -type seconds() :: integer().
 -type millis() :: integer().
 -type micros() :: integer().
 -type nanos() :: integer().
--export_type([seconds/0, millis/0, micros/0, nanos/0]).
+-export_type([hours/0, seconds/0, millis/0, micros/0, nanos/0]).
+
+-type fetch_remote_timestamp() :: fun(() -> {ok, millis()} | {error, term()}).
 
 % difference between readings of two clocks, expressed in given unit
 -type bias(Unit) :: Unit.
@@ -72,7 +75,7 @@
 -export([store_bias_millis/2]).
 -export([read_clock_time/2]).
 
-%% The clocks bias is cached using a application env and defaults to 0 unless a
+%% The clocks bias is stored in a node-wide cache and defaults to 0 unless a
 %% synchronization is done. It is expressed in nanoseconds to simplify the
 %% adjustment process when taking timestamps (they are always taken in
 %% nanoseconds and then converted to a bigger unit). However, the bias is
@@ -111,7 +114,7 @@ timestamp_nanos() ->
     ?MODULE:read_clock_time(local_clock, nanos).
 
 
--spec synchronize_local_with_remote_server(fun(() -> millis())) -> ok | error.
+-spec synchronize_local_with_remote_server(fetch_remote_timestamp()) -> ok | error.
 synchronize_local_with_remote_server(FetchRemoteTimestamp) ->
     try
         % use system_clock as reference, as it will be adjusted by measured bias
@@ -124,9 +127,13 @@ synchronize_local_with_remote_server(FetchRemoteTimestamp) ->
                 ]),
                 error
         end
-    catch Class:Reason ->
-        ?error_stacktrace("Failed to synchronize with remote clock - ~w:~p", [Class, Reason]),
-        error
+    catch
+        throw:{error, _} = Error ->
+            ?error("Failed to synchronize with remote clock due to ~w", [Error]),
+            error;
+        Class:Reason ->
+            ?error_stacktrace("Failed to synchronize with remote clock - ~w:~p", [Class, Reason]),
+            error
     end.
 
 
@@ -135,8 +142,8 @@ synchronize_remote_with_local(Node) ->
     try
         FetchRemoteTimestamp = fun() ->
             case rpc:call(Node, ?MODULE, read_clock_time, [system_clock, millis]) of
-                I when is_integer(I) -> I;
-                {badrpc, nodedown} -> throw(nodedown)
+                Timestamp when is_integer(Timestamp) -> {ok, Timestamp};
+                {badrpc, Reason} -> throw({error, {badrpc, Reason}})
             end
         end,
         % use local_clock as reference to adjust the remote clock (remote node's local_clock)
@@ -150,8 +157,8 @@ synchronize_remote_with_local(Node) ->
                 error
         end
     catch
-        throw:nodedown ->
-            ?error("Failed to synchronize node's clock (~p) with local - the node is down", [Node]),
+        throw:{error, _} = Error ->
+            ?error("Failed to synchronize node's clock (~p) with local due to ~w", [Node, Error]),
             error;
         Class:Reason ->
             ?error_stacktrace("Failed to synchronize node's clock (~p) with local - ~w:~p", [Node, Class, Reason]),
@@ -214,11 +221,15 @@ read_clock_time(local_clock, nanos) ->
 
 
 %% @private
--spec estimate_bias_and_delay(fun(() -> millis()), clock()) -> {delay_ok | delay_too_high, bias(millis()), delay()}.
+-spec estimate_bias_and_delay(fetch_remote_timestamp(), clock()) ->
+    {delay_ok | delay_too_high, bias(millis()), delay()} | no_return().
 estimate_bias_and_delay(FetchRemoteTimestamp, ReferenceClock) ->
     {BiasSum, DelaySum} = lists:foldl(fun(_, {BiasAcc, DelayAcc}) ->
         Before = ?MODULE:read_clock_time(ReferenceClock, millis),
-        RemoteTimestamp = FetchRemoteTimestamp(),
+        RemoteTimestamp = case FetchRemoteTimestamp() of
+            {ok, Timestamp} -> Timestamp;
+            {error, _} = Error -> throw(Error)
+        end,
         After = ?MODULE:read_clock_time(ReferenceClock, millis),
         EstimatedMeasurementMoment = (Before + After) div 2,
         Bias = RemoteTimestamp - EstimatedMeasurementMoment,

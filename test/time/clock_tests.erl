@@ -37,6 +37,7 @@ local_clock_sync_test_() ->
         fun teardown/1,
         [
             {"successful", fun successful_synchronize_local_clock_with_remote/0},
+            {"error result", fun error_result_synchronize_local_clock_with_remote/0},
             {"crashed", fun crashed_synchronize_local_clock_with_remote/0},
             {"timed out", fun timed_out_synchronize_local_clock_with_remote/0},
             {"delay ok", fun delay_ok_synchronize_local_clock_with_remote/0},
@@ -51,10 +52,15 @@ successful_synchronize_local_clock_with_remote() ->
     ?assertNot(clock:is_synchronized()),
 
     ?assertEqual(ok, clock:synchronize_local_with_remote_server(gen_delayed_timestamp_callback(
-        rand:uniform(90), fun() -> ?REMOTE_SYSTEM_TIMESTAMP() end)
+        rand:uniform(90),
+        fun() -> {ok, ?REMOTE_SYSTEM_TIMESTAMP()} end)
     )),
     ?assert(are_clocks_in_sync(local_clock, remote_system_clock)),
     ?assert(clock:is_synchronized()).
+
+
+error_result_synchronize_local_clock_with_remote() ->
+    assert_local_clock_time_does_not_change_upon_sync_fail(fun() -> {error, failed} end).
 
 
 crashed_synchronize_local_clock_with_remote() ->
@@ -64,7 +70,7 @@ crashed_synchronize_local_clock_with_remote() ->
 timed_out_synchronize_local_clock_with_remote() ->
     assert_local_clock_time_does_not_change_upon_sync_fail(gen_delayed_timestamp_callback(
         ?TEST_MAX_ALLOWED_SYNC_DELAY_MILLIS + 3 + rand:uniform(65),
-        fun() -> ?REMOTE_SYSTEM_TIMESTAMP() end
+        fun() -> {ok, ?REMOTE_SYSTEM_TIMESTAMP()} end
     )).
 
 
@@ -72,11 +78,11 @@ delay_ok_synchronize_local_clock_with_remote() ->
     % if the delay is higher than ?SATISFYING_SYNC_DELAY_MILLIS, but lower than half the bias, it is accepted
     ?assertEqual(ok, clock:synchronize_local_with_remote_server(gen_delayed_timestamp_callback(
         110 + rand:uniform(20),
-        fun() -> -300 + ?LOCAL_SYSTEM_TIMESTAMP() end
+        fun() -> {ok, -300 + ?LOCAL_SYSTEM_TIMESTAMP()} end
     ))),
     ?assertEqual(ok, clock:synchronize_local_with_remote_server(gen_delayed_timestamp_callback(
         110 + rand:uniform(20),
-        fun() -> 300 + ?LOCAL_SYSTEM_TIMESTAMP() end
+        fun() -> {ok, 300 + ?LOCAL_SYSTEM_TIMESTAMP()} end
     ))).
 
 
@@ -85,7 +91,7 @@ delay_too_high_synchronize_local_clock_with_remote() ->
     % deemed to high - in this case delay is ~110-130ms, while the bias is ~200ms
     assert_local_clock_time_does_not_change_upon_sync_fail(gen_delayed_timestamp_callback(
         110 + rand:uniform(20),
-        fun() -> -200 + ?LOCAL_SYSTEM_TIMESTAMP() end
+        fun() -> {ok, -200 + ?LOCAL_SYSTEM_TIMESTAMP()} end
     )).
 
 
@@ -94,16 +100,18 @@ failed_synchronize_local_clock_with_remote_does_not_change_previous_bias() ->
         ?assertEqual(ok, clock:synchronize_local_with_remote_server(fun() -> ?REMOTE_SYSTEM_TIMESTAMP() end)),
         ?assert(are_clocks_in_sync(local_clock, remote_system_clock)),
 
+        assert_local_clock_time_does_not_change_upon_sync_fail(fun() -> {error, bad_result} end),
+
         assert_local_clock_time_does_not_change_upon_sync_fail(fun crash_with_random_reason/0),
 
         assert_local_clock_time_does_not_change_upon_sync_fail(gen_delayed_timestamp_callback(
             ?TEST_MAX_ALLOWED_SYNC_DELAY_MILLIS + 5 + rand:uniform(15),  % timeout
-            fun() -> -1500 + ?LOCAL_SYSTEM_TIMESTAMP() end
+            fun() -> {ok, -1500 + ?LOCAL_SYSTEM_TIMESTAMP()} end
         )),
 
         assert_local_clock_time_does_not_change_upon_sync_fail(gen_delayed_timestamp_callback(
             1000,  % delay > bias/2
-            fun() -> -1500 + ?LOCAL_SYSTEM_TIMESTAMP() end
+            fun() -> {ok, -1500 + ?LOCAL_SYSTEM_TIMESTAMP()} end
         ))
     end}.
 
@@ -202,7 +210,6 @@ failed_synchronize_node_clock_with_local_does_not_change_previous_bias() ->
     ?assertEqual(ok, clock:synchronize_remote_with_local(?DUMMY_REMOTE_NODE)),
     ?assert(are_clocks_in_sync(remote_clock, local_clock)),
 
-    % check that failed synchronizations does not change the remote clock
     assert_remote_clock_time_does_not_change_upon_sync_fail(fun crash_with_random_reason/0),
 
     assert_remote_clock_time_does_not_change_upon_sync_fail(fun() -> {badrpc, nodedown} end),
@@ -253,7 +260,7 @@ time_sync_backup_test_() ->
 
 
 reset_and_restore() ->
-    ?assertEqual(ok, clock:synchronize_local_with_remote_server(fun() -> ?REMOTE_SYSTEM_TIMESTAMP() end)),
+    ?assertEqual(ok, clock:synchronize_local_with_remote_server(fun() -> {ok, ?REMOTE_SYSTEM_TIMESTAMP()} end)),
 
     clock:reset_to_system_time(),
     ?assert(are_clocks_in_sync(local_clock, local_system_clock)),
