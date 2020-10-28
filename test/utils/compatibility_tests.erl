@@ -68,7 +68,7 @@ setup() ->
     meck:expect(time_utils, timestamp_seconds, fun get_mocked_time_seconds/0),
     meck:expect(time_utils, timestamp_millis, fun get_mocked_time_millis/0),
     meck:new(node_cache, [passthrough]),
-    meck:expect(node_cache, now, fun get_mocked_time_millis/0),
+    meck:expect(node_cache, now, fun get_mocked_time_seconds/0),
 
     ok.
 

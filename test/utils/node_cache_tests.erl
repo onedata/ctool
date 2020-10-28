@@ -79,10 +79,15 @@ clear(Key) ->
     ?assertError({badkey, Key}, node_cache:get(Key)).
     
 acquire_with_put_ttl(Key) ->
-    ?assertEqual({ok, ?VALUE}, node_cache:acquire(Key, ?FUN_TRUE(?TTL))),
+    % check value from AcquireCallback
+    ?assertEqual({ok, ?VALUE}, node_cache:acquire(Key, ?FUN_TRUE(?TTL))), 
+    % check value from cache
     ?assertEqual(?VALUE, node_cache:get(Key)),
+    ?assertEqual({ok, ?VALUE}, node_cache:acquire(Key, ?FUN_TRUE(?TTL))), 
+    
     simulate_time_passing(?TTL),
-    ?assertError({badkey, Key}, node_cache:get(Key)).
+    ?assertError({badkey, Key}, node_cache:get(Key)),
+    ?assertEqual({ok, ?VALUE}, node_cache:acquire(Key, ?FUN_TRUE(?TTL))).
 
 acquire_with_put_infinity(Key) ->
     ?assertEqual({ok, ?VALUE}, node_cache:acquire(Key, ?FUN_TRUE(infinity))),

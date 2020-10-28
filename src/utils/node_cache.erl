@@ -47,13 +47,18 @@
 %%--------------------------------------------------------------------
 -spec init() -> ok.
 init() ->
-    node_cache = ets:new(node_cache, [set, public, named_table, {read_concurrency, true}]),
+    node_cache = ets:new(
+        node_cache, 
+        [set, public, named_table, {read_concurrency, true}]
+    ),
     ok.
+
 
 -spec destroy() -> ok.
 destroy() ->
     true = ets:delete(node_cache),
     ok.
+
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -62,12 +67,11 @@ destroy() ->
 %%--------------------------------------------------------------------
 -spec get(key()) -> value() | no_return().
 get(Key) ->
-    check_validity(Key, 
-        case ets:lookup(?MODULE, Key) of
-            [{Key, Value}] -> {ok, Value};
-            [] -> ?ERROR_NOT_FOUND
-        end
-    ).
+    case do_get(Key) of
+        {ok, Value} -> Value;
+        ?ERROR_NOT_FOUND -> error({badkey, Key})
+    end.
+
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -77,12 +81,10 @@ get(Key) ->
 %%--------------------------------------------------------------------
 -spec get(key(), Default) -> value() | Default.
 get(Key, Default) ->
-    check_validity(Key,
-        case ets:lookup(?MODULE, Key) of
-            [{Key, Value}] -> {ok, Value};
-            [] -> {ok, {Default, infinity}}
-        end
-    ).
+    case do_get(Key) of
+        {ok, Value} -> Value;
+        ?ERROR_NOT_FOUND -> Default
+    end.
 
 
 %%--------------------------------------------------------------------
@@ -98,18 +100,19 @@ get(Key, Default) ->
 %%--------------------------------------------------------------------
 -spec acquire(key(), acquire_callback()) -> {ok, value()} | {error, term()}.
 acquire(Key, AcquireCallback) when is_function(AcquireCallback, 0) ->
-    case get(Key, ?ERROR_NOT_FOUND) of
+    case do_get(Key) of
         ?ERROR_NOT_FOUND ->
             case AcquireCallback() of
                 {ok, Value, TTL} ->
-                    put(Key, Value, TTL, new),
+                    put(Key, Value, TTL),
                     {ok, Value};
                 {error, _} = Error ->
                     Error
             end;
-        Value ->
+        {ok, Value} ->
             {ok, Value}
     end.
+
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -120,29 +123,18 @@ acquire(Key, AcquireCallback) when is_function(AcquireCallback, 0) ->
 put(Key, Value) ->
     put(Key, Value, infinity).
 
-%%--------------------------------------------------------------------
-%% @doc
-%% @equiv put(Name, Value, infinity, replace).
-%% @end
-%%--------------------------------------------------------------------
--spec put(key(), value(), ttl()) -> ok.
-put(Key, Value, TTL) ->
-    put(Key, Value, TTL, replace).
 
 %%--------------------------------------------------------------------
 %% @doc
 %% Stores value in cache for given time in milliseconds or infinitely.
-%% Distinction for new and replace is introduced only to appease dialyzer 
-%% which does not allow for calling ets:insert directly after ets:lookup.
 %% @end
-%%--------------------------------------------------------------------
--spec put(key(), value(), ttl(), new | replace) -> ok.
-put(Key, Value, TTL, Mode) ->
+-spec put(key(), value(), ttl()) -> ok.
+put(Key, Value, TTL) ->
     ValidUntil = case TTL of
         infinity -> infinity;
         _ -> ?NOW() + TTL
     end,
-    do_put(Key, {Value, ValidUntil}, Mode), 
+    true = ets:insert(?MODULE, {Key, {Value, ValidUntil}}),
     ok.
 
 
@@ -155,37 +147,33 @@ clear(Key) ->
 %%% Internal functions
 %%%===================================================================
 
-%%--------------------------------------------------------------------
 %% @private
-%% @doc
-%% Inserts given value to ets.
-%% Distinction for new and replace is introduced only to appease dialyzer 
-%% which does not allow for calling ets:insert directly after ets:lookup.
-%% @end
-%%--------------------------------------------------------------------
--spec do_put(key(), {value(), ttl()}, new | replace) -> boolean().
-do_put(Key, Value, new) ->
-    ets:insert_new(?MODULE, {Key, Value});
-do_put(Key, Value, _) ->
-    true == ets:insert(?MODULE, {Key, Value}).
+-spec do_get(key()) -> {ok, {value(), ttl()}} | ?ERROR_NOT_FOUND.
+do_get(Key) ->
+    check_validity(
+        case ets:lookup(?MODULE, Key) of
+            [{Key, Value}] -> {ok, Value};
+            [] -> ?ERROR_NOT_FOUND
+        end
+    ).
+
 
 %%--------------------------------------------------------------------
 %% @private
 %% @doc
-%% Returns cached value if given entry is valid (has not expired).
 %% @end
 %%--------------------------------------------------------------------
--spec check_validity(key(), {ok, {value(), ttl()}} | ?ERROR_NOT_FOUND) -> 
-    value() | no_return(). 
-check_validity(_Key, {ok, {Value, infinity}}) ->
-    Value;
-check_validity(Key, {ok, {Value, ValidUntil}}) ->
+-spec check_validity({ok, {value(), ttl()}} | ?ERROR_NOT_FOUND) -> 
+    {ok, value()} | ?ERROR_NOT_FOUND. 
+check_validity({ok, {Value, infinity}}) ->
+    {ok, Value};
+check_validity({ok, {Value, ValidUntil}}) ->
     case ValidUntil > ?NOW() of
-        true -> Value;
-        false -> error({badkey, Key})
+        true -> {ok, Value};
+        false -> ?ERROR_NOT_FOUND
     end;
-check_validity(Key, _) ->
-    error({badkey, Key}).
+check_validity(_) ->
+    ?ERROR_NOT_FOUND.
 
 
 %% @private
