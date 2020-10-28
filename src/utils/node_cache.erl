@@ -77,11 +77,12 @@ get(Key) ->
 %%--------------------------------------------------------------------
 -spec get(key(), Default) -> value() | Default.
 get(Key, Default) ->
-    try 
-        get(Key)
-    catch error:{badkey, Key} ->
-        Default
-    end.
+    check_validity(Key,
+        case ets:lookup(?MODULE, Key) of
+            [{Key, Value}] -> {ok, Value};
+            [] -> {ok, {Default, infinity}}
+        end
+    ).
 
 
 %%--------------------------------------------------------------------
