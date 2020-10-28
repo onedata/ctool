@@ -84,6 +84,7 @@
 -define(CLOCK_BIAS_CACHE_NANOS, clock_bias_nanos).
 
 -define(SYNC_REQUEST_REPEATS, ctool:get_env(clock_sync_request_repeats, 5)).
+% see examine_delay/2 for information how these env variables are used
 -define(SATISFYING_SYNC_DELAY_MILLIS, ctool:get_env(clock_sync_satisfying_delay, 2000)).
 -define(MAX_ALLOWED_SYNC_DELAY_MILLIS, ctool:get_env(clock_sync_max_allowed_delay, 10000)).
 
@@ -197,10 +198,10 @@ try_to_restore_previous_synchronization() ->
             store_bias_millis_in_cache(BiasMillis),
             true;
         stale ->
-            ?info("Discarded a stale time synchronization backup"),
+            ?info("Discarded a stale time synchronization backup - defaulting to the system clock"),
             false;
         not_found ->
-            ?info("Time synchronization backup not found - skipping restoration"),
+            ?info("Time synchronization backup not found - defaulting to the system clock"),
             false
     end.
 
@@ -240,13 +241,22 @@ estimate_bias_and_delay(FetchRemoteTimestamp, ReferenceClock) ->
     {examine_delay(AvgDelay, AvgBias), AvgBias, AvgDelay}.
 
 
+
+%%--------------------------------------------------------------------
 %% @private
+%% @doc
+%% Decides if given communication delay is acceptable. If the delay is lower
+%% or equal to ?SATISFYING_SYNC_DELAY_MILLIS, it is always accepted. Otherwise,
+%% it can be accepted if lower than half the bias, but not higher than
+%% ?MAX_ALLOWED_SYNC_DELAY_MILLIS.
+%% @end
+%%--------------------------------------------------------------------
 -spec examine_delay(delay(), bias(millis())) -> delay_ok | delay_too_high.
 examine_delay(Delay, Bias) ->
     SatisfyingDelay = ?SATISFYING_SYNC_DELAY_MILLIS,
     MaxAllowedDelay = ?MAX_ALLOWED_SYNC_DELAY_MILLIS,
     if
-        Delay < SatisfyingDelay -> delay_ok;
+        Delay =< SatisfyingDelay -> delay_ok;
         Delay > MaxAllowedDelay -> delay_too_high;
         Delay < abs(Bias) / 2 -> delay_ok;
         true -> delay_too_high
@@ -259,7 +269,11 @@ examine_delay(Delay, Bias) ->
 store_bias_millis({remote_clock, Node}, BiasMillis) ->
     ok = rpc:call(Node, ?MODULE, ?FUNCTION_NAME, [local_clock, BiasMillis]);
 store_bias_millis(local_clock, BiasMillis) ->
-    ?debug("Local clock has been synchronized, current bias: ~Bms", [BiasMillis]),
+    % log on info level upon the first synchronization
+    case is_synchronized() of
+        false -> ?info("Local clock has been synchronized, current bias: ~Bms", [BiasMillis]);
+        true -> ?debug("Local clock has been synchronized, current bias: ~Bms", [BiasMillis])
+    end,
     store_bias_millis_in_cache(BiasMillis),
     store_bias_millis_on_disk(BiasMillis).
 
