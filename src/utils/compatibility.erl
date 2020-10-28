@@ -335,7 +335,7 @@ get_registry(local) ->
                     {error, cannot_parse_registry} ->
                         {error, cannot_parse_registry};
                     {ok, Registry} ->
-                        {ok, Registry, timer:seconds(?REGISTRY_CACHE_TTL)}
+                        {ok, Registry, ?REGISTRY_CACHE_TTL}
                 end;
             Other ->
                 ?error("Cannot parse compatibility registry (~s) due to ~w", [
