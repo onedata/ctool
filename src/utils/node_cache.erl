@@ -161,6 +161,7 @@ do_get(Key) ->
 %%--------------------------------------------------------------------
 %% @private
 %% @doc
+%% Returns cached value if given entry is valid (has not expired).
 %% @end
 %%--------------------------------------------------------------------
 -spec check_validity({ok, {value(), ttl()}} | ?ERROR_NOT_FOUND) -> 
