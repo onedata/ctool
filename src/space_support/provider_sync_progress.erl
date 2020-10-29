@@ -19,7 +19,7 @@
 % Denotes the database sequence - an increasing number that reflects the number
 % of changed documents in database since the beginning of space support.
 -type seq() :: non_neg_integer().
--type timestamp() :: time_utils:seconds().
+-type timestamp() :: clock:seconds().
 % Stores information about latest sequence currently known for given provider.
 % Each provider has its own sync progress stats, which allows checking if it is
 % up to date with other providers or falling behind.

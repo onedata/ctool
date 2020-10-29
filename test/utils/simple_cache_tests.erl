@@ -155,11 +155,11 @@ single_value_and_map() ->
     
     
 setup() ->
-    meck:new(time_utils, [non_strict]),
-    meck:expect(time_utils, timestamp_millis, fun timestamp_mock/0).
+    meck:new(clock, [non_strict]),
+    meck:expect(clock, timestamp_millis, fun timestamp_mock/0).
 
 teardown(_) ->
-    ?assert(meck:validate([time_utils])),
+    ?assert(meck:validate([clock])),
     meck:unload(),
     application:unset_env(?APP_NAME, key).
     
