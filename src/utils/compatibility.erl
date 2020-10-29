@@ -120,7 +120,7 @@
 -type unknown_version_error() :: {unknown_version, onedata:release_version(), {revision, revision()}}.
 
 -define(REGISTRY_PATH, ctool:get_env(compatibility_registry_path)).
--define(REGISTRY_CACHE_TTL, ctool:get_env(compatibility_registry_cache_ttl, 900)). % 15 minutes
+-define(REGISTRY_CACHE_TTL_SECONDS, ctool:get_env(compatibility_registry_cache_ttl_seconds, 900)). % 15 minutes
 -define(REGISTRY_MIRRORS, ctool:get_env(compatibility_registry_mirrors, [])).
 -define(DEFAULT_REGISTRY, ctool:get_env(default_compatibility_registry)).
 -define(NOW(), time_utils:timestamp_seconds()).
@@ -311,10 +311,7 @@ get_entries(Section, Version, Strategy) ->
 %% @private
 -spec should_fetch_registry() -> boolean().
 should_fetch_registry() ->
-    case node_cache:get(compatibility_registry_fetch_backoff, undefined) of
-        undefined -> true;
-        BackoffUntil -> BackoffUntil < ?NOW()
-    end.
+    node_cache:get(compatibility_registry_fetch_backoff, 0) < ?NOW().
 
 
 %% @private

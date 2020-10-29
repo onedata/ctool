@@ -6,7 +6,8 @@
 %%% @end
 %%%-------------------------------------------------------------------
 %%% @doc 
-%%% This module implements a node-wide cache based on ets.
+%%% This module implements a node-wide cache based on ets. 
+%%% Entries can be cached infinitely or with desired TTL
 %%% @end
 %%%-------------------------------------------------------------------
 -module(node_cache).
@@ -41,14 +42,14 @@
 %%--------------------------------------------------------------------
 %% @doc
 %% Must be called before cache can be used. Should be done in a 
-%% long-living process(like application supervisor). Cache will 
+%% long-living process (like application supervisor). Cache will 
 %% be destroyed automatically when calling process dies.
 %% @end
 %%--------------------------------------------------------------------
 -spec init() -> ok.
 init() ->
-    node_cache = ets:new(
-        node_cache, 
+    ?MODULE = ets:new(
+        ?MODULE, 
         [set, public, named_table, {read_concurrency, true}]
     ),
     ok.
@@ -56,42 +57,31 @@ init() ->
 
 -spec destroy() -> ok.
 destroy() ->
-    true = ets:delete(node_cache),
+    true = ets:delete(?MODULE),
     ok.
 
 
-%%--------------------------------------------------------------------
-%% @doc
-%% If cache exists and is not expired returns cached value.
-%% @end
-%%--------------------------------------------------------------------
 -spec get(key()) -> value() | no_return().
 get(Key) ->
-    case do_get(Key) of
-        {ok, Value} -> Value;
-        ?ERROR_NOT_FOUND -> error({badkey, Key})
+    case lookup_in_cache(Key) of
+        {true, Value} -> Value;
+        false -> error({badkey, Key})
     end.
 
 
-%%--------------------------------------------------------------------
-%% @doc
-%% If cache exists and is not expired returns cached value otherwise 
-%% returns provided default value.
-%% @end
-%%--------------------------------------------------------------------
 -spec get(key(), Default) -> value() | Default.
 get(Key, Default) ->
-    case do_get(Key) of
-        {ok, Value} -> Value;
-        ?ERROR_NOT_FOUND -> Default
+    case lookup_in_cache(Key) of
+        {true, Value} -> Value;
+        false -> Default
     end.
 
 
 %%--------------------------------------------------------------------
 %% @doc
-%% If cache exists and is not expired returns cached value. 
-%% Otherwise AcquireCallback is executed and returned value 
-%% is cached for provided time (unless error was returned).
+%% If there is a still valid, cached value for given key, it is 
+%% returned. Otherwise AcquireCallback is executed and returned
+%% value is cached for provided time (unless error was returned).
 %% 
 %% NOTE: This function is NOT atomic so calling it in parallel 
 %% might result in multiple AcquireCallback executions.
@@ -100,8 +90,8 @@ get(Key, Default) ->
 %%--------------------------------------------------------------------
 -spec acquire(key(), acquire_callback()) -> {ok, value()} | {error, term()}.
 acquire(Key, AcquireCallback) when is_function(AcquireCallback, 0) ->
-    case do_get(Key) of
-        ?ERROR_NOT_FOUND ->
+    case lookup_in_cache(Key) of
+        false ->
             case AcquireCallback() of
                 {ok, Value, TTL} ->
                     put(Key, Value, TTL),
@@ -109,25 +99,16 @@ acquire(Key, AcquireCallback) when is_function(AcquireCallback, 0) ->
                 {error, _} = Error ->
                     Error
             end;
-        {ok, Value} ->
+        {true, Value} ->
             {ok, Value}
     end.
 
 
-%%--------------------------------------------------------------------
-%% @doc
-%% @equiv put(Name, Value, infinity).
-%% @end
-%%--------------------------------------------------------------------
 -spec put(key(), value()) -> ok.
 put(Key, Value) ->
     put(Key, Value, infinity).
 
 
-%%--------------------------------------------------------------------
-%% @doc
-%% Stores value in cache for given time in milliseconds or infinitely.
-%% @end
 -spec put(key(), value(), ttl()) -> ok.
 put(Key, Value, TTL) ->
     ValidUntil = case TTL of
@@ -148,37 +129,28 @@ clear(Key) ->
 %%%===================================================================
 
 %% @private
--spec do_get(key()) -> {ok, value()} | ?ERROR_NOT_FOUND.
-do_get(Key) ->
-    check_validity(
-        case ets:lookup(?MODULE, Key) of
-            [{Key, ValueAndTtl}] -> {ok, ValueAndTtl};
-            [] -> ?ERROR_NOT_FOUND
-        end
-    ).
+-spec lookup_in_cache(key()) -> {true, value()} | false.
+lookup_in_cache(Key) ->
+    case ets:lookup(?MODULE, Key) of
+        [{Key, ValueAndValidUntil}] -> check_validity(ValueAndValidUntil);
+        [] -> false
+    end.
 
 
-%%--------------------------------------------------------------------
 %% @private
-%% @doc
-%% Returns cached value if given entry is valid (has not expired).
-%% @end
-%%--------------------------------------------------------------------
--spec check_validity({ok, {value(), ttl()}} | ?ERROR_NOT_FOUND) -> 
-    {ok, value()} | ?ERROR_NOT_FOUND. 
-check_validity({ok, {Value, infinity}}) ->
-    {ok, Value};
-check_validity({ok, {Value, ValidUntil}}) ->
+-spec check_validity({value(), ttl()}) -> 
+    {true, value()} | false. 
+check_validity({Value, infinity}) ->
+    {true, Value};
+check_validity({Value, ValidUntil}) ->
     case ValidUntil > ?NOW() of
-        true -> {ok, Value};
-        false -> ?ERROR_NOT_FOUND
-    end;
-check_validity(_) ->
-    ?ERROR_NOT_FOUND.
+        true -> {true, Value};
+        false -> false
+    end.
 
 
 %% @private
 %% Exported for eunit tests and called by ?MODULE
--spec now() -> time_utils:millis().
+-spec now() -> time_utils:seconds().
 now() ->
     erlang:system_time(second).

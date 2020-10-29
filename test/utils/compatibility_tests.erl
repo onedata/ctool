@@ -56,7 +56,7 @@ setup() ->
     DefaultRegistryPath = filename:join(TmpPath, "compatibility.default.json"),
     ctool:set_env(compatibility_registry_path, RegistryPath),
     ctool:set_env(default_compatibility_registry, DefaultRegistryPath),
-    ctool:set_env(compatibility_registry_cache_ttl, 900),
+    ctool:set_env(compatibility_registry_cache_ttl_seconds, 900),
     compatibility:clear_registry_cache(),
     mock_compatibility_file(#{<<"revision">> => 2019010100}),
     mock_default_compatibility_file(#{<<"revision">> => 2019010100}),
@@ -111,7 +111,7 @@ get_compatibility_file() ->
     ok.
 mock_mirror_result(Url, Result) ->
     node_cache:put({mocked_mirror, Url}, Result),
-    {ok, Mirrors} = node_cache:acquire(mocked_mirrors, fun() -> {ok, [], 0} end),
+    Mirrors = node_cache:get(mocked_mirrors, []),
     node_cache:put(mocked_mirrors, [Url | Mirrors]).
 
 
@@ -120,9 +120,7 @@ mock_mirror_list(Mirrors) ->
 
 
 get_mocked_mirror_result(Url) ->
-    {ok, Result} = node_cache:acquire({mocked_mirror, Url}, fun() ->
-        {ok, {error, nxdomain}, 0}
-    end),
+    Result = node_cache:get({mocked_mirror, Url}, {error, nxdomain}),
     case Result of
         {ok, Code, JsonMap} when is_map(JsonMap) ->
             {ok, Code, #{}, json_utils:encode(JsonMap)};
@@ -135,7 +133,7 @@ get_mocked_mirror_result(Url) ->
 
 clear_mocked_mirrors() ->
     mock_mirror_list([]),
-    {ok, Mirrors} = node_cache:acquire(mocked_mirrors, fun() -> {ok, [], 0} end),
+    Mirrors = node_cache:get(mocked_mirrors, []),
     [node_cache:clear({mocked_mirror, M}) || M <- Mirrors].
 
 
@@ -413,7 +411,7 @@ caching_local_registry_content() ->
 
     % The file contents should be cached for configured time
     mock_compatibility_file(Newer),
-    CacheTTL = ctool:get_env(compatibility_registry_cache_ttl),
+    CacheTTL = ctool:get_env(compatibility_registry_cache_ttl_seconds),
     simulate_time_passing(CacheTTL - 1),
     % The cache is still valid
     ?assertEqual({false, [<<"18.02.1">>]}, ?OZvsOP(<<"18.02.1">>, <<"18.02.2">>)),
@@ -628,7 +626,7 @@ fetching_newer_registry() ->
             }
         }
     }}),
-    CacheTTL = ctool:get_env(compatibility_registry_cache_ttl),
+    CacheTTL = ctool:get_env(compatibility_registry_cache_ttl_seconds),
     simulate_time_passing(CacheTTL - 1),
     % The cache is still valid
     ?assertEqual({false, [<<"18.02.1">>, <<"18.02.2">>]}, ?OZvsOP(<<"18.02.1">>, <<"18.02.3">>)),

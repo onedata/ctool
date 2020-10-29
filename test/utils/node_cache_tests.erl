@@ -16,7 +16,8 @@
 
 -define(VALUE, value).
 -define(TTL, 8).
--define(FUN_TRUE(TTL), fun() -> {ok, ?VALUE, TTL} end).
+-define(ACQUIRE_CALLBACK_OK(TTL), fun() -> {ok, ?VALUE, TTL} end).
+-define(ACQUIRE_CALLBACK_ERROR(), fun() -> {error, reason} end).
 -define(KEYS, [
     atom_key,
     23467234,
@@ -36,20 +37,17 @@
     {"get_default", fun get_default/1},
     {"clear", fun clear/1},
     {"acquire_with_put_ttl", fun acquire_with_put_ttl/1},
-    {"acquire_with_put_infinity", fun acquire_with_put_infinity/1}
+    {"acquire_with_put_infinity", fun acquire_with_put_infinity/1},
+    {"acquire_with_error", fun acquire_with_error/1}
 ]).
 
 node_cache_test_() ->
     {foreach,
         fun setup/0,
         fun teardown/1,
-        lists:flatten(
-            lists:map(fun({TestDescription, Fun}) ->
-                lists:map(fun(Key) ->
-                    {TestDescription, fun() -> Fun(Key) end}
-                end, ?KEYS)
-            end, ?TEST_CASES)
-        )
+        lists:flatmap(fun({TestDescription, Fun}) ->
+            [{TestDescription, fun() -> Fun(Key) end} || Key <- ?KEYS]
+        end, ?TEST_CASES)
     }.
 
 put_with_ttl(Key) ->
@@ -79,21 +77,23 @@ clear(Key) ->
     ?assertError({badkey, Key}, node_cache:get(Key)).
     
 acquire_with_put_ttl(Key) ->
-    % check value from AcquireCallback
-    ?assertEqual({ok, ?VALUE}, node_cache:acquire(Key, ?FUN_TRUE(?TTL))), 
-    % check value from cache
+    ?assertEqual({ok, ?VALUE}, node_cache:acquire(Key, ?ACQUIRE_CALLBACK_OK(?TTL))), 
     ?assertEqual(?VALUE, node_cache:get(Key)),
-    ?assertEqual({ok, ?VALUE}, node_cache:acquire(Key, ?FUN_TRUE(?TTL))), 
+    ?assertEqual({ok, ?VALUE}, node_cache:acquire(Key, ?ACQUIRE_CALLBACK_OK(?TTL))), 
     
     simulate_time_passing(?TTL),
     ?assertError({badkey, Key}, node_cache:get(Key)),
-    ?assertEqual({ok, ?VALUE}, node_cache:acquire(Key, ?FUN_TRUE(?TTL))).
+    ?assertEqual({ok, ?VALUE}, node_cache:acquire(Key, ?ACQUIRE_CALLBACK_OK(?TTL))).
 
 acquire_with_put_infinity(Key) ->
-    ?assertEqual({ok, ?VALUE}, node_cache:acquire(Key, ?FUN_TRUE(infinity))),
+    ?assertEqual({ok, ?VALUE}, node_cache:acquire(Key, ?ACQUIRE_CALLBACK_OK(infinity))),
     ?assertEqual(?VALUE, node_cache:get(Key)),
     simulate_time_passing(?TTL),
     ?assertEqual(?VALUE, node_cache:get(Key)).
+
+acquire_with_error(Key) ->
+    ?assertEqual({error, reason}, node_cache:acquire(Key, ?ACQUIRE_CALLBACK_ERROR())),
+    ?assertError({badkey, Key}, node_cache:get(Key)).
 
 
 %%%===================================================================

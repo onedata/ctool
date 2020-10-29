@@ -26,9 +26,9 @@
 -type last_refresh_attempt() :: non_neg_integer().
 
 % How often a DB validity check is performed
--define(VALIDITY_CHECK_INTERVAL, 3600000). % 1 hour
+-define(VALIDITY_CHECK_INTERVAL_SEC, 3600). % 1 hour
 % How often a DB load attempt is retried upon failure
--define(LOAD_ATTEMPT_BACKOFF, 300). % 5 minutes
+-define(LOAD_ATTEMPT_BACKOFF_SEC, 300). % 5 minutes
 % Critical section (per node and db type) to avoid race conditions when
 % reading / refreshing the database.
 -define(CRITICAL_SECTION(DbType, Fun), global:trans({{geo_db, DbType, node()}, self()}, Fun)).
@@ -74,19 +74,19 @@ ensure_db_loaded(DbType) ->
         ?CRITICAL_SECTION(DbType, fun() ->
             try ensure_db_loaded_unsafe(DbType) of
                 ok ->
-                    {ok, loaded, ?VALIDITY_CHECK_INTERVAL};
+                    {ok, loaded, ?VALIDITY_CHECK_INTERVAL_SEC};
                 {error, _} = Error ->
                     ?error(
                         "GEO DB could not be loaded due to ~w, next attempt in ~B seconds",
-                        [Error, ?LOAD_ATTEMPT_BACKOFF]
+                        [Error, ?LOAD_ATTEMPT_BACKOFF_SEC]
                     ),
-                    {ok, not_loaded, ?LOAD_ATTEMPT_BACKOFF}
+                    {ok, not_loaded, ?LOAD_ATTEMPT_BACKOFF_SEC}
             catch Type:Reason ->
                 ?error_stacktrace(
                     "Unexpected error when loading GEO DB (~p) - ~p:~p, next attempt in ~B seconds",
-                    [DbType, Type, Reason, ?LOAD_ATTEMPT_BACKOFF]
+                    [DbType, Type, Reason, ?LOAD_ATTEMPT_BACKOFF_SEC]
                 ),
-                {ok, not_loaded, ?LOAD_ATTEMPT_BACKOFF}
+                {ok, not_loaded, ?LOAD_ATTEMPT_BACKOFF_SEC}
             end
         end)
     end,
