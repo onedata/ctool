@@ -51,6 +51,8 @@ compatibility_verification_test_() ->
 
 setup() ->
     node_cache:init(),
+    clock_freezer_mock:setup(),
+
     TmpPath = mochitemp:mkdtemp(),
     RegistryPath = filename:join(TmpPath, "compatibility.json"),
     DefaultRegistryPath = filename:join(TmpPath, "compatibility.default.json"),
@@ -64,23 +66,20 @@ setup() ->
     meck:new(http_client, [passthrough]),
     meck:expect(http_client, get, fun get_mocked_mirror_result/1),
 
-    meck:new(time_utils, [passthrough]),
-    meck:expect(time_utils, timestamp_seconds, fun get_mocked_time_seconds/0),
-    meck:expect(time_utils, timestamp_millis, fun get_mocked_time_millis/0),
     meck:new(node_cache, [passthrough]),
-    meck:expect(node_cache, now, fun get_mocked_time_seconds/0),
+    meck:expect(node_cache, now, fun clock_freezer_mock:current_time_seconds/0),
 
     ok.
 
 teardown(_) ->
+    clock_freezer_mock:teardown(),
+
     RegistryPath = ctool:get_env(compatibility_registry_path),
     TmpPath = filename:dirname(RegistryPath),
     mochitemp:rmtempdir(TmpPath),
     clear_mocked_mirrors(),
     ?assert(meck:validate(http_client)),
     ok = meck:unload(http_client),
-    ?assert(meck:validate(time_utils)),
-    ok = meck:unload(time_utils),
     ?assert(meck:validate(node_cache)),
     ok = meck:unload(node_cache),
     node_cache:destroy().
@@ -137,19 +136,8 @@ clear_mocked_mirrors() ->
     [node_cache:clear({mocked_mirror, M}) || M <- Mirrors].
 
 
-get_mocked_time_seconds() ->
-    case get(mocked_time) of
-        undefined -> 1500000000; % starting timestamp
-        Val -> Val
-    end.
-
-
-get_mocked_time_millis() ->
-    timer:seconds(get_mocked_time_seconds()).
-
-
 simulate_time_passing(Seconds) ->
-    put(mocked_time, get_mocked_time_seconds() + Seconds).
+    clock_freezer_mock:simulate_time_passing(Seconds * 1000).
 
 %%%===================================================================
 %%% Test functions

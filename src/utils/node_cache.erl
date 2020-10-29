@@ -23,7 +23,7 @@
 
 -type key() :: term().
 -type value() :: term().
--type ttl() :: time_utils:seconds() | infinity.
+-type ttl() :: clock:seconds() | infinity.
 
 %% function called by acquire/2 when there is no valid value in cache
 -type acquire_callback() :: fun(() ->
@@ -151,6 +151,6 @@ check_validity({Value, ValidUntil}) ->
 
 %% @private
 %% Exported for eunit tests and called by ?MODULE
--spec now() -> time_utils:seconds().
+-spec now() -> clock:seconds().
 now() ->
     erlang:system_time(second).

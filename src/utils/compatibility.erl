@@ -123,7 +123,7 @@
 -define(REGISTRY_CACHE_TTL_SECONDS, ctool:get_env(compatibility_registry_cache_ttl_seconds, 900)). % 15 minutes
 -define(REGISTRY_MIRRORS, ctool:get_env(compatibility_registry_mirrors, [])).
 -define(DEFAULT_REGISTRY, ctool:get_env(default_compatibility_registry)).
--define(NOW(), time_utils:timestamp_seconds()).
+-define(NOW(), clock:timestamp_seconds()).
 
 -export([check_products_compatibility/4]).
 -export([get_compatible_versions/3]).
@@ -317,7 +317,7 @@ should_fetch_registry() ->
 %% @private
 -spec reset_fetch_backoff() -> ok.
 reset_fetch_backoff() ->
-    node_cache:put(compatibility_registry_fetch_backoff, ?NOW() + ?REGISTRY_CACHE_TTL).
+    node_cache:put(compatibility_registry_fetch_backoff, ?NOW() + ?REGISTRY_CACHE_TTL_SECONDS).
 
 
 %% @private
@@ -332,7 +332,7 @@ get_registry(local) ->
                     {error, cannot_parse_registry} ->
                         {error, cannot_parse_registry};
                     {ok, Registry} ->
-                        {ok, Registry, ?REGISTRY_CACHE_TTL}
+                        {ok, Registry, ?REGISTRY_CACHE_TTL_SECONDS}
                 end;
             Other ->
                 ?error("Cannot parse compatibility registry (~s) due to ~w", [
