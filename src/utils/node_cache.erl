@@ -148,11 +148,11 @@ clear(Key) ->
 %%%===================================================================
 
 %% @private
--spec do_get(key()) -> {ok, {value(), ttl()}} | ?ERROR_NOT_FOUND.
+-spec do_get(key()) -> {ok, value()} | ?ERROR_NOT_FOUND.
 do_get(Key) ->
     check_validity(
         case ets:lookup(?MODULE, Key) of
-            [{Key, Value}] -> {ok, Value};
+            [{Key, ValueAndTtl}] -> {ok, ValueAndTtl};
             [] -> ?ERROR_NOT_FOUND
         end
     ).
