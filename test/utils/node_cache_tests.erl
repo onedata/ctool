@@ -15,9 +15,10 @@
 -include_lib("eunit/include/eunit.hrl").
 
 -define(VALUE, value).
+-define(ERROR, {error, reason}).
 -define(TTL, 8).
 -define(ACQUIRE_CALLBACK_OK(TTL), fun() -> {ok, ?VALUE, TTL} end).
--define(ACQUIRE_CALLBACK_ERROR(), fun() -> {error, reason} end).
+-define(ACQUIRE_CALLBACK_ERROR(), fun() -> ?ERROR end).
 -define(KEYS, [
     atom_key,
     23467234,
@@ -92,7 +93,7 @@ acquire_with_put_infinity(Key) ->
     ?assertEqual(?VALUE, node_cache:get(Key)).
 
 acquire_with_error(Key) ->
-    ?assertEqual({error, reason}, node_cache:acquire(Key, ?ACQUIRE_CALLBACK_ERROR())),
+    ?assertEqual(?ERROR, node_cache:acquire(Key, ?ACQUIRE_CALLBACK_ERROR())),
     ?assertError({badkey, Key}, node_cache:get(Key)).
 
 

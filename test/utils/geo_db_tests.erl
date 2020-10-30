@@ -51,7 +51,6 @@ geo_db_test_() ->
 %%%===================================================================
 
 setup() ->
-    node_cache:init(),
     clock_freezer_mock:setup(),
 
     meck:new(locus),
@@ -137,7 +136,6 @@ setup() ->
 
 
 teardown(#{tmpDir := TmpDir}) ->
-    node_cache:destroy(),
     clock_freezer_mock:teardown(),
 
     ?assert(meck:validate(locus)),

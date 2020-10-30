@@ -340,16 +340,16 @@ simulate_time_passing(Millis) ->
 setup() ->
     node_cache:init(),
     clock:reset_to_system_time(),
-    node_cache:put(clock_sync_satisfying_delay, ?TEST_SATISFYING_SYNC_DELAY_MILLIS),
-    node_cache:put(clock_sync_max_allowed_delay, ?TEST_MAX_ALLOWED_SYNC_DELAY_MILLIS),
-    node_cache:put(clock_sync_backup_validity_secs, ?TEST_BIAS_BACKUP_VALIDITY_SECONDS),
+    ctool:set_env(clock_sync_satisfying_delay, ?TEST_SATISFYING_SYNC_DELAY_MILLIS),
+    ctool:set_env(clock_sync_max_allowed_delay, ?TEST_MAX_ALLOWED_SYNC_DELAY_MILLIS),
+    ctool:set_env(clock_sync_backup_validity_secs, ?TEST_BIAS_BACKUP_VALIDITY_SECONDS),
     unset_bias_nanos_at_remote_node(),
 
     freeze_system_time(),
 
     TmpPath = mochitemp:mkdtemp(),
     BackupFile = filename:join(TmpPath, "time_synchronization_data.json"),
-    node_cache:put(clock_sync_backup_file, BackupFile),
+    ctool:set_env(clock_sync_backup_file, BackupFile),
 
     meck:new(rpc, [unstick, passthrough]),
     meck:expect(rpc, call, fun
@@ -362,7 +362,7 @@ setup() ->
 
 %% @private
 teardown(_) ->
-    BackupFile = node_cache:get(clock_sync_backup_file),
+    BackupFile = ctool:get_env(clock_sync_backup_file),
     TmpPath = filename:dirname(BackupFile),
     mochitemp:rmtempdir(TmpPath),
 
@@ -406,7 +406,7 @@ is_clock_synchronized_on_remote_node() ->
 
 %% @private
 mock_existing_backup_file(Content) ->
-    ?assertEqual(ok, file:write_file(node_cache:get(clock_sync_backup_file), Content)).
+    ?assertEqual(ok, file:write_file(ctool:get_env(clock_sync_backup_file), Content)).
 
 
 %% @private

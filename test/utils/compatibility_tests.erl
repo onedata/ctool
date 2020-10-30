@@ -50,7 +50,6 @@ compatibility_verification_test_() ->
 %%%===================================================================
 
 setup() ->
-    node_cache:init(),
     clock_freezer_mock:setup(),
 
     TmpPath = mochitemp:mkdtemp(),
@@ -72,8 +71,6 @@ setup() ->
     ok.
 
 teardown(_) ->
-    clock_freezer_mock:teardown(),
-
     RegistryPath = ctool:get_env(compatibility_registry_path),
     TmpPath = filename:dirname(RegistryPath),
     mochitemp:rmtempdir(TmpPath),
@@ -82,7 +79,8 @@ teardown(_) ->
     ok = meck:unload(http_client),
     ?assert(meck:validate(node_cache)),
     ok = meck:unload(node_cache),
-    node_cache:destroy().
+    
+    clock_freezer_mock:teardown().
 
 
 mock_compatibility_file(JsonMap) when is_map(JsonMap) ->

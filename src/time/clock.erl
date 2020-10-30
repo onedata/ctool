@@ -83,13 +83,13 @@
 %% environments based on network communication.
 -define(CLOCK_BIAS_CACHE_NANOS, clock_bias_nanos).
 
--define(SYNC_REQUEST_REPEATS, node_cache:get(clock_sync_request_repeats, 5)).
+-define(SYNC_REQUEST_REPEATS, ctool:get_env(clock_sync_request_repeats, 5)).
 % see examine_delay/2 for information how these env variables are used
--define(SATISFYING_SYNC_DELAY_MILLIS, node_cache:get(clock_sync_satisfying_delay, 2000)).
--define(MAX_ALLOWED_SYNC_DELAY_MILLIS, node_cache:get(clock_sync_max_allowed_delay, 10000)).
+-define(SATISFYING_SYNC_DELAY_MILLIS, ctool:get_env(clock_sync_satisfying_delay, 2000)).
+-define(MAX_ALLOWED_SYNC_DELAY_MILLIS, ctool:get_env(clock_sync_max_allowed_delay, 10000)).
 
--define(BIAS_BACKUP_FILE, node_cache:get(clock_sync_backup_file)).
--define(BIAS_BACKUP_VALIDITY_SECONDS, node_cache:get(clock_sync_backup_validity_secs, 900)).
+-define(BIAS_BACKUP_FILE, ctool:get_env(clock_sync_backup_file)).
+-define(BIAS_BACKUP_VALIDITY_SECONDS, ctool:get_env(clock_sync_backup_validity_secs, 900)).
 
 %%%===================================================================
 %%% API

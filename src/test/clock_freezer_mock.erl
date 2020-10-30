@@ -8,8 +8,10 @@
 %%% @doc
 %%% This module allows freezing the clock on local or remote nodes so that it
 %%% always returns the same time and one can manually simulate time passing.
-%%% Dedicated for tests of time dependent logic (requires that the logic uses
-%%% the clock module internally). Uses meck under the hood.
+%%% Uses meck under the hood and mocks the behaviour of the 'clock' and 
+%%% 'node_cache' modules. Dedicated for tests of time dependent logic
+%%% (requires that the logic uses the clock internally or uses node_cache to
+%%% store entries with limited TTL). 
 %%%
 %%% The API has two version - for the local node and for specific nodes(s).
 %%% In the latter case, it uses the mock manager for mocking (via test_utils)
@@ -36,6 +38,7 @@
 
 -spec setup() -> ok.
 setup() ->
+    node_cache:init(),
     set_current_time_millis(starting_frozen_time()),
     ok = meck:new(clock, [passthrough]),
     ok = meck:expect(clock, timestamp_seconds, fun current_time_seconds/0),
@@ -46,6 +49,7 @@ setup() ->
 
 -spec teardown() -> ok.
 teardown() ->
+    node_cache:destroy(),
     ok = meck:unload(clock).
 
 
