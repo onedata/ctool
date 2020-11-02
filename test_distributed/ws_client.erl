@@ -60,7 +60,7 @@ start_link() ->
 % Starts a client connection to given server
 % Returns Pid of the client process.
 start_link(Url) ->
-    websocket_client:start_link(Url, ?MODULE, [], []).
+    websocket_client:start_link(Url, [], ?MODULE, [], []).
 
 % Stops the client
 stop(Pid) ->

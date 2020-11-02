@@ -45,7 +45,7 @@
 | token_invalid | token_revoked | not_an_access_token | not_an_identity_token
 | {not_an_invite_token, ExpectedInviteType :: any | token_type:invite_type(), Received :: tokens:type()}
 | {token_caveat_unverified, caveats:caveat()}
-| {token_time_caveat_required, time_utils:seconds()}
+| {token_time_caveat_required, clock:seconds()}
 | token_subject_invalid | {token_service_forbidden, aai:service_spec()}
 | invite_token_subject_not_authorized | invite_token_usage_limit_exceeded
 | {invite_token_consumer_invalid, aai:consumer_spec()}
@@ -251,8 +251,7 @@ to_json(?ERROR_FILE_ACCESS(Path, Errno)) ->
     #{
         <<"id">> => <<"fileAccess">>,
         <<"details">> => #{<<"path">> => PathBin, <<"errno">> => Errno},
-        <<"description">> => ?FMT("Cannot access file \"~ts\": ~p.",
-            [PathBin, Errno])
+        <<"description">> => ?FMT("Cannot access file \"~ts\": ~p.", [PathBin, Errno])
     };
 
 %% -----------------------------------------------------------------------------
@@ -390,7 +389,9 @@ to_json(?ERROR_INVITE_TOKEN_CONSUMER_INVALID(Consumer)) -> #{
     <<"details">> => #{
         <<"consumer">> => aai:subject_to_json(Consumer)
     },
-    <<"description">> => ?FMT("The consumer '~s' is invalid for this type of invite token.", [aai:subject_to_printable(Consumer)])
+    <<"description">> => ?FMT("The consumer '~s' is invalid for this type of invite token.", [
+        aai:subject_to_printable(Consumer)
+    ])
 };
 to_json(?ERROR_INVITE_TOKEN_TARGET_ID_INVALID(Id)) -> #{
     <<"id">> => <<"inviteTokenTargetIdInvalid">>,
@@ -401,7 +402,7 @@ to_json(?ERROR_INVITE_TOKEN_TARGET_ID_INVALID(Id)) -> #{
 };
 to_json(?ERROR_TOKEN_SESSION_INVALID) -> #{
     <<"id">> => <<"tokenSessionInvalid">>,
-    <<"description">> => <<"This token was issued for a session that no longer exists.">>
+    <<"description">> => <<"This token is bound to a session different than presented by the client or no longer existent.">>
 };
 
 %% -----------------------------------------------------------------------------

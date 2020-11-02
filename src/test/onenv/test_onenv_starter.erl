@@ -39,7 +39,7 @@ prepare_test_environment(Config0) ->
     
     % strings "true" or "false"
     CleanEnv = os:getenv("clean_env"),
-    Cover = os:getenv("cover"),
+    CoverEnabled = os:getenv("cover") == "true",
     
     % Dummy first call to onenv to setup configs. 
     % Path to sources must be proivided in first onenv call that creates one-env docker
@@ -52,8 +52,8 @@ prepare_test_environment(Config0) ->
         {set_project_root_path, [ProjectRoot]}
     ]),
     
-    ConfigWithCover = case Cover of
-        "true" ->
+    ConfigWithCover = case CoverEnabled of
+        true ->
             {ok, CoverSpec} = file:consult(filename:join(ProjectRoot, "test_distributed/cover_tmp.spec")),
             CoveredDirs = lists:map(fun(DirRelPath) ->
                 list_to_atom(filename:join(ProjectRoot, DirRelPath))
@@ -62,14 +62,18 @@ prepare_test_environment(Config0) ->
             ExcludedModules = kv_utils:get(excl_mods, CoverSpec),
             test_config:add_envs(Config, op_worker, op_worker,
                 [{covered_dirs, CoveredDirs}, {covered_excluded_modules, ExcludedModules}]);
-        "false" ->
+        false ->
             Config
     end,
     
     PodsProplist = start_environment(ConfigWithCover),
     add_entries_to_etc_hosts(PodsProplist),
-    NodesConfig = prepare_nodes_config(Config, PodsProplist),
+    NodesConfig = prepare_nodes_config(ConfigWithCover, PodsProplist),
     connect_nodes(NodesConfig),
+    
+    % when cover is enabled all modules are recompiled resulting in custom configs being lost
+    % so setting custom envs manually is necessary
+    CoverEnabled andalso set_custom_envs(NodesConfig),
     
     test_config:set_many(NodesConfig, [
         [clean_env, CleanEnv == "true"],
@@ -85,7 +89,7 @@ clean_environment(Config) ->
     CleanEnv = test_config:get_custom(Config, clean_env, true),
     
     utils:cmd([OnenvScript, "export", PrivDir]),
-    test_node_starter:clean_environment(Config),
+    test_node_starter:maybe_gather_cover(Config),
     CleanEnv andalso utils:cmd([OnenvScript, "clean", "--all", "--persistent-volumes"]),
     ok.
 
@@ -249,12 +253,42 @@ sources_rel_path(Config, Service) ->
 
 
 %% @private
--spec service_to_config_key(component(), op | oz) -> test_config:key().
+-spec set_custom_envs(test_config:config()) -> ok.
+set_custom_envs(Config) ->
+    CustomEnvs = test_config:get_custom_envs(Config),
+    lists:foreach(fun({Component, Envs}) ->
+        ConfigKey = service_to_config_key(Component),
+        Nodes = test_config:get_custom(Config, ConfigKey),
+        lists:foreach(fun(Node) -> set_custom_envs_on_node(Node, Envs) end, Nodes)
+    end, CustomEnvs).
+
+
+%% @private
+-spec set_custom_envs_on_node(node(), [{test_config:service(), proplists:proplist()}]) -> ok.
+set_custom_envs_on_node(Node, CustomEnvs) ->
+    lists:foreach(fun({Application, EnvList}) ->
+        lists:foreach(fun({EnvKey, EnvValue}) ->
+            ok = rpc:call(Node, application, set_env, [Application, EnvKey, EnvValue])
+        end, EnvList)
+    end, CustomEnvs).
+
+
+%% @private
+-spec service_to_config_key(component(), op | oz | undefined) -> test_config:key().
 service_to_config_key(worker, op) -> op_worker_nodes;
 service_to_config_key(worker, oz) -> oz_worker_nodes;
 service_to_config_key(onepanel, op) -> op_panel_nodes;
 service_to_config_key(onepanel, oz) -> oz_panel_nodes;
 service_to_config_key(cluster_manager, _) -> cm_nodes.
+
+
+%% @private
+-spec service_to_config_key(test_config:service()) -> test_config:key().
+service_to_config_key(op_worker) -> service_to_config_key(worker, op);
+service_to_config_key(oz_worker) -> service_to_config_key(worker, oz);
+service_to_config_key(op_panel) -> service_to_config_key(onepanel, op);
+service_to_config_key(oz_panel) -> service_to_config_key(onepanel, oz);
+service_to_config_key(cluster_manager) -> service_to_config_key(cluster_manager, undefined).
 
 
 %% @private

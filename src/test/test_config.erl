@@ -22,6 +22,7 @@
 % test config getters
 -export([
     get_providers/1, get_all_op_worker_nodes/1, get_all_oz_worker_nodes/1,
+    get_all_op_panel_nodes/1, get_all_oz_panel_nodes/1,
     get_provider_nodes/2, get_provider_spaces/2, get_provider_users/2,
     get_user_session_id_on_provider/3,
     get_custom/2, get_custom/3
@@ -48,7 +49,7 @@
 -type service_as_list() :: string(). % "op_worker" | "oz_worker" | "op_panel" | "oz_panel" | "cluster_manager"
 -type service() :: onedata:service() | cluster_manager.
 
--export_type([config/0, key/0, service_as_list/0]).
+-export_type([config/0, key/0, service/0, service_as_list/0]).
 
 %%%===================================================================
 %%% Init per suite config setters
@@ -60,7 +61,8 @@ set_onenv_scenario(Config, ScenarioName) ->
 
 -spec add_envs(config(), service(), atom(), proplists:proplist()) -> config().
 add_envs(Config, Service, Application, Envs) ->
-    set_custom(Config, [custom_envs, Service, Application], Envs).
+    CurrentEnvs = get_custom(Config, [custom_envs, Service, Application], []),
+    set_custom(Config, [custom_envs, Service, Application], lists:usort(CurrentEnvs ++ Envs)).
 
 -spec set_posthook(test_config:config(), fun((test_config:config()) -> test_config:config())) -> 
     test_config:config().
@@ -83,6 +85,14 @@ get_all_op_worker_nodes(Config) ->
 -spec get_all_oz_worker_nodes(config()) -> [node()].
 get_all_oz_worker_nodes(Config) ->
     get_custom(Config, oz_worker_nodes, []).
+
+-spec get_all_oz_panel_nodes(config()) -> [node()].
+get_all_oz_panel_nodes(Config) ->
+    get_custom(Config, oz_panel_nodes, []).
+
+-spec get_all_op_panel_nodes(config()) -> [node()].
+get_all_op_panel_nodes(Config) ->
+    get_custom(Config, op_panel_nodes, []).
 
 -spec get_provider_nodes(config(), ProviderId :: binary()) -> [node()].
 get_provider_nodes(Config, ProviderId) ->

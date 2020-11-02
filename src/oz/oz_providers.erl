@@ -159,7 +159,7 @@ modify_details(Auth, Parameters) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec get_zone_time(Auth :: oz_endpoint:auth()) ->
-    {ok, IpAddress :: binary()} | {error, Reason :: term()}.
+    {ok, clock:millis()} | {error, Reason :: term()}.
 get_zone_time(Auth) ->
     ?run(fun() ->
         URN = "/provider/public/get_current_time",

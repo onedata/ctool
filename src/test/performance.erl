@@ -731,9 +731,9 @@ proccess_repeat_result(RepeatResult, Rep, RepsSummary, RepsDetails, FailedReps) 
     {ok, [#parameter{}]} | {error, Reason :: binary()} | list().
 exec_test_repeat(SuiteName, CaseName, CaseConfig) ->
     try
-        Timestamp1 = time_utils:timestamp_millis(),
+        Timestamp1 = clock:timestamp_millis(),
         Result = apply(SuiteName, base_case(CaseName), [CaseConfig]),
-        Timestamp2 = time_utils:timestamp_millis(),
+        Timestamp2 = clock:timestamp_millis(),
         TestTime = Timestamp2 - Timestamp1,
         % Return list of parameters consisting of default 'test_time' parameter
         % and parameters returned from test case.

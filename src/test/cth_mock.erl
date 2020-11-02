@@ -40,7 +40,11 @@ init(_Id, _Opts) ->
     State :: []) -> {[term()], []}.
 post_init_per_suite(_Suite, _Config, Return, State) ->
     lists:foreach(fun(N) ->
-        {ok, _} = rpc:call(N, mock_manager, start, [])
+        ok = case rpc:call(N, mock_manager, start, []) of
+            {ok, _} -> ok;
+            {error, {already_started, _}} -> ok;
+            Error -> Error
+        end
     end, mock_manager_nodes(Return)),
     {Return, State}.
 
