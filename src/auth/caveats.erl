@@ -501,7 +501,7 @@ sanitize(_) ->
 unverified_description(#cv_time{valid_until = ValidUntil}) ->
     str_utils:format_bin(
         "unverified time caveat: this token has expired at '~s'",
-        [time_format:seconds_to_iso8601(ValidUntil)]
+        [time:seconds_to_iso8601(ValidUntil)]
     );
 
 unverified_description(#cv_ip{whitelist = Whitelist}) ->

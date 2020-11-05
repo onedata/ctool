@@ -35,7 +35,7 @@
     erlang_vm_cpu = 0.0 :: float(),
     erlang_vm_mem = [] :: [{Type :: atom(), Size :: non_neg_integer()}],
     erlang_vm_processes_num = 0 :: non_neg_integer(),
-    last_update = 0 :: integer() % Timestamp of the last measurement in seconds since epoch
+    last_update_timer :: stopwatch:instance()
 }).
 
 -type node_monitoring_state() :: #node_monitoring_state{}.
@@ -47,7 +47,6 @@
 -define(NET_STATS_FILE(_Interface, _Type), "/sys/class/net/" ++ _Interface ++ "/statistics/" ++ _Type).
 -define(NET_SPEED_FILE(_Interface), "/sys/class/net/" ++ _Interface ++ "/speed").
 -define(NET_DUPLEX_FILE(_Interface), "/sys/class/net/" ++ _Interface ++ "/duplex").
--define(NOW(), clock:timestamp_millis()).
 
 %% API
 -export([start/0, update/1]).
@@ -66,7 +65,7 @@
 %%--------------------------------------------------------------------
 -spec start() -> #node_monitoring_state{}.
 start() ->
-    update(#node_monitoring_state{last_update = ?NOW()}).
+    update(#node_monitoring_state{last_update_timer = stopwatch:start()}).
 
 
 %%--------------------------------------------------------------------
@@ -77,31 +76,29 @@ start() ->
 -spec update(MonitoringState :: #node_monitoring_state{}) -> #node_monitoring_state{}.
 update(MonitoringState) ->
     #node_monitoring_state{
-        last_update = LastUpdate,
+        last_update_timer = LastUpdateTimer,
         cpu_last = CPULast,
         net_last = NetLast
     } = MonitoringState,
-    case ?NOW() of
-        LastUpdate ->
-            % time difference is zero - two updates were called within a millisecond
-            MonitoringState;
-        Now ->
-            % Time difference is in seconds, float is required for better accuracy
-            TimeDiff = (Now - LastUpdate) / 1000,
-            {CPUStats, NewCPULast} = get_cpu_stats(CPULast),
-            {NetStats, NewNetLast} = get_network_stats(NetLast, TimeDiff),
-            MemStats = get_memory_stats(),
-            MonitoringState#node_monitoring_state{
-                last_update = Now,
-                cpu_stats = CPUStats,
-                cpu_last = NewCPULast,
-                mem_stats = MemStats,
-                net_stats = NetStats,
-                net_last = NewNetLast,
-                erlang_vm_cpu = cpu_sup:util(),
-                erlang_vm_mem = erlang:memory(),
-                erlang_vm_processes_num = length(erlang:processes())}
-    end.
+
+    % make sure the time difference is not zero in case the update function
+    % is called twice in a very short interval
+    TimeDiffMillis = max(1, stopwatch:read_millis(LastUpdateTimer)),
+    TimeDiffSeconds = TimeDiffMillis / 1000, % float is required for better accuracy
+
+    {CPUStats, NewCPULast} = get_cpu_stats(CPULast),
+    {NetStats, NewNetLast} = get_network_stats(NetLast, TimeDiffSeconds),
+    MemStats = get_memory_stats(),
+    MonitoringState#node_monitoring_state{
+        last_update_timer = stopwatch:start(),
+        cpu_stats = CPUStats,
+        cpu_last = NewCPULast,
+        mem_stats = MemStats,
+        net_stats = NetStats,
+        net_last = NewNetLast,
+        erlang_vm_cpu = cpu_sup:util(),
+        erlang_vm_mem = erlang:memory(),
+        erlang_vm_processes_num = length(erlang:processes())}.
 
 
 %%--------------------------------------------------------------------

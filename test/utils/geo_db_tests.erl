@@ -151,8 +151,8 @@ teardown(#{tmpDir := TmpDir}) ->
 get_frozen_time() ->
     clock_freezer_mock:current_time_seconds().
 
-simulate_time_passing(Seconds) ->
-    clock_freezer_mock:simulate_time_passing(Seconds * 1000).
+simulate_seconds_passing(Seconds) ->
+    clock_freezer_mock:simulate_seconds_passing(Seconds).
 
 -define(DUMMY_ENV(DbType),
     binary_to_atom(str_utils:format_bin("db_loaded_~p", [DbType]), utf8)
@@ -186,18 +186,18 @@ refresh_geo_db(#{tmpDir := TmpDir}) ->
 
     RefreshPeriod = 86400 * ctool:get_env(geo_db_refresh_period_days),
 
-    simulate_time_passing(314),
+    simulate_seconds_passing(314),
     ?assertEqual({ok, ?QUERY_RESULT(TimeAlpha)}, geo_db:lookup(asn, "5.6.7.8")),
     ?assertEqual({ok, ?QUERY_RESULT(TimeAlpha)}, geo_db:lookup(country, "9.6.7.8")),
 
     % After the refresh period, newer GEO DB should be fetched
     % (which will cause dummy query results to include a newer timestamp)
-    simulate_time_passing(RefreshPeriod + 1 - 314),
+    simulate_seconds_passing(RefreshPeriod + 1 - 314),
     TimeBeta = get_frozen_time(),
     ?assertEqual({ok, ?QUERY_RESULT(TimeBeta)}, geo_db:lookup(asn, "5.6.7.8")),
 
     % ASN and country DBs are refreshed separately
-    simulate_time_passing(13),
+    simulate_seconds_passing(13),
     TimeGamma = get_frozen_time(),
     ?assertEqual({ok, ?QUERY_RESULT(TimeGamma)}, geo_db:lookup(country, "9.6.7.8")),
 
@@ -214,7 +214,7 @@ refresh_geo_db(#{tmpDir := TmpDir}) ->
     }),
     ?assertEqual({ok, ExpStatus}, file:read_file(?DUMMY_STATUS_FILE(TmpDir))),
 
-    simulate_time_passing(RefreshPeriod + 1),
+    simulate_seconds_passing(RefreshPeriod + 1),
     TimeOmega = get_frozen_time(),
     ?assertEqual({ok, ?QUERY_RESULT(TimeOmega)}, geo_db:lookup(asn, "5.6.7.8")),
     ?assertEqual({ok, ?QUERY_RESULT(TimeOmega)}, geo_db:lookup(country, "9.6.7.8")),
@@ -239,20 +239,20 @@ absent_or_bad_maxmind_licence_key(_) ->
     % Databases should not be updated if license key is not given
     ctool:set_env(maxmind_licence_key, undefined),
     RefreshPeriod = 86400 * ctool:get_env(geo_db_refresh_period_days),
-    simulate_time_passing(RefreshPeriod + 1),
+    simulate_seconds_passing(RefreshPeriod + 1),
     ?assertEqual({ok, ?QUERY_RESULT(TimeAlpha)}, geo_db:lookup(asn, "5.6.7.8")),
     ?assertEqual({ok, ?QUERY_RESULT(TimeAlpha)}, geo_db:lookup(country, "9.6.7.8")),
 
     % Databases should not be updated if a bad license key is given
     ctool:set_env(maxmind_licence_key, <<"bad-key">>),
     RefreshBackoff = ctool:get_env(geo_db_refresh_backoff_secs),
-    simulate_time_passing(RefreshBackoff + 1),
+    simulate_seconds_passing(RefreshBackoff + 1),
     ?assertEqual({ok, ?QUERY_RESULT(TimeAlpha)}, geo_db:lookup(asn, "5.6.7.8")),
     ?assertEqual({ok, ?QUERY_RESULT(TimeAlpha)}, geo_db:lookup(country, "9.6.7.8")),
 
     % Set a correct license key - after the backoff, the databases should be updated
     ctool:set_env(maxmind_licence_key, ?DUMMY_LICENSE_KEY),
-    simulate_time_passing(RefreshBackoff + 1),
+    simulate_seconds_passing(RefreshBackoff + 1),
     TimeBeta = get_frozen_time(),
     ?assertEqual({ok, ?QUERY_RESULT(TimeBeta)}, geo_db:lookup(asn, "5.6.7.8")),
     ?assertEqual({ok, ?QUERY_RESULT(TimeBeta)}, geo_db:lookup(country, "9.6.7.8")).
@@ -277,7 +277,7 @@ bad_db_path(#{tmpDir := TmpDir}) ->
     ?assertEqual({error, database_not_loaded}, geo_db:lookup(country, "1.2.3.5")),
 
     % Wait until the backoff passes
-    simulate_time_passing(301), % Not configurable, see ?LOAD_ATTEMPT_BACKOFF in geo_db
+    simulate_seconds_passing(301), % Not configurable, see ?LOAD_ATTEMPT_BACKOFF in geo_db
     ?assertEqual({ok, ?QUERY_RESULT(TimeAlpha)}, geo_db:lookup(asn, "1.2.3.4")),
     ?assertEqual({ok, ?QUERY_RESULT(TimeAlpha)}, geo_db:lookup(country, "1.2.3.5")).
 
@@ -286,7 +286,7 @@ bad_db_mirror(#{tmpDir := TmpDir}) ->
     TimeAlpha = get_frozen_time(),
     ?assertEqual({ok, ?QUERY_RESULT(TimeAlpha)}, geo_db:lookup(asn, "5.6.7.8")),
 
-    simulate_time_passing(7),
+    simulate_seconds_passing(7),
     ?assertEqual({ok, ?QUERY_RESULT(TimeAlpha)}, geo_db:lookup(country, "9.6.7.8")),
 
     ctool:set_env(geo_db_mirror, #{
@@ -295,12 +295,12 @@ bad_db_mirror(#{tmpDir := TmpDir}) ->
     }),
 
     RefreshPeriod = 86400 * ctool:get_env(geo_db_refresh_period_days),
-    simulate_time_passing(RefreshPeriod + 1),
+    simulate_seconds_passing(RefreshPeriod + 1),
     TimeGamma = get_frozen_time(),
     % Refresh should fail, causing the old DB to be still used
     ?assertEqual({ok, ?QUERY_RESULT(TimeAlpha)}, geo_db:lookup(asn, "5.6.7.8")),
 
-    simulate_time_passing(9),
+    simulate_seconds_passing(9),
     TimeDelta = get_frozen_time(),
     ?assertEqual({ok, ?QUERY_RESULT(TimeAlpha)}, geo_db:lookup(country, "9.6.7.8")),
 
@@ -322,18 +322,18 @@ bad_db_mirror(#{tmpDir := TmpDir}) ->
         asn =>     ?DUMMY_DB_MIRROR(asn),
         country => ?DUMMY_DB_MIRROR(country)
     }),
-    simulate_time_passing(17),
+    simulate_seconds_passing(17),
     ?assertEqual({ok, ?QUERY_RESULT(TimeAlpha)}, geo_db:lookup(asn, "5.6.7.8")),
-    simulate_time_passing(4),
+    simulate_seconds_passing(4),
     ?assertEqual({ok, ?QUERY_RESULT(TimeAlpha)}, geo_db:lookup(country, "9.6.7.8")),
 
     % Wait until the backoff passes
     RefreshBackoff = ctool:get_env(geo_db_refresh_backoff_secs),
-    simulate_time_passing(RefreshBackoff + 1 - 17 - 4),
+    simulate_seconds_passing(RefreshBackoff + 1 - 17 - 4),
     TimeTheta = get_frozen_time(),
     ?assertEqual({ok, ?QUERY_RESULT(TimeTheta)}, geo_db:lookup(asn, "5.6.7.8")),
 
-    simulate_time_passing(19),
+    simulate_seconds_passing(19),
     TimeOmega = get_frozen_time(),
     ?assertEqual({ok, ?QUERY_RESULT(TimeOmega)}, geo_db:lookup(country, "9.6.7.8")),
 

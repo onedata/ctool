@@ -69,7 +69,7 @@ get_details(Auth, HandleId) ->
                 <<"resourceId">>, Props, undefined),
             metadata = proplists:get_value(
                 <<"metadata">>, Props, undefined),
-            timestamp = time_format:iso8601_to_datetime(proplists:get_value(
+            timestamp = time:iso8601_to_datetime(proplists:get_value(
                 <<"timestamp">>, Props, undefined))
         },
         {ok, HandleDetails}

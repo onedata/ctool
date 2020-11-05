@@ -120,10 +120,10 @@
 -type unknown_version_error() :: {unknown_version, onedata:release_version(), {revision, revision()}}.
 
 -define(REGISTRY_PATH, ctool:get_env(compatibility_registry_path)).
--define(REGISTRY_CACHE_TTL_SECONDS, ctool:get_env(compatibility_registry_cache_ttl_seconds, 900)). % 15 minutes
+-define(REGISTRY_CACHE_TTL, ctool:get_env(compatibility_registry_cache_ttl_secs, 900)). % 15 min
+-define(REGISTRY_FETCH_BACKOFF, ctool:get_env(compatibility_registry_fetch_backoff_secs, 900)). % 15 min
 -define(REGISTRY_MIRRORS, ctool:get_env(compatibility_registry_mirrors, [])).
 -define(DEFAULT_REGISTRY, ctool:get_env(default_compatibility_registry)).
--define(NOW(), clock:timestamp_seconds()).
 
 -export([check_products_compatibility/4]).
 -export([get_compatible_versions/3]).
@@ -207,8 +207,7 @@ verify_gui_hash(_, _, _) ->
 -spec clear_registry_cache() -> ok.
 clear_registry_cache() ->
     node_cache:clear(compatibility_registry),
-    node_cache:clear(compatibility_registry_fetch_backoff),
-    ok.
+    node_cache:clear(compatibility_registry_active_backoff).
 
 %%%===================================================================
 %%% Internal functions
@@ -311,13 +310,14 @@ get_entries(Section, Version, Strategy) ->
 %% @private
 -spec should_fetch_registry() -> boolean().
 should_fetch_registry() ->
-    node_cache:get(compatibility_registry_fetch_backoff, 0) < ?NOW().
+    IsOnBackoff = node_cache:get(compatibility_registry_active_backoff, false),
+    not IsOnBackoff.
 
 
 %% @private
 -spec reset_fetch_backoff() -> ok.
 reset_fetch_backoff() ->
-    node_cache:put(compatibility_registry_fetch_backoff, ?NOW() + ?REGISTRY_CACHE_TTL_SECONDS).
+    node_cache:put(compatibility_registry_active_backoff, true, ?REGISTRY_FETCH_BACKOFF).
 
 
 %% @private
@@ -332,7 +332,7 @@ get_registry(local) ->
                     {error, cannot_parse_registry} ->
                         {error, cannot_parse_registry};
                     {ok, Registry} ->
-                        {ok, Registry, ?REGISTRY_CACHE_TTL_SECONDS}
+                        {true, Registry, ?REGISTRY_CACHE_TTL}
                 end;
             Other ->
                 ?error("Cannot parse compatibility registry (~s) due to ~w", [

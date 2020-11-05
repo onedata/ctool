@@ -8,10 +8,8 @@
 %%% @doc
 %%% This module allows freezing the clock on local or remote nodes so that it
 %%% always returns the same time and one can manually simulate time passing.
-%%% Uses meck under the hood and mocks the behaviour of the 'clock' and 
-%%% 'node_cache' modules. Dedicated for tests of time dependent logic
-%%% (requires that the logic uses the clock internally or uses node_cache to
-%%% store entries with limited TTL). 
+%%% Dedicated for tests of time dependent logic (requires that the logic uses
+%%% the ctool's time management modules internally). Uses meck under the hood.
 %%%
 %%% The API has two version - for the local node and for specific nodes(s).
 %%% In the latter case, it uses the mock manager for mocking (via test_utils)
@@ -25,7 +23,8 @@
 %% API
 -export([setup/0, teardown/0]).
 -export([setup/1, teardown/1]).
--export([simulate_time_passing/1, simulate_time_passing/2]).
+-export([simulate_seconds_passing/1, simulate_seconds_passing/2]).
+-export([simulate_millis_passing/1, simulate_millis_passing/2]).
 -export([set_current_time_millis/1, set_current_time_millis/2]).
 -export([current_time_seconds/0]).
 -export([current_time_millis/0]).
@@ -40,75 +39,77 @@
 setup() ->
     node_cache:init(),
     set_current_time_millis(starting_frozen_time()),
-    ok = meck:new(clock, [passthrough]),
-    ok = meck:expect(clock, timestamp_seconds, fun current_time_seconds/0),
-    ok = meck:expect(clock, timestamp_millis, fun current_time_millis/0),
-    ok = meck:expect(clock, timestamp_micros, fun current_time_micros/0),
-    ok = meck:expect(clock, timestamp_nanos, fun current_time_nanos/0).
+    ok = meck:new(native_node_clock, [passthrough]),
+    ok = meck:expect(native_node_clock, system_time_millis, fun current_time_millis/0),
+    ok = meck:expect(native_node_clock, monotonic_time_millis, fun current_time_millis/0),
+    ok = meck:expect(native_node_clock, monotonic_time_nanos, fun current_time_nanos/0).
 
 
 -spec teardown() -> ok.
 teardown() ->
     node_cache:destroy(),
-    ok = meck:unload(clock).
+    ok = meck:unload(native_node_clock).
 
 
 -spec setup(node() | [node()]) -> ok.
 setup(NodeOrNodes) ->
     set_current_time_millis(NodeOrNodes, starting_frozen_time()),
-    ok = test_utils:mock_new(NodeOrNodes, clock, [passthrough]),
-    ok = test_utils:mock_expect(NodeOrNodes, clock, timestamp_seconds, fun current_time_seconds/0),
-    ok = test_utils:mock_expect(NodeOrNodes, clock, timestamp_millis, fun current_time_millis/0),
-    ok = test_utils:mock_expect(NodeOrNodes, clock, timestamp_micros, fun current_time_micros/0),
-    ok = test_utils:mock_expect(NodeOrNodes, clock, timestamp_nanos, fun current_time_nanos/0).
+    ok = test_utils:mock_new(NodeOrNodes, native_node_clock, [passthrough]),
+    ok = test_utils:mock_expect(NodeOrNodes, native_node_clock, system_time_millis, fun current_time_millis/0),
+    ok = test_utils:mock_expect(NodeOrNodes, native_node_clock, monotonic_time_millis, fun current_time_millis/0),
+    ok = test_utils:mock_expect(NodeOrNodes, native_node_clock, monotonic_time_nanos, fun current_time_nanos/0).
 
 
 -spec teardown(node() | [node()]) -> ok.
 teardown(NodeOrNodes) ->
-    ok = test_utils:mock_unload(NodeOrNodes, clock).
+    ok = test_utils:mock_unload(NodeOrNodes, native_node_clock).
 
 
--spec simulate_time_passing(clock:millis()) -> ok.
-simulate_time_passing(Millis) ->
+-spec simulate_seconds_passing(time:seconds()) -> ok.
+simulate_seconds_passing(Seconds) ->
+    simulate_millis_passing(Seconds * 1000).
+
+-spec simulate_seconds_passing(node() | [node()], time:seconds()) -> ok.
+simulate_seconds_passing(NodeOrNodes, Seconds) ->
+    simulate_millis_passing(NodeOrNodes, Seconds * 1000).
+
+
+-spec simulate_millis_passing(time:millis()) -> ok.
+simulate_millis_passing(Millis) ->
     set_current_time_millis(current_time_millis() + Millis).
 
-
--spec simulate_time_passing(node() | [node()], clock:millis()) -> ok.
-simulate_time_passing(NodeOrNodes, Millis) ->
+-spec simulate_millis_passing(node() | [node()], time:millis()) -> ok.
+simulate_millis_passing(NodeOrNodes, Millis) ->
     set_current_time_millis(NodeOrNodes, current_time_millis() + Millis).
 
 
--spec set_current_time_millis(clock:millis()) -> ok.
+-spec set_current_time_millis(time:millis()) -> ok.
 set_current_time_millis(Millis) ->
     node_cache:put(clock_freezer_timestamp_millis, Millis).
 
-
--spec set_current_time_millis(node() | [node()], clock:millis()) -> ok.
+-spec set_current_time_millis(node() | [node()], time:millis()) -> ok.
 set_current_time_millis(NodeOrNodes, Millis) ->
     rpc_call_each_node(NodeOrNodes, ?MODULE, ?FUNCTION_NAME, [Millis]),
     % store the time locally as well to allow tracking the frozen time on this node (using current_time_* functions)
     set_current_time_millis(Millis).
 
 
--spec current_time_seconds() -> clock:seconds().
+-spec current_time_seconds() -> time:seconds().
 current_time_seconds() ->
     current_time_millis() div 1000.
 
-
--spec current_time_millis() -> clock:millis().
+-spec current_time_millis() -> time:millis().
 current_time_millis() ->
     case node_cache:get(clock_freezer_timestamp_millis, undefined) of
         Time when is_integer(Time) -> Time;
-        undefined -> error(str_utils:format("~p:setup/x must be called first to use the time freezer", [?MODULE]))
+        undefined -> error(str_utils:format("~p:setup/x must be called first to use the clock freezer", [?MODULE]))
     end.
 
-
--spec current_time_micros() -> clock:micros().
+-spec current_time_micros() -> time:micros().
 current_time_micros() ->
     current_time_millis() * 1000.
 
-
--spec current_time_nanos() -> clock:nanos().
+-spec current_time_nanos() -> time:nanos().
 current_time_nanos() ->
     current_time_millis() * 1000 * 1000.
 
@@ -136,11 +137,11 @@ rpc_call_each_node(Nodes, Module, Function, Args) ->
 %% to simulation of passing time). This returns the bigger of the two times.
 %% @end
 %%--------------------------------------------------------------------
--spec starting_frozen_time() -> clock:millis().
+-spec starting_frozen_time() -> time:millis().
 starting_frozen_time() ->
     PreviousFrozenTime = try
         current_time_millis()
     catch _:_ ->
         0
     end,
-    max(clock:timestamp_millis(), PreviousFrozenTime).
+    max(global_clock:timestamp_millis(), PreviousFrozenTime).
