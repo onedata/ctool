@@ -6,9 +6,9 @@
 %%% @end
 %%%-------------------------------------------------------------------
 %%% @doc
-%%% This module MUST be universally for checking the absolute global "wall time"
-%%% (which is determined by Onezone's cluster time). It contains procedures for
-%%% clock synchronization between different nodes/clusters.
+%%% This module MUST be used universally for checking the absolute global
+%%% "wall time" (which is identical to Onezone's cluster time). It contains
+%%% procedures for clock synchronization between different nodes/clusters.
 %%%
 %%% The timestamp_*/0 and monotonic_timestamp_*/1 functions are the only
 %%% recommended way of acquiring an absolute timestamp across Onedata services.
@@ -88,8 +88,13 @@
 %% resolution does not make sense in environments based on network communication.
 -define(CLOCK_BIAS_CACHE, clock_bias_cache).
 
+%% If a backward time warp greater than the threshold is detected, a warning
+%% is logged, but not more often than the backoff.
+-define(BACKWARD_TIME_WARP_WARN_THRESHOLD_SECONDS, 60).
+-define(BACKWARD_TIME_WARP_WARN_BACKOFF_SECONDS, 60).
+
 -define(SYNC_REQUEST_REPEATS, ctool:get_env(clock_sync_request_repeats, 5)).
-% see examine_delay/2 for information how these env variables are used
+%% see examine_delay/2 for information how these env variables are used
 -define(SATISFYING_SYNC_DELAY_MILLIS, ctool:get_env(clock_sync_satisfying_delay, 2000)).
 -define(MAX_ALLOWED_SYNC_DELAY_MILLIS, ctool:get_env(clock_sync_max_allowed_delay, 10000)).
 
@@ -126,13 +131,17 @@ timestamp_millis() ->
 %%--------------------------------------------------------------------
 -spec monotonic_timestamp_seconds(Previous :: time:seconds()) -> time:seconds().
 monotonic_timestamp_seconds(Previous) ->
-    max(timestamp_seconds(), Previous).
+    TimestampSeconds = timestamp_seconds(),
+    warn_upon_backward_time_warp(TimestampSeconds - Previous),
+    max(TimestampSeconds, Previous).
 
 
 %% @see monotonic_timestamp_seconds/1
 -spec monotonic_timestamp_millis(Previous :: time:millis()) -> time:millis().
 monotonic_timestamp_millis(Previous) ->
-    max(timestamp_millis(), Previous).
+    TimestampMillis = timestamp_millis(),
+    warn_upon_backward_time_warp((TimestampMillis - Previous) div 1000),
+    max(TimestampMillis, Previous).
 
 
 -spec synchronize_local_with_remote_server(fetch_remote_timestamp()) -> ok | error.
@@ -339,4 +348,23 @@ recover_bias_from_disk() ->
         Other ->
             ?debug("Cannot read the time synchronization backup file - ~p", [Other]),
             not_found
+    end.
+
+
+%% @private
+-spec warn_upon_backward_time_warp(time:seconds()) -> ok.
+warn_upon_backward_time_warp(TimeDiffSeconds) ->
+    case TimeDiffSeconds > -?BACKWARD_TIME_WARP_WARN_THRESHOLD_SECONDS of
+        true ->
+            ok;
+        false ->
+            % backoff for some time between warning logs to avoid flooding
+            utils:debounce(?BACKWARD_TIME_WARP_WARN_BACKOFF_SECONDS, fun() ->
+                ?warning(
+                    "Detected a major backward time warp in the global clock - ~B seconds. "
+                    "Time-triggered events as well as statistics and other information "
+                    "based on absolute time may be temporarily distorted.",
+                    [-TimeDiffSeconds]
+                )
+            end)
     end.

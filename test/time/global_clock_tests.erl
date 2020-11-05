@@ -304,6 +304,80 @@ failed_restore_from_disc_due_to_backup_parsing_error() ->
     ?assert(are_clocks_in_sync(local_clock, local_system_clock)).
 
 %%%===================================================================
+%%% Eunit tests - monotonic timestamps
+%%%===================================================================
+
+monotonic_timestamp_test_() ->
+    {foreach,
+        fun setup/0,
+        fun teardown/1,
+        [
+            {"monotonicity and warnings", fun monotonicity_and_warnings/0}
+        ]
+    }.
+
+monotonicity_and_warnings() ->
+    CountAllWarningLogs = fun() ->
+        % logger is mocked in setup, warning is on loglevel = 3
+        meck:num_calls(logger, dispatch_log, [3, '_', '_', '_', '_'])
+    end,
+
+    lists:foreach(fun({TimeUnit, MonotonicTimestampFun}) ->
+        InitialWarningLogCount = CountAllWarningLogs(),
+        CountWarningLogsInThisIteration = fun() ->
+            CountAllWarningLogs() - InitialWarningLogCount
+        end,
+        % fast-forward the time to clear the log backoff caused by other tests
+        clock_freezer_mock:simulate_seconds_passing(9999999),
+
+        SecondsInCurrentUnit = fun(Value) ->
+            case TimeUnit of
+                seconds -> Value;
+                millis -> Value * 1000
+            end
+        end,
+
+        Alpha = MonotonicTimestampFun(0),
+        Beta = MonotonicTimestampFun(Alpha),
+        ?assert(Beta >= Alpha),
+
+        Gamma = MonotonicTimestampFun(Alpha - SecondsInCurrentUnit(500)),
+        ?assert(Gamma >= Alpha),
+        ?assertEqual(0, CountWarningLogsInThisIteration()),
+
+        % major warp back in time (>60s) should be detected and logged
+        Delta = MonotonicTimestampFun(Alpha + SecondsInCurrentUnit(500)),
+        ?assert(Delta >= Alpha + SecondsInCurrentUnit(500)),
+        ?assertEqual(1, CountWarningLogsInThisIteration()),
+        % there should be a minute backoff between logs
+        clock_freezer_mock:simulate_seconds_passing(30),
+        MonotonicTimestampFun(Alpha + SecondsInCurrentUnit(500)),
+        ?assertEqual(1, CountWarningLogsInThisIteration()),
+        clock_freezer_mock:simulate_seconds_passing(30),
+        MonotonicTimestampFun(Alpha + SecondsInCurrentUnit(500)),
+        ?assertEqual(2, CountWarningLogsInThisIteration()),
+
+        clock_freezer_mock:simulate_seconds_passing(500),
+        Theta = MonotonicTimestampFun(Delta),
+        ?assert(Theta >= Delta),
+
+        clock_freezer_mock:simulate_seconds_passing(3600 * 24),
+        Sigma = MonotonicTimestampFun(Theta),
+        ?assert(Sigma >= Theta),
+        Rho = MonotonicTimestampFun(Sigma),
+        ?assert(Rho >= Sigma),
+
+        ?assertEqual(2, CountWarningLogsInThisIteration()),
+        clock_freezer_mock:simulate_seconds_passing(-3600),
+        Omega = MonotonicTimestampFun(Rho),
+        ?assert(Omega >= Rho),
+        ?assertEqual(3, CountWarningLogsInThisIteration())
+    end, [
+        {seconds, fun global_clock:monotonic_timestamp_seconds/1},
+        {millis, fun global_clock:monotonic_timestamp_millis/1}
+    ]).
+
+%%%===================================================================
 %%% Helper functions
 %%%===================================================================
 
@@ -327,7 +401,12 @@ setup() ->
             eval_mocked_remote_timestamp_rpc_response();
         (?DUMMY_REMOTE_NODE, global_clock, store_bias, [local_clock, Bias]) ->
             set_bias_at_remote_node(Bias)
-    end).
+    end),
+
+    meck:new(logger, []),
+    meck:expect(logger, should_log, fun(_) -> true end),
+    meck:expect(logger, parse_process_info, fun(_) -> [] end),
+    meck:expect(logger, dispatch_log, fun(_, _, _, _, _) -> ok end).
 
 
 %% @private
@@ -338,7 +417,8 @@ teardown(_) ->
     TmpPath = filename:dirname(BackupFile),
     mochitemp:rmtempdir(TmpPath),
 
-    ok = meck:unload(rpc).
+    ok = meck:unload(rpc),
+    ok = meck:unload(logger).
 
 
 %% @private

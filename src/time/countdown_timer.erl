@@ -39,7 +39,7 @@ start_millis(Millis) ->
     native_node_clock:monotonic_time_millis() + Millis.
 
 
--spec is_expired(time:millis()) -> boolean().
+-spec is_expired(instance()) -> boolean().
 is_expired(infinity) ->
     false;
 is_expired(ExpiryMillis) ->
