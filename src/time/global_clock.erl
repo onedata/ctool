@@ -359,7 +359,7 @@ warn_upon_backward_time_warp(TimeDiffSeconds) ->
             ok;
         false ->
             % backoff for some time between warning logs to avoid flooding
-            utils:debounce(?BACKWARD_TIME_WARP_WARN_BACKOFF_SECONDS, fun() ->
+            utils:throttle(?BACKWARD_TIME_WARP_WARN_BACKOFF_SECONDS, fun() ->
                 ?warning(
                     "Detected a major backward time warp in the global clock - ~B seconds. "
                     "Time-triggered events as well as statistics and other information "

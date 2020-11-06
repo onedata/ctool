@@ -7,8 +7,12 @@
 %%%-------------------------------------------------------------------
 %%% @doc
 %%% This module MUST be used universally for measuring time elapsed between two
-%%% moments within a single node, without knowing the absolute "wall time". Uses
-%%% Erlang's monotonic clock under the hood for the best accuracy of time passing.
+%%% moments within a single node, without knowing the absolute "wall time".
+%%% Consider using 'countdown_timer' for measuring a predefined interval or
+%%% controlling expiry within a single runtime instance. See 'global_clock' for
+%%% reading absolute global time.
+%%%
+%%% Uses Erlang's monotonic clock internally for the best accuracy of time passing.
 %%% @end
 %%%-------------------------------------------------------------------
 -module(stopwatch).

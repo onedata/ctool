@@ -40,7 +40,7 @@ count_down_seconds() ->
     ?assert(countdown_timer:is_expired(CountdownTimer)),
 
     clock_freezer_mock:simulate_millis_passing(58431),
-    ?_assert(countdown_timer:is_expired(CountdownTimer)).
+    ?assert(countdown_timer:is_expired(CountdownTimer)).
 
 
 count_down_millis() ->
@@ -50,14 +50,17 @@ count_down_millis() ->
     clock_freezer_mock:simulate_millis_passing(350),
     ?assertNot(countdown_timer:is_expired(CountdownTimer)),
 
-    clock_freezer_mock:simulate_millis_passing(211),
+    clock_freezer_mock:simulate_millis_passing(210),
+    ?assertNot(countdown_timer:is_expired(CountdownTimer)),
+
+    clock_freezer_mock:simulate_millis_passing(1),
     ?assert(countdown_timer:is_expired(CountdownTimer)),
 
     clock_freezer_mock:simulate_millis_passing(1),
     ?assert(countdown_timer:is_expired(CountdownTimer)),
 
     clock_freezer_mock:simulate_millis_passing(93692823),
-    ?_assert(countdown_timer:is_expired(CountdownTimer)).
+    ?assert(countdown_timer:is_expired(CountdownTimer)).
 
 
 count_down_infinity() ->
@@ -72,7 +75,6 @@ count_down_infinity() ->
         countdown_timer:start_seconds(infinity),
         countdown_timer:start_millis(infinity)
     ]).
-
 
 
 -endif.

@@ -20,29 +20,33 @@
 stopwatch_test_() ->
     {foreach,
         fun clock_freezer_mock:setup/0,
-        fun(_) -> clock_freezer_mock:teardown() end, [
-        fun(_) ->
-            Stopwatch = stopwatch:start(),
+        fun(_) -> clock_freezer_mock:teardown() end,
+        [
+            {"stopwatch in various units", fun stopwatch_in_various_units/0}
+        ]
+    }.
 
-            ?assertEqual(0, stopwatch:read_seconds(Stopwatch)),
-            ?assertEqual(0, stopwatch:read_millis(Stopwatch)),
-            ?assertEqual(0, stopwatch:read_micros(Stopwatch)),
-            ?assertEqual(0, stopwatch:read_nanos(Stopwatch)),
+stopwatch_in_various_units() ->
+    Stopwatch = stopwatch:start(),
 
-            clock_freezer_mock:simulate_millis_passing(123),
+    ?assertEqual(0, stopwatch:read_seconds(Stopwatch)),
+    ?assertEqual(0, stopwatch:read_millis(Stopwatch)),
+    ?assertEqual(0, stopwatch:read_micros(Stopwatch)),
+    ?assertEqual(0, stopwatch:read_nanos(Stopwatch)),
 
-            ?assertEqual(0, stopwatch:read_seconds(Stopwatch)),
-            ?assertEqual(123, stopwatch:read_millis(Stopwatch)),
-            ?assertEqual(123000, stopwatch:read_micros(Stopwatch)),
-            ?assertEqual(123000000, stopwatch:read_nanos(Stopwatch)),
+    clock_freezer_mock:simulate_millis_passing(123),
 
-            clock_freezer_mock:simulate_millis_passing(8950),
+    ?assertEqual(0, stopwatch:read_seconds(Stopwatch)),
+    ?assertEqual(123, stopwatch:read_millis(Stopwatch)),
+    ?assertEqual(123000, stopwatch:read_micros(Stopwatch)),
+    ?assertEqual(123000000, stopwatch:read_nanos(Stopwatch)),
 
-            ?assertEqual(9, stopwatch:read_seconds(Stopwatch)),
-            ?assertEqual(9073, stopwatch:read_millis(Stopwatch)),
-            ?assertEqual(9073000, stopwatch:read_micros(Stopwatch)),
-            ?_assertEqual(9073000000, stopwatch:read_nanos(Stopwatch))
-        end
-    ]}.
+    clock_freezer_mock:simulate_millis_passing(8950),
+
+    ?assertEqual(9, stopwatch:read_seconds(Stopwatch)),
+    ?assertEqual(9073, stopwatch:read_millis(Stopwatch)),
+    ?assertEqual(9073000, stopwatch:read_micros(Stopwatch)),
+    ?assertEqual(9073000000, stopwatch:read_nanos(Stopwatch)).
+
 
 -endif.
