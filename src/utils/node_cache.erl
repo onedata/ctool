@@ -1,13 +1,14 @@
 %%%-------------------------------------------------------------------
-%%% @author Micha; Stanisz
-%%% @copyright (C) 2018 ACK CYFRONET AGH
+%%% @author Michal Stanisz
+%%% @copyright (C) 2018-2020 ACK CYFRONET AGH
 %%% This software is released under the MIT license
 %%% cited in 'LICENSE.txt'.
 %%% @end
 %%%-------------------------------------------------------------------
 %%% @doc 
 %%% This module implements a node-wide cache based on ets. 
-%%% Entries can be cached infinitely or with desired TTL
+%%% Entries can be cached infinitely or with desired TTL.
+%%% Before use cache must be initialized, see {@link init/0}.
 %%% @end
 %%%-------------------------------------------------------------------
 -module(node_cache).
