@@ -21,10 +21,6 @@
     parse_range_header/2
 ]).
 
--ifdef(TEST).
--export([parse_bytes_ranges/2]).
--endif.
-
 % Range of bytes (inclusive at both ends), e.g.:
 % - {0, 99} means 100 bytes beginning at offset 0,
 % - {10, 10} means 1 byte beginning at offset 10.
@@ -46,23 +42,16 @@
 %%--------------------------------------------------------------------
 %% @doc
 %% Parses and returns query string parameters. For every parameter
-%% specified multiple times it's values are merged into list.
+%% specified multiple times it's values are merged into list in reverse order.
 %% @end
 %%--------------------------------------------------------------------
 -spec parse_query_string(cowboy_req:req()) -> map().
 parse_query_string(Req) ->
-    Params = lists:foldl(fun({Param, Val}, AccMap) ->
+    lists:foldl(fun({Param, Val}, AccMap) ->
         maps:update_with(Param, fun(OldVal) ->
             [Val | utils:ensure_list(OldVal)]
         end, Val, AccMap)
-    end, #{}, cowboy_req:parse_qs(Req)),
-
-    maps:fold(fun
-        (K, V, AccIn) when is_list(V) ->
-            AccIn#{K => lists:reverse(V)};
-        (_K, _V, AccIn) ->
-            AccIn
-    end, Params, Params).
+    end, #{}, cowboy_req:parse_qs(Req)).
 
 
 -spec parse_range_header(cowboy_req:req(), content_size()) ->
@@ -93,7 +82,10 @@ parse_range_header(Req, ContentSize) ->
 parse_bytes_ranges(RangesBin, ContentSize) when is_binary(RangesBin) ->
     case binary:split(RangesBin, <<"=">>, [global]) of
         [<<"bytes">>, RawRanges] ->
-            parse_bytes_ranges(binary:split(RawRanges, <<",">>, [global]), ContentSize);
+            parse_bytes_ranges(
+                binary:split(RawRanges, [<<",">>, <<" ">>, <<"\t">>], [global, trim_all]),
+                ContentSize
+            );
         _ ->
             invalid
     end;
