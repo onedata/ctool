@@ -57,23 +57,30 @@ setup() ->
     DefaultRegistryPath = filename:join(TmpPath, "compatibility.default.json"),
     ctool:set_env(compatibility_registry_path, RegistryPath),
     ctool:set_env(default_compatibility_registry, DefaultRegistryPath),
-    ctool:set_env(compatibility_registry_cache_ttl, 900),
+    ctool:set_env(compatibility_registry_cache_ttl_seconds, 900),
     compatibility:clear_registry_cache(),
     mock_compatibility_file(#{<<"revision">> => 2019010100}),
     mock_default_compatibility_file(#{<<"revision">> => 2019010100}),
 
     meck:new(http_client, [passthrough]),
-    meck:expect(http_client, get, fun get_mocked_mirror_result/1).
+    meck:expect(http_client, get, fun get_mocked_mirror_result/1),
+
+    meck:new(node_cache, [passthrough]),
+    meck:expect(node_cache, now, fun clock_freezer_mock:current_time_seconds/0),
+
+    ok.
 
 teardown(_) ->
-    clock_freezer_mock:teardown(),
-
     RegistryPath = ctool:get_env(compatibility_registry_path),
     TmpPath = filename:dirname(RegistryPath),
     mochitemp:rmtempdir(TmpPath),
     clear_mocked_mirrors(),
     ?assert(meck:validate(http_client)),
-    ok = meck:unload(http_client).
+    ok = meck:unload(http_client),
+    ?assert(meck:validate(node_cache)),
+    ok = meck:unload(node_cache),
+    
+    clock_freezer_mock:teardown().
 
 
 mock_compatibility_file(JsonMap) when is_map(JsonMap) ->
@@ -100,9 +107,9 @@ get_compatibility_file() ->
     Result :: {ok, Code :: integer(), Body :: binary() | map()} | {error, term()}) ->
     ok.
 mock_mirror_result(Url, Result) ->
-    simple_cache:put({mocked_mirror, Url}, Result),
-    {ok, Mirrors} = simple_cache:get(mocked_mirrors, fun() -> {false, []} end),
-    simple_cache:put(mocked_mirrors, [Url | Mirrors]).
+    node_cache:put({mocked_mirror, Url}, Result),
+    Mirrors = node_cache:get(mocked_mirrors, []),
+    node_cache:put(mocked_mirrors, [Url | Mirrors]).
 
 
 mock_mirror_list(Mirrors) ->
@@ -110,9 +117,7 @@ mock_mirror_list(Mirrors) ->
 
 
 get_mocked_mirror_result(Url) ->
-    {ok, Result} = simple_cache:get({mocked_mirror, Url}, fun() ->
-        {false, {error, nxdomain}}
-    end),
+    Result = node_cache:get({mocked_mirror, Url}, {error, nxdomain}),
     case Result of
         {ok, Code, JsonMap} when is_map(JsonMap) ->
             {ok, Code, #{}, json_utils:encode(JsonMap)};
@@ -125,8 +130,8 @@ get_mocked_mirror_result(Url) ->
 
 clear_mocked_mirrors() ->
     mock_mirror_list([]),
-    {ok, Mirrors} = simple_cache:get(mocked_mirrors, fun() -> {false, []} end),
-    [simple_cache:clear({mocked_mirror, M}) || M <- Mirrors].
+    Mirrors = node_cache:get(mocked_mirrors, []),
+    [node_cache:clear({mocked_mirror, M}) || M <- Mirrors].
 
 
 simulate_time_passing(Seconds) ->
@@ -392,7 +397,7 @@ caching_local_registry_content() ->
 
     % The file contents should be cached for configured time
     mock_compatibility_file(Newer),
-    CacheTTL = ctool:get_env(compatibility_registry_cache_ttl),
+    CacheTTL = ctool:get_env(compatibility_registry_cache_ttl_seconds),
     simulate_time_passing(CacheTTL - 1),
     % The cache is still valid
     ?assertEqual({false, [<<"18.02.1">>]}, ?OZvsOP(<<"18.02.1">>, <<"18.02.2">>)),
@@ -607,7 +612,7 @@ fetching_newer_registry() ->
             }
         }
     }}),
-    CacheTTL = ctool:get_env(compatibility_registry_cache_ttl),
+    CacheTTL = ctool:get_env(compatibility_registry_cache_ttl_seconds),
     simulate_time_passing(CacheTTL - 1),
     % The cache is still valid
     ?assertEqual({false, [<<"18.02.1">>, <<"18.02.2">>]}, ?OZvsOP(<<"18.02.1">>, <<"18.02.3">>)),

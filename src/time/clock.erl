@@ -169,7 +169,7 @@ synchronize_remote_with_local(Node) ->
 
 -spec is_synchronized() -> boolean().
 is_synchronized() ->
-    is_integer(ctool:get_env(?CLOCK_BIAS_CACHE_NANOS, undefined)).
+    is_integer(node_cache:get(?CLOCK_BIAS_CACHE_NANOS, undefined)).
 
 
 %%--------------------------------------------------------------------
@@ -181,7 +181,7 @@ is_synchronized() ->
 %%--------------------------------------------------------------------
 -spec reset_to_system_time() -> ok.
 reset_to_system_time() ->
-    ctool:unset_env(?CLOCK_BIAS_CACHE_NANOS).
+    node_cache:clear(?CLOCK_BIAS_CACHE_NANOS).
 
 
 %%--------------------------------------------------------------------
@@ -281,13 +281,13 @@ store_bias_millis(local_clock, BiasMillis) ->
 %% @private
 -spec store_bias_millis_in_cache(bias(millis())) -> ok | no_return().
 store_bias_millis_in_cache(BiasMillis) ->
-    ok = ctool:set_env(?CLOCK_BIAS_CACHE_NANOS, BiasMillis * 1000000).
+    ok = node_cache:put(?CLOCK_BIAS_CACHE_NANOS, BiasMillis * 1000000).
 
 
 %% @private
 -spec get_bias_nanos_from_cache() -> bias(nanos()).
 get_bias_nanos_from_cache() ->
-    ctool:get_env(?CLOCK_BIAS_CACHE_NANOS, 0).
+    node_cache:get(?CLOCK_BIAS_CACHE_NANOS, 0).
 
 
 %% @private

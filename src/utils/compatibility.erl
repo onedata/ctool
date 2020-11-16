@@ -120,7 +120,7 @@
 -type unknown_version_error() :: {unknown_version, onedata:release_version(), {revision, revision()}}.
 
 -define(REGISTRY_PATH, ctool:get_env(compatibility_registry_path)).
--define(REGISTRY_CACHE_TTL, ctool:get_env(compatibility_registry_cache_ttl, 900)). % 15 minutes
+-define(REGISTRY_CACHE_TTL_SECONDS, ctool:get_env(compatibility_registry_cache_ttl_seconds, 900)). % 15 minutes
 -define(REGISTRY_MIRRORS, ctool:get_env(compatibility_registry_mirrors, [])).
 -define(DEFAULT_REGISTRY, ctool:get_env(default_compatibility_registry)).
 -define(NOW(), clock:timestamp_seconds()).
@@ -206,8 +206,8 @@ verify_gui_hash(_, _, _) ->
 %%--------------------------------------------------------------------
 -spec clear_registry_cache() -> ok.
 clear_registry_cache() ->
-    simple_cache:clear(compatibility_registry),
-    simple_cache:clear(compatibility_registry_fetch_backoff),
+    node_cache:clear(compatibility_registry),
+    node_cache:clear(compatibility_registry_fetch_backoff),
     ok.
 
 %%%===================================================================
@@ -311,23 +311,20 @@ get_entries(Section, Version, Strategy) ->
 %% @private
 -spec should_fetch_registry() -> boolean().
 should_fetch_registry() ->
-    case simple_cache:get(compatibility_registry_fetch_backoff) of
-        {ok, BackoffUntil} -> BackoffUntil < ?NOW();
-        {error, not_found} -> true
-    end.
+    node_cache:get(compatibility_registry_fetch_backoff, 0) < ?NOW().
 
 
 %% @private
 -spec reset_fetch_backoff() -> ok.
 reset_fetch_backoff() ->
-    simple_cache:put(compatibility_registry_fetch_backoff, ?NOW() + ?REGISTRY_CACHE_TTL).
+    node_cache:put(compatibility_registry_fetch_backoff, ?NOW() + ?REGISTRY_CACHE_TTL_SECONDS).
 
 
 %% @private
 -spec get_registry(Strategy :: local | fetch) ->
     {ok, registry()} | {error, cannot_parse_registry | cannot_fetch_registry}.
 get_registry(local) ->
-    simple_cache:get(compatibility_registry, fun() ->
+    node_cache:acquire(compatibility_registry, fun() ->
         take_default_registry_if_newer(),
         case file:read_file(?REGISTRY_PATH) of
             {ok, Binary} ->
@@ -335,7 +332,7 @@ get_registry(local) ->
                     {error, cannot_parse_registry} ->
                         {error, cannot_parse_registry};
                     {ok, Registry} ->
-                        {true, Registry, timer:seconds(?REGISTRY_CACHE_TTL)}
+                        {ok, Registry, ?REGISTRY_CACHE_TTL_SECONDS}
                 end;
             Other ->
                 ?error("Cannot parse compatibility registry (~s) due to ~w", [

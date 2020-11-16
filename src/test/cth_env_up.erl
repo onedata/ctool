@@ -30,6 +30,7 @@
 %%--------------------------------------------------------------------
 -spec init(_Id :: term(), _Opts :: term()) -> {ok, state(), non_neg_integer()}.
 init(_Id, _Opts) ->
+    node_cache:init(),
     {ok, #state{}, ?CTH_ENV_UP_PRIORITY}.
 
 

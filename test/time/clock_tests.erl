@@ -150,7 +150,7 @@ successful_synchronize_node_clock_with_local() ->
     % remote node clock synchronization should converge to the local_clock (rather than system_clock)
     % randomize some initial local bias to make sure this works as expected
     RandomBiasSeconds = lists_utils:random_element([0, (60 + rand:uniform(1000))]),
-    ctool:set_env(clock_bias_nanos, RandomBiasSeconds * 1000 * 1000 * 1000 * 1000),
+    node_cache:put(clock_bias_nanos, RandomBiasSeconds * 1000 * 1000 * 1000 * 1000),
 
     ?assert(are_clocks_in_sync(remote_clock, remote_system_clock)),
     ?assertNot(is_clock_synchronized_on_remote_node()),
@@ -317,7 +317,7 @@ freeze_system_time() ->
         F(system_clock, nanos) ->
             get_frozen_system_time_millis() * 1000000;
         F(local_clock, nanos) ->
-            get_frozen_system_time_millis() * 1000000 + ctool:get_env(clock_bias_nanos, 0)
+            get_frozen_system_time_millis() * 1000000 + node_cache:get(clock_bias_nanos, 0)
     end).
 
 
@@ -326,11 +326,11 @@ unfreeze_system_time() ->
 
 
 get_frozen_system_time_millis() ->
-    ctool:get_env(frozen_system_time_millis, 1500000000).
+    node_cache:get(frozen_system_time_millis, 1500000000).
 
 
 simulate_time_passing(Millis) ->
-    ctool:set_env(frozen_system_time_millis, get_frozen_system_time_millis() + Millis).
+    node_cache:put(frozen_system_time_millis, get_frozen_system_time_millis() + Millis).
 
 %%%===================================================================
 %%% Helper functions
@@ -338,6 +338,7 @@ simulate_time_passing(Millis) ->
 
 %% @private
 setup() ->
+    node_cache:init(),
     clock:reset_to_system_time(),
     ctool:set_env(clock_sync_satisfying_delay, ?TEST_SATISFYING_SYNC_DELAY_MILLIS),
     ctool:set_env(clock_sync_max_allowed_delay, ?TEST_MAX_ALLOWED_SYNC_DELAY_MILLIS),
@@ -366,40 +367,41 @@ teardown(_) ->
     mochitemp:rmtempdir(TmpPath),
 
     unfreeze_system_time(),
+    node_cache:destroy(),
     ok = meck:unload(rpc).
 
 
 %% @private
 %% simulates the bias being set on a remote node with RPC
 set_bias_nanos_at_remote_node(Bias) ->
-    ctool:set_env(mocked_remote_node_bias_nanos, Bias).
+    node_cache:put(mocked_remote_node_bias_nanos, Bias).
 
 
 %% @private
 %% returns the bias that was simulated to be set on a remote node with RPC
 get_bias_nanos_at_remote_node() ->
-    ctool:get_env(mocked_remote_node_bias_nanos, 0).
+    node_cache:get(mocked_remote_node_bias_nanos, 0).
 
 
 %% @private
 unset_bias_nanos_at_remote_node() ->
-    ctool:unset_env(mocked_remote_node_bias_nanos).
+    node_cache:clear(mocked_remote_node_bias_nanos).
 
 
 %% @private
 mock_next_remote_timestamp_rpc_response(Fun) ->
-    ctool:set_env(mocked_remote_timestamp_response, Fun).
+    node_cache:put(mocked_remote_timestamp_response, Fun).
 
 
 %% @private
 eval_mocked_remote_timestamp_rpc_response() ->
-    Fun = ctool:get_env(mocked_remote_timestamp_response),
+    Fun = node_cache:get(mocked_remote_timestamp_response),
     Fun().
 
 
 %% @private
 is_clock_synchronized_on_remote_node() ->
-    is_integer(ctool:get_env(mocked_remote_node_bias_nanos, undefined)).
+    is_integer(node_cache:get(mocked_remote_node_bias_nanos, undefined)).
 
 
 %% @private

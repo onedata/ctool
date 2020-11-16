@@ -17,7 +17,18 @@
 %%% Eunit tests
 %%%===================================================================
 
-general_conversion_test() ->
+time_format_test_() ->
+    {foreach,
+        fun setup/0,
+        fun teardown/1,
+        [
+            fun general_conversion/0,
+            fun specific_conversion/0
+        ]
+    }.
+
+
+general_conversion() ->
     Seconds = clock:timestamp_seconds(),
     DateTime = time_format:seconds_to_datetime(Seconds),
     Iso8601 = time_format:datetime_to_iso8601(DateTime),
@@ -32,7 +43,7 @@ general_conversion_test() ->
     ?assertEqual(Iso8601, time_format:datetime_to_iso8601(DateTime)).
 
 
-specific_conversion_test() ->
+specific_conversion() ->
     Seconds = 1600956903,
     SecondsMidnight = 1600905600,
     Iso8601 = <<"2020-09-24T14:15:03Z">>,
@@ -52,5 +63,12 @@ specific_conversion_test() ->
     ?assertEqual(SecondsMidnight, time_format:iso8601_to_seconds(Iso8601DateOnly)),
     ?assertEqual(DateTimeMidnight, time_format:iso8601_to_datetime(Iso8601DateOnly)).
 
+
+setup() ->
+    node_cache:init().
+
+
+teardown(_) ->
+    node_cache:destroy().
 
 -endif.

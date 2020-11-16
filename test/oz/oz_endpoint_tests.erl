@@ -65,6 +65,7 @@ oz_endpoint_test_() ->
 %%%===================================================================
 
 setup() ->
+    node_cache:init(),
     meck:new(oz_plugin, [non_strict]),
     meck:new(cert_utils, []),
     meck:expect(oz_plugin, get_oz_url, fun() -> "OZ_URL" end),
@@ -77,6 +78,7 @@ setup() ->
     meck:expect(cert_utils, load_ders_in_dir, fun(_) -> [] end).
 
 teardown(_) ->
+    node_cache:destroy(),
     lists:foreach(fun(Module) ->
         ?assert(meck:validate(Module)),
         ok = meck:unload(Module)
