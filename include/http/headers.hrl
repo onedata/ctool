@@ -41,6 +41,7 @@
 -define(HDR_CONTENT_LENGTH, <<"content-length">>).
 -define(HDR_CONTENT_RANGE, <<"content-range">>).
 -define(HDR_CONTENT_TYPE, <<"content-type">>).
+-define(HDR_RANGE, <<"range">>).
 -define(HDR_SET_COOKIE, <<"set-cookie">>).
 -define(HDR_COOKIE, <<"cookie">>).
 -define(HDR_LOCATION, <<"location">>).
