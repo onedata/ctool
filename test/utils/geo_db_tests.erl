@@ -52,6 +52,7 @@ geo_db_test_() ->
 
 setup() ->
     clock_freezer_mock:setup(),
+    node_cache:init(),
 
     meck:new(locus),
     meck:expect(locus, lookup, fun(DbType, _IP) ->
@@ -82,9 +83,6 @@ setup() ->
         end
     end),
     
-    meck:new(node_cache, [passthrough]),
-    meck:expect(node_cache, now, fun clock_freezer_mock:current_time_seconds/0),
-
     TmpDir = mochitemp:mkdtemp(),
 
     ctool:set_env(maxmind_licence_key, ?DUMMY_LICENSE_KEY),
@@ -136,12 +134,11 @@ setup() ->
 
 
 teardown(#{tmpDir := TmpDir}) ->
+    node_cache:destroy(),
     clock_freezer_mock:teardown(),
 
     ?assert(meck:validate(locus)),
     ok = meck:unload(locus),
-    ?assert(meck:validate(node_cache)),
-    ok = meck:unload(node_cache),
     ?assert(meck:validate(http_client)),
     ok = meck:unload(http_client),
 

@@ -58,7 +58,7 @@
 
 -include("logging.hrl").
 
--type fetch_remote_timestamp() :: fun(() -> {ok, time:millis()} | {error, term()}).
+-type fetch_remote_timestamp_fun() :: fun(() -> {ok, time:millis()} | {error, term()}).
 
 % difference between readings of two clocks
 -type bias() :: time:millis().
@@ -144,7 +144,7 @@ monotonic_timestamp_millis(Previous) ->
     max(TimestampMillis, Previous).
 
 
--spec synchronize_local_with_remote_server(fetch_remote_timestamp()) -> ok | error.
+-spec synchronize_local_with_remote_server(fetch_remote_timestamp_fun()) -> ok | error.
 synchronize_local_with_remote_server(FetchRemoteTimestamp) ->
     try
         % use system_clock as reference, as it will be adjusted by measured bias
@@ -249,7 +249,7 @@ read_clock_time(local_clock) ->
 
 
 %% @private
--spec estimate_bias_and_delay(fetch_remote_timestamp(), clock_type()) ->
+-spec estimate_bias_and_delay(fetch_remote_timestamp_fun(), clock_type()) ->
     {delay_ok | delay_too_high, bias(), delay()} | no_return().
 estimate_bias_and_delay(FetchRemoteTimestamp, ReferenceClock) ->
     {BiasSum, DelaySum} = lists:foldl(fun(_, {BiasAcc, DelayAcc}) ->

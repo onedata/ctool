@@ -384,6 +384,7 @@ monotonicity_and_warnings() ->
 %% @private
 setup() ->
     clock_freezer_mock:setup(),
+    node_cache:init(),
 
     global_clock:reset_to_system_time(),
     ctool:set_env(clock_sync_satisfying_delay, ?TEST_SATISFYING_SYNC_DELAY_MILLIS),
@@ -411,6 +412,7 @@ setup() ->
 
 %% @private
 teardown(_) ->
+    node_cache:destroy(),
     clock_freezer_mock:teardown(),
 
     BackupFile = ctool:get_env(clock_sync_backup_file),

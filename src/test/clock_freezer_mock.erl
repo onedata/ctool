@@ -37,7 +37,6 @@
 
 -spec setup() -> ok.
 setup() ->
-    node_cache:init(),
     set_current_time_millis(starting_frozen_time()),
     ok = meck:new(native_node_clock, [passthrough]),
     ok = meck:expect(native_node_clock, system_time_millis, fun current_time_millis/0),
@@ -47,7 +46,6 @@ setup() ->
 
 -spec teardown() -> ok.
 teardown() ->
-    node_cache:destroy(),
     ok = meck:unload(native_node_clock).
 
 
@@ -85,7 +83,9 @@ simulate_millis_passing(NodeOrNodes, Millis) ->
 
 -spec set_current_time_millis(time:millis()) -> ok.
 set_current_time_millis(Millis) ->
-    node_cache:put(clock_freezer_timestamp_millis, Millis).
+    % use an env variable rather than node_cache to avoid a circular dependency
+    % and a non-obvious requirement to init node cache whenever the clock is mocked
+    ctool:set_env(clock_freezer_timestamp_millis, Millis).
 
 -spec set_current_time_millis(node() | [node()], time:millis()) -> ok.
 set_current_time_millis(NodeOrNodes, Millis) ->
@@ -100,7 +100,7 @@ current_time_seconds() ->
 
 -spec current_time_millis() -> time:millis().
 current_time_millis() ->
-    case node_cache:get(clock_freezer_timestamp_millis, undefined) of
+    case ctool:get_env(clock_freezer_timestamp_millis, undefined) of
         Time when is_integer(Time) -> Time;
         undefined -> error(str_utils:format("~p:setup/x must be called first to use the clock freezer", [?MODULE]))
     end.
@@ -144,4 +144,4 @@ starting_frozen_time() ->
     catch _:_ ->
         0
     end,
-    max(global_clock:timestamp_millis(), PreviousFrozenTime).
+    max(native_node_clock:system_time_millis(), PreviousFrozenTime).

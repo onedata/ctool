@@ -40,7 +40,7 @@
 -define(JOIN(List, Sep), str_utils:join_binary(List, Sep)).
 
 %% API
--export([add/2, get_caveats/1, find/2, filter/2]).
+-export([add/2, get_caveats/1, find/2, filter/2, infer_ttl/1]).
 -export([type/1, all_types/0]).
 -export([build_verifier/2]).
 -export([serialize/1, deserialize/1]).
@@ -78,6 +78,18 @@ find(Type, Caveats) ->
 -spec filter([type()], [caveat()]) -> [caveat()].
 filter(Types, Caveats) ->
     lists:filter(fun(Caveat) -> lists:member(type(Caveat), Types) end, Caveats).
+
+
+-spec infer_ttl([caveats:caveat()]) -> undefined | time:seconds().
+infer_ttl(Caveats) ->
+    ValidUntil = lists:foldl(fun
+        (#cv_time{valid_until = ValidUntil}, undefined) -> ValidUntil;
+        (#cv_time{valid_until = ValidUntil}, Acc) -> min(ValidUntil, Acc)
+    end, undefined, caveats:filter([cv_time], Caveats)),
+    case ValidUntil of
+        undefined -> undefined;
+        _ -> ValidUntil - global_clock:timestamp_seconds()
+    end.
 
 
 -spec type(caveat()) -> type().

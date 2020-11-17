@@ -48,18 +48,33 @@ ensure_running(Application) ->
 
 %%--------------------------------------------------------------------
 %% @doc
+%% @equiv throttle(erlang:fun_to_list(Fun), Interval, Fun).
+%% The function itself is used as throttler identifier.
+%% @end
+%%--------------------------------------------------------------------
+-spec throttle(Interval :: time:seconds(), fun(() -> Result)) -> Result.
+throttle(Interval, Fun) ->
+    throttle(erlang:fun_to_list(Fun), Interval, Fun).
+
+
+%%--------------------------------------------------------------------
+%% @doc
 %% Executes given Fun, but not more often than the Interval (excessive calls
 %% are completely discarded). Works deterministically within a single process,
 %% otherwise it is best effort - duplicate Fun execution may occur when
 %% called by parallel processes within a very short time window.
 %%
+%% Identifier is an arbitrary term that identifies the throttler instance
+%% (calls with different identifiers are independently throttled, even if the
+%% same function is given).
+%%
 %% Always returns the result of last execution that was applied.
 %% @end
 %%--------------------------------------------------------------------
--spec throttle(Interval :: time:seconds(), fun(() -> Result)) -> Result.
-throttle(Interval, Fun) when is_function(Fun, 0) ->
-    {ok, Res} = simple_cache:get({throttle, erlang:fun_to_list(Fun)}, fun() ->
-        {true, Fun(), timer:seconds(Interval)}
+-spec throttle(Identifier :: term(), Interval :: time:seconds(), fun(() -> Result)) -> Result.
+throttle(Identifier, Interval, Fun) when is_function(Fun, 0) ->
+    {ok, Res} = node_cache:acquire({throttle, Identifier}, fun() ->
+        {ok, Fun(), Interval}
     end),
     Res.
 
