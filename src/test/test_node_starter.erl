@@ -200,11 +200,7 @@ maybe_gather_cover(Config, Apps, _) ->
     lists:foreach(fun(Node) ->
         receive
             {app_ended, CoverNode, FileData} ->
-                {Mega, Sec, Micro} = os:timestamp(),
-                CoverFile = atom_to_list(CoverNode) ++
-                    integer_to_list(
-                        (Mega * 1000000 + Sec) * 1000000 + Micro) ++
-                    ".coverdata",
+                CoverFile = str_utils:format("~s-~B.coverdata", [CoverNode, global_clock:timestamp_millis()]),
                 ok = file:write_file(CoverFile, FileData),
                 cover:import(CoverFile),
                 file:delete(CoverFile)

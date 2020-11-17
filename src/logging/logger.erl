@@ -182,9 +182,8 @@ parse_process_info({_, {Module, Function, Arity}}) ->
 -spec log_with_rotation(LogFile :: string(),
     Format :: io:format(), Args :: [term()], MaxSize :: non_neg_integer()) -> ok.
 log_with_rotation(LogFile, Format, Args, MaxSize) ->
-    Now = os:timestamp(),
     {Date, Time} = lager_util:format_time(lager_util:maybe_utc(
-        lager_util:localtime_ms(Now))),
+        lager_util:localtime_ms())),
 
     case filelib:file_size(LogFile) > MaxSize of
         true ->
