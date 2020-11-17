@@ -134,6 +134,7 @@ testcases() -> [
     ?ERROR_MISSING_REQUIRED_VALUE(<<"spaceId">>),
     ?ERROR_MISSING_AT_LEAST_ONE_VALUE([<<"name">>, <<"type">>]),
     ?ERROR_BAD_DATA(<<"spaceId">>),
+    ?ERROR_BAD_DATA(<<"spaceId">>, <<"Not so readable hint">>),
     ?ERROR_BAD_VALUE_EMPTY(<<"spaceId">>),
     % @TODO VFS-5838 Placeholder to plug into existing onepanel mechanism
     ?ERROR_BAD_VALUE_BOOLEAN(<<"subdomainDelegation">>),

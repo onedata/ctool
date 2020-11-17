@@ -464,6 +464,16 @@ to_json(?ERROR_BAD_DATA(Key)) -> #{
     },
     <<"description">> => ?FMT("Bad value: provided \"~s\" could not be understood by the server.", [Key])
 };
+to_json(?ERROR_BAD_DATA(Key, HumanReadableHint)) -> #{
+    <<"id">> => <<"badDataWithHint">>,
+    <<"details">> => #{
+        <<"key">> => Key,
+        <<"hint">> => HumanReadableHint
+    },
+    <<"description">> => ?FMT("Bad value: provided \"~s\" could not be understood by the server due to: ~s.", [
+        Key, HumanReadableHint
+    ])
+};
 to_json(?ERROR_BAD_VALUE_EMPTY(Key)) -> #{
     <<"id">> => <<"badValueEmpty">>,
     <<"details">> => #{
@@ -1236,6 +1246,12 @@ from_json(#{<<"id">> := <<"missingAtLeastOneValue">>, <<"details">> := #{<<"keys
 from_json(#{<<"id">> := <<"badData">>, <<"details">> := #{<<"key">> := Key}}) ->
     ?ERROR_BAD_DATA(Key);
 
+from_json(#{<<"id">> := <<"badDataWithHint">>, <<"details">> := #{
+    <<"key">> := Key,
+    <<"hint">> := HumanReadableHint
+}}) ->
+    ?ERROR_BAD_DATA(Key, HumanReadableHint);
+
 from_json(#{<<"id">> := <<"badValueEmpty">>, <<"details">> := #{<<"key">> := Key}}) ->
     ?ERROR_BAD_VALUE_EMPTY(Key);
 
@@ -1606,6 +1622,7 @@ to_http_code(?ERROR_MALFORMED_DATA) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_MISSING_REQUIRED_VALUE(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_MISSING_AT_LEAST_ONE_VALUE(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_BAD_DATA(_)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_BAD_DATA(_, _)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_BAD_VALUE_EMPTY(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_BAD_VALUE_BOOLEAN(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_BAD_VALUE_ATOM(_)) -> ?HTTP_400_BAD_REQUEST;
