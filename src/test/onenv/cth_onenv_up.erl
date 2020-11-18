@@ -1,14 +1,14 @@
 %%%-------------------------------------------------------------------
-%%% @author Jakub Kudzia
-%%% @copyright (C) 2016 ACK CYFRONET AGH
+%%% @author Michal Stanisz
+%%% @copyright (C) 2020 ACK CYFRONET AGH
 %%% This software is released under the MIT license
 %%% cited in 'LICENSE.txt'.
 %%% @doc
 %%% CT hook responsible for starting test environment.
 %%% @end
 %%%-------------------------------------------------------------------
--module(cth_env_up).
--author("Jakub Kudzia").
+-module(cth_onenv_up).
+-author("Michal Stanisz").
 
 %% API
 %% CTH callback
@@ -17,15 +17,15 @@
 %% posthooks
 -export([post_init_per_suite/4, post_end_per_suite/4]).
 
--include("test/test_utils.hrl").
+-include_lib("ctool/include/test/test_utils.hrl").
+-include_lib("ctool/include/logging.hrl").
 
--record(state, {disabled=false}).
+-record(state, {}).
 -type state() :: #state{}.
 
 %%--------------------------------------------------------------------
 %% @doc
 %% CTH callback called when hook is being installed.
-%% Initializes logger state.
 %% @end
 %%--------------------------------------------------------------------
 -spec init(_Id :: term(), _Opts :: term()) -> {ok, state(), non_neg_integer()}.
@@ -36,28 +36,22 @@ init(_Id, _Opts) ->
 
 %%--------------------------------------------------------------------
 %% @doc
-%% CTH callback called after init_per_suite.
-%% Starts test environment.
-%% By default starts environment described in {test}_SUITE_data/?DEFAULT_ENV_DESCRIPTION.
-%% You can pass custom environment description file by adding
-%% {?ENV_DESCRIPTION, "{your_env_file}.json"} to Config returned by init_per_suite.
-%% "{your_env_file}.json" must be present in {test}_SUITE_data.
+%% CTH callback called after `init_per_suite`. Starts test environment.
+%% Name of test environment yaml file should be provided in Config 
+%% by calling test_config:set_onenv_scenario/2 in `init_per_suite`. 
+%% Given file must exist in test_distributed/onenv_scenarios.
 %% If you intend to perform some initialization after environment is up,
-%% pass fun(Config) -> ...end under key ?ENV_UP_POSTHOOK to Config.
+%% pass fun(Config) -> ... end to test_config:set_posthook/2 in `init_per_suite`.
 %%
+%% Config returned from `init_per_suite` is stored in Return variable.
 %% @end
 %%--------------------------------------------------------------------
--spec post_init_per_suite(Suite :: atom(), _Config :: [term()], Return :: [term()],
-    State :: state()) -> {[term()], state()}.
-post_init_per_suite(Suite, _Config, Return, State) ->
-    case ?config(?CTH_ENV_UP, Return) of
-        ?DISABLE ->
-            {Return, State#state{disabled = true}};
-        _ ->
-            ct:pal("Environment initialization in ~p", [Suite]),
-            NewConfig = test_node_starter:prepare_test_environment(Return, Suite),
-            {NewConfig, State}
-    end.
+-spec post_init_per_suite(Suite :: atom(), test_config:config(), Return :: test_config:config(),
+    State :: state()) -> {test_config:config(), state()}.
+post_init_per_suite(Suite, _, Return, State) ->
+    ct:pal("Environment initialization in ~p", [Suite]),
+    NewConfig = test_onenv_starter:prepare_test_environment(Return),
+    {NewConfig, State}.
 
 
 %%--------------------------------------------------------------------
@@ -66,12 +60,10 @@ post_init_per_suite(Suite, _Config, Return, State) ->
 %% Cleans environment used in given test suite.
 %% @end
 %%--------------------------------------------------------------------
--spec post_end_per_suite(Suite :: atom(), Config :: [term()], Return :: term(),
+-spec post_end_per_suite(Suite :: atom(), Config :: test_config:config(), Return :: term(),
     State :: state()) -> {[term()], state()}.
-post_end_per_suite(_Suite, _Config, Return, State = #state{disabled = true}) ->
-    {Return, State};
 post_end_per_suite(Suite, Config, Return, State) ->
     ct:pal("Environment cleaning in ~p", [Suite]),
-    test_node_starter:clean_environment(Config),
+    test_onenv_starter:clean_environment(Config),
     {Return, State}.
 

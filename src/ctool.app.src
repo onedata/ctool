@@ -109,7 +109,7 @@
         % known mirrors. The new registry is fetched when there is a chance that
         % it is outdated - in case an incompatibility between services or
         % unverified GUI is detected.
-        {compatibility_registry_cache_ttl, 900}, % 15 minutes
+        {compatibility_registry_cache_ttl_seconds, 900}, % 15 minutes
 
 
         %% ===================================================================

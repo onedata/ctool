@@ -16,7 +16,6 @@
 -ifdef(TEST).
 -include_lib("eunit/include/eunit.hrl").
 
-
 is_valid_name_test() ->
     ?assert(monitoring:is_valid_name("azAZ09_", 12)),
     ?assertNot(monitoring:is_valid_name("azAZ09_", 13)),
@@ -153,10 +152,12 @@ get_interface_stats_test() ->
 file_open_error_test_() ->
     {foreach,
         fun() ->
+            node_cache:init(),
             meck:new(file, [unstick, passthrough]),
             meck:expect(file, open, fun(_, _) -> error end)
         end,
         fun(_) ->
+            node_cache:destroy(),
             unmock_file()
         end,
         [
