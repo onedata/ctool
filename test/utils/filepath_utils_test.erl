@@ -21,9 +21,13 @@ sanitize_test_() ->
     F = fun filepath_utils:sanitize/1,
 
     [
-        ?_assertEqual(<<"/a/b">>, F(<<"/a/b/">>)),
-        ?_assertEqual(<<"/a/b">>, F(<<"    /a/b/">>)),
-        ?_assertEqual(<<"/a/b">>, F(<<"/a/b    ">>))
+        ?_assertEqual({ok, <<"/a/b">>}, F(<<"/a/b///////////">>)),
+        ?_assertEqual({ok, <<"/a/b">>}, F(<<"a/b/">>)),
+        ?_assertEqual({ok, <<"/a/b">>}, F(<<"    /a/b/">>)),
+        ?_assertEqual({ok, <<"/a/b">>}, F(<<"/a/b    ">>)),
+
+        ?_assertEqual({error, relative_path}, F(<<"/a/b/../c">>)),
+        ?_assertEqual({ok, <<"/a/b/..e/c">>}, F(<<"/a/b/..e/c">>))
     ].
 
 
@@ -32,7 +36,7 @@ is_ancestor_test_() ->
 
     [
         ?_assertEqual(false, F(<<"/c/b/a">>, <<"/a/b/c">>)),
-        ?_assertEqual(false, F(<<"/a/b/c/d">>, <<"/a/b/c/">>)),
+        ?_assertEqual(false, F(<<"/a/b/c/d">>, <<"/a/b/c">>)),
         ?_assertEqual(false, F(<<"/a/b/c">>, <<"/a/b/c">>)),
 
         ?_assertEqual({true, <<"c">>}, F(<<"/a/b">>, <<"/a/b/c">>)),
@@ -45,7 +49,6 @@ is_equal_or_descendant_test_() ->
 
     [
         ?_assertEqual(false, F(<<"/c/b/a">>, <<"/a/b/c">>)),
-        ?_assertEqual(false, F(<<"/a/b/c">>, <<"/a/b/c/">>)),
         ?_assertEqual(true, F(<<"/a/b/c">>, <<"/a/b/c">>)),
         ?_assertEqual(true, F(<<"/a/b/c/d">>, <<"/a/b/c">>))
     ].
@@ -56,7 +59,7 @@ is_descendant_test_() ->
 
     [
         ?_assertEqual(false, F(<<"/c/b/a">>, <<"/a/b/c">>)),
-        ?_assertEqual(false, F(<<"/a/b/c">>, <<"/a/b/c/">>)),
+        ?_assertEqual(false, F(<<"/a/b/c">>, <<"/a/b/c">>)),
         ?_assertEqual(false, F(<<"/a/b/c">>, <<"/a/b/c">>)),
         ?_assertEqual(false, F(<<"/a/b/cc">>, <<"/a/b/c">>)),
         ?_assertEqual(true, F(<<"/a/b/c/d">>, <<"/a/b/c">>))
@@ -70,8 +73,8 @@ consolidate_test_() ->
         ?_assertEqual([<<"/c/b">>], F([<<"/c/b">>, <<"/c/b/q">>])),
         ?_assertEqual([<<"/a/b/c">>], F([<<"/a/b/c/d">>, <<"/a/b/c">>])),
         ?_assertEqual(
-            [<<"/a/b/c">>, <<"p/o/i">>],
-            F([<<"/a/b/c/d">>, <<"/a/b/c">>, <<"p/o/i">>, <<"/a/b/c/e/w/q">>])
+            [<<"/a/b/c">>, <<"/p/o/i">>],
+            F([<<"/a/b/c/d">>, <<"/a/b/c">>, <<"/p/o/i">>, <<"/a/b/c/e/w/q">>])
         ),
         ?_assertEqual([<<"/a/b/c">>, <<"/c/b/a">>], F([<<"/c/b/a">>, <<"/a/b/c">>]))
     ].
@@ -90,8 +93,8 @@ intersect_test_() ->
     ].
 
 
-check_path_relation_test_() ->
-    F = fun filepath_utils:check_paths_relation/2,
+check_relation_test_() ->
+    F = fun filepath_utils:check_relation/2,
 
     [
         ?_assertEqual(

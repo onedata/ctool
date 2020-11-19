@@ -23,17 +23,17 @@
 
 -export([sanitize/1]).
 -export([is_ancestor/2, is_equal_or_descendant/2, is_descendant/2]).
--export([consolidate/1, intersect/2, check_paths_relation/2]).
+-export([consolidate/1, intersect/2, check_relation/2]).
 
--type filename() :: binary().
+-type name() :: binary().
 
 -type raw_path() :: binary().
-% Sanitized filepath with no whitespaces and no trailing '/'
--type pure_path() :: binary().
+% Absolute filepath with no whitespaces and no trailing '/'
+-type sanitized_path() :: binary().
 
--type relation() :: equal | descendant | {ancestor, ordsets:ordset(filename())}.
+-type relation() :: equal | descendant | {ancestor, ordsets:ordset(name())}.
 
--export_type([filename/0, raw_path/0, pure_path/0, relation/0]).
+-export_type([name/0, raw_path/0, sanitized_path/0, relation/0]).
 
 
 %%%===================================================================
@@ -96,22 +96,23 @@ parent_dir(Path) ->
     ensure_ends_with_slash(filename:dirname(filename:absname(Path))).
 
 
--spec sanitize(raw_path()) -> pure_path().
+-spec sanitize(raw_path()) -> {ok, sanitized_path()}.
 sanitize(RawPath) ->
-    string:trim(string:trim(RawPath), trailing, "/").
+    ensure_absolute_path(string:trim(string:trim(RawPath), trailing, "/")).
 
 
--spec is_ancestor(pure_path(), pure_path()) -> {true, filename()} | false.
+
+-spec is_ancestor(sanitized_path(), sanitized_path()) -> {true, name()} | false.
 is_ancestor(PossibleAncestor, ReferencePath) ->
     is_ancestor(PossibleAncestor, byte_size(PossibleAncestor), ReferencePath).
 
 
--spec is_equal_or_descendant(pure_path(), pure_path()) -> boolean().
+-spec is_equal_or_descendant(sanitized_path(), sanitized_path()) -> boolean().
 is_equal_or_descendant(PossibleDescendant, ReferencePath) ->
     is_equal_or_descendant(PossibleDescendant, ReferencePath, byte_size(ReferencePath)).
 
 
--spec is_descendant(pure_path(), pure_path()) -> boolean().
+-spec is_descendant(sanitized_path(), sanitized_path()) -> boolean().
 is_descendant(PossibleDescendant, ReferencePath) ->
     is_descendant(PossibleDescendant, ReferencePath, byte_size(ReferencePath)).
 
@@ -123,19 +124,20 @@ is_descendant(PossibleDescendant, ReferencePath) ->
 %% [/a/b, /q/w/e]
 %% @end
 %%--------------------------------------------------------------------
--spec consolidate([pure_path()]) -> [pure_path()].
+-spec consolidate([sanitized_path()]) -> [sanitized_path()].
 consolidate(Paths) ->
     consolidate(lists:usort(Paths), []).
 
 
 %%--------------------------------------------------------------------
 %% @doc
-%% Intersects 2 path sets.
-%% NOTE !!!
-%% Those whitelists must be consolidated before calling this function.
+%% Intersects 2 path lists.
+%%
+%%                        !!! NOTE !!!
+%% Path lists must be consolidated before calling this function.
 %% @end
 %%--------------------------------------------------------------------
--spec intersect([pure_path()], [pure_path()]) -> [pure_path()].
+-spec intersect([sanitized_path()], [sanitized_path()]) -> [sanitized_path()].
 intersect(PathsA, PathsB) ->
     intersect(PathsA, PathsB, []).
 
@@ -149,9 +151,9 @@ intersect(PathsA, PathsB) ->
 %% children names.
 %% @end
 %%--------------------------------------------------------------------
--spec check_paths_relation(pure_path(), [pure_path()]) ->
+-spec check_relation(sanitized_path(), [sanitized_path()]) ->
     undefined | relation().
-check_paths_relation(Path, ReferencePaths) ->
+check_relation(Path, ReferencePaths) ->
     PathLen = size(Path),
 
     lists:foldl(fun
@@ -192,28 +194,28 @@ check_paths_relation(Path, ReferencePaths) ->
 
 
 %% @private
--spec consolidate(Paths :: [pure_path()], ConsolidatedPaths :: [pure_path()]) ->
-    UpdatedConsolidatedPaths :: [pure_path()].
-consolidate([], ConsolidatedPaths) ->
-    lists:reverse(ConsolidatedPaths);
-consolidate([Path], ConsolidatedPaths) ->
-    lists:reverse([Path | ConsolidatedPaths]);
-consolidate([PathA, PathB | RestOfPaths], ConsolidatedPaths) ->
+-spec consolidate(Paths :: [sanitized_path()], SortedConsolidatedPaths :: [sanitized_path()]) ->
+    UpdatedSortedConsolidatedPaths :: [sanitized_path()].
+consolidate([], SortedConsolidatedPaths) ->
+    lists:reverse(SortedConsolidatedPaths);
+consolidate([Path], SortedConsolidatedPaths) ->
+    lists:reverse([Path | SortedConsolidatedPaths]);
+consolidate([PathA, PathB | RestOfPaths], SortedConsolidatedPaths) ->
     case is_equal_or_descendant(PathB, PathA) of
         true ->
-            consolidate([PathA | RestOfPaths], ConsolidatedPaths);
+            consolidate([PathA | RestOfPaths], SortedConsolidatedPaths);
         false ->
-            consolidate([PathB | RestOfPaths], [PathA | ConsolidatedPaths])
+            consolidate([PathB | RestOfPaths], [PathA | SortedConsolidatedPaths])
     end.
 
 
 %% @private
 -spec intersect(
-    PathsSetA :: [pure_path()],
-    PathsSetB :: [pure_path()],
-    Intersection :: [pure_path()]
+    PathsSetA :: [sanitized_path()],
+    PathsSetB :: [sanitized_path()],
+    Intersection :: [sanitized_path()]
 ) ->
-    UpdatedIntersection :: [pure_path()].
+    UpdatedIntersection :: [sanitized_path()].
 intersect([], _, Intersection) ->
     lists:reverse(Intersection);
 intersect(_, [], Intersection) ->
@@ -247,8 +249,8 @@ intersect([PathA | RestA] = PathsA, [PathB | RestB] = PathsB, Intersection) ->
 %% returns additionally it's immediate child.
 %% @end
 %%--------------------------------------------------------------------
--spec is_ancestor(pure_path(), pos_integer(), pure_path()) ->
-    {true, filename()} | false.
+-spec is_ancestor(sanitized_path(), pos_integer(), sanitized_path()) ->
+    {true, name()} | false.
 is_ancestor(PossibleAncestor, PossibleAncestorLen, ReferencePath) ->
     case ReferencePath of
         <<PossibleAncestor:PossibleAncestorLen/binary, "/", RelativePath/binary>> ->
@@ -260,7 +262,7 @@ is_ancestor(PossibleAncestor, PossibleAncestorLen, ReferencePath) ->
 
 
 %% @private
--spec is_equal_or_descendant(pure_path(), pure_path(), pos_integer()) ->
+-spec is_equal_or_descendant(sanitized_path(), sanitized_path(), pos_integer()) ->
     boolean().
 is_equal_or_descendant(Path, Path, _PathLen) ->
     true;
@@ -269,7 +271,7 @@ is_equal_or_descendant(PossibleDescendant, ReferencePath, PathLen) ->
 
 
 %% @private
--spec is_descendant(pure_path(), pure_path(), pos_integer()) ->
+-spec is_descendant(sanitized_path(), sanitized_path(), pos_integer()) ->
     boolean().
 is_descendant(PossibleDescendant, ReferencePath, ReferencePathLen) ->
     case PossibleDescendant of
@@ -277,4 +279,17 @@ is_descendant(PossibleDescendant, ReferencePath, ReferencePathLen) ->
             true;
         _ ->
             false
+    end.
+
+
+%% @private
+-spec ensure_absolute_path(sanitized_path()) ->
+    {ok, sanitized_path()} | {error, relative_path}.
+ensure_absolute_path(RawPath) ->
+    Tokens = binary:split(RawPath, <<"/">>, [global]),
+    case lists:any(fun(X) -> X == <<".">> orelse X == <<"..">> end, Tokens) of
+        true ->
+            {error, relative_path};
+        _ ->
+            {ok, ensure_begins_with_slash(RawPath)}
     end.
