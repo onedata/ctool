@@ -58,7 +58,7 @@
 % Name of the key in data structure that caused the error, e.g. <<"name">>.
 -type key() :: binary().
 -type data_validation() :: malformed_data | {missing_required_value, key()}
-| {missing_at_least_one_value, [key()]} | {bad_data, key()}
+| {missing_at_least_one_value, [key()]} | {bad_data, key()} | {bad_data, key(), Hint :: binary()}
 | {empty_value, key()} | {bad_value_atom, key()}
 | {bad_value_list_of_atoms, key()} | {bad_value_boolean, key()}
 | {bad_value_binary, key()} | {bad_value_binary_too_long, key(), {max, integer()}}
@@ -470,9 +470,7 @@ to_json(?ERROR_BAD_DATA(Key, HumanReadableHint)) -> #{
         <<"key">> => Key,
         <<"hint">> => HumanReadableHint
     },
-    <<"description">> => ?FMT("Bad value: provided \"~s\" could not be understood by the server due to: ~s.", [
-        Key, HumanReadableHint
-    ])
+    <<"description">> => ?FMT("Bad value provided for \"~s\": ~ts.", [Key, HumanReadableHint])
 };
 to_json(?ERROR_BAD_VALUE_EMPTY(Key)) -> #{
     <<"id">> => <<"badValueEmpty">>,
