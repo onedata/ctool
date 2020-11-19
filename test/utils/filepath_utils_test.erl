@@ -17,8 +17,8 @@
 -include_lib("eunit/include/eunit.hrl").
 
 
-pure_path_test_() ->
-    F = fun filepath_utils:pure_path/1,
+sanitize_test_() ->
+    F = fun filepath_utils:sanitize/1,
 
     [
         ?_assertEqual(<<"/a/b">>, F(<<"/a/b/">>)),
@@ -40,8 +40,8 @@ is_ancestor_test_() ->
     ].
 
 
-is_path_or_subpath_test_() ->
-    F = fun filepath_utils:is_path_or_subpath/2,
+is_equal_or_descendant_test_() ->
+    F = fun filepath_utils:is_equal_or_descendant/2,
 
     [
         ?_assertEqual(false, F(<<"/c/b/a">>, <<"/a/b/c">>)),
@@ -51,8 +51,8 @@ is_path_or_subpath_test_() ->
     ].
 
 
-is_subpath_test_() ->
-    F = fun filepath_utils:is_subpath/2,
+is_descendant_test_() ->
+    F = fun filepath_utils:is_descendant/2,
 
     [
         ?_assertEqual(false, F(<<"/c/b/a">>, <<"/a/b/c">>)),
@@ -63,7 +63,7 @@ is_subpath_test_() ->
     ].
 
 
-consolidate_paths_test_() ->
+consolidate_test_() ->
     F = fun filepath_utils:consolidate/1,
 
     [
@@ -77,7 +77,7 @@ consolidate_paths_test_() ->
     ].
 
 
-intersect_path_whitelists_test_() ->
+intersect_test_() ->
     F = fun filepath_utils:intersect/2,
 
     [
@@ -110,11 +110,15 @@ check_path_relation_test_() ->
             )
         ),
         ?_assertEqual(
-            subpath,
+            equal,
+            F(<<"/qwe/binaries">>, [<<"/asd/bin">>, <<"/qwe/binaries">>])
+        ),
+        ?_assertEqual(
+            descendant,
             F(<<"/qwe/binaries/chmod">>, [<<"/asd/bin">>, <<"/qwe/binaries">>])
         ),
         ?_assertEqual(
-            subpath,
+            descendant,
             F(<<"/qwe/bin/users">>, [<<"/asd/bin/users/qwe">>, <<"/qwe/bin">>])
         ),
         ?_assertEqual(

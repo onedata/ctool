@@ -21,8 +21,8 @@
     ensure_begins_with_prefix/2, parent_dir/1
 ]).
 
--export([pure_path/1]).
--export([is_ancestor/2, is_path_or_subpath/2, is_subpath/2]).
+-export([sanitize/1]).
+-export([is_ancestor/2, is_equal_or_descendant/2, is_descendant/2]).
 -export([consolidate/1, intersect/2, check_paths_relation/2]).
 
 -type filename() :: binary().
@@ -31,7 +31,7 @@
 % Sanitized filepath with no whitespaces and no trailing '/'
 -type pure_path() :: binary().
 
--type relation() :: subpath | {ancestor, ordsets:ordset(filename())}.
+-type relation() :: equal | descendant | {ancestor, ordsets:ordset(filename())}.
 
 -export_type([filename/0, raw_path/0, pure_path/0, relation/0]).
 
@@ -96,30 +96,30 @@ parent_dir(Path) ->
     ensure_ends_with_slash(filename:dirname(filename:absname(Path))).
 
 
--spec pure_path(raw_path()) -> pure_path().
-pure_path(RawPath) ->
+-spec sanitize(raw_path()) -> pure_path().
+sanitize(RawPath) ->
     string:trim(string:trim(RawPath), trailing, "/").
 
 
 -spec is_ancestor(pure_path(), pure_path()) -> {true, filename()} | false.
-is_ancestor(PossibleAncestor, Path) ->
-    is_ancestor(PossibleAncestor, byte_size(PossibleAncestor), Path).
+is_ancestor(PossibleAncestor, ReferencePath) ->
+    is_ancestor(PossibleAncestor, byte_size(PossibleAncestor), ReferencePath).
 
 
--spec is_path_or_subpath(pure_path(), pure_path()) -> boolean().
-is_path_or_subpath(PossiblePathOrSubPath, Path) ->
-    is_path_or_subpath(PossiblePathOrSubPath, Path, byte_size(Path)).
+-spec is_equal_or_descendant(pure_path(), pure_path()) -> boolean().
+is_equal_or_descendant(PossibleDescendant, ReferencePath) ->
+    is_equal_or_descendant(PossibleDescendant, ReferencePath, byte_size(ReferencePath)).
 
 
--spec is_subpath(pure_path(), pure_path()) -> boolean().
-is_subpath(PossibleSubPath, Path) ->
-    is_subpath(PossibleSubPath, Path, byte_size(Path)).
+-spec is_descendant(pure_path(), pure_path()) -> boolean().
+is_descendant(PossibleDescendant, ReferencePath) ->
+    is_descendant(PossibleDescendant, ReferencePath, byte_size(ReferencePath)).
 
 
 %%--------------------------------------------------------------------
 %% @doc
-%% Consolidates paths by removing ones that are subpaths of others, e.g.:
-%% >> consolidate([/a/b/, /a/b/c, /q/w/e]).
+%% Consolidates paths by removing ones that are descendants of others, e.g.:
+%% >> consolidate([/a/b, /a/b/c, /q/w/e]).
 %% [/a/b, /q/w/e]
 %% @end
 %%--------------------------------------------------------------------
@@ -136,37 +136,44 @@ consolidate(Paths) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec intersect([pure_path()], [pure_path()]) -> [pure_path()].
-intersect(PathsSetA, PathsSetB) ->
-    intersect(PathsSetA, PathsSetB, []).
+intersect(PathsA, PathsB) ->
+    intersect(PathsA, PathsB, []).
 
 
 %%--------------------------------------------------------------------
 %% @doc
-%% Checks whether Path is ancestor or subpath to any of specified paths.
-%% In case when Path is ancestor to one path and subpath to another,
-%% then subpath takes precedence.
+%% Checks whether Path is ancestor, equal or descendant to any of specified paths.
+%% In case when Path is ancestor to one path and equal/descendant to another,
+%% then equal/descendant takes precedence.
 %% Additionally, if it is ancestor, it returns collection of it's immediate
 %% children names.
 %% @end
 %%--------------------------------------------------------------------
 -spec check_paths_relation(pure_path(), [pure_path()]) ->
     undefined | relation().
-check_paths_relation(Path, PathsSet) ->
+check_paths_relation(Path, ReferencePaths) ->
     PathLen = size(Path),
 
     lists:foldl(fun
-        (_, subpath) ->
-            subpath;
-        (PathToCheck, Acc) ->
-            PathToCheckLen = size(PathToCheck),
-            case PathLen >= PathToCheckLen of
+        (_, descendant) ->
+            descendant;
+        (_, equal) ->
+            equal;
+        (ReferencePath, Acc) ->
+            ReferencePathLen = size(ReferencePath),
+            case PathLen >= ReferencePathLen of
                 true ->
-                    case is_path_or_subpath(Path, PathToCheck, PathToCheckLen) of
-                        true -> subpath;
-                        false -> Acc
+                    case Path == ReferencePath of
+                        true ->
+                            equal;
+                        false ->
+                            case is_descendant(Path, ReferencePath, ReferencePathLen) of
+                                true -> descendant;
+                                false -> Acc
+                            end
                     end;
                 false ->
-                    case is_ancestor(Path, PathLen, PathToCheck) of
+                    case is_ancestor(Path, PathLen, ReferencePath) of
                         {true, Child} ->
                             NamesAcc = case Acc of
                                 undefined -> ordsets:new();
@@ -176,7 +183,7 @@ check_paths_relation(Path, PathsSet) ->
                         false -> Acc
                     end
             end
-    end, undefined, PathsSet).
+    end, undefined, ReferencePaths).
 
 
 %%%===================================================================
@@ -192,7 +199,7 @@ consolidate([], ConsolidatedPaths) ->
 consolidate([Path], ConsolidatedPaths) ->
     lists:reverse([Path | ConsolidatedPaths]);
 consolidate([PathA, PathB | RestOfPaths], ConsolidatedPaths) ->
-    case is_path_or_subpath(PathB, PathA) of
+    case is_equal_or_descendant(PathB, PathA) of
         true ->
             consolidate([PathA | RestOfPaths], ConsolidatedPaths);
         false ->
@@ -211,24 +218,24 @@ intersect([], _, Intersection) ->
     lists:reverse(Intersection);
 intersect(_, [], Intersection) ->
     lists:reverse(Intersection);
-intersect([PathA | RestA] = PathsSettA, [PathB | RestB] = PathsSetB, Intersection) ->
+intersect([PathA | RestA] = PathsA, [PathB | RestB] = PathsB, Intersection) ->
     PathALen = size(PathA),
     PathBLen = size(PathB),
 
     case PathA < PathB of
         true ->
-            case is_subpath(PathB, PathA, PathALen) of
+            case is_descendant(PathB, PathA, PathALen) of
                 true ->
                     intersect(RestA, RestB, [PathB | Intersection]);
                 false ->
-                    intersect(RestA, PathsSetB, Intersection)
+                    intersect(RestA, PathsB, Intersection)
             end;
         false ->
-            case is_path_or_subpath(PathA, PathB, PathBLen) of
+            case is_equal_or_descendant(PathA, PathB, PathBLen) of
                 true ->
                     intersect(RestA, RestB, [PathA | Intersection]);
                 false ->
-                    intersect(PathsSettA, RestB, Intersection)
+                    intersect(PathsA, RestB, Intersection)
             end
     end.
 
@@ -236,16 +243,16 @@ intersect([PathA | RestA] = PathsSettA, [PathB | RestB] = PathsSetB, Intersectio
 %%--------------------------------------------------------------------
 %% @private
 %% @doc
-%% Checks whether PossibleAncestor is ancestor of Path. If it is then
+%% Checks whether PossibleAncestor is ancestor of ReferencePath. If it is then
 %% returns additionally it's immediate child.
 %% @end
 %%--------------------------------------------------------------------
 -spec is_ancestor(pure_path(), pos_integer(), pure_path()) ->
     {true, filename()} | false.
-is_ancestor(PossibleAncestor, PossibleAncestorLen, Path) ->
-    case Path of
-        <<PossibleAncestor:PossibleAncestorLen/binary, "/", SubPath/binary>> ->
-            [Name | _] = string:split(SubPath, <<"/">>),
+is_ancestor(PossibleAncestor, PossibleAncestorLen, ReferencePath) ->
+    case ReferencePath of
+        <<PossibleAncestor:PossibleAncestorLen/binary, "/", RelativePath/binary>> ->
+            [Name | _] = string:split(RelativePath, <<"/">>),
             {true, Name};
         _ ->
             false
@@ -253,20 +260,20 @@ is_ancestor(PossibleAncestor, PossibleAncestorLen, Path) ->
 
 
 %% @private
--spec is_path_or_subpath(pure_path(), pure_path(), pos_integer()) ->
+-spec is_equal_or_descendant(pure_path(), pure_path(), pos_integer()) ->
     boolean().
-is_path_or_subpath(Path, Path, _PathLen) ->
+is_equal_or_descendant(Path, Path, _PathLen) ->
     true;
-is_path_or_subpath(PossiblePathOrSubPath, Path, PathLen) ->
-    is_subpath(PossiblePathOrSubPath, Path, PathLen).
+is_equal_or_descendant(PossibleDescendant, ReferencePath, PathLen) ->
+    is_descendant(PossibleDescendant, ReferencePath, PathLen).
 
 
 %% @private
--spec is_subpath(pure_path(), pure_path(), pos_integer()) ->
+-spec is_descendant(pure_path(), pure_path(), pos_integer()) ->
     boolean().
-is_subpath(PossibleSubPath, Path, PathLen) ->
-    case PossibleSubPath of
-        <<Path:PathLen/binary, "/", _/binary>> ->
+is_descendant(PossibleDescendant, ReferencePath, ReferencePathLen) ->
+    case PossibleDescendant of
+        <<ReferencePath:ReferencePathLen/binary, "/", _/binary>> ->
             true;
         _ ->
             false
