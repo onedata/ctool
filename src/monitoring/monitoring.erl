@@ -81,10 +81,9 @@ update(MonitoringState) ->
         net_last = NetLast
     } = MonitoringState,
 
-    % make sure the time difference is not zero in case the update function
-    % is called twice in a very short interval
-    TimeDiffMillis = max(1, stopwatch:read_millis(LastUpdateTimer)),
-    TimeDiffSeconds = TimeDiffMillis / 1000, % float is required for better accuracy
+    % make sure the time difference is not zero in case the update function is
+    % called twice in a very short interval, float is required for better accuracy
+    TimeDiffSeconds = max(0.001, stopwatch:read_seconds(LastUpdateTimer, float)),
 
     {CPUStats, NewCPULast} = get_cpu_stats(CPULast),
     {NetStats, NewNetLast} = get_network_stats(NetLast, TimeDiffSeconds),

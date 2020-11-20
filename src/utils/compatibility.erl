@@ -347,7 +347,10 @@ get_registry(fetch) ->
     case fetch_registry(Mirrors) of
         {ok, Binary, Registry, Mirror} ->
             try
-                maybe_overwrite_registry(Binary, Registry, Mirror)
+                case maybe_overwrite_registry(Binary, Registry, Mirror) of
+                    true -> {ok, Registry};
+                    false -> get_registry(local)
+                end
             catch Type:Reason ->
                 ?error_stacktrace("Error processing newly fetched compatibility registry - ~p:~p, mirror: ~s", [
                     Type, Reason, Mirror
@@ -391,10 +394,27 @@ fetch_registry([]) ->
 
 %% @private
 -spec maybe_overwrite_registry(Binary :: binary(), registry(), Mirror :: http_client:url()) ->
-    {ok, registry()}.
+    boolean().
 maybe_overwrite_registry(Binary, Registry, Mirror) ->
-    {ok, LocalRegistry} = get_registry(local),
-    case revision(Registry) > revision(LocalRegistry) of
+    ShouldOverwrite = case get_registry(local) of
+        {ok, LocalRegistry} ->
+            case revision(Registry) > revision(LocalRegistry) of
+                true ->
+                    true;
+                false ->
+                    ?debug(
+                        "Ignoring compatibility registry fetched from mirror ~s "
+                        "- revision (~B) not newer than local (~B)",
+                        [Mirror, revision(Registry), revision(LocalRegistry)]
+                    ),
+                    false
+            end;
+        {error, cannot_parse_registry} ->
+            % handle situations when the local registry has been deleted or is broken
+            true
+    end,
+
+    case ShouldOverwrite of
         true ->
             RegistryPath = ?REGISTRY_PATH,
             ?info(
@@ -404,14 +424,9 @@ maybe_overwrite_registry(Binary, Registry, Mirror) ->
             ),
             ok = file:write_file(RegistryPath, Binary),
             clear_registry_cache(),
-            {ok, Registry};
+            true;
         false ->
-            ?debug(
-                "Ignoring compatibility registry fetched from mirror ~s "
-                "- revision (~B) not newer than local (~B)",
-                [Mirror, revision(Registry), revision(LocalRegistry)]
-            ),
-            {ok, LocalRegistry}
+            false
     end.
 
 

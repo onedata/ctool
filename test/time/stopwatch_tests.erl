@@ -30,6 +30,8 @@ stopwatch_in_various_units() ->
     Stopwatch = stopwatch:start(),
 
     ?assertEqual(0, stopwatch:read_seconds(Stopwatch)),
+    ?assertEqual(0, stopwatch:read_seconds(Stopwatch, integer)),
+    ?assertEqual(0.0, stopwatch:read_seconds(Stopwatch, float)),
     ?assertEqual(0, stopwatch:read_millis(Stopwatch)),
     ?assertEqual(0, stopwatch:read_micros(Stopwatch)),
     ?assertEqual(0, stopwatch:read_nanos(Stopwatch)),
@@ -37,6 +39,8 @@ stopwatch_in_various_units() ->
     clock_freezer_mock:simulate_millis_passing(123),
 
     ?assertEqual(0, stopwatch:read_seconds(Stopwatch)),
+    ?assertEqual(0, stopwatch:read_seconds(Stopwatch, integer)),
+    ?assertEqual(0.123, stopwatch:read_seconds(Stopwatch, float)),
     ?assertEqual(123, stopwatch:read_millis(Stopwatch)),
     ?assertEqual(123000, stopwatch:read_micros(Stopwatch)),
     ?assertEqual(123000000, stopwatch:read_nanos(Stopwatch)),
@@ -44,6 +48,8 @@ stopwatch_in_various_units() ->
     clock_freezer_mock:simulate_millis_passing(8950),
 
     ?assertEqual(9, stopwatch:read_seconds(Stopwatch)),
+    ?assertEqual(9, stopwatch:read_seconds(Stopwatch, integer)),
+    ?assertEqual(9.073, stopwatch:read_seconds(Stopwatch, float)),
     ?assertEqual(9073, stopwatch:read_millis(Stopwatch)),
     ?assertEqual(9073000, stopwatch:read_micros(Stopwatch)),
     ?assertEqual(9073000000, stopwatch:read_nanos(Stopwatch)).

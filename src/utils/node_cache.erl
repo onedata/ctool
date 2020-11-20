@@ -104,11 +104,9 @@ acquire(Key, AcquireCallback) when is_function(AcquireCallback, 0) ->
 put(Key, Value) ->
     put(Key, Value, infinity).
 
-
 -spec put(key(), value(), ttl()) -> ok.
 put(Key, Value, TTL) ->
-    true = ets:insert(?MODULE, {Key, {Value, countdown_timer:start_seconds(TTL)}}),
-    ok.
+    insert_into_cache(Key, Value, TTL).
 
 
 -spec clear(key()) -> ok.
@@ -121,9 +119,22 @@ clear(Key) ->
 %%%===================================================================
 
 %% @private
+-spec insert_into_cache(key(), value(), ttl()) -> ok.
+insert_into_cache(Key, Value, TTL) ->
+    Expiry = case TTL of
+        infinity -> infinity;
+        _ -> countdown_timer:start_seconds(TTL)
+    end,
+    true = ets:insert(?MODULE, {Key, {Value, Expiry}}),
+    ok.
+
+
+%% @private
 -spec lookup_in_cache(key()) -> {true, value()} | false.
 lookup_in_cache(Key) ->
     case ets:lookup(?MODULE, Key) of
+        [{Key, {Value, infinity}}] ->
+            {true, Value};
         [{Key, {Value, ExpiryTimer}}] ->
             case countdown_timer:is_expired(ExpiryTimer) of
                 false -> {true, Value};

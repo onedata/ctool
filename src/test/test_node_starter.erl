@@ -200,9 +200,9 @@ maybe_gather_cover(Config, Apps, _) ->
     lists:foreach(fun(Node) ->
         receive
             {app_ended, CoverNode, FileData} ->
-                CoverFile = str_utils:format("~s-~B.coverdata", [CoverNode, global_clock:timestamp_millis()]),
+                CoverFile = str_utils:format("~s-~s.coverdata", [CoverNode, str_utils:rand_hex(10)]),
                 ok = file:write_file(CoverFile, FileData),
-                cover:import(CoverFile),
+                ok = cover:import(CoverFile),
                 file:delete(CoverFile)
         after
             ?TIMEOUT ->
@@ -278,7 +278,7 @@ maybe_stop_cover() ->
             ok;
         {ok, Dirs} when is_list(Dirs) ->
             CoverFile = "cv.coverdata",
-            cover:export(CoverFile),
+            ok = cover:export(CoverFile),
             {ok, FileData} = file:read_file(CoverFile),
             ok = file:delete(CoverFile),
             lists:foreach(fun(Node) ->
