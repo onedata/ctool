@@ -18,10 +18,11 @@
 % File path manipulation
 -export([
     ensure_ends_with_slash/1, ensure_begins_with_slash/1,
-    ensure_begins_with_prefix/2, parent_dir/1
+    ensure_begins_with_prefix/2, parent_dir/1, basename_and_parent_dir/1
 ]).
 
 -export([sanitize/1]).
+-export([split/1, join/1]).
 -export([is_ancestor/2, is_equal_or_descendant/2, is_descendant/2]).
 -export([consolidate/1, intersect/2, check_relation/2]).
 
@@ -31,10 +32,14 @@
 % Absolute filepath with no whitespaces and no trailing '/'
 -type sanitized_path() :: binary().
 
+-type path() :: raw_path() | sanitized_path().
+
+
 -type relation() :: equal | descendant | {ancestor, ordsets:ordset(name())}.
 
 -export_type([name/0, raw_path/0, sanitized_path/0, relation/0]).
 
+-define(DIRECTORY_SEPARATOR, "/").
 
 %%%===================================================================
 %%% API
@@ -96,10 +101,60 @@ parent_dir(Path) ->
     ensure_ends_with_slash(filename:dirname(filename:absname(Path))).
 
 
--spec sanitize(raw_path()) -> {ok, sanitized_path()}.
-sanitize(RawPath) ->
-    ensure_absolute_path(string:trim(string:trim(RawPath), trailing, "/")).
+-spec basename_and_parent_dir(path()) -> {Name :: name(), Parent :: path()}.
+basename_and_parent_dir(Path) ->
+    case lists:reverse(split(Path)) of
+        [Leaf | Tokens] ->
+            {Leaf, join([<<?DIRECTORY_SEPARATOR>> | lists:reverse(Tokens)])};
+        _ ->
+            {<<"">>, <<?DIRECTORY_SEPARATOR>>}
+    end.
 
+
+-spec split(path()) -> [binary()].
+split(Path) ->
+    Tokens = lists:filter(
+        fun(Token) -> Token /= <<".">> end,
+        binary:split(Path, <<?DIRECTORY_SEPARATOR>>, [global, trim_all])
+    ),
+    case Path of
+        <<?DIRECTORY_SEPARATOR, _/binary>> ->
+            [<<?DIRECTORY_SEPARATOR>> | Tokens];
+        _ ->
+            Tokens
+    end.
+
+
+-spec join([binary()]) -> path().
+join([]) ->
+    <<>>;
+join([<<?DIRECTORY_SEPARATOR>> = Sep, <<?DIRECTORY_SEPARATOR>> | Tokens]) ->
+    join([Sep | Tokens]);
+join([<<?DIRECTORY_SEPARATOR>> = Sep | Tokens]) ->
+    <<Sep/binary, (join(Tokens))/binary>>;
+join(Tokens) ->
+    Tokens1 = lists:filtermap(fun(Token) ->
+        case string:trim(Token, both, ?DIRECTORY_SEPARATOR) of
+            <<>> -> false;
+            Bin -> {true, Bin}
+        end
+    end, Tokens),
+
+    str_utils:join_binary(Tokens1, <<?DIRECTORY_SEPARATOR>>).
+
+
+-spec sanitize(raw_path()) -> {ok, sanitized_path()} | {error, invalid_path}.
+sanitize(RawPath) ->
+    Tokens = split(RawPath),
+    IsInvalidFilePathToken = fun(Token) ->
+        Token == <<"..">> orelse binary:match(Token, <<"\0">>) /= nomatch
+    end,
+    case lists:any(IsInvalidFilePathToken, Tokens) of
+        true ->
+            {error, invalid_path};
+        false ->
+            {ok, join(Tokens)}
+    end.
 
 
 -spec is_ancestor(sanitized_path(), sanitized_path()) -> {true, name()} | false.
@@ -253,8 +308,8 @@ intersect([PathA | RestA] = PathsA, [PathB | RestB] = PathsB, Intersection) ->
     {true, name()} | false.
 is_ancestor(PossibleAncestor, PossibleAncestorLen, ReferencePath) ->
     case ReferencePath of
-        <<PossibleAncestor:PossibleAncestorLen/binary, "/", RelativePath/binary>> ->
-            [Name | _] = string:split(RelativePath, <<"/">>),
+        <<PossibleAncestor:PossibleAncestorLen/binary, ?DIRECTORY_SEPARATOR, RelPath/binary>> ->
+            [Name | _] = string:split(RelPath, <<?DIRECTORY_SEPARATOR>>),
             {true, Name};
         _ ->
             false
@@ -275,21 +330,8 @@ is_equal_or_descendant(PossibleDescendant, ReferencePath, PathLen) ->
     boolean().
 is_descendant(PossibleDescendant, ReferencePath, ReferencePathLen) ->
     case PossibleDescendant of
-        <<ReferencePath:ReferencePathLen/binary, "/", _/binary>> ->
+        <<ReferencePath:ReferencePathLen/binary, ?DIRECTORY_SEPARATOR, _/binary>> ->
             true;
         _ ->
             false
-    end.
-
-
-%% @private
--spec ensure_absolute_path(sanitized_path()) ->
-    {ok, sanitized_path()} | {error, relative_path}.
-ensure_absolute_path(RawPath) ->
-    Tokens = binary:split(RawPath, <<"/">>, [global]),
-    case lists:any(fun(X) -> X == <<".">> orelse X == <<"..">> end, Tokens) of
-        true ->
-            {error, relative_path};
-        _ ->
-            {ok, ensure_begins_with_slash(RawPath)}
     end.
