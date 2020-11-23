@@ -12,6 +12,8 @@
 -module(filepath_utils).
 -author("Tomasz Lichon").
 
+-include("utils/filepath_utils.hrl").
+
 % File path validation
 -export([ends_with_slash/1]).
 
@@ -29,7 +31,7 @@
 -type name() :: binary().
 
 -type raw_path() :: binary().
-% Absolute filepath with no whitespaces and no trailing '/'
+% Filepath with removed '.' and no trailing '/'
 -type sanitized_path() :: binary().
 
 -type path() :: raw_path() | sanitized_path().
@@ -39,7 +41,6 @@
 
 -export_type([name/0, raw_path/0, sanitized_path/0, relation/0]).
 
--define(DIRECTORY_SEPARATOR, "/").
 
 %%%===================================================================
 %%% API
@@ -249,25 +250,25 @@ check_relation(Path, ReferencePaths) ->
 
 
 %% @private
--spec consolidate(Paths :: [sanitized_path()], SortedConsolidatedPaths :: [sanitized_path()]) ->
-    UpdatedSortedConsolidatedPaths :: [sanitized_path()].
-consolidate([], SortedConsolidatedPaths) ->
-    lists:reverse(SortedConsolidatedPaths);
-consolidate([Path], SortedConsolidatedPaths) ->
-    lists:reverse([Path | SortedConsolidatedPaths]);
-consolidate([PathA, PathB | RestOfPaths], SortedConsolidatedPaths) ->
+-spec consolidate(SortedPaths :: [sanitized_path()], ConsolidatedPaths :: [sanitized_path()]) ->
+    UpdatedConsolidatedPaths :: [sanitized_path()].
+consolidate([], ConsolidatedPaths) ->
+    lists:reverse(ConsolidatedPaths);
+consolidate([Path], ConsolidatedPaths) ->
+    lists:reverse([Path | ConsolidatedPaths]);
+consolidate([PathA, PathB | RestOfSortedPaths], ConsolidatedPaths) ->
     case is_equal_or_descendant(PathB, PathA) of
         true ->
-            consolidate([PathA | RestOfPaths], SortedConsolidatedPaths);
+            consolidate([PathA | RestOfSortedPaths], ConsolidatedPaths);
         false ->
-            consolidate([PathB | RestOfPaths], [PathA | SortedConsolidatedPaths])
+            consolidate([PathB | RestOfSortedPaths], [PathA | ConsolidatedPaths])
     end.
 
 
 %% @private
 -spec intersect(
-    PathsSetA :: [sanitized_path()],
-    PathsSetB :: [sanitized_path()],
+    ConsolidatedPathsA :: [sanitized_path()],
+    ConsolidatedPathsB :: [sanitized_path()],
     Intersection :: [sanitized_path()]
 ) ->
     UpdatedIntersection :: [sanitized_path()].
@@ -275,7 +276,7 @@ intersect([], _, Intersection) ->
     lists:reverse(Intersection);
 intersect(_, [], Intersection) ->
     lists:reverse(Intersection);
-intersect([PathA | RestA] = PathsA, [PathB | RestB] = PathsB, Intersection) ->
+intersect([PathA | RestA] = ConsolidatedPathsA, [PathB | RestB] = ConsolidatedPathsB, Intersection) ->
     PathALen = size(PathA),
     PathBLen = size(PathB),
 
@@ -285,14 +286,14 @@ intersect([PathA | RestA] = PathsA, [PathB | RestB] = PathsB, Intersection) ->
                 true ->
                     intersect(RestA, RestB, [PathB | Intersection]);
                 false ->
-                    intersect(RestA, PathsB, Intersection)
+                    intersect(RestA, ConsolidatedPathsB, Intersection)
             end;
         false ->
             case is_equal_or_descendant(PathA, PathB, PathBLen) of
                 true ->
                     intersect(RestA, RestB, [PathA | Intersection]);
                 false ->
-                    intersect(PathsA, RestB, Intersection)
+                    intersect(ConsolidatedPathsA, RestB, Intersection)
             end
     end.
 
