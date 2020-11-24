@@ -1,5 +1,6 @@
 %%%--------------------------------------------------------------------
 %%% @author Tomasz Lichon
+%%% @author Bartosz Walkowicz
 %%% @copyright (C) 2015-2020 ACK CYFRONET AGH
 %%% This software is released under the MIT license
 %%% cited in 'LICENSE.txt'.
@@ -11,24 +12,27 @@
 %%%--------------------------------------------------------------------
 -module(filepath_utils).
 -author("Tomasz Lichon").
+-author("Bartosz Walkowicz").
 
--include("utils/filepath_utils.hrl").
+-include("onedata.hrl").
 
 % File path validation
+-export([is_invalid_name/1]).
 -export([ends_with_slash/1]).
 
 % File path manipulation
--export([
-    ensure_ends_with_slash/1, ensure_begins_with_slash/1,
-    ensure_begins_with_prefix/2, parent_dir/1, basename_and_parent_dir/1
-]).
+-export([ensure_ends_with_slash/1]).
+-export([ensure_begins_with_slash/1, ensure_begins_with_prefix/2]).
+-export([parent_dir/1, basename_and_parent_dir/1]).
+
+-export([split_and_skip_dots/1, split/1, join/1]).
 
 -export([sanitize/1]).
--export([split/1, join/1]).
 -export([is_ancestor/2, is_equal_or_descendant/2, is_descendant/2]).
 -export([consolidate/1, intersect/2, check_relation/2]).
 
 -type name() :: binary().
+-type tokens() :: [name()].
 
 -type raw_path() :: binary().
 % Filepath with removed '.' and no trailing '/'
@@ -39,7 +43,7 @@
 
 -type relation() :: equal | descendant | {ancestor, ordsets:ordset(name())}.
 
--export_type([name/0, raw_path/0, sanitized_path/0, relation/0]).
+-export_type([name/0, tokens/0, raw_path/0, sanitized_path/0, path/0, relation/0]).
 
 
 %%%===================================================================
@@ -47,43 +51,34 @@
 %%%===================================================================
 
 
-%%--------------------------------------------------------------------
-%% @doc Returns true when given path ends with '/'
-%%--------------------------------------------------------------------
--spec ends_with_slash(binary()) -> boolean().
+-spec is_invalid_name(name()) -> boolean().
+is_invalid_name(Name) ->
+    binary:match(Name, <<"\0">>) /= nomatch.
+
+
+-spec ends_with_slash(path()) -> boolean().
 ends_with_slash(<<"">>) ->
     false;
 ends_with_slash(Path) ->
-    binary:last(Path) =:= $/.
+    binary:last(Path) =:= ?DIRECTORY_SEPARATOR_CODE_POINT.
 
 
-%%--------------------------------------------------------------------
-%% @doc
-%% Appends '/' to the end of filepath if last character is different
-%% @end
-%%--------------------------------------------------------------------
--spec ensure_ends_with_slash(binary()) -> binary().
+-spec ensure_ends_with_slash(path()) -> path().
 ensure_ends_with_slash(<<"">>) ->
-    <<"/">>;
+    <<?DIRECTORY_SEPARATOR>>;
 ensure_ends_with_slash(Path) ->
     case ends_with_slash(Path) of
         true -> Path;
-        false -> <<Path/binary, "/">>
+        false -> <<Path/binary, ?DIRECTORY_SEPARATOR>>
     end.
 
 
-%%--------------------------------------------------------------------
-%% @equiv ensure_begins_with_prefix(Path, <<"/">>)
-%%--------------------------------------------------------------------
--spec ensure_begins_with_slash(Path :: binary()) -> binary().
+-spec ensure_begins_with_slash(path()) -> path().
 ensure_begins_with_slash(Path) ->
-    ensure_begins_with_prefix(Path, <<"/">>).
+    ensure_begins_with_prefix(Path, <<?DIRECTORY_SEPARATOR>>).
 
 
-%%--------------------------------------------------------------------
-%% @doc Ensures that path begins with given prefix
-%%--------------------------------------------------------------------
--spec ensure_begins_with_prefix(Path :: binary(), Prefix :: binary()) -> binary().
+-spec ensure_begins_with_prefix(path(), Prefix :: binary()) -> path().
 ensure_begins_with_prefix(Path, Prefix) ->
     Size = size(Prefix),
     case Path of
@@ -94,15 +89,13 @@ ensure_begins_with_prefix(Path, Prefix) ->
     end.
 
 
-%%--------------------------------------------------------------------
-%% @doc Get parent dir
-%%--------------------------------------------------------------------
--spec parent_dir(binary()) -> binary().
+-spec parent_dir(path()) -> path().
 parent_dir(Path) ->
     ensure_ends_with_slash(filename:dirname(filename:absname(Path))).
 
 
--spec basename_and_parent_dir(path()) -> {Name :: name(), Parent :: path()}.
+-spec basename_and_parent_dir(Path :: path()) ->
+    {Name :: name(), AbsoluteParentPath :: path()}.
 basename_and_parent_dir(Path) ->
     case lists:reverse(split(Path)) of
         [Leaf | Tokens] ->
@@ -112,12 +105,19 @@ basename_and_parent_dir(Path) ->
     end.
 
 
--spec split(path()) -> [binary()].
+-spec split_and_skip_dots(path()) -> {ok, tokens()} | {error, invalid_path}.
+split_and_skip_dots(Path) ->
+    Tokens = lists:filter(fun(Token) -> Token /= <<".">> end, split(Path)),
+
+    case lists:any(fun(X) -> X =:= <<"..">> end, Tokens) of
+        true -> {error, invalid_path};
+        false -> {ok, Tokens}
+    end.
+
+
+-spec split(path()) -> tokens().
 split(Path) ->
-    Tokens = lists:filter(
-        fun(Token) -> Token /= <<".">> end,
-        binary:split(Path, <<?DIRECTORY_SEPARATOR>>, [global, trim_all])
-    ),
+    Tokens = binary:split(Path, <<?DIRECTORY_SEPARATOR>>, [global, trim_all]),
     case Path of
         <<?DIRECTORY_SEPARATOR, _/binary>> ->
             [<<?DIRECTORY_SEPARATOR>> | Tokens];
@@ -126,7 +126,7 @@ split(Path) ->
     end.
 
 
--spec join([binary()]) -> path().
+-spec join(tokens()) -> path().
 join([]) ->
     <<>>;
 join([<<?DIRECTORY_SEPARATOR>> = Sep, <<?DIRECTORY_SEPARATOR>> | Tokens]) ->
@@ -146,15 +146,14 @@ join(Tokens) ->
 
 -spec sanitize(raw_path()) -> {ok, sanitized_path()} | {error, invalid_path}.
 sanitize(RawPath) ->
-    Tokens = split(RawPath),
-    IsInvalidFilePathToken = fun(Token) ->
-        Token == <<"..">> orelse binary:match(Token, <<"\0">>) /= nomatch
-    end,
-    case lists:any(IsInvalidFilePathToken, Tokens) of
-        true ->
-            {error, invalid_path};
-        false ->
-            {ok, join(Tokens)}
+    case split_and_skip_dots(RawPath) of
+        {ok, Tokens} ->
+            case lists:any(fun is_invalid_name/1, Tokens) of
+                true -> {error, invalid_path};
+                false -> {ok, join(Tokens)}
+            end;
+        {error, _} = Error ->
+            Error
     end.
 
 
@@ -194,8 +193,8 @@ consolidate(Paths) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec intersect([sanitized_path()], [sanitized_path()]) -> [sanitized_path()].
-intersect(PathsA, PathsB) ->
-    intersect(PathsA, PathsB, []).
+intersect(ConsolidatedPathsA, ConsolidatedPathsB) ->
+    intersect(ConsolidatedPathsA, ConsolidatedPathsB, []).
 
 
 %%--------------------------------------------------------------------
@@ -212,22 +211,18 @@ intersect(PathsA, PathsB) ->
 check_relation(Path, ReferencePaths) ->
     PathLen = size(Path),
 
-    lists:foldl(fun
-        (_, descendant) ->
-            descendant;
-        (_, equal) ->
-            equal;
+    lists_utils:foldl_while(fun
         (ReferencePath, Acc) ->
             ReferencePathLen = size(ReferencePath),
             case PathLen >= ReferencePathLen of
                 true ->
                     case Path == ReferencePath of
                         true ->
-                            equal;
+                            {halt, equal};
                         false ->
                             case is_descendant(Path, ReferencePath, ReferencePathLen) of
-                                true -> descendant;
-                                false -> Acc
+                                true -> {halt, descendant};
+                                false -> {cont, Acc}
                             end
                     end;
                 false ->
@@ -237,8 +232,9 @@ check_relation(Path, ReferencePaths) ->
                                 undefined -> ordsets:new();
                                 {ancestor, Children} -> Children
                             end,
-                            {ancestor, ordsets:add_element(Child, NamesAcc)};
-                        false -> Acc
+                            {cont, {ancestor, ordsets:add_element(Child, NamesAcc)}};
+                        false ->
+                            {cont, Acc}
                     end
             end
     end, undefined, ReferencePaths).
