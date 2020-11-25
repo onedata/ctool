@@ -41,7 +41,10 @@
 -type path() :: raw_path() | sanitized_path().
 
 
--type relation() :: equal | descendant | {ancestor, ordsets:ordset(name())}.
+-type relation() ::
+    equal |
+    {descendant, RelPathFromAncestor :: sanitized_path()} |
+    {ancestor, RelPathToDescendant :: sanitized_path()}.
 
 -export_type([name/0, tokens/0, raw_path/0, sanitized_path/0, path/0, relation/0]).
 
@@ -60,7 +63,7 @@ is_invalid_name(Name) ->
 ends_with_slash(<<"">>) ->
     false;
 ends_with_slash(Path) ->
-    binary:last(Path) =:= ?DIRECTORY_SEPARATOR_CODE_POINT.
+    binary:last(Path) =:= ?DIRECTORY_SEPARATOR_CHAR.
 
 
 -spec ensure_ends_with_slash(path()) -> path().
@@ -157,19 +160,43 @@ sanitize(RawPath) ->
     end.
 
 
--spec is_ancestor(sanitized_path(), sanitized_path()) -> {true, name()} | false.
+-spec is_ancestor(sanitized_path(), sanitized_path()) ->
+    {true, RelPathToDescendant :: sanitized_path()} | false.
 is_ancestor(PossibleAncestor, ReferencePath) ->
     is_ancestor(PossibleAncestor, byte_size(PossibleAncestor), ReferencePath).
 
 
--spec is_equal_or_descendant(sanitized_path(), sanitized_path()) -> boolean().
+-spec is_equal_or_descendant(sanitized_path(), sanitized_path()) ->
+    {true, RelPathFromAncestor :: sanitized_path()} | false.
 is_equal_or_descendant(PossibleDescendant, ReferencePath) ->
     is_equal_or_descendant(PossibleDescendant, ReferencePath, byte_size(ReferencePath)).
 
 
--spec is_descendant(sanitized_path(), sanitized_path()) -> boolean().
+-spec is_descendant(sanitized_path(), sanitized_path()) ->
+    {true, RelPathFromAncestor :: sanitized_path()} | false.
 is_descendant(PossibleDescendant, ReferencePath) ->
     is_descendant(PossibleDescendant, ReferencePath, byte_size(ReferencePath)).
+
+
+-spec check_relation(sanitized_path(), sanitized_path()) ->
+    undefined | relation().
+check_relation(Path, ReferencePath) ->
+    PathLen = size(Path),
+    ReferencePathLen = size(ReferencePath),
+
+    case PathLen >= ReferencePathLen of
+        true ->
+            case is_equal_or_descendant(Path, ReferencePath, ReferencePathLen) of
+                {true, <<>>} -> equal;
+                {true, RelPath} -> {descendant, RelPath};
+                false -> undefined
+            end;
+        false ->
+            case is_ancestor(Path, PathLen, ReferencePath) of
+                {true, RelPath} -> {ancestor, RelPath};
+                false -> undefined
+            end
+    end.
 
 
 %%--------------------------------------------------------------------
@@ -197,49 +224,6 @@ intersect(ConsolidatedPathsA, ConsolidatedPathsB) ->
     intersect(ConsolidatedPathsA, ConsolidatedPathsB, []).
 
 
-%%--------------------------------------------------------------------
-%% @doc
-%% Checks whether Path is ancestor, equal or descendant to any of specified paths.
-%% In case when Path is ancestor to one path and equal/descendant to another,
-%% then equal/descendant takes precedence.
-%% Additionally, if it is ancestor, it returns collection of it's immediate
-%% children names.
-%% @end
-%%--------------------------------------------------------------------
--spec check_relation(sanitized_path(), [sanitized_path()]) ->
-    undefined | relation().
-check_relation(Path, ReferencePaths) ->
-    PathLen = size(Path),
-
-    lists_utils:foldl_while(fun
-        (ReferencePath, Acc) ->
-            ReferencePathLen = size(ReferencePath),
-            case PathLen >= ReferencePathLen of
-                true ->
-                    case Path == ReferencePath of
-                        true ->
-                            {halt, equal};
-                        false ->
-                            case is_descendant(Path, ReferencePath, ReferencePathLen) of
-                                true -> {halt, descendant};
-                                false -> {cont, Acc}
-                            end
-                    end;
-                false ->
-                    case is_ancestor(Path, PathLen, ReferencePath) of
-                        {true, Child} ->
-                            NamesAcc = case Acc of
-                                undefined -> ordsets:new();
-                                {ancestor, Children} -> Children
-                            end,
-                            {cont, {ancestor, ordsets:add_element(Child, NamesAcc)}};
-                        false ->
-                            {cont, Acc}
-                    end
-            end
-    end, undefined, ReferencePaths).
-
-
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
@@ -254,7 +238,7 @@ consolidate([Path], ConsolidatedPaths) ->
     lists:reverse([Path | ConsolidatedPaths]);
 consolidate([PathA, PathB | RestOfSortedPaths], ConsolidatedPaths) ->
     case is_equal_or_descendant(PathB, PathA) of
-        true ->
+        {true, _} ->
             consolidate([PathA | RestOfSortedPaths], ConsolidatedPaths);
         false ->
             consolidate([PathB | RestOfSortedPaths], [PathA | ConsolidatedPaths])
@@ -279,14 +263,14 @@ intersect([PathA | RestA] = ConsolidatedPathsA, [PathB | RestB] = ConsolidatedPa
     case PathA < PathB of
         true ->
             case is_descendant(PathB, PathA, PathALen) of
-                true ->
+                {true, _} ->
                     intersect(RestA, RestB, [PathB | Intersection]);
                 false ->
                     intersect(RestA, ConsolidatedPathsB, Intersection)
             end;
         false ->
             case is_equal_or_descendant(PathA, PathB, PathBLen) of
-                true ->
+                {true, _} ->
                     intersect(RestA, RestB, [PathA | Intersection]);
                 false ->
                     intersect(ConsolidatedPathsA, RestB, Intersection)
@@ -294,20 +278,13 @@ intersect([PathA | RestA] = ConsolidatedPathsA, [PathB | RestB] = ConsolidatedPa
     end.
 
 
-%%--------------------------------------------------------------------
 %% @private
-%% @doc
-%% Checks whether PossibleAncestor is ancestor of ReferencePath. If it is then
-%% returns additionally it's immediate child.
-%% @end
-%%--------------------------------------------------------------------
 -spec is_ancestor(sanitized_path(), pos_integer(), sanitized_path()) ->
-    {true, name()} | false.
+    {true, RelPathToDescendant :: sanitized_path()} | false.
 is_ancestor(PossibleAncestor, PossibleAncestorLen, ReferencePath) ->
     case ReferencePath of
         <<PossibleAncestor:PossibleAncestorLen/binary, ?DIRECTORY_SEPARATOR, RelPath/binary>> ->
-            [Name | _] = string:split(RelPath, <<?DIRECTORY_SEPARATOR>>),
-            {true, Name};
+            {true, RelPath};
         _ ->
             false
     end.
@@ -315,20 +292,20 @@ is_ancestor(PossibleAncestor, PossibleAncestorLen, ReferencePath) ->
 
 %% @private
 -spec is_equal_or_descendant(sanitized_path(), sanitized_path(), pos_integer()) ->
-    boolean().
+    {true, RelPathFromAncestor :: sanitized_path()} | false.
 is_equal_or_descendant(Path, Path, _PathLen) ->
-    true;
+    {true, <<>>};
 is_equal_or_descendant(PossibleDescendant, ReferencePath, PathLen) ->
     is_descendant(PossibleDescendant, ReferencePath, PathLen).
 
 
 %% @private
 -spec is_descendant(sanitized_path(), sanitized_path(), pos_integer()) ->
-    boolean().
+    {true, RelPathFromAncestor :: sanitized_path()} | false.
 is_descendant(PossibleDescendant, ReferencePath, ReferencePathLen) ->
     case PossibleDescendant of
-        <<ReferencePath:ReferencePathLen/binary, ?DIRECTORY_SEPARATOR, _/binary>> ->
-            true;
+        <<ReferencePath:ReferencePathLen/binary, ?DIRECTORY_SEPARATOR, RelPath/binary>> ->
+            {true, RelPath};
         _ ->
             false
     end.

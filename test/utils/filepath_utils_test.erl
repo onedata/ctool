@@ -76,7 +76,7 @@ is_ancestor_test_() ->
 
         ?_assertEqual({true, <<"c">>}, P(<<"/a/b">>, <<"/a/b/c">>)),
         ?_assertEqual({true, <<"c">>}, P(<<"a/b">>, <<"a/b/c">>)),
-        ?_assertEqual({true, <<"b">>}, P(<<"/a">>, <<"/a/b/c">>))
+        ?_assertEqual({true, <<"b/c">>}, P(<<"/a">>, <<"/a/b/c">>))
     ].
 
 
@@ -85,9 +85,9 @@ is_equal_or_descendant_test_() ->
 
     [
         ?_assertEqual(false, P(<<"/c/b/a">>, <<"/a/b/c">>)),
-        ?_assertEqual(true, P(<<"/a/b/c">>, <<"/a/b/c">>)),
-        ?_assertEqual(true, P(<<"a/b/c">>, <<"a/b/c">>)),
-        ?_assertEqual(true, P(<<"/a/b/c/d">>, <<"/a/b/c">>))
+        ?_assertEqual({true, <<>>}, P(<<"/a/b/c">>, <<"/a/b/c">>)),
+        ?_assertEqual({true, <<>>}, P(<<"a/b/c">>, <<"a/b/c">>)),
+        ?_assertEqual({true, <<"d">>}, P(<<"/a/b/c/d">>, <<"/a/b/c">>))
     ].
 
 
@@ -101,7 +101,8 @@ is_descendant_test_() ->
         ?_assertEqual(false, P(<<"/a/b/c">>, <<"/a/b/c">>)),
         ?_assertEqual(false, P(<<"/a/b/cc">>, <<"/a/b/c">>)),
         ?_assertEqual(false, P(<<"a/b/cc">>, <<"a/b/c">>)),
-        ?_assertEqual(true, P(<<"/a/b/c/d">>, <<"/a/b/c">>))
+        ?_assertEqual({true, <<"d">>}, P(<<"/a/b/c/d">>, <<"/a/b/c">>)),
+        ?_assertEqual({true, <<"b/c/d">>}, P(<<"/a/b/c/d">>, <<"/a">>))
     ].
 
 
@@ -144,37 +145,19 @@ check_relation_test_() ->
     F = fun filepath_utils:check_relation/2,
 
     [
-        ?_assertEqual(
-            undefined,
-            F(<<"/qwe/binar">>, [<<"asd">>, <<"/qwe/users">>])
-        ),
-        ?_assertEqual(
-            undefined,
-            F(<<"/qwe/binar">>, [<<"/qwe/bin">>, <<"/qwe/binaries">>])
-        ),
-        ?_assertEqual(
-            {ancestor, ordsets:from_list([<<"asd">>, <<"chmod">>])},
-            F(
-                <<"/qwe/bin">>,
-                [<<"/asd/binaries">>, <<"/qwe/bin/chmod">>, <<"/asd/qwe/asd">>, <<"/qwe/bin/asd">>]
-            )
-        ),
-        ?_assertEqual(
-            equal,
-            F(<<"/qwe/binaries">>, [<<"/asd/bin">>, <<"/qwe/binaries">>])
-        ),
-        ?_assertEqual(
-            descendant,
-            F(<<"/qwe/binaries/chmod">>, [<<"/asd/bin">>, <<"/qwe/binaries">>])
-        ),
-        ?_assertEqual(
-            descendant,
-            F(<<"/qwe/bin/users">>, [<<"/asd/bin/users/qwe">>, <<"/qwe/bin">>])
-        ),
-        ?_assertEqual(
-            undefined,
-            F(<<"/qwe/bin/users">>, [<<"/asd/bin/users/qwe">>])
-        )
+        ?_assertEqual(undefined, F(<<"/qwe/binar">>, <<"asd">>)),
+        ?_assertEqual(undefined, F(<<"/qwe/binar">>, <<"/qwe/users">>)),
+        ?_assertEqual(undefined, F(<<"/qwe/binar">>, <<"/qwe/bin">>)),
+        ?_assertEqual(undefined, F(<<"/qwe/binar">>,  <<"/qwe/binaries">>)),
+        ?_assertEqual(undefined, F(<<"/qwe/bin/users">>, <<"/asd/bin/users/qwe">>)),
+
+        ?_assertEqual(equal, F(<<"/qwe/binaries">>, <<"/qwe/binaries">>)),
+
+        ?_assertEqual({ancestor, <<"asd">>}, F(<<"/qwe/bin">>, <<"/qwe/bin/asd">>)),
+        ?_assertEqual({ancestor, <<"asd/zxc">>}, F(<<"/qwe/bin">>, <<"/qwe/bin/asd/zxc">>)),
+
+        ?_assertEqual({descendant, <<"chmod">>}, F(<<"/qwe/binaries/chmod">>, <<"/qwe/binaries">>)),
+        ?_assertEqual({descendant, <<"bin/users">>}, F(<<"/qwe/bin/users">>, <<"/qwe">>))
     ].
 
 

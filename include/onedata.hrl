@@ -52,6 +52,6 @@
 
 %% Macros used for file manipulation
 -define(DIRECTORY_SEPARATOR, "/").
--define(DIRECTORY_SEPARATOR_CODE_POINT, $/).
+-define(DIRECTORY_SEPARATOR_CHAR, $/).
 
 -endif.
