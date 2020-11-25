@@ -383,7 +383,7 @@ monotonicity_and_warnings() ->
 
 %% @private
 setup() ->
-    clock_freezer_mock:setup(),
+    clock_freezer_mock:setup_locally([global_clock, ?MODULE]),
     node_cache:init(),
 
     global_clock:reset_to_system_time(),
@@ -401,7 +401,10 @@ setup() ->
         (?DUMMY_REMOTE_NODE, global_clock, read_clock_time, [system_clock]) ->
             eval_mocked_remote_timestamp_rpc_response();
         (?DUMMY_REMOTE_NODE, global_clock, store_bias, [local_clock, Bias]) ->
-            set_bias_at_remote_node(Bias)
+            set_bias_at_remote_node(Bias);
+        % other calls are used by clock_freezer_mock behind the scenes
+        (Node, Module, Function, Args) ->
+            meck:passthrough([Node, Module, Function, Args])
     end),
 
     meck:new(logger, []),
@@ -413,7 +416,7 @@ setup() ->
 %% @private
 teardown(_) ->
     node_cache:destroy(),
-    clock_freezer_mock:teardown(),
+    clock_freezer_mock:teardown_locally(),
 
     BackupFile = ctool:get_env(clock_sync_backup_file),
     TmpPath = filename:dirname(BackupFile),

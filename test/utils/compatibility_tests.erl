@@ -51,7 +51,7 @@ compatibility_verification_test_() ->
 %%%===================================================================
 
 setup() ->
-    clock_freezer_mock:setup(),
+    clock_freezer_mock:setup_locally([compatibility]),
     node_cache:init(),
 
     TmpPath = mochitemp:mkdtemp(),
@@ -77,7 +77,7 @@ teardown(_) ->
     ok = meck:unload(http_client),
 
     node_cache:destroy(),
-    clock_freezer_mock:teardown().
+    clock_freezer_mock:teardown_locally().
 
 
 mock_compatibility_file(JsonMap) when is_map(JsonMap) ->

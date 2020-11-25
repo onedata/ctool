@@ -162,7 +162,6 @@ verify(#token{type = ?INVITE_TOKEN} = Token, Secret, AuthCtx) ->
 verify(Token = #token{macaroon = Macaroon}, Secret, AuthCtx, SupportedCaveats) ->
     Verifier = caveats:build_verifier(AuthCtx, SupportedCaveats),
     try
-        
         case macaroon_verifier:verify(Verifier, Macaroon, Secret) of
             ok ->
                 {ok, #auth{

@@ -533,11 +533,11 @@ filter_caveats_test() ->
 infer_ttl_test_() ->
     {setup,
         fun() ->
-            clock_freezer_mock:setup(),
+            clock_freezer_mock:setup_locally([caveats]),
             node_cache:init()
         end,
         fun(_) ->
-            clock_freezer_mock:teardown(),
+            clock_freezer_mock:teardown_locally(),
             node_cache:destroy()
         end,
         fun() ->

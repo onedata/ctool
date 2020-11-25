@@ -11,21 +11,28 @@
 %%% Dedicated for tests of time dependent logic (requires that the logic uses
 %%% the ctool's time management modules internally). Uses meck under the hood.
 %%%
-%%% The API has two version - for the local node and for specific nodes(s).
-%%% In the latter case, it uses the mock manager for mocking (via test_utils)
-%%% and stores the frozen time on the calling node so that it is possible
-%%% to track the time using current_time_* functions.
+%%% The mock works only if called by one of whitelisted modules (which are given
+%%% during setup) - this way, clock can be frozen selectively for only the
+%%% modules that are tested, without affecting the rest of the application logic.
+%%%
+%%% The setup/teardown API has two versions - for the local node and for
+%%% specific nodes(s). In the latter case, it uses the mock manager for mocking.
+%%% After setup, the clock_freezer keeps track of the nodes where the mock is
+%%% deployed and allows tracking or modifying the current time from a central
+%%% point. NOTE that because of this, coordination of the mocking must always be
+%%% done from the same node.
 %%% @end
 %%%-------------------------------------------------------------------
 -module(clock_freezer_mock).
 -author("Lukasz Opiola").
 
 %% API
--export([setup/0, teardown/0]).
--export([setup/1, teardown/1]).
--export([simulate_seconds_passing/1, simulate_seconds_passing/2]).
--export([simulate_millis_passing/1, simulate_millis_passing/2]).
--export([set_current_time_millis/1, set_current_time_millis/2]).
+-export([setup_locally/1, teardown_locally/0]).
+-export([setup_on_nodes/2, teardown_on_nodes/1]).
+-export([simulate_seconds_passing/1]).
+-export([simulate_millis_passing/1]).
+-export([set_current_time_millis/1]).
+-export([current_time_hours/0]).
 -export([current_time_seconds/0]).
 -export([current_time_millis/0]).
 -export([current_time_micros/0]).
@@ -35,31 +42,35 @@
 %%% API
 %%%===================================================================
 
--spec setup() -> ok.
-setup() ->
+-spec setup_locally([atom()]) -> ok.
+setup_locally(WhitelistedModules) ->
+    set_target_nodes([node()]),
+    set_whitelisted_modules_on_target_nodes(WhitelistedModules),
     set_current_time_millis(starting_frozen_time()),
     ok = meck:new(native_node_clock, [passthrough]),
-    ok = meck:expect(native_node_clock, system_time_millis, fun current_time_millis/0),
-    ok = meck:expect(native_node_clock, monotonic_time_millis, fun current_time_millis/0),
-    ok = meck:expect(native_node_clock, monotonic_time_nanos, fun current_time_nanos/0).
+    ok = meck:expect(native_node_clock, system_time_millis, fun mocked_current_time_millis/0),
+    ok = meck:expect(native_node_clock, monotonic_time_millis, fun mocked_current_time_millis/0),
+    ok = meck:expect(native_node_clock, monotonic_time_nanos, fun mocked_current_time_nanos/0).
 
 
--spec teardown() -> ok.
-teardown() ->
+-spec teardown_locally() -> ok.
+teardown_locally() ->
     ok = meck:unload(native_node_clock).
 
 
--spec setup(node() | [node()]) -> ok.
-setup(NodeOrNodes) ->
-    set_current_time_millis(NodeOrNodes, starting_frozen_time()),
+-spec setup_on_nodes(node() | [node()], [atom()]) -> ok.
+setup_on_nodes(NodeOrNodes, WhitelistedModules) ->
+    set_target_nodes(utils:ensure_list(NodeOrNodes)),
+    set_whitelisted_modules_on_target_nodes(WhitelistedModules),
+    set_current_time_millis(starting_frozen_time()),
     ok = test_utils:mock_new(NodeOrNodes, native_node_clock, [passthrough]),
-    ok = test_utils:mock_expect(NodeOrNodes, native_node_clock, system_time_millis, fun current_time_millis/0),
-    ok = test_utils:mock_expect(NodeOrNodes, native_node_clock, monotonic_time_millis, fun current_time_millis/0),
-    ok = test_utils:mock_expect(NodeOrNodes, native_node_clock, monotonic_time_nanos, fun current_time_nanos/0).
+    ok = test_utils:mock_expect(NodeOrNodes, native_node_clock, system_time_millis, fun mocked_current_time_millis/0),
+    ok = test_utils:mock_expect(NodeOrNodes, native_node_clock, monotonic_time_millis, fun mocked_current_time_millis/0),
+    ok = test_utils:mock_expect(NodeOrNodes, native_node_clock, monotonic_time_nanos, fun mocked_current_time_nanos/0).
 
 
--spec teardown(node() | [node()]) -> ok.
-teardown(NodeOrNodes) ->
+-spec teardown_on_nodes(node() | [node()]) -> ok.
+teardown_on_nodes(NodeOrNodes) ->
     ok = test_utils:mock_unload(NodeOrNodes, native_node_clock).
 
 
@@ -67,31 +78,20 @@ teardown(NodeOrNodes) ->
 simulate_seconds_passing(Seconds) ->
     simulate_millis_passing(Seconds * 1000).
 
--spec simulate_seconds_passing(node() | [node()], time:seconds()) -> ok.
-simulate_seconds_passing(NodeOrNodes, Seconds) ->
-    simulate_millis_passing(NodeOrNodes, Seconds * 1000).
-
 
 -spec simulate_millis_passing(time:millis()) -> ok.
 simulate_millis_passing(Millis) ->
     set_current_time_millis(current_time_millis() + Millis).
 
--spec simulate_millis_passing(node() | [node()], time:millis()) -> ok.
-simulate_millis_passing(NodeOrNodes, Millis) ->
-    set_current_time_millis(NodeOrNodes, current_time_millis() + Millis).
-
 
 -spec set_current_time_millis(time:millis()) -> ok.
 set_current_time_millis(Millis) ->
-    % use an env variable rather than node_cache to avoid a circular dependency
-    % and a non-obvious requirement to init node cache whenever the clock is mocked
-    ctool:set_env(clock_freezer_timestamp_millis, Millis).
+    set_current_time_millis_everywhere(Millis).
 
--spec set_current_time_millis(node() | [node()], time:millis()) -> ok.
-set_current_time_millis(NodeOrNodes, Millis) ->
-    rpc_call_each_node(NodeOrNodes, ?MODULE, ?FUNCTION_NAME, [Millis]),
-    % store the time locally as well to allow tracking the frozen time on this node (using current_time_* functions)
-    set_current_time_millis(Millis).
+
+-spec current_time_hours() -> time:hours().
+current_time_hours() ->
+    current_time_seconds() div 3600.
 
 
 -spec current_time_seconds() -> time:seconds().
@@ -111,17 +111,70 @@ current_time_micros() ->
 
 -spec current_time_nanos() -> time:nanos().
 current_time_nanos() ->
-    current_time_millis() * 1000 * 1000.
+    current_time_millis() * 1000000.
 
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
 
+%% NOTE: env variables are used rather than the node_cache to avoid a circular dependency
+%% and a non-obvious requirement to init node cache whenever the clock is mocked
+
+%% @private
+-spec set_target_nodes([node()]) -> ok.
+set_target_nodes(Nodes) ->
+    ctool:set_env(clock_freezer_target_nodes, Nodes).
+
+
+%% @private
+-spec get_target_nodes() -> [node()].
+get_target_nodes() ->
+    ctool:get_env(clock_freezer_target_nodes).
+
+%% @private
+-spec set_whitelisted_modules_on_target_nodes([atom()]) -> ok.
+set_whitelisted_modules_on_target_nodes(Modules) ->
+    rpc_call_each_node(get_target_nodes(), ctool, set_env, [clock_freezer_whitelisted_modules, Modules]).
+
+
+%% @private
+%% May be evaluated only on a target node (called in result of meck expect)
+-spec is_any_module_whitelisted([atom()]) -> boolean().
+is_any_module_whitelisted(Modules) ->
+    [] /= lists_utils:intersect(Modules, ctool:get_env(clock_freezer_whitelisted_modules)).
+
+
+%% @private
+%% May be evaluated only on a target node (called in result of meck expect)
+-spec mocked_current_time_millis() -> time:millis().
+mocked_current_time_millis() ->
+    CurrentTimeMillis = current_time_millis(),
+    CallingModules = try throw(dummy) catch _:_ -> [M || {M, _, _, _} <- erlang:get_stacktrace()] end,
+    case is_any_module_whitelisted(CallingModules) of
+        true -> CurrentTimeMillis;
+        false -> meck:passthrough([])
+    end.
+
+
+%% @private
+%% May be evaluated only on a target node (called in result of meck expect)
+-spec mocked_current_time_nanos() -> time:nanos().
+mocked_current_time_nanos() ->
+    mocked_current_time_millis() * 1000000.
+
+
+%% @private
+-spec set_current_time_millis_everywhere(time:millis()) -> ok.
+set_current_time_millis_everywhere(Millis) ->
+    % store the time locally as well to allow centralized time management
+    rpc_call_each_node(lists_utils:union(get_target_nodes(), [node()]),
+        ctool, set_env, [clock_freezer_timestamp_millis, Millis]
+    ).
+
+
 %% @private
 %% The call Module:Function(Args) must return ok
--spec rpc_call_each_node(node() | [node()], atom(), atom(), list()) -> ok.
-rpc_call_each_node(Node, Module, Function, Args) when is_atom(Node) ->
-    rpc_call_each_node([Node], Module, Function, Args);
+-spec rpc_call_each_node([node()], atom(), atom(), list()) -> ok.
 rpc_call_each_node(Nodes, Module, Function, Args) ->
     lists:foreach(fun(Node) ->
         ok = rpc:call(Node, Module, Function, Args)

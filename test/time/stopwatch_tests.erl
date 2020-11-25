@@ -19,8 +19,8 @@
 
 stopwatch_test_() ->
     {foreach,
-        fun clock_freezer_mock:setup/0,
-        fun(_) -> clock_freezer_mock:teardown() end,
+        fun() -> clock_freezer_mock:setup_locally([?MODULE]) end,
+        fun(_) -> clock_freezer_mock:teardown_locally() end,
         [
             {"stopwatch in various units", fun stopwatch_in_various_units/0}
         ]
