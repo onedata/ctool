@@ -50,4 +50,8 @@
 -define(LINE_20_02, <<"20.02.*">>).
 -define(LINE_21_02, <<"21.02.*">>).
 
+%% Macros used for file manipulation
+-define(DIRECTORY_SEPARATOR, "/").
+-define(DIRECTORY_SEPARATOR_CHAR, $/).
+
 -endif.
