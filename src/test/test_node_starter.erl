@@ -64,11 +64,8 @@ prepare_test_environment(Config, TestModule, Apps) ->
     LoadModules = ?config(load_modules, Config, []),
 
     try
-        DataDir = ?config(data_dir, Config),
-        CtTestRoot = filename:join(DataDir, ".."),
-        ProjectRoot = filename:join(lists:takewhile(fun(Token) ->
-            Token /= "test_distributed"
-        end, filename:split(DataDir))),
+        CtTestRoot = test_utils:ct_tests_root_dir(Config),
+        ProjectRoot = test_utils:project_root_dir(Config),
         AppmockRoot = filename:join(ProjectRoot, "appmock"),
         CmRoot = filename:join(ProjectRoot, "cluster_manager"),
 

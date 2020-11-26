@@ -27,8 +27,6 @@
 -export([get_env/3, set_env/4]).
 -export([get_docker_ip/1]).
 
--type ct_config() :: proplists:proplist().
-
 -define(TIMEOUT, timer:seconds(60)).
 -define(ATTEMPTS, 10).
 
@@ -37,21 +35,21 @@
 %%% API
 %%%===================================================================
 
--spec data_dir(ct_config()) -> binary().
+-spec data_dir(test_config:config()) -> file:filename().
 data_dir(Config) ->
-    ?config(data_dir, Config).
+    test_config:get_custom(Config, data_dir).
 
--spec project_root_dir(ct_config()) -> binary().
+-spec project_root_dir(test_config:config()) -> file:filename().
 project_root_dir(Config) ->
     filename:join(lists:takewhile(fun(Token) ->
         Token /= "test_distributed"
     end, filename:split(data_dir(Config)))).
 
--spec ct_tests_root_dir(ct_config()) -> binary().
+-spec ct_tests_root_dir(test_config:config()) -> file:filename().
 ct_tests_root_dir(Config) ->
     filename:join([project_root_dir(Config), "test_distributed"]).
 
--spec load_utility_modules(ct_config()) -> ok.
+-spec load_utility_modules(test_config:config()) -> ok.
 load_utility_modules(Config) ->
     CtTestsRootDir = ct_tests_root_dir(Config),
     CtTestsUtilsDir = filename:join([CtTestsRootDir, "utils"]),
@@ -63,17 +61,24 @@ load_utility_modules(Config) ->
         {i, filename:join([CtTestsRootDir, "..", "_build", "default", "lib"])}
     ],
 
-    filelib:fold_files(CtTestsUtilsDir, ".*\.erl", true, fun(SrcFilePath, _) ->
-        ModuleName = list_to_atom(filename:basename(SrcFilePath, ".erl")),
+    AllRecompiledModules = filelib:fold_files(CtTestsUtilsDir, ".*\.erl", true, fun
+        (SrcFilePath, AlreadyRecompiledModules) ->
+            ModuleName = list_to_atom(filename:basename(SrcFilePath, ".erl")),
 
-        maybe_recompile_module(ModuleName, SrcFilePath, Includes),
+            RecompiledModules = case maybe_recompile_module(ModuleName, SrcFilePath, Includes) of
+                true -> [ModuleName | AlreadyRecompiledModules];
+                false -> AlreadyRecompiledModules
+            end,
+            true = code:add_pathz(filename:dirname(SrcFilePath)),
+            code:purge(ModuleName),
+            {module, ModuleName} = code:load_file(ModuleName),
 
-        true = code:add_pathz(filename:dirname(SrcFilePath)),
-        code:purge(ModuleName),
-        {module, ModuleName} = code:load_file(ModuleName),
+            RecompiledModules
+        end,
+        []
+    ),
 
-        ok
-    end, ok).
+    ct:pal("Recompiled utility modules: ~p", [AllRecompiledModules]).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -317,7 +322,8 @@ do_action(Fun, Num) ->
     end.
 
 %% @private
--spec maybe_recompile_module(module(), binary(), Includes :: [{i, binary()}]) -> ok.
+-spec maybe_recompile_module(module(), file:filename(), Includes :: [{i, file:filename()}]) ->
+    boolean().
 maybe_recompile_module(ModuleName, SrcFilePath, Includes) ->
     case should_recompile_module(SrcFilePath) of
         true ->
@@ -328,17 +334,16 @@ maybe_recompile_module(ModuleName, SrcFilePath, Includes) ->
             ],
             case compile:file(SrcFilePath, CompileOpts) of
                 {ok, ModuleName} ->
-                    ct:pal("Recompile: ~p~n", [ModuleName]),
-                    ok;
+                    true;
                 _ ->
                     ct:fail("Couldn't compile module: ~p", [ModuleName])
             end;
         false ->
-            ok
+            false
     end.
 
 %% @private
--spec should_recompile_module(binary()) -> boolean().
+-spec should_recompile_module(file:filename()) -> boolean().
 should_recompile_module(SrcFilePath) ->
     ModuleDirPath = filename:dirname(SrcFilePath),
     ModuleNameStr = filename:basename(SrcFilePath, ".erl"),
