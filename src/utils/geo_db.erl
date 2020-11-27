@@ -32,7 +32,7 @@
 % Critical section (per node and db type) to avoid race conditions when
 % reading / refreshing the database.
 -define(CRITICAL_SECTION(DbType, Fun), global:trans({{geo_db, DbType, node()}, self()}, Fun)).
--define(NOW(), clock:timestamp_seconds()).
+-define(NOW(), global_clock:timestamp_seconds()).
 % Configurable env variables
 -define(MAXMIND_LICENCE_KEY, ctool:get_env(maxmind_licence_key, undefined)).
 -define(GEO_DB_PATH(DbType), maps:get(DbType, ctool:get_env(geo_db_path))).

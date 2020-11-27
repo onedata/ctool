@@ -19,7 +19,7 @@
 % any user.
 
 -record(cv_time, {
-    valid_until = 0 :: clock:seconds()
+    valid_until = 0 :: time:seconds()
 }).
 
 -record(cv_ip, {

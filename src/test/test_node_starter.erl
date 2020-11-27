@@ -33,6 +33,9 @@
     {onepanel, onepanel_nodes}
 ]).
 
+-define(FORMAT_STRING_LIST(Strings), string:join(Strings, ", ")).
+-define(FORMAT_ATOM_LIST(Atoms), string:join(lists:map(fun atom_to_list/1, Atoms), ", ")).
+
 %%%===================================================================
 %%% Starting and stoping nodes
 %%%===================================================================
@@ -59,7 +62,7 @@ prepare_test_environment(Config, TestModule) ->
 prepare_test_environment(Config, TestModule, Apps) ->
     DescriptionFile = env_description(Config),
     LoadModules = ?config(load_modules, Config, []),
-    
+
     try
         DataDir = ?config(data_dir, Config),
         CtTestRoot = filename:join(DataDir, ".."),
@@ -68,22 +71,22 @@ prepare_test_environment(Config, TestModule, Apps) ->
         end, filename:split(DataDir))),
         AppmockRoot = filename:join(ProjectRoot, "appmock"),
         CmRoot = filename:join(ProjectRoot, "cluster_manager"),
-        
+
         ConfigWithPaths = [{ct_test_root, CtTestRoot}, {project_root, ProjectRoot} | Config],
-        
+
         PrivDir = ?config(priv_dir, Config),
         LogsDir = filename:join(PrivDir, atom_to_list(TestModule) ++ "_logs"),
         os:cmd("mkdir -p " ++ LogsDir),
-        
+
         utils:cmd(["echo", "'" ++ DescriptionFile ++ ":'", ">> prepare_test_environment.log"]),
         utils:cmd(["echo", "'" ++ DescriptionFile ++ ":'", ">> prepare_test_environment_error.log"]),
-        
+
         StartLog = retry_running_env_up_script_until(ProjectRoot, AppmockRoot,
             CmRoot, LogsDir, DescriptionFile, ?ENV_UP_RETRIES_NUMBER),
-        
+
         % Save start log to file
         utils:cmd(["echo", binary_to_list(<<"'", StartLog/binary, "'">>), ">> prepare_test_environment.log"]),
-        
+
         EnvDesc = json_parser:parse_json_binary_to_atom_proplist(StartLog),
         try
             Dns = ?config(dns, EnvDesc),
@@ -93,15 +96,15 @@ prepare_test_environment(Config, TestModule, Apps) ->
                     get_cookies(Nodes, AppName, ?COOKIE_KEY, DescriptionFile)
                 end, Apps
             ),
-            
+
             set_cookies(AllNodesWithCookies),
             os:cmd("echo nameserver " ++ atom_to_list(Dns) ++ " > /etc/resolv.conf"),
-            
+
             AllNodes = [N || {N, _C} <- AllNodesWithCookies],
             ping_nodes(AllNodes),
             global:sync(),
             load_modules(AllNodes, [TestModule, test_utils | LoadModules]),
-            
+
             lists:append([
                 ConfigWithPaths,
                 proplists:delete(dns, EnvDesc),
@@ -117,7 +120,7 @@ prepare_test_environment(Config, TestModule, Apps) ->
                 clean_environment(EnvDesc),
                 {fail, {init_failed, E11, E12}}
         end
-    
+
     catch
         E21:E22 ->
             ct:print("Prepare of environment failed ~p:~p~n~p",
@@ -153,12 +156,15 @@ clean_environment(Config, Apps) ->
             "Stacktrace: ~p", [E1, E2, erlang:get_stacktrace()]),
             E2
     end,
-    
+
     Dockers = proplists:get_value(docker_ids, Config, []),
     DockersStr = lists:map(fun atom_to_list/1, Dockers),
     ProjectRoot = ?config(project_root, Config),
+    ct:pal("Removing dockers: ~s", [?FORMAT_STRING_LIST(
+        lists:map(fun(DockerIdStr) -> string:slice(DockerIdStr, 0, 7) end, DockersStr)
+    )]),
     remove_dockers(ProjectRoot, DockersStr),
-    
+
     case StopStatus of
         ok ->
             ok;
@@ -196,17 +202,14 @@ maybe_gather_cover(Config, Apps, _) ->
         end, Nodes)
     end, Apps),
     stop_applications(Config, Apps),
-    
+
+    NodesWithCover /= [] andalso ct:pal("Gathering cover from nodes: ~s", [?FORMAT_ATOM_LIST(NodesWithCover)]),
     lists:foreach(fun(Node) ->
         receive
             {app_ended, CoverNode, FileData} ->
-                {Mega, Sec, Micro} = os:timestamp(),
-                CoverFile = atom_to_list(CoverNode) ++
-                    integer_to_list(
-                        (Mega * 1000000 + Sec) * 1000000 + Micro) ++
-                    ".coverdata",
+                CoverFile = str_utils:format("~s-~s.coverdata", [CoverNode, str_utils:rand_hex(10)]),
                 ok = file:write_file(CoverFile, FileData),
-                cover:import(CoverFile),
+                ok = cover:import(CoverFile),
                 file:delete(CoverFile)
         after
             ?TIMEOUT ->
@@ -230,14 +233,14 @@ maybe_start_cover() ->
             ok;
         {ok, Dirs} when is_list(Dirs) ->
             cover:start(),
-            
+
             ExcludedModules = case application:get_env(covered_excluded_modules) of
                 {ok, Mods} when is_list(Dirs) ->
                     Mods;
                 _ ->
                     []
             end,
-            
+
             case ExcludedModules of
                 [] ->
                     lists:foreach(fun(D) ->
@@ -282,7 +285,7 @@ maybe_stop_cover() ->
             ok;
         {ok, Dirs} when is_list(Dirs) ->
             CoverFile = "cv.coverdata",
-            cover:export(CoverFile),
+            ok = cover:export(CoverFile),
             {ok, FileData} = file:read_file(CoverFile),
             ok = file:delete(CoverFile),
             lists:foreach(fun(Node) ->
@@ -308,7 +311,7 @@ maybe_stop_cover() ->
 %% Stops all started applications
 %% @end
 %%--------------------------------------------------------------------
--spec stop_applications(Config :: list() | test_config:config(), 
+-spec stop_applications(Config :: list() | test_config:config(),
     Apps :: [{AppName :: atom(), ConfigName :: atom()}]) -> ok.
 stop_applications(Config, Apps) ->
     lists:foreach(
@@ -316,6 +319,7 @@ stop_applications(Config, Apps) ->
             Nodes = test_config:get_custom(Config, ConfigName, []),
             lists:foreach(fun(Node) ->
                 try
+                    ct:pal("Stopping application '~s' on node ~s...", [AppName, Node]),
                     ok = rpc:call(Node, application, stop, [AppName])
                 catch
                     _:{badmatch, {badrpc, nodedown}} ->
@@ -329,7 +333,8 @@ stop_applications(Config, Apps) ->
                 end
             end, Nodes)
         end, Apps
-    ).
+    ),
+    ct:pal("Applications successfully stopped on all nodes").
 
 %%--------------------------------------------------------------------
 %% @private
@@ -460,9 +465,9 @@ set_cookies(NodesWithCookies) ->
     string(), integer()) -> any().
 retry_running_env_up_script_until(ProjectRoot, AppmockRoot, CmRoot,
     LogsDir, DescriptionFile, RetriesNumber) ->
-    
+
     StartLog = run_env_up_script(ProjectRoot, AppmockRoot, CmRoot, LogsDir, DescriptionFile),
-    
+
     case StartLog of
         % if env_up.py failed, last line of output will start with "Using default image for",
         % because stderr is redirected to prepare_test_environment.log
@@ -474,8 +479,8 @@ retry_running_env_up_script_until(ProjectRoot, AppmockRoot, CmRoot,
                 "docker ps -a | grep testmaster | awk '{print $1}'"
             ), right, $\n),
             remove_dockers(ProjectRoot, lists:delete(MasterId, Ids)),
-            
-            
+
+
             case RetriesNumber > 0 of
                 true ->
                     ct:print("Retrying to run env_up.py. Number of retries left: ~p~n", [RetriesNumber]),
@@ -507,7 +512,7 @@ run_env_up_script(ProjectRoot, AppmockRoot, CmRoot, LogsDir, DescriptionFile) ->
         "--bin-cm", CmRoot,
         "--logdir", LogsDir,
         DescriptionFile, "2>> prepare_test_environment_error.log"])),
-    
+
     % TODO VFS-1816 remove log filter
     % Some of env_up logs goes to stdout instead of stderr, they need to be
     % removed for proper parsing of JSON with env_up result

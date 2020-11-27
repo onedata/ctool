@@ -161,15 +161,15 @@ seconds_since_modification_test(Config) ->
     ok = file:make_dir(Dir),
 
     ok = touch(File),
-    CreationTime = time_format:datetime_to_seconds(filelib:last_modified(File)),
+    CreationTime = time:datetime_to_seconds(filelib:last_modified(File)),
     timer:sleep(rand:uniform(1250)),
-    ?assertEqual({ok, clock:timestamp_seconds() - CreationTime}, file_utils:seconds_since_modification(File)),
+    ?assertEqual({ok, global_clock:timestamp_seconds() - CreationTime}, file_utils:seconds_since_modification(File)),
 
     timer:sleep(rand:uniform(1250)),
     ok = touch(File),
-    ModificationTime = time_format:datetime_to_seconds(filelib:last_modified(File)),
+    ModificationTime = time:datetime_to_seconds(filelib:last_modified(File)),
     timer:sleep(rand:uniform(1250)),
-    ?_assertEqual({ok, clock:timestamp_seconds() - ModificationTime}, file_utils:seconds_since_modification(File)).
+    ?_assertEqual({ok, global_clock:timestamp_seconds() - ModificationTime}, file_utils:seconds_since_modification(File)).
 
 
 
