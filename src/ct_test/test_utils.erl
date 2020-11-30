@@ -14,21 +14,71 @@
 
 -include("test/assertions.hrl").
 -include("test/test_utils.hrl").
+-include_lib("kernel/include/file.hrl").
 
 %% API
--export([mock_new/2, mock_new/3, mock_expect/4, mock_validate/2, mock_unload/1,
+-export([data_dir/1, project_root_dir/1, ct_tests_root_dir/1]).
+-export([load_utility_modules/1]).
+-export([
+    mock_new/2, mock_new/3, mock_expect/4, mock_validate/2, mock_unload/1,
     mock_unload/2, mock_validate_and_unload/2, mock_assert_num_calls/5,
-    mock_assert_num_calls/6, mock_assert_num_calls_sum/5]).
+    mock_assert_num_calls/6, mock_assert_num_calls_sum/5
+]).
 -export([get_env/3, set_env/4]).
 -export([get_docker_ip/1]).
 
 -define(TIMEOUT, timer:seconds(60)).
 -define(ATTEMPTS, 10).
 
+
 %%%===================================================================
 %%% API
 %%%===================================================================
 
+-spec data_dir(test_config:config()) -> file:filename().
+data_dir(Config) ->
+    test_config:get_custom(Config, data_dir).
+
+-spec project_root_dir(test_config:config()) -> file:filename().
+project_root_dir(Config) ->
+    filename:join(lists:takewhile(fun(Token) ->
+        Token /= "test_distributed"
+    end, filename:split(data_dir(Config)))).
+
+-spec ct_tests_root_dir(test_config:config()) -> file:filename().
+ct_tests_root_dir(Config) ->
+    filename:join([project_root_dir(Config), "test_distributed"]).
+
+-spec load_utility_modules(test_config:config()) -> ok.
+load_utility_modules(Config) ->
+    CtTestsRootDir = ct_tests_root_dir(Config),
+    CtTestsUtilsDir = filename:join([CtTestsRootDir, "utils"]),
+
+    Includes = [
+        {i, CtTestsRootDir},
+        {i, filename:join([CtTestsRootDir, "include"])},
+        {i, filename:join([CtTestsRootDir, "..", "include"])},
+        {i, filename:join([CtTestsRootDir, "..", "_build", "default", "lib"])}
+    ],
+
+    AllRecompiledModules = filelib:fold_files(CtTestsUtilsDir, ".*\.erl", true, fun
+        (SrcFilePath, AlreadyRecompiledModules) ->
+            ModuleName = list_to_atom(filename:basename(SrcFilePath, ".erl")),
+
+            RecompiledModules = case maybe_recompile_module(ModuleName, SrcFilePath, Includes) of
+                true -> [ModuleName | AlreadyRecompiledModules];
+                false -> AlreadyRecompiledModules
+            end,
+            true = code:add_pathz(filename:dirname(SrcFilePath)),
+            code:purge(ModuleName),
+            {module, ModuleName} = code:load_file(ModuleName),
+
+            RecompiledModules
+        end,
+        []
+    ),
+
+    ct:pal("Recompiled utility modules: ~p", [AllRecompiledModules]).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -269,4 +319,41 @@ do_action(Fun, Num) ->
         E1:E2 ->
             ct:print("Action ~p failed with error: ~p", [Fun, {E1, E2}]),
             do_action(Fun, Num - 1)
+    end.
+
+%% @private
+-spec maybe_recompile_module(module(), file:filename(), Includes :: [{i, file:filename()}]) ->
+    boolean().
+maybe_recompile_module(ModuleName, SrcFilePath, Includes) ->
+    case should_recompile_module(SrcFilePath) of
+        true ->
+            CompileOpts = [
+                verbose, report,
+                {outdir, filename:dirname(SrcFilePath)}
+                | Includes
+            ],
+            case compile:file(SrcFilePath, CompileOpts) of
+                {ok, ModuleName} ->
+                    true;
+                _ ->
+                    ct:fail("Couldn't compile module: ~p", [ModuleName])
+            end;
+        false ->
+            false
+    end.
+
+%% @private
+-spec should_recompile_module(file:filename()) -> boolean().
+should_recompile_module(SrcFilePath) ->
+    ModuleDirPath = filename:dirname(SrcFilePath),
+    ModuleNameStr = filename:basename(SrcFilePath, ".erl"),
+    BeamFilePath = filename:join(ModuleDirPath, ModuleNameStr ++ ".beam"),
+
+    {ok, SrcFileInfo} = file:read_file_info(SrcFilePath),
+
+    case file:read_file_info(BeamFilePath) of
+        {ok, BeamFileInfo} ->
+            SrcFileInfo#file_info.mtime >= BeamFileInfo#file_info.mtime;
+        {error, _} ->
+            true
     end.

@@ -14,6 +14,8 @@
 %% CTH callback
 %% initialization
 -export([init/2]).
+%% prehooks
+-export([pre_init_per_suite/3]).
 %% posthooks
 -export([post_init_per_suite/4, post_end_per_suite/4]).
 
@@ -32,6 +34,19 @@
 init(_Id, _Opts) ->
     node_cache:init(),
     {ok, #state{}, ?CTH_ENV_UP_PRIORITY}.
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%% CTH callback called before init_per_suite.
+%% Loads utility test modules.
+%% @end
+%%--------------------------------------------------------------------
+-spec pre_init_per_suite(Suite :: atom(), _Config :: [term()], State :: state()) ->
+    {[term()], state()}.
+pre_init_per_suite(_Suite, Config, State) ->
+    ok = test_utils:load_utility_modules(Config),
+    {Config, State}.
 
 
 %%--------------------------------------------------------------------

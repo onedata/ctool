@@ -29,10 +29,7 @@
 -spec prepare_test_environment(test_config:config()) -> test_config:config().
 prepare_test_environment(Config0) ->
     application:start(yamerl),
-    DataDir = test_config:get_custom(Config0, data_dir),
-    ProjectRoot = filename:join(lists:takewhile(fun(Token) ->
-        Token /= "test_distributed"
-    end, filename:split(DataDir))),
+    ProjectRoot = test_utils:project_root_dir(Config0),
     OnenvScript = filename:join([ProjectRoot, "one-env", "onenv"]),
     PathToSources = os:getenv("path_to_sources"),
     AbsPathToSources = filename:join([ProjectRoot, PathToSources]),
