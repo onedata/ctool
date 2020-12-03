@@ -109,8 +109,9 @@
         % known mirrors. The new registry is fetched when there is a chance that
         % it is outdated - in case an incompatibility between services or
         % unverified GUI is detected.
-        {compatibility_registry_cache_ttl_seconds, 900}, % 15 minutes
-
+        {compatibility_registry_cache_ttl_secs, 900}, % 15 minutes
+        % Backoff before retry upon failed attempt to fetch a newer registry.
+        {compatibility_registry_fetch_backoff_secs, 900}, % 15 minutes
 
         %% ===================================================================
         %% GEOLOCATION - uses MaxMind GeoLite2 databases.

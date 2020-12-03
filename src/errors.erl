@@ -45,7 +45,7 @@
 | token_invalid | token_revoked | not_an_access_token | not_an_identity_token
 | {not_an_invite_token, ExpectedInviteType :: any | token_type:invite_type(), Received :: tokens:type()}
 | {token_caveat_unverified, caveats:caveat()}
-| {token_time_caveat_required, clock:seconds()}
+| {token_time_caveat_required, time:seconds()}
 | token_subject_invalid | {token_service_forbidden, aai:service_spec()}
 | invite_token_subject_not_authorized | invite_token_usage_limit_exceeded
 | {invite_token_consumer_invalid, aai:consumer_spec()}
@@ -58,7 +58,7 @@
 % Name of the key in data structure that caused the error, e.g. <<"name">>.
 -type key() :: binary().
 -type data_validation() :: malformed_data | {missing_required_value, key()}
-| {missing_at_least_one_value, [key()]} | {bad_data, key()}
+| {missing_at_least_one_value, [key()]} | {bad_data, key()} | {bad_data, key(), Hint :: binary()}
 | {empty_value, key()} | {bad_value_atom, key()}
 | {bad_value_list_of_atoms, key()} | {bad_value_boolean, key()}
 | {bad_value_binary, key()} | {bad_value_binary_too_long, key(), {max, integer()}}
@@ -463,6 +463,14 @@ to_json(?ERROR_BAD_DATA(Key)) -> #{
         <<"key">> => Key
     },
     <<"description">> => ?FMT("Bad value: provided \"~s\" could not be understood by the server.", [Key])
+};
+to_json(?ERROR_BAD_DATA(Key, HumanReadableHint)) -> #{
+    <<"id">> => <<"badDataWithHint">>,
+    <<"details">> => #{
+        <<"key">> => Key,
+        <<"hint">> => HumanReadableHint
+    },
+    <<"description">> => ?FMT("Bad value provided for \"~s\": ~ts.", [Key, HumanReadableHint])
 };
 to_json(?ERROR_BAD_VALUE_EMPTY(Key)) -> #{
     <<"id">> => <<"badValueEmpty">>,
@@ -1236,6 +1244,12 @@ from_json(#{<<"id">> := <<"missingAtLeastOneValue">>, <<"details">> := #{<<"keys
 from_json(#{<<"id">> := <<"badData">>, <<"details">> := #{<<"key">> := Key}}) ->
     ?ERROR_BAD_DATA(Key);
 
+from_json(#{<<"id">> := <<"badDataWithHint">>, <<"details">> := #{
+    <<"key">> := Key,
+    <<"hint">> := HumanReadableHint
+}}) ->
+    ?ERROR_BAD_DATA(Key, HumanReadableHint);
+
 from_json(#{<<"id">> := <<"badValueEmpty">>, <<"details">> := #{<<"key">> := Key}}) ->
     ?ERROR_BAD_VALUE_EMPTY(Key);
 
@@ -1606,6 +1620,7 @@ to_http_code(?ERROR_MALFORMED_DATA) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_MISSING_REQUIRED_VALUE(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_MISSING_AT_LEAST_ONE_VALUE(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_BAD_DATA(_)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_BAD_DATA(_, _)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_BAD_VALUE_EMPTY(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_BAD_VALUE_BOOLEAN(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_BAD_VALUE_ATOM(_)) -> ?HTTP_400_BAD_REQUEST;

@@ -19,20 +19,15 @@
 %% API
 -export([init/0, destroy/0]).
 -export([get/1, get/2, acquire/2, put/2, put/3, clear/1]).
-% for mocking in tests
--export([now/0]).
 
 -type key() :: term().
 -type value() :: term().
--type ttl() :: clock:seconds() | infinity.
+-type ttl() :: time:seconds() | time:infinity().
 
 %% function called by acquire/2 when there is no valid value in cache
 -type acquire_callback() :: fun(() ->
         {ok, value(), ttl()} |
         {error, Reason :: term()}).
-
-% call using module for mocking in tests
--define(NOW(), ?MODULE:now()).
 
 -compile([{no_auto_import, [get/1]}]).
 
@@ -109,15 +104,9 @@ acquire(Key, AcquireCallback) when is_function(AcquireCallback, 0) ->
 put(Key, Value) ->
     put(Key, Value, infinity).
 
-
 -spec put(key(), value(), ttl()) -> ok.
 put(Key, Value, TTL) ->
-    ValidUntil = case TTL of
-        infinity -> infinity;
-        _ -> ?NOW() + TTL
-    end,
-    true = ets:insert(?MODULE, {Key, {Value, ValidUntil}}),
-    ok.
+    insert_into_cache(Key, Value, TTL).
 
 
 -spec clear(key()) -> ok.
@@ -130,28 +119,27 @@ clear(Key) ->
 %%%===================================================================
 
 %% @private
+-spec insert_into_cache(key(), value(), ttl()) -> ok.
+insert_into_cache(Key, Value, TTL) ->
+    Expiry = case TTL of
+        infinity -> infinity;
+        _ -> countdown_timer:start_seconds(TTL)
+    end,
+    true = ets:insert(?MODULE, {Key, {Value, Expiry}}),
+    ok.
+
+
+%% @private
 -spec lookup_in_cache(key()) -> {true, value()} | false.
 lookup_in_cache(Key) ->
     case ets:lookup(?MODULE, Key) of
-        [{Key, ValueAndValidUntil}] -> check_validity(ValueAndValidUntil);
-        [] -> false
+        [{Key, {Value, infinity}}] ->
+            {true, Value};
+        [{Key, {Value, ExpiryTimer}}] ->
+            case countdown_timer:is_expired(ExpiryTimer) of
+                false -> {true, Value};
+                true -> false
+            end;
+        [] ->
+            false
     end.
-
-
-%% @private
--spec check_validity({value(), ttl()}) -> 
-    {true, value()} | false. 
-check_validity({Value, infinity}) ->
-    {true, Value};
-check_validity({Value, ValidUntil}) ->
-    case ValidUntil > ?NOW() of
-        true -> {true, Value};
-        false -> false
-    end.
-
-
-%% @private
-%% Exported for eunit tests and called by ?MODULE
--spec now() -> clock:seconds().
-now() ->
-    erlang:system_time(second).

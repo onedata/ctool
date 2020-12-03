@@ -19,6 +19,7 @@
 -export([get_host/1, get_host_as_atom/1, cmd/1]).
 -export([process_info/1, process_info/2]).
 -export([ensure_defined/2, ensure_defined/3, undefined_to_null/1, null_to_undefined/1]).
+-export([throttle/2]).
 -export([timeout/2, timeout/4]).
 -export([duration/1, adjust_duration/2]).
 -export([mkdtemp/0, mkdtemp/3, rmtempdir/1, run_with_tempdir/1]).
@@ -47,12 +48,45 @@ ensure_running(Application) ->
 
 %%--------------------------------------------------------------------
 %% @doc
+%% @equiv throttle(erlang:fun_to_list(Fun), Interval, Fun).
+%% The function itself is used as throttler identifier.
+%% @end
+%%--------------------------------------------------------------------
+-spec throttle(Interval :: time:seconds(), fun(() -> Result)) -> Result.
+throttle(Interval, Fun) ->
+    throttle(erlang:fun_to_list(Fun), Interval, Fun).
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Executes given Fun, but not more often than the Interval (excessive calls
+%% are completely discarded). Works deterministically within a single process,
+%% otherwise it is best effort - duplicate Fun execution may occur when
+%% called by parallel processes within a very short time window.
+%%
+%% Identifier is an arbitrary term that identifies the throttler instance
+%% (calls with different identifiers are independently throttled, even if the
+%% same function is given).
+%%
+%% Always returns the result of last execution that was applied.
+%% @end
+%%--------------------------------------------------------------------
+-spec throttle(Identifier :: term(), Interval :: time:seconds(), fun(() -> Result)) -> Result.
+throttle(Identifier, Interval, Fun) when is_function(Fun, 0) ->
+    {ok, Res} = node_cache:acquire({throttle, Identifier}, fun() ->
+        {ok, Fun(), Interval}
+    end),
+    Res.
+
+
+%%--------------------------------------------------------------------
+%% @doc
 %% Executes Fun waiting Timeout milliseconds for results.
 %% Note that execution of Fun might continue even after this function
 %% returns with {error, timeout}
 %% @end
 %%--------------------------------------------------------------------
--spec timeout(Fun :: fun(() -> Result), TimeoutMillis :: non_neg_integer()) ->
+-spec timeout(Fun :: fun(() -> Result), time:millis()) ->
     {done, Result} | {error, timeout}.
 timeout(Fun, Timeout) when is_function(Fun, 0) ->
     case rpc:call(node(), erlang, apply, [Fun, []], Timeout) of
@@ -155,10 +189,9 @@ cmd(Command) ->
     AdjustedDuration :: integer() | float(), TimeUnit :: string()} when
     Result :: term().
 duration(Function) ->
-    T1 = clock:timestamp_micros(),
+    Stopwatch = stopwatch:start(),
     Result = Function(),
-    T2 = clock:timestamp_micros(),
-    UsDuration = T2 - T1,
+    UsDuration = stopwatch:read_micros(Stopwatch),
     {AdjustedDuration, TimeUnit} = adjust_duration(UsDuration, us),
     {Result, UsDuration, AdjustedDuration, TimeUnit}.
 

@@ -530,6 +530,49 @@ filter_caveats_test() ->
     ).
 
 
+infer_ttl_test_() ->
+    {setup,
+        fun() ->
+            clock_freezer_mock:setup_locally([caveats]),
+            node_cache:init()
+        end,
+        fun(_) ->
+            clock_freezer_mock:teardown_locally(),
+            node_cache:destroy()
+        end,
+        fun() ->
+            ?assertEqual(undefined, caveats:infer_ttl([])),
+
+            ?assertEqual(undefined, caveats:infer_ttl([
+                #cv_asn{whitelist = [322]},
+                #cv_consumer{whitelist = [?SUB(user, <<"567">>)]},
+                #cv_country{type = whitelist, list = [<<"PL">>, <<"FR">>]},
+                #cv_api{whitelist = [{all, all, ?GRI_PATTERN('*', '*', '*', '*')}]}
+            ])),
+
+            ?assertEqual(123, caveats:infer_ttl([
+                #cv_time{valid_until = clock_freezer_mock:current_time_seconds() + 123},
+                #cv_consumer{whitelist = [?SUB(user, <<"567">>)]}
+            ])),
+
+            ?assertEqual(100, caveats:infer_ttl([
+                #cv_country{type = whitelist, list = [<<"PL">>, <<"FR">>]},
+                #cv_api{whitelist = [{all, all, ?GRI_PATTERN('*', '*', '*', '*')}]},
+                #cv_time{valid_until = clock_freezer_mock:current_time_seconds() + 99999},
+                #cv_time{valid_until = clock_freezer_mock:current_time_seconds() + 100}
+            ])),
+
+            ?assertEqual(-15, caveats:infer_ttl([
+                #cv_asn{whitelist = [322]},
+                #cv_time{valid_until = clock_freezer_mock:current_time_seconds() + 99999},
+                #cv_time{valid_until = clock_freezer_mock:current_time_seconds() + 100},
+                #cv_consumer{whitelist = [?SUB(user, <<"567">>)]},
+                #cv_time{valid_until = clock_freezer_mock:current_time_seconds() - 15}
+            ]))
+        end
+    }.
+
+
 too_large_token_test() ->
     ctool:set_env(max_token_size, ?CUSTOM_MAX_TOKEN_SIZE),
     % Hex converts each byte to two chars

@@ -49,8 +49,14 @@
 
 node_cache_test_() ->
     {foreach,
-        fun setup/0,
-        fun teardown/1,
+        fun() ->
+            clock_freezer_mock:setup_locally([node_cache]),
+            node_cache:init()
+        end,
+        fun(_) ->
+            clock_freezer_mock:teardown_locally(),
+            node_cache:destroy()
+        end,
         lists:flatmap(fun({TestDescription, Fun}) ->
             [{TestDescription, fun() -> Fun(Key) end} || Key <- ?KEYS]
         end, ?TEST_CASES)
@@ -58,6 +64,8 @@ node_cache_test_() ->
 
 put_with_ttl(Key) ->
     ok = node_cache:put(Key, ?VALUE, ?TTL),
+    ?assertEqual(?VALUE, node_cache:get(Key)),
+    clock_freezer_mock:simulate_seconds_passing(?TTL - 1),
     ?assertEqual(?VALUE, node_cache:get(Key)).
 
 overwrite_value(Key) ->
@@ -68,17 +76,17 @@ overwrite_value(Key) ->
 put_infinity(Key) ->
     ok = node_cache:put(Key, ?VALUE),
     ?assertEqual(?VALUE, node_cache:get(Key)),
-    simulate_time_passing(?TTL),
+    clock_freezer_mock:simulate_seconds_passing(?TTL),
     ?assertEqual(?VALUE, node_cache:get(Key)).
 
 get_expired(Key) ->
     node_cache:put(Key, ?VALUE, ?TTL),
-    simulate_time_passing(?TTL),
+    clock_freezer_mock:simulate_seconds_passing(?TTL),
     ?assertError({badkey, Key}, node_cache:get(Key)).
 
 get_expired_default(Key) ->
     node_cache:put(Key, ?VALUE, ?TTL),
-    simulate_time_passing(?TTL),
+    clock_freezer_mock:simulate_seconds_passing(?TTL),
     ?assertEqual(?VALUE2, node_cache:get(Key, ?VALUE2)).
 
 get_non_existing(Key) ->
@@ -99,47 +107,27 @@ acquire_with_put_ttl(Key) ->
     ?assertEqual(?VALUE, node_cache:get(Key)),
     ?assertEqual({ok, ?VALUE}, node_cache:acquire(Key, ?ACQUIRE_CALLBACK_OK(?TTL))), 
     
-    simulate_time_passing(?TTL),
+    clock_freezer_mock:simulate_seconds_passing(?TTL - 1),
+    ?assertEqual(?VALUE, node_cache:get(Key)),
+    clock_freezer_mock:simulate_seconds_passing(1),
     ?assertError({badkey, Key}, node_cache:get(Key)),
     ?assertEqual({ok, ?VALUE}, node_cache:acquire(Key, ?ACQUIRE_CALLBACK_OK(?TTL))).
 
 acquire_after_ttl(Key) ->
     ?assertEqual({ok, ?VALUE}, node_cache:acquire(Key, ?ACQUIRE_CALLBACK_OK(?TTL))),
     ?assertEqual({ok, ?VALUE}, node_cache:acquire(Key, ?ACQUIRE_CALLBACK_OK(?VALUE2, ?TTL))),
-    simulate_time_passing(?TTL),
+    clock_freezer_mock:simulate_seconds_passing(?TTL),
     ?assertEqual({ok, ?VALUE2}, node_cache:acquire(Key, ?ACQUIRE_CALLBACK_OK(?VALUE2, ?TTL))).
 
 acquire_with_put_infinity(Key) ->
     ?assertEqual({ok, ?VALUE}, node_cache:acquire(Key, ?ACQUIRE_CALLBACK_OK(infinity))),
     ?assertEqual(?VALUE, node_cache:get(Key)),
-    simulate_time_passing(?TTL),
+    clock_freezer_mock:simulate_seconds_passing(?TTL),
     ?assertEqual(?VALUE, node_cache:get(Key)).
 
 acquire_with_error(Key) ->
     ?assertEqual(?ERROR, node_cache:acquire(Key, ?ACQUIRE_CALLBACK_ERROR())),
     ?assertError({badkey, Key}, node_cache:get(Key)).
 
-
-%%%===================================================================
-%%% Helper functions
-%%%===================================================================
-    
-setup() ->
-    node_cache:init(),
-    meck:new(node_cache, [passthrough]),
-    meck:expect(node_cache, now, fun timestamp_mock/0).
-
-teardown(_) ->
-    node_cache:destroy(),
-    meck:unload().
-
-timestamp_mock() ->
-    case get(mocked_time) of
-        undefined -> 1500000000; % starting timestamp
-        Val -> Val
-    end.
-
-simulate_time_passing(Milliseconds) ->
-    put(mocked_time, timestamp_mock() + Milliseconds).   
 
 -endif.

@@ -40,6 +40,7 @@ compatibility_verification_test_() ->
             {"Taking default registry if newer", fun taking_default_registry_if_newer/0},
             {"Fetching newer registry", fun fetching_newer_registry/0},
             {"Fetching older registry", fun fetching_older_registry/0},
+            {"Overwriting broken or absent registry", fun overwriting_broken_or_absent_registry/0},
             {"Trying multiple mirrors", fun trying_multiple_mirrors/0}
         ]
     }.
@@ -50,25 +51,22 @@ compatibility_verification_test_() ->
 %%%===================================================================
 
 setup() ->
-    clock_freezer_mock:setup(),
+    clock_freezer_mock:setup_locally([compatibility]),
+    node_cache:init(),
 
     TmpPath = mochitemp:mkdtemp(),
     RegistryPath = filename:join(TmpPath, "compatibility.json"),
     DefaultRegistryPath = filename:join(TmpPath, "compatibility.default.json"),
     ctool:set_env(compatibility_registry_path, RegistryPath),
     ctool:set_env(default_compatibility_registry, DefaultRegistryPath),
-    ctool:set_env(compatibility_registry_cache_ttl_seconds, 900),
+    ctool:set_env(compatibility_registry_cache_ttl_secs, 900),
+    ctool:set_env(compatibility_registry_fetch_backoff_secs, 900),
     compatibility:clear_registry_cache(),
     mock_compatibility_file(#{<<"revision">> => 2019010100}),
     mock_default_compatibility_file(#{<<"revision">> => 2019010100}),
 
     meck:new(http_client, [passthrough]),
-    meck:expect(http_client, get, fun get_mocked_mirror_result/1),
-
-    meck:new(node_cache, [passthrough]),
-    meck:expect(node_cache, now, fun clock_freezer_mock:current_time_seconds/0),
-
-    ok.
+    meck:expect(http_client, get, fun get_mocked_mirror_result/1).
 
 teardown(_) ->
     RegistryPath = ctool:get_env(compatibility_registry_path),
@@ -77,10 +75,9 @@ teardown(_) ->
     clear_mocked_mirrors(),
     ?assert(meck:validate(http_client)),
     ok = meck:unload(http_client),
-    ?assert(meck:validate(node_cache)),
-    ok = meck:unload(node_cache),
-    
-    clock_freezer_mock:teardown().
+
+    node_cache:destroy(),
+    clock_freezer_mock:teardown_locally().
 
 
 mock_compatibility_file(JsonMap) when is_map(JsonMap) ->
@@ -117,8 +114,7 @@ mock_mirror_list(Mirrors) ->
 
 
 get_mocked_mirror_result(Url) ->
-    Result = node_cache:get({mocked_mirror, Url}, {error, nxdomain}),
-    case Result of
+    case node_cache:get({mocked_mirror, Url}, {error, nxdomain}) of
         {ok, Code, JsonMap} when is_map(JsonMap) ->
             {ok, Code, #{}, json_utils:encode(JsonMap)};
         {ok, Code, Binary} when is_binary(Binary) ->
@@ -132,10 +128,6 @@ clear_mocked_mirrors() ->
     mock_mirror_list([]),
     Mirrors = node_cache:get(mocked_mirrors, []),
     [node_cache:clear({mocked_mirror, M}) || M <- Mirrors].
-
-
-simulate_time_passing(Seconds) ->
-    clock_freezer_mock:simulate_time_passing(Seconds * 1000).
 
 %%%===================================================================
 %%% Test functions
@@ -397,13 +389,13 @@ caching_local_registry_content() ->
 
     % The file contents should be cached for configured time
     mock_compatibility_file(Newer),
-    CacheTTL = ctool:get_env(compatibility_registry_cache_ttl_seconds),
-    simulate_time_passing(CacheTTL - 1),
+    CacheTTL = ctool:get_env(compatibility_registry_cache_ttl_secs),
+    clock_freezer_mock:simulate_seconds_passing(CacheTTL - 1),
     % The cache is still valid
     ?assertEqual({false, [<<"18.02.1">>]}, ?OZvsOP(<<"18.02.1">>, <<"18.02.2">>)),
 
     % But not anymore
-    simulate_time_passing(2),
+    clock_freezer_mock:simulate_seconds_passing(2),
     ?assertEqual(true, ?OZvsOP(<<"18.02.1">>, <<"18.02.2">>)),
 
     ok.
@@ -612,12 +604,12 @@ fetching_newer_registry() ->
             }
         }
     }}),
-    CacheTTL = ctool:get_env(compatibility_registry_cache_ttl_seconds),
-    simulate_time_passing(CacheTTL - 1),
+    CacheTTL = ctool:get_env(compatibility_registry_cache_ttl_secs),
+    clock_freezer_mock:simulate_seconds_passing(CacheTTL - 1),
     % The cache is still valid
     ?assertEqual({false, [<<"18.02.1">>, <<"18.02.2">>]}, ?OZvsOP(<<"18.02.1">>, <<"18.02.3">>)),
     % But not anymore
-    simulate_time_passing(2),
+    clock_freezer_mock:simulate_seconds_passing(2),
     ?assertEqual(true, ?OZvsOP(<<"18.02.1">>, <<"18.02.3">>)),
     ?assertMatch(#{<<"revision">> := 2019010300}, get_compatibility_file()),
 
@@ -677,6 +669,41 @@ fetching_older_registry() ->
     ?assertMatch(Mirror3Result, get_compatibility_file()),
 
     ok.
+
+
+overwriting_broken_or_absent_registry() ->
+    mock_compatibility_file(<<"">>),
+    overwriting_broken_or_absent_registry_base(),
+
+    mock_compatibility_file(<<"not a valid json">>),
+    overwriting_broken_or_absent_registry_base(),
+
+    RegistryPath = ctool:get_env(compatibility_registry_path),
+    ok = file:delete(RegistryPath),
+    overwriting_broken_or_absent_registry_base().
+
+
+overwriting_broken_or_absent_registry_base() ->
+    Mirror = "https://example.com/compatibility.json",
+    MirrorResult = #{
+        <<"revision">> => 2019010100,
+        <<"compatibility">> => #{
+            <<"onezone:oneprovider">> => #{
+                <<"18.02.1">> => [
+                    <<"18.02.1">>,
+                    <<"18.02.2">>
+                ]
+            }
+        }
+    },
+    mock_mirror_list([Mirror]),
+    mock_mirror_result(Mirror, {ok, 200, MirrorResult}),
+    compatibility:clear_registry_cache(),
+
+    % upon any query, a fetch should be attempted and overwrite the registry
+    ?assertNotMatch(MirrorResult, catch get_compatibility_file()),
+    ?assertEqual({ok, [<<"18.02.1">>, <<"18.02.2">>]}, ?OZvsOPVersions(<<"18.02.1">>)),
+    ?assertMatch(MirrorResult, get_compatibility_file()).
 
 
 trying_multiple_mirrors() ->

@@ -238,7 +238,6 @@ dec_double({B, P}) ->
 -spec enc_byte_array(iolist(), non_neg_integer()) -> xdr().
 enc_byte_array(Data, N) ->
     Len = io_list_len(Data),
-    io:format("Len: ~p~n", [Len]),
     if
         Len == N -> true;
         true -> exit({xdr, limit})

@@ -40,7 +40,7 @@
 }).
 
 -record(auth_ctx, {
-    current_timestamp = 0 :: clock:seconds(),
+    current_timestamp = 0 :: time:seconds(),
     %% @todo VFS-6098 deprecated, kept for backward compatibility
     scope = unlimited :: unlimited | tokens:scope(),
     ip = undefined :: undefined | ip_utils:ip(),

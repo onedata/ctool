@@ -512,7 +512,7 @@ exec_perf_config(SuiteName, CaseName, CaseArgs, CaseDescr, Config, DefaultReps,
     ConfigsMap = maps:get(<<"configs">>, CaseMap, #{}),
     ConfigMap = #{
         <<"name">> => BinConfigName,
-        <<"completed">> => get_timestamp(),
+        <<"completed">> => global_clock:timestamp_millis(),
         <<"parameters">> => format_parameters(ConfigParamsToJSON),
         <<"description">> => list_to_binary(ConfigDescr),
         <<"repeats_number">> => RepeatsDone,
@@ -573,7 +573,7 @@ exec_perf_config(SuiteName, CaseName, CaseArgs, CaseDescr, Config, DefaultReps,
     FailedReps :: map() | [map()]}.
 exec_test_repeats(SuiteName, CaseName, ConfigName, CaseConfig, {timeout, TimeLimit}) ->
     [{{cases, SuiteName},  Cases}] = ets:lookup(?STRESS_ETS_NAME, {cases, SuiteName}),
-    exec_test_repeats(SuiteName, CaseName, ConfigName, CaseConfig, 1, {timeout, os:timestamp(), TimeLimit},
+    exec_test_repeats(SuiteName, CaseName, ConfigName, CaseConfig, 1, {timeout, stopwatch:start(), TimeLimit},
         lists:map(fun(_) -> [] end, Cases), lists:map(fun(_) -> [] end, Cases),
         lists:map(fun(_) -> #{} end, Cases));
 exec_test_repeats(SuiteName, CaseName, ConfigName, CaseConfig, Reps) ->
@@ -584,9 +584,8 @@ exec_test_repeats(_SuiteName, _CaseName, _ConfigName, _CaseConfig, Reps, Reps,
 exec_test_repeats(SuiteName, CaseName, ConfigName, CaseConfig, Rep, Reps,
     RepsSummary, RepsDetails, FailedReps) ->
     TimeStop = case Reps of
-                   {timeout, StartTime, TimeLimit} ->
-                       Now = os:timestamp(),
-                       TestTime = timer:now_diff(Now, StartTime) div 1000000,
+                   {timeout, Stopwatch, TimeLimit} ->
+                       TestTime = stopwatch:read_seconds(Stopwatch),
                        TimeLeft = TimeLimit - TestTime,
 
                        [{{cases, SuiteName},  Cases}] = ets:lookup(?STRESS_ETS_NAME, {cases, SuiteName}),
@@ -731,10 +730,9 @@ proccess_repeat_result(RepeatResult, Rep, RepsSummary, RepsDetails, FailedReps) 
     {ok, [#parameter{}]} | {error, Reason :: binary()} | list().
 exec_test_repeat(SuiteName, CaseName, CaseConfig) ->
     try
-        Timestamp1 = clock:timestamp_millis(),
+        Stopwatch = stopwatch:start(),
         Result = apply(SuiteName, base_case(CaseName), [CaseConfig]),
-        Timestamp2 = clock:timestamp_millis(),
-        TestTime = Timestamp2 - Timestamp1,
+        TestTime = stopwatch:read_millis(Stopwatch),
         % Return list of parameters consisting of default 'test_time' parameter
         % and parameters returned from test case.
         case is_stress_test() and (CaseName =:= stress_test) of
@@ -882,17 +880,6 @@ merge_parameter(#parameter{unit = Unit1, description = Descr1} = ConfigParam,
         unit = case Unit1 of "" -> Unit2; _ -> Unit1 end,
         description = case Descr1 of "" -> Descr2; _ -> Descr1 end
     }.
-
-%%--------------------------------------------------------------------
-%% @private
-%% @doc
-%% Returns current timestamp in milliseconds.
-%% @end
-%%--------------------------------------------------------------------
--spec get_timestamp() -> integer().
-get_timestamp() ->
-    {Mega, Sec, Micro} = os:timestamp(),
-    (Mega * 1000000 + Sec) * 1000 + (Micro div 1000).
 
 %%--------------------------------------------------------------------
 %% @private

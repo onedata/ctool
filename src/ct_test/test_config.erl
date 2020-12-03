@@ -44,7 +44,7 @@
     get_custom_envs/1
 ]).
 
--opaque config() :: kv_utils:nested(key(), any()).
+-type config() :: kv_utils:nested(key(), any()).
 -type key() :: atom() | binary() | any().
 -type service_as_list() :: string(). % "op_worker" | "oz_worker" | "op_panel" | "oz_panel" | "cluster_manager"
 -type service() :: onedata:service() | cluster_manager.
