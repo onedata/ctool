@@ -174,7 +174,6 @@
 -define(ERROR_NOT_A_LOCAL_STORAGE_SUPPORTING_SPACE(ProviderId, StorageId, SpaceId),
     {error, {not_a_local_storage_supporting_space, ProviderId, StorageId, SpaceId}}).
 -define(ERROR_STORAGE_IN_USE, {error, storage_in_use}).
--define(ERROR_REQUIRES_MANUAL_STORAGE_IMPORT_MODE, {error, requires_manual_storage_import_mode}).
 -define(ERROR_REQUIRES_AUTO_STORAGE_IMPORT_MODE, {error, requires_auto_storage_import_mode}).
 -define(ERROR_STORAGE_TEST_FAILED(Operation), {error, {storage_test_failed, Operation}}).
 -define(ERROR_REQUIRES_NON_IMPORTED_STORAGE(StorageId), {error, {requires_non_imported_storage, StorageId}}).
