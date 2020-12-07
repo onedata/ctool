@@ -46,9 +46,11 @@
 
 %% Macros with known major release lines of Onedata software
 -define(LINE_19_02, <<"19.02.*">>).
--define(LINE_20_02(Suffix), <<"20.02.", Suffix/binary>>).
+-define(LINE_19_02(Minor), <<"19.02.", Minor/binary>>).
 -define(LINE_20_02, <<"20.02.*">>).
+-define(LINE_20_02(Minor), <<"20.02.", Minor/binary>>).
 -define(LINE_21_02, <<"21.02.*">>).
+-define(LINE_21_02(Minor), <<"21.02.", Minor/binary>>).
 
 %% Macros used for file manipulation
 -define(DIRECTORY_SEPARATOR, "/").

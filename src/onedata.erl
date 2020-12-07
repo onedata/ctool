@@ -46,6 +46,7 @@
 -export([service_gui/1, service_by_gui/2]).
 -export([service_shortname/1, service_by_shortname/1]).
 -export([gui_prefix/1, gui_by_prefix/1]).
+-export([compare_major_versions/2]).
 
 %%%===================================================================
 %%% API
@@ -121,3 +122,10 @@ gui_by_prefix(<<"opw">>) -> ?OP_WORKER_GUI;
 gui_by_prefix(<<"onp">>) -> ?ONEPANEL_GUI;
 gui_by_prefix(<<"hrv">>) -> ?HARVESTER_GUI;
 gui_by_prefix(_) -> error(badarg).
+
+
+-spec compare_major_versions(release_version(), release_version()) -> lower | equal | greater.
+compare_major_versions(<<A:5/binary, _/binary>>, <<B:5/binary, _/binary>>) when A < B -> lower;
+compare_major_versions(<<A:5/binary, _/binary>>, <<B:5/binary, _/binary>>) when A =:= B -> equal;
+compare_major_versions(<<A:5/binary, _/binary>>, <<B:5/binary, _/binary>>) when A > B -> greater;
+compare_major_versions(_, _) -> error(badarg).

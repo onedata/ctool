@@ -16,7 +16,7 @@
 -include("../onedata.hrl").
 -include("caveats.hrl").
 
-% Refer to aai.erl for description of below records
+% Refer to aai.erl for description of below records and types
 
 -record(subject, {
     type = nobody :: aai:subject_type(),

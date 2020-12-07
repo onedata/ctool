@@ -54,16 +54,16 @@
 
 legacy_support_test() ->
     ProviderId = ?RAND_ID(),
-    WithLegacySupport = support_stage:insert_legacy_support_entry(#{}, ProviderId),
-    ?assertMatch({ok, ?LEGACY_SUPPORT_STAGE_DETAILS}, support_stage:lookup_details_by_provider(WithLegacySupport, ProviderId)),
-    LegacySupportRevoked = support_stage:mark_legacy_support_revocation(#{}, ProviderId),
+    {ok, WithLegacySupport} = support_stage:insert_legacy_support_entry(#{}, ProviderId),
+    ?assertMatch(?LEGACY_SUPPORT, support_stage:lookup_details(WithLegacySupport, ProviderId)),
+    {ok, LegacySupportRevoked} = support_stage:mark_legacy_support_revocation(#{}, ProviderId),
     % Legacy supports are not retained in support history, but removed completely.
-    ?assertMatch(error, support_stage:lookup_details_by_provider(LegacySupportRevoked, ProviderId)),
+    ?assertMatch(error, support_stage:lookup_details(LegacySupportRevoked, ProviderId)),
     ?assertMatch(#{}, LegacySupportRevoked).
 
 
 legacy_support_upgrade_test() ->
-    InitialStages = ?LEGACY_SUPPORT_STAGE_DETAILS,
+    InitialStages = ?LEGACY_SUPPORT,
     ?assert(test_combinations(InitialStages, ?ST_A, fun
         (joining) -> ?STAGES(joining, #{?ST_A => joining});
         (_) -> illegal
@@ -82,6 +82,7 @@ only_storage_transition_from_joining_test() ->
     InitialStages = ?STAGES(joining, #{?ST_A => joining}),
     ?assert(test_combinations(InitialStages, ?ST_A, fun
         (active) -> ?STAGES(active, #{?ST_A => active});
+        ({resizing, 0}) -> ?STAGES(evicting_replicas, #{?ST_A => {resizing, 0}});
         (_) -> illegal
     end)).
 
@@ -164,6 +165,7 @@ one_storage_transition_from_joining_test() ->
     InitialStages = ?STAGES(joining, #{?ST_A => joining, ?ST_B => joining, ?ST_C => joining}),
     ?assert(test_combinations(InitialStages, ?ST_A, fun
         (active) -> ?STAGES(remodelling, #{?ST_A => active, ?ST_B => joining, ?ST_C => joining});
+        ({resizing, 0}) -> ?STAGES(remodelling, #{?ST_A => {resizing, 0}, ?ST_B => joining, ?ST_C => joining});
         (_) -> illegal
     end)).
 
@@ -171,6 +173,7 @@ two_storages_transition_from_joining_test() ->
     InitialStages = ?STAGES(remodelling, #{?ST_A => joining, ?ST_B => joining, ?ST_C => active}),
     ?assert(test_combinations(InitialStages, ?ST_B, fun
         (active) -> ?STAGES(remodelling, #{?ST_A => joining, ?ST_B => active, ?ST_C => active});
+        ({resizing, 0}) -> ?STAGES(remodelling, #{?ST_A => joining, ?ST_B => {resizing, 0}, ?ST_C => active});
         (_) -> illegal
     end)).
 
@@ -178,6 +181,7 @@ all_storages_transition_from_joining_test() ->
     InitialStages = ?STAGES(remodelling, #{?ST_A => active, ?ST_B => active, ?ST_C => joining}),
     ?assert(test_combinations(InitialStages, ?ST_C, fun
         (active) -> ?STAGES(active, #{?ST_A => active, ?ST_B => active, ?ST_C => active});
+        ({resizing, 0}) -> ?STAGES(remodelling, #{?ST_A => active, ?ST_B => active, ?ST_C => {resizing, 0}});
         (_) -> illegal
     end)).
 
@@ -291,6 +295,14 @@ transition_from_remodelling_variant8_test() ->
     InitialStages = ?STAGES(remodelling, #{?ST_A => purging, ?ST_B => retiring, ?ST_C => joining}),
     ?assert(test_combinations(InitialStages, ?ST_B, fun
         (retired) -> ?STAGES(remodelling, #{?ST_A => purging, ?ST_B => retired, ?ST_C => joining});
+        (_) -> illegal
+    end)).
+
+transition_from_remodelling_variant9_test() ->
+    InitialStages = ?STAGES(remodelling, #{?ST_A => joining, ?ST_B => {resizing, ?LARGE}, ?ST_C => purging}),
+    ?assert(test_combinations(InitialStages, ?ST_A, fun
+        (active) -> ?STAGES(remodelling, #{?ST_A => active, ?ST_B => {resizing, ?LARGE}, ?ST_C => purging});
+        ({resizing, 0}) -> ?STAGES(remodelling, #{?ST_A => {resizing, 0}, ?ST_B => {resizing, ?LARGE}, ?ST_C => purging});
         (_) -> illegal
     end)).
 
@@ -535,14 +547,28 @@ one_storage_resupport_test() ->
         (_) -> illegal
     end)).
 
-two_storages_resupport_test() ->
+two_storages_resupport_variant1_test() ->
+    InitialStages = ?STAGES(joining, #{?ST_A => retired, ?ST_B => joining, ?ST_C => retired}),
+    ?assert(test_combinations(InitialStages, ?ST_A, fun
+        (joining) -> ?STAGES(joining, #{?ST_A => joining, ?ST_B => joining, ?ST_C => retired});
+        (_) -> illegal
+    end)).
+
+two_storages_resupport_variant2_test() ->
     InitialStages = ?STAGES(active, #{?ST_A => retired, ?ST_B => retired, ?ST_C => active}),
     ?assert(test_combinations(InitialStages, ?ST_A, fun
         (joining) -> ?STAGES(remodelling, #{?ST_A => joining, ?ST_B => retired, ?ST_C => active});
         (_) -> illegal
     end)).
 
-all_storages_resupport_test() ->
+all_storages_resupport_variant1_test() ->
+    InitialStages = ?STAGES(remodelling, #{?ST_A => active, ?ST_B => joining, ?ST_C => retired}),
+    ?assert(test_combinations(InitialStages, ?ST_C, fun
+        (joining) -> ?STAGES(remodelling, #{?ST_A => active, ?ST_B => joining, ?ST_C => joining});
+        (_) -> illegal
+    end)).
+
+all_storages_resupport_variant2_test() ->
     InitialStages = ?STAGES(active, #{?ST_A => active, ?ST_B => active, ?ST_C => retired}),
     ?assert(test_combinations(InitialStages, ?ST_C, fun
         (joining) -> ?STAGES(remodelling, #{?ST_A => active, ?ST_B => active, ?ST_C => joining});
@@ -559,6 +585,9 @@ all_storages_resupport_test() ->
 % A random number of retired storages is added to the support stage details
 % to check that they do not affect the transitions (should be kept only
 % for archival purposes).
+% InitialStageDetails can be:
+%   * none   - if there was no support previously
+%   * ?LEGACY_SUPPORT - if previously the supporting provider was in legacy version
 test_combinations(InitialStageDetails, StorageId, GenExpectationFun) ->
     RandomPreexistingState = lists:foldl(fun(StageDetailsExample, Acc) ->
         Acc#{?RAND_ID() => StageDetailsExample}
@@ -567,9 +596,9 @@ test_combinations(InitialStageDetails, StorageId, GenExpectationFun) ->
     ProviderId = ?RAND_ID(),
 
     % add some randomly generated retired storages to check if they do not impact
-    % the stage transitions, but not if the initial stage was ?LEGACY_SUPPORT_STAGE_DETAILS
+    % the stage transitions, but not if the initial stage was legacy
     DummyRetiredStorages = case InitialStageDetails of
-        ?LEGACY_SUPPORT_STAGE_DETAILS ->
+        ?LEGACY_SUPPORT ->
             #{};
         _ ->
             lists:foldl(fun(RetiredStorageId, Acc) ->
@@ -577,13 +606,14 @@ test_combinations(InitialStageDetails, StorageId, GenExpectationFun) ->
             end, #{}, lists_utils:random_sublist([?RAND_ID(), ?RAND_ID(), ?RAND_ID(), ?RAND_ID()]))
     end,
 
-    StagePerProvider = case InitialStageDetails of
+    StageRegistry = case InitialStageDetails of
         #support_stage_details{} ->
             RandomPreexistingState#{
                 ProviderId => inject_storage_stages(InitialStageDetails, DummyRetiredStorages)
             };
-        ?LEGACY_SUPPORT_STAGE_DETAILS ->
-            support_stage:insert_legacy_support_entry(RandomPreexistingState, ProviderId);
+        ?LEGACY_SUPPORT ->
+            {ok, WithLegacy} = support_stage:insert_legacy_support_entry(RandomPreexistingState, ProviderId),
+            WithLegacy;
         none ->
             case DummyRetiredStorages of
                 Map when map_size(Map) == 0 ->
@@ -596,15 +626,15 @@ test_combinations(InitialStageDetails, StorageId, GenExpectationFun) ->
             end
     end,
 
-    ?assertEqual(StagePerProvider, support_stage:per_provider_from_json(
-        support_stage:per_provider_to_json(StagePerProvider)
-    )),
+    ?assertEqual(StageRegistry, support_stage:registry_from_json(json_utils:decode(
+        json_utils:encode(support_stage:registry_to_json(StageRegistry))
+    ))),
 
-    {PrevProviderStage, PrevStorageStage} = case maps:find(ProviderId, StagePerProvider) of
+    {PrevProviderStage, PrevStorageStage} = case support_stage:lookup_details(StageRegistry, ProviderId) of
         {ok, Details = #support_stage_details{per_storage = PerStorage}} ->
             StorageStage = maps:get(StorageId, PerStorage, none),
             {Details#support_stage_details.provider_stage, StorageStage};
-        _ -> % covers none and ?LEGACY_SUPPORT_STAGE_DETAILS
+        _ -> % covers none and ?LEGACY_SUPPORT
             {none, none}
     end,
 
@@ -615,31 +645,31 @@ test_combinations(InitialStageDetails, StorageId, GenExpectationFun) ->
             illegal ->
                 ?ERROR_ILLEGAL_SUPPORT_STAGE_TRANSITION(PrevProviderStage, PrevStorageStage);
             _ ->
-                {ok, StagePerProvider#{
+                {ok, StageRegistry#{
                     ProviderId => inject_storage_stages(ExpectedNewStageDetails, DummyRetiredStorages)
                 }}
         end,
-        Result = support_stage:apply_transition(StagePerProvider, ProviderId, StorageId, TransitionTo),
+        Result = support_stage:apply_transition(StageRegistry, ProviderId, StorageId, TransitionTo),
         CompareResult = compare_transition_result(ProviderId, StorageId, TransitionTo, ExpectedTransitionResult, Result),
 
         % If the transition was successful, check that the new stage (stage per provider) is as expected.
         case {Result, ExpectedTransitionResult} of
-            {{ok, NewStagesPerProvider}, {ok, _}} ->
+            {{ok, NewStagesRegistry}, {ok, _}} ->
                 ?assertEqual(
                     {ok, inject_storage_stages(ExpectedNewStageDetails, DummyRetiredStorages)},
-                    support_stage:lookup_details_by_provider(NewStagesPerProvider, ProviderId)
+                    support_stage:lookup_details(NewStagesRegistry, ProviderId)
                 ),
                 % check that calling the corresponding high-level operation gives the same result
                 ?assertEqual(Result, call_high_level_operation(
-                    StagePerProvider, ProviderId, StorageId, PrevStorageStage, TransitionTo
+                    StageRegistry, ProviderId, StorageId, PrevStorageStage, TransitionTo
                 )),
                 % make sure that only the stage details of subject provider have changed
                 ?assertEqual(
-                    maps:without([ProviderId], StagePerProvider),
-                    maps:without([ProviderId], NewStagesPerProvider)
+                    maps:without([ProviderId], StageRegistry),
+                    maps:without([ProviderId], NewStagesRegistry)
                 ),
-                ?assertEqual(NewStagesPerProvider, support_stage:per_provider_from_json(json_utils:decode(
-                    json_utils:encode(support_stage:per_provider_to_json(NewStagesPerProvider))
+                ?assertEqual(NewStagesRegistry, support_stage:registry_from_json(json_utils:decode(
+                    json_utils:encode(support_stage:registry_to_json(NewStagesRegistry))
                 )));
             _ ->
                 ok
@@ -662,7 +692,8 @@ compare_transition_result(ProviderId, StorageId, TransitionTo, ExpectedResult, A
                 "TransitionTo: ~p~n"
                 "Expected: ~p~n"
                 "Got: ~p~n",
-                [ProviderId, StorageId, TransitionTo, ExpectedResult, ActualResult]),
+                [ProviderId, StorageId, TransitionTo, ExpectedResult, ActualResult]
+            ),
             false
     end.
 
@@ -676,30 +707,32 @@ inject_storage_stages(StageDetails, StorageStages) ->
 % Tests use the low level API to test all transitions, including illegal ones.
 % Legal transitions can be mapped to high level operations, as below, this way
 % the high level API can also be tested.
-call_high_level_operation(PerProvider, ProviderId, StorageId, none, joining) ->
-    support_stage:init_support(PerProvider, ProviderId, StorageId);
-call_high_level_operation(PerProvider, ProviderId, StorageId, retired, joining) ->
-    support_stage:init_support(PerProvider, ProviderId, StorageId);
-call_high_level_operation(PerProvider, ProviderId, StorageId, joining, active) ->
-    support_stage:finalize_support(PerProvider, ProviderId, StorageId);
+call_high_level_operation(Registry, ProviderId, StorageId, none, joining) ->
+    support_stage:init_support(Registry, ProviderId, StorageId);
+call_high_level_operation(Registry, ProviderId, StorageId, retired, joining) ->
+    support_stage:init_support(Registry, ProviderId, StorageId);
+call_high_level_operation(Registry, ProviderId, StorageId, joining, active) ->
+    support_stage:finalize_support(Registry, ProviderId, StorageId);
+call_high_level_operation(Registry, ProviderId, StorageId, joining, {resizing, 0}) ->
+    support_stage:init_unsupport(Registry, ProviderId, StorageId);
 
-call_high_level_operation(PerProvider, ProviderId, StorageId, active, {resizing, Target}) when Target > 0 ->
-    support_stage:init_resize(PerProvider, ProviderId, StorageId, Target);
-call_high_level_operation(PerProvider, ProviderId, StorageId, {resizing, _}, {resizing, Target}) when Target > 0 ->
-    support_stage:init_resize(PerProvider, ProviderId, StorageId, Target);
-call_high_level_operation(PerProvider, ProviderId, StorageId, {resizing, Target}, active) when Target > 0 ->
-    support_stage:finalize_resize(PerProvider, ProviderId, StorageId);
+call_high_level_operation(Registry, ProviderId, StorageId, active, {resizing, Target}) when Target > 0 ->
+    support_stage:init_resize(Registry, ProviderId, StorageId, Target);
+call_high_level_operation(Registry, ProviderId, StorageId, {resizing, _}, {resizing, Target}) when Target > 0 ->
+    support_stage:init_resize(Registry, ProviderId, StorageId, Target);
+call_high_level_operation(Registry, ProviderId, StorageId, {resizing, Target}, active) when Target > 0 ->
+    support_stage:finalize_resize(Registry, ProviderId, StorageId);
 
-call_high_level_operation(PerProvider, ProviderId, StorageId, active, {resizing, 0}) ->
-    support_stage:init_unsupport(PerProvider, ProviderId, StorageId);
-call_high_level_operation(PerProvider, ProviderId, StorageId, {resizing, _}, {resizing, 0}) ->
-    support_stage:init_unsupport(PerProvider, ProviderId, StorageId);
-call_high_level_operation(PerProvider, ProviderId, StorageId, {resizing, 0}, purging) ->
-    support_stage:complete_unsupport_resize(PerProvider, ProviderId, StorageId);
-call_high_level_operation(PerProvider, ProviderId, StorageId, purging, retiring) ->
-    support_stage:complete_unsupport_purge(PerProvider, ProviderId, StorageId);
-call_high_level_operation(PerProvider, ProviderId, StorageId, retiring, retired) ->
-    support_stage:finalize_unsupport(PerProvider, ProviderId, StorageId).
+call_high_level_operation(Registry, ProviderId, StorageId, active, {resizing, 0}) ->
+    support_stage:init_unsupport(Registry, ProviderId, StorageId);
+call_high_level_operation(Registry, ProviderId, StorageId, {resizing, _}, {resizing, 0}) ->
+    support_stage:init_unsupport(Registry, ProviderId, StorageId);
+call_high_level_operation(Registry, ProviderId, StorageId, {resizing, 0}, purging) ->
+    support_stage:complete_unsupport_resize(Registry, ProviderId, StorageId);
+call_high_level_operation(Registry, ProviderId, StorageId, purging, retiring) ->
+    support_stage:complete_unsupport_purge(Registry, ProviderId, StorageId);
+call_high_level_operation(Registry, ProviderId, StorageId, retiring, retired) ->
+    support_stage:finalize_unsupport(Registry, ProviderId, StorageId).
 
 
 -endif.
