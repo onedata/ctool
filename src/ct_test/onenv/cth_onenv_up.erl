@@ -65,7 +65,7 @@ pre_init_per_suite(_Suite, Config, State) ->
     State :: state()) -> {test_config:config(), state()}.
 post_init_per_suite(Suite, _, Return, State) ->
     ct:pal("Environment initialization in ~p", [Suite]),
-    NewConfig = test_onenv_starter:prepare_test_environment(Return),
+    NewConfig = test_onenv_starter:prepare_test_environment(Return, Suite),
     {NewConfig, State}.
 
 
