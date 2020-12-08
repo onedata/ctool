@@ -37,7 +37,7 @@
 
 -record(registry_update_result, {
     new_registry :: provider_sync_progress:registry(),
-    % informs about providers that transitioned from joining of from/to desync
+    % informs about providers that transitioned from joining or from/to desync
     % as a result of the previous report consumption
     transitioned_from_joining = [] :: [provider_sync_progress:provider_id()],
     transitioned_from_desync = [] :: [provider_sync_progress:provider_id()],

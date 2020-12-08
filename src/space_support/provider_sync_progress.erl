@@ -10,12 +10,28 @@
 %%% statistics in a space. The sync progress of a provider is represented as a
 %%% summary of dbsync sequence numbers of peer providers supporting the space
 %%% that were seen and processed by the provider.
+%%%
+%%% Legacy providers have a dedicated API ensuring backward compatibility and
+%%% creating default entries, as they do not recognize the sync progress concept.
 %%% @end
 %%%-------------------------------------------------------------------
 -module(provider_sync_progress).
 -author("Lukasz Opiola").
 
 -include("space_support/provider_sync_progress.hrl").
+
+-export([new/0]).
+-export([lookup/2]).
+-export([register_support/3]).
+-export([register_unsupport/2]).
+-export([register_legacy_support/3]).
+-export([register_upgrade_of_legacy_support/2]).
+-export([register_legacy_unsupport/2]).
+-export([consume_collective_report/3]).
+-export([build_collective_report/2]).
+-export([prune_archival_entries/1]).
+-export([collective_report_to_json/1, collective_report_from_json/1]).
+-export([registry_to_json/1, registry_from_json/1]).
 
 -type provider_id() :: onedata:service_id().
 -export_type([provider_id/0]).
@@ -27,9 +43,9 @@
 % already be on a higher seq when the updates reach its peers. Latest emitted seq
 % for a provider is the seen seq reported by each provider under own provider id.
 -type seen_seq() :: non_neg_integer().
-% Each seen_seq() is coupled with the timestamp denoting the moment when it was
-% emitted by the provider (the timestamp is assigned once and does not change
-% for the seq).
+% Each seen_seq() is coupled with the timestamp denoting the moment when the
+% database document associated with the sequence number has been persisted by
+% the provider (the timestamp is assigned once and does not change for the seq).
 -type seq_timestamp() :: time:seconds().
 % Difference between the latest seq emitted by a peer provider and the
 % latest seq seen by the subject provider.
@@ -53,11 +69,11 @@
 
 % Denotes that a provider is in legacy version and does not recognize the sync
 % progress model. Such provider does not report its progress and will have
-% default entries in the registry (seq = 1) until it is upgraded. Such
-% provider cannot be marked as active (is always perceived as joining).
+% default entries in the registry (seq = 1). It will be marked as joining until
+% it is upgraded - then is starts catching up with modern providers.
 -type legacy() :: boolean().
 % Indicates that the provider is not yet actively supporting the space,
-% but catching up with changes from other providers. The flag is to true set
+% but catching up with changes from other providers. The flag is set to true
 % when the provider grants support for the space and hasn't had any active
 % previous support. Then, it is set to false when the provider catches up with
 % peer providers. This transition (true -> false) is a trigger for transition
@@ -65,7 +81,8 @@
 % unchanged during the support lifecycle.
 -type joining() :: boolean().
 % Denotes that the subject provider does not support the space anymore and
-% the stored values are archival. Such entries are kept until all peer providers
+% the stored values are archival - the registry state is "frozen" at the
+% moment of space unsupport. Such entries are kept until all peer providers
 % have seen the latest seq of the retired provider - and then removed in the
 % process of pruning the registry.
 -type archival() :: boolean().
@@ -85,7 +102,7 @@
 -type registry_update_result() :: #registry_update_result{}.
 -export_type([registry_update_result/0]).
 
-% Hold a sync progress report - reports are sent by each provider and used to
+% Holds a sync progress report - reports are sent by each provider and used to
 % compute the sync progress entries. In a space with N providers, each provider
 % periodically sends a collective report that consists of N
 % sync_progress_reports (for each provider, including self).
@@ -96,19 +113,6 @@
 -type report() :: #report{}.
 -type collective_report() :: #{provider_id() => report()}.
 -export_type([collective_report/0]).
-
--export([new/0]).
--export([lookup/2]).
--export([register_support/3]).
--export([register_unsupport/2]).
--export([register_legacy_support/3]).
--export([register_upgrade_of_legacy_support/2]).
--export([register_legacy_unsupport/2]).
--export([consume_collective_report/3]).
--export([build_collective_report/2]).
--export([prune_archival_entries/1]).
--export([collective_report_to_json/1, collective_report_from_json/1]).
--export([registry_to_json/1, registry_from_json/1]).
 
 -define(DESYNC_THRESHOLD_SECONDS, ctool:get_env(provider_sync_progress_desync_threshold_seconds, 300)). % 5 minutes
 
@@ -131,7 +135,6 @@ lookup(Registry, ProviderId) ->
 %% Adds information to the registry about a new supporting provider. Must be
 %% called only upon the first support (consecutive supports with different
 %% storages must not be reported).
-%% NOTE: must not be used for legacy providers.
 %% @end
 %%--------------------------------------------------------------------
 -spec register_support(registry(), provider_id(), time:seconds()) -> registry_update_result().
@@ -144,24 +147,14 @@ register_support(Registry, NewProviderId, SpaceCreationTimestamp) ->
 %% Adds information to the registry that a provider has ceased support for the
 %% space. Must be called only when the provider revokes support with its last
 %% storage (from all that were supporting the space).
-%% NOTE: must not be used for legacy providers.
 %% @end
 %%--------------------------------------------------------------------
 -spec register_unsupport(registry(), provider_id()) -> registry_update_result().
 register_unsupport(Registry, ProviderId) ->
-    ProviderSummary = case lookup(Registry, ProviderId) of
-        error ->
-            error({support_not_registered, ProviderId});
-        {ok, #provider_summary{archival = true}} ->
-            error({support_not_registered, ProviderId});
-        {ok, #provider_summary{legacy = true}} ->
-            error({legacy_provider, ProviderId});
-        {ok, PS} ->
-            PS
-    end,
-    NewRegistry = update_registry_entries(Registry, #{
-        ProviderId => ProviderSummary#provider_summary{archival = true}
-    }),
+    ensure_current_support_state(Registry, ProviderId, modern),
+    NewRegistry = maps:update_with(ProviderId, fun(ProviderSummary) ->
+        ProviderSummary#provider_summary{archival = true}
+    end, Registry),
     build_registry_update_result(Registry, NewRegistry).
 
 
@@ -183,22 +176,12 @@ register_legacy_support(Registry, NewProviderId, SpaceCreationTimestamp) ->
 %% and can start reporting its sync progress.
 %% @end
 %%--------------------------------------------------------------------
+-spec register_upgrade_of_legacy_support(registry(), provider_id()) -> registry_update_result().
 register_upgrade_of_legacy_support(Registry, ProviderId) ->
-    ProviderSummary = case lookup(Registry, ProviderId) of
-        error ->
-            error({support_not_registered, ProviderId});
-        {ok, #provider_summary{archival = true}} ->
-            error({support_not_registered, ProviderId});
-        {ok, #provider_summary{legacy = true} = PS} ->
-            PS;
-        {ok, _} ->
-            error({not_a_legacy_provider, ProviderId})
-    end,
-    NewRegistry = update_registry_entries(Registry, #{
-        ProviderId => update_provider_summary_entries(
-            ProviderSummary#provider_summary{legacy = false}, #{}
-        )
-    }),
+    ensure_current_support_state(Registry, ProviderId, legacy),
+    NewRegistry = maps:update_with(ProviderId, fun(ProviderSummary) ->
+        update_provider_summary_entries(ProviderSummary#provider_summary{legacy = false}, #{})
+    end, Registry),
     build_registry_update_result(Registry, NewRegistry).
 
 
@@ -209,19 +192,10 @@ register_upgrade_of_legacy_support(Registry, ProviderId) ->
 %%--------------------------------------------------------------------
 -spec register_legacy_unsupport(registry(), provider_id()) -> registry_update_result().
 register_legacy_unsupport(Registry, ProviderId) ->
-    ProviderSummary = case lookup(Registry, ProviderId) of
-        error ->
-            error({support_not_registered, ProviderId});
-        {ok, #provider_summary{archival = true}} ->
-            error({support_not_registered, ProviderId});
-        {ok, #provider_summary{legacy = true} = PS} ->
-            PS;
-        {ok, _} ->
-            error({not_a_legacy_provider, ProviderId})
-    end,
-    NewRegistry = update_registry_entries(Registry, #{
-        ProviderId => ProviderSummary#provider_summary{archival = true}
-    }),
+    ensure_current_support_state(Registry, ProviderId, legacy),
+    NewRegistry = maps:update_with(ProviderId, fun(ProviderSummary) ->
+        ProviderSummary#provider_summary{archival = true}
+    end, Registry),
     build_registry_update_result(Registry, NewRegistry).
 
 
@@ -229,22 +203,15 @@ register_legacy_unsupport(Registry, ProviderId) ->
 %% @doc
 %% Consumes a report sent by a subject provider, updating its sync progress
 %% towards peers, and the peers' progresses towards the subject.
-%% NOTE: must not be used for legacy providers.
 %% @end
 %%--------------------------------------------------------------------
 -spec consume_collective_report(registry(), provider_id(), collective_report()) -> registry_update_result().
 consume_collective_report(Registry, SubjectId, CollectiveReport) ->
-    case lookup(Registry, SubjectId) of
-        {ok, #provider_summary{legacy = true}} ->
-            error({legacy_provider, SubjectId});
-        _ ->
-            ok
-    end,
+    ensure_current_support_state(Registry, SubjectId, modern),
     UpdatedRegistry = apply_collective_report(Registry, SubjectId, CollectiveReport),
-    UpdatedProviderSummary = maps:get(SubjectId, UpdatedRegistry),
-    FinalRegistry = UpdatedRegistry#{
-        SubjectId => UpdatedProviderSummary#provider_summary{last_report = global_clock:timestamp_seconds()}
-    },
+    FinalRegistry = maps:update_with(SubjectId, fun(ProviderSummary) ->
+        ProviderSummary#provider_summary{last_report = global_clock:timestamp_seconds()}
+    end, UpdatedRegistry),
     build_registry_update_result(Registry, FinalRegistry).
 
 
@@ -324,28 +291,61 @@ registry_from_json(RegistryJson) ->
 %%% Internal functions
 %%%===================================================================
 
+%%--------------------------------------------------------------------
+%% @private
+%% @doc
+%% Checks that given provider was in expected support state in given registry
+%% and raises an error if the expectation is not met.
+%% @end
+%%--------------------------------------------------------------------
+-spec ensure_current_support_state(registry(), provider_id(), none | modern | legacy) ->
+    ok | no_return().
+ensure_current_support_state(Registry, ProviderId, ExpectedSupportState) ->
+    case {ExpectedSupportState, lookup(Registry, ProviderId)} of
+        {none, {ok, #provider_summary{archival = false}}} ->
+            error({support_already_registered, ProviderId});
+        {none, _} ->
+            ok;
+
+        {_, error} ->
+            error({support_not_registered, ProviderId});
+        {_, {ok, #provider_summary{archival = true}}} ->
+            error({support_not_registered, ProviderId});
+
+        {modern, {ok, #provider_summary{legacy = true}}} ->
+            error({legacy_provider, ProviderId});
+        {modern, {ok, _}} ->
+            ok;
+
+        {legacy, {ok, #provider_summary{legacy = false}}} ->
+            error({not_a_legacy_provider, ProviderId});
+        {legacy, {ok, _}} ->
+            ok
+    end.
+
+
+%% @private
 -spec register_support_internal(registry(), provider_id(), time:seconds(), legacy()) ->
     registry_update_result().
 register_support_internal(Registry, NewProviderId, SpaceCreationTimestamp, Legacy) ->
+    ensure_current_support_state(Registry, NewProviderId, none),
     case lookup(Registry, NewProviderId) of
-        {ok, #provider_summary{archival = false}} ->
-            error({support_already_registered, NewProviderId});
         {ok, Existing = #provider_summary{archival = true}} ->
-            NewRegistry = update_registry_entries(Registry, #{
+            NewRegistry = Registry#{
                 NewProviderId => update_provider_summary_entries(
                     Existing#provider_summary{legacy = Legacy, joining = true, desync = true, archival = false},
                     #{}
                 )
-            }),
+            },
             build_registry_update_result(Registry, NewRegistry);
         error ->
-            WithInitialPeerReports = update_registry_entries(Registry, maps:map(fun(_PeerId, ProviderSummaryOfPeer) ->
+            WithInitialPeerReports = maps:merge(Registry, maps:map(fun(_PeerId, ProviderSummaryOfPeer) ->
                 update_provider_summary_entries(ProviderSummaryOfPeer, #{
                     NewProviderId => initial_peer_summary(SpaceCreationTimestamp)
                 })
             end, Registry)),
 
-            WithNewProvider = update_registry_entries(WithInitialPeerReports, #{
+            WithNewProvider = WithInitialPeerReports#{
                 NewProviderId => #provider_summary{
                     legacy = Legacy,
                     joining = true,
@@ -353,7 +353,7 @@ register_support_internal(Registry, NewProviderId, SpaceCreationTimestamp, Legac
                     archival = false,
                     per_peer = #{}
                 }
-            }),
+            },
 
             AllProviders = maps:keys(WithNewProvider),
             CollectiveReport = build_collective_report(AllProviders, fun(_PeerId) ->
@@ -452,12 +452,6 @@ build_peer_summary(ReportOfSubject, ReportOfPeer) ->
         delay = Delay,
         desync = Delay > ?DESYNC_THRESHOLD_SECONDS
     }.
-
-
-%% @private
--spec update_registry_entries(registry(), #{provider_id() => provider_summary()}) -> registry().
-update_registry_entries(Registry, NewSummaries) ->
-    maps:merge(Registry, NewSummaries).
 
 
 %% @private
