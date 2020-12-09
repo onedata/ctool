@@ -26,43 +26,42 @@
 -export_type([parameters/0, data_write/0, metadata_replication/0]).
 
 -type provider_id() :: onedata:service_id().
--type per_provider() :: #{provider_id() => parameters()}.
--export_type([per_provider/0]).
+% The registry object (one for a space) accumulates all information about
+% support parameters of all supporting providers.
+-type registry() :: #{provider_id() => parameters()}.
+-export_type([registry/0]).
 
--export([build/2]).
 -export([lookup_by_provider/2]).
 -export([update_for_provider/3]).
 -export([remove_for_provider/2]).
+-export([build/2]).
 -export([get_data_write/1, get_metadata_replication/1]).
 -export([serialize/1, deserialize/1]).
 -export([to_json/1, from_json/1]).
--export([per_provider_to_json/1, per_provider_from_json/1]).
+-export([registry_to_json/1, registry_from_json/1]).
 
 %%%===================================================================
 %%% API
 %%%===================================================================
 
+-spec lookup_by_provider(registry(), provider_id()) -> {ok, parameters()} | error.
+lookup_by_provider(Registry, ProviderId) ->
+    maps:find(ProviderId, Registry).
+
+
+-spec update_for_provider(registry(), provider_id(), parameters()) -> registry().
+update_for_provider(Registry, ProviderId, Parameters) ->
+    Registry#{ProviderId => Parameters}.
+
+
+-spec remove_for_provider(registry(), provider_id()) -> registry().
+remove_for_provider(Registry, ProviderId) ->
+    maps:remove(ProviderId, Registry).
+
+
 -spec build(data_write(), metadata_replication()) -> parameters().
 build(DataWrite, MetadataReplication) ->
     #space_support_parameters{data_write = DataWrite, metadata_replication = MetadataReplication}.
-
-
--spec lookup_by_provider(per_provider(), provider_id()) ->
-    {ok, parameters()} | error.
-lookup_by_provider(ParametersPerProvider, ProviderId) ->
-    maps:find(ProviderId, ParametersPerProvider).
-
-
--spec update_for_provider(per_provider(), provider_id(), parameters()) ->
-    per_provider().
-update_for_provider(ParametersPerProvider, ProviderId, Parameters) ->
-    ParametersPerProvider#{ProviderId => Parameters}.
-
-
--spec remove_for_provider(per_provider(), provider_id()) ->
-    per_provider().
-remove_for_provider(ParametersPerProvider, ProviderId) ->
-    maps:remove(ProviderId, ParametersPerProvider).
 
 
 -spec get_data_write(parameters()) -> data_write().
@@ -129,15 +128,15 @@ from_json(Parameters) ->
     #space_support_parameters{data_write = DW, metadata_replication = MR}.
 
 
--spec per_provider_to_json(per_provider()) -> json_utils:json_map().
-per_provider_to_json(ParametersPerProvider) ->
+-spec registry_to_json(registry()) -> json_utils:json_map().
+registry_to_json(Registry) ->
     maps:map(fun(_ProviderId, Parameters) ->
         to_json(Parameters)
-    end, ParametersPerProvider).
+    end, Registry).
 
 
--spec per_provider_from_json(json_utils:json_map()) -> per_provider().
-per_provider_from_json(JsonParametersPerProvider) ->
+-spec registry_from_json(json_utils:json_map()) -> registry().
+registry_from_json(RegistryJson) ->
     maps:map(fun(_ProviderId, Parameters) ->
         from_json(Parameters)
-    end, JsonParametersPerProvider).
+    end, RegistryJson).

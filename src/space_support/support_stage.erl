@@ -16,9 +16,9 @@
 %%% always inferred from the storage stages and cannot be modified directly -
 %%% serves as a summary of the provider's support in the space.
 %%%
-%%% NOTE: consult "support stages" on Confluence for broader descriptions and a
-%%% diagram with possible transitions, which is essentially implemented in this
-%%% module.
+%%% NOTE: consult "support stages" on Onedata's Confluence for broader
+%%% descriptions and a diagram with possible transitions, which is essentially
+%%% implemented in this module.
 %%% @end
 %%%-------------------------------------------------------------------
 -module(support_stage).
@@ -42,6 +42,8 @@
 %   joining - phase of initial setup after a space is supported and when the
 %             storage cannot be used yet, transitions to active when the
 %             provider has caught up with dbsync changes from other providers.
+%             May be interrupted by initializing unsupport (transitions to
+%             {resizing, 0}).
 %   active - the storage is operational
 %   {resizing, TargetSize} - the granted storage quota by this storage is being
 %             changed, which may be a long process if replicas need to be
@@ -80,8 +82,10 @@
 | evicting_replicas | purging_storages | purging_database | retired.
 -export_type([storage_id/0, details/0, provider_support_stage/0, storage_support_stage/0]).
 
--type per_provider() :: #{provider_id() => details()}.
--export_type([per_provider/0]).
+% The registry object (one for a space) accumulates all information about
+% support stages of all supporting providers.
+-type registry() :: #{provider_id() => details()}.
+-export_type([registry/0]).
 
 -export([init_support/3, finalize_support/3]).
 -export([init_resize/4, finalize_resize/3]).
@@ -90,60 +94,60 @@
 -export([apply_transition/4]).
 -export([insert_legacy_support_entry/2]).
 -export([mark_legacy_support_revocation/2]).
--export([lookup_details_by_provider/2]).
--export([per_provider_to_json/1, per_provider_from_json/1]).
+-export([lookup_details/2]).
+-export([registry_to_json/1, registry_from_json/1]).
 -export([serialize/2, deserialize/2]).
 
 %%%===================================================================
 %%% API
 %%%===================================================================
 
--spec init_support(per_provider(), provider_id(), storage_id()) ->
-    {ok, per_provider()} | errors:error().
-init_support(PerProvider, ProviderId, StorageId) ->
-    apply_transition(PerProvider, ProviderId, StorageId, joining).
+-spec init_support(registry(), provider_id(), storage_id()) ->
+    {ok, registry()} | errors:error().
+init_support(Registry, ProviderId, StorageId) ->
+    apply_transition(Registry, ProviderId, StorageId, joining).
 
 
--spec finalize_support(per_provider(), provider_id(), storage_id()) ->
-    {ok, per_provider()} | errors:error().
-finalize_support(PerProvider, ProviderId, StorageId) ->
-    apply_transition(PerProvider, ProviderId, StorageId, active).
+-spec finalize_support(registry(), provider_id(), storage_id()) ->
+    {ok, registry()} | errors:error().
+finalize_support(Registry, ProviderId, StorageId) ->
+    apply_transition(Registry, ProviderId, StorageId, active).
 
 
--spec init_resize(per_provider(), provider_id(), storage_id(), resize_target()) ->
-    {ok, per_provider()} | errors:error().
-init_resize(PerProvider, ProviderId, StorageId, TargetSize) when TargetSize > 0 ->
-    apply_transition(PerProvider, ProviderId, StorageId, {resizing, TargetSize}).
+-spec init_resize(registry(), provider_id(), storage_id(), resize_target()) ->
+    {ok, registry()} | errors:error().
+init_resize(Registry, ProviderId, StorageId, TargetSize) when TargetSize > 0 ->
+    apply_transition(Registry, ProviderId, StorageId, {resizing, TargetSize}).
 
 
--spec finalize_resize(per_provider(), provider_id(), storage_id()) ->
-    {ok, per_provider()} | errors:error().
-finalize_resize(PerProvider, ProviderId, StorageId) ->
-    apply_transition(PerProvider, ProviderId, StorageId, active).
+-spec finalize_resize(registry(), provider_id(), storage_id()) ->
+    {ok, registry()} | errors:error().
+finalize_resize(Registry, ProviderId, StorageId) ->
+    apply_transition(Registry, ProviderId, StorageId, active).
 
 
--spec init_unsupport(per_provider(), provider_id(), storage_id()) ->
-    {ok, per_provider()} | errors:error().
-init_unsupport(PerProvider, ProviderId, StorageId) ->
-    apply_transition(PerProvider, ProviderId, StorageId, {resizing, 0}).
+-spec init_unsupport(registry(), provider_id(), storage_id()) ->
+    {ok, registry()} | errors:error().
+init_unsupport(Registry, ProviderId, StorageId) ->
+    apply_transition(Registry, ProviderId, StorageId, {resizing, 0}).
 
 
--spec complete_unsupport_resize(per_provider(), provider_id(), storage_id()) ->
-    {ok, per_provider()} | errors:error().
-complete_unsupport_resize(PerProvider, ProviderId, StorageId) ->
-    apply_transition(PerProvider, ProviderId, StorageId, purging).
+-spec complete_unsupport_resize(registry(), provider_id(), storage_id()) ->
+    {ok, registry()} | errors:error().
+complete_unsupport_resize(Registry, ProviderId, StorageId) ->
+    apply_transition(Registry, ProviderId, StorageId, purging).
 
 
--spec complete_unsupport_purge(per_provider(), provider_id(), storage_id()) ->
-    {ok, per_provider()} | errors:error().
-complete_unsupport_purge(PerProvider, ProviderId, StorageId) ->
-    apply_transition(PerProvider, ProviderId, StorageId, retiring).
+-spec complete_unsupport_purge(registry(), provider_id(), storage_id()) ->
+    {ok, registry()} | errors:error().
+complete_unsupport_purge(Registry, ProviderId, StorageId) ->
+    apply_transition(Registry, ProviderId, StorageId, retiring).
 
 
--spec finalize_unsupport(per_provider(), provider_id(), storage_id()) ->
-    {ok, per_provider()} | errors:error().
-finalize_unsupport(PerProvider, ProviderId, StorageId) ->
-    apply_transition(PerProvider, ProviderId, StorageId, retired).
+-spec finalize_unsupport(registry(), provider_id(), storage_id()) ->
+    {ok, registry()} | errors:error().
+finalize_unsupport(Registry, ProviderId, StorageId) ->
+    apply_transition(Registry, ProviderId, StorageId, retired).
 
 
 %%--------------------------------------------------------------------
@@ -152,13 +156,13 @@ finalize_unsupport(PerProvider, ProviderId, StorageId) ->
 %% using this function to provide a high level API for space support lifecycle.
 %% @end
 %%--------------------------------------------------------------------
--spec apply_transition(per_provider(), provider_id(), storage_id(), storage_support_stage()) ->
-    {ok, per_provider()} | errors:error().
-apply_transition(PerProvider, ProviderId, StorageId, NewStorageStage) ->
-    CurrentStageDetails = case lookup_details_by_provider(PerProvider, ProviderId) of
+-spec apply_transition(registry(), provider_id(), storage_id(), storage_support_stage()) ->
+    {ok, registry()} | errors:error().
+apply_transition(Registry, ProviderId, StorageId, NewStorageStage) ->
+    CurrentStageDetails = case lookup_details(Registry, ProviderId) of
         % legacy entry is treated as if there was no entry at all
         % (legacy providers will appear as joining after upgrade).
-        {ok, StageDetails} when StageDetails /= ?LEGACY_SUPPORT_STAGE_DETAILS ->
+        {ok, StageDetails} when StageDetails /= ?LEGACY_SUPPORT ->
             StageDetails;
         _ ->
             #support_stage_details{
@@ -170,7 +174,7 @@ apply_transition(PerProvider, ProviderId, StorageId, NewStorageStage) ->
     end,
     case apply_stage_transition(CurrentStageDetails, StorageId, NewStorageStage) of
         {ok, NewStageDetails} ->
-            {ok, PerProvider#{ProviderId => NewStageDetails}};
+            {ok, Registry#{ProviderId => NewStageDetails}};
         {error, _} = Error ->
             Error
     end.
@@ -182,10 +186,9 @@ apply_transition(PerProvider, ProviderId, StorageId, NewStorageStage) ->
 %% not recognize supports stages.
 %% @end
 %%--------------------------------------------------------------------
--spec insert_legacy_support_entry(per_provider(), provider_id()) ->
-    per_provider().
-insert_legacy_support_entry(PerProvider, ProviderId) ->
-    PerProvider#{ProviderId => ?LEGACY_SUPPORT_STAGE_DETAILS}.
+-spec insert_legacy_support_entry(registry(), provider_id()) -> {ok, registry()}.
+insert_legacy_support_entry(Registry, ProviderId) ->
+    {ok, Registry#{ProviderId => ?LEGACY_SUPPORT}}.
 
 
 %%--------------------------------------------------------------------
@@ -194,34 +197,35 @@ insert_legacy_support_entry(PerProvider, ProviderId) ->
 %% support history, but removed completely.
 %% @end
 %%--------------------------------------------------------------------
--spec mark_legacy_support_revocation(per_provider(), provider_id()) ->
-    per_provider().
-mark_legacy_support_revocation(PerProvider, ProviderId) ->
-    maps:remove(ProviderId, PerProvider).
+-spec mark_legacy_support_revocation(registry(), provider_id()) -> {ok, registry()}.
+mark_legacy_support_revocation(Registry, ProviderId) ->
+    {ok, maps:remove(ProviderId, Registry)}.
 
 
--spec lookup_details_by_provider(per_provider(), provider_id()) ->
-    {ok, details()} | error.
-lookup_details_by_provider(PerProvider, ProviderId) ->
-    maps:find(ProviderId, PerProvider).
+-spec lookup_details(registry(), provider_id()) -> {ok, details()} | ?LEGACY_SUPPORT | error.
+lookup_details(Registry, ProviderId) ->
+    case maps:find(ProviderId, Registry) of
+        {ok, ?LEGACY_SUPPORT} -> ?LEGACY_SUPPORT;
+        Other -> Other
+    end.
 
 
--spec per_provider_to_json(per_provider()) -> json_utils:json_map().
-per_provider_to_json(PerProvider) ->
+-spec registry_to_json(registry()) -> json_utils:json_map().
+registry_to_json(Registry) ->
     maps:map(fun(_ProviderId, SupportStage) ->
         details_to_json(SupportStage)
-    end, PerProvider).
+    end, Registry).
 
 
--spec per_provider_from_json(json_utils:json_map()) -> per_provider().
-per_provider_from_json(PerProviderJson) ->
+-spec registry_from_json(json_utils:json_map()) -> registry().
+registry_from_json(RegistryJson) ->
     maps:map(fun(_ProviderId, SupportStage) ->
         details_from_json(SupportStage)
-    end, PerProviderJson).
+    end, RegistryJson).
 
 
 -spec details_to_json(details()) -> json_utils:json_term().
-details_to_json(?LEGACY_SUPPORT_STAGE_DETAILS) ->
+details_to_json(?LEGACY_SUPPORT) ->
     <<"legacySupport">>;
 details_to_json(#support_stage_details{provider_stage = ProviderStage, per_storage = PerStorage}) ->
     #{
@@ -234,7 +238,7 @@ details_to_json(#support_stage_details{provider_stage = ProviderStage, per_stora
 
 -spec details_from_json(json_utils:json_term()) -> details().
 details_from_json(<<"legacySupport">>) ->
-    ?LEGACY_SUPPORT_STAGE_DETAILS;
+    ?LEGACY_SUPPORT;
 details_from_json(#{<<"providerStage">> := ProviderStage, <<"perStorage">> := PerStorage}) ->
     #support_stage_details{
         provider_stage = deserialize(provider, ProviderStage),
@@ -325,6 +329,8 @@ infer_provider_stage(ProviderStage, StorageStages) ->
 
         % All storages are in joining stage (a new one have just appeared)
         {joining, [joining]} -> {ok, joining};
+        % All joining storages have started unsupport (the joining process was cancelled)
+        {joining, [{resizing, 0}]} -> {ok, evicting_replicas};
         % All joining storages have become active
         {joining, [active]} -> {ok, active};
         % Any mix of the above or one of the active storages transitioned to another state
@@ -376,7 +382,7 @@ infer_provider_stage(ProviderStage, StorageStages) ->
         {retired, [joining]} -> {ok, joining};
 
         % Other transitions are not allowed, such changes to the space support must be declined
-        {_ ,_} -> illegal
+        {_, _} -> illegal
     end.
 
 
@@ -384,6 +390,7 @@ infer_provider_stage(ProviderStage, StorageStages) ->
 -spec is_transition_allowed(From :: storage_support_stage(), To :: storage_support_stage()) -> boolean().
 is_transition_allowed(none, joining) -> true;
 is_transition_allowed(joining, active) -> true;
+is_transition_allowed(joining, {resizing, 0}) -> true;
 is_transition_allowed(active, {resizing, TargetSize}) when is_integer(TargetSize) -> true;
 is_transition_allowed({resizing, 0}, purging) -> true;
 is_transition_allowed({resizing, _}, {resizing, TargetSize}) when is_integer(TargetSize) -> true;
