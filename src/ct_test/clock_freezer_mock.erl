@@ -74,14 +74,16 @@ teardown_on_nodes(NodeOrNodes) ->
     ok = test_utils:mock_unload(NodeOrNodes, native_node_clock).
 
 
--spec simulate_seconds_passing(time:seconds()) -> ok.
+-spec simulate_seconds_passing(time:seconds()) -> time:seconds().
 simulate_seconds_passing(Seconds) ->
-    simulate_millis_passing(Seconds * 1000).
+    simulate_millis_passing(Seconds * 1000) div 1000.
 
 
--spec simulate_millis_passing(time:millis()) -> ok.
+-spec simulate_millis_passing(time:millis()) -> time:millis().
 simulate_millis_passing(Millis) ->
-    set_current_time_millis(current_time_millis() + Millis).
+    NewTimeMillis = current_time_millis() + Millis,
+    set_current_time_millis(NewTimeMillis),
+    NewTimeMillis.
 
 
 -spec set_current_time_millis(time:millis()) -> ok.

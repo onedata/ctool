@@ -15,9 +15,14 @@
 -include_lib("ctool/include/test/test_utils.hrl").
 
 %% API
--export([prepare_test_environment/1, clean_environment/1]).
+-export([prepare_test_environment/2, clean_environment/1]).
 
+-define(TIMEOUT, timer:seconds(60)).
 -define(DEFAULT_COOKIE, cluster_node).
+
+-define(ALL_NODES_TYPES, [
+    cm_nodes, op_worker_nodes, op_panel_nodes, oz_worker_nodes, oz_panel_nodes
+]).
 
 -type path() :: string().
 -type component() :: worker | onepanel | cluster_manager.
@@ -26,8 +31,9 @@
 %%% API
 %%%===================================================================
 
--spec prepare_test_environment(test_config:config()) -> test_config:config().
-prepare_test_environment(Config0) ->
+-spec prepare_test_environment(test_config:config(), TestModule :: module()) ->
+    test_config:config().
+prepare_test_environment(Config0, TestModule) ->
     application:start(yamerl),
     ProjectRoot = test_utils:project_root_dir(Config0),
     OnenvScript = filename:join([ProjectRoot, "one-env", "onenv"]),
@@ -67,7 +73,9 @@ prepare_test_environment(Config0) ->
     add_entries_to_etc_hosts(PodsProplist),
     NodesConfig = prepare_nodes_config(ConfigWithCover, PodsProplist),
     connect_nodes(NodesConfig),
-    
+
+    load_modules(TestModule, NodesConfig),
+
     % when cover is enabled all modules are recompiled resulting in custom configs being lost
     % so setting custom envs manually is necessary
     CoverEnabled andalso set_custom_envs(NodesConfig),
@@ -171,14 +179,33 @@ add_nodes_to_config(NodesAndKeys, PodName, Config) ->
 %% @private
 -spec connect_nodes(test_config:config()) -> ok.
 connect_nodes(Config) ->
-    NodesTypes = [cm_nodes, op_worker_nodes, op_panel_nodes, oz_worker_nodes, oz_panel_nodes],
     erlang:set_cookie(node(), ?DEFAULT_COOKIE),
     lists:foreach(fun(NodeType) ->
         Nodes = test_config:get_custom(Config, NodeType, []),
         lists:foreach(fun(Node) ->
             true = net_kernel:connect_node(Node)
         end, Nodes)
-    end, NodesTypes).
+    end, ?ALL_NODES_TYPES).
+
+
+%% @private
+-spec load_modules(TestModule :: module(), Modules :: [module()]) -> ok.
+load_modules(TestModule, Config) ->
+    Modules = [TestModule, test_utils | ?config(load_modules, Config, [])],
+
+    lists:foreach(fun(NodeType) ->
+        Nodes = test_config:get_custom(Config, NodeType, []),
+        lists:foreach(fun(Node) ->
+            lists:foreach(fun(Module) ->
+                {Module, Binary, Filename} = code:get_object_code(Module),
+                rpc:call(Node, code, delete, [Module], ?TIMEOUT),
+                rpc:call(Node, code, purge, [Module], ?TIMEOUT),
+                ?assertEqual({module, Module}, rpc:call(
+                    Node, code, load_binary, [Module, Filename, Binary], ?TIMEOUT
+                ))
+            end, Modules)
+        end, Nodes)
+    end, ?ALL_NODES_TYPES).
 
 
 %% @private
