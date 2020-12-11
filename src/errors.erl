@@ -105,7 +105,6 @@
 | {space_not_supported_by, ProviderId :: binary()}
 | {not_a_local_storage_supporting_space, ProviderId :: binary(), StorageId :: binary(), SpaceId :: binary()}
 | storage_in_use
-| requires_manual_storage_import_mode
 | requires_auto_storage_import_mode
 | transfer_already_ended | transfer_not_ended
 | {storage_test_failed, read | write | remove}
@@ -869,10 +868,6 @@ to_json(?ERROR_STORAGE_IN_USE) -> #{
     <<"id">> => <<"storageInUse">>,
     <<"description">> => <<"Specified storage supports a space.">>
 };
-to_json(?ERROR_REQUIRES_MANUAL_STORAGE_IMPORT_MODE) -> #{
-    <<"id">> => <<"requiresManualStorageImportMode">>,
-    <<"description">> => <<"Operation requires space with manual storage import mode.">>
-};
 to_json(?ERROR_REQUIRES_AUTO_STORAGE_IMPORT_MODE) -> #{
     <<"id">> => <<"requiresAutoStorageImportMode">>,
     <<"description">> => <<"Operation requires space with auto storage import mode.">>
@@ -1436,9 +1431,6 @@ from_json(#{<<"id">> := <<"notALocalStorageSupportingSpace">>, <<"details">> := 
 from_json(#{<<"id">> := <<"storageInUse">>}) ->
     ?ERROR_STORAGE_IN_USE;
 
-from_json(#{<<"id">> := <<"requiresManualStorageImportMode">>}) ->
-    ?ERROR_REQUIRES_MANUAL_STORAGE_IMPORT_MODE;
-
 from_json(#{<<"id">> := <<"requiresAutoStorageImportMode">>}) ->
     ?ERROR_REQUIRES_AUTO_STORAGE_IMPORT_MODE;
 
@@ -1685,7 +1677,6 @@ to_http_code(?ERROR_FILE_POPULARITY_DISABLED) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_SPACE_NOT_SUPPORTED_BY(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_NOT_A_LOCAL_STORAGE_SUPPORTING_SPACE(_, _, _)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_STORAGE_IN_USE) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_REQUIRES_MANUAL_STORAGE_IMPORT_MODE) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_REQUIRES_AUTO_STORAGE_IMPORT_MODE) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_STORAGE_TEST_FAILED(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_REQUIRES_NON_IMPORTED_STORAGE(_)) -> ?HTTP_400_BAD_REQUEST;
