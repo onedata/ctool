@@ -25,8 +25,8 @@
 
 % used in functions transferring values between containers
 -type mapping(K1, K2, V) ::
-{From :: path(K1), To :: path(K2)} |
-{From :: path(K1), To :: path(K2), Default :: V}.
+    {From :: path(K1), To :: path(K2)} |
+    {From :: path(K1), To :: path(K2), Default :: V}.
 %% @formatter:on
 
 -export_type([nested/0, nested/2, path/0, path/1]).
@@ -137,15 +137,15 @@ put(_, _, BadNested) ->
     error({badnested, BadNested}).
 
 
--spec update_with(path(K), Fun :: fun(), nested(K, V)) -> nested(K, V).
+-spec update_with(path(K), Fun :: fun((OldValue :: term()) -> NewValue :: term()), nested(K, V)) -> nested(K, V).
 update_with(Key, Fun, Nested) ->
     case find(Key, Nested) of
         {ok, Value} -> put(Key, Fun(Value), Nested);
-        error -> error
+        error -> error({badkeys, Key})
     end.
 
 
--spec update_with(path(K), Fun :: fun(), Init :: V, nested(K, V)) -> nested(K, V).
+-spec update_with(path(K), Fun :: fun((OldValue :: term()) -> NewValue :: term()), Init :: V, nested(K, V)) -> nested(K, V).
 update_with(Key, Fun, Init, Nested) ->
     case find(Key, Nested) of
         {ok, Value} -> put(Key, Fun(Value), Nested);
