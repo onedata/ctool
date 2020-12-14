@@ -136,54 +136,59 @@ put_test_() -> [
     ] || Container <- ?ALL].
 
 update_with_test_() -> [
-    {"override old value", [
+    {"override existing value", [
         ?_assertEqual(#{key_1 => value_2},
-            kv_utils:update_with([key_1], fun(_OldValue) -> value_2 end, #{key_1 => value_1})),
+            kv_utils:update_with([key_1], fun(_) -> value_2 end, #{key_1 => value_1})),
         ?_assertEqual([{key_1, value_2}],
-            kv_utils:update_with([key_1], fun(_OldValue) -> value_2 end, [{key_1, value_1}])),
+            kv_utils:update_with([key_1], fun(_) -> value_2 end, [{key_1, value_1}])),
         ?_assertEqual(#{key_1 => value_2},
-            kv_utils:update_with([key_1], fun(_OldValue) ->
-                value_2 end, value_3, #{key_1 => value_1})),
+            kv_utils:update_with([key_1], fun(_) -> value_2 end, value_3, #{key_1 => value_1})),
         ?_assertEqual([{key_1, value_2}],
-            kv_utils:update_with([key_1], fun(_OldValue) ->
-                value_2 end, value_3, [{key_1, value_1}]))
+            kv_utils:update_with([key_1], fun(_) -> value_2 end, value_3, [{key_1, value_1}])),
+        ?_assertEqual(#{key_1 => #{key_2 => value_3}},
+            kv_utils:update_with([key_1, key_2], fun(_) -> value_3 end, #{key_1 => #{key_2 => value_2}})),
+        ?_assertEqual([{key_1, [{key_2, value_3}]}],
+            kv_utils:update_with([key_1, key_2], fun(_) -> value_3 end, [{key_1, [{key_2, value_2}]}])),
+        ?_assertEqual(#{key_1 => #{key_2 => value_3}},
+            kv_utils:update_with([key_1, key_2], fun(_) -> value_3 end, value_4, #{key_1 => #{key_2 => value_2}})),
+        ?_assertEqual([{key_1, [{key_2, value_3}]}],
+            kv_utils:update_with([key_1, key_2], fun(_) -> value_3 end, value_4, [{key_1, [{key_2, value_2}]}]))
     ]},
-    {"process existing value", [
+    {"transform existing value", [
         ?_assertEqual(#{key_1 => 4},
             kv_utils:update_with([key_1], fun(OldValue) -> 2 * OldValue end, #{key_1 => 2})),
         ?_assertEqual([{key_1, 4}],
-            kv_utils:update_with([key_1], fun(OldValue) -> 2 * OldValue end, [{key_1, 2}]))
+            kv_utils:update_with([key_1], fun(OldValue) -> 2 * OldValue end, [{key_1, 2}])),
+        ?_assertEqual(#{key_1 => #{key_2 => 4}},
+            kv_utils:update_with([key_1, key_2], fun(OldValue) -> 2 * OldValue end, #{key_1 => #{key_2 => 2}})),
+        ?_assertEqual([{key_1, [{key_2, 4}]}],
+            kv_utils:update_with([key_1, key_2], fun(OldValue) -> 2 * OldValue end, [{key_1, [{key_2, 2}]}]))
     ]},
-    {"put new single key", [
+    {"insert initial value under key", [
         ?_assertEqual(#{key_1 => value_1, key_2 => value_2},
-            kv_utils:update_with([key_2], fun(_OldValue) ->
-                value_2 end, value_2, #{key_1 => value_1})),
+            kv_utils:update_with([key_2], fun(_) -> value_2 end, value_2, #{key_1 => value_1})),
         ?_assertEqual([{key_2, value_2}, {key_1, value_1}],
-            kv_utils:update_with([key_2], fun(_OldValue) ->
-                value_2 end, value_2, [{key_1, value_1}]))
+            kv_utils:update_with([key_2], fun(_) -> value_2 end, value_2, [{key_1, value_1}]))
     ]},
-    {"put new nested path, inherit container type", [
+    {"insert initial value under path, inherit container type", [
         ?_assertEqual(#{key1 => value1, key2 => #{subkey1 => value_2}},
-            kv_utils:update_with([key2, subkey1], fun(_OldValue) ->
-                value_3 end, value_2, #{key1 => value1})),
+            kv_utils:update_with([key2, subkey1], fun(_) -> value_3 end, value_2, #{key1 => value1})),
         ?_assertEqual([{key2, [{subkey1, value2}]}, {key1, value1}],
-            kv_utils:update_with([key2, subkey1], fun(_OldValue) ->
-                value_3 end, value2, [{key1, value1}])),
+            kv_utils:update_with([key2, subkey1], fun(_) -> value_3 end, value2, [{key1, value1}])),
         ?_assertEqual([{key1, value1}, {key2, #{subkey1 => #{subkey2 => value2}}}],
-            kv_utils:update_with([key2, subkey1, subkey2], fun(_OldValue) ->
-                value_3 end, value2, [{key1, value1}, {key2, #{}}]))
+            kv_utils:update_with([key2, subkey1, subkey2], fun(_) -> value_3 end, value2, [{key1, value1}, {key2, #{}}]))
     ]}
 ] ++ [
     [
         {"fail on bad subcontainer", [
-            ?_assertError({badnested, _}, kv_utils:update_with([bad1, subkey], fun(_OldValue) ->
-                value end, Container)),
-            ?_assertError({badnested, _}, kv_utils:update_with([bad2, subkey], fun(_OldValue) ->
-                value end, value, Container))
+            ?_assertError({badnested, _},
+                kv_utils:update_with([bad1, subkey], fun(_) -> value end, Container)),
+            ?_assertError({badnested, _},
+                kv_utils:update_with([bad2, subkey], fun(_) -> value end, value, Container))
         ]},
         {"fail on bad path", [
-            ?_assertError({badkeys, _}, kv_utils:update_with([unexistest_key], fun(_OldValue) ->
-                value end, Container))
+            ?_assertError({badkeys, _},
+                kv_utils:update_with([unexistest_key], fun(_) -> value end, Container))
         ]}]
     || Container <- ?ALL].
 
