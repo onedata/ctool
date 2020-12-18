@@ -32,7 +32,7 @@
 -export_type([nested/0, nested/2, path/0, path/1]).
 
 %% API
--export([get/2, get/3, find/2, put/3, remove/2, rename_entry/3]).
+-export([get/2, get/3, find/2, put/3, update_with/3, update_with/4, remove/2, rename_entry/3]).
 -export([copy_all/3, copy_found/2, copy_found/3]).
 
 
@@ -135,6 +135,22 @@ put([Key | Tail], Value, List) when is_list(List) ->
 
 put(_, _, BadNested) ->
     error({badnested, BadNested}).
+
+
+-spec update_with(path(K), Fun :: fun((OldValue :: term()) -> NewValue :: term()), nested(K, V)) -> nested(K, V).
+update_with(Key, Fun, Nested) ->
+    case find(Key, Nested) of
+        {ok, Value} -> put(Key, Fun(Value), Nested);
+        error -> error({badkeys, Key})
+    end.
+
+
+-spec update_with(path(K), Fun :: fun((OldValue :: term()) -> NewValue :: term()), Init :: V, nested(K, V)) -> nested(K, V).
+update_with(Key, Fun, Init, Nested) ->
+    case find(Key, Nested) of
+        {ok, Value} -> put(Key, Fun(Value), Nested);
+        error -> put(Key, Init, Nested)
+    end.
 
 
 %%--------------------------------------------------------------------
