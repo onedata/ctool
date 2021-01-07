@@ -24,72 +24,31 @@
 %%%
 %%%     "compatibility": {
 %%%         "onezone:oneprovider": {
-%%%             "18.02.0-rc13": [
-%%%                 "18.02.0-rc13"
-%%%             ],
-%%%             "18.02.1": [
-%%%                 "18.02.0-rc13",
-%%%                 "18.02.1",
-%%%                 "18.02.2"
-%%%             ],
-%%%             "18.02.2": [
-%%%                 "18.02.0-rc13",
-%%%                 "18.02.1",
-%%%                 "18.02.2"
-%%%             ],
-%%%             "19.02.0-beta1": [
-%%%                 "18.02.1",
-%%%                 "18.02.2",
-%%%                 "19.02.0-beta1"
-%%%             ]
+%%%             "18.02.0-rc13": ["18.02.0-rc13"],
+%%%             "18.02.1": ["18.02.0-rc13", "18.02.1", "18.02.2"],
+%%%             "18.02.2": ["18.02.0-rc13", "18.02.1", "18.02.2"],
+%%%             "19.02.0-beta1": ["18.02.1", "18.02.2", "19.02.0-beta1"]
 %%%         },
 %%%         "oneprovider:oneprovider": {
-%%%             "18.02.0-rc13": [
-%%%                 "18.02.0-rc13"
-%%%             ],
-%%%             "18.02.1": [
-%%%                 "18.02.0-rc13",
-%%%                 "18.02.1"
-%%%             ],
-%%%             "18.02.2": [
-%%%                 "18.02.0-rc13",
-%%%                 "18.02.1",
-%%%                 "18.02.2"
-%%%             ],
-%%%             "19.02.0-beta1": [
-%%%                 "19.02.0-beta1"
-%%%             ]
+%%%             "18.02.0-rc13": ["18.02.0-rc13"],
+%%%             "18.02.1": ["18.02.0-rc13", "18.02.1"],
+%%%             "18.02.2": ["18.02.0-rc13", "18.02.1", "18.02.2"],
+%%%             "19.02.0-beta1": ["19.02.0-beta1"]
 %%%         },
 %%%         "oneprovider:oneclient": {
-%%%             "18.02.0-rc13": [
-%%%                 "18.02.0-rc13"
-%%%             ],
-%%%             "18.02.1": [
-%%%                 "18.02.0-rc13",
-%%%                 "18.02.1",
-%%%                 "18.02.2"
-%%%             ],
-%%%             "18.02.2": [
-%%%                 "18.02.0-rc13",
-%%%                 "18.02.1",
-%%%                 "18.02.2"
-%%%             ],
-%%%             "19.02.0-beta1": [
-%%%                 "19.02.0-beta1"
-%%%             ]
+%%%             "18.02.0-rc13": ["18.02.0-rc13"],
+%%%             "18.02.1": ["18.02.0-rc13", "18.02.1", "18.02.2"],
+%%%             "18.02.2": ["18.02.0-rc13", "18.02.1", "18.02.2"],
+%%%             "19.02.0-beta1": ["19.02.0-beta1"]
 %%%         }
 %%%     },
 %%%
 %%%     "gui-sha256": {
 %%%         "op-worker": {
-%%%             "19.02.0-beta1": [
-%%%                 "bd47689bd7ef220d73ef4a61672b9f43dc60ae5815ce2aa5f2c8673f3eaafc85"
-%%%             ]
+%%%             "19.02.0-beta1": ["bd47689bd7ef220d73ef4a61672b9f43dc60ae5815ce2aa5f2c8673f3eaafc85"]
 %%%         },
 %%%         "onepanel": {
-%%%             "19.02.0-beta1": [
-%%%                 "c5f9a1009588f3ae1407dc978b0c057213dd3753abb9d224acdbfc209ffadadd"
-%%%             ]
+%%%             "19.02.0-beta1": ["c5f9a1009588f3ae1407dc978b0c057213dd3753abb9d224acdbfc209ffadadd"]
 %%%         },
 %%%         "harvester": {
 %%%             "19.02.0-beta1": {
@@ -106,6 +65,13 @@
 -include("onedata.hrl").
 -include("logging.hrl").
 
+-export([check_products_compatibility/4]).
+-export([get_compatible_versions/3]).
+-export([verify_gui_hash/3]).
+-export([check_for_updates/1]).
+-export([peek_current_registry_revision/0]).
+-export([clear_registry_cache/0]).
+
 % A nested map acquired by parsing the JSON file
 -type registry() :: map().
 % Section is denoted by a list of nested keys in the registry map
@@ -116,19 +82,21 @@
 % A positive integer denoting the revision of the compatibility registry,
 % incremented upon every update.
 -type revision() :: pos_integer().
+% Strategy when retrieving the registry - returns either the current local
+% version stored in the registry file, or attempts to fetch a newer version
+% from known mirrors (but with a configurable backoff).
+-type strategy() :: local | check_for_updates.
 % Verbose error returned when the version queried for does not exist in the registry
 -type unknown_version_error() :: {unknown_version, onedata:release_version(), {revision, revision()}}.
 
--define(REGISTRY_PATH, ctool:get_env(compatibility_registry_path)).
+-define(CURRENT_REGISTRY_FILE, ctool:get_env(current_compatibility_registry_file)).
+-define(DEFAULT_REGISTRY_FILE, ctool:get_env(default_compatibility_registry_file)).
 -define(REGISTRY_CACHE_TTL, ctool:get_env(compatibility_registry_cache_ttl_secs, 900)). % 15 min
--define(REGISTRY_FETCH_BACKOFF, ctool:get_env(compatibility_registry_fetch_backoff_secs, 900)). % 15 min
+-define(CHECK_FOR_UPDATE_BACKOFF, ctool:get_env(compatibility_registry_check_for_updates_backoff_secs, 900)). % 15 min
 -define(REGISTRY_MIRRORS, ctool:get_env(compatibility_registry_mirrors, [])).
--define(DEFAULT_REGISTRY, ctool:get_env(default_compatibility_registry)).
 
--export([check_products_compatibility/4]).
--export([get_compatible_versions/3]).
--export([verify_gui_hash/3]).
--export([clear_registry_cache/0]).
+% regex to retrieve release version from git full build version
+-define(OC_VERSION_REGEXP, <<"^(?<release>[\\w.]+(-\\w+)?)(-\\d+-g\\w+)?$">>).
 
 %%%===================================================================
 %%% API functions
@@ -198,16 +166,52 @@ verify_gui_hash(_, _, _) ->
     error(badarg).
 
 
+-spec check_for_updates([Mirror :: http_client:url()]) -> {ok, registry()} | {error, not_updated}.
+check_for_updates(Mirrors) ->
+    lists_utils:foldl_while(fun(Mirror, _) ->
+        case fetch_registry(Mirror) of
+            {ok, Binary, Registry} ->
+                try
+                    case overwrite_registry_if_newer(Binary, Registry, Mirror) of
+                        true ->
+                            {halt, {ok, Registry}};
+                        false ->
+                            {cont, {error, not_updated}}
+                    end
+                catch Type:Reason ->
+                    ?error_stacktrace(
+                        "Error processing newly fetched compatibility registry from mirror: ~s~n~w:~p", [
+                            Type, Reason, Mirror
+                        ]),
+                    {cont, {error, not_updated}}
+                end;
+            error ->
+                {cont, {error, not_updated}}
+        end
+    end, {error, not_updated}, Mirrors).
+
+
+-spec peek_current_registry_revision() -> {ok, revision()} | {error, cannot_parse_registry}.
+peek_current_registry_revision() ->
+    case get_registry(local) of
+        {ok, Registry} ->
+            {ok, revision(Registry)};
+        {error, _} = Error ->
+            Error
+    end.
+
+
 %%--------------------------------------------------------------------
 %% @doc
 %% Instantly clears registry cache - the next check will cause the registry file
-%% to be read again from disk and (if required) a fetch attempt will be performed.
+%% to be read again from disk and (if required) a check for update will be
+%% performed.
 %% @end
 %%--------------------------------------------------------------------
 -spec clear_registry_cache() -> ok.
 clear_registry_cache() ->
-    node_cache:clear(compatibility_registry),
-    node_cache:clear(compatibility_registry_active_backoff).
+    node_cache:clear({?MODULE, registry}),
+    node_cache:clear({?MODULE, check_for_updates_active_backoff}).
 
 %%%===================================================================
 %%% Internal functions
@@ -216,9 +220,8 @@ clear_registry_cache() ->
 %%--------------------------------------------------------------------
 %% @private
 %% @doc
-%% Checks if given entry is on the list of all valid entries for given
-%% registry section and version. May attempt fetching a newer registry in case
-%% of a negative result.
+%% Checks if given entry is on the list of all valid entries for given registry
+%% section and version. May check for updates in case of a negative result.
 %% @end
 %%--------------------------------------------------------------------
 -spec check_entry(section(), onedata:release_version(), entry()) ->
@@ -229,24 +232,19 @@ check_entry(Section, Version, Entry) ->
         true ->
             true;
         FailureResult ->
-            case should_fetch_registry() of
-                true ->
-                    case check_entry(Section, Version, Entry, fetch) of
-                        {error, cannot_fetch_registry} ->
-                            FailureResult;
-                        Result ->
-                            Result
-                    end;
-                false ->
-                    FailureResult
+            case check_entry(Section, Version, Entry, check_for_updates) of
+                {error, not_updated} ->
+                    FailureResult;
+                Result ->
+                    Result
             end
     end.
 
 
 %% @private
--spec check_entry(section(), onedata:release_version(), entry(), Strategy :: local | fetch) ->
+-spec check_entry(section(), onedata:release_version(), entry(), strategy()) ->
     true | {false, ValidEntries :: [entry()]} |
-    {error, unknown_version_error() | cannot_parse_registry | cannot_fetch_registry}.
+    {error, unknown_version_error() | cannot_parse_registry | not_updated}.
 check_entry(Section, Version, Entry, Strategy) ->
     case get_entries(Section, Version, Strategy) of
         {error, _} = Error ->
@@ -263,35 +261,30 @@ check_entry(Section, Version, Entry, Strategy) ->
 %% @private
 %% @doc
 %% Returns the list of all valid entries for given registry section and version.
-%% May attempt fetching a newer registry in case of a negative result.
+%% May check for updates in case of a negative result.
 %% @end
 %%--------------------------------------------------------------------
 -spec get_entries(section(), onedata:release_version()) ->
     {ok, [entry()]} |
-    {error, unknown_version_error() | cannot_parse_registry | cannot_fetch_registry}.
+    {error, unknown_version_error() | cannot_parse_registry}.
 get_entries(Section, Version) ->
     case get_entries(Section, Version, local) of
         {ok, Entries} ->
             {ok, Entries};
         FailureResult ->
-            case should_fetch_registry() of
-                true ->
-                    case get_entries(Section, Version, fetch) of
-                        {error, cannot_fetch_registry} ->
-                            FailureResult;
-                        Result ->
-                            Result
-                    end;
-                false ->
-                    FailureResult
+            case get_entries(Section, Version, check_for_updates) of
+                {error, not_updated} ->
+                    FailureResult;
+                Result ->
+                    Result
             end
     end.
 
 
 %% @private
--spec get_entries(section(), onedata:release_version(), Strategy :: local | fetch) ->
+-spec get_entries(section(), onedata:release_version(), strategy()) ->
     {ok, [entry()]} |
-    {error, unknown_version_error() | cannot_parse_registry | cannot_fetch_registry}.
+    {error, unknown_version_error() | cannot_parse_registry | not_updated}.
 get_entries(Section, Version, Strategy) ->
     case get_registry(Strategy) of
         {error, _} = Error ->
@@ -308,25 +301,25 @@ get_entries(Section, Version, Strategy) ->
 
 
 %% @private
--spec should_fetch_registry() -> boolean().
-should_fetch_registry() ->
-    IsOnBackoff = node_cache:get(compatibility_registry_active_backoff, false),
+-spec should_check_for_updates() -> boolean().
+should_check_for_updates() ->
+    IsOnBackoff = node_cache:get({?MODULE, check_for_updates_active_backoff}, false),
     not IsOnBackoff.
 
 
 %% @private
--spec reset_fetch_backoff() -> ok.
-reset_fetch_backoff() ->
-    node_cache:put(compatibility_registry_active_backoff, true, ?REGISTRY_FETCH_BACKOFF).
+-spec restart_check_for_updates_backoff() -> ok.
+restart_check_for_updates_backoff() ->
+    node_cache:put({?MODULE, check_for_updates_active_backoff}, true, ?CHECK_FOR_UPDATE_BACKOFF).
 
 
 %% @private
--spec get_registry(Strategy :: local | fetch) ->
-    {ok, registry()} | {error, cannot_parse_registry | cannot_fetch_registry}.
+-spec get_registry(strategy()) ->
+    {ok, registry()} | {error, cannot_parse_registry | not_updated}.
 get_registry(local) ->
-    node_cache:acquire(compatibility_registry, fun() ->
+    node_cache:acquire({?MODULE, registry}, fun() ->
         take_default_registry_if_newer(),
-        case file:read_file(?REGISTRY_PATH) of
+        case file:read_file(?CURRENT_REGISTRY_FILE) of
             {ok, Binary} ->
                 case parse_registry(Binary) of
                     {error, cannot_parse_registry} ->
@@ -336,66 +329,45 @@ get_registry(local) ->
                 end;
             Other ->
                 ?error("Cannot parse compatibility registry (~s) due to ~w", [
-                    ?REGISTRY_PATH, Other
+                    ?CURRENT_REGISTRY_FILE, Other
                 ]),
                 {error, cannot_parse_registry}
         end
     end);
-get_registry(fetch) ->
-    reset_fetch_backoff(),
-    Mirrors = ?REGISTRY_MIRRORS,
-    case fetch_registry(Mirrors) of
-        {ok, Binary, Registry, Mirror} ->
-            try
-                case maybe_overwrite_registry(Binary, Registry, Mirror) of
-                    true -> {ok, Registry};
-                    false -> get_registry(local)
-                end
-            catch Type:Reason ->
-                ?error_stacktrace("Error processing newly fetched compatibility registry - ~p:~p, mirror: ~s", [
-                    Type, Reason, Mirror
-                ]),
-                {error, cannot_fetch_registry}
-            end;
-        {error, cannot_fetch_registry} ->
-            ?warning("Cannot fetch compatibility registry, tried mirrors:~n~s", [
-                str_utils:join_binary(
-                    [str_utils:to_binary(M) || M <- Mirrors],
-                    <<"\n">>
-                )
-            ]),
-            {error, cannot_fetch_registry}
+get_registry(check_for_updates) ->
+    case should_check_for_updates() of
+        false ->
+            {error, not_updated};
+        true ->
+            restart_check_for_updates_backoff(),
+            Mirrors = ?REGISTRY_MIRRORS,
+            check_for_updates(Mirrors)
     end.
 
 
 %% @private
--spec fetch_registry([Mirror :: http_client:url()]) ->
-    {ok, Binary :: binary(), registry(), Mirror :: http_client:url()} |
-    {error, cannot_fetch_registry}.
-fetch_registry([Mirror | Rest]) ->
+-spec fetch_registry(Mirror :: http_client:url()) -> {ok, Binary :: binary(), registry()} | error.
+fetch_registry(Mirror) ->
     case http_client:get(Mirror) of
         {ok, 200, _, Binary} ->
             case parse_registry(Binary) of
                 {error, cannot_parse_registry} ->
-                    ?debug("Cannot parse registry from mirror ~s", [Mirror]),
-                    fetch_registry(Rest);
+                    ?warning("Cannot parse compatibility registry from mirror: ~s", [Mirror]),
+                    error;
                 {ok, Registry} ->
-                    {ok, Binary, Registry, Mirror}
+                    {ok, Binary, Registry}
             end;
         Other ->
-            ?debug("Cannot fetch compatibility registry from mirror ~s - ~p", [
-                Mirror, Other
-            ]),
-            fetch_registry(Rest)
-    end;
-fetch_registry([]) ->
-    {error, cannot_fetch_registry}.
+            ?warning("Cannot fetch compatibility registry from mirror: ~s", [Mirror]),
+            ?debug("Cannot fetch compatibility registry from mirror: ~s~nFetch result: ~p", [Mirror, Other]),
+            error
+    end.
 
 
 %% @private
--spec maybe_overwrite_registry(Binary :: binary(), registry(), Mirror :: http_client:url()) ->
+-spec overwrite_registry_if_newer(Binary :: binary(), registry(), Mirror :: http_client:url()) ->
     boolean().
-maybe_overwrite_registry(Binary, Registry, Mirror) ->
+overwrite_registry_if_newer(Binary, Registry, Mirror) ->
     ShouldOverwrite = case get_registry(local) of
         {ok, LocalRegistry} ->
             case revision(Registry) > revision(LocalRegistry) of
@@ -416,13 +388,13 @@ maybe_overwrite_registry(Binary, Registry, Mirror) ->
 
     case ShouldOverwrite of
         true ->
-            RegistryPath = ?REGISTRY_PATH,
+            RegistryFile = ?CURRENT_REGISTRY_FILE,
             ?info(
-                "Fetched a new compatibility registry from mirror ~s "
+                "Fetched a newer compatibility registry from mirror ~s "
                 "(rev. ~B), overwriting the old one at ~s",
-                [Mirror, revision(Registry), RegistryPath]
+                [Mirror, revision(Registry), RegistryFile]
             ),
-            ok = file:write_file(RegistryPath, Binary),
+            ok = file:write_file(RegistryFile, Binary),
             clear_registry_cache(),
             true;
         false ->
@@ -498,14 +470,19 @@ parse_registry(Binary) ->
 %%--------------------------------------------------------------------
 -spec take_default_registry_if_newer() -> ok.
 take_default_registry_if_newer() ->
-    case {peek_revision(?DEFAULT_REGISTRY), peek_revision(?REGISTRY_PATH)} of
+    case {peek_revision(?DEFAULT_REGISTRY_FILE), peek_revision(?CURRENT_REGISTRY_FILE)} of
         {{ok, Default}, {ok, Current}} when Default > Current ->
-            {ok, _} = file:copy(?DEFAULT_REGISTRY, ?REGISTRY_PATH),
+            {ok, _} = file:copy(?DEFAULT_REGISTRY_FILE, ?CURRENT_REGISTRY_FILE),
             ?notice("Replaced the compatibility registry with the default one (rev. ~B)", [
                 Default
             ]);
         {{ok, _Default}, {ok, _Current}} ->
             ?debug("Compatibility registry is not older than the default one");
+        {{ok, Default}, {error, cannot_parse_registry}} ->
+            {ok, _} = file:copy(?DEFAULT_REGISTRY_FILE, ?CURRENT_REGISTRY_FILE),
+            ?notice("Cannot read local compatibility registry - replacing with the default one (rev. ~B)", [
+                Default
+            ]);
         {Other1, Other2} ->
             ?warning(
                 "Cannot compare current and default compatibility registry~n"
@@ -547,9 +524,6 @@ revision(#{<<"revision">> := Revision}) ->
     Revision.
 
 
-% regex to retrieve release version from git full build version
--define(OC_VERSION_RE, <<"^(?<release>[\\w.]+(-\\w+)?)(-\\d+-g\\w+)?$">>).
-
 %%--------------------------------------------------------------------
 %% @private
 %% @doc
@@ -559,7 +533,7 @@ revision(#{<<"revision">> := Revision}) ->
 %%--------------------------------------------------------------------
 -spec normalize_oneclient_version(binary()) -> binary().
 normalize_oneclient_version(Version) ->
-    case re:run(Version, ?OC_VERSION_RE, [{capture, all_names, binary}]) of
+    case re:run(Version, ?OC_VERSION_REGEXP, [{capture, all_names, binary}]) of
         {match, [NormalizedVersion]} -> NormalizedVersion;
         nomatch -> Version
     end.
