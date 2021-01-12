@@ -456,20 +456,24 @@ to_json(?ERROR_MISSING_AT_LEAST_ONE_VALUE(Keys)) -> #{
     },
     <<"description">> => ?FMT("Missing data, you must provide at least one of: ~p.", [Keys])
 };
-to_json(?ERROR_BAD_DATA(Key)) -> #{
-    <<"id">> => <<"badData">>,
-    <<"details">> => #{
-        <<"key">> => Key
-    },
-    <<"description">> => ?FMT("Bad value: provided \"~s\" could not be understood by the server.", [Key])
-};
 to_json(?ERROR_BAD_DATA(Key, HumanReadableHint)) -> #{
-    <<"id">> => <<"badDataWithHint">>,
+    <<"id">> => <<"badData">>,
     <<"details">> => #{
         <<"key">> => Key,
         <<"hint">> => HumanReadableHint
     },
     <<"description">> => ?FMT("Bad value provided for \"~s\": ~ts.", [Key, HumanReadableHint])
+};
+to_json(?ERROR_BAD_DATA(Key)) -> #{
+    <<"id">> => <<"badData">>,
+    <<"details">> => #{
+        <<"key">> => Key
+    },
+    <<"description">> => ?FMT(
+        "Bad value: provided \"~s\" has an invalid format or is incomprehensible "
+        "in the context of this operation.",
+        [Key]
+    )
 };
 to_json(?ERROR_BAD_VALUE_EMPTY(Key)) -> #{
     <<"id">> => <<"badValueEmpty">>,
@@ -1236,14 +1240,11 @@ from_json(#{<<"id">> := <<"missingRequiredValue">>,
 from_json(#{<<"id">> := <<"missingAtLeastOneValue">>, <<"details">> := #{<<"keys">> := Keys}}) ->
     ?ERROR_MISSING_AT_LEAST_ONE_VALUE(Keys);
 
+from_json(#{<<"id">> := <<"badData">>, <<"details">> := #{<<"key">> := Key, <<"hint">> := HumanReadableHint}}) ->
+    ?ERROR_BAD_DATA(Key, HumanReadableHint);
+
 from_json(#{<<"id">> := <<"badData">>, <<"details">> := #{<<"key">> := Key}}) ->
     ?ERROR_BAD_DATA(Key);
-
-from_json(#{<<"id">> := <<"badDataWithHint">>, <<"details">> := #{
-    <<"key">> := Key,
-    <<"hint">> := HumanReadableHint
-}}) ->
-    ?ERROR_BAD_DATA(Key, HumanReadableHint);
 
 from_json(#{<<"id">> := <<"badValueEmpty">>, <<"details">> := #{<<"key">> := Key}}) ->
     ?ERROR_BAD_VALUE_EMPTY(Key);
@@ -1666,7 +1667,7 @@ to_http_code(?ERROR_CANNOT_DELETE_ENTITY(_, _)) -> ?HTTP_500_INTERNAL_SERVER_ERR
 to_http_code(?ERROR_CANNOT_ADD_RELATION_TO_SELF) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_RELATION_DOES_NOT_EXIST(_, _, _, _)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_RELATION_ALREADY_EXISTS(_, _, _, _)) -> ?HTTP_409_CONFLICT;
-to_http_code(?ERROR_SPACE_ALREADY_SUPPORTED_WITH_IMPORTED_STORAGE(_,_)) -> ?HTTP_409_CONFLICT;
+to_http_code(?ERROR_SPACE_ALREADY_SUPPORTED_WITH_IMPORTED_STORAGE(_, _)) -> ?HTTP_409_CONFLICT;
 
 %%--------------------------------------------------------------------
 %% op_worker errors

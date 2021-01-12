@@ -34,14 +34,16 @@ compatibility_verification_test_() ->
             {"OP:OZ compatibility check", fun op_oz_compatibility_check/0},
             {"OP:OP compatibility check", fun op_op_compatibility_check/0},
             {"OP:OC compatibility check", fun op_oc_compatibility_check/0},
-            {"Registry parsing error", fun registry_parsing_error/0},
             {"GUI hash verification", fun gui_hash_verification/0},
             {"Caching local registry content", fun caching_local_registry_content/0},
             {"Taking default registry if newer", fun taking_default_registry_if_newer/0},
             {"Fetching newer registry", fun fetching_newer_registry/0},
             {"Fetching older registry", fun fetching_older_registry/0},
+            {"Registry parsing error", fun registry_parsing_error/0},
             {"Overwriting broken or absent registry", fun overwriting_broken_or_absent_registry/0},
-            {"Trying multiple mirrors", fun trying_multiple_mirrors/0}
+            {"Taking default registry if local is broken", fun taking_default_registry_if_local_is_broken/0},
+            {"Trying multiple mirrors", fun trying_multiple_mirrors/0},
+            {"Forcing check for updates", fun forcing_check_for_updates/0}
         ]
     }.
 
@@ -57,8 +59,8 @@ setup() ->
     TmpPath = mochitemp:mkdtemp(),
     RegistryPath = filename:join(TmpPath, "compatibility.json"),
     DefaultRegistryPath = filename:join(TmpPath, "compatibility.default.json"),
-    ctool:set_env(compatibility_registry_path, RegistryPath),
-    ctool:set_env(default_compatibility_registry, DefaultRegistryPath),
+    ctool:set_env(current_compatibility_registry_file, RegistryPath),
+    ctool:set_env(default_compatibility_registry_file, DefaultRegistryPath),
     ctool:set_env(compatibility_registry_cache_ttl_secs, 900),
     ctool:set_env(compatibility_registry_fetch_backoff_secs, 900),
     compatibility:clear_registry_cache(),
@@ -69,7 +71,7 @@ setup() ->
     meck:expect(http_client, get, fun get_mocked_mirror_result/1).
 
 teardown(_) ->
-    RegistryPath = ctool:get_env(compatibility_registry_path),
+    RegistryPath = ctool:get_env(current_compatibility_registry_file),
     TmpPath = filename:dirname(RegistryPath),
     mochitemp:rmtempdir(TmpPath),
     clear_mocked_mirrors(),
@@ -83,19 +85,19 @@ teardown(_) ->
 mock_compatibility_file(JsonMap) when is_map(JsonMap) ->
     mock_compatibility_file(json_utils:encode(JsonMap));
 mock_compatibility_file(Binary) when is_binary(Binary) ->
-    RegistryPath = ctool:get_env(compatibility_registry_path),
+    RegistryPath = ctool:get_env(current_compatibility_registry_file),
     ok = file:write_file(RegistryPath, Binary).
 
 
 mock_default_compatibility_file(JsonMap) when is_map(JsonMap) ->
     mock_default_compatibility_file(json_utils:encode(JsonMap));
 mock_default_compatibility_file(Binary) when is_binary(Binary) ->
-    RegistryPath = ctool:get_env(default_compatibility_registry),
+    RegistryPath = ctool:get_env(default_compatibility_registry_file),
     ok = file:write_file(RegistryPath, Binary).
 
 
 get_compatibility_file() ->
-    RegistryPath = ctool:get_env(compatibility_registry_path),
+    RegistryPath = ctool:get_env(current_compatibility_registry_file),
     {ok, BinaryJson} = file:read_file(RegistryPath),
     json_utils:decode(BinaryJson).
 
@@ -204,9 +206,7 @@ oz_op_compatibility_check() ->
 
     ?assertEqual({ok, [<<"17.06.1">>, <<"17.06.2">>, <<"17.06.3">>]}, ?OZvsOPVersions(<<"17.06.3">>)),
     ?assertEqual({ok, [<<"17.06.3">>, <<"18.02.1">>]}, ?OZvsOPVersions(<<"18.02.1">>)),
-    ?assertEqual({error, {unknown_version, <<"18.02.2">>, {revision, 2019010100}}}, ?OZvsOPVersions(<<"18.02.2">>)),
-
-    ok.
+    ?assertEqual({error, {unknown_version, <<"18.02.2">>, {revision, 2019010100}}}, ?OZvsOPVersions(<<"18.02.2">>)).
 
 op_oz_compatibility_check() ->
     ?assertEqual({error, {unknown_version, <<"18.02.1">>, {revision, 2019010100}}}, ?OPvsOZ(<<"18.02.1">>, <<"17.06.3">>)),
@@ -250,9 +250,7 @@ op_oz_compatibility_check() ->
 
     ?assertEqual({ok, [<<"17.06.3">>, <<"17.06.2">>, <<"17.06.1">>]}, ?OPvsOZVersions(<<"17.06.3">>)),
     ?assertEqual({ok, [<<"18.02.1">>, <<"17.06.3">>]}, ?OPvsOZVersions(<<"18.02.1">>)),
-    ?assertEqual({error, {unknown_version, <<"18.02.2">>, {revision, 2019010100}}}, ?OPvsOZVersions(<<"18.02.2">>)),
-
-    ok.
+    ?assertEqual({error, {unknown_version, <<"18.02.2">>, {revision, 2019010100}}}, ?OPvsOZVersions(<<"18.02.2">>)).
 
 op_op_compatibility_check() ->
     ?assertEqual({error, {unknown_version, <<"19.02.1">>, {revision, 2019010100}}}, ?OPvsOP(<<"19.02.1">>, <<"18.02.4">>)),
@@ -311,9 +309,7 @@ op_op_compatibility_check() ->
     ?assertEqual({ok, [<<"18.02.4">>, <<"19.02.1">>, <<"19.02.2">>, <<"20.02.1">>]}, ?OPvsOPVersions(<<"19.02.1">>)),
     ?assertEqual({ok, [<<"19.02.1">>, <<"19.02.2">>, <<"20.02.1">>]}, ?OPvsOPVersions(<<"19.02.2">>)),
     ?assertEqual({ok, [<<"19.02.1">>, <<"19.02.2">>, <<"20.02.1">>]}, ?OPvsOPVersions(<<"20.02.1">>)),
-    ?assertEqual({error, {unknown_version, <<"20.02.2">>, {revision, 2019011700}}}, ?OPvsOPVersions(<<"20.02.2">>)),
-
-    ok.
+    ?assertEqual({error, {unknown_version, <<"20.02.2">>, {revision, 2019011700}}}, ?OPvsOPVersions(<<"20.02.2">>)).
 
 
 op_oc_compatibility_check() ->
@@ -356,9 +352,7 @@ op_oc_compatibility_check() ->
 
     ?assertEqual({ok, [<<"20.08.1">>]}, ?OPvsOCVersions(<<"20.08.1">>)),
     ?assertEqual({ok, [<<"19.02.1-rc11">>, <<"20.08.1">>, <<"20.08.2">>]}, ?OPvsOCVersions(<<"20.08.2">>)),
-    ?assertEqual({error, {unknown_version, <<"20.08.3">>, {revision, 2019112300}}}, ?OPvsOCVersions(<<"20.08.3">>)),
-
-    ok.
+    ?assertEqual({error, {unknown_version, <<"20.08.3">>, {revision, 2019112300}}}, ?OPvsOCVersions(<<"20.08.3">>)).
 
 
 caching_local_registry_content() ->
@@ -396,9 +390,7 @@ caching_local_registry_content() ->
 
     % But not anymore
     clock_freezer_mock:simulate_seconds_passing(2),
-    ?assertEqual(true, ?OZvsOP(<<"18.02.1">>, <<"18.02.2">>)),
-
-    ok.
+    ?assertEqual(true, ?OZvsOP(<<"18.02.1">>, <<"18.02.2">>)).
 
 
 gui_hash_verification() ->
@@ -459,37 +451,7 @@ gui_hash_verification() ->
     ?assertEqual({error, {unknown_version, <<"18.02.3">>, {revision, 2019071900}}}, ?VerifyGUI(?OP_WORKER_GUI, <<"18.02.3">>, ?SHA_OMEGA)),
     ?assertEqual({error, {unknown_version, <<"18.02.3">>, {revision, 2019071900}}}, ?VerifyGUI(?ONEPANEL_GUI, <<"18.02.3">>, ?SHA_DELTA)),
     ?assertEqual({error, {unknown_version, <<"18.02.3">>, {revision, 2019071900}}}, ?VerifyGUI(?ONEPANEL_GUI, <<"18.02.3">>, ?SHA_GAMMA)),
-    ?assertEqual({error, {unknown_version, <<"18.02.3">>, {revision, 2019071900}}}, ?VerifyGUI(?HARVESTER_GUI, <<"18.02.3">>, ?SHA_KAPPA)),
-
-    ok.
-
-
-registry_parsing_error() ->
-    mock_compatibility_file(<<"wait:\"what'this'isnot-a-json,17">>),
-    compatibility:clear_registry_cache(),
-    ?assertEqual(
-        {error, cannot_parse_registry},
-        compatibility:check_products_compatibility(?ONEZONE, <<"19.02.1">>, ?ONEPROVIDER, <<"20.08.1">>)
-    ),
-
-    mock_compatibility_file(#{<<"missing">> => <<"revision">>}),
-    compatibility:clear_registry_cache(),
-    ?assertEqual(
-        {error, cannot_parse_registry},
-        compatibility:verify_gui_hash(?ONEPANEL_GUI, <<"19.02.2">>, ?SHA_GAMMA)
-    ),
-
-    % Inexistent compatibility file should also cause {error, cannot_parse_registry}
-    RegistryPath = ctool:get_env(compatibility_registry_path),
-    ok = file:delete(RegistryPath),
-
-    compatibility:clear_registry_cache(),
-    ?assertEqual(
-        {error, cannot_parse_registry},
-        compatibility:verify_gui_hash(?ONEPANEL_GUI, <<"19.02.2">>, ?SHA_GAMMA)
-    ),
-
-    ok.
+    ?assertEqual({error, {unknown_version, <<"18.02.3">>, {revision, 2019071900}}}, ?VerifyGUI(?HARVESTER_GUI, <<"18.02.3">>, ?SHA_KAPPA)).
 
 
 taking_default_registry_if_newer() ->
@@ -584,7 +546,7 @@ fetching_newer_registry() ->
     clear_mocked_mirrors(),
     compatibility:clear_registry_cache(),
     ?assertEqual(true, ?OZvsOP(<<"18.02.1">>, <<"18.02.2">>)),
-    ?assertMatch(#{<<"revision">> := 2019010200}, get_compatibility_file()),
+    ?assertEqual({ok, 2019010200}, compatibility:peek_current_registry_revision()),
 
     % Fetching should be attempted when the cache expires by itself
     compatibility:clear_registry_cache(),
@@ -611,9 +573,7 @@ fetching_newer_registry() ->
     % But not anymore
     clock_freezer_mock:simulate_seconds_passing(2),
     ?assertEqual(true, ?OZvsOP(<<"18.02.1">>, <<"18.02.3">>)),
-    ?assertMatch(#{<<"revision">> := 2019010300}, get_compatibility_file()),
-
-    ok.
+    ?assertEqual({ok, 2019010300}, compatibility:peek_current_registry_revision()).
 
 
 fetching_older_registry() ->
@@ -666,9 +626,36 @@ fetching_older_registry() ->
     compatibility:clear_registry_cache(),
     ?assertEqual(true, ?OZvsOP(<<"18.02.1">>, <<"18.02.2">>)),
     ?assertNotMatch(OriginalCompatibilityFile, get_compatibility_file()),
-    ?assertMatch(Mirror3Result, get_compatibility_file()),
+    ?assertMatch(Mirror3Result, get_compatibility_file()).
 
-    ok.
+
+registry_parsing_error() ->
+    % default registry would be taken if the local cannot be parsed (unless its broken too)
+    mock_default_compatibility_file(<<"invalid">>),
+
+    mock_compatibility_file(<<"wait:\"what'this'isnot-a-json,17">>),
+    compatibility:clear_registry_cache(),
+    ?assertEqual(
+        {error, cannot_parse_registry},
+        compatibility:check_products_compatibility(?ONEZONE, <<"19.02.1">>, ?ONEPROVIDER, <<"20.08.1">>)
+    ),
+
+    mock_compatibility_file(#{<<"missing">> => <<"revision">>}),
+    compatibility:clear_registry_cache(),
+    ?assertEqual(
+        {error, cannot_parse_registry},
+        compatibility:verify_gui_hash(?ONEPANEL_GUI, <<"19.02.2">>, ?SHA_GAMMA)
+    ),
+
+    % Inexistent compatibility file should also cause {error, cannot_parse_registry}
+    RegistryPath = ctool:get_env(current_compatibility_registry_file),
+    ok = file:delete(RegistryPath),
+
+    compatibility:clear_registry_cache(),
+    ?assertEqual(
+        {error, cannot_parse_registry},
+        compatibility:verify_gui_hash(?ONEPANEL_GUI, <<"19.02.2">>, ?SHA_GAMMA)
+    ).
 
 
 overwriting_broken_or_absent_registry() ->
@@ -678,12 +665,15 @@ overwriting_broken_or_absent_registry() ->
     mock_compatibility_file(<<"not a valid json">>),
     overwriting_broken_or_absent_registry_base(),
 
-    RegistryPath = ctool:get_env(compatibility_registry_path),
+    RegistryPath = ctool:get_env(current_compatibility_registry_file),
     ok = file:delete(RegistryPath),
     overwriting_broken_or_absent_registry_base().
 
 
 overwriting_broken_or_absent_registry_base() ->
+    % default registry would be taken if the local cannot be parsed (unless its broken too)
+    mock_default_compatibility_file(<<"invalid">>),
+
     Mirror = "https://example.com/compatibility.json",
     MirrorResult = #{
         <<"revision">> => 2019010100,
@@ -706,7 +696,42 @@ overwriting_broken_or_absent_registry_base() ->
     ?assertMatch(MirrorResult, get_compatibility_file()).
 
 
+taking_default_registry_if_local_is_broken() ->
+    mock_compatibility_file(<<"">>),
+    taking_default_registry_if_local_is_broken_base(),
+
+    mock_compatibility_file(<<"not a valid json">>),
+    taking_default_registry_if_local_is_broken_base(),
+
+    RegistryPath = ctool:get_env(current_compatibility_registry_file),
+    ok = file:delete(RegistryPath),
+    taking_default_registry_if_local_is_broken_base().
+
+taking_default_registry_if_local_is_broken_base() ->
+    DefaultRegistry = #{
+        <<"revision">> => 2019020304,
+        <<"compatibility">> => #{
+            <<"onezone:oneprovider">> => #{
+                <<"20.02.1">> => [
+                    <<"20.02.1">>
+                ]
+            }
+        }
+    },
+    mock_default_compatibility_file(DefaultRegistry),
+    compatibility:clear_registry_cache(),
+
+    ?assertEqual({ok, [<<"20.02.1">>]}, ?OZvsOPVersions(<<"20.02.1">>)),
+    ?assertEqual({error, {unknown_version, <<"18.02.1">>, {revision, 2019020304}}}, ?OZvsOPVersions(<<"18.02.1">>)),
+
+    CurrentRegistry = get_compatibility_file(),
+    ?assertEqual(CurrentRegistry, DefaultRegistry).
+
+
 trying_multiple_mirrors() ->
+    mock_compatibility_file(maps:merge(get_compatibility_file(), #{<<"revision">> => 2019020100})),
+    compatibility:clear_registry_cache(),
+
     Alpha = "https://alpha.com/compatiblity.json",
     Beta = "https://beta.com/compatiblity.json",
     Gamma = "https://gamma.com/compatiblity.json",
@@ -719,9 +744,10 @@ trying_multiple_mirrors() ->
     mock_mirror_result(Delta, {ok, 200, #{<<"revision">> => 2019030100}}),
     compatibility:clear_registry_cache(),
 
-    % Mirrors are tried in order up to the first successful hit
-    ?assertEqual({error, {unknown_version, <<"18.02.1">>, {revision, 2019020100}}}, ?OPvsOC(<<"18.02.1">>, <<"17.06.3">>)),
-    ?assertMatch(#{<<"revision">> := 2019020100}, get_compatibility_file()),
+    % Mirrors are tried in order up to the first successful hit that offered a newer revision
+    % (the Gamma mirror has offers the same revision as the current compatibility)
+    ?assertEqual({error, {unknown_version, <<"18.02.1">>, {revision, 2019030100}}}, ?OPvsOC(<<"18.02.1">>, <<"17.06.3">>)),
+    ?assertEqual({ok, 2019030100}, compatibility:peek_current_registry_revision()),
 
     % If a mirror returns an incomprehensible answer, it is ignored
     mock_compatibility_file(#{<<"revision">> => 2019010100}),
@@ -729,7 +755,7 @@ trying_multiple_mirrors() ->
     mock_mirror_result(Beta, {ok, 200, #{<<"revision">> => 2019060100}}),
     compatibility:clear_registry_cache(),
     ?assertEqual({error, {unknown_version, <<"18.02.1">>, {revision, 2019060100}}}, ?OPvsOC(<<"18.02.1">>, <<"17.06.3">>)),
-    ?assertMatch(#{<<"revision">> := 2019060100}, get_compatibility_file()),
+    ?assertEqual({ok, 2019060100}, compatibility:peek_current_registry_revision()),
 
     % If all mirrors fail, local compatibility file is used for the check and
     % unknown version error is returned
@@ -740,22 +766,92 @@ trying_multiple_mirrors() ->
     mock_mirror_result(Delta, {ok, 200, <<"wait:\"what'this'isnot-a-json,17">>}),
     compatibility:clear_registry_cache(),
     ?assertEqual({error, {unknown_version, <<"18.02.1">>, {revision, 2019010100}}}, ?OPvsOC(<<"18.02.1">>, <<"17.06.3">>)),
-    ?assertMatch(#{<<"revision">> := 2019010100}, get_compatibility_file()),
+    ?assertEqual({ok, 2019010100}, compatibility:peek_current_registry_revision()),
 
     mock_compatibility_file(#{<<"revision">> => 2019010100}),
     [mock_mirror_result(M, {error, nxdomain}) || M <- [Alpha, Beta, Gamma, Delta]],
     compatibility:clear_registry_cache(),
     ?assertEqual({error, {unknown_version, <<"18.02.1">>, {revision, 2019010100}}}, ?OPvsOC(<<"18.02.1">>, <<"17.06.3">>)),
-    ?assertMatch(#{<<"revision">> := 2019010100}, get_compatibility_file()),
+    ?assertEqual({ok, 2019010100}, compatibility:peek_current_registry_revision()),
 
     % The same if there are no mirrors specified at all
     mock_compatibility_file(#{<<"revision">> => 2019010100}),
     mock_mirror_list([]),
     compatibility:clear_registry_cache(),
     ?assertEqual({error, {unknown_version, <<"18.02.1">>, {revision, 2019010100}}}, ?OPvsOC(<<"18.02.1">>, <<"17.06.3">>)),
-    ?assertMatch(#{<<"revision">> := 2019010100}, get_compatibility_file()),
+    ?assertEqual({ok, 2019010100}, compatibility:peek_current_registry_revision()).
 
-    ok.
+
+forcing_check_for_updates() ->
+    mock_compatibility_file(#{
+        <<"revision">> => 2019050500,
+        <<"compatibility">> => #{
+            <<"onezone:oneprovider">> => #{
+                <<"18.02.1">> => [
+                    <<"18.02.1">>
+                ]
+            }
+        }
+    }),
+    compatibility:clear_registry_cache(),
+    ?assertEqual({false, [<<"18.02.1">>]}, ?OZvsOP(<<"18.02.1">>, <<"18.02.2">>)),
+
+    % older mirror should not overwrite the registry
+    OlderMirror = "https://mirror1.example.com/compatibility.json",
+    mock_mirror_result(OlderMirror, {ok, 200, #{
+        <<"revision">> => 2019030300,
+        <<"compatibility">> => #{
+            <<"onezone:oneprovider">> => #{
+                <<"18.02.1">> => [
+                    <<"18.02.1">>,
+                    <<"18.02.2">>
+                ]
+            }
+        }
+    }}),
+    compatibility:check_for_updates([OlderMirror]),
+    ?assertEqual({false, [<<"18.02.1">>]}, ?OZvsOP(<<"18.02.1">>, <<"18.02.2">>)),
+    ?assertEqual({ok, 2019050500}, compatibility:peek_current_registry_revision()),
+
+    % newer mirror should overwrite the registry
+    NewerMirror = "https://mirror2.example.com/compatibility.json",
+    mock_mirror_result(NewerMirror, {ok, 200, #{
+        <<"revision">> => 2019070700,
+        <<"compatibility">> => #{
+            <<"onezone:oneprovider">> => #{
+                <<"18.02.1">> => [
+                    <<"18.02.1">>,
+                    <<"18.02.2">>
+                ]
+            }
+        }
+    }}),
+    compatibility:check_for_updates([NewerMirror]),
+    ?assertEqual(true, ?OZvsOP(<<"18.02.1">>, <<"18.02.2">>)),
+    ?assertEqual({ok, [<<"18.02.1">>, <<"18.02.2">>]}, ?OZvsOPVersions(<<"18.02.1">>)),
+    ?assertEqual({ok, 2019070700}, compatibility:peek_current_registry_revision()),
+
+    % if more than one mirror is given, all should be tried unless one of them is newer
+    ?assertEqual({false, [<<"18.02.1">>, <<"18.02.2">>]}, ?OZvsOP(<<"18.02.1">>, <<"18.02.3">>)),
+
+    NewestMirror = "https://mirror3.example.com/compatibility.json",
+    mock_mirror_result(NewerMirror, {ok, 200, #{
+        <<"revision">> => 2019090900,
+        <<"compatibility">> => #{
+            <<"onezone:oneprovider">> => #{
+                <<"18.02.1">> => [
+                    <<"18.02.1">>,
+                    <<"18.02.2">>,
+                    <<"18.02.3">>
+                ]
+            }
+        }
+    }}),
+    compatibility:check_for_updates([OlderMirror, NewerMirror, NewestMirror]),
+    ?assertEqual(true, ?OZvsOP(<<"18.02.1">>, <<"18.02.3">>)),
+    ?assertEqual({ok, [<<"18.02.1">>, <<"18.02.2">>, <<"18.02.3">>]}, ?OZvsOPVersions(<<"18.02.1">>)),
+    ?assertEqual({ok, 2019090900}, compatibility:peek_current_registry_revision()).
+
 
 
 -endif.
