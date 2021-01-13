@@ -68,7 +68,9 @@ setup() ->
     mock_default_compatibility_file(#{<<"revision">> => 2019010100}),
 
     meck:new(http_client, [passthrough]),
-    meck:expect(http_client, get, fun get_mocked_mirror_result/1).
+    meck:expect(http_client, get, fun(Url, _, _, [{ssl_options, [{cacerts, _}]}]) ->
+        get_mocked_mirror_result(Url)
+    end).
 
 teardown(_) ->
     RegistryPath = ctool:get_env(current_compatibility_registry_file),
@@ -809,7 +811,7 @@ forcing_check_for_updates() ->
             }
         }
     }}),
-    compatibility:check_for_updates([OlderMirror]),
+    compatibility:check_for_updates([OlderMirror], []),
     ?assertEqual({false, [<<"18.02.1">>]}, ?OZvsOP(<<"18.02.1">>, <<"18.02.2">>)),
     ?assertEqual({ok, 2019050500}, compatibility:peek_current_registry_revision()),
 
@@ -826,7 +828,7 @@ forcing_check_for_updates() ->
             }
         }
     }}),
-    compatibility:check_for_updates([NewerMirror]),
+    compatibility:check_for_updates([NewerMirror], []),
     ?assertEqual(true, ?OZvsOP(<<"18.02.1">>, <<"18.02.2">>)),
     ?assertEqual({ok, [<<"18.02.1">>, <<"18.02.2">>]}, ?OZvsOPVersions(<<"18.02.1">>)),
     ?assertEqual({ok, 2019070700}, compatibility:peek_current_registry_revision()),
@@ -847,7 +849,7 @@ forcing_check_for_updates() ->
             }
         }
     }}),
-    compatibility:check_for_updates([OlderMirror, NewerMirror, NewestMirror]),
+    compatibility:check_for_updates([OlderMirror, NewerMirror, NewestMirror], []),
     ?assertEqual(true, ?OZvsOP(<<"18.02.1">>, <<"18.02.3">>)),
     ?assertEqual({ok, [<<"18.02.1">>, <<"18.02.2">>, <<"18.02.3">>]}, ?OZvsOPVersions(<<"18.02.1">>)),
     ?assertEqual({ok, 2019090900}, compatibility:peek_current_registry_revision()).

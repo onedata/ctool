@@ -68,7 +68,7 @@
 -export([check_products_compatibility/4]).
 -export([get_compatible_versions/3]).
 -export([verify_gui_hash/3]).
--export([check_for_updates/1]).
+-export([check_for_updates/2]).
 -export([peek_current_registry_revision/0]).
 -export([clear_registry_cache/0]).
 
@@ -166,10 +166,11 @@ verify_gui_hash(_, _, _) ->
     error(badarg).
 
 
--spec check_for_updates([Mirror :: http_client:url()]) -> {ok, registry()} | {error, not_updated}.
-check_for_updates(Mirrors) ->
+-spec check_for_updates([Mirror :: http_client:url()], TrustedCaCerts :: [public_key:der_encoded()]) ->
+    {ok, registry()} | {error, not_updated}.
+check_for_updates(Mirrors, TrustedCaCerts) ->
     lists_utils:foldl_while(fun(Mirror, _) ->
-        case fetch_registry(Mirror) of
+        case fetch_registry(Mirror, TrustedCaCerts) of
             {ok, Binary, Registry} ->
                 try
                     case overwrite_registry_if_newer(Binary, Registry, Mirror) of
@@ -341,14 +342,15 @@ get_registry(check_for_updates) ->
         true ->
             restart_check_for_updates_backoff(),
             Mirrors = ?REGISTRY_MIRRORS,
-            check_for_updates(Mirrors)
+            check_for_updates(Mirrors, [])
     end.
 
 
 %% @private
--spec fetch_registry(Mirror :: http_client:url()) -> {ok, Binary :: binary(), registry()} | error.
-fetch_registry(Mirror) ->
-    case http_client:get(Mirror) of
+-spec fetch_registry(Mirror :: http_client:url(), TrustedCaCerts :: [public_key:der_encoded()]) ->
+    {ok, Binary :: binary(), registry()} | error.
+fetch_registry(Mirror, TrustedCaCerts) ->
+    case http_client:get(Mirror, #{}, <<>>, [{ssl_options, [{cacerts, TrustedCaCerts}]}]) of
         {ok, 200, _, Binary} ->
             case parse_registry(Binary) of
                 {error, cannot_parse_registry} ->
