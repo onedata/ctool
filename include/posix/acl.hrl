@@ -34,7 +34,6 @@
 -define(no_flags_mask, 16#00000000).
 -define(identifier_group, <<"IDENTIFIER_GROUP">>).
 -define(identifier_group_mask, 16#00000040).
-% todo implement inheritance as in cdmi spec book 16.1.4
 
 % ace access masks
 -define(read_object, <<"READ_OBJECT">>).
