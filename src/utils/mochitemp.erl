@@ -25,7 +25,7 @@
 -export([gettempdir/0]).
 -export([mkdtemp/0, mkdtemp/3]).
 -export([rmtempdir/1]).
-%% -export([mkstemp/4]).
+
 -define(SAFE_CHARS, {$a, $b, $c, $d, $e, $f, $g, $h, $i, $j, $k, $l, $m,
                      $n, $o, $p, $q, $r, $s, $t, $u, $v, $w, $x, $y, $z,
                      $A, $B, $C, $D, $E, $F, $G, $H, $I, $J, $K, $L, $M,
@@ -34,13 +34,6 @@
 -define(TMP_MAX, 10000).
 
 -include_lib("kernel/include/file.hrl").
-
-%% TODO: An ugly wrapper over the mktemp tool with open_port and sadness?
-%%       We can't implement this race-free in Erlang without the ability
-%%       to issue O_CREAT|O_EXCL. I suppose we could hack something with
-%%       mkdtemp, del_dir, open.
-%% mkstemp(Suffix, Prefix, Dir, Options) ->
-%%    ok.
 
 rmtempdir(Dir) ->
     case file:del_dir(Dir) of

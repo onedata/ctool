@@ -35,9 +35,9 @@
 -define(NOW(), global_clock:timestamp_seconds()).
 % Configurable env variables
 -define(MAXMIND_LICENCE_KEY, ctool:get_env(maxmind_licence_key, undefined)).
--define(GEO_DB_PATH(DbType), maps:get(DbType, ctool:get_env(geo_db_path))).
+-define(GEO_DB_FILE(DbType), maps:get(DbType, ctool:get_env(geo_db_file))).
 -define(GEO_DB_MIRROR(DbType), maps:get(DbType, ctool:get_env(geo_db_mirror))).
--define(GEO_DB_STATUS_FILE, ctool:get_env(geo_db_status_path)).
+-define(GEO_DB_STATUS_FILE, ctool:get_env(geo_db_status_file)).
 -define(GEO_DB_REFRESH_PERIOD_SEC, ctool:get_env(geo_db_refresh_period_days) * 86400).
 -define(GEO_DB_REFRESH_BACKOFF_SEC, ctool:get_env(geo_db_refresh_backoff_secs)).
 
@@ -112,16 +112,16 @@ ensure_db_loaded_unsafe(DbType) ->
 
 -spec load_db(db_type()) -> ok | {error, term()}.
 load_db(DbType) ->
-    DbPath = ?GEO_DB_PATH(DbType),
-    case filelib:is_file(DbPath) of
+    DbFile = ?GEO_DB_FILE(DbType),
+    case filelib:is_file(DbFile) of
         false ->
-            {error, {no_such_file, DbPath}};
+            {error, {no_such_file, DbFile}};
         true ->
-            locus:start_loader(DbType, DbPath),
+            locus:start_loader(DbType, DbFile),
             locus:wait_for_loader(DbType, 2000),
             case locus:get_info(DbType) of
                 {ok, _} ->
-                    ?debug("Successfully loaded ~p GEO DB (~s)", [DbType, DbPath]),
+                    ?debug("Successfully loaded ~p GEO DB (~s)", [DbType, DbFile]),
                     ok;
                 {error, _} = Error ->
                     Error
@@ -169,7 +169,7 @@ fetch_newer_db(DbType, LicenceKey) ->
     Url = http_utils:append_url_parameters(Mirror, #{<<"license_key">> => LicenceKey}),
     case http_client:get(Url) of
         {ok, 200, _, Data} ->
-            file:write_file(?GEO_DB_PATH(DbType), Data),
+            file:write_file(?GEO_DB_FILE(DbType), Data),
             write_status(DbType, Now, Now),
             ?info("Fetched a newer ~p GEO DB (~s)", [DbType, Mirror]),
             true;

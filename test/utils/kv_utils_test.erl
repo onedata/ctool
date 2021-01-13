@@ -135,6 +135,62 @@ put_test_() -> [
             ?_assertError({badnested, _}, kv_utils:put([bad2, subkey], value, Container))}
     ] || Container <- ?ALL].
 
+update_with_test_() -> [
+    {"override existing value", [
+        ?_assertEqual(#{key_1 => value_2},
+            kv_utils:update_with([key_1], fun(_) -> value_2 end, #{key_1 => value_1})),
+        ?_assertEqual([{key_1, value_2}],
+            kv_utils:update_with([key_1], fun(_) -> value_2 end, [{key_1, value_1}])),
+        ?_assertEqual(#{key_1 => value_2},
+            kv_utils:update_with([key_1], fun(_) -> value_2 end, value_3, #{key_1 => value_1})),
+        ?_assertEqual([{key_1, value_2}],
+            kv_utils:update_with([key_1], fun(_) -> value_2 end, value_3, [{key_1, value_1}])),
+        ?_assertEqual(#{key_1 => #{key_2 => value_3}},
+            kv_utils:update_with([key_1, key_2], fun(_) -> value_3 end, #{key_1 => #{key_2 => value_2}})),
+        ?_assertEqual([{key_1, [{key_2, value_3}]}],
+            kv_utils:update_with([key_1, key_2], fun(_) -> value_3 end, [{key_1, [{key_2, value_2}]}])),
+        ?_assertEqual(#{key_1 => #{key_2 => value_3}},
+            kv_utils:update_with([key_1, key_2], fun(_) -> value_3 end, value_4, #{key_1 => #{key_2 => value_2}})),
+        ?_assertEqual([{key_1, [{key_2, value_3}]}],
+            kv_utils:update_with([key_1, key_2], fun(_) -> value_3 end, value_4, [{key_1, [{key_2, value_2}]}]))
+    ]},
+    {"transform existing value", [
+        ?_assertEqual(#{key_1 => 4},
+            kv_utils:update_with([key_1], fun(OldValue) -> 2 * OldValue end, #{key_1 => 2})),
+        ?_assertEqual([{key_1, 4}],
+            kv_utils:update_with([key_1], fun(OldValue) -> 2 * OldValue end, [{key_1, 2}])),
+        ?_assertEqual(#{key_1 => #{key_2 => 4}},
+            kv_utils:update_with([key_1, key_2], fun(OldValue) -> 2 * OldValue end, #{key_1 => #{key_2 => 2}})),
+        ?_assertEqual([{key_1, [{key_2, 4}]}],
+            kv_utils:update_with([key_1, key_2], fun(OldValue) -> 2 * OldValue end, [{key_1, [{key_2, 2}]}]))
+    ]},
+    {"insert initial value under key", [
+        ?_assertEqual(#{key_1 => value_1, key_2 => value_2},
+            kv_utils:update_with([key_2], fun(_) -> value_2 end, value_2, #{key_1 => value_1})),
+        ?_assertEqual([{key_2, value_2}, {key_1, value_1}],
+            kv_utils:update_with([key_2], fun(_) -> value_2 end, value_2, [{key_1, value_1}]))
+    ]},
+    {"insert initial value under path, inherit container type", [
+        ?_assertEqual(#{key1 => value1, key2 => #{subkey1 => value_2}},
+            kv_utils:update_with([key2, subkey1], fun(_) -> value_3 end, value_2, #{key1 => value1})),
+        ?_assertEqual([{key2, [{subkey1, value2}]}, {key1, value1}],
+            kv_utils:update_with([key2, subkey1], fun(_) -> value_3 end, value2, [{key1, value1}])),
+        ?_assertEqual([{key1, value1}, {key2, #{subkey1 => #{subkey2 => value2}}}],
+            kv_utils:update_with([key2, subkey1, subkey2], fun(_) -> value_3 end, value2, [{key1, value1}, {key2, #{}}]))
+    ]}
+] ++ [
+    [
+        {"fail on bad subcontainer", [
+            ?_assertError({badnested, _},
+                kv_utils:update_with([bad1, subkey], fun(_) -> value end, Container)),
+            ?_assertError({badnested, _},
+                kv_utils:update_with([bad2, subkey], fun(_) -> value end, value, Container))
+        ]},
+        {"fail on bad path", [
+            ?_assertError({badkeys, _},
+                kv_utils:update_with([unexistest_key], fun(_) -> value end, Container))
+        ]}]
+    || Container <- ?ALL].
 
 remove_test_() -> [
     ?_assertEqual(#{k1 => v1}, kv_utils:remove(k2, #{k1 => v1, k2 => v2})),
@@ -219,7 +275,7 @@ copy_and_copy_found_test_() -> [[
 
 
 copy_test_() -> [[
-    {"fail on missing",[
+    {"fail on missing", [
         ?_assertError({badkeys, [missing]},
             kv_utils:copy_all([{missing, key1}], Container, #{key1 => old})),
         ?_assertError({badkeys, [missing, subkey]},
@@ -264,7 +320,7 @@ find_many_test() -> [[
                 {missing, key2},
                 {[key2, key3], key3}
             ], Container))}
-    ] || Container <- ?ALL].
+] || Container <- ?ALL].
 
 
 

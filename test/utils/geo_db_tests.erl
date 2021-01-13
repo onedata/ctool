@@ -18,7 +18,7 @@
 
 % Dummy query result that depends on timestamp (to verify if db is refreshed)
 -define(QUERY_RESULT(Timestamp), #{<<"dummy-result">> => Timestamp}).
--define(DUMMY_DB_PATH(Dir, DbType), filename:join([Dir, atom_to_list(DbType) ++ "-geo-db.tar.gz"])).
+-define(DUMMY_DB_FILE(Dir, DbType), filename:join([Dir, atom_to_list(DbType) ++ "-geo-db.tar.gz"])).
 -define(DUMMY_DB_MIRROR(DbType), <<"https://example.com/dl?edition_id=", (atom_to_binary(DbType, utf8))/binary>>).
 -define(DUMMY_STATUS_FILE(Dir), filename:join([Dir, "geo-db-status.json"])).
 -define(DUMMY_LICENSE_KEY, <<"LiCeNsE12345">>).
@@ -90,12 +90,12 @@ setup() ->
     ctool:set_env(geo_db_refresh_backoff_secs, 3600),
     % Dummy DB files hold the timestamp of their creation which is later
     % returned in dummy query results
-    ctool:set_env(geo_db_path, #{
-        asn =>     ?DUMMY_DB_PATH(TmpDir, asn),
-        country => ?DUMMY_DB_PATH(TmpDir, country)
+    ctool:set_env(geo_db_file, #{
+        asn =>     ?DUMMY_DB_FILE(TmpDir, asn),
+        country => ?DUMMY_DB_FILE(TmpDir, country)
     }),
-    file:write_file(?DUMMY_DB_PATH(TmpDir, asn), integer_to_binary(get_frozen_time())),
-    file:write_file(?DUMMY_DB_PATH(TmpDir, country), integer_to_binary(get_frozen_time())),
+    file:write_file(?DUMMY_DB_FILE(TmpDir, asn), integer_to_binary(get_frozen_time())),
+    file:write_file(?DUMMY_DB_FILE(TmpDir, country), integer_to_binary(get_frozen_time())),
 
     ctool:set_env(geo_db_mirror, #{
         asn =>     ?DUMMY_DB_MIRROR(asn),
@@ -112,7 +112,7 @@ setup() ->
         end
     end),
 
-    ctool:set_env(geo_db_status_path, ?DUMMY_STATUS_FILE(TmpDir)),
+    ctool:set_env(geo_db_status_file, ?DUMMY_STATUS_FILE(TmpDir)),
     file:write_file(?DUMMY_STATUS_FILE(TmpDir), json_utils:encode(#{
         <<"asn">> => #{
             <<"last-refresh">> => get_frozen_time(),
@@ -258,7 +258,7 @@ absent_or_bad_maxmind_licence_key(_) ->
 bad_db_path(#{tmpDir := TmpDir}) ->
     TimeAlpha = get_frozen_time(),
 
-    ctool:set_env(geo_db_path, #{
+    ctool:set_env(geo_db_file, #{
         asn =>     "/a/b/c/d/e/asn",
         country => "/a/b/c/d/e/country"
     }),
@@ -266,9 +266,9 @@ bad_db_path(#{tmpDir := TmpDir}) ->
     ?assertEqual({error, database_not_loaded}, geo_db:lookup(country, "1.2.3.5")),
 
     % Even if correct paths are set, next load attempts should be backed off
-    ctool:set_env(geo_db_path, #{
-        asn =>     ?DUMMY_DB_PATH(TmpDir, asn),
-        country => ?DUMMY_DB_PATH(TmpDir, country)
+    ctool:set_env(geo_db_file, #{
+        asn =>     ?DUMMY_DB_FILE(TmpDir, asn),
+        country => ?DUMMY_DB_FILE(TmpDir, country)
     }),
     ?assertEqual({error, database_not_loaded}, geo_db:lookup(asn, "1.2.3.4")),
     ?assertEqual({error, database_not_loaded}, geo_db:lookup(country, "1.2.3.5")),

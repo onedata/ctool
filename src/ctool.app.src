@@ -96,19 +96,16 @@
         % and verified gui hashes. This file evolves during service's lifetime -
         % can be overwritten by a newer registry when such is available.
         % NOTE: Must be overriden in the including project.
-        {compatibility_registry_path, "./etc/compatibility.json"},
+        {current_compatibility_registry_file, "./etc/compatibility.json"},
         % Path to the default compatibility.json for current software version.
         % NOTE: Must be overriden in the including project.
-        {default_compatibility_registry, "./data/compatibility.default.json"},
+        {default_compatibility_registry_file, "./data/compatibility.default.json"},
         % URLs from the compatibility registry can be fetched - used when there
         % is a chance that the static registry is outdated. The URLs are tried
         % in the order up to the first successful mirror.
         {compatibility_registry_mirrors, [
             "https://onedata.org/compatibility.json",
-            "https://raw.githubusercontent.com/onedata/compatibility-reference/develop/compatibility.json",
-            % deprecated mirrors, to be removed in next major releases
-            "https://onedata.org/docs/doc/compatibility_reference/compatibility.json",
-            "https://raw.githubusercontent.com/onedata/onedata-documentation/master/doc/compatibility_reference/compatibility.json"
+            "https://raw.githubusercontent.com/onedata/compatibility-reference/develop/compatibility.json"
         ]},
         % For how long (in seconds) the cached compatibility registry is
         % considered up-to-date. Before that time passes, the registry will not
@@ -118,8 +115,9 @@
         % it is outdated - in case an incompatibility between services or
         % unverified GUI is detected.
         {compatibility_registry_cache_ttl_secs, 900}, % 15 minutes
-        % Backoff before retry upon failed attempt to fetch a newer registry.
-        {compatibility_registry_fetch_backoff_secs, 900}, % 15 minutes
+        % Minimum interval between consecutive checks if a newer registry is
+        % available on compatibility registry mirrors.
+        {compatibility_registry_check_for_updates_backoff_secs, 900}, % 15 minutes
 
         %% ===================================================================
         %% GEOLOCATION - uses MaxMind GeoLite2 databases.
@@ -135,13 +133,13 @@
 
         % Path to compressed MaxMind's GeoLite2 databases used for mapping
         % IP addresses to ASN and country.
-        {geo_db_path, #{
+        {geo_db_file, #{
             asn =>     "./etc/geo-db/geo-db-asn.tar.gz",
             country => "./etc/geo-db/geo-db-country.tar.gz"
         }},
         % File that holds info about last successful and attempted updates
         % of the MaxMind DBs.
-        {geo_db_status_path, "./etc/geo-db/geo-db-status.json"},
+        {geo_db_status_file, "./etc/geo-db/geo-db-status.json"},
 
         % Mirrors from which the MaxMind DBs download will be attempted in case
         % the refresh period passes. Licence key will be concatenated as another
