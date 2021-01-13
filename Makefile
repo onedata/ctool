@@ -45,3 +45,10 @@ eunit:
 	./rebar3 eunit skip_deps=true --suite=${SUITES}
 ## Rename all tests in order to remove duplicated names (add _(++i) suffix to each test)
 	@for tout in `find test -name "TEST-*.xml"`; do awk '/testcase/{gsub("_[0-9]+\"", "_" ++i "\"")}1' $$tout > $$tout.tmp; mv $$tout.tmp $$tout; done
+
+##
+## Codetag tracker
+##
+
+codetag_tracker:
+	./bamboos/scripts/codetag_tracker.sh
