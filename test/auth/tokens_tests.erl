@@ -611,6 +611,14 @@ infer_interface_test() ->
         #cv_consumer{whitelist = [?SUB(user, <<"567">>)]},
         #cv_api{whitelist = [{all, all, ?GRI_PATTERN('*', '*', '*', '*')}]},
         #cv_interface{interface = oneclient}
+    ])),
+
+    ?assertEqual(rest, caveats:infer_interface([
+        #cv_data_path{whitelist = [<<"/a/b/c/d">>]},
+        #cv_interface{interface = rest},
+        #cv_consumer{whitelist = [?SUB(?ONEPROVIDER, <<"ghjk">>)]},
+        #cv_ip{whitelist = [{{98, 122, 6, 0}, 24}]},
+        #cv_interface{interface = rest}
     ])).
 
 

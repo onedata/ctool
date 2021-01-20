@@ -30,10 +30,10 @@
 %%%       * a time caveat, with TTL as stated above
 %%%       * a service caveat, limiting the service when the token can be used only to the specific Oneprovider
 %%%       * a consumer caveat, limiting consuming party only to the specific Oneprovider
-%%%       * an API caveat that allow strictly only reading basic user data (original API caveats are retained!)
+%%%       * an API caveat that allows only reading basic user data (original API caveats are retained!)
 %%%   * Note that IP - related caveats are dropped as they are no longer relevant
 %%%     (the obtained token will be used only internally in Oneprovider)
-%%%   % Note that as interface caveats are retained, Oneprovider must always include the proper interface in the auth
+%%%   * Note that as interface caveats are retained, Oneprovider must always include the proper interface in the auth
 %%%     context, despite the token being actually used only internally.
 %%% @end
 %%%--------------------------------------------------------------------
@@ -66,7 +66,7 @@ build_token_caveats(OriginalCaveats, ProviderId, Ttl) ->
         #cv_time{valid_until = global_clock:timestamp_seconds() + Ttl},
         #cv_service{whitelist = [?SERVICE(?OP_WORKER, ProviderId)]},
         #cv_consumer{whitelist = [?SUB(?ONEPROVIDER, ProviderId)]},
-        % no dot include the API caveat if it's already there
+        % do not include the API caveat if it's already there
         lists_utils:union([offline_access_api_caveat()], RetainedCaveats)
     ]).
 

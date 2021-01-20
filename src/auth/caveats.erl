@@ -96,10 +96,9 @@ infer_ttl(Caveats) ->
 %%--------------------------------------------------------------------
 %% @doc
 %% Infers on what interface a token with given caveats will be accepted.
-%% Returns undefined if any interface is accepted.
-%% NOTE: undefined is also returned when interface caveats are conflicting
-%%       with each other and there is no valid interface at all
-%%       (verification will always fail).
+%% Returns undefined if any interface is accepted, i.e. there is no interface caveat.
+%% NOTE: undefined is also returned when interface caveats are conflicting with
+%% each other and there is no valid interface at all (verification will always fail).
 %% @end
 %%--------------------------------------------------------------------
 -spec infer_interface([caveats:caveat()]) -> undefined | cv_interface:interface().
