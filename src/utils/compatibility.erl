@@ -182,7 +182,7 @@ check_for_updates(Mirrors, TrustedCaCerts) ->
                 catch Type:Reason ->
                     ?error_stacktrace(
                         "Error processing newly fetched compatibility registry from mirror: ~s~n~w:~p", [
-                            Type, Reason, Mirror
+                            Mirror, Type, Reason
                         ]),
                     {cont, {error, not_updated}}
                 end;

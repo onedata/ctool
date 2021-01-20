@@ -40,7 +40,8 @@
 -define(JOIN(List, Sep), str_utils:join_binary(List, Sep)).
 
 %% API
--export([add/2, get_caveats/1, find/2, filter/2, infer_ttl/1]).
+-export([add/2, get_caveats/1, find/2, filter/2]).
+-export([infer_ttl/1, infer_interface/1]).
 -export([type/1, all_types/0]).
 -export([build_verifier/2]).
 -export([serialize/1, deserialize/1]).
@@ -90,6 +91,27 @@ infer_ttl(Caveats) ->
         undefined -> undefined;
         _ -> ValidUntil - global_clock:timestamp_seconds()
     end.
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Infers on what interface a token with given caveats will be accepted.
+%% Returns undefined if any interface is accepted, i.e. there is no interface caveat.
+%% NOTE: undefined is also returned when interface caveats are conflicting with
+%% each other and there is no valid interface at all (verification will always fail).
+%% @end
+%%--------------------------------------------------------------------
+-spec infer_interface([caveats:caveat()]) -> undefined | cv_interface:interface().
+infer_interface(Caveats) ->
+    lists_utils:foldl_while(fun
+        (#cv_interface{interface = Interface}, undefined) ->
+            {cont, Interface};
+        (#cv_interface{interface = Interface}, Acc) ->
+            case Interface of
+                Acc -> {cont, Interface};
+                _ -> {halt, undefined}
+            end
+    end, undefined, caveats:filter([cv_interface], Caveats)).
 
 
 -spec type(caveat()) -> type().
