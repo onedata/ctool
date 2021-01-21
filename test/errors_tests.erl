@@ -223,6 +223,7 @@ testcases() -> [
     ?ERROR_DNS_SERVERS_UNREACHABLE([default, {1, 2, 3, 4}]),
     {different, ?ERROR_DNS_SERVERS_UNREACHABLE([<<"1.1.1.1">>, <<"8.8.8.8">>]),
         ?ERROR_DNS_SERVERS_UNREACHABLE([{1, 1, 1, 1}, {8, 8, 8, 8}])},
+    ?ERROR_QUOTA_EXCEEDED,
 
     %%--------------------------------------------------------------------
     %% onepanel errors
