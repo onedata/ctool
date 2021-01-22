@@ -189,6 +189,7 @@
 -define(ERROR_TRANSFER_NOT_ENDED, {error, transfer_not_ended}).
 -define(ERROR_VIEW_NOT_EXISTS_ON(ProviderId), {error, {view_not_exists_on, ProviderId}}).
 -define(ERROR_VIEW_QUERY_FAILED(Category, Description), {error, {view_query_failed, Category, Description}}).
+-define(ERROR_QUOTA_EXCEEDED, {error, quota_exceeded}).
 
 
 %%--------------------------------------------------------------------

@@ -116,7 +116,8 @@
 | {auto_storage_import_not_supported, StorageId :: binary(), SupportedStorages :: [binary()], SupportedObjectStorages :: [binary()]}
 | {stat_operation_not_supported, StorageId :: binary}
 | {view_not_exists_on, ProviderId :: binary()}
-| {view_query_failed, Category :: binary(), Description :: binary()}.
+| {view_query_failed, Category :: binary(), Description :: binary()}
+| quota_exceeded.
 
 -type onepanel() :: {error_on_nodes, error(), Hostnames :: [binary()]}
 | {dns_servers_unreachable, [ip_utils:ip() | default]}
@@ -967,6 +968,10 @@ to_json(?ERROR_VIEW_QUERY_FAILED(Category, Description)) -> #{
     },
     <<"description">> => ?FMT("Query on view failed. Error category: ~s. Description: ~s.", [Category, Description])
 };
+to_json(?ERROR_QUOTA_EXCEEDED) -> #{
+    <<"id">> => <<"quotaExceeded">>,
+    <<"description">> => <<"Space's storage quota has been exceeded.">>
+};
 
 %%--------------------------------------------------------------------
 %% onepanel errors
@@ -1488,6 +1493,8 @@ from_json(#{<<"id">> := <<"viewQueryFailed">>, <<"details">> := #{
 }}) ->
     ?ERROR_VIEW_QUERY_FAILED(Category, Description);
 
+from_json(#{<<"id">> := <<"quotaExceeded">>}) ->
+    ?ERROR_QUOTA_EXCEEDED;
 
 %%--------------------------------------------------------------------
 %% onepanel errors
@@ -1691,6 +1698,7 @@ to_http_code(?ERROR_TRANSFER_ALREADY_ENDED) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_TRANSFER_NOT_ENDED) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_VIEW_NOT_EXISTS_ON(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_VIEW_QUERY_FAILED(_, _)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_QUOTA_EXCEEDED) -> ?HTTP_400_BAD_REQUEST;
 
 %%--------------------------------------------------------------------
 %% onepanel errors
