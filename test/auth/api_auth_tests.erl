@@ -70,7 +70,7 @@ check_authorization_test() ->
 
 % For each testcase, generates possible combination of caveats (based on caveat_examples)
 % and checks if the result of check_authorization function is as expected.
-check_authorization_test(T = #testcase{service = Service, operation = Operation, gri = GRI, caveat_examples = CaveatExamples}) ->
+check_authorization_test(#testcase{service = Service, operation = Operation, gri = GRI, caveat_examples = CaveatExamples}) ->
     TestCombinations = powerset(CaveatExamples),
     % Each combination includes a random subset of caveat examples
     lists:foreach(fun(CaveatExamplesSubset) ->
