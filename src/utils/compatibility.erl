@@ -13,6 +13,12 @@
 %%% might be fetched when there is a chance that it is outdated - in case an
 %%% incompatibility between services or unverified GUI is detected.
 %%%
+%%% Due to the fact that compatibility reference is read from file, on
+%%% multi-node clusters the knowledge about the compatibility might differ
+%%% among different nodes. For this reason, the module uses the concept of a
+%%% resolver that needs to know all cluster nodes and will perform unification
+%%% of the knowledge while answering queries.
+%%%
 %%% The registry is versioned using the 'revision' field (integer). It should be
 %%% incremented upon any modification. Later, it is used to decide if the newly
 %%% fetched registry is newer than the local one and should replace it.
@@ -65,29 +71,52 @@
 -include("onedata.hrl").
 -include("logging.hrl").
 
--export([check_products_compatibility/4]).
--export([get_compatible_versions/3]).
--export([verify_gui_hash/3]).
+-export([build_resolver/2]).
+-export([check_products_compatibility/5]).
+-export([get_compatible_versions/4]).
+-export([verify_gui_hash/4]).
 -export([check_for_updates/2]).
--export([peek_current_registry_revision/0]).
+-export([peek_current_registry_revision/1]).
 -export([clear_registry_cache/0]).
+% internal RPC
+-export([overwrite_registry/1]).
 
-% A nested map acquired by parsing the JSON file
--type registry() :: map().
+
+% Opaque record that holds information required for answering compatibility queries
+% on a multi-node cluster. Must be instantiated and passed to this module for every query.
+-record(resolver, {
+    nodes :: [node()],
+    extra_trusted_cacerts :: [public_key:der_encoded()]
+}).
+-opaque resolver() :: #resolver{}.
+-export_type([resolver/0]).
+
+% Private record holding an instance of compatibility registry.
+-record(registry, {
+    % raw binary data read from a compatibility file or a mirror (must be an encoded JSON)
+    raw :: binary(),
+    % a nested map acquired by parsing the raw binary
+    parsed :: #{binary() => _},
+    revision :: revision()
+}).
+-type registry() :: #registry{}.
+
+% A positive integer denoting the revision of the compatibility registry,
+% incremented upon every update.
+-type revision() :: pos_integer().
 % Section is denoted by a list of nested keys in the registry map
 -type section() :: kv_utils:path(binary()).
 % Entry can be a product version or GUI hash - there is a list of entries
 % specified per every version in the compatibility registry.
 -type entry() :: onedata:release_version() | onedata:gui_hash().
-% A positive integer denoting the revision of the compatibility registry,
-% incremented upon every update.
--type revision() :: pos_integer().
 % Strategy when retrieving the registry - returns either the current local
 % version stored in the registry file, or attempts to fetch a newer version
 % from known mirrors (but with a configurable backoff).
 -type strategy() :: local | check_for_updates.
 % Verbose error returned when the version queried for does not exist in the registry
 -type unknown_version_error() :: {unknown_version, onedata:release_version(), {revision, revision()}}.
+% An url from which the compatibility registry can be downloaded
+-type mirror() :: http_client:url().
 
 -define(CURRENT_REGISTRY_FILE, ctool:get_env(current_compatibility_registry_file)).
 -define(DEFAULT_REGISTRY_FILE, ctool:get_env(default_compatibility_registry_file)).
@@ -104,24 +133,37 @@
 
 %%--------------------------------------------------------------------
 %% @doc
+%% Builds the resolver required for making queries. All nodes in the cluster
+%% should be provided so that the compatibility files can be kept coherent on
+%% all of them.
+%% @end
+%%--------------------------------------------------------------------
+-spec build_resolver([node()], ExtraTrustedCaCerts :: [public_key:der_encoded()]) -> resolver().
+build_resolver(Nodes, ExtraTrustedCaCerts) when is_list(Nodes) andalso is_list(ExtraTrustedCaCerts) ->
+    #resolver{nodes = Nodes, extra_trusted_cacerts = ExtraTrustedCaCerts}.
+
+
+%%--------------------------------------------------------------------
+%% @doc
 %% Checks if the two products in given versions are compatible with each other.
 %% @end
 %%--------------------------------------------------------------------
 -spec check_products_compatibility(
+    resolver(),
     ProductA :: onedata:product(), VersionA :: onedata:release_version(),
     ProductB :: onedata:product(), VersionB :: onedata:release_version()) ->
     true | {false, CompatibleVersions :: [onedata:release_version()]} |
     {error, unknown_version_error() | cannot_parse_registry}.
-check_products_compatibility(?ONEZONE, VersionA, ?ONEPROVIDER, VersionB) ->
-    check_entry([<<"compatibility">>, <<"onezone:oneprovider">>], VersionA, VersionB);
-check_products_compatibility(?ONEPROVIDER, VersionA, ?ONEZONE, VersionB) ->
-    check_entry([<<"compatibility">>, <<"oneprovider:onezone">>], VersionA, VersionB);
-check_products_compatibility(?ONEPROVIDER, VersionA, ?ONEPROVIDER, VersionB) ->
-    check_entry([<<"compatibility">>, <<"oneprovider:oneprovider">>], VersionA, VersionB);
-check_products_compatibility(?ONEPROVIDER, VersionA, ?ONECLIENT, VersionB) ->
-    check_entry([<<"compatibility">>, <<"oneprovider:oneclient">>],
+check_products_compatibility(Resolver, ?ONEZONE, VersionA, ?ONEPROVIDER, VersionB) ->
+    check_entry(Resolver, [<<"compatibility">>, <<"onezone:oneprovider">>], VersionA, VersionB);
+check_products_compatibility(Resolver, ?ONEPROVIDER, VersionA, ?ONEZONE, VersionB) ->
+    check_entry(Resolver, [<<"compatibility">>, <<"oneprovider:onezone">>], VersionA, VersionB);
+check_products_compatibility(Resolver, ?ONEPROVIDER, VersionA, ?ONEPROVIDER, VersionB) ->
+    check_entry(Resolver, [<<"compatibility">>, <<"oneprovider:oneprovider">>], VersionA, VersionB);
+check_products_compatibility(Resolver, ?ONEPROVIDER, VersionA, ?ONECLIENT, VersionB) ->
+    check_entry(Resolver, [<<"compatibility">>, <<"oneprovider:oneclient">>],
         VersionA, normalize_oneclient_version(VersionB));
-check_products_compatibility(_, _, _, _) ->
+check_products_compatibility(_, _, _, _, _) ->
     error(badarg).
 
 
@@ -131,19 +173,20 @@ check_products_compatibility(_, _, _, _) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec get_compatible_versions(
+    resolver(),
     ProductA :: onedata:product(), VersionA :: onedata:release_version(),
     ProductB :: onedata:product()) ->
     {ok, CompatibleVersions :: [onedata:release_version()]} |
     {error, unknown_version_error() | cannot_parse_registry}.
-get_compatible_versions(?ONEZONE, VersionA, ?ONEPROVIDER) ->
-    get_entries([<<"compatibility">>, <<"onezone:oneprovider">>], VersionA);
-get_compatible_versions(?ONEPROVIDER, VersionA, ?ONEZONE) ->
-    get_entries([<<"compatibility">>, <<"oneprovider:onezone">>], VersionA);
-get_compatible_versions(?ONEPROVIDER, VersionA, ?ONEPROVIDER) ->
-    get_entries([<<"compatibility">>, <<"oneprovider:oneprovider">>], VersionA);
-get_compatible_versions(?ONEPROVIDER, VersionA, ?ONECLIENT) ->
-    get_entries([<<"compatibility">>, <<"oneprovider:oneclient">>], VersionA);
-get_compatible_versions(_, _, _) ->
+get_compatible_versions(Resolver, ?ONEZONE, VersionA, ?ONEPROVIDER) ->
+    get_entries(Resolver, [<<"compatibility">>, <<"onezone:oneprovider">>], VersionA);
+get_compatible_versions(Resolver, ?ONEPROVIDER, VersionA, ?ONEZONE) ->
+    get_entries(Resolver, [<<"compatibility">>, <<"oneprovider:onezone">>], VersionA);
+get_compatible_versions(Resolver, ?ONEPROVIDER, VersionA, ?ONEPROVIDER) ->
+    get_entries(Resolver, [<<"compatibility">>, <<"oneprovider:oneprovider">>], VersionA);
+get_compatible_versions(Resolver, ?ONEPROVIDER, VersionA, ?ONECLIENT) ->
+    get_entries(Resolver, [<<"compatibility">>, <<"oneprovider:oneclient">>], VersionA);
+get_compatible_versions(_, _, _, _) ->
     error(badarg).
 
 
@@ -152,38 +195,36 @@ get_compatible_versions(_, _, _) ->
 %% Checks if the GUI hash is valid for the service in given version.
 %% @end
 %%--------------------------------------------------------------------
--spec verify_gui_hash(?OP_WORKER_GUI | ?ONEPANEL_GUI | ?HARVESTER_GUI,
+-spec verify_gui_hash(resolver(), ?OP_WORKER_GUI | ?ONEPANEL_GUI | ?HARVESTER_GUI,
     onedata:release_version(), onedata:gui_hash()) ->
     true | {false, CorrectHashes :: [onedata:gui_hash()]} |
     {error, unknown_version_error() | cannot_parse_registry}.
-verify_gui_hash(?OP_WORKER_GUI, Version, GuiHash) ->
-    check_entry([<<"gui-sha256">>, <<"op-worker">>], Version, GuiHash);
-verify_gui_hash(?ONEPANEL_GUI, Version, GuiHash) ->
-    check_entry([<<"gui-sha256">>, <<"onepanel">>], Version, GuiHash);
-verify_gui_hash(?HARVESTER_GUI, Version, GuiHash) ->
-    check_entry([<<"gui-sha256">>, <<"harvester">>], Version, GuiHash);
-verify_gui_hash(_, _, _) ->
+verify_gui_hash(Resolver, ?OP_WORKER_GUI, Version, GuiHash) ->
+    check_entry(Resolver, [<<"gui-sha256">>, <<"op-worker">>], Version, GuiHash);
+verify_gui_hash(Resolver, ?ONEPANEL_GUI, Version, GuiHash) ->
+    check_entry(Resolver, [<<"gui-sha256">>, <<"onepanel">>], Version, GuiHash);
+verify_gui_hash(Resolver, ?HARVESTER_GUI, Version, GuiHash) ->
+    check_entry(Resolver, [<<"gui-sha256">>, <<"harvester">>], Version, GuiHash);
+verify_gui_hash(_, _, _, _) ->
     error(badarg).
 
 
--spec check_for_updates([Mirror :: http_client:url()], TrustedCaCerts :: [public_key:der_encoded()]) ->
-    {ok, registry()} | {error, not_updated}.
-check_for_updates(Mirrors, TrustedCaCerts) ->
+-spec check_for_updates(resolver(), [mirror()]) -> {ok, registry()} | {error, not_updated}.
+check_for_updates(Resolver, Mirrors) ->
     lists_utils:foldl_while(fun(Mirror, _) ->
-        case fetch_registry(Mirror, TrustedCaCerts) of
-            {ok, Binary, Registry} ->
+        case fetch_registry(Resolver, Mirror) of
+            {ok, Registry} ->
                 try
-                    case overwrite_registry_if_newer(Binary, Registry, Mirror) of
+                    case take_registry_from_mirror_if_newer(Resolver, Registry, Mirror) of
                         true ->
                             {halt, {ok, Registry}};
                         false ->
                             {cont, {error, not_updated}}
                     end
                 catch Type:Reason ->
-                    ?error_stacktrace(
-                        "Error processing newly fetched compatibility registry from mirror: ~s~n~w:~p", [
-                            Mirror, Type, Reason
-                        ]),
+                    ?error_stacktrace("Error processing newly fetched compatibility registry from mirror: ~s~n~w:~p", [
+                        Mirror, Type, Reason
+                    ]),
                     {cont, {error, not_updated}}
                 end;
             error ->
@@ -192,11 +233,11 @@ check_for_updates(Mirrors, TrustedCaCerts) ->
     end, {error, not_updated}, Mirrors).
 
 
--spec peek_current_registry_revision() -> {ok, revision()} | {error, cannot_parse_registry}.
-peek_current_registry_revision() ->
-    case get_registry(local) of
+-spec peek_current_registry_revision(resolver()) -> {ok, revision()} | {error, cannot_parse_registry}.
+peek_current_registry_revision(Resolver) ->
+    case get_registry(Resolver, local) of
         {ok, Registry} ->
-            {ok, revision(Registry)};
+            {ok, Registry#registry.revision};
         {error, _} = Error ->
             Error
     end.
@@ -205,14 +246,25 @@ peek_current_registry_revision() ->
 %%--------------------------------------------------------------------
 %% @doc
 %% Instantly clears registry cache - the next check will cause the registry file
-%% to be read again from disk and (if required) a check for update will be
-%% performed.
+%% to be read again from disk and (if required) a check for update will be performed.
 %% @end
 %%--------------------------------------------------------------------
 -spec clear_registry_cache() -> ok.
 clear_registry_cache() ->
     node_cache:clear({?MODULE, registry}),
     node_cache:clear({?MODULE, check_for_updates_active_backoff}).
+
+
+%% @private
+%% exported for internal RPC
+-spec overwrite_registry(registry()) -> ok.
+overwrite_registry(#registry{raw = Binary, revision = Revision}) ->
+    RegistryFile = ?CURRENT_REGISTRY_FILE,
+    ok = file:write_file(RegistryFile, Binary),
+    ?info("Overwritten the compatibility registry with a newer one (rev. ~B) at ~s", [
+        Revision, RegistryFile
+    ]),
+    clear_registry_cache().
 
 %%%===================================================================
 %%% Internal functions
@@ -225,15 +277,15 @@ clear_registry_cache() ->
 %% section and version. May check for updates in case of a negative result.
 %% @end
 %%--------------------------------------------------------------------
--spec check_entry(section(), onedata:release_version(), entry()) ->
+-spec check_entry(resolver(), section(), onedata:release_version(), entry()) ->
     true | {false, ValidEntries :: [entry()]} |
     {error, unknown_version_error() | cannot_parse_registry}.
-check_entry(Section, Version, Entry) ->
-    case check_entry(Section, Version, Entry, local) of
+check_entry(Resolver, Section, Version, Entry) ->
+    case check_entry(Resolver, Section, Version, Entry, local) of
         true ->
             true;
         FailureResult ->
-            case check_entry(Section, Version, Entry, check_for_updates) of
+            case check_entry(Resolver, Section, Version, Entry, check_for_updates) of
                 {error, not_updated} ->
                     FailureResult;
                 Result ->
@@ -243,11 +295,11 @@ check_entry(Section, Version, Entry) ->
 
 
 %% @private
--spec check_entry(section(), onedata:release_version(), entry(), strategy()) ->
+-spec check_entry(resolver(), section(), onedata:release_version(), entry(), strategy()) ->
     true | {false, ValidEntries :: [entry()]} |
     {error, unknown_version_error() | cannot_parse_registry | not_updated}.
-check_entry(Section, Version, Entry, Strategy) ->
-    case get_entries(Section, Version, Strategy) of
+check_entry(Resolver, Section, Version, Entry, Strategy) ->
+    case get_entries(Resolver, Section, Version, Strategy) of
         {error, _} = Error ->
             Error;
         {ok, Entries} ->
@@ -265,15 +317,15 @@ check_entry(Section, Version, Entry, Strategy) ->
 %% May check for updates in case of a negative result.
 %% @end
 %%--------------------------------------------------------------------
--spec get_entries(section(), onedata:release_version()) ->
+-spec get_entries(resolver(), section(), onedata:release_version()) ->
     {ok, [entry()]} |
     {error, unknown_version_error() | cannot_parse_registry}.
-get_entries(Section, Version) ->
-    case get_entries(Section, Version, local) of
+get_entries(Resolver, Section, Version) ->
+    case get_entries(Resolver, Section, Version, local) of
         {ok, Entries} ->
             {ok, Entries};
         FailureResult ->
-            case get_entries(Section, Version, check_for_updates) of
+            case get_entries(Resolver, Section, Version, check_for_updates) of
                 {error, not_updated} ->
                     FailureResult;
                 Result ->
@@ -283,21 +335,44 @@ get_entries(Section, Version) ->
 
 
 %% @private
--spec get_entries(section(), onedata:release_version(), strategy()) ->
+-spec get_entries(resolver(), section(), onedata:release_version(), strategy()) ->
     {ok, [entry()]} |
     {error, unknown_version_error() | cannot_parse_registry | not_updated}.
-get_entries(Section, Version, Strategy) ->
-    case get_registry(Strategy) of
+get_entries(Resolver, Section, Version, Strategy) ->
+    case get_registry(Resolver, Strategy) of
         {error, _} = Error ->
             Error;
         {ok, Registry} ->
             AllVersions = get_section(Section, Registry),
             case maps:find(Version, AllVersions) of
                 error ->
-                    {error, {unknown_version, Version, {revision, revision(Registry)}}};
+                    {error, {unknown_version, Version, {revision, Registry#registry.revision}}};
                 {ok, Entries} ->
                     {ok, Entries}
             end
+    end.
+
+
+%% @private
+-spec get_registry(resolver(), strategy()) ->
+    {ok, registry()} | {error, cannot_parse_registry | not_updated}.
+get_registry(Resolver, local) ->
+    node_cache:acquire({?MODULE, registry}, fun() ->
+        take_default_registry_if_newer(Resolver),
+        case read_registry(?CURRENT_REGISTRY_FILE) of
+            {ok, Registry} ->
+                {ok, Registry, ?REGISTRY_CACHE_TTL};
+            {error, cannot_parse_registry} ->
+                {error, cannot_parse_registry}
+        end
+    end);
+get_registry(Resolver, check_for_updates) ->
+    case should_check_for_updates() of
+        false ->
+            {error, not_updated};
+        true ->
+            restart_check_for_updates_backoff(),
+            check_for_updates(Resolver, ?REGISTRY_MIRRORS)
     end.
 
 
@@ -315,149 +390,21 @@ restart_check_for_updates_backoff() ->
 
 
 %% @private
--spec get_registry(strategy()) ->
-    {ok, registry()} | {error, cannot_parse_registry | not_updated}.
-get_registry(local) ->
-    node_cache:acquire({?MODULE, registry}, fun() ->
-        take_default_registry_if_newer(),
-        case file:read_file(?CURRENT_REGISTRY_FILE) of
-            {ok, Binary} ->
-                case parse_registry(Binary) of
-                    {error, cannot_parse_registry} ->
-                        {error, cannot_parse_registry};
-                    {ok, Registry} ->
-                        {ok, Registry, ?REGISTRY_CACHE_TTL}
-                end;
-            Other ->
-                ?error("Cannot parse compatibility registry (~s) due to ~w", [
-                    ?CURRENT_REGISTRY_FILE, Other
-                ]),
-                {error, cannot_parse_registry}
-        end
-    end);
-get_registry(check_for_updates) ->
-    case should_check_for_updates() of
-        false ->
-            {error, not_updated};
-        true ->
-            restart_check_for_updates_backoff(),
-            Mirrors = ?REGISTRY_MIRRORS,
-            check_for_updates(Mirrors, [])
-    end.
-
-
-%% @private
--spec fetch_registry(Mirror :: http_client:url(), TrustedCaCerts :: [public_key:der_encoded()]) ->
-    {ok, Binary :: binary(), registry()} | error.
-fetch_registry(Mirror, TrustedCaCerts) ->
+-spec fetch_registry(resolver(), mirror()) -> {ok, registry()} | error.
+fetch_registry(#resolver{extra_trusted_cacerts = TrustedCaCerts}, Mirror) ->
     case http_client:get(Mirror, #{}, <<>>, [{ssl_options, [{cacerts, TrustedCaCerts}]}]) of
-        {ok, 200, _, Binary} ->
-            case parse_registry(Binary) of
+        {ok, 200, _, Response} ->
+            case parse_registry(Response) of
                 {error, cannot_parse_registry} ->
                     ?warning("Cannot parse compatibility registry from mirror: ~s", [Mirror]),
                     error;
                 {ok, Registry} ->
-                    {ok, Binary, Registry}
+                    {ok, Registry}
             end;
         Other ->
             ?warning("Cannot fetch compatibility registry from mirror: ~s", [Mirror]),
             ?debug("Cannot fetch compatibility registry from mirror: ~s~nFetch result: ~p", [Mirror, Other]),
             error
-    end.
-
-
-%% @private
--spec overwrite_registry_if_newer(Binary :: binary(), registry(), Mirror :: http_client:url()) ->
-    boolean().
-overwrite_registry_if_newer(Binary, Registry, Mirror) ->
-    ShouldOverwrite = case get_registry(local) of
-        {ok, LocalRegistry} ->
-            case revision(Registry) > revision(LocalRegistry) of
-                true ->
-                    true;
-                false ->
-                    ?debug(
-                        "Ignoring compatibility registry fetched from mirror ~s "
-                        "- revision (~B) not newer than local (~B)",
-                        [Mirror, revision(Registry), revision(LocalRegistry)]
-                    ),
-                    false
-            end;
-        {error, cannot_parse_registry} ->
-            % handle situations when the local registry has been deleted or is broken
-            true
-    end,
-
-    case ShouldOverwrite of
-        true ->
-            RegistryFile = ?CURRENT_REGISTRY_FILE,
-            ?info(
-                "Fetched a newer compatibility registry from mirror ~s "
-                "(rev. ~B), overwriting the old one at ~s",
-                [Mirror, revision(Registry), RegistryFile]
-            ),
-            ok = file:write_file(RegistryFile, Binary),
-            clear_registry_cache(),
-            true;
-        false ->
-            false
-    end.
-
-
-%% @private
--spec parse_registry(Binary :: binary()) -> {ok, registry()} | {error, cannot_parse_registry}.
-parse_registry(Binary) ->
-    try
-        Registry = json_utils:decode(Binary),
-        true = revision(Registry) > 0,
-
-        %% In case of compatibility between providers, the relation is symmetrical,
-        %% but the registry file might not have symmetrical entries - they are
-        %% coalesced here.
-        CompatibilitySection = maps:get(<<"compatibility">>, Registry, #{}),
-        OPvsOPSection = maps:get(<<"oneprovider:oneprovider">>, CompatibilitySection, #{}),
-        OPvsOPCoalesced = maps:fold(fun(VersionA, CompatibleVersions, OuterAcc) ->
-            lists:foldl(fun(VersionB, InnerAcc) ->
-                InnerAcc#{
-                    VersionB => lists:usort([VersionA | maps:get(VersionB, InnerAcc, [])])
-                }
-            end, OuterAcc, CompatibleVersions)
-        end, OPvsOPSection, OPvsOPSection),
-
-        % Registry contains compatible provider versions for each zone version.
-        % Reversed relation needs to be calculated.
-        OZvsOPSection = maps:get(<<"onezone:oneprovider">>, CompatibilitySection, #{}),
-        OPvsOZ = maps:fold(fun(OzVersion, CompatibleOpVersions, OuterAcc) ->
-            lists:foldl(fun(OpVersion, InnerAcc) ->
-                maps:update_with(OpVersion, fun(CompOzVersions) ->
-                    [OzVersion | CompOzVersions]
-                end, [OzVersion], InnerAcc)
-            end, OuterAcc, CompatibleOpVersions)
-        end, #{}, OZvsOPSection),
-
-        %% Harvester GUI entries have another nesting level with human-readable
-        %% labels (e.g. "ecrin") - it is flattened here.
-        GuiShaSection = maps:get(<<"gui-sha256">>, Registry, #{}),
-        HarvesterGuiSection = maps:get(<<"harvester">>, GuiShaSection, #{}),
-        HarvesterGuiCoalesced = maps:map(fun(_Version, LabelMap) ->
-            lists:flatten(maps:values(LabelMap))
-        end, HarvesterGuiSection),
-
-        {ok, Registry#{
-            <<"compatibility">> => CompatibilitySection#{
-                <<"oneprovider:oneprovider">> => OPvsOPCoalesced,
-                <<"oneprovider:onezone">> => OPvsOZ
-            },
-            <<"gui-sha256">> => GuiShaSection#{
-                <<"harvester">> => HarvesterGuiCoalesced
-            }
-        }}
-    catch
-        Type:Reason ->
-            ?debug_stacktrace("Cannot parse compatibility registry due to ~p:~p", [
-                Type, Reason
-            ]),
-            {error, cannot_parse_registry}
     end.
 
 
@@ -470,21 +417,17 @@ parse_registry(Binary) ->
 %% before it had a chance to fetch the newer registry.
 %% @end
 %%--------------------------------------------------------------------
--spec take_default_registry_if_newer() -> ok.
-take_default_registry_if_newer() ->
-    case {peek_revision(?DEFAULT_REGISTRY_FILE), peek_revision(?CURRENT_REGISTRY_FILE)} of
-        {{ok, Default}, {ok, Current}} when Default > Current ->
-            {ok, _} = file:copy(?DEFAULT_REGISTRY_FILE, ?CURRENT_REGISTRY_FILE),
-            ?notice("Replaced the compatibility registry with the default one (rev. ~B)", [
-                Default
-            ]);
+-spec take_default_registry_if_newer(resolver()) -> ok.
+take_default_registry_if_newer(Resolver) ->
+    case {read_registry(?DEFAULT_REGISTRY_FILE), read_registry(?CURRENT_REGISTRY_FILE)} of
+        {{ok, Default}, {ok, Current}} when Default#registry.revision > Current#registry.revision ->
+            ?notice("Replacing the compatibility registry with the default one (rev. ~B)", [Default#registry.revision]),
+            overwrite_registry_on_all_nodes(Resolver, Default);
         {{ok, _Default}, {ok, _Current}} ->
             ?debug("Compatibility registry is not older than the default one");
-        {{ok, Default}, {error, cannot_parse_registry}} ->
-            {ok, _} = file:copy(?DEFAULT_REGISTRY_FILE, ?CURRENT_REGISTRY_FILE),
-            ?notice("Cannot read local compatibility registry - replacing with the default one (rev. ~B)", [
-                Default
-            ]);
+        {{ok, Default = #registry{revision = Revision}}, {error, cannot_parse_registry}} ->
+            ?notice("Cannot read local compatibility registry - replacing with the default one (rev. ~B)", [Revision]),
+            overwrite_registry_on_all_nodes(Resolver, Default);
         {Other1, Other2} ->
             ?warning(
                 "Cannot compare current and default compatibility registry~n"
@@ -496,19 +439,108 @@ take_default_registry_if_newer() ->
 
 
 %% @private
--spec peek_revision(file:name_all()) -> {ok, revision()} | {error, cannot_parse_registry}.
-peek_revision(RegistryFile) ->
-    case file:read_file(RegistryFile) of
+-spec take_registry_from_mirror_if_newer(resolver(), registry(), mirror()) -> boolean().
+take_registry_from_mirror_if_newer(Resolver, Registry = #registry{revision = CandidateRevision}, Mirror) ->
+     case get_registry(Resolver, local) of
+        {ok, #registry{revision = LocalRevision}} when LocalRevision >= CandidateRevision ->
+            ?debug("Ignoring compatibility registry fetched from mirror ~s - revision (~B) not newer than local (~B)", [
+                Mirror, CandidateRevision, LocalRevision
+            ]),
+            false;
+        _ ->
+            % also handles situations when the local registry has been deleted or is broken and cannot be parsed
+            ?info("Fetched a newer (rev. ~B) compatibility registry from mirror ~s", [CandidateRevision, Mirror]),
+            overwrite_registry_on_all_nodes(Resolver, Registry),
+            true
+    end.
+
+
+%% @private
+-spec overwrite_registry_on_all_nodes(resolver(), registry()) -> ok.
+overwrite_registry_on_all_nodes(#resolver{nodes = Nodes}, Registry) ->
+    lists:foreach(fun(Node) ->
+        case rpc:call(Node, ?MODULE, overwrite_registry, [Registry]) of
+            ok ->
+                ok;
+            {badrpc, Reason} ->
+                ?warning(
+                    "Failed to overwrite the compatibility registry on node ~p - it might have "
+                    "an outdated knowledge about Onedata services compatibility.~nError was: ~p", [
+                        Node, {badrpc, Reason}
+                    ]
+                )
+        end
+    end, Nodes).
+
+
+-spec read_registry(file:name_all()) -> {ok, registry()} | {error, cannot_parse_registry}.
+read_registry(FilePath) ->
+    case file:read_file(FilePath) of
         {ok, Binary} ->
-            case parse_registry(Binary) of
-                {error, cannot_parse_registry} ->
-                    {error, cannot_parse_registry};
-                {ok, Registry} ->
-                    {ok, revision(Registry)}
-            end;
+            parse_registry(Binary);
         Other ->
-            ?error("Cannot parse compatibility registry (~s) due to ~w", [
-                RegistryFile, Other
+            ?error("Cannot read compatibility registry (~s) due to ~w", [FilePath, Other]),
+            {error, cannot_parse_registry}
+    end.
+
+
+%% @private
+-spec parse_registry(RawRegistry :: binary()) -> {ok, registry()} | {error, cannot_parse_registry}.
+parse_registry(RawRegistry) ->
+    try
+        Parsed = json_utils:decode(RawRegistry),
+        Revision = maps:get(<<"revision">>, Parsed),
+        Revision > 0 orelse throw(invalid_revision),
+
+        %% In case of compatibility between providers, the relation is symmetrical,
+        %% but the registry file might not have symmetrical entries - they are
+        %% coalesced here.
+        CompatibilitySection = maps:get(<<"compatibility">>, Parsed, #{}),
+        OPvsOPSection = maps:get(<<"oneprovider:oneprovider">>, CompatibilitySection, #{}),
+        OPvsOPCoalesced = maps:fold(fun(VersionA, CompatibleVersions, OuterAcc) ->
+            lists:foldl(fun(VersionB, InnerAcc) ->
+                InnerAcc#{
+                    VersionB => lists:usort([VersionA | maps:get(VersionB, InnerAcc, [])])
+                }
+            end, OuterAcc, CompatibleVersions)
+        end, OPvsOPSection, OPvsOPSection),
+
+        % Parsed contains compatible provider versions for each zone version.
+        % Reversed relation needs to be calculated.
+        OZvsOPSection = maps:get(<<"onezone:oneprovider">>, CompatibilitySection, #{}),
+        OPvsOZ = maps:fold(fun(OzVersion, CompatibleOpVersions, OuterAcc) ->
+            lists:foldl(fun(OpVersion, InnerAcc) ->
+                maps:update_with(OpVersion, fun(CompOzVersions) ->
+                    [OzVersion | CompOzVersions]
+                end, [OzVersion], InnerAcc)
+            end, OuterAcc, CompatibleOpVersions)
+        end, #{}, OZvsOPSection),
+
+        %% Harvester GUI entries have another nesting level with human-readable
+        %% labels (e.g. "ecrin") - it is flattened here.
+        GuiShaSection = maps:get(<<"gui-sha256">>, Parsed, #{}),
+        HarvesterGuiSection = maps:get(<<"harvester">>, GuiShaSection, #{}),
+        HarvesterGuiCoalesced = maps:map(fun(_Version, LabelMap) ->
+            lists:flatten(maps:values(LabelMap))
+        end, HarvesterGuiSection),
+
+        {ok, #registry{
+            raw = RawRegistry,
+            revision = Revision,
+            parsed = Parsed#{
+                <<"compatibility">> => CompatibilitySection#{
+                    <<"oneprovider:oneprovider">> => OPvsOPCoalesced,
+                    <<"oneprovider:onezone">> => OPvsOZ
+                },
+                <<"gui-sha256">> => GuiShaSection#{
+                    <<"harvester">> => HarvesterGuiCoalesced
+                }
+            }
+        }}
+    catch
+        Type:Reason ->
+            ?debug_stacktrace("Cannot parse compatibility registry due to ~p:~p", [
+                Type, Reason
             ]),
             {error, cannot_parse_registry}
     end.
@@ -516,14 +548,8 @@ peek_revision(RegistryFile) ->
 
 %% @private
 -spec get_section(section(), registry()) -> map().
-get_section(Section, Map) ->
-    kv_utils:get(Section, Map, #{}).
-
-
-%% @private
--spec revision(registry()) -> revision().
-revision(#{<<"revision">> := Revision}) ->
-    Revision.
+get_section(Section, #registry{parsed = Parsed}) ->
+    kv_utils:get(Section, Parsed, #{}).
 
 
 %%--------------------------------------------------------------------
