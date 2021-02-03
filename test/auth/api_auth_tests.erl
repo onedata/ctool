@@ -6,7 +6,7 @@
 %%% @end
 %%%-------------------------------------------------------------------
 %%% @doc
-%%% Eunit tests of api_caveats module.
+%%% Eunit tests of api_auth module.
 %%% @end
 %%%-------------------------------------------------------------------
 -module(api_auth_tests).

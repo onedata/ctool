@@ -573,6 +573,55 @@ infer_ttl_test_() ->
     }.
 
 
+infer_interface_test() ->
+    ?assertEqual(undefined, caveats:infer_interface([])),
+
+    ?assertEqual(undefined, caveats:infer_interface([
+        #cv_asn{whitelist = [322]},
+        #cv_consumer{whitelist = [?SUB(user, <<"567">>)]},
+        #cv_country{type = whitelist, list = [<<"PL">>, <<"FR">>]},
+        #cv_api{whitelist = [{all, all, ?GRI_PATTERN('*', '*', '*', '*')}]}
+    ])),
+
+    ?assertEqual(oneclient, caveats:infer_interface([
+        #cv_time{valid_until = 16531329412382},
+        #cv_interface{interface = oneclient},
+        #cv_consumer{whitelist = [?SUB(user, <<"567">>)]}
+    ])),
+
+    ?assertEqual(undefined, caveats:infer_interface([
+        #cv_interface{interface = rest},
+        #cv_country{type = whitelist, list = [<<"PL">>, <<"FR">>]},
+        #cv_api{whitelist = [{all, all, ?GRI_PATTERN('*', '*', '*', '*')}]},
+        #cv_interface{interface = graphsync},
+        #cv_time{valid_until = 16531329412382}
+    ])),
+
+    ?assertEqual(graphsync, caveats:infer_interface([
+        #cv_asn{whitelist = [322]},
+        #cv_interface{interface = graphsync},
+        #cv_consumer{whitelist = [?SUB(user, <<"567">>)]},
+        #cv_time{valid_until = 16531329412382}
+    ])),
+
+    ?assertEqual(undefined, caveats:infer_interface([
+        #cv_interface{interface = rest},
+        #cv_data_readonly{},
+        #cv_interface{interface = graphsync},
+        #cv_consumer{whitelist = [?SUB(user, <<"567">>)]},
+        #cv_api{whitelist = [{all, all, ?GRI_PATTERN('*', '*', '*', '*')}]},
+        #cv_interface{interface = oneclient}
+    ])),
+
+    ?assertEqual(rest, caveats:infer_interface([
+        #cv_data_path{whitelist = [<<"/a/b/c/d">>]},
+        #cv_interface{interface = rest},
+        #cv_consumer{whitelist = [?SUB(?ONEPROVIDER, <<"ghjk">>)]},
+        #cv_ip{whitelist = [{{98, 122, 6, 0}, 24}]},
+        #cv_interface{interface = rest}
+    ])).
+
+
 too_large_token_test() ->
     ctool:set_env(max_token_size, ?CUSTOM_MAX_TOKEN_SIZE),
     % Hex converts each byte to two chars
