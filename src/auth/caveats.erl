@@ -41,7 +41,7 @@
 
 %% API
 -export([add/2, get_caveats/1, find/2, filter/2]).
--export([infer_ttl/1, infer_interface/1]).
+-export([infer_ttl/1, infer_expiration_timestamp/1]).
 -export([type/1, all_types/0]).
 -export([build_verifier/2]).
 -export([serialize/1, deserialize/1]).
@@ -83,35 +83,18 @@ filter(Types, Caveats) ->
 
 -spec infer_ttl([caveats:caveat()]) -> undefined | time:seconds().
 infer_ttl(Caveats) ->
-    ValidUntil = lists:foldl(fun
-        (#cv_time{valid_until = ValidUntil}, undefined) -> ValidUntil;
-        (#cv_time{valid_until = ValidUntil}, Acc) -> min(ValidUntil, Acc)
-    end, undefined, caveats:filter([cv_time], Caveats)),
-    case ValidUntil of
+    case infer_expiration_timestamp(Caveats) of
         undefined -> undefined;
-        _ -> ValidUntil - global_clock:timestamp_seconds()
+        ValidUntil -> ValidUntil - global_clock:timestamp_seconds()
     end.
 
 
-%%--------------------------------------------------------------------
-%% @doc
-%% Infers on what interface a token with given caveats will be accepted.
-%% Returns undefined if any interface is accepted, i.e. there is no interface caveat.
-%% NOTE: undefined is also returned when interface caveats are conflicting with
-%% each other and there is no valid interface at all (verification will always fail).
-%% @end
-%%--------------------------------------------------------------------
--spec infer_interface([caveats:caveat()]) -> undefined | cv_interface:interface().
-infer_interface(Caveats) ->
-    lists_utils:foldl_while(fun
-        (#cv_interface{interface = Interface}, undefined) ->
-            {cont, Interface};
-        (#cv_interface{interface = Interface}, Acc) ->
-            case Interface of
-                Acc -> {cont, Interface};
-                _ -> {halt, undefined}
-            end
-    end, undefined, caveats:filter([cv_interface], Caveats)).
+-spec infer_expiration_timestamp([caveats:caveat()]) -> undefined | time:seconds().
+infer_expiration_timestamp(Caveats) ->
+    lists:foldl(fun
+        (#cv_time{valid_until = ValidUntil}, undefined) -> ValidUntil;
+        (#cv_time{valid_until = ValidUntil}, Acc) -> min(ValidUntil, Acc)
+    end, undefined, caveats:filter([cv_time], Caveats)).
 
 
 -spec type(caveat()) -> type().

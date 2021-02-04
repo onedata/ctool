@@ -573,53 +573,52 @@ infer_ttl_test_() ->
     }.
 
 
-infer_interface_test() ->
-    ?assertEqual(undefined, caveats:infer_interface([])),
+infer_expiration_timestamp_test_() ->
+    {setup,
+        fun() ->
+            clock_freezer_mock:setup_locally([caveats]),
+            node_cache:init()
+        end,
+        fun(_) ->
+            clock_freezer_mock:teardown_locally(),
+            node_cache:destroy()
+        end,
+        fun() ->
+            CurrTime = clock_freezer_mock:current_time_seconds(),
 
-    ?assertEqual(undefined, caveats:infer_interface([
-        #cv_asn{whitelist = [322]},
-        #cv_consumer{whitelist = [?SUB(user, <<"567">>)]},
-        #cv_country{type = whitelist, list = [<<"PL">>, <<"FR">>]},
-        #cv_api{whitelist = [{all, all, ?GRI_PATTERN('*', '*', '*', '*')}]}
-    ])),
+            ?assertEqual(undefined, caveats:infer_expiration_timestamp([])),
 
-    ?assertEqual(oneclient, caveats:infer_interface([
-        #cv_time{valid_until = 16531329412382},
-        #cv_interface{interface = oneclient},
-        #cv_consumer{whitelist = [?SUB(user, <<"567">>)]}
-    ])),
+            ?assertEqual(undefined, caveats:infer_expiration_timestamp([
+                #cv_asn{whitelist = [322]},
+                #cv_consumer{whitelist = [?SUB(user, <<"567">>)]},
+                #cv_country{type = whitelist, list = [<<"PL">>, <<"FR">>]},
+                #cv_api{whitelist = [{all, all, ?GRI_PATTERN('*', '*', '*', '*')}]}
+            ])),
 
-    ?assertEqual(undefined, caveats:infer_interface([
-        #cv_interface{interface = rest},
-        #cv_country{type = whitelist, list = [<<"PL">>, <<"FR">>]},
-        #cv_api{whitelist = [{all, all, ?GRI_PATTERN('*', '*', '*', '*')}]},
-        #cv_interface{interface = graphsync},
-        #cv_time{valid_until = 16531329412382}
-    ])),
+            ValidUntil1 = CurrTime + 123,
+            ?assertEqual(ValidUntil1, caveats:infer_expiration_timestamp([
+                #cv_time{valid_until = ValidUntil1},
+                #cv_consumer{whitelist = [?SUB(user, <<"567">>)]}
+            ])),
 
-    ?assertEqual(graphsync, caveats:infer_interface([
-        #cv_asn{whitelist = [322]},
-        #cv_interface{interface = graphsync},
-        #cv_consumer{whitelist = [?SUB(user, <<"567">>)]},
-        #cv_time{valid_until = 16531329412382}
-    ])),
+            ValidUntil2 = CurrTime + 100,
+            ?assertEqual(ValidUntil2, caveats:infer_expiration_timestamp([
+                #cv_country{type = whitelist, list = [<<"PL">>, <<"FR">>]},
+                #cv_api{whitelist = [{all, all, ?GRI_PATTERN('*', '*', '*', '*')}]},
+                #cv_time{valid_until = CurrTime + 99999},
+                #cv_time{valid_until = ValidUntil2}
+            ])),
 
-    ?assertEqual(undefined, caveats:infer_interface([
-        #cv_interface{interface = rest},
-        #cv_data_readonly{},
-        #cv_interface{interface = graphsync},
-        #cv_consumer{whitelist = [?SUB(user, <<"567">>)]},
-        #cv_api{whitelist = [{all, all, ?GRI_PATTERN('*', '*', '*', '*')}]},
-        #cv_interface{interface = oneclient}
-    ])),
-
-    ?assertEqual(rest, caveats:infer_interface([
-        #cv_data_path{whitelist = [<<"/a/b/c/d">>]},
-        #cv_interface{interface = rest},
-        #cv_consumer{whitelist = [?SUB(?ONEPROVIDER, <<"ghjk">>)]},
-        #cv_ip{whitelist = [{{98, 122, 6, 0}, 24}]},
-        #cv_interface{interface = rest}
-    ])).
+            ValidUntil3 = CurrTime - 15,
+            ?assertEqual(ValidUntil3, caveats:infer_expiration_timestamp([
+                #cv_asn{whitelist = [322]},
+                #cv_time{valid_until = CurrTime + 99999},
+                #cv_time{valid_until = ValidUntil3},
+                #cv_consumer{whitelist = [?SUB(user, <<"567">>)]},
+                #cv_time{valid_until = CurrTime + 100}
+            ]))
+        end
+    }.
 
 
 too_large_token_test() ->
