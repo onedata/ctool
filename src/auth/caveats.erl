@@ -41,7 +41,7 @@
 
 %% API
 -export([add/2, get_caveats/1, find/2, filter/2]).
--export([infer_ttl/1, infer_expiration_timestamp/1]).
+-export([infer_ttl/1, infer_expiration_time/1]).
 -export([type/1, all_types/0]).
 -export([build_verifier/2]).
 -export([serialize/1, deserialize/1]).
@@ -83,14 +83,14 @@ filter(Types, Caveats) ->
 
 -spec infer_ttl([caveats:caveat()]) -> undefined | time:seconds().
 infer_ttl(Caveats) ->
-    case infer_expiration_timestamp(Caveats) of
+    case infer_expiration_time(Caveats) of
         undefined -> undefined;
         ValidUntil -> ValidUntil - global_clock:timestamp_seconds()
     end.
 
 
--spec infer_expiration_timestamp([caveats:caveat()]) -> undefined | time:seconds().
-infer_expiration_timestamp(Caveats) ->
+-spec infer_expiration_time([caveats:caveat()]) -> undefined | time:seconds().
+infer_expiration_time(Caveats) ->
     lists:foldl(fun
         (#cv_time{valid_until = ValidUntil}, undefined) -> ValidUntil;
         (#cv_time{valid_until = ValidUntil}, Acc) -> min(ValidUntil, Acc)
