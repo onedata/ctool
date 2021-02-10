@@ -51,6 +51,8 @@
 -define(LINE_20_02(Patch), <<"20.02.", Patch/binary>>).
 -define(LINE_21_02, <<"21.02.*">>).
 -define(LINE_21_02(Patch), <<"21.02.", Patch/binary>>).
+-define(LINE_22_02, <<"22.02.*">>).
+-define(LINE_22_02(Patch), <<"22.02.", Patch/binary>>).
 
 %% Macros used for file manipulation
 -define(DIRECTORY_SEPARATOR, "/").
