@@ -44,7 +44,20 @@
 -define(UNIFIED, unified).
 -define(EMERGENCY, emergency).
 
-%% Macros with known major release lines of Onedata software
+%% Macros with known major-minor release lines of Onedata software. Onedata uses
+%% Calendar Versioning (calver.org), but it does not guarantee compatibility
+%% between Minor versions within the same Major version. Nevertheless, usually
+%% only one Minor version is released within one Major version.
+%% The pair Major.Minor (e.g. 19.02) is referred to a release line that can have
+%% many patches (e.g. 19.02.1, 19.02.2, ...).
+%% Compatibility within one release line is always guaranteed, but limited to
+%% stable versions; without modifiers such as "alpha", "beta", "rc1" etc.
+%% Patches introduce bug fixes and improvements that do not break the compatibility.
+%% Version examples:
+%%    19.02.0-rc3
+%%    20.02.1
+%%    20.02.6
+%%    21.02.0-alpha1
 -define(LINE_19_02, <<"19.02.*">>).
 -define(LINE_19_02(Patch), <<"19.02.", Patch/binary>>).
 -define(LINE_20_02, <<"20.02.*">>).

@@ -6,7 +6,8 @@
 %%% @end
 %%%-------------------------------------------------------------------
 %%% @doc
-%%% Common definitions and records used in support_stage module.
+%%% Common definitions and records related to support stages.
+%%% @see support_stage
 %%% @end
 %%%-------------------------------------------------------------------
 
@@ -17,12 +18,8 @@
 -record(support_stage_details, {
     provider_stage :: support_stage:provider_support_stage(),
     per_storage :: #{
-        support_stage:storage_id() => support_stage:storage_support_stage()
+        onedata:storage_id() => support_stage:storage_support_stage()
     }
 }).
-
-%% Used to denote that the provider is in legacy version that does not recognize
-%% the new space support model (stages, sync progress etc).
--define(LEGACY_SUPPORT, legacy_support).
 
 -endif.

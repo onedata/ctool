@@ -15,6 +15,13 @@
 
 -include("onedata.hrl").
 
+%% API
+-export([service_by_type/2, service_type/1, service_to_cluster_type/1]).
+-export([service_gui/1, service_by_gui/2]).
+-export([service_shortname/1, service_by_shortname/1]).
+-export([gui_prefix/1, gui_by_prefix/1]).
+-export([compare_release_line/2]).
+
 %% Types of Onedata products
 -type product() :: ?ONEZONE | ?ONEPROVIDER | ?ONECLIENT.
 %% Release version of a product, for example <<"19.02.0-beta1">>
@@ -35,18 +42,15 @@
 %% services, emergency GUI refers only to limited Onepanel interface used for
 %% emergencies (typically when Onezone is not available).
 -type gui_mode() :: ?UNIFIED | ?EMERGENCY.
+%% Ids of global onedata models
+-type provider_id() :: onedata:service_id().
+-type storage_id() :: gri:entity_id().
 
 -export_type([product/0, release_version/0]).
 -export_type([cluster_type/0]).
 -export_type([service/0, service_type/0, service_id/0]).
 -export_type([gui/0, gui_hash/0, gui_mode/0]).
-
-%% API
--export([service_by_type/2, service_type/1, service_to_cluster_type/1]).
--export([service_gui/1, service_by_gui/2]).
--export([service_shortname/1, service_by_shortname/1]).
--export([gui_prefix/1, gui_by_prefix/1]).
--export([compare_major_versions/2]).
+-export_type([provider_id/0, storage_id/0]).
 
 %%%===================================================================
 %%% API
@@ -124,8 +128,8 @@ gui_by_prefix(<<"hrv">>) -> ?HARVESTER_GUI;
 gui_by_prefix(_) -> error(badarg).
 
 
--spec compare_major_versions(release_version(), release_version()) -> lower | equal | greater.
-compare_major_versions(<<A:5/binary, _/binary>>, <<B:5/binary, _/binary>>) when A < B -> lower;
-compare_major_versions(<<A:5/binary, _/binary>>, <<B:5/binary, _/binary>>) when A =:= B -> equal;
-compare_major_versions(<<A:5/binary, _/binary>>, <<B:5/binary, _/binary>>) when A > B -> greater;
-compare_major_versions(_, _) -> error(badarg).
+-spec compare_release_line(release_version(), release_version()) -> lower | equal | greater.
+compare_release_line(<<A:5/binary, _/binary>>, <<B:5/binary, _/binary>>) when A < B -> lower;
+compare_release_line(<<A:5/binary, _/binary>>, <<B:5/binary, _/binary>>) when A =:= B -> equal;
+compare_release_line(<<A:5/binary, _/binary>>, <<B:5/binary, _/binary>>) when A > B -> greater;
+compare_release_line(_, _) -> error(badarg).
