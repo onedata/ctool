@@ -40,7 +40,7 @@
 | unauthorized() | forbidden | not_found | already_exists
 | {file_access, Path :: file:name_all(), errno()}.
 
--type auth() :: bad_basic_credentials | {bad_idp_access_token, IdP :: atom()}
+-type auth() :: user_blocked | bad_basic_credentials | {bad_idp_access_token, IdP :: atom()}
 | bad_token | {bad_service_token, auth()} | {bad_consumer_token, auth()}
 | token_invalid | token_revoked | not_an_access_token | not_an_identity_token
 | {not_an_invite_token, ExpectedInviteType :: any | token_type:invite_type(), Received :: tokens:type()}
@@ -268,6 +268,13 @@ to_json(?ERROR_POSIX(Errno)) -> #{
 %% -----------------------------------------------------------------------------
 %% Auth errors
 %% -----------------------------------------------------------------------------
+to_json(?ERROR_USER_BLOCKED) -> #{
+    <<"id">> => <<"userBlocked">>,
+    <<"description">> => <<
+        "This user account has been blocked by the administrator and "
+        "cannot be used unless it is unblocked again."
+    >>
+};
 to_json(?ERROR_BAD_BASIC_CREDENTIALS) -> #{
     <<"id">> => <<"badBasicCredentials">>,
     <<"description">> => <<"Invalid username or password.">>
@@ -1143,6 +1150,9 @@ from_json(#{<<"id">> := <<"posix">>, <<"details">> := #{<<"errno">> := Errno}}) 
 %% -----------------------------------------------------------------------------
 %% Auth errors
 %% -----------------------------------------------------------------------------
+from_json(#{<<"id">> := <<"userBlocked">>}) ->
+    ?ERROR_USER_BLOCKED;
+
 from_json(#{<<"id">> := <<"badBasicCredentials">>}) ->
     ?ERROR_BAD_BASIC_CREDENTIALS;
 
@@ -1581,6 +1591,7 @@ to_http_code(?ERROR_POSIX(_)) -> ?HTTP_400_BAD_REQUEST;
 %% -----------------------------------------------------------------------------
 %% Auth errors
 %% -----------------------------------------------------------------------------
+to_http_code(?ERROR_USER_BLOCKED) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_BAD_BASIC_CREDENTIALS) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_BAD_IDP_ACCESS_TOKEN(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_BAD_TOKEN) -> ?HTTP_400_BAD_REQUEST;
