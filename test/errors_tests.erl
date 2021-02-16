@@ -90,6 +90,7 @@ testcases() -> [
     %% -----------------------------------------------------------------------------
     %% Auth errors
     %% -----------------------------------------------------------------------------
+    ?ERROR_USER_BLOCKED,
     ?ERROR_BAD_BASIC_CREDENTIALS,
     {different, ?ERROR_BAD_IDP_ACCESS_TOKEN(keycloak), ?ERROR_BAD_IDP_ACCESS_TOKEN(<<"keycloak">>)},
     ?ERROR_BAD_TOKEN,
