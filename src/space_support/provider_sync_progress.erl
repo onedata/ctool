@@ -20,30 +20,26 @@
 
 -include("space_support/provider_sync_progress.hrl").
 
--export([new/0]).
+-export([new_registry/1]).
 -export([lookup/2]).
 -export([register_support/3]).
--export([register_unsupport/2]).
--export([register_legacy_support/3]).
+-export([register_unsupport/3]).
 -export([register_upgrade_of_legacy_support/2]).
--export([register_legacy_unsupport/2]).
 -export([consume_collective_report/3]).
 -export([build_collective_report/2]).
 -export([prune_archival_entries/1]).
 -export([collective_report_to_json/1, collective_report_from_json/1]).
 -export([registry_to_json/1, registry_from_json/1]).
 
--type provider_id() :: onedata:service_id().
--export_type([provider_id/0]).
-
 % Seq stands for database sequence - an increasing number that reflects the
 % number of changed documents in database since the beginning of space support.
-% Seen seq is the latest seq of peer provider that was seen by the subject
-% provider. Because of the synchronization delays, the emitting provider may
-% already be on a higher seq when the updates reach its peers. Latest emitted seq
-% for a provider is the seen seq reported by each provider under own provider id.
--type seen_seq() :: non_neg_integer().
-% Each seen_seq() is coupled with the timestamp denoting the moment when the
+% This modules uses the concept of "seen" seq - the latest seq of a peer provider
+% that was seen by the subject provider. Because of the synchronization delays,
+% the emitting provider may already be on a higher seq when the updates reach
+% its peers. Latest emitted seq for a provider is the seen seq reported by each
+% provider under own provider id.
+-type seq() :: non_neg_integer().
+% Each seq() is coupled with the timestamp denoting the moment when the
 % database document associated with the sequence number has been persisted by
 % the provider (the timestamp is assigned once and does not change for the seq).
 -type seq_timestamp() :: time:seconds().
@@ -62,10 +58,10 @@
 % Expresses the sync progress of the subject provider with a peer provider.
 % Holds precomputed sync progress summary that results from latest reports sent
 % by providers (recomputed on every report).
-% Each provider has a peer_summary record for itself that denotes the latest
-% emitted seq and its timestamp.
--type peer_summary() :: #peer_summary{}.
--export_type([seen_seq/0, seq_timestamp/0, diff/0, delay/0, desync/0, peer_summary/0]).
+% Each provider has a #sync_progress_with_peer{} record for itself that denotes
+% the latest emitted seq and its timestamp.
+-type sync_progress_with_peer() :: #sync_progress_with_peer{}.
+-export_type([seq/0, seq_timestamp/0, diff/0, delay/0, desync/0, sync_progress_with_peer/0]).
 
 % Denotes that a provider is in legacy version and does not recognize the sync
 % progress model. Such provider does not report its progress and will have
@@ -86,33 +82,34 @@
 % have seen the latest seq of the retired provider - and then removed in the
 % process of pruning the registry.
 -type archival() :: boolean().
-% Summarizes the sync progress of a provider in the space, holds the summary
+% Summarizes the sync progress of a provider in the space, holds the entries
 % per peer provider. Each provider in a space has its own corresponding
-% provider_summary.
--type provider_summary() :: #provider_summary{}.
--export_type([legacy/0, joining/0, archival/0, provider_summary/0]).
+% provider_sync_progress.
+-type provider_sync_progress() :: #provider_sync_progress{}.
+-export_type([legacy/0, joining/0, archival/0, provider_sync_progress/0]).
 
 % The registry object (one for a space) accumulates all information about sync
 % progresses of all supporting (and archival) providers.
--type registry() :: #{provider_id() => provider_summary()}.
--export_type([registry/0]).
-
-% This record carries information about a registry update outcome - the updated
-% registry and a list of transitions from/to joining/desync state.
--type registry_update_result() :: #registry_update_result{}.
--export_type([registry_update_result/0]).
+-type registry() :: #sync_progress_registry{}.
+-type per_provider() :: #{onedata:provider_id() => provider_sync_progress()}.
+-export_type([registry/0, per_provider/0]).
 
 % Holds a sync progress report - reports are sent by each provider and used to
 % compute the sync progress entries. In a space with N providers, each provider
 % periodically sends a collective report that consists of N
 % sync_progress_reports (for each provider, including self).
 -record(report, {
-    seen_seq :: seen_seq(),
+    seen_seq :: seq(),
     seq_timestamp :: seq_timestamp()
 }).
 -type report() :: #report{}.
--type collective_report() :: #{provider_id() => report()}.
+-type collective_report() :: #{onedata:provider_id() => report()}.
 -export_type([collective_report/0]).
+
+% This record carries information about a registry update outcome - the updated
+% registry and a list of transitions from/to joining/desync state.
+-type registry_update_result() :: #sync_progress_registry_update_result{}.
+-export_type([registry_update_result/0]).
 
 -define(DESYNC_THRESHOLD_SECONDS, ctool:get_env(provider_sync_progress_desync_threshold_seconds, 300)). % 5 minutes
 
@@ -120,14 +117,17 @@
 %%% API
 %%%===================================================================
 
--spec new() -> registry().
-new() ->
-    #{}.
+-spec new_registry(time:seconds()) -> registry().
+new_registry(SpaceCreationTime) ->
+    #sync_progress_registry{
+        space_creation_time = SpaceCreationTime,
+        per_provider = #{}
+    }.
 
 
--spec lookup(registry(), provider_id()) -> {ok, provider_summary()} | error.
+-spec lookup(registry(), onedata:provider_id()) -> {ok, provider_sync_progress()} | error.
 lookup(Registry, ProviderId) ->
-    maps:find(ProviderId, Registry).
+    maps:find(ProviderId, Registry#sync_progress_registry.per_provider).
 
 
 %%--------------------------------------------------------------------
@@ -137,9 +137,50 @@ lookup(Registry, ProviderId) ->
 %% storages must not be reported).
 %% @end
 %%--------------------------------------------------------------------
--spec register_support(registry(), provider_id(), time:seconds()) -> registry_update_result().
-register_support(Registry, NewProviderId, SpaceCreationTimestamp) ->
-    register_support_internal(Registry, NewProviderId, SpaceCreationTimestamp, _Legacy = false).
+-spec register_support(registry(), support_stage:support_model(), onedata:provider_id()) ->
+    registry_update_result().
+register_support(Registry, SupportModel, NewProviderId) ->
+    ensure_current_support_model(Registry, NewProviderId, none),
+    IsLegacy = (SupportModel == legacy),
+    SpaceCreationTime = Registry#sync_progress_registry.space_creation_time,
+    PerProvider = Registry#sync_progress_registry.per_provider,
+    case lookup(Registry, NewProviderId) of
+        {ok, Existing = #provider_sync_progress{archival = true}} ->
+            NewPerProvider = PerProvider#{
+                NewProviderId => update_entries_per_peer(
+                    Existing#provider_sync_progress{
+                        legacy = IsLegacy,
+                        joining = true,
+                        desync = true,
+                        archival = false},
+                    #{}
+                )
+            },
+            build_registry_update_result(Registry, NewPerProvider);
+        error ->
+            WithInitialPeerReports = maps:merge(PerProvider, maps:map(fun(_PeerId, ProviderSyncProgressOfPeer) ->
+                update_entries_per_peer(ProviderSyncProgressOfPeer, #{
+                    NewProviderId => initial_sync_progress_with_peer(SpaceCreationTime)
+                })
+            end, PerProvider)),
+
+            WithNewProvider = WithInitialPeerReports#{
+                NewProviderId => #provider_sync_progress{
+                    legacy = IsLegacy,
+                    joining = true,
+                    desync = true,
+                    archival = false,
+                    per_peer = #{}
+                }
+            },
+
+            AllProviders = maps:keys(WithNewProvider),
+            CollectiveReport = build_collective_report(AllProviders, fun(_PeerId) ->
+                {1, SpaceCreationTime}
+            end),
+            NewPerProvider = apply_collective_report(WithNewProvider, NewProviderId, CollectiveReport),
+            build_registry_update_result(Registry, NewPerProvider)
+    end.
 
 
 %%--------------------------------------------------------------------
@@ -149,25 +190,14 @@ register_support(Registry, NewProviderId, SpaceCreationTimestamp) ->
 %% storage (from all that were supporting the space).
 %% @end
 %%--------------------------------------------------------------------
--spec register_unsupport(registry(), provider_id()) -> registry_update_result().
-register_unsupport(Registry, ProviderId) ->
-    ensure_current_support_state(Registry, ProviderId, modern),
-    NewRegistry = maps:update_with(ProviderId, fun(ProviderSummary) ->
-        ProviderSummary#provider_summary{archival = true}
-    end, Registry),
-    build_registry_update_result(Registry, NewRegistry).
-
-
-%%--------------------------------------------------------------------
-%% @doc
-%% Equivalent of register_support/3 for legacy providers.
-%% Marks the provider as non-conformant to the new support model, which changes
-%% the logic that is applied in regard to sync progress.
-%% @end
-%%--------------------------------------------------------------------
--spec register_legacy_support(registry(), provider_id(), time:seconds()) -> registry_update_result().
-register_legacy_support(Registry, NewProviderId, SpaceCreationTimestamp) ->
-    register_support_internal(Registry, NewProviderId, SpaceCreationTimestamp, _Legacy = true).
+-spec register_unsupport(registry(), support_stage:support_model(), onedata:provider_id()) ->
+    registry_update_result().
+register_unsupport(Registry, SupportModel, ProviderId) ->
+    ensure_current_support_model(Registry, ProviderId, SupportModel),
+    NewPerProvider = maps:update_with(ProviderId, fun(ProviderSyncProgress) ->
+        ProviderSyncProgress#provider_sync_progress{archival = true}
+    end, Registry#sync_progress_registry.per_provider),
+    build_registry_update_result(Registry, NewPerProvider).
 
 
 %%--------------------------------------------------------------------
@@ -176,27 +206,13 @@ register_legacy_support(Registry, NewProviderId, SpaceCreationTimestamp) ->
 %% and can start reporting its sync progress.
 %% @end
 %%--------------------------------------------------------------------
--spec register_upgrade_of_legacy_support(registry(), provider_id()) -> registry_update_result().
+-spec register_upgrade_of_legacy_support(registry(), onedata:provider_id()) -> registry_update_result().
 register_upgrade_of_legacy_support(Registry, ProviderId) ->
-    ensure_current_support_state(Registry, ProviderId, legacy),
-    NewRegistry = maps:update_with(ProviderId, fun(ProviderSummary) ->
-        update_provider_summary_entries(ProviderSummary#provider_summary{legacy = false}, #{})
-    end, Registry),
-    build_registry_update_result(Registry, NewRegistry).
-
-
-%%--------------------------------------------------------------------
-%% @doc
-%% Works like register_unsupport/2, but for legacy providers.
-%% @end
-%%--------------------------------------------------------------------
--spec register_legacy_unsupport(registry(), provider_id()) -> registry_update_result().
-register_legacy_unsupport(Registry, ProviderId) ->
-    ensure_current_support_state(Registry, ProviderId, legacy),
-    NewRegistry = maps:update_with(ProviderId, fun(ProviderSummary) ->
-        ProviderSummary#provider_summary{archival = true}
-    end, Registry),
-    build_registry_update_result(Registry, NewRegistry).
+    ensure_current_support_model(Registry, ProviderId, legacy),
+    NewPerProvider = maps:update_with(ProviderId, fun(ProviderSyncProgress) ->
+        update_entries_per_peer(ProviderSyncProgress#provider_sync_progress{legacy = false}, #{})
+    end, Registry#sync_progress_registry.per_provider),
+    build_registry_update_result(Registry, NewPerProvider).
 
 
 %%--------------------------------------------------------------------
@@ -205,17 +221,18 @@ register_legacy_unsupport(Registry, ProviderId) ->
 %% towards peers, and the peers' progresses towards the subject.
 %% @end
 %%--------------------------------------------------------------------
--spec consume_collective_report(registry(), provider_id(), collective_report()) -> registry_update_result().
+-spec consume_collective_report(registry(), onedata:provider_id(), collective_report()) -> registry_update_result().
 consume_collective_report(Registry, SubjectId, CollectiveReport) ->
-    ensure_current_support_state(Registry, SubjectId, modern),
-    UpdatedRegistry = apply_collective_report(Registry, SubjectId, CollectiveReport),
-    FinalRegistry = maps:update_with(SubjectId, fun(ProviderSummary) ->
-        ProviderSummary#provider_summary{last_report = global_clock:timestamp_seconds()}
-    end, UpdatedRegistry),
-    build_registry_update_result(Registry, FinalRegistry).
+    ensure_current_support_model(Registry, SubjectId, modern),
+    SanitizedReport = sanitize_collective_report(CollectiveReport, Registry#sync_progress_registry.space_creation_time),
+    UpdatedPerProvider = apply_collective_report(Registry#sync_progress_registry.per_provider, SubjectId, SanitizedReport),
+    FinalPerProvider = maps:update_with(SubjectId, fun(ProviderSyncProgress) ->
+        ProviderSyncProgress#provider_sync_progress{last_report = global_clock:timestamp_seconds()}
+    end, UpdatedPerProvider),
+    build_registry_update_result(Registry, FinalPerProvider).
 
 
--spec build_collective_report([provider_id()], fun((provider_id()) -> {seen_seq(), seq_timestamp()})) ->
+-spec build_collective_report([onedata:provider_id()], fun((onedata:provider_id()) -> {seq(), seq_timestamp()})) ->
     collective_report().
 build_collective_report(AllProviders, BuildReportForProvider) ->
     lists:foldl(fun(PeerId, Acc) ->
@@ -233,14 +250,15 @@ build_collective_report(AllProviders, BuildReportForProvider) ->
 %%--------------------------------------------------------------------
 -spec prune_archival_entries(registry()) -> registry_update_result().
 prune_archival_entries(Registry) ->
-    AllProviders = maps:keys(Registry),
+    PerProvider = Registry#sync_progress_registry.per_provider,
+    AllProviders = maps:keys(PerProvider),
     ProvidersToPrune = maps:fold(fun
-        (_SubjectId, #provider_summary{archival = false}, Acc) ->
+        (_SubjectId, #provider_sync_progress{archival = false}, Acc) ->
             Acc;
-        (SubjectId, ProviderSummary, Acc) ->
-            #report{seen_seq = LatestSeq} = lookup_latest_report(ProviderSummary, SubjectId),
+        (SubjectId, ProviderSyncProgress, Acc) ->
+            #report{seen_seq = LatestSeq} = lookup_latest_report(ProviderSyncProgress, SubjectId),
             AllProvidersCaughtUp = lists:all(fun(PeerId) ->
-                case lookup_latest_report(Registry, PeerId, SubjectId) of
+                case lookup_latest_report(PerProvider, PeerId, SubjectId) of
                     #report{seen_seq = LatestSeq} -> true;
                     _ -> false
                 end
@@ -249,12 +267,12 @@ prune_archival_entries(Registry) ->
                 true -> [SubjectId | Acc];
                 false -> Acc
             end
-    end, [], Registry),
+    end, [], PerProvider),
 
-    WithoutRegistryEntries = maps:without(ProvidersToPrune, Registry),
-    WithoutEntriesInPeers = maps:map(fun(_PeerId, ProviderSummary) ->
-        ProviderSummary#provider_summary{
-            per_peer = maps:without(ProvidersToPrune, ProviderSummary#provider_summary.per_peer)
+    WithoutRegistryEntries = maps:without(ProvidersToPrune, PerProvider),
+    WithoutEntriesInPeers = maps:map(fun(_PeerId, ProviderSyncProgress) ->
+        ProviderSyncProgress#provider_sync_progress{
+            per_peer = maps:without(ProvidersToPrune, ProviderSyncProgress#provider_sync_progress.per_peer)
         }
     end, WithoutRegistryEntries),
     build_registry_update_result(Registry, WithoutEntriesInPeers).
@@ -276,16 +294,22 @@ collective_report_from_json(CollectiveReportJson) ->
 
 -spec registry_to_json(registry()) -> json_utils:json_map().
 registry_to_json(Registry) ->
-    maps:map(fun(_PrId, ProviderSummary) ->
-        provider_summary_to_json(ProviderSummary)
-    end, Registry).
+    #{
+        <<"spaceCreationTime">> => Registry#sync_progress_registry.space_creation_time,
+        <<"perProvider">> => maps:map(fun(_PrId, ProviderSyncProgress) ->
+            provider_sync_progress_to_json(ProviderSyncProgress)
+        end, Registry#sync_progress_registry.per_provider)
+    }.
 
 
 -spec registry_from_json(json_utils:json_map()) -> registry().
 registry_from_json(RegistryJson) ->
-    maps:map(fun(_PrId, ProviderSummaryJson) ->
-        provider_summary_from_json(ProviderSummaryJson)
-    end, RegistryJson).
+    #sync_progress_registry{
+        space_creation_time = maps:get(<<"spaceCreationTime">>, RegistryJson),
+        per_provider = maps:map(fun(_PrId, ProviderSyncProgressJson) ->
+            provider_sync_progress_from_json(ProviderSyncProgressJson)
+        end, maps:get(<<"perProvider">>, RegistryJson))
+    }.
 
 %%%===================================================================
 %%% Internal functions
@@ -294,74 +318,55 @@ registry_from_json(RegistryJson) ->
 %%--------------------------------------------------------------------
 %% @private
 %% @doc
-%% Checks that given provider was in expected support state in given registry
-%% and raises an error if the expectation is not met.
+%% Checks that given provider is marked to have the expected support generation
+%% in given registry and raises an error if the expectation is not met.
+%% The 'none' atom indicates that there is expected to be no support at all.
 %% @end
 %%--------------------------------------------------------------------
--spec ensure_current_support_state(registry(), provider_id(), none | modern | legacy) ->
+-spec ensure_current_support_model(registry(), onedata:provider_id(), none | support_stage:support_model()) ->
     ok | no_return().
-ensure_current_support_state(Registry, ProviderId, ExpectedSupportState) ->
-    case {ExpectedSupportState, lookup(Registry, ProviderId)} of
-        {none, {ok, #provider_summary{archival = false}}} ->
+ensure_current_support_model(Registry, ProviderId, ExpectedSupportModel) ->
+    case {ExpectedSupportModel, lookup(Registry, ProviderId)} of
+        {none, {ok, #provider_sync_progress{archival = false}}} ->
             error({support_already_registered, ProviderId});
         {none, _} ->
             ok;
 
         {_, error} ->
             error({support_not_registered, ProviderId});
-        {_, {ok, #provider_summary{archival = true}}} ->
+        {_, {ok, #provider_sync_progress{archival = true}}} ->
             error({support_not_registered, ProviderId});
 
-        {modern, {ok, #provider_summary{legacy = true}}} ->
+        {modern, {ok, #provider_sync_progress{legacy = true}}} ->
             error({legacy_provider, ProviderId});
         {modern, {ok, _}} ->
             ok;
 
-        {legacy, {ok, #provider_summary{legacy = false}}} ->
+        {legacy, {ok, #provider_sync_progress{legacy = false}}} ->
             error({not_a_legacy_provider, ProviderId});
         {legacy, {ok, _}} ->
             ok
     end.
 
 
+%%--------------------------------------------------------------------
 %% @private
--spec register_support_internal(registry(), provider_id(), time:seconds(), legacy()) ->
-    registry_update_result().
-register_support_internal(Registry, NewProviderId, SpaceCreationTimestamp, Legacy) ->
-    ensure_current_support_state(Registry, NewProviderId, none),
-    case lookup(Registry, NewProviderId) of
-        {ok, Existing = #provider_summary{archival = true}} ->
-            NewRegistry = Registry#{
-                NewProviderId => update_provider_summary_entries(
-                    Existing#provider_summary{legacy = Legacy, joining = true, desync = true, archival = false},
-                    #{}
-                )
-            },
-            build_registry_update_result(Registry, NewRegistry);
-        error ->
-            WithInitialPeerReports = maps:merge(Registry, maps:map(fun(_PeerId, ProviderSummaryOfPeer) ->
-                update_provider_summary_entries(ProviderSummaryOfPeer, #{
-                    NewProviderId => initial_peer_summary(SpaceCreationTimestamp)
-                })
-            end, Registry)),
-
-            WithNewProvider = WithInitialPeerReports#{
-                NewProviderId => #provider_summary{
-                    legacy = Legacy,
-                    joining = true,
-                    desync = true,
-                    archival = false,
-                    per_peer = #{}
-                }
-            },
-
-            AllProviders = maps:keys(WithNewProvider),
-            CollectiveReport = build_collective_report(AllProviders, fun(_PeerId) ->
-                {1, SpaceCreationTimestamp}
-            end),
-            NewRegistry = apply_collective_report(WithNewProvider, NewProviderId, CollectiveReport),
-            build_registry_update_result(Registry, NewRegistry)
-    end.
+%% @doc
+%% Makes sure that the timestamps in the report are not lower than the SpaceCreationTime.
+%% Such reports may occur for example just after supporting a space - when providers do
+%% not know any sequences of others, they send reports with timestamps set to zero.
+%% This ensures that calculated delay between any two providers cannot exceed the space's
+%% length of life.
+%% @end
+%%--------------------------------------------------------------------
+-spec sanitize_collective_report(collective_report(), time:seconds()) -> collective_report().
+sanitize_collective_report(CollectiveReport, SpaceCreationTime) ->
+    maps:map(fun
+        (_PrId, R = #report{seq_timestamp = T}) when T < SpaceCreationTime ->
+            R#report{seq_timestamp = SpaceCreationTime};
+        (_PrId, Report) ->
+            Report
+    end, CollectiveReport).
 
 
 %%--------------------------------------------------------------------
@@ -372,57 +377,59 @@ register_support_internal(Registry, NewProviderId, SpaceCreationTimestamp, Legac
 %% Returns the modified registry.
 %% @end
 %%--------------------------------------------------------------------
--spec apply_collective_report(registry(), provider_id(), collective_report()) -> registry().
-apply_collective_report(Registry, SubjectId, CollectiveReport) ->
-    AllProviders = maps:keys(Registry),
+-spec apply_collective_report(per_provider(), onedata:provider_id(), collective_report()) -> per_provider().
+apply_collective_report(PerProvider, SubjectId, CollectiveReport) ->
+    AllProviders = maps:keys(PerProvider),
     % take only existing providers from the map
     WithExistingProviders = maps:with(AllProviders, CollectiveReport),
 
-    % update the subject provider's summary, calculating new peer summary for each of its peers
-    ProviderSummaryOfSubject = maps:get(SubjectId, Registry),
-    NewPerPeerSummaries = maps:map(fun(PeerId, ReportOfSubject) ->
+    % update the subject provider's sync progress, calculating sync progress with each of its peers
+    ProviderSyncProgressOfSubject = maps:get(SubjectId, PerProvider),
+    NewSubjectsProgressPerPeer = maps:map(fun(PeerId, ReportOfSubject) ->
         LatestReportOfPeer = case PeerId of
             SubjectId -> ReportOfSubject;
-            _ -> lookup_latest_report(Registry, PeerId, PeerId)
+            _ -> lookup_latest_report(PerProvider, PeerId, PeerId)
         end,
-        build_peer_summary(ReportOfSubject, LatestReportOfPeer)
+        calculate_sync_progress_with_peer(ReportOfSubject, LatestReportOfPeer)
     end, WithExistingProviders),
-    SubjectRecalculated = Registry#{
-        SubjectId => update_provider_summary_entries(ProviderSummaryOfSubject, NewPerPeerSummaries)
+    SubjectRecalculated = PerProvider#{
+        SubjectId => update_entries_per_peer(ProviderSyncProgressOfSubject, NewSubjectsProgressPerPeer)
     },
 
-    % update the summaries of all subject's peers, calculating new sync progress
-    % with the subject provider
+    % update the sync progress of all subject's peers, calculating new sync progress with the subject provider
     LatestReportOfSubject = maps:get(SubjectId, CollectiveReport),
     maps:fold(fun(PeerId, _Report, RegistryAcc) ->
-        ProviderSummaryOfPeer = maps:get(PeerId, RegistryAcc),
-        LatestReportOfPeer = lookup_latest_report(ProviderSummaryOfPeer, SubjectId),
-        NewPeerSummaryOfSubject = build_peer_summary(LatestReportOfPeer, LatestReportOfSubject),
+        ProviderSyncProgressOfPeer = maps:get(PeerId, RegistryAcc),
+        LatestReportOfPeer = lookup_latest_report(ProviderSyncProgressOfPeer, SubjectId),
+        NewPeersSyncProgressWithSubject = calculate_sync_progress_with_peer(LatestReportOfPeer, LatestReportOfSubject),
         RegistryAcc#{
-            PeerId => update_provider_summary_entries(ProviderSummaryOfPeer, #{SubjectId => NewPeerSummaryOfSubject})
+            PeerId => update_entries_per_peer(ProviderSyncProgressOfPeer, #{
+                SubjectId => NewPeersSyncProgressWithSubject
+            })
         }
     end, SubjectRecalculated, WithExistingProviders).
 
 
 %% @private
--spec lookup_latest_report(registry(), provider_id(), provider_id()) -> report().
-lookup_latest_report(Registry, SubjectId, PeerId) when is_map(Registry) ->
-    lookup_latest_report(maps:get(SubjectId, Registry), PeerId).
+-spec lookup_latest_report(per_provider(), onedata:provider_id(), onedata:provider_id()) -> report().
+lookup_latest_report(PerProvider, SubjectId, PeerId) when is_map(PerProvider) ->
+    ProviderSyncProgress = maps:get(SubjectId, PerProvider),
+    lookup_latest_report(ProviderSyncProgress, PeerId).
 
 
 %% @private
--spec lookup_latest_report(provider_summary(), provider_id()) -> report().
-lookup_latest_report(#provider_summary{per_peer = PerPeer}, PeerId) ->
-    #peer_summary{seen_seq = Seq, seq_timestamp = Timestamp} = maps:get(PeerId, PerPeer),
+-spec lookup_latest_report(provider_sync_progress(), onedata:provider_id()) -> report().
+lookup_latest_report(#provider_sync_progress{per_peer = PerPeer}, PeerId) ->
+    #sync_progress_with_peer{seen_seq = Seq, seq_timestamp = Timestamp} = maps:get(PeerId, PerPeer),
     #report{seen_seq = Seq, seq_timestamp = Timestamp}.
 
 
 %% @private
--spec initial_peer_summary(time:seconds()) -> peer_summary().
-initial_peer_summary(SpaceCreationTimestamp) ->
-    #peer_summary{
+-spec initial_sync_progress_with_peer(time:seconds()) -> sync_progress_with_peer().
+initial_sync_progress_with_peer(SpaceCreationTime) ->
+    #sync_progress_with_peer{
         seen_seq = 1,
-        seq_timestamp = SpaceCreationTimestamp,
+        seq_timestamp = SpaceCreationTime,
         diff = 0,
         delay = 0,
         desync = false
@@ -430,8 +437,8 @@ initial_peer_summary(SpaceCreationTimestamp) ->
 
 
 %% @private
--spec build_peer_summary(report(), report()) -> peer_summary().
-build_peer_summary(ReportOfSubject, ReportOfPeer) ->
+-spec calculate_sync_progress_with_peer(report(), report()) -> sync_progress_with_peer().
+calculate_sync_progress_with_peer(ReportOfSubject, ReportOfPeer) ->
     SeenSeq = ReportOfSubject#report.seen_seq,
     SeenSeqTimestamp = ReportOfSubject#report.seq_timestamp,
     % As reporting is done in intervals, for some time seq seen by the
@@ -445,7 +452,7 @@ build_peer_summary(ReportOfSubject, ReportOfPeer) ->
     end,
     Diff = LatestSeq - SeenSeq,
     Delay = LatestSeqTimestamp - SeenSeqTimestamp,
-    #peer_summary{
+    #sync_progress_with_peer{
         seen_seq = SeenSeq,
         seq_timestamp = SeenSeqTimestamp,
         diff = Diff,
@@ -455,41 +462,43 @@ build_peer_summary(ReportOfSubject, ReportOfPeer) ->
 
 
 %% @private
--spec update_provider_summary_entries(provider_summary(), #{provider_id() => peer_summary()}) -> provider_summary().
-update_provider_summary_entries(ProviderSummary, NewPeerSummaries) ->
-    NewPerPeer = maps:merge(ProviderSummary#provider_summary.per_peer, NewPeerSummaries),
-    Desync = maps:fold(fun(_, #peer_summary{desync = DesyncTowardsPeer}, Acc) ->
+-spec update_entries_per_peer(provider_sync_progress(), #{onedata:provider_id() => sync_progress_with_peer()}) ->
+    provider_sync_progress().
+update_entries_per_peer(ProviderSyncProgress, NewProgressPerPeer) ->
+    NewPerPeer = maps:merge(ProviderSyncProgress#provider_sync_progress.per_peer, NewProgressPerPeer),
+    Desync = maps:fold(fun(_, #sync_progress_with_peer{desync = DesyncTowardsPeer}, Acc) ->
         Acc orelse DesyncTowardsPeer
     end, false, NewPerPeer),
-    ProviderSummary#provider_summary{
+    ProviderSyncProgress#provider_sync_progress{
         per_peer = NewPerPeer,
         desync = Desync,
         % the joining flag is set upon first support and unset when the provider becomes
         % synced with its peers (desync flag becomes false), then it does not change anymore
         % NOTE that legacy providers cannot be marked as joined unless they upgrade, even
         % if they are not desynced
-        joining = case ProviderSummary#provider_summary.joining of
-            true -> Desync orelse ProviderSummary#provider_summary.legacy;
+        joining = case ProviderSyncProgress#provider_sync_progress.joining of
+            true -> Desync orelse ProviderSyncProgress#provider_sync_progress.legacy;
             false -> false
         end
     }.
 
 
 %% @private
--spec build_registry_update_result(registry(), registry()) -> registry_update_result().
-build_registry_update_result(Identical, Identical) ->
-    #registry_update_result{
-        new_registry = Identical,
+-spec build_registry_update_result(registry(), per_provider()) ->
+    registry_update_result().
+build_registry_update_result(PreviousRegistry = #sync_progress_registry{per_provider = Identical}, Identical) ->
+    #sync_progress_registry_update_result{
+        new_registry = PreviousRegistry,
         transitioned_from_joining = [],
         transitioned_to_desync = [],
         transitioned_from_desync = []
     };
-build_registry_update_result(Prev, New) ->
-    #registry_update_result{
-        new_registry = New,
-        transitioned_from_joining = find_transitions(Prev, New, fun(PS) -> not PS#provider_summary.joining end),
-        transitioned_to_desync = find_transitions(Prev, New, fun(PS) -> PS#provider_summary.desync end),
-        transitioned_from_desync = find_transitions(Prev, New, fun(PS) -> not PS#provider_summary.desync end)
+build_registry_update_result(PreviousRegistry = #sync_progress_registry{per_provider = Prev}, New) ->
+    #sync_progress_registry_update_result{
+        new_registry = PreviousRegistry#sync_progress_registry{per_provider = New},
+        transitioned_from_joining = find_transitions(Prev, New, fun(PS) -> not PS#provider_sync_progress.joining end),
+        transitioned_to_desync = find_transitions(Prev, New, fun(PS) -> PS#provider_sync_progress.desync end),
+        transitioned_from_desync = find_transitions(Prev, New, fun(PS) -> not PS#provider_sync_progress.desync end)
     }.
 
 
@@ -502,27 +511,28 @@ build_registry_update_result(Prev, New) ->
 %% transition to desired state.
 %% @end
 %%--------------------------------------------------------------------
--spec find_transitions(registry(), registry(), fun((provider_summary()) -> boolean())) -> [provider_id()].
+-spec find_transitions(per_provider(), per_provider(), fun((provider_sync_progress()) -> boolean())) ->
+    [onedata:provider_id()].
 find_transitions(Previous, Current, Condition) ->
-    CurrentlyInDesiredState = maps:fold(fun(ProviderId, ProviderSummary, Acc) ->
-        case Condition(ProviderSummary) of
+    CurrentlyInDesiredState = maps:fold(fun(ProviderId, ProviderSyncProgress, Acc) ->
+        case Condition(ProviderSyncProgress) of
             true -> [ProviderId | Acc];
             false -> Acc
         end
     end, [], Current),
     lists:filter(fun(ProviderId) ->
-        case lookup(Previous, ProviderId) of
+        case maps:find(ProviderId, Previous) of
             error ->
                 % the transition is considered to have taken place if the provider hasn't existed before
                 true;
-            {ok, #provider_summary{archival = true}} ->
+            {ok, #provider_sync_progress{archival = true}} ->
                 % archival providers are treated as previously inexistent, but only if they rejoined
-                case lookup(Current, ProviderId) of
-                    {ok, #provider_summary{archival = true}} -> false;
-                    {ok, #provider_summary{archival = false}} -> true
+                case maps:find(ProviderId, Current) of
+                    {ok, #provider_sync_progress{archival = true}} -> false;
+                    {ok, #provider_sync_progress{archival = false}} -> true
                 end;
-            {ok, ProviderSummary} ->
-                not Condition(ProviderSummary)
+            {ok, ProviderSyncProgress} ->
+                not Condition(ProviderSyncProgress)
         end
     end, CurrentlyInDesiredState).
 
@@ -540,54 +550,54 @@ report_from_json(#{<<"seenSeq">> := Seq, <<"seqTimestamp">> := Time}) when is_in
 
 
 %% @private
--spec provider_summary_to_json(provider_summary()) -> json_utils:json_map().
-provider_summary_to_json(ProviderSummary) ->
+-spec provider_sync_progress_to_json(provider_sync_progress()) -> json_utils:json_map().
+provider_sync_progress_to_json(ProviderSyncProgress) ->
     #{
-        <<"legacy">> => ProviderSummary#provider_summary.legacy,
-        <<"joining">> => ProviderSummary#provider_summary.joining,
-        <<"archival">> => ProviderSummary#provider_summary.archival,
-        <<"desync">> => ProviderSummary#provider_summary.desync,
-        <<"lastReport">> => ProviderSummary#provider_summary.last_report,
-        <<"perPeer">> => maps:map(fun(_PrId, PeerSummary) ->
-            peer_summary_to_json(PeerSummary)
-        end, ProviderSummary#provider_summary.per_peer)
+        <<"legacy">> => ProviderSyncProgress#provider_sync_progress.legacy,
+        <<"joining">> => ProviderSyncProgress#provider_sync_progress.joining,
+        <<"archival">> => ProviderSyncProgress#provider_sync_progress.archival,
+        <<"desync">> => ProviderSyncProgress#provider_sync_progress.desync,
+        <<"lastReport">> => ProviderSyncProgress#provider_sync_progress.last_report,
+        <<"perPeer">> => maps:map(fun(_PrId, SyncProgressWithPeer) ->
+            sync_progress_with_peer_to_json(SyncProgressWithPeer)
+        end, ProviderSyncProgress#provider_sync_progress.per_peer)
     }.
 
 
 %% @private
--spec provider_summary_from_json(json_utils:json_map()) -> provider_summary().
-provider_summary_from_json(ProviderSummaryJson) ->
-    #provider_summary{
-        legacy = maps:get(<<"legacy">>, ProviderSummaryJson),
-        joining = maps:get(<<"joining">>, ProviderSummaryJson),
-        archival = maps:get(<<"archival">>, ProviderSummaryJson),
-        desync = maps:get(<<"desync">>, ProviderSummaryJson),
-        last_report = maps:get(<<"lastReport">>, ProviderSummaryJson),
-        per_peer = maps:map(fun(_PrId, PeerSummaryJson) ->
-            peer_summary_from_json(PeerSummaryJson)
-        end, maps:get(<<"perPeer">>, ProviderSummaryJson))
+-spec provider_sync_progress_from_json(json_utils:json_map()) -> provider_sync_progress().
+provider_sync_progress_from_json(ProviderSyncProgressJson) ->
+    #provider_sync_progress{
+        legacy = maps:get(<<"legacy">>, ProviderSyncProgressJson),
+        joining = maps:get(<<"joining">>, ProviderSyncProgressJson),
+        archival = maps:get(<<"archival">>, ProviderSyncProgressJson),
+        desync = maps:get(<<"desync">>, ProviderSyncProgressJson),
+        last_report = maps:get(<<"lastReport">>, ProviderSyncProgressJson),
+        per_peer = maps:map(fun(_PrId, SyncProgressWithPeerJson) ->
+            sync_progress_with_peer_from_json(SyncProgressWithPeerJson)
+        end, maps:get(<<"perPeer">>, ProviderSyncProgressJson))
     }.
 
 
 %% @private
--spec peer_summary_to_json(peer_summary()) -> json_utils:json_map().
-peer_summary_to_json(ProviderSummary) ->
+-spec sync_progress_with_peer_to_json(sync_progress_with_peer()) -> json_utils:json_map().
+sync_progress_with_peer_to_json(SyncProgressWithPeer) ->
     #{
-        <<"seenSeq">> => ProviderSummary#peer_summary.seen_seq,
-        <<"seqTimestamp">> => ProviderSummary#peer_summary.seq_timestamp,
-        <<"diff">> => ProviderSummary#peer_summary.diff,
-        <<"delay">> => ProviderSummary#peer_summary.delay,
-        <<"desync">> => ProviderSummary#peer_summary.desync
+        <<"seenSeq">> => SyncProgressWithPeer#sync_progress_with_peer.seen_seq,
+        <<"seqTimestamp">> => SyncProgressWithPeer#sync_progress_with_peer.seq_timestamp,
+        <<"diff">> => SyncProgressWithPeer#sync_progress_with_peer.diff,
+        <<"delay">> => SyncProgressWithPeer#sync_progress_with_peer.delay,
+        <<"desync">> => SyncProgressWithPeer#sync_progress_with_peer.desync
     }.
 
 
 %% @private
--spec peer_summary_from_json(json_utils:json_map()) -> peer_summary().
-peer_summary_from_json(ProviderSummaryJson) ->
-    #peer_summary{
-        seen_seq = maps:get(<<"seenSeq">>, ProviderSummaryJson),
-        seq_timestamp = maps:get(<<"seqTimestamp">>, ProviderSummaryJson),
-        diff = maps:get(<<"diff">>, ProviderSummaryJson),
-        delay = maps:get(<<"delay">>, ProviderSummaryJson),
-        desync = maps:get(<<"desync">>, ProviderSummaryJson)
+-spec sync_progress_with_peer_from_json(json_utils:json_map()) -> sync_progress_with_peer().
+sync_progress_with_peer_from_json(SyncProgressWithPeerJson) ->
+    #sync_progress_with_peer{
+        seen_seq = maps:get(<<"seenSeq">>, SyncProgressWithPeerJson),
+        seq_timestamp = maps:get(<<"seqTimestamp">>, SyncProgressWithPeerJson),
+        diff = maps:get(<<"diff">>, SyncProgressWithPeerJson),
+        delay = maps:get(<<"delay">>, SyncProgressWithPeerJson),
+        desync = maps:get(<<"desync">>, SyncProgressWithPeerJson)
     }.

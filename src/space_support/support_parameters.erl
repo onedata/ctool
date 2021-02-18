@@ -14,6 +14,16 @@
 -module(support_parameters).
 -author("Lukasz Opiola").
 
+-export([new_registry/0]).
+-export([lookup_by_provider/2]).
+-export([update_for_provider/3]).
+-export([remove_for_provider/2]).
+-export([build/2]).
+-export([get_data_write/1, get_metadata_replication/1]).
+-export([serialize/1, deserialize/1]).
+-export([to_json/1, from_json/1]).
+-export([registry_to_json/1, registry_from_json/1]).
+
 % Parameters of space support, inscribed in ?SUPPORT_SPACE tokens and assigned
 % to the provider when supporting a space
 -record(space_support_parameters, {
@@ -25,36 +35,31 @@
 -type metadata_replication() :: eager | lazy | none.
 -export_type([parameters/0, data_write/0, metadata_replication/0]).
 
--type provider_id() :: onedata:service_id().
 % The registry object (one for a space) accumulates all information about
 % support parameters of all supporting providers.
--type registry() :: #{provider_id() => parameters()}.
+-type registry() :: #{onedata:provider_id() => parameters()}.
 -export_type([registry/0]).
-
--export([lookup_by_provider/2]).
--export([update_for_provider/3]).
--export([remove_for_provider/2]).
--export([build/2]).
--export([get_data_write/1, get_metadata_replication/1]).
--export([serialize/1, deserialize/1]).
--export([to_json/1, from_json/1]).
--export([registry_to_json/1, registry_from_json/1]).
 
 %%%===================================================================
 %%% API
 %%%===================================================================
 
--spec lookup_by_provider(registry(), provider_id()) -> {ok, parameters()} | error.
+-spec new_registry() -> registry().
+new_registry() ->
+    #{}.
+
+
+-spec lookup_by_provider(registry(), onedata:provider_id()) -> {ok, parameters()} | error.
 lookup_by_provider(Registry, ProviderId) ->
     maps:find(ProviderId, Registry).
 
 
--spec update_for_provider(registry(), provider_id(), parameters()) -> registry().
+-spec update_for_provider(registry(), onedata:provider_id(), parameters()) -> registry().
 update_for_provider(Registry, ProviderId, Parameters) ->
     Registry#{ProviderId => Parameters}.
 
 
--spec remove_for_provider(registry(), provider_id()) -> registry().
+-spec remove_for_provider(registry(), onedata:provider_id()) -> registry().
 remove_for_provider(Registry, ProviderId) ->
     maps:remove(ProviderId, Registry).
 

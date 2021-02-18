@@ -84,8 +84,13 @@
         %% SPACE SUPPORT
         %% ===================================================================
 
-        % Delay against a peer provider that causes a provider to be marked as desync
+        % Delay against a peer provider that causes
+        % a provider to be marked as desync.
         {provider_sync_progress_desync_threshold_seconds, 300}, % 5 minutes
+
+        % Percentage of storage capacity usage at which
+        % a provider is marked as overfull.
+        {provider_capacity_usage_overfull_threshold_percent, 98},
 
 
         %% ===================================================================

@@ -37,7 +37,8 @@ support_parameters_test_case(DataWrite, MetadataReplication) ->
     ?assertEqual(DataWrite, support_parameters:get_data_write(Params)),
     ?assertEqual(MetadataReplication, support_parameters:get_metadata_replication(Params)),
 
-    RegistryFirst = support_parameters:update_for_provider(#{}, ?PRV_ALPHA, Params),
+    EmptyRegistry = support_parameters:new_registry(),
+    RegistryFirst = support_parameters:update_for_provider(EmptyRegistry, ?PRV_ALPHA, Params),
     ?assertEqual({ok, Params}, support_parameters:lookup_by_provider(RegistryFirst, ?PRV_ALPHA)),
     ?assertEqual(error, support_parameters:lookup_by_provider(RegistryFirst, ?PROVIDER_BETA)),
     ?assertEqual(RegistryFirst, support_parameters:registry_from_json(json_utils:decode(
