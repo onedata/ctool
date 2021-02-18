@@ -141,10 +141,7 @@ lookup(Registry, ProviderId) ->
     registry_update_result().
 register_support(Registry, SupportModel, NewProviderId) ->
     ensure_current_support_model(Registry, NewProviderId, none),
-    IsLegacy = case SupportModel of
-        legacy -> true;
-        modern -> false
-    end,
+    IsLegacy = (SupportModel == legacy),
     SpaceCreationTime = Registry#sync_progress_registry.space_creation_time,
     PerProvider = Registry#sync_progress_registry.per_provider,
     case lookup(Registry, NewProviderId) of

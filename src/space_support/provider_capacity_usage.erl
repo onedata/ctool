@@ -1,6 +1,6 @@
 %%%-------------------------------------------------------------------
 %%% @author Lukasz Opiola
-%%% @copyright (C) 2020 ACK CYFRONET AGH
+%%% @copyright (C) 2021 ACK CYFRONET AGH
 %%% This software is released under the MIT license
 %%% cited in 'LICENSE.txt'.
 %%% @end
@@ -32,8 +32,8 @@
 % storage capacity usage for each storage of each supporting provider.
 -type storage_capacity_usage() :: #storage_capacity_usage{}.
 -type provider_capacity_usage() :: #provider_capacity_usage{}.
--type registry() :: #{onedata:provider_id() => provider_capacity_usage()}.
--export_type([registry/0]).
+-opaque registry() :: #{onedata:provider_id() => provider_capacity_usage()}.
+-export_type([registry/0, provider_capacity_usage/0]).
 
 % Storage usage report regularly submitted by a provider - should include all
 % its supporting storages, but due to asynchronicity of changes in supports
@@ -67,7 +67,7 @@ lookup_by_provider(Registry, ProviderId) ->
 register_support(Registry, ProviderId, StorageId, SupportSize) ->
     PrevProviderUsage = maps:get(ProviderId, Registry, #provider_capacity_usage{}),
     DefaultEntry = #storage_capacity_usage{
-        total = SupportSize,
+        granted = SupportSize,
         used = ?UNKNOWN_USAGE_VALUE,
         overfull = false
     },
@@ -107,7 +107,7 @@ consume_report(Registry, ProviderId, Report) ->
         maps:update_with(StorageId, fun(StorageUsage) ->
             StorageUsage#storage_capacity_usage{
                 used = BytesUsed,
-                overfull = is_overfull(BytesUsed, StorageUsage#storage_capacity_usage.total)
+                overfull = is_overfull(BytesUsed, StorageUsage#storage_capacity_usage.granted)
             }
         end, Acc)
     end, PrevPerStorage, ReportWithRegisteredStorages),
@@ -143,9 +143,9 @@ registry_from_json(RegistryJson) ->
 %%%===================================================================
 
 %% @private
--spec is_overfull(Used :: bytes(), Total :: bytes()) -> boolean().
-is_overfull(Used, Total) ->
-    Used * 100 / Total > ?OVERFULL_THRESHOLD_PERCENT.
+-spec is_overfull(Used :: bytes(), Granted :: bytes()) -> boolean().
+is_overfull(Used, Granted) ->
+    Used * 100 / Granted > ?OVERFULL_THRESHOLD_PERCENT.
 
 
 %% @private
@@ -231,7 +231,7 @@ provider_capacity_usage_from_json(ProviderUsageJson) ->
 -spec storage_capacity_usage_to_json(storage_capacity_usage()) -> json_utils:json_map().
 storage_capacity_usage_to_json(StorageUsage) ->
     #{
-        <<"total">> => StorageUsage#storage_capacity_usage.total,
+        <<"granted">> => StorageUsage#storage_capacity_usage.granted,
         <<"used">> => StorageUsage#storage_capacity_usage.used,
         <<"overfull">> => StorageUsage#storage_capacity_usage.overfull
     }.
@@ -241,7 +241,7 @@ storage_capacity_usage_to_json(StorageUsage) ->
 -spec storage_capacity_usage_from_json(json_utils:json_map()) -> storage_capacity_usage().
 storage_capacity_usage_from_json(StorageUsageJson) ->
     #storage_capacity_usage{
-        total = maps:get(<<"total">>, StorageUsageJson),
+        granted = maps:get(<<"granted">>, StorageUsageJson),
         used = maps:get(<<"used">>, StorageUsageJson),
         overfull = maps:get(<<"overfull">>, StorageUsageJson)
     }.

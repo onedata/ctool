@@ -1,6 +1,6 @@
 %%%-------------------------------------------------------------------
 %%% @author Lukasz Opiola
-%%% @copyright (C) 2020 ACK CYFRONET AGH
+%%% @copyright (C) 2021 ACK CYFRONET AGH
 %%% This software is released under the MIT license
 %%% cited in 'LICENSE.txt'.
 %%% @end
@@ -20,7 +20,7 @@
 % Refer to provider_capacity_usage.erl for description of below records and types
 
 -record(storage_capacity_usage, {
-    total :: provider_capacity_usage:bytes(),
+    granted :: provider_capacity_usage:bytes(),
     used :: provider_capacity_usage:bytes(),
     overfull :: provider_capacity_usage:overfull()
 }).

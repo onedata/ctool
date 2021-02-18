@@ -1,6 +1,6 @@
 %%%-------------------------------------------------------------------
 %%% @author Lukasz Opiola
-%%% @copyright (C) 2020 ACK CYFRONET AGH
+%%% @copyright (C) 2021 ACK CYFRONET AGH
 %%% This software is released under the MIT license
 %%% cited in 'LICENSE.txt'.
 %%% @end
@@ -51,7 +51,7 @@ storage_capacity_registry_lifecycle_test() ->
     ?assert(check_update_result(#capacity_usage_registry_update_result{
         new_registry = #{
             ?PR_A => #provider_capacity_usage{overfull = false, per_storage = #{
-                ?ST_A => #storage_capacity_usage{used = ?UNKNOWN_USAGE_VALUE, total = ?SIZE_A, overfull = false}
+                ?ST_A => #storage_capacity_usage{used = ?UNKNOWN_USAGE_VALUE, granted = ?SIZE_A, overfull = false}
             }}
         },
         transitioned_to_overfull = [],
@@ -63,7 +63,7 @@ storage_capacity_registry_lifecycle_test() ->
     ?assert(check_update_result(#capacity_usage_registry_update_result{
         new_registry = #{
             ?PR_A => #provider_capacity_usage{overfull = false, per_storage = #{
-                ?ST_A => #storage_capacity_usage{used = 0, total = ?SIZE_A, overfull = false}
+                ?ST_A => #storage_capacity_usage{used = 0, granted = ?SIZE_A, overfull = false}
             }}
         },
         transitioned_to_overfull = [],
@@ -74,7 +74,7 @@ storage_capacity_registry_lifecycle_test() ->
     ?assert(check_update_result(#capacity_usage_registry_update_result{
         new_registry = #{
             ?PR_A => #provider_capacity_usage{overfull = true, per_storage = #{
-                ?ST_A => #storage_capacity_usage{used = ?SIZE_A + 3, total = ?SIZE_A, overfull = true}
+                ?ST_A => #storage_capacity_usage{used = ?SIZE_A + 3, granted = ?SIZE_A, overfull = true}
             }}
         },
         transitioned_to_overfull = [?PR_A],
@@ -85,10 +85,10 @@ storage_capacity_registry_lifecycle_test() ->
     ?assert(check_update_result(#capacity_usage_registry_update_result{
         new_registry = #{
             ?PR_A => #provider_capacity_usage{overfull = true, per_storage = #{
-                ?ST_A => #storage_capacity_usage{used = ?SIZE_A + 3, total = ?SIZE_A, overfull = true}
+                ?ST_A => #storage_capacity_usage{used = ?SIZE_A + 3, granted = ?SIZE_A, overfull = true}
             }},
             ?PR_B => #provider_capacity_usage{overfull = false, per_storage = #{
-                ?ST_B1 => #storage_capacity_usage{used = ?UNKNOWN_USAGE_VALUE, total = ?SIZE_B1, overfull = false}
+                ?ST_B1 => #storage_capacity_usage{used = ?UNKNOWN_USAGE_VALUE, granted = ?SIZE_B1, overfull = false}
             }}
         },
         transitioned_to_overfull = [],
@@ -100,10 +100,10 @@ storage_capacity_registry_lifecycle_test() ->
     ?assert(check_update_result(#capacity_usage_registry_update_result{
         new_registry = #{
             ?PR_A => #provider_capacity_usage{overfull = true, per_storage = #{
-                ?ST_A => #storage_capacity_usage{used = ?SIZE_A + 3, total = ?SIZE_A, overfull = true}
+                ?ST_A => #storage_capacity_usage{used = ?SIZE_A + 3, granted = ?SIZE_A, overfull = true}
             }},
             ?PR_B => #provider_capacity_usage{overfull = false, per_storage = #{
-                ?ST_B1 => #storage_capacity_usage{used = 78, total = ?SIZE_B1, overfull = false}
+                ?ST_B1 => #storage_capacity_usage{used = 78, granted = ?SIZE_B1, overfull = false}
             }}
         },
         transitioned_to_overfull = [],
@@ -115,10 +115,10 @@ storage_capacity_registry_lifecycle_test() ->
     ?assert(check_update_result(#capacity_usage_registry_update_result{
         new_registry = #{
             ?PR_A => #provider_capacity_usage{overfull = true, per_storage = #{
-                ?ST_A => #storage_capacity_usage{used = ?SIZE_A + 3, total = ?SIZE_A, overfull = true}
+                ?ST_A => #storage_capacity_usage{used = ?SIZE_A + 3, granted = ?SIZE_A, overfull = true}
             }},
             ?PR_B => #provider_capacity_usage{overfull = false, per_storage = #{
-                ?ST_B1 => #storage_capacity_usage{used = 78, total = ?SIZE_B1, overfull = false}
+                ?ST_B1 => #storage_capacity_usage{used = 78, granted = ?SIZE_B1, overfull = false}
             }}
         },
         transitioned_to_overfull = [],
@@ -129,7 +129,7 @@ storage_capacity_registry_lifecycle_test() ->
     ?assert(check_update_result(#capacity_usage_registry_update_result{
         new_registry = #{
             ?PR_B => #provider_capacity_usage{overfull = false, per_storage = #{
-                ?ST_B1 => #storage_capacity_usage{used = 78, total = ?SIZE_B1, overfull = false}
+                ?ST_B1 => #storage_capacity_usage{used = 78, granted = ?SIZE_B1, overfull = false}
             }}
         },
         % no transition should be reported if the provider no longer supports the space, even though it was overfull
@@ -141,8 +141,8 @@ storage_capacity_registry_lifecycle_test() ->
     ?assert(check_update_result(#capacity_usage_registry_update_result{
         new_registry = #{
             ?PR_B => #provider_capacity_usage{overfull = false, per_storage = #{
-                ?ST_B1 => #storage_capacity_usage{used = 78, total = ?SIZE_B1, overfull = false},
-                ?ST_B2 => #storage_capacity_usage{used = ?UNKNOWN_USAGE_VALUE, total = ?SIZE_B2, overfull = false}
+                ?ST_B1 => #storage_capacity_usage{used = 78, granted = ?SIZE_B1, overfull = false},
+                ?ST_B2 => #storage_capacity_usage{used = ?UNKNOWN_USAGE_VALUE, granted = ?SIZE_B2, overfull = false}
             }}
         },
         transitioned_to_overfull = [],
@@ -153,11 +153,11 @@ storage_capacity_registry_lifecycle_test() ->
     ?assert(check_update_result(#capacity_usage_registry_update_result{
         new_registry = #{
             ?PR_A => #provider_capacity_usage{overfull = false, per_storage = #{
-                ?ST_A => #storage_capacity_usage{used = ?UNKNOWN_USAGE_VALUE, total = ?SIZE_A, overfull = false}
+                ?ST_A => #storage_capacity_usage{used = ?UNKNOWN_USAGE_VALUE, granted = ?SIZE_A, overfull = false}
             }},
             ?PR_B => #provider_capacity_usage{overfull = false, per_storage = #{
-                ?ST_B1 => #storage_capacity_usage{used = 78, total = ?SIZE_B1, overfull = false},
-                ?ST_B2 => #storage_capacity_usage{used = ?UNKNOWN_USAGE_VALUE, total = ?SIZE_B2, overfull = false}
+                ?ST_B1 => #storage_capacity_usage{used = 78, granted = ?SIZE_B1, overfull = false},
+                ?ST_B2 => #storage_capacity_usage{used = ?UNKNOWN_USAGE_VALUE, granted = ?SIZE_B2, overfull = false}
             }}
         },
         transitioned_to_overfull = [],
@@ -169,11 +169,11 @@ storage_capacity_registry_lifecycle_test() ->
     ?assert(check_update_result(#capacity_usage_registry_update_result{
         new_registry = #{
             ?PR_A => #provider_capacity_usage{overfull = false, per_storage = #{
-                ?ST_A => #storage_capacity_usage{used = ?UNKNOWN_USAGE_VALUE, total = ?SIZE_A, overfull = false}
+                ?ST_A => #storage_capacity_usage{used = ?UNKNOWN_USAGE_VALUE, granted = ?SIZE_A, overfull = false}
             }},
             ?PR_B => #provider_capacity_usage{overfull = true, per_storage = #{
-                ?ST_B1 => #storage_capacity_usage{used = ?SIZE_B1 - 2, total = ?SIZE_B1, overfull = true},
-                ?ST_B2 => #storage_capacity_usage{used = ?UNKNOWN_USAGE_VALUE, total = ?SIZE_B2, overfull = false}
+                ?ST_B1 => #storage_capacity_usage{used = ?SIZE_B1 - 2, granted = ?SIZE_B1, overfull = true},
+                ?ST_B2 => #storage_capacity_usage{used = ?UNKNOWN_USAGE_VALUE, granted = ?SIZE_B2, overfull = false}
             }}
         },
         transitioned_to_overfull = [?PR_B],
@@ -184,11 +184,11 @@ storage_capacity_registry_lifecycle_test() ->
     ?assert(check_update_result(#capacity_usage_registry_update_result{
         new_registry = #{
             ?PR_A => #provider_capacity_usage{overfull = false, per_storage = #{
-                ?ST_A => #storage_capacity_usage{used = 666, total = ?SIZE_A, overfull = false}
+                ?ST_A => #storage_capacity_usage{used = 666, granted = ?SIZE_A, overfull = false}
             }},
             ?PR_B => #provider_capacity_usage{overfull = true, per_storage = #{
-                ?ST_B1 => #storage_capacity_usage{used = ?SIZE_B1 - 2, total = ?SIZE_B1, overfull = true},
-                ?ST_B2 => #storage_capacity_usage{used = ?UNKNOWN_USAGE_VALUE, total = ?SIZE_B2, overfull = false}
+                ?ST_B1 => #storage_capacity_usage{used = ?SIZE_B1 - 2, granted = ?SIZE_B1, overfull = true},
+                ?ST_B2 => #storage_capacity_usage{used = ?UNKNOWN_USAGE_VALUE, granted = ?SIZE_B2, overfull = false}
             }}
         },
         transitioned_to_overfull = [],
@@ -199,11 +199,11 @@ storage_capacity_registry_lifecycle_test() ->
     ?assert(check_update_result(#capacity_usage_registry_update_result{
         new_registry = #{
             ?PR_A => #provider_capacity_usage{overfull = false, per_storage = #{
-                ?ST_A => #storage_capacity_usage{used = 666, total = ?SIZE_A, overfull = false}
+                ?ST_A => #storage_capacity_usage{used = 666, granted = ?SIZE_A, overfull = false}
             }},
             ?PR_B => #provider_capacity_usage{overfull = false, per_storage = #{
-                ?ST_B1 => #storage_capacity_usage{used = 90909, total = ?SIZE_B1, overfull = false},
-                ?ST_B2 => #storage_capacity_usage{used = 1234567, total = ?SIZE_B2, overfull = false}
+                ?ST_B1 => #storage_capacity_usage{used = 90909, granted = ?SIZE_B1, overfull = false},
+                ?ST_B2 => #storage_capacity_usage{used = 1234567, granted = ?SIZE_B2, overfull = false}
             }}
         },
         transitioned_to_overfull = [],
@@ -214,11 +214,11 @@ storage_capacity_registry_lifecycle_test() ->
     ?assert(check_update_result(#capacity_usage_registry_update_result{
         new_registry = #{
             ?PR_A => #provider_capacity_usage{overfull = false, per_storage = #{
-                ?ST_A => #storage_capacity_usage{used = 666, total = ?SIZE_A, overfull = false}
+                ?ST_A => #storage_capacity_usage{used = 666, granted = ?SIZE_A, overfull = false}
             }},
             ?PR_B => #provider_capacity_usage{overfull = true, per_storage = #{
-                ?ST_B1 => #storage_capacity_usage{used = 80808, total = ?SIZE_B1, overfull = false},
-                ?ST_B2 => #storage_capacity_usage{used = ?SIZE_B2 - 190, total = ?SIZE_B2, overfull = true}
+                ?ST_B1 => #storage_capacity_usage{used = 80808, granted = ?SIZE_B1, overfull = false},
+                ?ST_B2 => #storage_capacity_usage{used = ?SIZE_B2 - 190, granted = ?SIZE_B2, overfull = true}
             }}
         },
         transitioned_to_overfull = [?PR_B],
@@ -229,10 +229,10 @@ storage_capacity_registry_lifecycle_test() ->
     ?assert(check_update_result(#capacity_usage_registry_update_result{
         new_registry = #{
             ?PR_A => #provider_capacity_usage{overfull = false, per_storage = #{
-                ?ST_A => #storage_capacity_usage{used = 666, total = ?SIZE_A, overfull = false}
+                ?ST_A => #storage_capacity_usage{used = 666, granted = ?SIZE_A, overfull = false}
             }},
             ?PR_B => #provider_capacity_usage{overfull = false, per_storage = #{
-                ?ST_B1 => #storage_capacity_usage{used = 80808, total = ?SIZE_B1, overfull = false}
+                ?ST_B1 => #storage_capacity_usage{used = 80808, granted = ?SIZE_B1, overfull = false}
             }}
         },
         % an overfull storage has been removed, which should cause the provider to transition
@@ -244,7 +244,7 @@ storage_capacity_registry_lifecycle_test() ->
     ?assert(check_update_result(#capacity_usage_registry_update_result{
         new_registry = #{
             ?PR_A => #provider_capacity_usage{overfull = false, per_storage = #{
-                ?ST_A => #storage_capacity_usage{used = 666, total = ?SIZE_A, overfull = false}
+                ?ST_A => #storage_capacity_usage{used = 666, granted = ?SIZE_A, overfull = false}
             }}
         },
         transitioned_to_overfull = [],
@@ -262,7 +262,7 @@ storage_capacity_registry_lifecycle_test() ->
     ?assert(check_update_result(#capacity_usage_registry_update_result{
         new_registry = #{
             ?PR_A => #provider_capacity_usage{overfull = false, per_storage = #{
-                ?ST_A => #storage_capacity_usage{used = ?UNKNOWN_USAGE_VALUE, total = ?SIZE_A, overfull = false}
+                ?ST_A => #storage_capacity_usage{used = ?UNKNOWN_USAGE_VALUE, granted = ?SIZE_A, overfull = false}
             }}
         },
         transitioned_to_overfull = [],
@@ -273,10 +273,10 @@ storage_capacity_registry_lifecycle_test() ->
     ?assert(check_update_result(#capacity_usage_registry_update_result{
         new_registry = #{
             ?PR_A => #provider_capacity_usage{overfull = false, per_storage = #{
-                ?ST_A => #storage_capacity_usage{used = ?UNKNOWN_USAGE_VALUE, total = ?SIZE_A, overfull = false}
+                ?ST_A => #storage_capacity_usage{used = ?UNKNOWN_USAGE_VALUE, granted = ?SIZE_A, overfull = false}
             }},
             ?PR_B => #provider_capacity_usage{overfull = false, per_storage = #{
-                ?ST_B2 => #storage_capacity_usage{used = ?UNKNOWN_USAGE_VALUE, total = ?SIZE_B2, overfull = false}
+                ?ST_B2 => #storage_capacity_usage{used = ?UNKNOWN_USAGE_VALUE, granted = ?SIZE_B2, overfull = false}
             }}
         },
         transitioned_to_overfull = [],
