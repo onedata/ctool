@@ -36,7 +36,8 @@
 -type general() :: {bad_message, json_utils:json_term()} | no_connection_to_oz
 | no_connection_to_peer_provider | no_connection_to_cluster_node
 | unregistered_provider | internal_server_error | not_implemented
-| not_supported | service_unavailable |  timeout | temporary_failure
+| not_supported | service_unavailable |  timeout
+| temporary_failure | {external_service_operation_failed, ServiceName :: binary()}
 | unauthorized() | forbidden | not_found | already_exists
 | {file_access, Path :: file:name_all(), errno()}.
 
@@ -222,6 +223,18 @@ to_json(?ERROR_TIMEOUT) -> #{
 to_json(?ERROR_TEMPORARY_FAILURE) -> #{
     <<"id">> => <<"temporaryFailure">>,
     <<"description">> => <<"Temporary failure - please try again later.">>
+};
+to_json(?ERROR_EXTERNAL_SERVICE_OPERATION_FAILED(ServiceName)) -> #{
+    <<"id">> => <<"externalServiceOperationFailed">>,
+    <<"details">> => #{
+        <<"serviceName">> => ServiceName
+    },
+    <<"description">> => ?FMT(
+        "Your request could not be fulfilled due to problems with the external "
+        "service '~ts'. This might be a temporary problem or a misconfiguration. "
+        "Please try again later or contact the site administrators if the problem persists.",
+        [ServiceName]
+    )
 };
 to_json(?ERROR_UNAUTHORIZED(AuthError)) -> #{
     <<"id">> => <<"unauthorized">>,
@@ -1123,6 +1136,9 @@ from_json(#{<<"id">> := <<"timeout">>}) ->
 from_json(#{<<"id">> := <<"temporaryFailure">>}) ->
     ?ERROR_TEMPORARY_FAILURE;
 
+from_json(#{<<"id">> := <<"externalServiceOperationFailed">>, <<"details">> := #{<<"serviceName">> := ServiceName}}) ->
+    ?ERROR_EXTERNAL_SERVICE_OPERATION_FAILED(ServiceName);
+
 from_json(#{<<"id">> := <<"unauthorized">>, <<"details">> := #{<<"authError">> := AuthError}}) ->
     ?ERROR_UNAUTHORIZED(from_json(AuthError));
 
@@ -1576,6 +1592,7 @@ to_http_code(?ERROR_NOT_SUPPORTED) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_SERVICE_UNAVAILABLE) -> ?HTTP_503_SERVICE_UNAVAILABLE;
 to_http_code(?ERROR_TIMEOUT) -> ?HTTP_503_SERVICE_UNAVAILABLE;
 to_http_code(?ERROR_TEMPORARY_FAILURE) -> ?HTTP_503_SERVICE_UNAVAILABLE;
+to_http_code(?ERROR_EXTERNAL_SERVICE_OPERATION_FAILED(_)) -> ?HTTP_503_SERVICE_UNAVAILABLE;
 to_http_code(?ERROR_UNAUTHORIZED(_)) -> ?HTTP_401_UNAUTHORIZED;
 to_http_code(?ERROR_UNAUTHORIZED) -> ?HTTP_401_UNAUTHORIZED;
 to_http_code(?ERROR_FORBIDDEN) -> ?HTTP_403_FORBIDDEN;
