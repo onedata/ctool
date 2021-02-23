@@ -74,6 +74,7 @@ testcases() -> [
     ?ERROR_SERVICE_UNAVAILABLE,
     ?ERROR_TIMEOUT,
     ?ERROR_TEMPORARY_FAILURE,
+    ?ERROR_EXTERNAL_SERVICE_OPERATION_FAILED(<<"Some external service">>),
     ?ERROR_UNAUTHORIZED(?ERROR_NOT_AN_ACCESS_TOKEN(?IDENTITY_TOKEN)),
     ?ERROR_UNAUTHORIZED,
     ?ERROR_FORBIDDEN,
@@ -90,6 +91,7 @@ testcases() -> [
     %% -----------------------------------------------------------------------------
     %% Auth errors
     %% -----------------------------------------------------------------------------
+    ?ERROR_USER_BLOCKED,
     ?ERROR_BAD_BASIC_CREDENTIALS,
     {different, ?ERROR_BAD_IDP_ACCESS_TOKEN(keycloak), ?ERROR_BAD_IDP_ACCESS_TOKEN(<<"keycloak">>)},
     ?ERROR_BAD_TOKEN,

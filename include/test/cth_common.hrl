@@ -15,9 +15,12 @@
 %% nodes on which mock_manager will be started
 -define(CTH_MOCK_MANAGER_NODES, [
     op_worker_nodes,
+    op_panel_nodes,
     cluster_worker_nodes,
     oz_worker_nodes,
+    oz_panel_nodes,
     onepanel_nodes,
+    cm_nodes,
     all_nodes % this key is used in onepanel
 ]).
 

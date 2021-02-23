@@ -31,6 +31,7 @@
 -define(ERROR_SERVICE_UNAVAILABLE, {error, service_unavailable}).
 -define(ERROR_TIMEOUT, {error, timeout}).
 -define(ERROR_TEMPORARY_FAILURE, {error, temporary_failure}).
+-define(ERROR_EXTERNAL_SERVICE_OPERATION_FAILED(ServiceName), {error, {external_service_operation_failed, ServiceName}}).
 -define(ERROR_UNAUTHORIZED(AuthError), {error, {unauthorized, AuthError}}).
 -define(ERROR_UNAUTHORIZED, {error, unauthorized}).
 -define(ERROR_FORBIDDEN, {error, forbidden}).
@@ -48,6 +49,7 @@
 %%--------------------------------------------------------------------
 %% Auth errors
 %%--------------------------------------------------------------------
+-define(ERROR_USER_BLOCKED, {error, user_blocked}).
 -define(ERROR_BAD_BASIC_CREDENTIALS, {error, bad_basic_credentials}).
 -define(ERROR_BAD_IDP_ACCESS_TOKEN(IdP), {error, {bad_idp_access_token, IdP}}).
 % The presented token cannot be understood by the server

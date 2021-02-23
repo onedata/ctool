@@ -36,11 +36,12 @@
 -type general() :: {bad_message, json_utils:json_term()} | no_connection_to_oz
 | no_connection_to_peer_provider | no_connection_to_cluster_node
 | unregistered_provider | internal_server_error | not_implemented
-| not_supported | service_unavailable |  timeout | temporary_failure
+| not_supported | service_unavailable |  timeout
+| temporary_failure | {external_service_operation_failed, ServiceName :: binary()}
 | unauthorized() | forbidden | not_found | already_exists
 | {file_access, Path :: file:name_all(), errno()}.
 
--type auth() :: bad_basic_credentials | {bad_idp_access_token, IdP :: atom()}
+-type auth() :: user_blocked | bad_basic_credentials | {bad_idp_access_token, IdP :: atom()}
 | bad_token | {bad_service_token, auth()} | {bad_consumer_token, auth()}
 | token_invalid | token_revoked | not_an_access_token | not_an_identity_token
 | {not_an_invite_token, ExpectedInviteType :: any | token_type:invite_type(), Received :: tokens:type()}
@@ -223,6 +224,18 @@ to_json(?ERROR_TEMPORARY_FAILURE) -> #{
     <<"id">> => <<"temporaryFailure">>,
     <<"description">> => <<"Temporary failure - please try again later.">>
 };
+to_json(?ERROR_EXTERNAL_SERVICE_OPERATION_FAILED(ServiceName)) -> #{
+    <<"id">> => <<"externalServiceOperationFailed">>,
+    <<"details">> => #{
+        <<"serviceName">> => ServiceName
+    },
+    <<"description">> => ?FMT(
+        "Your request could not be fulfilled due to problems with the external "
+        "service '~ts'. This might be a temporary problem or a misconfiguration. "
+        "Please try again later or contact the site administrators if the problem persists.",
+        [ServiceName]
+    )
+};
 to_json(?ERROR_UNAUTHORIZED(AuthError)) -> #{
     <<"id">> => <<"unauthorized">>,
     <<"details">> => #{
@@ -268,6 +281,13 @@ to_json(?ERROR_POSIX(Errno)) -> #{
 %% -----------------------------------------------------------------------------
 %% Auth errors
 %% -----------------------------------------------------------------------------
+to_json(?ERROR_USER_BLOCKED) -> #{
+    <<"id">> => <<"userBlocked">>,
+    <<"description">> => <<
+        "This user account has been blocked by the administrator and "
+        "cannot be used unless it is unblocked again."
+    >>
+};
 to_json(?ERROR_BAD_BASIC_CREDENTIALS) -> #{
     <<"id">> => <<"badBasicCredentials">>,
     <<"description">> => <<"Invalid username or password.">>
@@ -1116,6 +1136,9 @@ from_json(#{<<"id">> := <<"timeout">>}) ->
 from_json(#{<<"id">> := <<"temporaryFailure">>}) ->
     ?ERROR_TEMPORARY_FAILURE;
 
+from_json(#{<<"id">> := <<"externalServiceOperationFailed">>, <<"details">> := #{<<"serviceName">> := ServiceName}}) ->
+    ?ERROR_EXTERNAL_SERVICE_OPERATION_FAILED(ServiceName);
+
 from_json(#{<<"id">> := <<"unauthorized">>, <<"details">> := #{<<"authError">> := AuthError}}) ->
     ?ERROR_UNAUTHORIZED(from_json(AuthError));
 
@@ -1143,6 +1166,9 @@ from_json(#{<<"id">> := <<"posix">>, <<"details">> := #{<<"errno">> := Errno}}) 
 %% -----------------------------------------------------------------------------
 %% Auth errors
 %% -----------------------------------------------------------------------------
+from_json(#{<<"id">> := <<"userBlocked">>}) ->
+    ?ERROR_USER_BLOCKED;
+
 from_json(#{<<"id">> := <<"badBasicCredentials">>}) ->
     ?ERROR_BAD_BASIC_CREDENTIALS;
 
@@ -1566,6 +1592,7 @@ to_http_code(?ERROR_NOT_SUPPORTED) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_SERVICE_UNAVAILABLE) -> ?HTTP_503_SERVICE_UNAVAILABLE;
 to_http_code(?ERROR_TIMEOUT) -> ?HTTP_503_SERVICE_UNAVAILABLE;
 to_http_code(?ERROR_TEMPORARY_FAILURE) -> ?HTTP_503_SERVICE_UNAVAILABLE;
+to_http_code(?ERROR_EXTERNAL_SERVICE_OPERATION_FAILED(_)) -> ?HTTP_503_SERVICE_UNAVAILABLE;
 to_http_code(?ERROR_UNAUTHORIZED(_)) -> ?HTTP_401_UNAUTHORIZED;
 to_http_code(?ERROR_UNAUTHORIZED) -> ?HTTP_401_UNAUTHORIZED;
 to_http_code(?ERROR_FORBIDDEN) -> ?HTTP_403_FORBIDDEN;
@@ -1581,6 +1608,7 @@ to_http_code(?ERROR_POSIX(_)) -> ?HTTP_400_BAD_REQUEST;
 %% -----------------------------------------------------------------------------
 %% Auth errors
 %% -----------------------------------------------------------------------------
+to_http_code(?ERROR_USER_BLOCKED) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_BAD_BASIC_CREDENTIALS) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_BAD_IDP_ACCESS_TOKEN(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_BAD_TOKEN) -> ?HTTP_400_BAD_REQUEST;
