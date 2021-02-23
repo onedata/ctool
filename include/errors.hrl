@@ -31,6 +31,7 @@
 -define(ERROR_SERVICE_UNAVAILABLE, {error, service_unavailable}).
 -define(ERROR_TIMEOUT, {error, timeout}).
 -define(ERROR_TEMPORARY_FAILURE, {error, temporary_failure}).
+-define(ERROR_EXTERNAL_SERVICE_OPERATION_FAILED(ServiceName), {error, {external_service_operation_failed, ServiceName}}).
 -define(ERROR_UNAUTHORIZED(AuthError), {error, {unauthorized, AuthError}}).
 -define(ERROR_UNAUTHORIZED, {error, unauthorized}).
 -define(ERROR_FORBIDDEN, {error, forbidden}).
