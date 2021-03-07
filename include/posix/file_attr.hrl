@@ -35,7 +35,7 @@
     provider_id :: binary(),
     owner_id :: binary(),
     fully_replicated :: undefined | boolean(),
-    nlink :: undefined | integer()
+    nlink :: undefined | non_neg_integer()
 }).
 
 -record(xattr, {
