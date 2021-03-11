@@ -23,6 +23,7 @@
 -export([format/1, format/2, format_bin/2, format_byte_size/1]).
 
 -export([rand_hex/1]).
+-export([pad_left/3, pad_right/3]).
 
 
 %%%===================================================================
@@ -206,3 +207,17 @@ format_byte_size(Size, [Unit | _]) ->
 -spec rand_hex(non_neg_integer()) -> binary().
 rand_hex(Size) ->
     hex_utils:hex(crypto:strong_rand_bytes(Size)).
+
+
+-spec pad_left(binary(), non_neg_integer(), binary()) -> binary().
+pad_left(Binary, ExpectedSize, Char) ->
+    BytesToFill = max(ExpectedSize - byte_size(Binary), 0),
+    Padding = binary:copy(Char, BytesToFill),
+    <<Padding/binary, Binary/binary>>.
+
+
+-spec pad_right(binary(), non_neg_integer(), binary()) -> binary().
+pad_right(Binary, ExpectedSize, Char) ->
+    BytesToFill = max(ExpectedSize - byte_size(Binary), 0),
+    Padding = binary:copy(Char, BytesToFill),
+    <<Binary/binary, Padding/binary>>.
