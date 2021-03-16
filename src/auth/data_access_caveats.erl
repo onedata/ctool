@@ -162,5 +162,6 @@ to_allowed_api(?OZ_WORKER, #cv_data_objectid{whitelist = ObjectidsWhitelist}) ->
 oz_worker_allowed_api(AllowedSpaces) ->
     #cv_api{whitelist = lists:flatten([
         {?OZ_WORKER, get, ?GRI_PATTERN(od_user, '*', instance, '*')},
+        {?OZ_WORKER, get, ?GRI_PATTERN(od_share, '*', instance, '*')},
         [{?OZ_WORKER, get, ?GRI_PATTERN(od_space, S, instance, '*')} || S <- AllowedSpaces]
     ])}.
