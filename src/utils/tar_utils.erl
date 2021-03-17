@@ -6,18 +6,39 @@
 %%% @end
 %%%--------------------------------------------------------------------
 %%% @doc
-%%% This module contains utility functions allowing for creating TAR archives.
+%%% This module contains utility functions allowing for creating TAR archives on-the-fly.
+%%% 
+%%% Module operates on state object and every function (except `close_archive_stream`) 
+%%% returns updated version of it. This updated state must be used in next call to this 
+%%% module. After `close_archive_stream` has been called, new state should be acquired 
+%%% using `open_archive_stream`.
+%%% For each file it is responsibility of a calling module to provide exactly FileSize 
+%%% bytes (as given in `new_file_entry`) in total in subsequent `append_to_file_content` 
+%%% calls.
+%%% 
+%%% Typical usage of this module is as follows: 
+%%%     1) `open_archive_stream`
+%%%     2) `new_file_entry`
+%%%     3) 0 or more calls to `append_to_file_content`
+%%%     4) repeat from 2) for each new file to add
+%%%     5) `close_archive_stream`
+%%% 
+%%% Any time between open and close `flush` function can be called to acquire bytes 
+%%% generated so far.
+%%%
+%%% When using this module with option gzip set to true, every call must be made from 
+%%% the same process.
 %%% @end
 %%%--------------------------------------------------------------------
 -module(tar_utils).
 -author("Michal Stanisz").
 
 %% API
--export([open_archive/0, open_archive/1]).
+-export([open_archive_stream/0, open_archive_stream/1]).
 -export([new_file_entry/6]).
 -export([append_to_file_content/2, append_to_file_content/3]).
--export([close_archive/1]).
--export([read_bytes/1]).
+-export([close_archive_stream/1]).
+-export([flush/1]).
 
 -define(BLOCK_SIZE, 512).
 -define(DIRECTORY_TYPE_FLAG, <<"5">>).
@@ -37,13 +58,13 @@
 -define(ZLIB_STRATEGY, default).
 
 -record(state, {
-    data = <<>> :: binary(),
-    current_file_bytes = 0 :: non_neg_integer(),
+    buffer = <<>> :: binary(),
+    current_file_size = 0 :: non_neg_integer(),
     zstream = undefined :: zlib:zstream()
 }).
 
 
--type state() :: #state{}.
+-opaque state() :: #state{}.
 -type bytes() :: binary().
 -type options() :: #{
     gzip => boolean()
@@ -55,13 +76,13 @@
 %%% API
 %%%===================================================================
 
--spec open_archive() -> state().
-open_archive() ->
-    open_archive(#{gzip => true}).
+-spec open_archive_stream() -> state().
+open_archive_stream() ->
+    open_archive_stream(#{gzip => true}).
 
 
--spec open_archive(options()) -> state().
-open_archive(Options) ->
+-spec open_archive_stream(options()) -> state().
+open_archive_stream(Options) ->
     ZStream = case maps:get(gzip, Options, false) of
         false -> undefined;
         true ->
@@ -78,7 +99,7 @@ open_archive(Options) ->
 new_file_entry(State, Filename, FileSize, Mode, Timestamp, FileType) ->
     Padding = data_padding(State),
     Header = file_header(Filename, FileSize, Mode, Timestamp, FileType),
-    append_data(State#state{current_file_bytes = 0}, deflate(State, <<Padding/binary, Header/binary>>)).
+    write_to_buffer(State#state{current_file_size = 0}, <<Padding/binary, Header/binary>>).
 
 
 -spec append_to_file_content(state(), bytes()) -> state().
@@ -86,33 +107,28 @@ append_to_file_content(State, Data) ->
     append_to_file_content(State, Data, byte_size(Data)).
 
 -spec append_to_file_content(state(), bytes(), non_neg_integer()) -> state().
-append_to_file_content(#state{current_file_bytes = CurrentFileSize} = State, Data, DataSize) ->
-    append_data(State#state{current_file_bytes = CurrentFileSize + DataSize}, deflate(State, Data)).
+append_to_file_content(#state{current_file_size = CurrentFileSize} = State, Data, DataSize) ->
+    write_to_buffer(State#state{current_file_size = CurrentFileSize + DataSize}, Data).
 
 
--spec close_archive(state()) -> bytes().
-close_archive(#state{zstream = ZStream} = State) ->
+-spec close_archive_stream(state()) -> bytes().
+close_archive_stream(#state{zstream = ZStream} = State) ->
     Padding = data_padding(State),
     EofMarker = ending_marker(),
-    Data = deflate(State, <<Padding/binary, EofMarker/binary>>, finish),
+    State2 = write_to_buffer(State, <<Padding/binary, EofMarker/binary>>, finish),
     ZStream =/= undefined andalso zlib:close(ZStream),
-    {FinalBytes, _} = read_bytes(append_data(State, Data)),
+    {FinalBytes, _} = flush(State2),
     FinalBytes.
 
 
--spec read_bytes(state()) -> {bytes(), state()}.
-read_bytes(#state{data = Bytes} = State) ->
-    {Bytes, State#state{data = <<>>}}.
+-spec flush(state()) -> {bytes(), state()}.
+flush(#state{buffer = Bytes} = State) ->
+    {Bytes, State#state{buffer = <<>>}}.
 
 
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
-
--spec append_data(state(), bytes()) -> state().
-append_data(#state{data = Data} = State, NewData) ->
-    State#state{data = <<Data/binary, NewData/binary>>}.
-
 
 %% @private
 -spec file_header(binary(), FileSize :: non_neg_integer(), Mode :: non_neg_integer(), 
@@ -125,23 +141,6 @@ file_header(Filename, FileSize, Mode, Timestamp, FileType) ->
             {?FILE_TYPE_FLAG, Filename}
     end,
     file_header(FinalFilename, byte_size(Filename), FileSize, Mode, Timestamp, Type).
-
-
-%% @private
--spec data_padding(state() | non_neg_integer()) -> bytes().
-data_padding(#state{current_file_bytes = FileSize}) ->
-    data_padding(FileSize);
-data_padding(FileSize) when FileSize rem ?BLOCK_SIZE == 0 -> 
-    <<>>;
-data_padding(FileSize) ->
-    BytesToFill = (?BLOCK_SIZE - FileSize rem ?BLOCK_SIZE),
-    binary:copy(?NUL, BytesToFill).
-
-
-%% @private
--spec ending_marker() -> bytes().
-ending_marker() ->
-    binary:copy(?NUL, 2 * ?BLOCK_SIZE).
 
 %% @private
 -spec file_header(binary(), FilenameSize :: non_neg_integer(), FileSize :: non_neg_integer(), 
@@ -184,6 +183,23 @@ file_header(Filename, FilenameSize, FileSize, Mode, Timestamp, Type) when Filena
 
 
 %% @private
+-spec ending_marker() -> bytes().
+ending_marker() ->
+    binary:copy(?NUL, 2 * ?BLOCK_SIZE).
+
+
+%% @private
+-spec data_padding(state() | non_neg_integer()) -> bytes().
+data_padding(#state{current_file_size = FileSize}) ->
+    data_padding(FileSize);
+data_padding(FileSize) when FileSize rem ?BLOCK_SIZE == 0 ->
+    <<>>;
+data_padding(FileSize) ->
+    BytesToFill = (?BLOCK_SIZE - FileSize rem ?BLOCK_SIZE),
+    binary:copy(?NUL, BytesToFill).
+
+
+%% @private
 -spec format_octal(integer()) -> 
     binary().
 format_octal(Octal) ->
@@ -206,13 +222,20 @@ calculate_checksum(<<>>, Acc) -> Acc.
 
 
 %% @private
--spec deflate(state(), binary()) -> binary().
-deflate(State, Data) ->
-    deflate(State, Data, none).
+-spec write_to_buffer(state(), binary()) -> state().
+write_to_buffer(State, Data) ->
+    write_to_buffer(State, Data, none).
 
 %% @private
--spec deflate(state(), binary(), zlib:zflush()) -> binary().
-deflate(#state{zstream = undefined}, Data, _Flush) ->
-    Data;
-deflate(#state{zstream = ZStream}, Data, Flush) ->
-    iolist_to_binary(zlib:deflate(ZStream, Data, Flush)).
+-spec write_to_buffer(state(), binary(), zlib:zflush()) -> state().
+write_to_buffer(#state{zstream = undefined} = State, Data, _ForceFlush) ->
+    append_data(State, Data);
+write_to_buffer(#state{zstream = ZStream} = State, Data, ForceFlush) ->
+    Deflated = iolist_to_binary(zlib:deflate(ZStream, Data, ForceFlush)),
+    append_data(State, Deflated).
+
+
+%% @private
+-spec append_data(state(), bytes()) -> state().
+append_data(#state{buffer = Data} = State, NewData) ->
+    State#state{buffer = <<Data/binary, NewData/binary>>}.
