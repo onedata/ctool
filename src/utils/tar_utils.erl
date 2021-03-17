@@ -13,10 +13,11 @@
 -author("Michal Stanisz").
 
 %% API
--export([prepare_header/5, data_padding/1, ending_marker/0]).
-
--type tar_header() :: binary().
--export_type([tar_header/0]).
+-export([open_archive/0, open_archive/1]).
+-export([new_file_entry/6]).
+-export([append_to_file_content/2, append_to_file_content/3]).
+-export([close_archive/1]).
+-export([read_bytes/1]).
 
 -define(BLOCK_SIZE, 512).
 -define(DIRECTORY_TYPE_FLAG, <<"5">>).
@@ -29,46 +30,127 @@
 -define(CHECKSUM_PLACEHOLDER, binary:copy(<<32>>, 8)).
 -define(CHECKSUM_ENDING, <<0, 32>>).
 
+-define(ZLIB_COMPRESSION_LEVEL, default).
+-define(ZLIB_MEMORY_LEVEL, 8).
+-define(ZLIB_WINDOW_BITS, 31).
+-define(ZLIB_METHOD, deflated).
+-define(ZLIB_STRATEGY, default).
+
+-record(state, {
+    data = <<>> :: binary(),
+    current_file_bytes = 0 :: non_neg_integer(),
+    zstream = undefined :: zlib:zstream()
+}).
+
+
+-type state() :: #state{}.
+-type bytes() :: binary().
+-type options() :: #{
+    gzip => boolean()
+}.
+
+-export_type([state/0, bytes/0]).
+
 %%%===================================================================
 %%% API
 %%%===================================================================
 
--spec prepare_header(binary(), FileSize :: non_neg_integer(), Mode :: non_neg_integer(), 
-    Timestamp :: non_neg_integer(), boolean()) -> tar_header().
-prepare_header(Filename, FileSize, Mode, Timestamp, IsDir) ->
-    {Type, FinalFilename} = case IsDir of
+-spec open_archive() -> state().
+open_archive() ->
+    open_archive(#{gzip => true}).
+
+
+-spec open_archive(options()) -> state().
+open_archive(Options) ->
+    ZStream = case maps:get(gzip, Options, false) of
+        false -> undefined;
         true ->
-            {?DIRECTORY_TYPE_FLAG, <<Filename/binary, "/">>};
-        false ->
-            {?FILE_TYPE_FLAG, Filename}
+            Z = zlib:open(),
+            ok = zlib:deflateInit(Z, ?ZLIB_COMPRESSION_LEVEL, ?ZLIB_METHOD, ?ZLIB_WINDOW_BITS,
+                ?ZLIB_MEMORY_LEVEL, ?ZLIB_STRATEGY),
+            Z
     end,
-    prepare_header(FinalFilename, byte_size(Filename), FileSize, Mode, Timestamp, Type).
+    #state{zstream = ZStream}.
 
 
--spec data_padding(non_neg_integer()) -> binary().
-data_padding(FileSize) when FileSize rem ?BLOCK_SIZE == 0 -> <<>>;
-data_padding(FileSize) ->
-    BytesToFill = (?BLOCK_SIZE - FileSize rem ?BLOCK_SIZE),
-    binary:copy(?NUL, BytesToFill).
+-spec new_file_entry(state(), binary(), FileSize :: non_neg_integer(), Mode :: non_neg_integer(), 
+    Timestamp :: non_neg_integer(), directory | regular) -> state().
+new_file_entry(State, Filename, FileSize, Mode, Timestamp, FileType) ->
+    Padding = data_padding(State),
+    Header = file_header(Filename, FileSize, Mode, Timestamp, FileType),
+    append_data(State#state{current_file_bytes = 0}, deflate(State, <<Padding/binary, Header/binary>>)).
 
 
--spec ending_marker() -> binary().
-ending_marker() ->
-    binary:copy(?NUL, 2 * ?BLOCK_SIZE).
+-spec append_to_file_content(state(), bytes()) -> state().
+append_to_file_content(State, Data) ->
+    append_to_file_content(State, Data, byte_size(Data)).
+
+-spec append_to_file_content(state(), bytes(), non_neg_integer()) -> state().
+append_to_file_content(#state{current_file_bytes = CurrentFileSize} = State, Data, DataSize) ->
+    append_data(State#state{current_file_bytes = CurrentFileSize + DataSize}, deflate(State, Data)).
+
+
+-spec close_archive(state()) -> bytes().
+close_archive(#state{zstream = ZStream} = State) ->
+    Padding = data_padding(State),
+    EofMarker = ending_marker(),
+    Data = deflate(State, <<Padding/binary, EofMarker/binary>>, finish),
+    ZStream =/= undefined andalso zlib:close(ZStream),
+    {FinalBytes, _} = read_bytes(append_data(State, Data)),
+    FinalBytes.
+
+
+-spec read_bytes(state()) -> {bytes(), state()}.
+read_bytes(#state{data = Bytes} = State) ->
+    {Bytes, State#state{data = <<>>}}.
 
 
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
 
+-spec append_data(state(), bytes()) -> state().
+append_data(#state{data = Data} = State, NewData) ->
+    State#state{data = <<Data/binary, NewData/binary>>}.
+
+
 %% @private
--spec prepare_header(binary(), FilenameSize :: non_neg_integer(), FileSize :: non_neg_integer(), 
-    Mode :: non_neg_integer(), Timestamp :: non_neg_integer(), binary()) -> tar_header().
-prepare_header(Filename, FilenameSize, FileSize, Mode, Timestamp, Type) when FilenameSize > ?MAX_FILENAME_LENGTH ->
-    LongLinkHeader = prepare_header(
+-spec file_header(binary(), FileSize :: non_neg_integer(), Mode :: non_neg_integer(), 
+    Timestamp :: non_neg_integer(), directory | regular) -> bytes().
+file_header(Filename, FileSize, Mode, Timestamp, FileType) ->
+    {Type, FinalFilename} = case FileType of
+        directory ->
+            {?DIRECTORY_TYPE_FLAG, str_utils:ensure_suffix(Filename, <<"/">>)};
+        regular ->
+            {?FILE_TYPE_FLAG, Filename}
+    end,
+    file_header(FinalFilename, byte_size(Filename), FileSize, Mode, Timestamp, Type).
+
+
+%% @private
+-spec data_padding(state() | non_neg_integer()) -> bytes().
+data_padding(#state{current_file_bytes = FileSize}) ->
+    data_padding(FileSize);
+data_padding(FileSize) when FileSize rem ?BLOCK_SIZE == 0 -> 
+    <<>>;
+data_padding(FileSize) ->
+    BytesToFill = (?BLOCK_SIZE - FileSize rem ?BLOCK_SIZE),
+    binary:copy(?NUL, BytesToFill).
+
+
+%% @private
+-spec ending_marker() -> bytes().
+ending_marker() ->
+    binary:copy(?NUL, 2 * ?BLOCK_SIZE).
+
+%% @private
+-spec file_header(binary(), FilenameSize :: non_neg_integer(), FileSize :: non_neg_integer(), 
+    Mode :: non_neg_integer(), Timestamp :: non_neg_integer(), binary()) -> bytes().
+file_header(Filename, FilenameSize, FileSize, Mode, Timestamp, Type) when FilenameSize > ?MAX_FILENAME_LENGTH ->
+    LongLinkHeader = file_header(
         ?LONG_LINK_HEADER, byte_size(?LONG_LINK_HEADER), FilenameSize, 0, 0, ?LONG_LINK_TYPE_FLAG),
     TrimmedFilename = binary:part(Filename, 0, ?MAX_FILENAME_LENGTH),
-    FileHeader = prepare_header(
+    FileHeader = file_header(
         TrimmedFilename, byte_size(TrimmedFilename), FileSize, Mode, Timestamp, Type),
     <<
         LongLinkHeader/binary,
@@ -77,7 +159,7 @@ prepare_header(Filename, FilenameSize, FileSize, Mode, Timestamp, Type) when Fil
         FileHeader/binary
     >>;
 
-prepare_header(Filename, FilenameSize, FileSize, Mode, Timestamp, Type) when FilenameSize =< ?MAX_FILENAME_LENGTH ->
+file_header(Filename, FilenameSize, FileSize, Mode, Timestamp, Type) when FilenameSize =< ?MAX_FILENAME_LENGTH ->
     % use root(0) as owner/group - by default it will be overwritten when untarring
     PaddedOwner = str_utils:pad_left(format_octal(0), 7, ?VALUE_PAD),
     PaddedGroup = str_utils:pad_left(format_octal(0), 7, ?VALUE_PAD),
@@ -122,3 +204,15 @@ calculate_checksum(<<W, Rest/bytes>>, Acc0) ->
     calculate_checksum(Rest, Acc1);
 calculate_checksum(<<>>, Acc) -> Acc.
 
+
+%% @private
+-spec deflate(state(), binary()) -> binary().
+deflate(State, Data) ->
+    deflate(State, Data, none).
+
+%% @private
+-spec deflate(state(), binary(), zlib:zflush()) -> binary().
+deflate(#state{zstream = undefined}, Data, _Flush) ->
+    Data;
+deflate(#state{zstream = ZStream}, Data, Flush) ->
+    iolist_to_binary(zlib:deflate(ZStream, Data, Flush)).
