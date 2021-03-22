@@ -21,10 +21,16 @@
 %%%===================================================================
 
 create_archive_test() ->
-    create_archive_test_base(#{gzip => false}).
+    create_archive_test_base(#{gzip => false}, 512).
 
 create_archive_gzip_test() ->
-    create_archive_test_base(#{gzip => true}).
+    create_archive_test_base(#{gzip => true}, 512).
+
+create_archive_large_files_test() ->
+    create_archive_test_base(#{gzip => false}, 32 * 1024 * 1024).
+
+create_archive_large_files_gzip_test() ->
+    create_archive_test_base(#{gzip => true}, 32 * 1024 * 1024).
 
 file_with_long_name_test() ->
     TmpPath = mochitemp:mkdtemp(),
@@ -37,15 +43,17 @@ file_with_long_name_test() ->
     Bytes = tar_utils:close_archive_stream(TarStream3),
     
     ?assertEqual(ok, erl_tar:extract({binary, Bytes}, [compressed, {cwd, TmpPath}])),
-    ?assertEqual({ok, FileContent}, file:read_file(filename:join(TmpPath, LongFilename))).
+    ?assertEqual({ok, FileContent}, file:read_file(filename:join(TmpPath, LongFilename))),
+    
+    mochitemp:rmtempdir(TmpPath).
 
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
 
-create_archive_test_base(OpenOptions) ->
+create_archive_test_base(OpenOptions, FileSize) ->
     TmpPath = mochitemp:mkdtemp(),
-    FileContent = crypto:strong_rand_bytes(512),
+    FileContent = crypto:strong_rand_bytes(FileSize),
     Dirname = ?RANDOM_NAME(),
     NestedFilePath = filename:join(Dirname, ?RANDOM_NAME()),
     FileName = ?RANDOM_NAME(),
@@ -63,5 +71,7 @@ create_archive_test_base(OpenOptions) ->
     {ok, After} = file:list_dir(TmpPath),
     ?assertEqual(true, lists:member(binary_to_list(Dirname), After)),
     ?assertEqual({ok, FileContent}, file:read_file(filename:join(TmpPath, FileName))),
-    ?assertEqual({ok, binary:copy(FileContent, 2)}, file:read_file(filename:join(TmpPath, NestedFilePath))).
+    ?assertEqual({ok, binary:copy(FileContent, 2)}, file:read_file(filename:join(TmpPath, NestedFilePath))),
+    
+    mochitemp:rmtempdir(TmpPath).
     
