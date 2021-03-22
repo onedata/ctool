@@ -27,10 +27,10 @@ create_archive_gzip_test() ->
     create_archive_test_base(#{gzip => true}, 512).
 
 create_archive_large_files_test() ->
-    create_archive_test_base(#{gzip => false}, 32 * 1024 * 1024).
+    create_archive_test_base(#{gzip => false}, 16 * 1024 * 1024).
 
 create_archive_large_files_gzip_test() ->
-    create_archive_test_base(#{gzip => true}, 32 * 1024 * 1024).
+    create_archive_test_base(#{gzip => true}, 16 * 1024 * 1024).
 
 file_with_long_name_test() ->
     TmpPath = mochitemp:mkdtemp(),
