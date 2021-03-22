@@ -23,7 +23,7 @@
 %%%     4) repeat from 2) for each new file to add
 %%%     5) `close_archive_stream`
 %%% 
-%%% Any time between open and close `flush` function can be called to acquire bytes 
+%%% Any time between open and close `flush_buffer` function can be called to acquire bytes 
 %%% generated so far.
 %%%
 %%% When using this module with option gzip set to true, every call must be made from 
@@ -38,7 +38,7 @@
 -export([new_file_entry/6]).
 -export([append_to_file_content/2, append_to_file_content/3]).
 -export([close_archive_stream/1]).
--export([flush/1]).
+-export([flush_buffer/1]).
 
 -define(BLOCK_SIZE, 512).
 -define(DIRECTORY_TYPE_FLAG, <<"5">>).
@@ -53,18 +53,21 @@
 
 -define(ZLIB_COMPRESSION_LEVEL, default).
 -define(ZLIB_MEMORY_LEVEL, 8).
--define(ZLIB_WINDOW_BITS, 31).
+% The base two logarithm of the window size (the size of the history buffer). 
+% It is to be in the range 8 through 15.
+% The most significant bit (16) switches on gzip header and checksum.
+-define(ZLIB_WINDOW_BITS, 15 + 16).
 -define(ZLIB_METHOD, deflated).
 -define(ZLIB_STRATEGY, default).
 
--record(state, {
-    buffer = <<>> :: binary(),
+-record(stream, {
+    buffer = <<>> :: bytes(),
     current_file_size = 0 :: non_neg_integer(),
     zstream = undefined :: zlib:zstream()
 }).
 
 
--opaque stream() :: #state{}.
+-opaque stream() :: #stream{}.
 -type bytes() :: binary().
 -type options() :: #{
     gzip => boolean()
@@ -82,43 +85,36 @@ open_archive_stream() ->
 
 -spec open_archive_stream(options()) -> stream().
 open_archive_stream(Options) ->
-    ZStream = case maps:get(gzip, Options, false) of
-        false -> undefined;
-        true -> init_zstream()
-    end,
-    #state{zstream = ZStream}.
+    init_buffer(Options).
 
 
 -spec new_file_entry(stream(), binary(), FileSize :: non_neg_integer(), Mode :: non_neg_integer(), 
     Timestamp :: non_neg_integer(), directory | regular) -> stream().
-new_file_entry(State, Filename, FileSize, Mode, Timestamp, FileType) ->
-    Padding = data_padding(State),
+new_file_entry(Stream, Filename, FileSize, Mode, Timestamp, FileType) ->
+    Padding = data_padding(Stream),
     Header = file_header(Filename, FileSize, Mode, Timestamp, FileType),
-    write_to_buffer(State#state{current_file_size = 0}, <<Padding/binary, Header/binary>>).
+    write_to_buffer(Stream#stream{current_file_size = 0}, <<Padding/binary, Header/binary>>).
 
 
 -spec append_to_file_content(stream(), bytes()) -> stream().
-append_to_file_content(State, Data) ->
-    append_to_file_content(State, Data, byte_size(Data)).
+append_to_file_content(Stream, Data) ->
+    append_to_file_content(Stream, Data, byte_size(Data)).
 
 -spec append_to_file_content(stream(), bytes(), non_neg_integer()) -> stream().
-append_to_file_content(#state{current_file_size = CurrentFileSize} = State, Data, DataSize) ->
-    write_to_buffer(State#state{current_file_size = CurrentFileSize + DataSize}, Data).
+append_to_file_content(#stream{current_file_size = CurrentFileSize} = Stream, Data, DataSize) ->
+    write_to_buffer(Stream#stream{current_file_size = CurrentFileSize + DataSize}, Data).
 
 
 -spec close_archive_stream(stream()) -> bytes().
-close_archive_stream(State) ->
-    Padding = data_padding(State),
+close_archive_stream(Stream) ->
+    Padding = data_padding(Stream),
     EofMarker = ending_marker(),
-    State2 = write_to_buffer(State, <<Padding/binary, EofMarker/binary>>, finish),
-    {FinalBytes, _} = flush(State2),
-    close_zstream(State2),
-    FinalBytes.
+    close_buffer(Stream, <<Padding/binary, EofMarker/binary>>).
 
 
--spec flush(stream()) -> {bytes(), stream()}.
-flush(#state{buffer = Bytes} = State) ->
-    {Bytes, State#state{buffer = <<>>}}.
+-spec flush_buffer(stream()) -> {bytes(), stream()}.
+flush_buffer(#stream{buffer = Bytes} = Stream) ->
+    {Bytes, Stream#stream{buffer = <<>>}}.
 
 
 %%%===================================================================
@@ -185,7 +181,7 @@ ending_marker() ->
 
 %% @private
 -spec data_padding(stream() | non_neg_integer()) -> bytes().
-data_padding(#state{current_file_size = FileSize}) ->
+data_padding(#stream{current_file_size = FileSize}) ->
     data_padding(FileSize);
 data_padding(FileSize) when FileSize rem ?BLOCK_SIZE == 0 ->
     <<>>;
@@ -195,20 +191,19 @@ data_padding(FileSize) ->
 
 
 %% @private
--spec format_octal(integer()) -> 
-    binary().
+-spec format_octal(integer()) -> bytes().
 format_octal(Octal) ->
     iolist_to_binary(io_lib:fwrite("~.8B", [Octal])).
 
 
 %% @private
--spec calculate_checksum(binary()) -> 
+-spec calculate_checksum(bytes()) -> 
     Checksum :: non_neg_integer().
 calculate_checksum(Bin) ->
     calculate_checksum(Bin, 0).
 
 %% @private
--spec calculate_checksum(binary(), Acc :: non_neg_integer()) -> 
+-spec calculate_checksum(bytes(), Acc :: non_neg_integer()) -> 
     Checksum :: non_neg_integer().
 calculate_checksum(<<W, Rest/bytes>>, Acc0) ->
     Acc1 = Acc0 + W,
@@ -217,17 +212,38 @@ calculate_checksum(<<>>, Acc) -> Acc.
 
 
 %% @private
--spec write_to_buffer(stream(), binary()) -> stream().
-write_to_buffer(State, Data) ->
-    write_to_buffer(State, Data, none).
+-spec write_to_buffer(stream(), bytes()) -> stream().
+write_to_buffer(Stream, Data) ->
+    write_to_buffer(Stream, Data, none).
 
 %% @private
--spec write_to_buffer(stream(), binary(), zlib:zflush()) -> stream().
-write_to_buffer(#state{zstream = undefined, buffer = Buffer} = State, Data, _ForceFlush) ->
-    State#state{buffer = <<Buffer/binary, Data/binary>>};
-write_to_buffer(#state{zstream = ZStream, buffer = Buffer} = State, Data, ForceFlush) ->
+-spec write_to_buffer(stream(), bytes(), zlib:zflush()) -> stream().
+write_to_buffer(#stream{zstream = undefined, buffer = Buffer} = Stream, Data, _ForceFlush) ->
+    Stream#stream{buffer = <<Buffer/binary, Data/binary>>};
+write_to_buffer(#stream{zstream = ZStream, buffer = Buffer} = Stream, Data, ForceFlush) ->
     Deflated = iolist_to_binary(zlib:deflate(ZStream, Data, ForceFlush)),
-    State#state{buffer = <<Buffer/binary, Deflated/binary>>}.
+    Stream#stream{buffer = <<Buffer/binary, Deflated/binary>>}.
+
+
+%% @private
+-spec init_buffer(options()) -> stream().
+init_buffer(Options) ->
+    ZStream = case maps:get(gzip, Options, false) of
+        false -> undefined;
+        true -> init_zstream()
+    end,
+    #stream{zstream = ZStream}.
+
+
+-spec close_buffer(stream(), bytes()) -> bytes().
+close_buffer(#stream{zstream = undefined} = Stream, Bytes) ->
+    Stream2 = write_to_buffer(Stream, Bytes),
+    {FinalBytes, _} = flush_buffer(Stream2),
+    FinalBytes;
+close_buffer(#stream{zstream = ZStream} = Stream, Data) when ZStream /= undefined ->
+    Deflated = iolist_to_binary(zlib:deflate(ZStream, Data, finish)),
+    zlib:close(ZStream),
+    close_buffer(Stream#stream{zstream = undefined}, Deflated).
 
 
 %% @private
@@ -237,9 +253,3 @@ init_zstream() ->
     ok = zlib:deflateInit(ZStream, ?ZLIB_COMPRESSION_LEVEL, ?ZLIB_METHOD, ?ZLIB_WINDOW_BITS,
         ?ZLIB_MEMORY_LEVEL, ?ZLIB_STRATEGY),
     ZStream.
-
-
-%% @private
--spec close_zstream(stream()) -> ok.
-close_zstream(#state{zstream = undefined}) -> ok;
-close_zstream(#state{zstream = ZStream}) -> zlib:close(ZStream).
