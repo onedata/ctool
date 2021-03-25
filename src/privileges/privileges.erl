@@ -63,7 +63,9 @@
 
 ?SPACE_ADD_SUPPORT | ?SPACE_REMOVE_SUPPORT |
 
-?SPACE_ADD_HARVESTER | ?SPACE_REMOVE_HARVESTER.
+?SPACE_ADD_HARVESTER | ?SPACE_REMOVE_HARVESTER |
+
+?SPACE_MANAGE_DATASETS.
 
 %% User privileges with regards to handle service.
 -type handle_service_privilege() ::
@@ -280,7 +282,8 @@ space_manager() ->
         ?SPACE_VIEW_STATISTICS,
         ?SPACE_VIEW_CHANGES_STREAM,
         ?SPACE_SCHEDULE_REPLICATION,
-        ?SPACE_VIEW_QOS
+        ?SPACE_VIEW_QOS,
+        ?SPACE_MANAGE_DATASETS
     ]).
 
 %%--------------------------------------------------------------------

@@ -84,6 +84,8 @@
 -define(SPACE_ADD_HARVESTER, space_add_harvester).
 -define(SPACE_REMOVE_HARVESTER, space_remove_harvester).
 
+-define(SPACE_MANAGE_DATASETS, space_manage_datasets).
+
 % Handle service privileges of members (users or groups)
 -define(HANDLE_SERVICE_VIEW, handle_service_view).
 -define(HANDLE_SERVICE_UPDATE, handle_service_update).
