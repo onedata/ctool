@@ -128,15 +128,15 @@ flush_buffer(#stream{buffer = Bytes} = Stream) ->
 -spec file_header(binary(), FileSize :: non_neg_integer(), Mode :: non_neg_integer(), 
     Timestamp :: non_neg_integer(), 'DIR' | 'REG' | {'SYMLNK', binary()}) -> bytes().
 file_header(Filename, FileSize, Mode, Timestamp, FileType) ->
-    {Type, FinalFilename, SymlinkPath} = case FileType of
+    {Type, FinalFilename, SymlinkPath, FinalMode} = case FileType of
         'DIR' ->
-            {?DIRECTORY_TYPE_FLAG, str_utils:ensure_suffix(Filename, <<"/">>), <<>>};
+            {?DIRECTORY_TYPE_FLAG, str_utils:ensure_suffix(Filename, <<"/">>), <<>>, Mode};
         'REG' ->
-            {?FILE_TYPE_FLAG, Filename, <<>>};
+            {?FILE_TYPE_FLAG, Filename, <<>>, Mode};
         {'SYMLNK', Path} ->
-            {?SYMLINK_TYPE_FLAG, Filename, Path}
+            {?SYMLINK_TYPE_FLAG, Filename, Path, 8#777}
     end,
-    file_header(FinalFilename, byte_size(FinalFilename), FileSize, Mode, Timestamp, Type, SymlinkPath).
+    file_header(FinalFilename, byte_size(FinalFilename), FileSize, FinalMode, Timestamp, Type, SymlinkPath).
 
 %% @private
 -spec file_header(binary(), FilenameSize :: non_neg_integer(), FileSize :: non_neg_integer(),

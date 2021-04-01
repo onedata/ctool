@@ -13,6 +13,7 @@
 -author("Michal Stanisz").
 
 -include_lib("eunit/include/eunit.hrl").
+-include_lib("kernel/include/file.hrl").
 
 -define(RANDOM_NAME(), binary:replace(base64:encode(crypto:strong_rand_bytes(12)), <<"/">>, <<"">>, [global])).
 
@@ -123,6 +124,8 @@ symlink_test_base(FileName, LinkName, SymlinkPath) ->
     ?assertEqual(ok, erl_tar:extract({binary, Bytes}, [compressed, {cwd, TmpPath}])),
     ?assertEqual({ok, FileContent}, file:read_file(filename:join(TmpPath, FileName))),
     ?assertEqual({ok, FileContent}, file:read_file(filename:join(TmpPath, LinkName))),
+    {ok, #file_info{mode = Mode}} = file:read_link_info(filename:join(TmpPath, LinkName)),
+    ?assertEqual(8#777, Mode rem 8#1000),
     
     mochitemp:rmtempdir(TmpPath).
     
