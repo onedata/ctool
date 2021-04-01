@@ -92,6 +92,10 @@ serialize_deserialize_testcases() -> [
         #gri{type = temporary_token_secret, id = <<"tts123">>, aspect = user, scope = private}
     },
     {
+        <<"op_dataset.123345456789890.instance:private">>,
+        #gri{type = op_dataset, id = <<"123345456789890">>, aspect = instance, scope = private}
+    },
+    {
         <<"file.891234718246113331.attrs:protected">>,
         #gri{type = op_file, id = <<"891234718246113331">>, aspect = attrs, scope = protected}
     },
@@ -179,6 +183,10 @@ serialize_deserialize_pattern_testcases() -> [
     {
         <<"*.*.harvest_metadata:private">>,
         #gri_pattern{type = '*', id = '*', aspect = harvest_metadata, scope = private}
+    },
+    {
+        <<"op_dataset.123345456789890.*:private">>,
+        #gri_pattern{type = op_dataset, id = <<"123345456789890">>, aspect = '*', scope = private}
     },
     {
         <<"file.891234718246113331.*:*">>,
