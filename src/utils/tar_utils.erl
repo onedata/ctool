@@ -93,9 +93,9 @@ open_archive_stream(Options) ->
 
 -spec new_file_entry(stream(), binary(), FileSize :: non_neg_integer(), Mode :: non_neg_integer(), 
     Timestamp :: non_neg_integer(), 'DIR' | 'REG' | {'SYMLNK', binary()}) -> stream().
-new_file_entry(Stream, Filename, FileSize, Mode, Timestamp, FileType) ->
+new_file_entry(Stream, Filename, FileSize, Mode, Timestamp, TypeSpec) ->
     Padding = data_padding(Stream),
-    Header = file_header(Filename, FileSize, Mode, Timestamp, FileType),
+    Header = file_header(Filename, FileSize, Mode, Timestamp, TypeSpec),
     write_to_buffer(Stream#stream{current_file_size = 0}, <<Padding/binary, Header/binary>>).
 
 
@@ -127,8 +127,8 @@ flush_buffer(#stream{buffer = Bytes} = Stream) ->
 %% @private
 -spec file_header(binary(), FileSize :: non_neg_integer(), Mode :: non_neg_integer(), 
     Timestamp :: non_neg_integer(), 'DIR' | 'REG' | {'SYMLNK', binary()}) -> bytes().
-file_header(Filename, FileSize, Mode, Timestamp, FileType) ->
-    {Type, FinalFilename, SymlinkPath, FinalMode} = case FileType of
+file_header(Filename, FileSize, Mode, Timestamp, TypeSpec) ->
+    {Type, FinalFilename, SymlinkPath, FinalMode} = case TypeSpec of
         'DIR' ->
             {?DIRECTORY_TYPE_FLAG, str_utils:ensure_suffix(Filename, <<"/">>), <<>>, Mode};
         'REG' ->
