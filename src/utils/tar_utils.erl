@@ -43,13 +43,16 @@
 -define(BLOCK_SIZE, 512).
 -define(DIRECTORY_TYPE_FLAG, <<"5">>).
 -define(FILE_TYPE_FLAG, <<"0">>).
--define(LONG_LINK_TYPE_FLAG, <<"L">>).
+-define(SYMLINK_TYPE_FLAG, <<"2">>).
 -define(NUL, <<0>>).
 -define(VALUE_PAD, <<"0">>).
--define(LONG_LINK_HEADER, <<46, 47, 46, 47, "@LongLink">>).
--define(MAX_FILENAME_LENGTH, 100).
 -define(CHECKSUM_PLACEHOLDER, binary:copy(<<32>>, 8)).
 -define(CHECKSUM_ENDING, <<0, 32>>).
+-define(MAX_FILENAME_LENGTH, 100).
+-define(MAX_SYMLINK_LENGTH, 100).
+-define(LONG_LINK_PREFIX, <<46, 47, 46, 47, "@LongLink">>).
+-define(FILENAME_LONG_LINK_TYPE_FLAG, <<"L">>).
+-define(SYMLINK_LONG_LINK_TYPE_FLAG, <<"K">>).
 
 -define(ZLIB_COMPRESSION_LEVEL, default).
 -define(ZLIB_MEMORY_LEVEL, 8).
@@ -89,10 +92,10 @@ open_archive_stream(Options) ->
 
 
 -spec new_file_entry(stream(), binary(), FileSize :: non_neg_integer(), Mode :: non_neg_integer(), 
-    Timestamp :: non_neg_integer(), directory | regular) -> stream().
-new_file_entry(Stream, Filename, FileSize, Mode, Timestamp, FileType) ->
+    Timestamp :: non_neg_integer(), 'DIR' | 'REG' | {'SYMLNK', binary()}) -> stream().
+new_file_entry(Stream, Filename, FileSize, Mode, Timestamp, TypeSpec) ->
     Padding = data_padding(Stream),
-    Header = file_header(Filename, FileSize, Mode, Timestamp, FileType),
+    Header = file_header(Filename, FileSize, Mode, Timestamp, TypeSpec),
     write_to_buffer(Stream#stream{current_file_size = 0}, <<Padding/binary, Header/binary>>).
 
 
@@ -123,33 +126,55 @@ flush_buffer(#stream{buffer = Bytes} = Stream) ->
 
 %% @private
 -spec file_header(binary(), FileSize :: non_neg_integer(), Mode :: non_neg_integer(), 
-    Timestamp :: non_neg_integer(), directory | regular) -> bytes().
-file_header(Filename, FileSize, Mode, Timestamp, FileType) ->
-    {Type, FinalFilename} = case FileType of
-        directory ->
-            {?DIRECTORY_TYPE_FLAG, str_utils:ensure_suffix(Filename, <<"/">>)};
-        regular ->
-            {?FILE_TYPE_FLAG, Filename}
+    Timestamp :: non_neg_integer(), 'DIR' | 'REG' | {'SYMLNK', binary()}) -> bytes().
+file_header(Filename, FileSize, Mode, Timestamp, TypeSpec) ->
+    {Type, FinalFilename, SymlinkPath, FinalMode} = case TypeSpec of
+        'DIR' ->
+            {?DIRECTORY_TYPE_FLAG, str_utils:ensure_suffix(Filename, <<"/">>), <<>>, Mode};
+        'REG' ->
+            {?FILE_TYPE_FLAG, Filename, <<>>, Mode};
+        {'SYMLNK', Path} ->
+            {?SYMLINK_TYPE_FLAG, Filename, Path, 8#777}
     end,
-    file_header(FinalFilename, byte_size(Filename), FileSize, Mode, Timestamp, Type).
+    file_header(FinalFilename, byte_size(FinalFilename), FileSize, FinalMode, Timestamp, Type, SymlinkPath).
 
 %% @private
--spec file_header(binary(), FilenameSize :: non_neg_integer(), FileSize :: non_neg_integer(), 
-    Mode :: non_neg_integer(), Timestamp :: non_neg_integer(), binary()) -> bytes().
-file_header(Filename, FilenameSize, FileSize, Mode, Timestamp, Type) when FilenameSize > ?MAX_FILENAME_LENGTH ->
-    LongLinkHeader = file_header(
-        ?LONG_LINK_HEADER, byte_size(?LONG_LINK_HEADER), FilenameSize, 0, 0, ?LONG_LINK_TYPE_FLAG),
+-spec file_header(binary(), FilenameSize :: non_neg_integer(), FileSize :: non_neg_integer(),
+    Mode :: non_neg_integer(), Timestamp :: non_neg_integer(), binary(), binary()) -> bytes().
+file_header(
+    Filename, FilenameSize, FileSize, Mode, Timestamp, Type, SymlinkPath
+) when byte_size(SymlinkPath) > ?MAX_SYMLINK_LENGTH ->
+    SymlinkSize = byte_size(SymlinkPath),
+    SymlinkLongLinkHeader = file_header(
+        ?LONG_LINK_PREFIX, byte_size(?LONG_LINK_PREFIX), SymlinkSize, 8#777, 0, ?SYMLINK_LONG_LINK_TYPE_FLAG, <<>>),
+    TrimmedSymlinkPath = binary:part(SymlinkPath, 0, ?MAX_SYMLINK_LENGTH),
+    FileHeader = file_header(
+        Filename, FilenameSize, FileSize, Mode, Timestamp, Type, TrimmedSymlinkPath),
+    <<
+        SymlinkLongLinkHeader/binary,
+        SymlinkPath/binary,
+        (data_padding(SymlinkSize))/binary,
+        FileHeader/binary
+    >>;
+
+file_header(
+    Filename, FilenameSize, FileSize, Mode, Timestamp, Type, SymlinkPath
+) when FilenameSize > ?MAX_FILENAME_LENGTH ->
+    FilenameLongLinkHeader = file_header(
+        ?LONG_LINK_PREFIX, byte_size(?LONG_LINK_PREFIX), FilenameSize, 0, 0, ?FILENAME_LONG_LINK_TYPE_FLAG, <<>>),
     TrimmedFilename = binary:part(Filename, 0, ?MAX_FILENAME_LENGTH),
     FileHeader = file_header(
-        TrimmedFilename, byte_size(TrimmedFilename), FileSize, Mode, Timestamp, Type),
+        TrimmedFilename, byte_size(TrimmedFilename), FileSize, Mode, Timestamp, Type, SymlinkPath),
     <<
-        LongLinkHeader/binary,
+        FilenameLongLinkHeader/binary,
         Filename/binary,
         (data_padding(FilenameSize))/binary,
         FileHeader/binary
     >>;
 
-file_header(Filename, FilenameSize, FileSize, Mode, Timestamp, Type) when FilenameSize =< ?MAX_FILENAME_LENGTH ->
+file_header(
+    Filename, FilenameSize, FileSize, Mode, Timestamp, Type, SymlinkPath
+) when FilenameSize =< ?MAX_FILENAME_LENGTH ->
     % use root(0) as owner/group - by default it will be overwritten when untarring
     PaddedOwner = str_utils:pad_left(format_octal(0), 7, ?VALUE_PAD),
     PaddedGroup = str_utils:pad_left(format_octal(0), 7, ?VALUE_PAD),
@@ -164,7 +189,7 @@ file_header(Filename, FilenameSize, FileSize, Mode, Timestamp, Type) when Filena
         PaddedSize/binary, 0,
         PaddedTimestamp/binary, 0
     >>,
-    HeaderSecondPart = <<(str_utils:pad_right(<<Type/binary>>, 101, ?NUL))/binary>>,
+    HeaderSecondPart = <<(str_utils:pad_right(<<Type/binary, SymlinkPath/binary>>, 101, ?NUL))/binary>>,
     Checksum = calculate_checksum(
         <<HeaderFirstPart/binary, (?CHECKSUM_PLACEHOLDER)/binary, HeaderSecondPart/binary>>),
     PaddedChecksum = 
