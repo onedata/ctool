@@ -55,4 +55,7 @@
 -define(DIRECTORY_SEPARATOR_CHAR, $/).
 -define(DIRECTORY_SEPARATOR_BIN, <<?DIRECTORY_SEPARATOR>>).
 
+-define(CURRENT_DIRECTORY, ".").
+-define(PARENT_DIRECTORY, "..").
+
 -endif.
