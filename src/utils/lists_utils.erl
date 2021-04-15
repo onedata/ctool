@@ -26,9 +26,9 @@
 -export([union/1, union/2, intersect/2, subtract/2]).
 -export([is_subset/2]).
 -export([replace/3]).
--export([ensure_length/2, number_items/1]).
+-export([ensure_length/2, enumerate/1]).
 -export([shuffle/1, random_element/1, random_sublist/1, random_sublist/3]).
--export([pmap/2, pforeach/2]).
+-export([pmap/2, pforeach/2, pfiltermap/3, pfiltermap/4]).
 -export([foldl_while/3]).
 
 
@@ -122,12 +122,8 @@ ensure_length(TargetLength, List) ->
     lists:sublist(lists:append(lists:duplicate(Repeats, List)), TargetLength).
 
 
-%%--------------------------------------------------------------------
-%% @doc Adds sequence number to each list element.
-%% @end
-%%--------------------------------------------------------------------
--spec number_items([T]) -> [{pos_integer(), T}].
-number_items(List) ->
+-spec enumerate([T]) -> [{pos_integer(), T}].
+enumerate(List) ->
     lists:zip(lists:seq(1, length(List)), List).
 
 
@@ -250,6 +246,52 @@ pforeach(Fun, Elements) ->
     List :: [T], T :: term().
 foldl_while(F, Accu, List) ->
     do_foldl(F, {cont, Accu}, List).
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%% A parallel function similar to lists:filtermap/2.
+%% However, Filter and Map functions are separated and number of parallel
+%% processes is limited.
+%% TODO VFS-7568 use tail recursion
+%% @end
+%%--------------------------------------------------------------------
+-spec pfiltermap(Map :: fun((X :: A) -> B), Filter :: fun((X :: A) -> boolean()),
+    L :: [A], MaxProcesses :: non_neg_integer()) -> [B].
+pfiltermap(Map, Filter, List, MaxProcesses)
+    when is_integer(MaxProcesses)
+    andalso MaxProcesses > 0
+->
+    Length = length(List),
+    case Length > MaxProcesses of
+        true ->
+            {L1, L2} = lists:split(MaxProcesses, List),
+            pfiltermap(Map, Filter, L1) ++
+            pfiltermap(Map, Filter, L2, MaxProcesses);
+        _ ->
+            pfiltermap(Map, Filter, List)
+    end.
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%% A parallel function similar to lists:filtermap/2
+%% However, Filter and Map functions are separated.
+%% TODO VFS-7568 parallelize also filtering step
+%% @end
+%%--------------------------------------------------------------------
+-spec pfiltermap(Map :: fun((X :: A) -> B), Filter :: fun((X :: A) -> boolean()),
+    List :: [A]) -> [B].
+pfiltermap(Map, Filter, List) ->
+    Mapped = pmap(fun(Element) -> Map(Element) end, List),
+    lists:filtermap(fun
+        (error) -> false;
+        (Ans) ->
+            case Filter(Ans) of
+                true -> {true, Ans};
+                false -> false
+            end
+    end, Mapped).
 
 %%%===================================================================
 %%% Internal functions
