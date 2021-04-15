@@ -256,8 +256,12 @@ foldl_while(F, Accu, List) ->
 %% TODO VFS-7568 use tail recursion
 %% @end
 %%--------------------------------------------------------------------
--spec pfiltermap(Map :: fun((X :: A) -> B), Filter :: fun((X :: A) -> boolean()),
-    L :: [A], MaxProcesses :: non_neg_integer()) -> [B].
+-spec pfiltermap(
+    Map :: fun((X :: A) -> Y :: B),
+    Filter :: fun((X :: B) -> boolean()),
+    List :: [X :: A],
+    MaxProcesses :: pos_integer()
+) -> [X :: B].
 pfiltermap(Map, Filter, List, MaxProcesses)
     when is_integer(MaxProcesses)
     andalso MaxProcesses > 0
@@ -280,18 +284,13 @@ pfiltermap(Map, Filter, List, MaxProcesses)
 %% TODO VFS-7568 parallelize also filtering step
 %% @end
 %%--------------------------------------------------------------------
--spec pfiltermap(Map :: fun((X :: A) -> B), Filter :: fun((X :: A) -> boolean()),
-    List :: [A]) -> [B].
+-spec pfiltermap(
+    Map :: fun((X :: A) -> Y :: B),
+    Filter :: fun((X :: B) -> boolean()),
+    List :: [X :: A]
+) -> [X :: B].
 pfiltermap(Map, Filter, List) ->
-    Mapped = pmap(fun(Element) -> Map(Element) end, List),
-    lists:filtermap(fun
-        (error) -> false;
-        (Ans) ->
-            case Filter(Ans) of
-                true -> {true, Ans};
-                false -> false
-            end
-    end, Mapped).
+    lists:filter(Filter, pmap(fun(Element) -> Map(Element) end, List)).
 
 %%%===================================================================
 %%% Internal functions
@@ -302,6 +301,6 @@ pfiltermap(Map, Filter, List) ->
     F :: fun((Elem :: T, AccIn) -> AccOut),
     AccIn :: term(), AccOut :: {cont, term()} | {halt, term()},
     List :: [T], T :: term().
-do_foldl(_F, {halt, Accu}, _) -> Accu;
-do_foldl(_F, {cont, Accu}, []) -> Accu;
-do_foldl(F, {cont, Accu}, [Hd | Tail]) -> do_foldl(F, F(Hd, Accu), Tail).
+do_foldl(_F, {halt, Acc}, _) -> Acc;
+do_foldl(_F, {cont, Acc}, []) -> Acc;
+do_foldl(F, {cont, Acc}, [Hd | Tail]) -> do_foldl(F, F(Hd, Acc), Tail).
