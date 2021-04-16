@@ -26,7 +26,7 @@
 -export([union/1, union/2, intersect/2, subtract/2]).
 -export([is_subset/2]).
 -export([replace/3]).
--export([ensure_length/2, enumerate/1]).
+-export([ensure_length/2, enumerate/1, index_of/2]).
 -export([shuffle/1, random_element/1, random_sublist/1, random_sublist/3]).
 -export([pmap/2, pforeach/2, pfiltermap/2, pfiltermap/3]).
 -export([foldl_while/3]).
@@ -125,6 +125,22 @@ ensure_length(TargetLength, List) ->
 -spec enumerate([T]) -> [{pos_integer(), T}].
 enumerate(List) ->
     lists:zip(lists:seq(1, length(List)), List).
+
+
+-spec index_of(term(), [term()]) -> pos_integer() | undefined.
+index_of(_Element, []) ->
+    undefined;
+index_of(Element, List) ->
+    Index = foldl_while(fun(E, Offset) ->
+        case E =:= Element of
+            true -> {halt, Offset};
+            false -> {cont, Offset + 1}
+        end
+    end, 1, List),
+    case Index > length(List) of
+        true -> undefined;
+        false -> Index
+    end.
 
 
 -spec shuffle([T]) -> [T].

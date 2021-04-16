@@ -29,6 +29,16 @@ replace_test() ->
     ?assertEqual(R(old, new, [0, 0, 0, 0, 0]), [0, 0, 0, 0, 0]).
 
 
+index_of_test() ->
+    L = lists:seq(1, 100),
+    ?assertEqual(undefined, lists_utils:index_of(1, [])),
+    ?assertEqual(1, lists_utils:index_of(1, L)),
+    ?assertEqual(50, lists_utils:index_of(50, L)),
+    ?assertEqual(100, lists_utils:index_of(100, L)),
+    ?assertEqual(undefined, lists_utils:index_of(101, L)),
+    ?assertEqual(undefined, lists_utils:index_of(<<"another missing value">>, L)).
+
+
 pmap_pforeach_pfiltermap_test_() ->
     {timeout, 60, fun() ->
         List = lists:seq(1, 100),
