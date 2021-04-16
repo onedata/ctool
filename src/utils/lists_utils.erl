@@ -249,27 +249,9 @@ pforeach(Fun, Elements) ->
 
 %%--------------------------------------------------------------------
 %% @doc
-%% Foldls the list until Fun returns {halt, Term}.
-%% The return value for Fun is expected to be
-%% {cont, Acc} to continue the fold with Acc as the new accumulator or
-%% {halt, Acc} to halt the fold and return Acc as the return value of this function
-%% @end
-%%--------------------------------------------------------------------
--spec foldl_while(F, Accu, List) -> Accu1 when
-    F :: fun((Elem :: T, AccIn) -> AccOut),
-    Accu :: term(), Accu1 :: term(),
-    AccIn :: term(), AccOut :: {cont, term()} | {halt, term()},
-    List :: [T], T :: term().
-foldl_while(F, Accu, List) ->
-    do_foldl(F, {cont, Accu}, List).
-
-
-%%--------------------------------------------------------------------
-%% @doc
-%% A parallel function similar to lists:filtermap/2.
-%% However, Filter and Map functions are separated and number of parallel
-%% processes is limited.
-%% TODO VFS-7568 use tail recursion
+%% A parallel version of lists:filtermap/2 - elements are processed by
+%% a limited number of processes. Raises an error if any of the processes
+%% crash or a process somehow dies without reporting back.
 %% @end
 %%--------------------------------------------------------------------
 -spec pfiltermap(
@@ -285,6 +267,7 @@ pfiltermap(Fun, Elements, MaxProcesses)
     case Length > MaxProcesses of
         true ->
             {L1, L2} = lists:split(MaxProcesses, Elements),
+            %% TODO VFS-7568 use tail recursion
             pfiltermap(Fun, L1) ++
             pfiltermap(Fun, L2, MaxProcesses);
         _ ->
@@ -294,8 +277,9 @@ pfiltermap(Fun, Elements, MaxProcesses)
 
 %%--------------------------------------------------------------------
 %% @doc
-%% A parallel function similar to lists:filtermap/2
-%% However, Filter and Map functions are separated.
+%% A parallel version of lists:filtermap/2 - each element is processed by
+%% a new async process. Raises an error if any of the processes crash
+%% or a process somehow dies without reporting back.
 %% TODO VFS-7568 parallelize also filtering step
 %% @end
 %%--------------------------------------------------------------------
@@ -307,6 +291,24 @@ pfiltermap(Fun, Elements) ->
     lists:filtermap(fun(MappedResult) ->
         MappedResult
     end, pmap(fun(Element) -> Fun(Element) end, Elements)).
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Foldls the list until Fun returns {halt, Term}.
+%% The return value for Fun is expected to be
+%% {cont, Acc} to continue the fold with Acc as the new accumulator or
+%% {halt, Acc} to halt the fold and return Acc as the return value of this function
+%% @end
+%%--------------------------------------------------------------------
+-spec foldl_while(F, Accu, List) -> Accu1 when
+    F :: fun((Elem :: T, AccIn) -> AccOut),
+    Accu :: term(), Accu1 :: term(),
+    AccIn :: term(), AccOut :: {cont, term()} | {halt, term()},
+    List :: [T], T :: term().
+foldl_while(F, Accu, List) ->
+    do_foldl(F, {cont, Accu}, List).
+
 
 %%%===================================================================
 %%% Internal functions
