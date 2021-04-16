@@ -28,7 +28,7 @@
 -export([replace/3]).
 -export([ensure_length/2, enumerate/1]).
 -export([shuffle/1, random_element/1, random_sublist/1, random_sublist/3]).
--export([pmap/2, pforeach/2, pfiltermap/3, pfiltermap/4]).
+-export([pmap/2, pforeach/2, pfiltermap/2, pfiltermap/3]).
 -export([foldl_while/3]).
 
 
@@ -257,23 +257,22 @@ foldl_while(F, Accu, List) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec pfiltermap(
-    Map :: fun((X :: A) -> Y :: B),
-    Filter :: fun((X :: B) -> boolean()),
-    List :: [X :: A],
+    Fun :: fun((X :: A) -> {true, Y :: B} | false),
+    Elements :: [X :: A],
     MaxProcesses :: pos_integer()
 ) -> [X :: B].
-pfiltermap(Map, Filter, List, MaxProcesses)
+pfiltermap(Fun, Elements, MaxProcesses)
     when is_integer(MaxProcesses)
     andalso MaxProcesses > 0
 ->
-    Length = length(List),
+    Length = length(Elements),
     case Length > MaxProcesses of
         true ->
-            {L1, L2} = lists:split(MaxProcesses, List),
-            pfiltermap(Map, Filter, L1) ++
-            pfiltermap(Map, Filter, L2, MaxProcesses);
+            {L1, L2} = lists:split(MaxProcesses, Elements),
+            pfiltermap(Fun, L1) ++
+            pfiltermap(Fun, L2, MaxProcesses);
         _ ->
-            pfiltermap(Map, Filter, List)
+            pfiltermap(Fun, Elements)
     end.
 
 
@@ -285,12 +284,13 @@ pfiltermap(Map, Filter, List, MaxProcesses)
 %% @end
 %%--------------------------------------------------------------------
 -spec pfiltermap(
-    Map :: fun((X :: A) -> Y :: B),
-    Filter :: fun((X :: B) -> boolean()),
-    List :: [X :: A]
+    Fun :: fun((X :: A) -> {true, Y :: B} | false),
+    Elements :: [X :: A]
 ) -> [X :: B].
-pfiltermap(Map, Filter, List) ->
-    lists:filter(Filter, pmap(fun(Element) -> Map(Element) end, List)).
+pfiltermap(Fun, Elements) ->
+    lists:filtermap(fun(MappedResult) ->
+        MappedResult
+    end, pmap(fun(Element) -> Fun(Element) end, Elements)).
 
 %%%===================================================================
 %%% Internal functions
