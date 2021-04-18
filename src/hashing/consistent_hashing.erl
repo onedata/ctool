@@ -238,7 +238,7 @@ init_ring(Nodes, NodesAssignedPerLabel) ->
     InitialCHash = chash:fresh(NodeCount, Node0),
     CHash = lists:foldl(fun({I, Node}, CHashAcc) ->
         chash:update(get_nth_index(I, CHashAcc), Node, CHashAcc)
-    end, InitialCHash, lists:zip(lists:seq(1, NodeCount), SortedUniqueNodes)),
+    end, InitialCHash, lists_utils:enumerate(SortedUniqueNodes)),
 
     #ring{chash = CHash, nodes_assigned_per_label = NodesAssignedPerLabel, all_nodes = SortedUniqueNodes}.
 

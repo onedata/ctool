@@ -29,18 +29,57 @@ replace_test() ->
     ?assertEqual(R(old, new, [0, 0, 0, 0, 0]), [0, 0, 0, 0, 0]).
 
 
-pmap_pforeach_test_() ->
+index_of_test() ->
+    L = lists:seq(1, 100),
+    ?assertEqual(undefined, lists_utils:index_of(1, [])),
+    ?assertEqual(1, lists_utils:index_of(1, L)),
+    ?assertEqual(50, lists_utils:index_of(50, L)),
+    ?assertEqual(100, lists_utils:index_of(100, L)),
+    ?assertEqual(undefined, lists_utils:index_of(101, L)),
+    ?assertEqual(undefined, lists_utils:index_of(<<"another missing value">>, L)).
+
+
+pmap_pforeach_pfiltermap_test_() ->
     {timeout, 60, fun() ->
         List = lists:seq(1, 100),
+        Length = length(List),
+        FilterMapFunGen = fun(M, F) ->
+            fun(X) ->
+                Result = M(X),
+                case F(Result) of
+                    true -> {true, Result};
+                    false -> false
+                end
+            end
+        end,
 
-        SimpleFun = fun(X) -> 2 * X - 15 end,
-        ?assertEqual(lists:map(SimpleFun, List), lists_utils:pmap(SimpleFun, List)),
-        ?assertEqual(lists:foreach(SimpleFun, List), lists_utils:pforeach(SimpleFun, List)),
+        SimpleMapFun = fun(X) -> X * X end,
+        SimpleFilterFun = fun(X) -> X rem 2 =:= 0 end,
+        SimpleFilterMapFun = FilterMapFunGen(SimpleMapFun, SimpleFilterFun),
 
-        AnotherFun = fun(X) -> 8 / X end,
-        AnotherFunLongLasting = fun(X) -> timer:sleep(5000 + rand:uniform(1000)), AnotherFun(X) end,
-        ?assertEqual(lists:map(AnotherFun, List), lists_utils:pmap(AnotherFunLongLasting, List)),
-        ?assertEqual(lists:foreach(AnotherFun, List), lists_utils:pforeach(AnotherFunLongLasting, List)),
+        ?assertEqual(lists:map(SimpleMapFun, List), lists_utils:pmap(SimpleMapFun, List)),
+        ?assertEqual(lists:foreach(SimpleMapFun, List), lists_utils:pforeach(SimpleMapFun, List)),
+        ?assertEqual(lists:filtermap(SimpleFilterMapFun, List),
+            lists_utils:pfiltermap(SimpleFilterMapFun, List)),
+        ?assertEqual(lists:filtermap(SimpleFilterMapFun, List),
+            lists_utils:pfiltermap(SimpleFilterMapFun, List, Length * 2)),
+        ?assertEqual(lists:filtermap(SimpleFilterMapFun, List),
+            lists_utils:pfiltermap(SimpleFilterMapFun, List, Length div 2)),
+
+        AnotherMapFun = fun(X) -> 8 / X end,
+        AnotherFilterFun = fun(X) -> X > 0.5 end,
+        AnotherMapFunLongLasting = fun(X) -> timer:sleep(5000 + rand:uniform(1000)), AnotherMapFun(X) end,
+        AnotherFilterMapFun = FilterMapFunGen(AnotherMapFun, AnotherFilterFun),
+        AnotherLongLastingFilterMapFun = FilterMapFunGen(AnotherMapFunLongLasting, AnotherFilterFun),
+
+        ?assertEqual(lists:map(AnotherMapFun, List), lists_utils:pmap(AnotherMapFunLongLasting, List)),
+        ?assertEqual(lists:foreach(AnotherMapFun, List), lists_utils:pforeach(AnotherMapFunLongLasting, List)),
+        ?assertEqual(lists:filtermap(AnotherFilterMapFun, List),
+            lists_utils:pfiltermap(AnotherLongLastingFilterMapFun, List)),
+        ?assertEqual(lists:filtermap(AnotherFilterMapFun, List),
+            lists_utils:pfiltermap(AnotherLongLastingFilterMapFun, List, Length * 2)),
+        ?assertEqual(lists:filtermap(AnotherFilterMapFun, List),
+            lists_utils:pfiltermap(AnotherLongLastingFilterMapFun, List, Length div 2)),
 
         CrashingFun = fun(X) ->
             case rand:uniform(4) of
@@ -57,6 +96,10 @@ pmap_pforeach_test_() ->
         ?assertException(
             error, {parallel_call_failed, {failed_processes, _}},
             lists_utils:pforeach(CrashingFun, List)
+        ),
+        ?assertException(
+            error, {parallel_call_failed, {failed_processes, _}},
+            lists_utils:pfiltermap(CrashingFun, List)
         )
     end}.
 

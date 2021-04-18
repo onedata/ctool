@@ -26,9 +26,9 @@
 -export([union/1, union/2, intersect/2, subtract/2]).
 -export([is_subset/2]).
 -export([replace/3]).
--export([ensure_length/2, number_items/1]).
+-export([ensure_length/2, enumerate/1, index_of/2]).
 -export([shuffle/1, random_element/1, random_sublist/1, random_sublist/3]).
--export([pmap/2, pforeach/2]).
+-export([pmap/2, pforeach/2, pfiltermap/2, pfiltermap/3]).
 -export([foldl_while/3]).
 
 
@@ -122,13 +122,25 @@ ensure_length(TargetLength, List) ->
     lists:sublist(lists:append(lists:duplicate(Repeats, List)), TargetLength).
 
 
-%%--------------------------------------------------------------------
-%% @doc Adds sequence number to each list element.
-%% @end
-%%--------------------------------------------------------------------
--spec number_items([T]) -> [{pos_integer(), T}].
-number_items(List) ->
+-spec enumerate([T]) -> [{pos_integer(), T}].
+enumerate(List) ->
     lists:zip(lists:seq(1, length(List)), List).
+
+
+-spec index_of(term(), [term()]) -> pos_integer() | undefined.
+index_of(_Element, []) ->
+    undefined;
+index_of(Element, List) ->
+    Index = foldl_while(fun(E, Offset) ->
+        case E =:= Element of
+            true -> {halt, Offset};
+            false -> {cont, Offset + 1}
+        end
+    end, 1, List),
+    case Index > length(List) of
+        true -> undefined;
+        false -> Index
+    end.
 
 
 -spec shuffle([T]) -> [T].
@@ -237,6 +249,52 @@ pforeach(Fun, Elements) ->
 
 %%--------------------------------------------------------------------
 %% @doc
+%% A parallel version of lists:filtermap/2 - elements are processed by
+%% a limited number of processes. Raises an error if any of the processes
+%% crash or a process somehow dies without reporting back.
+%% @end
+%%--------------------------------------------------------------------
+-spec pfiltermap(
+    Fun :: fun((X :: A) -> {true, Y :: B} | false),
+    Elements :: [X :: A],
+    MaxProcesses :: pos_integer()
+) -> [X :: B].
+pfiltermap(Fun, Elements, MaxProcesses)
+    when is_integer(MaxProcesses)
+    andalso MaxProcesses > 0
+->
+    Length = length(Elements),
+    case Length > MaxProcesses of
+        true ->
+            {L1, L2} = lists:split(MaxProcesses, Elements),
+            %% TODO VFS-7568 use tail recursion
+            pfiltermap(Fun, L1) ++
+            pfiltermap(Fun, L2, MaxProcesses);
+        _ ->
+            pfiltermap(Fun, Elements)
+    end.
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%% A parallel version of lists:filtermap/2 - each element is processed by
+%% a new async process. Raises an error if any of the processes crash
+%% or a process somehow dies without reporting back.
+%% TODO VFS-7568 parallelize also filtering step
+%% @end
+%%--------------------------------------------------------------------
+-spec pfiltermap(
+    Fun :: fun((X :: A) -> {true, Y :: B} | false),
+    Elements :: [X :: A]
+) -> [X :: B].
+pfiltermap(Fun, Elements) ->
+    lists:filtermap(fun(MappedResult) ->
+        MappedResult
+    end, pmap(fun(Element) -> Fun(Element) end, Elements)).
+
+
+%%--------------------------------------------------------------------
+%% @doc
 %% Foldls the list until Fun returns {halt, Term}.
 %% The return value for Fun is expected to be
 %% {cont, Acc} to continue the fold with Acc as the new accumulator or
@@ -251,6 +309,7 @@ pforeach(Fun, Elements) ->
 foldl_while(F, Accu, List) ->
     do_foldl(F, {cont, Accu}, List).
 
+
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
@@ -260,6 +319,6 @@ foldl_while(F, Accu, List) ->
     F :: fun((Elem :: T, AccIn) -> AccOut),
     AccIn :: term(), AccOut :: {cont, term()} | {halt, term()},
     List :: [T], T :: term().
-do_foldl(_F, {halt, Accu}, _) -> Accu;
-do_foldl(_F, {cont, Accu}, []) -> Accu;
-do_foldl(F, {cont, Accu}, [Hd | Tail]) -> do_foldl(F, F(Hd, Accu), Tail).
+do_foldl(_F, {halt, Acc}, _) -> Acc;
+do_foldl(_F, {cont, Acc}, []) -> Acc;
+do_foldl(F, {cont, Acc}, [Hd | Tail]) -> do_foldl(F, F(Hd, Acc), Tail).
