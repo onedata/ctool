@@ -36,7 +36,9 @@
 
 ?GROUP_CREATE_HANDLE | ?GROUP_LEAVE_HANDLE |
 
-?GROUP_ADD_HARVESTER | ?GROUP_REMOVE_HARVESTER.
+?GROUP_ADD_HARVESTER | ?GROUP_REMOVE_HARVESTER |
+
+?GROUP_ADD_ATM_INVENTORY | ?GROUP_REMOVE_ATM_INVENTORY.
 
 %% User privileges with regards to Space management.
 -type space_privilege() ::
@@ -97,6 +99,15 @@
 
 ?CLUSTER_ADD_GROUP | ?CLUSTER_REMOVE_GROUP.
 
+%% User privileges with regards to Automation Inventory management.
+-type atm_inventory_privilege() ::
+?ATM_INVENTORY_VIEW | ?ATM_INVENTORY_UPDATE | ?ATM_INVENTORY_DELETE |
+?ATM_INVENTORY_VIEW_PRIVILEGES | ?ATM_INVENTORY_SET_PRIVILEGES |
+
+?ATM_INVENTORY_ADD_USER | ?ATM_INVENTORY_REMOVE_USER |
+
+?ATM_INVENTORY_ADD_GROUP | ?ATM_INVENTORY_REMOVE_GROUP.
+
 -type oz_privilege() ::
 ?OZ_VIEW_PRIVILEGES | ?OZ_SET_PRIVILEGES |
 
@@ -146,9 +157,15 @@
 ?OZ_HARVESTERS_LIST_RELATIONSHIPS | ?OZ_HARVESTERS_ADD_RELATIONSHIPS | ?OZ_HARVESTERS_REMOVE_RELATIONSHIPS |
 
 %% Privileges to administrate clusters in OZ
-?OZ_CLUSTERS_LIST | ?OZ_CLUSTERS_VIEW |?OZ_CLUSTERS_UPDATE |
+?OZ_CLUSTERS_LIST | ?OZ_CLUSTERS_VIEW | ?OZ_CLUSTERS_UPDATE |
 ?OZ_CLUSTERS_VIEW_PRIVILEGES | ?OZ_CLUSTERS_SET_PRIVILEGES |
-?OZ_CLUSTERS_LIST_RELATIONSHIPS | ?OZ_CLUSTERS_ADD_RELATIONSHIPS | ?OZ_CLUSTERS_REMOVE_RELATIONSHIPS.
+?OZ_CLUSTERS_LIST_RELATIONSHIPS | ?OZ_CLUSTERS_ADD_RELATIONSHIPS | ?OZ_CLUSTERS_REMOVE_RELATIONSHIPS |
+
+%% Privileges to administrate automation inventories in OZ
+?OZ_ATM_INVENTORIES_LIST | ?OZ_ATM_INVENTORIES_VIEW |
+?OZ_ATM_INVENTORIES_CREATE | ?OZ_ATM_INVENTORIES_UPDATE | ?OZ_ATM_INVENTORIES_DELETE |
+?OZ_ATM_INVENTORIES_VIEW_PRIVILEGES | ?OZ_ATM_INVENTORIES_SET_PRIVILEGES |
+?OZ_ATM_INVENTORIES_LIST_RELATIONSHIPS | ?OZ_ATM_INVENTORIES_ADD_RELATIONSHIPS | ?OZ_ATM_INVENTORIES_REMOVE_RELATIONSHIPS.
 
 
 -export_type([
@@ -159,6 +176,7 @@
     handle_privilege/0,
     harvester_privilege/0,
     cluster_privilege/0,
+    atm_inventory_privilege/0,
     oz_privilege/0
 ]).
 
@@ -173,6 +191,7 @@
 -export([harvester_member/0, harvester_manager/0, harvester_admin/0,
     harvester_privileges/0]).
 -export([cluster_member/0, cluster_manager/0, cluster_admin/0, cluster_privileges/0]).
+-export([atm_inventory_member/0, atm_inventory_manager/0, atm_inventory_admin/0, atm_inventory_privileges/0]).
 -export([oz_viewer/0, oz_admin/0, oz_privileges/0]).
 
 %%%===================================================================
@@ -226,7 +245,8 @@ group_manager() ->
         ?GROUP_ADD_USER, ?GROUP_REMOVE_USER,
         ?GROUP_ADD_PARENT, ?GROUP_LEAVE_PARENT,
         ?GROUP_ADD_CHILD, ?GROUP_REMOVE_CHILD,
-        ?GROUP_ADD_HARVESTER, ?GROUP_REMOVE_HARVESTER
+        ?GROUP_ADD_HARVESTER, ?GROUP_REMOVE_HARVESTER,
+        ?GROUP_ADD_ATM_INVENTORY, ?GROUP_REMOVE_ATM_INVENTORY
     ]).
 
 %%--------------------------------------------------------------------
@@ -447,6 +467,32 @@ cluster_privileges() ->
     cluster_admin().
 
 
+-spec atm_inventory_member() -> privileges(atm_inventory_privilege()).
+atm_inventory_member() ->
+    from_list([
+        ?ATM_INVENTORY_VIEW
+    ]).
+
+-spec atm_inventory_manager() -> privileges(atm_inventory_privilege()).
+atm_inventory_manager() ->
+    union(atm_inventory_member(), [
+        ?ATM_INVENTORY_ADD_USER, ?ATM_INVENTORY_REMOVE_USER,
+        ?ATM_INVENTORY_ADD_GROUP, ?ATM_INVENTORY_REMOVE_GROUP
+    ]).
+
+-spec atm_inventory_admin() -> privileges(atm_inventory_privilege()).
+atm_inventory_admin() ->
+    union(atm_inventory_manager(), [
+        ?ATM_INVENTORY_UPDATE, ?ATM_INVENTORY_DELETE,
+        ?ATM_INVENTORY_VIEW_PRIVILEGES, ?ATM_INVENTORY_SET_PRIVILEGES
+    ]).
+
+
+-spec atm_inventory_privileges() -> privileges(atm_inventory_privilege()).
+atm_inventory_privileges() ->
+    atm_inventory_admin().
+
+
 %%--------------------------------------------------------------------
 %% @doc All view privileges in OZ API.
 %%--------------------------------------------------------------------
@@ -469,7 +515,9 @@ oz_viewer() ->
 
         ?OZ_HARVESTERS_LIST, ?OZ_HARVESTERS_VIEW, ?OZ_HARVESTERS_LIST_RELATIONSHIPS,
 
-        ?OZ_CLUSTERS_LIST, ?OZ_CLUSTERS_VIEW, ?OZ_CLUSTERS_LIST_RELATIONSHIPS
+        ?OZ_CLUSTERS_LIST, ?OZ_CLUSTERS_VIEW, ?OZ_CLUSTERS_LIST_RELATIONSHIPS,
+
+        ?OZ_ATM_INVENTORIES_LIST, ?OZ_ATM_INVENTORIES_VIEW, ?OZ_ATM_INVENTORIES_LIST_RELATIONSHIPS
     ]).
 
 
@@ -513,7 +561,11 @@ oz_admin() ->
 
         ?OZ_CLUSTERS_UPDATE,
         ?OZ_CLUSTERS_VIEW_PRIVILEGES, ?OZ_CLUSTERS_SET_PRIVILEGES,
-        ?OZ_CLUSTERS_ADD_RELATIONSHIPS, ?OZ_CLUSTERS_REMOVE_RELATIONSHIPS
+        ?OZ_CLUSTERS_ADD_RELATIONSHIPS, ?OZ_CLUSTERS_REMOVE_RELATIONSHIPS,
+
+        ?OZ_ATM_INVENTORIES_CREATE, ?OZ_ATM_INVENTORIES_UPDATE, ?OZ_ATM_INVENTORIES_DELETE,
+        ?OZ_ATM_INVENTORIES_VIEW_PRIVILEGES, ?OZ_ATM_INVENTORIES_SET_PRIVILEGES,
+        ?OZ_ATM_INVENTORIES_ADD_RELATIONSHIPS, ?OZ_ATM_INVENTORIES_REMOVE_RELATIONSHIPS
     ]).
 
 

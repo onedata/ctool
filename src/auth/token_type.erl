@@ -22,7 +22,8 @@
 | ?USER_JOIN_SPACE | ?GROUP_JOIN_SPACE | ?SUPPORT_SPACE | ?HARVESTER_JOIN_SPACE
 | ?USER_JOIN_CLUSTER | ?GROUP_JOIN_CLUSTER
 | ?REGISTER_ONEPROVIDER
-| ?USER_JOIN_HARVESTER | ?GROUP_JOIN_HARVESTER | ?SPACE_JOIN_HARVESTER.
+| ?USER_JOIN_HARVESTER | ?GROUP_JOIN_HARVESTER | ?SPACE_JOIN_HARVESTER
+| ?USER_JOIN_ATM_INVENTORY | ?GROUP_JOIN_ATM_INVENTORY.
 % Parameters specific for given invite type - currently only ?SUPPORT_SPACE
 % tokens allow parameters
 -type invite_parameters() :: undefined | support_parameters:parameters().
@@ -169,7 +170,9 @@ invite_type_to_str(?USER_JOIN_CLUSTER) -> <<"userJoinCluster">>;
 invite_type_to_str(?GROUP_JOIN_CLUSTER) -> <<"groupJoinCluster">>;
 invite_type_to_str(?USER_JOIN_HARVESTER) -> <<"userJoinHarvester">>;
 invite_type_to_str(?GROUP_JOIN_HARVESTER) -> <<"groupJoinHarvester">>;
-invite_type_to_str(?SPACE_JOIN_HARVESTER) -> <<"spaceJoinHarvester">>.
+invite_type_to_str(?SPACE_JOIN_HARVESTER) -> <<"spaceJoinHarvester">>;
+invite_type_to_str(?USER_JOIN_ATM_INVENTORY) -> <<"userJoinAtmInventory">>;
+invite_type_to_str(?GROUP_JOIN_ATM_INVENTORY) -> <<"groupJoinAtmInventory">>.
 
 
 -spec invite_type_from_str(binary()) -> invite_type().
@@ -184,7 +187,9 @@ invite_type_from_str(<<"userJoinCluster">>) -> ?USER_JOIN_CLUSTER;
 invite_type_from_str(<<"groupJoinCluster">>) -> ?GROUP_JOIN_CLUSTER;
 invite_type_from_str(<<"userJoinHarvester">>) -> ?USER_JOIN_HARVESTER;
 invite_type_from_str(<<"groupJoinHarvester">>) -> ?GROUP_JOIN_HARVESTER;
-invite_type_from_str(<<"spaceJoinHarvester">>) -> ?SPACE_JOIN_HARVESTER.
+invite_type_from_str(<<"spaceJoinHarvester">>) -> ?SPACE_JOIN_HARVESTER;
+invite_type_from_str(<<"userJoinAtmInventory">>) -> ?USER_JOIN_ATM_INVENTORY;
+invite_type_from_str(<<"groupJoinAtmInventory">>) -> ?GROUP_JOIN_ATM_INVENTORY.
 
 
 -spec to_printable(type()) -> string().
@@ -219,7 +224,11 @@ to_printable(?INVITE_TOKEN(?USER_JOIN_HARVESTER, HarvesterId)) ->
 to_printable(?INVITE_TOKEN(?GROUP_JOIN_HARVESTER, HarvesterId)) ->
     str_utils:format("invite token for a group to join harvester \"~s\"", [HarvesterId]);
 to_printable(?INVITE_TOKEN(?SPACE_JOIN_HARVESTER, HarvesterId)) ->
-    str_utils:format("invite token for a space to become a metadata source for harvester \"~s\"", [HarvesterId]).
+    str_utils:format("invite token for a space to become a metadata source for harvester \"~s\"", [HarvesterId]);
+to_printable(?INVITE_TOKEN(?USER_JOIN_ATM_INVENTORY, AtmInventoryId)) ->
+    str_utils:format("invite token for a user to join automation inventory \"~s\"", [AtmInventoryId]);
+to_printable(?INVITE_TOKEN(?GROUP_JOIN_ATM_INVENTORY, AtmInventoryId)) ->
+    str_utils:format("invite token for a group to join automation inventory \"~s\"", [AtmInventoryId]).
 
 %%%===================================================================
 %%% Internal functions
@@ -239,7 +248,9 @@ invite_types() -> [
     ?GROUP_JOIN_CLUSTER,
     ?USER_JOIN_HARVESTER,
     ?GROUP_JOIN_HARVESTER,
-    ?SPACE_JOIN_HARVESTER
+    ?SPACE_JOIN_HARVESTER,
+    ?USER_JOIN_ATM_INVENTORY,
+    ?GROUP_JOIN_ATM_INVENTORY
 ].
 
 
@@ -256,7 +267,9 @@ serialize_invite_type(?USER_JOIN_CLUSTER) -> <<"ujc">>;
 serialize_invite_type(?GROUP_JOIN_CLUSTER) -> <<"gjc">>;
 serialize_invite_type(?USER_JOIN_HARVESTER) -> <<"ujh">>;
 serialize_invite_type(?GROUP_JOIN_HARVESTER) -> <<"gjh">>;
-serialize_invite_type(?SPACE_JOIN_HARVESTER) -> <<"sjh">>.
+serialize_invite_type(?SPACE_JOIN_HARVESTER) -> <<"sjh">>;
+serialize_invite_type(?USER_JOIN_ATM_INVENTORY) -> <<"uji">>;
+serialize_invite_type(?GROUP_JOIN_ATM_INVENTORY) -> <<"gji">>.
 
 
 %% @private
@@ -272,7 +285,9 @@ deserialize_invite_type(<<"ujc">>) -> ?USER_JOIN_CLUSTER;
 deserialize_invite_type(<<"gjc">>) -> ?GROUP_JOIN_CLUSTER;
 deserialize_invite_type(<<"ujh">>) -> ?USER_JOIN_HARVESTER;
 deserialize_invite_type(<<"gjh">>) -> ?GROUP_JOIN_HARVESTER;
-deserialize_invite_type(<<"sjh">>) -> ?SPACE_JOIN_HARVESTER.
+deserialize_invite_type(<<"sjh">>) -> ?SPACE_JOIN_HARVESTER;
+deserialize_invite_type(<<"uji">>) -> ?USER_JOIN_ATM_INVENTORY;
+deserialize_invite_type(<<"gji">>) -> ?GROUP_JOIN_ATM_INVENTORY.
 
 
 %% @private
@@ -319,4 +334,6 @@ invite_target_json_key(?USER_JOIN_CLUSTER) -> <<"clusterId">>;
 invite_target_json_key(?GROUP_JOIN_CLUSTER) -> <<"clusterId">>;
 invite_target_json_key(?USER_JOIN_HARVESTER) -> <<"harvesterId">>;
 invite_target_json_key(?GROUP_JOIN_HARVESTER) -> <<"harvesterId">>;
-invite_target_json_key(?SPACE_JOIN_HARVESTER) -> <<"harvesterId">>.
+invite_target_json_key(?SPACE_JOIN_HARVESTER) -> <<"harvesterId">>;
+invite_target_json_key(?USER_JOIN_ATM_INVENTORY) -> <<"atmInventoryId">>;
+invite_target_json_key(?GROUP_JOIN_ATM_INVENTORY) -> <<"atmInventoryId">>.

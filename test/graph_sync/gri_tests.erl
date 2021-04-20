@@ -185,6 +185,10 @@ serialize_deserialize_pattern_testcases() -> [
         #gri_pattern{type = '*', id = '*', aspect = harvest_metadata, scope = private}
     },
     {
+        <<"atm_inventory.*.workflows:protected">>,
+        #gri_pattern{type = od_atm_inventory, id = '*', aspect = workflows, scope = protected}
+    },
+    {
         <<"op_dataset.123345456789890.*:private">>,
         #gri_pattern{type = op_dataset, id = <<"123345456789890">>, aspect = '*', scope = private}
     },
