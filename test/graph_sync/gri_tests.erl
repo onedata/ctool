@@ -193,6 +193,11 @@ serialize_deserialize_pattern_testcases() -> [
         #gri_pattern{type = od_atm_inventory, id = '*', aspect = workflows, scope = protected}
     },
     {
+        <<"atm_lambda.lAmBdAiD.*">>,
+        #gri_pattern{type = od_atm_lambda, id = <<"lAmBdAiD">>, aspect = '*', scope = private},
+        <<"atm_lambda.lAmBdAiD.*:private">>
+    },
+    {
         <<"op_dataset.qwertyuiop.*:private">>,
         #gri_pattern{type = op_dataset, id = <<"qwertyuiop">>, aspect = '*', scope = private}
     },
