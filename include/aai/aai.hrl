@@ -129,5 +129,7 @@
 -define(USER_JOIN_HARVESTER, user_join_harvester).
 -define(GROUP_JOIN_HARVESTER, group_join_harvester).
 -define(SPACE_JOIN_HARVESTER, space_join_harvester).
+-define(USER_JOIN_ATM_INVENTORY, user_join_atm_inventory).
+-define(GROUP_JOIN_ATM_INVENTORY, group_join_atm_inventory).
 
 -endif.
