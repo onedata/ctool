@@ -88,6 +88,10 @@
 -define(SPACE_REMOVE_HARVESTER, space_remove_harvester).
 
 -define(SPACE_MANAGE_DATASETS, space_manage_datasets).
+-define(SPACE_VIEW_ARCHIVES, space_view_archives).
+-define(SPACE_CREATE_ARCHIVES, space_create_archives).
+-define(SPACE_REMOVE_ARCHIVES, space_remove_archives).
+-define(SPACE_RECALL_ARCHIVES, space_recall_archives).
 
 % Handle service privileges of members (users or groups)
 -define(HANDLE_SERVICE_VIEW, handle_service_view).
