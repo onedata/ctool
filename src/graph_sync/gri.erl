@@ -37,8 +37,8 @@
 | od_storage | od_token | od_atm_inventory | space_stats | temporary_token_secret
 | onp_ceph | onp_cluster | onp_host | onp_panel | onp_provider | onp_service
 | onp_space | onp_storage | onp_user | onp_zone
-| op_dataset | op_file | op_group | op_handle | op_handle_service | op_metrics
-| op_provider | op_qos | op_share | op_space | op_transfer | op_user.
+| op_archive | op_dataset | op_file | op_group | op_handle | op_handle_service
+| op_metrics | op_provider | op_qos | op_share | op_space | op_transfer | op_user.
 
 -type entity_type_pattern() :: '*' | entity_type().
 
@@ -203,6 +203,7 @@ serialize_type(onp_storage, _) -> <<"onp_storage">>;
 serialize_type(onp_user, _) -> <<"onp_user">>;
 serialize_type(onp_zone, _) -> <<"onp_zone">>;
 
+serialize_type(op_archive, _) -> <<"op_archive">>;
 serialize_type(op_dataset, _) -> <<"op_dataset">>;
 serialize_type(op_file, _) -> <<"file">>;
 serialize_type(op_group, _) -> <<"op_group">>;
@@ -251,6 +252,7 @@ deserialize_type(<<"onp_storage">>, _) -> onp_storage;
 deserialize_type(<<"onp_user">>, _) -> onp_user;
 deserialize_type(<<"onp_zone">>, _) -> onp_zone;
 
+deserialize_type(<<"op_archive">>, _) -> op_archive;
 deserialize_type(<<"op_dataset">>, _) -> op_dataset;
 deserialize_type(<<"file">>, _) -> op_file;
 deserialize_type(<<"op_group">>, _) -> op_group;

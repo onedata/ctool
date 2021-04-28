@@ -67,7 +67,9 @@
 
 ?SPACE_ADD_HARVESTER | ?SPACE_REMOVE_HARVESTER |
 
-?SPACE_MANAGE_DATASETS.
+?SPACE_MANAGE_DATASETS |
+?SPACE_VIEW_ARCHIVES | ?SPACE_CREATE_ARCHIVES |
+?SPACE_REMOVE_ARCHIVES | ?SPACE_RECALL_ARCHIVES.
 
 %% User privileges with regards to handle service.
 -type handle_service_privilege() ::
@@ -303,7 +305,9 @@ space_manager() ->
         ?SPACE_VIEW_CHANGES_STREAM,
         ?SPACE_SCHEDULE_REPLICATION,
         ?SPACE_VIEW_QOS,
-        ?SPACE_MANAGE_DATASETS
+        ?SPACE_MANAGE_DATASETS,
+        ?SPACE_VIEW_ARCHIVES,
+        ?SPACE_CREATE_ARCHIVES
     ]).
 
 %%--------------------------------------------------------------------
@@ -320,7 +324,9 @@ space_admin() ->
         ?SPACE_MANAGE_VIEWS,
         ?SPACE_CANCEL_REPLICATION,
         ?SPACE_SCHEDULE_EVICTION, ?SPACE_CANCEL_EVICTION,
-        ?SPACE_MANAGE_QOS
+        ?SPACE_MANAGE_QOS,
+        ?SPACE_REMOVE_ARCHIVES,
+        ?SPACE_RECALL_ARCHIVES
     ]).
 
 %%--------------------------------------------------------------------
