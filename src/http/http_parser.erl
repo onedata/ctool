@@ -26,12 +26,12 @@
 % - {10, 10} means 1 byte beginning at offset 10.
 -type bytes_range() :: {
     InclusiveRangeStart :: non_neg_integer(),
-    InclusiveRangeEnd :: non_neg_integer()
+    InclusiveRangeEnd :: non_neg_integer() | unknown
 }.
 
 -export_type([bytes_range/0]).
 
--type content_size() :: non_neg_integer().
+-type content_size() :: non_neg_integer() | unknown.
 
 
 %%%===================================================================
@@ -106,12 +106,22 @@ parse_bytes_range([<<>>, FromEndBin], ContentSize) ->
         {max(0, ContentSize - binary_to_integer(FromEndBin)), ContentSize - 1},
         ContentSize
     );
-parse_bytes_range([RangeStartBin, <<>>], ContentSize) ->
+parse_bytes_range([RangeStartBin, <<>>], unknown = ContentSize) ->
+    validate_bytes_range(
+        {binary_to_integer(RangeStartBin), unknown},
+        ContentSize
+    );
+parse_bytes_range([RangeStartBin, RangeEndBin], unknown) ->
+    validate_bytes_range(
+        {binary_to_integer(RangeStartBin), binary_to_integer(RangeEndBin)},
+        unknown
+    );
+parse_bytes_range([RangeStartBin, <<>>], ContentSize) when is_integer(ContentSize) ->
     validate_bytes_range(
         {binary_to_integer(RangeStartBin), ContentSize - 1},
         ContentSize
     );
-parse_bytes_range([RangeStartBin, RangeEndBin], ContentSize) ->
+parse_bytes_range([RangeStartBin, RangeEndBin], ContentSize) when is_integer(ContentSize) ->
     validate_bytes_range(
         {binary_to_integer(RangeStartBin), min(binary_to_integer(RangeEndBin), ContentSize - 1)},
         ContentSize
