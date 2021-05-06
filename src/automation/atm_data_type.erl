@@ -55,7 +55,7 @@ type_to_json(atm_histogram_type) -> <<"histogram">>;
 type_to_json(atm_dataset_type) -> <<"dataset">>;
 type_to_json(atm_archive_type) -> <<"archive">>;
 type_to_json(atm_store_credentials_type) -> <<"storeCredentials">>;
-type_to_json(atm_onedatafs_credentials_type) -> <<"onedatafsOptions">>.
+type_to_json(atm_onedatafs_credentials_type) -> <<"onedatafsCredentials">>.
 
 
 -spec type_from_json(json_utils:json_term()) -> type().
@@ -67,7 +67,7 @@ type_from_json(<<"histogram">>) -> atm_histogram_type;
 type_from_json(<<"dataset">>) -> atm_dataset_type;
 type_from_json(<<"archive">>) -> atm_archive_type;
 type_from_json(<<"storeCredentials">>) -> atm_store_credentials_type;
-type_from_json(<<"onedatafsOptions">>) -> atm_onedatafs_credentials_type.
+type_from_json(<<"onedatafsCredentials">>) -> atm_onedatafs_credentials_type.
 
 
 -spec value_constraints_to_json(type(), value_constraints()) -> json_utils:json_term().

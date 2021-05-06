@@ -1,6 +1,6 @@
 %%%-------------------------------------------------------------------
 %%% @author Lukasz Opiola
-%%% @copyright (C) 2019 ACK CYFRONET AGH
+%%% @copyright (C) 2021 ACK CYFRONET AGH
 %%% This software is released under the MIT license
 %%% cited in 'LICENSE.txt'.
 %%% @end
@@ -20,62 +20,66 @@
 
 encode_decode_atm_data_spec_test() ->
     lists:foreach(fun(DataSpec) ->
-        ?assert(is_equal_after_encode_and_decode(DataSpec))
+        ?assert(is_equal_after_json_encode_and_decode(DataSpec))
     end, example_data_specs()).
 
 
 encode_decode_lambda_engine_test() ->
-    encode_decode_lambda_engine_test_base(onedata_function),
-    encode_decode_lambda_engine_test_base(open_faas),
-    encode_decode_lambda_engine_test_base(atm_workflow),
-    encode_decode_lambda_engine_test_base(user_form).
-
-encode_decode_lambda_engine_test_base(Engine) ->
-    ?assertEqual(
-        Engine,
-        automation:decode_lambda_engine(automation:encode_lambda_engine(Engine))
-    ).
+    LambdaEngineTypes = [
+        #atm_lambda_engine_type{type = onedata_function},
+        #atm_lambda_engine_type{type = openfaas},
+        #atm_lambda_engine_type{type = atm_workflow},
+        #atm_lambda_engine_type{type = user_form}
+    ],
+    lists:foreach(fun(EngineType) ->
+        ?assert(is_equal_after_json_encode_and_decode(EngineType)),
+        ?assert(is_equal_after_db_encode_and_decode(EngineType))
+    end, LambdaEngineTypes).
 
 
 encode_decode_lambda_execution_options_test() ->
-    ?assert(is_equal_after_encode_and_decode(
+    encode_decode_lambda_execution_options_test_base(
         #atm_lambda_execution_options{}
-    )),
-    ?assert(is_equal_after_encode_and_decode(
+    ),
+    encode_decode_lambda_execution_options_test_base(
         #atm_lambda_execution_options{readonly = true}
-    )),
-    ?assert(is_equal_after_encode_and_decode(
+    ),
+    encode_decode_lambda_execution_options_test_base(
         #atm_lambda_execution_options{readonly = false}
-    )),
-    ?assert(is_equal_after_encode_and_decode(
+    ),
+    encode_decode_lambda_execution_options_test_base(
         #atm_lambda_execution_options{mount_space_options = #atm_mount_space_options{}}
-    )),
-    ?assert(is_equal_after_encode_and_decode(
+    ),
+    encode_decode_lambda_execution_options_test_base(
         #atm_lambda_execution_options{mount_space_options = #atm_mount_space_options{
             mount_point = <<"/a/b/c/d">>
         }}
-    )),
-    ?assert(is_equal_after_encode_and_decode(
+    ),
+    encode_decode_lambda_execution_options_test_base(
         #atm_lambda_execution_options{mount_space_options = #atm_mount_space_options{
             mount_oneclient = true,
             mount_point = <<"/a/b/c/d">>
         }}
-    )),
-    ?assert(is_equal_after_encode_and_decode(
+    ),
+    encode_decode_lambda_execution_options_test_base(
         #atm_lambda_execution_options{mount_space_options = #atm_mount_space_options{
             mount_oneclient = true,
             mount_point = <<"/a/b/c/d">>,
             oneclient_options = <<"--a --b">>
         }}
-    )).
+    ).
+
+encode_decode_lambda_execution_options_test_base(ExecutionOptions) ->
+    ?assert(is_equal_after_json_encode_and_decode(ExecutionOptions)),
+    ?assert(is_equal_after_db_encode_and_decode(ExecutionOptions)).
 
 
 encode_decode_lambda_argument_spec_test() ->
     lists:foreach(fun(DataSpec) ->
-        ?assert(is_equal_after_encode_and_decode(#atm_lambda_argument_spec{
+        ArgumentSpec = #atm_lambda_argument_spec{
             name = str_utils:rand_hex(16),
             data_spec = DataSpec,
-            is_array = lists_utils:random_element([true, false]),
+            is_batch = lists_utils:random_element([true, false]),
             is_optional = lists_utils:random_element([true, false]),
             default_value = lists_utils:random_element([
                 true,
@@ -85,18 +89,21 @@ encode_decode_lambda_argument_spec_test() ->
                 #{<<"object">> => 134},
                 #{<<"nested">> => #{<<"object">> => <<"text">>}}
             ])
-        }))
+        },
+        ?assert(is_equal_after_json_encode_and_decode(ArgumentSpec)),
+        ?assert(is_equal_after_db_encode_and_decode(ArgumentSpec))
     end, example_data_specs()).
 
 
 encode_decode_lambda_result_spec_test() ->
     lists:foreach(fun(DataSpec) ->
-        ?assert(is_equal_after_encode_and_decode(#atm_lambda_result_spec{
+        ResultSpec = #atm_lambda_result_spec{
             name = str_utils:rand_hex(16),
             data_spec = DataSpec,
-            is_array = lists_utils:random_element([true, false]),
-            is_optional = lists_utils:random_element([true, false])
-        }))
+            is_batch = lists_utils:random_element([true, false])
+        },
+        ?assert(is_equal_after_json_encode_and_decode(ResultSpec)),
+        ?assert(is_equal_after_db_encode_and_decode(ResultSpec))
     end, example_data_specs()).
 
 %%%===================================================================
@@ -125,7 +132,13 @@ example_data_specs() ->
     end, AllTypes).
 
 
-is_equal_after_encode_and_decode(Record) ->
-    Record =:= record_json_encoder:decode(record_json_encoder:encode(Record)).
+is_equal_after_json_encode_and_decode(Record) ->
+    RecordType = utils:record_type(Record),
+    Record =:= jsonable_record:from_json(jsonable_record:to_json(Record, RecordType), RecordType).
+
+
+is_equal_after_db_encode_and_decode(Record) ->
+    RecordType = utils:record_type(Record),
+    Record =:= persistent_record:decode(persistent_record:encode(Record, RecordType), RecordType).
 
 -endif.

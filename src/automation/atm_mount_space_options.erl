@@ -6,38 +6,33 @@
 %%% @end
 %%%-------------------------------------------------------------------
 %%% @doc
-%%% Base model for lambda execution options used in automation machinery.
+%%% Jsonable record expressing space mounting options used in automation machinery.
 %%% @end
 %%%-------------------------------------------------------------------
 -module(atm_mount_space_options).
 -author("Lukasz Opiola").
 
--behaviour(jsonable_record).
+-behaviour(persistent_record).
 
 -include("automation/automation.hrl").
--include("logging.hrl").
 
-%% Jsonable record callbacks
+%% Persistent record callbacks
 -export([version/0, to_json/1, from_json/1]).
 
 
 -type record() :: #atm_mount_space_options{}.
-
-
 -export_type([record/0]).
-
 
 %%%===================================================================
 %%% Jsonable record callbacks
 %%%===================================================================
 
-
--spec version() -> record_json_encoder:model_version().
+-spec version() -> persistent_record:record_version().
 version() ->
     1.
 
 
--spec to_json(record()) -> json_utils:json_map().
+-spec to_json(record()) -> json_utils:json_term().
 to_json(Spec) ->
     #{
         <<"mountOneclient">> => Spec#atm_mount_space_options.mount_oneclient,
@@ -46,10 +41,10 @@ to_json(Spec) ->
     }.
 
 
--spec from_json(json_utils:json_map()) -> record().
+-spec from_json(json_utils:json_term()) -> record().
 from_json(SpecJson) ->
     #atm_mount_space_options{
         mount_oneclient = maps:get(<<"mountOneclient">>, SpecJson, false),
-        mount_point = maps:get(<<"mountPoint">>, SpecJson, <<"/tmp/oneclient">>),
+        mount_point = maps:get(<<"mountPoint">>, SpecJson, <<"/mnt/onedata">>),
         oneclient_options = maps:get(<<"oneclientOptions">>, SpecJson, <<"">>)
     }.

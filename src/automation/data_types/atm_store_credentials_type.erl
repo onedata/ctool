@@ -19,8 +19,6 @@
 %% atm_data_type callbacks
 -export([value_constraints_to_json/1, value_constraints_from_json/1]).
 
--type store_type() :: single_value | list | map | forest | range | histogram.
-
 %%%===================================================================
 %%% atm_data_type callbacks
 %%%===================================================================
@@ -41,7 +39,7 @@ value_constraints_from_json(ConstraintsJson) ->
     }.
 
 
--spec store_type_to_json(store_type()) -> json_utils:json_term().
+-spec store_type_to_json(automation:store_type()) -> json_utils:json_term().
 store_type_to_json(single_value) -> <<"singleValue">>;
 store_type_to_json(list) -> <<"list">>;
 store_type_to_json(map) -> <<"map">>;
@@ -50,7 +48,7 @@ store_type_to_json(range) -> <<"range">>;
 store_type_to_json(histogram) -> <<"histogram">>.
 
 
--spec store_type_from_json(json_utils:json_term()) -> store_type().
+-spec store_type_from_json(json_utils:json_term()) -> automation:store_type().
 store_type_from_json(<<"singleValue">>) -> single_value;
 store_type_from_json(<<"list">>) -> list;
 store_type_from_json(<<"map">>) -> map;

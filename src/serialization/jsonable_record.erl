@@ -1,5 +1,5 @@
 %%%-------------------------------------------------------------------
-%%% @author Bartosz Walkowicz
+%%% @author Lukasz Opiola
 %%% @copyright (C) 2021 ACK CYFRONET AGH
 %%% This software is released under the MIT license
 %%% cited in 'LICENSE.txt'.
@@ -10,29 +10,31 @@
 %%% records that are to be encoded/decoded to/from JSON. Each such record should
 %%% have a dedicated module implementing the callbacks.
 %%%
-%%% This interface is intended especially for records stored in persistent
-%%% database and transmitted via system APIs.
+%%% This interface is intended especially for records transmitted via system APIs
+%%% and sub-records of parent persistent records - those that are not stored
+%%% directly in the database, but as a part of a bigger document.
 %%% @end
 %%%-------------------------------------------------------------------
 -module(jsonable_record).
--author("Bartosz Walkowicz").
+-author("Lukasz Opiola").
 
+%% API
+-export([to_json/2, from_json/2]).
 
-%%--------------------------------------------------------------------
-%% @doc
-%% Returns the current version of the record's definition (as defined in code).
-%% The version is used to compare versions and trigger an upgrade if needed.
-%% @end
-%%--------------------------------------------------------------------
--callback version() -> record_json_encoder:record_version().
+-type record() :: tuple().
+-type record_type() :: module().
+-export_type([record/0, record_type/0]).
 
+%%%===================================================================
+%%% jsonable_record behaviour
+%%%===================================================================
 
 %%--------------------------------------------------------------------
 %% @doc
 %% Encodes record as json object.
 %% @end
 %%--------------------------------------------------------------------
--callback to_json(record_json_encoder:record()) -> json_utils:json_map().
+-callback to_json(record()) -> json_utils:json_term().
 
 
 %%--------------------------------------------------------------------
@@ -40,16 +42,17 @@
 %% Decodes record from json object.
 %% @end
 %%--------------------------------------------------------------------
--callback from_json(json_utils:json_map()) -> record_json_encoder:record().
+-callback from_json(json_utils:json_term()) -> record().
+
+%%%===================================================================
+%%% API functions
+%%%===================================================================
+
+-spec to_json(record(), record_type()) -> json_utils:json_term().
+to_json(JsonableRecord, RecordType) ->
+    RecordType:to_json(JsonableRecord).
 
 
-%%--------------------------------------------------------------------
-%% @doc
-%% Upgrades older records (must be implemented if record version > 1).
-%% @end
-%%--------------------------------------------------------------------
--callback upgrade_json(record_json_encoder:record_version(), json_utils:json_map()) ->
-    {record_json_encoder:record_version(), json_utils:json_map()}.
-
-
--optional_callbacks([upgrade_json/2]).
+-spec from_json(json_utils:json_term(), record_type()) -> record().
+from_json(EncodedRecord, RecordType) ->
+    RecordType:from_json(EncodedRecord).

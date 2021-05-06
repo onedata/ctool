@@ -19,7 +19,7 @@
 %% atm_data_type callbacks
 -export([value_constraints_to_json/1, value_constraints_from_json/1]).
 
--type file_type() :: 'REG' | 'DIR' | 'ANY'.
+-type file_type() :: 'REG' | 'DIR' | 'SYMLNK' | 'ANY'.
 
 %%%===================================================================
 %%% atm_data_type callbacks
@@ -44,10 +44,12 @@ value_constraints_from_json(ConstraintsJson) ->
 -spec file_type_to_json(file_type()) -> json_utils:json_term().
 file_type_to_json('REG') -> <<"REG">>;
 file_type_to_json('DIR') -> <<"DIR">>;
+file_type_to_json('SYMLNK') -> <<"SYMLNK">>;
 file_type_to_json('ANY') -> <<"ANY">>.
 
 
 -spec file_type_from_json(json_utils:json_term()) -> file_type().
 file_type_from_json(<<"REG">>) -> 'REG';
 file_type_from_json(<<"DIR">>) -> 'DIR';
+file_type_from_json(<<"SYMLNK">>) -> 'SYMLNK';
 file_type_from_json(<<"ANY">>) -> 'ANY'.
