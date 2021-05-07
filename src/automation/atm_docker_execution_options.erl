@@ -1,66 +1,53 @@
 %%%-------------------------------------------------------------------
-%%% @author Bartosz Walkowicz
+%%% @author Lukasz Opiola
 %%% @copyright (C) 2021 ACK CYFRONET AGH
 %%% This software is released under the MIT license
 %%% cited in 'LICENSE.txt'.
 %%% @end
 %%%-------------------------------------------------------------------
 %%% @doc
-%%% Base model for data specs used in automation machinery.
+%%% Record expressing docker execution options used in automation machinery.
 %%% @end
 %%%-------------------------------------------------------------------
--module(atm_data_spec).
--author("Bartosz Walkowicz").
+-module(atm_docker_execution_options).
+-author("Lukasz Opiola").
 
 -behaviour(jsonable_record).
 -behaviour(persistent_record).
 
 -include("automation/automation.hrl").
 
-%% API
--export([get_type/1, get_value_constraints/1]).
-
-%% Jsonable record callbacks
+%% jsonable_record callbacks
 -export([to_json/1, from_json/1]).
 
 %% persistent_record callbacks
 -export([version/0, db_encode/2, db_decode/2]).
 
 
--type record() :: #atm_data_spec{}.
+-type record() :: #atm_docker_execution_options{}.
 -export_type([record/0]).
-
-%%%===================================================================
-%%% API functions
-%%%===================================================================
-
--spec get_type(record()) -> atm_data_type:type().
-get_type(#atm_data_spec{type = Type}) ->
-    Type.
-
-
--spec get_value_constraints(record()) -> atm_data_type:value_constraints().
-get_value_constraints(#atm_data_spec{value_constraints = ValueConstraints}) ->
-    ValueConstraints.
 
 %%%===================================================================
 %%% jsonable_record callbacks
 %%%===================================================================
 
--spec to_json(record()) -> json_utils:json_map().
-to_json(#atm_data_spec{type = Type, value_constraints = ValueConstraints}) ->
+-spec to_json(record()) -> json_utils:json_term().
+to_json(Spec) ->
     #{
-        <<"type">> => atm_data_type:type_to_json(Type),
-        <<"valueConstraints">> => atm_data_type:value_constraints_to_json(Type, ValueConstraints)
+        <<"readonly">> => Spec#atm_docker_execution_options.readonly,
+        <<"mountOneclient">> => Spec#atm_docker_execution_options.mount_oneclient,
+        <<"oneclientMountPoint">> => Spec#atm_docker_execution_options.oneclient_mount_point,
+        <<"oneclientOptions">> => Spec#atm_docker_execution_options.oneclient_options
     }.
 
 
--spec from_json(json_utils:json_map()) -> record().
-from_json(#{<<"type">> := TypeJson, <<"valueConstraints">> := ValueConstraints}) ->
-    Type = atm_data_type:type_from_json(TypeJson),
-    #atm_data_spec{
-        type = Type,
-        value_constraints = atm_data_type:value_constraints_from_json(Type, ValueConstraints)
+-spec from_json(json_utils:json_term()) -> record().
+from_json(SpecJson) ->
+    #atm_docker_execution_options{
+        readonly = maps:get(<<"readonly">>, SpecJson, false),
+        mount_oneclient = maps:get(<<"mountOneclient">>, SpecJson, false),
+        oneclient_mount_point = maps:get(<<"oneclientMountPoint">>, SpecJson, <<"/mnt/onedata">>),
+        oneclient_options = maps:get(<<"oneclientOptions">>, SpecJson, <<"">>)
     }.
 
 %%%===================================================================

@@ -18,19 +18,32 @@
     value_constraints = #{} :: atm_data_type:value_constraints()
 }).
 
--record(atm_lambda_engine_type, {
-    type ::atm_lambda_engine_type:type()
-}).
-
--record(atm_mount_space_options, {
+-record(atm_docker_execution_options, {
+    readonly = false :: boolean(),
     mount_oneclient = false :: boolean(),
-    mount_point = <<"/mnt/onedata">> :: binary(),
+    oneclient_mount_point = <<"/mnt/onedata">> :: binary(),
     oneclient_options = <<"">> :: binary()
 }).
 
--record(atm_lambda_execution_options, {
-    readonly = false :: boolean(),
-    mount_space_options = #atm_mount_space_options{} :: atm_mount_space_options:record()
+-record(atm_onedata_function_operation_spec, {
+    function_id :: binary()
+}).
+
+-record(atm_openfaas_operation_spec, {
+    docker_image :: binary(),
+    docker_execution_options :: #atm_docker_execution_options{}
+}).
+
+-record(atm_workflow_operation_spec, {
+    atm_workflow_id :: binary()
+}).
+
+-record(atm_user_form_operation_spec, {
+    user_form_id :: binary()
+}).
+
+-record(atm_lambda_operation_spec, {
+    spec :: atm_lambda_operation_spec:spec()
 }).
 
 % Specification of a single input argument a lambda function.

@@ -18,58 +18,89 @@
 -include("automation/automation.hrl").
 -include("logging.hrl").
 
+-define(RAND_STR(), str_utils:rand_hex(16)).
+-define(RAND_BOOL(), lists_utils:random_element([true, false])).
+
 encode_decode_atm_data_spec_test() ->
     lists:foreach(fun(DataSpec) ->
         ?assert(is_equal_after_json_encode_and_decode(DataSpec))
     end, example_data_specs()).
 
 
-encode_decode_lambda_engine_test() ->
-    LambdaEngineTypes = [
-        #atm_lambda_engine_type{type = onedata_function},
-        #atm_lambda_engine_type{type = openfaas},
-        #atm_lambda_engine_type{type = atm_workflow},
-        #atm_lambda_engine_type{type = user_form}
+encode_decode_operation_spec_test() ->
+    OperationSpecExamples = [
+        #atm_lambda_operation_spec{
+            spec = #atm_onedata_function_operation_spec{
+                function_id = ?RAND_STR()
+            }
+        },
+        #atm_lambda_operation_spec{
+            spec = #atm_openfaas_operation_spec{
+                docker_image = ?RAND_STR(),
+                docker_execution_options = #atm_docker_execution_options{
+                    readonly = ?RAND_BOOL(),
+                    mount_oneclient = ?RAND_BOOL(),
+                    oneclient_mount_point = <<"/a/b/c/d/", (?RAND_STR())/binary>>,
+                    oneclient_options = lists_utils:random_element([<<"">>, <<"--a --b">>])
+                }
+            }
+        },
+        #atm_lambda_operation_spec{
+            spec = #atm_workflow_operation_spec{
+                atm_workflow_id = ?RAND_STR()
+            }
+        },
+        #atm_lambda_operation_spec{
+            spec = #atm_user_form_operation_spec{
+                user_form_id = ?RAND_STR()
+            }
+        }
     ],
-    lists:foreach(fun(EngineType) ->
-        ?assert(is_equal_after_json_encode_and_decode(EngineType)),
-        ?assert(is_equal_after_db_encode_and_decode(EngineType))
-    end, LambdaEngineTypes).
+    lists:foreach(fun(OperationSpec) ->
+        ?assert(is_equal_after_json_encode_and_decode(OperationSpec)),
+        ?assert(is_equal_after_db_encode_and_decode(OperationSpec))
+    end, OperationSpecExamples).
 
 
-encode_decode_lambda_execution_options_test() ->
-    encode_decode_lambda_execution_options_test_base(
-        #atm_lambda_execution_options{}
+encode_decode_docker_execution_options_test() ->
+    encode_decode_docker_execution_options_test_base(
+        #atm_docker_execution_options{}
     ),
-    encode_decode_lambda_execution_options_test_base(
-        #atm_lambda_execution_options{readonly = true}
+    encode_decode_docker_execution_options_test_base(
+        #atm_docker_execution_options{
+            readonly = true
+        }
     ),
-    encode_decode_lambda_execution_options_test_base(
-        #atm_lambda_execution_options{readonly = false}
+    encode_decode_docker_execution_options_test_base(
+        #atm_docker_execution_options{
+            readonly = false
+        }
     ),
-    encode_decode_lambda_execution_options_test_base(
-        #atm_lambda_execution_options{mount_space_options = #atm_mount_space_options{}}
+    encode_decode_docker_execution_options_test_base(
+        #atm_docker_execution_options{
+            mount_oneclient = ?RAND_BOOL()
+        }
     ),
-    encode_decode_lambda_execution_options_test_base(
-        #atm_lambda_execution_options{mount_space_options = #atm_mount_space_options{
-            mount_point = <<"/a/b/c/d">>
-        }}
+    encode_decode_docker_execution_options_test_base(
+        #atm_docker_execution_options{
+            oneclient_mount_point = <<"/a/b/c/d">>
+        }
     ),
-    encode_decode_lambda_execution_options_test_base(
-        #atm_lambda_execution_options{mount_space_options = #atm_mount_space_options{
+    encode_decode_docker_execution_options_test_base(
+        #atm_docker_execution_options{
             mount_oneclient = true,
-            mount_point = <<"/a/b/c/d">>
-        }}
+            oneclient_mount_point = <<"/a/b/c/d">>
+        }
     ),
-    encode_decode_lambda_execution_options_test_base(
-        #atm_lambda_execution_options{mount_space_options = #atm_mount_space_options{
+    encode_decode_docker_execution_options_test_base(
+        #atm_docker_execution_options{
             mount_oneclient = true,
-            mount_point = <<"/a/b/c/d">>,
+            oneclient_mount_point = <<"/a/b/c/d">>,
             oneclient_options = <<"--a --b">>
-        }}
+        }
     ).
 
-encode_decode_lambda_execution_options_test_base(ExecutionOptions) ->
+encode_decode_docker_execution_options_test_base(ExecutionOptions) ->
     ?assert(is_equal_after_json_encode_and_decode(ExecutionOptions)),
     ?assert(is_equal_after_db_encode_and_decode(ExecutionOptions)).
 
@@ -77,10 +108,10 @@ encode_decode_lambda_execution_options_test_base(ExecutionOptions) ->
 encode_decode_lambda_argument_spec_test() ->
     lists:foreach(fun(DataSpec) ->
         ArgumentSpec = #atm_lambda_argument_spec{
-            name = str_utils:rand_hex(16),
+            name = ?RAND_STR(),
             data_spec = DataSpec,
-            is_batch = lists_utils:random_element([true, false]),
-            is_optional = lists_utils:random_element([true, false]),
+            is_batch = ?RAND_BOOL(),
+            is_optional = ?RAND_BOOL(),
             default_value = lists_utils:random_element([
                 true,
                 false,
@@ -98,9 +129,9 @@ encode_decode_lambda_argument_spec_test() ->
 encode_decode_lambda_result_spec_test() ->
     lists:foreach(fun(DataSpec) ->
         ResultSpec = #atm_lambda_result_spec{
-            name = str_utils:rand_hex(16),
+            name = ?RAND_STR(),
             data_spec = DataSpec,
-            is_batch = lists_utils:random_element([true, false])
+            is_batch = ?RAND_BOOL()
         },
         ?assert(is_equal_after_json_encode_and_decode(ResultSpec)),
         ?assert(is_equal_after_db_encode_and_decode(ResultSpec))
