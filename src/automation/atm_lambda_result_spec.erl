@@ -62,7 +62,7 @@ db_decode(SpecJson, NestedRecordDecoder) ->
 %%% Internal functions
 %%%===================================================================
 
--spec encode_with(record(), fun((record(), atm_data_spec) -> json_utils:json_term())) ->
+-spec encode_with(record(), persistent_record:nested_record_encoder()) ->
     json_utils:json_term().
 encode_with(Spec, EncodeDataSpecFun) ->
     #{
@@ -72,7 +72,7 @@ encode_with(Spec, EncodeDataSpecFun) ->
     }.
 
 
--spec decode_with(json_utils:json_term(), fun((json_utils:json_term(), atm_data_spec) -> record())) ->
+-spec decode_with(json_utils:json_term(), persistent_record:nested_record_decoder()) ->
     record().
 decode_with(SpecJson, DecodeDataSpecFun) ->
     #atm_lambda_result_spec{

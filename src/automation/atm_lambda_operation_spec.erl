@@ -30,27 +30,26 @@
 
 
 -type engine() :: onedata_function | openfaas | atm_workflow | user_form.
--type spec() :: atm_onedata_function_operation_spec:record()
+-type record() :: atm_onedata_function_operation_spec:record()
 | atm_openfaas_operation_spec:record()
 | atm_workflow_operation_spec:record()
 | atm_user_form_operation_spec:record().
--type spec_module() :: atm_onedata_function_operation_spec
+-type record_type() :: atm_onedata_function_operation_spec
 | atm_openfaas_operation_spec
 | atm_atm_workflow_operation_spec
 | atm_user_form_operation_spec.
 
--type record() :: #atm_lambda_operation_spec{}.
--export_type([engine/0, spec/0, record/0]).
+-export_type([engine/0, record/0]).
 
 %%%===================================================================
 %%% API
 %%%===================================================================
 
 -spec get_engine(record()) -> engine().
-get_engine(#atm_lambda_operation_spec{spec = #atm_onedata_function_operation_spec{}}) -> onedata_function;
-get_engine(#atm_lambda_operation_spec{spec = #atm_openfaas_operation_spec{}}) -> openfaas;
-get_engine(#atm_lambda_operation_spec{spec = #atm_workflow_operation_spec{}}) -> atm_workflow;
-get_engine(#atm_lambda_operation_spec{spec = #atm_user_form_operation_spec{}}) -> user_form.
+get_engine(#atm_onedata_function_operation_spec{}) -> onedata_function;
+get_engine(#atm_openfaas_operation_spec{}) -> openfaas;
+get_engine(#atm_workflow_operation_spec{}) -> atm_workflow;
+get_engine(#atm_user_form_operation_spec{}) -> user_form.
 
 
 %%--------------------------------------------------------------------
@@ -82,22 +81,13 @@ engine_from_json(<<"userForm">>) -> user_form.
 %%%===================================================================
 
 -spec to_json(record()) -> json_utils:json_term().
-to_json(#atm_lambda_operation_spec{spec = Spec}) ->
-    SpecModule = utils:record_type(Spec),
-    Engine = spec_module_to_engine(SpecModule),
-    maps:merge(
-        #{<<"engine">> => engine_to_json(Engine)},
-        SpecModule:to_json(Spec)
-    ).
+to_json(Record) ->
+    encode_with(Record, fun jsonable_record:to_json/2).
 
 
 -spec from_json(json_utils:json_term()) -> record().
-from_json(SpecJson) ->
-    Engine = engine_from_json(maps:get(<<"engine">>, SpecJson)),
-    SpecModule = engine_to_spec_module(Engine),
-    #atm_lambda_operation_spec{
-        spec = SpecModule:from_json(SpecJson)
-    }.
+from_json(RecordJson) ->
+    decode_with(RecordJson, fun jsonable_record:from_json/2).
 
 %%%===================================================================
 %%% persistent_record callbacks
@@ -109,27 +99,46 @@ version() ->
 
 
 -spec db_encode(record(), persistent_record:nested_record_encoder()) -> json_utils:json_term().
-db_encode(Spec, _NestedRecordEncoder) ->
-    to_json(Spec).
+db_encode(Spec, NestedRecordEncoder) ->
+    encode_with(Spec, NestedRecordEncoder).
 
 
 -spec db_decode(json_utils:json_term(), persistent_record:nested_record_decoder()) -> record().
-db_decode(SpecJson, _NestedRecordDecoder) ->
-    from_json(SpecJson).
+db_decode(SpecJson, NestedRecordDecoder) ->
+    decode_with(SpecJson, NestedRecordDecoder).
 
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
 
--spec spec_module_to_engine(spec_module()) -> engine().
-spec_module_to_engine(atm_onedata_function_operation_spec) -> onedata_function;
-spec_module_to_engine(atm_openfaas_operation_spec) -> openfaas;
-spec_module_to_engine(atm_workflow_operation_spec) -> atm_workflow;
-spec_module_to_engine(atm_user_form_operation_spec) -> user_form.
+-spec encode_with(record(), persistent_record:nested_record_encoder()) ->
+    json_utils:json_term().
+encode_with(Record, NestedRecordEncoder) ->
+    RecordType = utils:record_type(Record),
+    Engine = record_type_to_engine(RecordType),
+    maps:merge(
+        #{<<"engine">> => engine_to_json(Engine)},
+        NestedRecordEncoder(Record, RecordType)
+    ).
 
 
--spec engine_to_spec_module(engine()) -> spec_module().
-engine_to_spec_module(onedata_function) -> atm_onedata_function_operation_spec;
-engine_to_spec_module(openfaas) -> atm_openfaas_operation_spec;
-engine_to_spec_module(atm_workflow) -> atm_workflow_operation_spec;
-engine_to_spec_module(user_form) -> atm_user_form_operation_spec.
+-spec decode_with(json_utils:json_term(), persistent_record:nested_record_decoder()) ->
+    record().
+decode_with(SpecJson, NestedRecordDecoder) ->
+    Engine = engine_from_json(maps:get(<<"engine">>, SpecJson)),
+    RecordType = engine_to_record_type(Engine),
+    NestedRecordDecoder(SpecJson, RecordType).
+
+
+-spec record_type_to_engine(record_type()) -> engine().
+record_type_to_engine(atm_onedata_function_operation_spec) -> onedata_function;
+record_type_to_engine(atm_openfaas_operation_spec) -> openfaas;
+record_type_to_engine(atm_workflow_operation_spec) -> atm_workflow;
+record_type_to_engine(atm_user_form_operation_spec) -> user_form.
+
+
+-spec engine_to_record_type(engine()) -> record_type().
+engine_to_record_type(onedata_function) -> atm_onedata_function_operation_spec;
+engine_to_record_type(openfaas) -> atm_openfaas_operation_spec;
+engine_to_record_type(atm_workflow) -> atm_workflow_operation_spec;
+engine_to_record_type(user_form) -> atm_user_form_operation_spec.

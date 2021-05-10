@@ -56,8 +56,9 @@ to_json(#atm_data_spec{type = Type, value_constraints = ValueConstraints}) ->
 
 
 -spec from_json(json_utils:json_map()) -> record().
-from_json(#{<<"type">> := TypeJson, <<"valueConstraints">> := ValueConstraints}) ->
-    Type = atm_data_type:type_from_json(TypeJson),
+from_json(DataSpecJson) ->
+    Type = atm_data_type:type_from_json(maps:get(<<"type">>, DataSpecJson)),
+    ValueConstraints = maps:get(<<"valueConstraints">>, DataSpecJson, #{}),
     #atm_data_spec{
         type = Type,
         value_constraints = atm_data_type:value_constraints_from_json(Type, ValueConstraints)

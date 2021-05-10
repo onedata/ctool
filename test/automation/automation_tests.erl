@@ -6,7 +6,7 @@
 %%% @end
 %%%-------------------------------------------------------------------
 %%% @doc
-%%% Eunit tests of api_auth module.
+%%% Eunit tests of automation related modules.
 %%% @end
 %%%-------------------------------------------------------------------
 -module(automation_tests).
@@ -29,36 +29,28 @@ encode_decode_atm_data_spec_test() ->
 
 encode_decode_operation_spec_test() ->
     OperationSpecExamples = [
-        #atm_lambda_operation_spec{
-            spec = #atm_onedata_function_operation_spec{
-                function_id = ?RAND_STR()
+        #atm_onedata_function_operation_spec{
+            function_id = ?RAND_STR()
+        },
+        #atm_openfaas_operation_spec{
+            docker_image = ?RAND_STR(),
+            docker_execution_options = #atm_docker_execution_options{
+                readonly = ?RAND_BOOL(),
+                mount_oneclient = ?RAND_BOOL(),
+                oneclient_mount_point = <<"/a/b/c/d/", (?RAND_STR())/binary>>,
+                oneclient_options = lists_utils:random_element([<<"">>, <<"--a --b">>])
             }
         },
-        #atm_lambda_operation_spec{
-            spec = #atm_openfaas_operation_spec{
-                docker_image = ?RAND_STR(),
-                docker_execution_options = #atm_docker_execution_options{
-                    readonly = ?RAND_BOOL(),
-                    mount_oneclient = ?RAND_BOOL(),
-                    oneclient_mount_point = <<"/a/b/c/d/", (?RAND_STR())/binary>>,
-                    oneclient_options = lists_utils:random_element([<<"">>, <<"--a --b">>])
-                }
-            }
+        #atm_workflow_operation_spec{
+            atm_workflow_id = ?RAND_STR()
         },
-        #atm_lambda_operation_spec{
-            spec = #atm_workflow_operation_spec{
-                atm_workflow_id = ?RAND_STR()
-            }
-        },
-        #atm_lambda_operation_spec{
-            spec = #atm_user_form_operation_spec{
-                user_form_id = ?RAND_STR()
-            }
+        #atm_user_form_operation_spec{
+            user_form_id = ?RAND_STR()
         }
     ],
     lists:foreach(fun(OperationSpec) ->
-        ?assert(is_equal_after_json_encode_and_decode(OperationSpec)),
-        ?assert(is_equal_after_db_encode_and_decode(OperationSpec))
+        ?assert(is_equal_after_json_encode_and_decode(OperationSpec, atm_lambda_operation_spec)),
+        ?assert(is_equal_after_db_encode_and_decode(OperationSpec, atm_lambda_operation_spec))
     end, OperationSpecExamples).
 
 
@@ -164,12 +156,16 @@ example_data_specs() ->
 
 
 is_equal_after_json_encode_and_decode(Record) ->
-    RecordType = utils:record_type(Record),
+    is_equal_after_json_encode_and_decode(Record, utils:record_type(Record)).
+
+is_equal_after_json_encode_and_decode(Record, RecordType) ->
     Record =:= jsonable_record:from_json(jsonable_record:to_json(Record, RecordType), RecordType).
 
 
 is_equal_after_db_encode_and_decode(Record) ->
-    RecordType = utils:record_type(Record),
+    is_equal_after_db_encode_and_decode(Record, utils:record_type(Record)).
+
+is_equal_after_db_encode_and_decode(Record, RecordType) ->
     Record =:= persistent_record:decode(persistent_record:encode(Record, RecordType), RecordType).
 
 -endif.

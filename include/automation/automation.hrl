@@ -42,10 +42,6 @@
     user_form_id :: binary()
 }).
 
--record(atm_lambda_operation_spec, {
-    spec :: atm_lambda_operation_spec:spec()
-}).
-
 % Specification of a single input argument a lambda function.
 % Each function has a list of argument specs.
 -record(atm_lambda_argument_spec, {

@@ -13,11 +13,15 @@
 -author("Lukasz Opiola").
 
 -behaviour(jsonable_record).
+-behaviour(persistent_record).
 
 -include("automation/automation.hrl").
 
 %% jsonable_record callbacks
 -export([to_json/1, from_json/1]).
+
+%% persistent_record callbacks
+-export([version/0, db_encode/2, db_decode/2]).
 
 
 -type record() :: #atm_onedata_function_operation_spec{}.
@@ -39,3 +43,21 @@ from_json(SpecJson) ->
     #atm_onedata_function_operation_spec{
         function_id = maps:get(<<"functionId">>, SpecJson)
     }.
+
+%%%===================================================================
+%%% persistent_record callbacks
+%%%===================================================================
+
+-spec version() -> persistent_record:record_version().
+version() ->
+    1.
+
+
+-spec db_encode(record(), persistent_record:nested_record_encoder()) -> json_utils:json_term().
+db_encode(Spec, _NestedRecordEncoder) ->
+    to_json(Spec).
+
+
+-spec db_decode(json_utils:json_term(), persistent_record:nested_record_decoder()) -> record().
+db_decode(SpecJson, _NestedRecordDecoder) ->
+    from_json(SpecJson).
