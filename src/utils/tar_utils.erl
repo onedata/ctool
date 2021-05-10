@@ -54,14 +54,14 @@
 -define(FILENAME_LONG_LINK_TYPE_FLAG, <<"L">>).
 -define(SYMLINK_LONG_LINK_TYPE_FLAG, <<"K">>).
 
--define(ZLIB_COMPRESSION_LEVEL, default).
--define(ZLIB_MEMORY_LEVEL, 8).
+-define(ZLIB_COMPRESSION_LEVEL, 1).
+-define(ZLIB_MEMORY_LEVEL, 9).
 % The base two logarithm of the window size (the size of the history buffer). 
 % It is to be in the range 8 through 15.
 % The most significant bit (16) switches on gzip header and checksum.
 -define(ZLIB_WINDOW_BITS, 15 + 16).
 -define(ZLIB_METHOD, deflated).
--define(ZLIB_STRATEGY, default).
+-define(ZLIB_STRATEGY, huffman_only).
 
 -record(stream, {
     buffer = <<>> :: bytes(),
