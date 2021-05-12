@@ -25,7 +25,8 @@
 -export([mkdtemp/0, mkdtemp/3, rmtempdir/1, run_with_tempdir/1]).
 -export([to_binary/1]).
 -export([save_file_on_hosts/3, save_file/2]).
--export([ensure_list/1, ensure_atom/1, ensure_boolean/1]).
+-export([ensure_list/1]).
+-export([to_atom/1, to_boolean/1]).
 
 -type time_unit() :: us | ms | s | min | h.
 
@@ -392,15 +393,15 @@ ensure_list(List) when is_list(List) -> List;
 ensure_list(Element) -> [Element].
 
 
--spec ensure_atom(term()) -> atom() | no_return().
-ensure_atom(Atom) when is_atom(Atom) -> Atom;
-ensure_atom(Binary) when is_binary(Binary) -> binary_to_atom(Binary, utf8).
+-spec to_atom(term()) -> atom() | no_return().
+to_atom(Atom) when is_atom(Atom) -> Atom;
+to_atom(Binary) when is_binary(Binary) -> binary_to_atom(Binary, utf8).
 
 
--spec ensure_boolean(binary() | boolean()) -> boolean() | no_return().
-ensure_boolean(Boolean) when is_boolean(Boolean) -> Boolean;
-ensure_boolean(<<"true">>) -> true;
-ensure_boolean(<<"false">>) -> false.
+-spec to_boolean(binary() | boolean()) -> boolean() | no_return().
+to_boolean(Boolean) when is_boolean(Boolean) -> Boolean;
+to_boolean(<<"true">>) -> true;
+to_boolean(<<"false">>) -> false.
 
 %%%===================================================================
 %%% Internal functions
