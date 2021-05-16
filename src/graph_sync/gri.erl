@@ -35,7 +35,7 @@
 -type entity_type() :: oz_worker | od_user | od_group | od_space | od_share
 | od_provider | od_handle_service | od_handle | od_cluster | od_harvester
 | od_storage | od_token | space_stats | temporary_token_secret
-| od_atm_inventory | od_atm_lambda
+| od_atm_inventory | od_atm_lambda | od_atm_workflow_schema
 | onp_ceph | onp_cluster | onp_host | onp_panel | onp_provider | onp_service
 | onp_space | onp_storage | onp_user | onp_zone
 | op_archive | op_dataset | op_file | op_group | op_handle | op_handle_service
@@ -193,6 +193,7 @@ serialize_type(space_stats, _) -> <<"space_stats">>;
 serialize_type(temporary_token_secret, _) -> <<"temporary_token_secret">>;
 serialize_type(od_atm_inventory, _) -> <<"atm_inventory">>;
 serialize_type(od_atm_lambda, _) -> <<"atm_lambda">>;
+serialize_type(od_atm_workflow_schema, _) -> <<"atm_workflow_schema">>;
 
 serialize_type(onp_ceph, _) -> <<"onp_ceph">>;
 serialize_type(onp_cluster, _) -> <<"onp_cluster">>;
@@ -243,6 +244,7 @@ deserialize_type(<<"space_stats">>, _) -> space_stats;
 deserialize_type(<<"temporary_token_secret">>, _) -> temporary_token_secret;
 deserialize_type(<<"atm_inventory">>, _) -> od_atm_inventory;
 deserialize_type(<<"atm_lambda">>, _) -> od_atm_lambda;
+deserialize_type(<<"atm_workflow_schema">>, _) -> od_atm_workflow_schema;
 
 deserialize_type(<<"onp_ceph">>, _) -> onp_ceph;
 deserialize_type(<<"onp_cluster">>, _) -> onp_cluster;

@@ -32,16 +32,16 @@
 %%%===================================================================
 
 -spec to_json(record()) -> json_utils:json_term().
-to_json(Spec) ->
+to_json(Record) ->
     #{
-        <<"atmWorkflowId">> => Spec#atm_workflow_operation_spec.atm_workflow_id
+        <<"atmWorkflowId">> => Record#atm_workflow_operation_spec.atm_workflow_id
     }.
 
 
 -spec from_json(json_utils:json_term()) -> record().
-from_json(SpecJson) ->
+from_json(RecordJson) ->
     #atm_workflow_operation_spec{
-        atm_workflow_id = maps:get(<<"atmWorkflowId">>, SpecJson)
+        atm_workflow_id = maps:get(<<"atmWorkflowId">>, RecordJson)
     }.
 
 %%%===================================================================
@@ -54,10 +54,10 @@ version() ->
 
 
 -spec db_encode(record(), persistent_record:nested_record_encoder()) -> json_utils:json_term().
-db_encode(Spec, _NestedRecordEncoder) ->
-    to_json(Spec).
+db_encode(Record, _NestedRecordEncoder) ->
+    to_json(Record).
 
 
 -spec db_decode(json_utils:json_term(), persistent_record:nested_record_decoder()) -> record().
-db_decode(SpecJson, _NestedRecordDecoder) ->
-    from_json(SpecJson).
+db_decode(RecordJson, _NestedRecordDecoder) ->
+    from_json(RecordJson).

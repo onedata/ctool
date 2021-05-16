@@ -99,13 +99,13 @@ version() ->
 
 
 -spec db_encode(record(), persistent_record:nested_record_encoder()) -> json_utils:json_term().
-db_encode(Spec, NestedRecordEncoder) ->
-    encode_with(Spec, NestedRecordEncoder).
+db_encode(Record, NestedRecordEncoder) ->
+    encode_with(Record, NestedRecordEncoder).
 
 
 -spec db_decode(json_utils:json_term(), persistent_record:nested_record_decoder()) -> record().
-db_decode(SpecJson, NestedRecordDecoder) ->
-    decode_with(SpecJson, NestedRecordDecoder).
+db_decode(RecordJson, NestedRecordDecoder) ->
+    decode_with(RecordJson, NestedRecordDecoder).
 
 %%%===================================================================
 %%% Internal functions
@@ -124,10 +124,10 @@ encode_with(Record, NestedRecordEncoder) ->
 
 -spec decode_with(json_utils:json_term(), persistent_record:nested_record_decoder()) ->
     record().
-decode_with(SpecJson, NestedRecordDecoder) ->
-    Engine = engine_from_json(maps:get(<<"engine">>, SpecJson)),
+decode_with(RecordJson, NestedRecordDecoder) ->
+    Engine = engine_from_json(maps:get(<<"engine">>, RecordJson)),
     RecordType = engine_to_record_type(Engine),
-    NestedRecordDecoder(SpecJson, RecordType).
+    NestedRecordDecoder(RecordJson, RecordType).
 
 
 -spec record_type_to_engine(record_type()) -> engine().

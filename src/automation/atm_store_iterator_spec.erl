@@ -6,10 +6,10 @@
 %%% @end
 %%%-------------------------------------------------------------------
 %%% @doc
-%%% Record expressing lambda argument specification used in automation machinery.
+%%% Record expressing store iterator spec used in automation machinery.
 %%% @end
 %%%-------------------------------------------------------------------
--module(atm_lambda_argument_spec).
+-module(atm_store_iterator_spec).
 -author("Lukasz Opiola").
 
 -behaviour(jsonable_record).
@@ -24,8 +24,13 @@
 -export([version/0, db_encode/2, db_decode/2]).
 
 
--type record() :: #atm_lambda_argument_spec{}.
--export_type([record/0]).
+-type engine() :: onedata_function | openfaas | atm_workflow | user_form.
+-type record() :: #atm_store_iterator_spec{}.
+-type strategy() :: atm_store_iterator_serial_strategy:record() | atm_store_iterator_batch_strategy:record().
+-type strategy_record_type() :: atm_store_iterator_serial_strategy | atm_store_iterator_batch_strategy.
+-type strategy_type() :: serial | batch.
+
+-export_type([engine/0, record/0, strategy/0]).
 
 %%%===================================================================
 %%% jsonable_record callbacks
@@ -65,22 +70,44 @@ db_decode(RecordJson, NestedRecordDecoder) ->
 -spec encode_with(record(), persistent_record:nested_record_encoder()) ->
     json_utils:json_term().
 encode_with(Record, NestedRecordEncoder) ->
-    #{
-        <<"name">> => Record#atm_lambda_argument_spec.name,
-        <<"dataSpec">> => NestedRecordEncoder(Record#atm_lambda_argument_spec.data_spec, atm_data_spec),
-        <<"isBatch">> => Record#atm_lambda_argument_spec.is_batch,
-        <<"isOptional">> => Record#atm_lambda_argument_spec.is_optional,
-        <<"defaultValue">> => Record#atm_lambda_argument_spec.default_value
-    }.
+    StrategyRecord = Record#atm_store_iterator_spec.strategy,
+    StrategyRecordType = utils:record_type(StrategyRecord),
+    StrategyType = record_type_to_strategy_type(StrategyRecordType),
+    maps:merge(
+        #{
+            <<"type">> => strategy_type_to_json(StrategyType),
+            <<"storeSchemaId">> => Record#atm_store_iterator_spec.store_schema_id
+        },
+        NestedRecordEncoder(StrategyRecord, StrategyRecordType)
+    ).
 
 
 -spec decode_with(json_utils:json_term(), persistent_record:nested_record_decoder()) ->
     record().
 decode_with(RecordJson, NestedRecordDecoder) ->
-    #atm_lambda_argument_spec{
-        name = maps:get(<<"name">>, RecordJson),
-        data_spec = NestedRecordDecoder(maps:get(<<"dataSpec">>, RecordJson), atm_data_spec),
-        is_batch = maps:get(<<"isBatch">>, RecordJson),
-        is_optional = maps:get(<<"isOptional">>, RecordJson),
-        default_value = maps:get(<<"defaultValue">>, RecordJson)
+    StrategyType = strategy_type_from_json(maps:get(<<"type">>, RecordJson)),
+    StrategyRecordType = strategy_type_to_record_type(StrategyType),
+    #atm_store_iterator_spec{
+        store_schema_id = maps:get(<<"storeSchemaId">>, RecordJson),
+        strategy = NestedRecordDecoder(RecordJson, StrategyRecordType)
     }.
+
+
+-spec record_type_to_strategy_type(strategy_record_type()) -> strategy_type().
+record_type_to_strategy_type(atm_store_iterator_serial_strategy) -> serial;
+record_type_to_strategy_type(atm_store_iterator_batch_strategy) -> batch.
+
+
+-spec strategy_type_to_record_type(strategy_type()) -> strategy_record_type().
+strategy_type_to_record_type(serial) -> atm_store_iterator_serial_strategy;
+strategy_type_to_record_type(batch) -> atm_store_iterator_batch_strategy.
+
+
+-spec strategy_type_to_json(strategy_type()) -> json_utils:json_term().
+strategy_type_to_json(serial) -> <<"serial">>;
+strategy_type_to_json(batch) -> <<"batch">>.
+
+
+-spec strategy_type_from_json(json_utils:json_term()) -> strategy_type().
+strategy_type_from_json(<<"serial">>) -> serial;
+strategy_type_from_json(<<"batch">>) -> batch.

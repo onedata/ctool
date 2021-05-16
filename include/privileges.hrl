@@ -142,6 +142,7 @@
 -define(ATM_INVENTORY_SET_PRIVILEGES, atm_inventory_set_privileges).
 
 -define(ATM_INVENTORY_MANAGE_LAMBDAS, atm_inventory_manage_lambdas).
+-define(ATM_INVENTORY_MANAGE_WORKFLOW_SCHEMAS, atm_inventory_manage_workflow_schemas).
 
 -define(ATM_INVENTORY_ADD_USER, atm_inventory_add_user).
 -define(ATM_INVENTORY_REMOVE_USER, atm_inventory_remove_user).
