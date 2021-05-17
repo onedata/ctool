@@ -44,6 +44,9 @@
 -define(GROUP_ADD_HARVESTER, group_add_harvester).
 -define(GROUP_REMOVE_HARVESTER, group_remove_harvester).
 
+-define(GROUP_ADD_ATM_INVENTORY, group_add_atm_inventory).
+-define(GROUP_REMOVE_ATM_INVENTORY, group_remove_atm_inventory).
+
 % Space privileges of members (users or groups)
 -define(SPACE_VIEW, space_view).
 -define(SPACE_UPDATE, space_update).
@@ -85,6 +88,10 @@
 -define(SPACE_REMOVE_HARVESTER, space_remove_harvester).
 
 -define(SPACE_MANAGE_DATASETS, space_manage_datasets).
+-define(SPACE_VIEW_ARCHIVES, space_view_archives).
+-define(SPACE_CREATE_ARCHIVES, space_create_archives).
+-define(SPACE_REMOVE_ARCHIVES, space_remove_archives).
+-define(SPACE_RECALL_ARCHIVES, space_recall_archives).
 
 % Handle service privileges of members (users or groups)
 -define(HANDLE_SERVICE_VIEW, handle_service_view).
@@ -126,6 +133,21 @@
 
 -define(CLUSTER_ADD_GROUP, cluster_add_group).
 -define(CLUSTER_REMOVE_GROUP, cluster_remove_group).
+
+% Automation inventory privileges of members (users or groups)
+-define(ATM_INVENTORY_VIEW, atm_inventory_view).
+-define(ATM_INVENTORY_UPDATE, atm_inventory_update).
+-define(ATM_INVENTORY_DELETE, atm_inventory_delete).
+-define(ATM_INVENTORY_VIEW_PRIVILEGES, atm_inventory_view_privileges).
+-define(ATM_INVENTORY_SET_PRIVILEGES, atm_inventory_set_privileges).
+
+-define(ATM_INVENTORY_MANAGE_LAMBDAS, atm_inventory_manage_lambdas).
+
+-define(ATM_INVENTORY_ADD_USER, atm_inventory_add_user).
+-define(ATM_INVENTORY_REMOVE_USER, atm_inventory_remove_user).
+
+-define(ATM_INVENTORY_ADD_GROUP, atm_inventory_add_group).
+-define(ATM_INVENTORY_REMOVE_GROUP, atm_inventory_remove_group).
 
 % OZ privileges to administrate privileges of users or groups in onezone
 -define(OZ_VIEW_PRIVILEGES, oz_view_privileges).
@@ -229,6 +251,18 @@
 -define(OZ_CLUSTERS_LIST_RELATIONSHIPS, oz_clusters_list_relationships).
 -define(OZ_CLUSTERS_ADD_RELATIONSHIPS, oz_clusters_add_relationships).
 -define(OZ_CLUSTERS_REMOVE_RELATIONSHIPS, oz_clusters_remove_relationships).
+
+%% Privileges to administrate automation inventories in OZ
+-define(OZ_ATM_INVENTORIES_LIST, oz_atm_inventories_list).
+-define(OZ_ATM_INVENTORIES_VIEW, oz_atm_inventories_view).
+-define(OZ_ATM_INVENTORIES_CREATE, oz_atm_inventories_create).
+-define(OZ_ATM_INVENTORIES_UPDATE, oz_atm_inventories_update).
+-define(OZ_ATM_INVENTORIES_DELETE, oz_atm_inventories_delete).
+-define(OZ_ATM_INVENTORIES_VIEW_PRIVILEGES, oz_atm_inventories_view_privileges).
+-define(OZ_ATM_INVENTORIES_SET_PRIVILEGES, oz_atm_inventories_set_privileges).
+-define(OZ_ATM_INVENTORIES_LIST_RELATIONSHIPS, oz_atm_inventories_list_relationships).
+-define(OZ_ATM_INVENTORIES_ADD_RELATIONSHIPS, oz_atm_inventories_add_relationships).
+-define(OZ_ATM_INVENTORIES_REMOVE_RELATIONSHIPS, oz_atm_inventories_remove_relationships).
 
 
 -endif.

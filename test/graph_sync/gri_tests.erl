@@ -92,6 +92,10 @@ serialize_deserialize_testcases() -> [
         #gri{type = temporary_token_secret, id = <<"tts123">>, aspect = user, scope = private}
     },
     {
+        <<"op_archive.qwertyuiop.instance:private">>,
+        #gri{type = op_archive, id = <<"qwertyuiop">>, aspect = instance, scope = private}
+    },
+    {
         <<"op_dataset.123345456789890.instance:private">>,
         #gri{type = op_dataset, id = <<"123345456789890">>, aspect = instance, scope = private}
     },
@@ -183,6 +187,19 @@ serialize_deserialize_pattern_testcases() -> [
     {
         <<"*.*.harvest_metadata:private">>,
         #gri_pattern{type = '*', id = '*', aspect = harvest_metadata, scope = private}
+    },
+    {
+        <<"atm_inventory.*.workflows:protected">>,
+        #gri_pattern{type = od_atm_inventory, id = '*', aspect = workflows, scope = protected}
+    },
+    {
+        <<"atm_lambda.lAmBdAiD.*">>,
+        #gri_pattern{type = od_atm_lambda, id = <<"lAmBdAiD">>, aspect = '*', scope = private},
+        <<"atm_lambda.lAmBdAiD.*:private">>
+    },
+    {
+        <<"op_dataset.qwertyuiop.*:private">>,
+        #gri_pattern{type = op_dataset, id = <<"qwertyuiop">>, aspect = '*', scope = private}
     },
     {
         <<"op_dataset.123345456789890.*:private">>,

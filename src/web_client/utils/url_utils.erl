@@ -14,7 +14,7 @@
 -include_lib("hackney/include/hackney_lib.hrl").
 
 %% API
--export([parse/1]).
+-export([parse/1, is_valid/1]).
 
 %%%===================================================================
 %%% API
@@ -25,8 +25,14 @@
 %% Parses given URI and returns identified parts.
 %% @end
 %%--------------------------------------------------------------------
--spec parse(Uri :: http_client:url()) -> #{scheme => http | https,
-host => binary(), port => non_neg_integer(), path => binary(), qs => binary()}.
+-spec parse(Uri :: http_client:url()) ->
+    #{
+        scheme => http | https,
+        host => binary(),
+        port => non_neg_integer(),
+        path => binary(),
+        qs => binary()
+    }.
 parse(Uri) ->
     #hackney_url{
         scheme = Scheme, host = Host, port = Port, path = Path, qs = QueryString
@@ -38,3 +44,14 @@ parse(Uri) ->
         path => Path,
         qs => QueryString
     }.
+
+
+-spec is_valid(http_client:url()) -> boolean().
+is_valid(Uri) ->
+    try
+       parse(Uri),
+       true
+    catch
+        _:_ ->
+            false
+    end.
