@@ -328,15 +328,15 @@ maybe_recompile_module(ModuleName, SrcFilePath, Includes) ->
     case should_recompile_module(SrcFilePath) of
         true ->
             CompileOpts = [
-                verbose, report,
+                verbose, report, return_errors,
                 {outdir, filename:dirname(SrcFilePath)}
                 | Includes
             ],
             case compile:file(SrcFilePath, CompileOpts) of
                 {ok, ModuleName} ->
                     true;
-                _ ->
-                    ct:fail("Couldn't compile module: ~p", [ModuleName])
+                Error ->
+                    ct:fail("Couldn't compile module '~w'~n~p", [ModuleName, Error])
             end;
         false ->
             false
