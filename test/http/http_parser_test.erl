@@ -19,12 +19,13 @@
 
 parse_bytes_ranges_test_() ->
     ContentSize = 100,
-    P = fun
-        (undefined) ->
+    PBase = fun
+        (undefined, ContentSize) ->
             http_parser:parse_range_header(#{headers => #{}}, ContentSize);
-        (RangeBin) ->
+        (RangeBin, ContentSize) ->
             http_parser:parse_range_header(#{headers => #{?HDR_RANGE => RangeBin}}, ContentSize)
     end,
+    P = fun(RangeOrUndefined) -> PBase(RangeOrUndefined, ContentSize) end,
 
     [
         ?_assertEqual(undefined, P(undefined)),
@@ -55,6 +56,12 @@ parse_bytes_ranges_test_() ->
         ?_assertEqual(invalid, P(<<"bytes   =  , 10-15 , 50-50,    -5  ">>)),
         ?_assertEqual([{10, 15}, {50, 50}, {95, 99}], P(<<"bytes=,,, ,    , 10-15,50-50,, \t  ,,,-5  ,,  ,">>)),
         ?_assertEqual([{10, 15}, {50, 50}, {95, 99}], P(<<"bytes=,,, ,    , 10-15, ,50-50,, \t  ,,,-5  ,,  ,">>)),
+        
+        % Parsing header with unknown content size should be possible
+        ?_assertEqual([{10, unknown}], PBase(<<"bytes=10-">>, unknown)),
+        ?_assertEqual(invalid, PBase(<<"bytes=-10">>, unknown)),
+        ?_assertEqual([{10, 15}], PBase(<<"bytes=10-15">>, unknown)),
+        ?_assertEqual([{10, 15}, {50, 50}], PBase(<<"bytes=10-15,50-50">>, unknown)),
 
         % When only RangeEnd exceeds ContentSize it should be trimmed
         ?_assertEqual([{80, 99}], P(<<"bytes=80-120">>))
