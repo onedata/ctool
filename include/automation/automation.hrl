@@ -87,14 +87,14 @@
     store_schema_id :: automation:id()
 }).
 
--record(atm_argument_value_builder, {
-    type :: atm_argument_value_builder:type(),
-    recipe :: atm_argument_value_builder:recipe()
+-record(atm_task_argument_value_builder, {
+    type :: atm_task_argument_value_builder:type(),
+    recipe :: atm_task_argument_value_builder:recipe()
 }).
 
 -record(atm_task_schema_argument_mapper, {
     argument_name :: automation:name(),
-    value_builder :: atm_argument_value_builder:record()
+    value_builder :: atm_task_argument_value_builder:record()
 }).
 
 -record(atm_task_schema_result_mapper, {

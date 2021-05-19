@@ -6,7 +6,7 @@
 %%% @end
 %%%-------------------------------------------------------------------
 %%% @doc
-%%% Record expressing task schema used in automation machinery.
+%%% Record expressing parallel box schema used in automation machinery.
 %%% @end
 %%%-------------------------------------------------------------------
 -module(atm_parallel_box_schema).

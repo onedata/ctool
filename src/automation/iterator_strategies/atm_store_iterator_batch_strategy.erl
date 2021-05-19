@@ -6,7 +6,7 @@
 %%% @end
 %%%-------------------------------------------------------------------
 %%% @doc
-%%% Record expressing store iterator serial strategy used in automation machinery.
+%%% Record expressing store iterator batch strategy used in automation machinery.
 %%% @end
 %%%-------------------------------------------------------------------
 -module(atm_store_iterator_batch_strategy).

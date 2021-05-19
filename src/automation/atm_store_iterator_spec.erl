@@ -24,13 +24,12 @@
 -export([version/0, db_encode/2, db_decode/2]).
 
 
--type engine() :: onedata_function | openfaas | atm_workflow | user_form.
 -type record() :: #atm_store_iterator_spec{}.
 -type strategy() :: atm_store_iterator_serial_strategy:record() | atm_store_iterator_batch_strategy:record().
 -type strategy_record_type() :: atm_store_iterator_serial_strategy | atm_store_iterator_batch_strategy.
 -type strategy_type() :: serial | batch.
 
--export_type([engine/0, record/0, strategy/0]).
+-export_type([record/0, strategy/0]).
 
 %%%===================================================================
 %%% jsonable_record callbacks

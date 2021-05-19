@@ -87,5 +87,5 @@ decode_with(SchemaJson, NestedRecordDecoder) ->
         type = automation:store_type_from_json(maps:get(<<"type">>, SchemaJson)),
         data_spec = NestedRecordDecoder(maps:get(<<"dataSpec">>, SchemaJson), atm_data_spec),
         requires_initial_value = maps:get(<<"requiresInitialValue">>, SchemaJson),
-        default_initial_value = utils:null_to_undefined(maps:get(<<"defaultInitialValue">>, SchemaJson))
+        default_initial_value = utils:null_to_undefined(maps:get(<<"defaultInitialValue">>, SchemaJson, null))
     }.

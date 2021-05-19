@@ -9,7 +9,7 @@
 %%% Base model for argument value builder used in automation machinery.
 %%% @end
 %%%-------------------------------------------------------------------
--module(atm_argument_value_builder).
+-module(atm_task_argument_value_builder).
 -author("Lukasz Opiola").
 
 -behaviour(jsonable_record).
@@ -24,12 +24,12 @@
 -export([version/0, db_encode/2, db_decode/2]).
 
 
--type record() :: #atm_argument_value_builder{}.
+-type record() :: #atm_task_argument_value_builder{}.
 -type type() :: iterated_item | const | object | store_credentials | onedatafs_credentials.
 %% @formatter:off
 %% Information required for given value builder type to build a value:
-%%  iterated_item: a recipe, expressed as an array, specifying how to extract a value from
-%%  an object that will be fed into the task by the store iterator of the current lane, eg:
+%%  * iterated_item: a recipe, expressed as an array, specifying how to extract a value from
+%%    an object that will be fed into the task by the store iterator of the current lane, eg:
 %%      undefined - the value will be expanded to the incoming object as-is (the field is optional)
 %%      [] - the same as undefined
 %%      ["key1", "key2", "1"] - the value will be expanded to the JSON term residing
@@ -38,24 +38,24 @@
 %%              {"key1": {"key2": ["zeroIndex", "foo"]}
 %%          the recipe would yield value "foo" (arrays are treated as objects with integer keys)
 %%
-%%  const: a constant value, eg. 13, "some text", true
+%%  * const: a constant value, eg. 13, "some text", true
 %%
-%%  object: a specification of an object to be built - can include only
-%%  nested #atm_argument_value_builder{} records as values:
+%%  * object: a specification of an object to be built - can include only
+%%    nested #atm_task_argument_value_builder{} records as values:
 %%      #{
-%%          "myStringValue": #atm_argument_value_builder{type = const, recipe = "some text"},
-%%          "myIntegerValue": #atm_argument_value_builder{type = const, recipe = 13},
-%%          "myBoolValue": #atm_argument_value_builder{type = const, recipe = true},
-%%          "myStoreCredentials": #atm_argument_value_builder{type = store_credentials, recipe = "$storeSchemaId"},
-%%          "myNestedObject": #atm_argument_value_builder{type = object, recipe = #{...}}
+%%          "myStringValue": #atm_task_argument_value_builder{type = const, recipe = "some text"},
+%%          "myIntegerValue": #atm_task_argument_value_builder{type = const, recipe = 13},
+%%          "myBoolValue": #atm_task_argument_value_builder{type = const, recipe = true},
+%%          "myStoreCredentials": #atm_task_argument_value_builder{type = store_credentials, recipe = "$storeSchemaId"},
+%%          "myNestedObject": #atm_task_argument_value_builder{type = object, recipe = #{...}}
 %%       }
 %%
-%%  store_credentials: the id of a specific store schema - the value will be expanded
-%%  during execution to the id of the store that was instantiated from the schema
+%%  * store_credentials: the id of a specific store schema - the value will be expanded
+%%    during execution to the credentials allowing access to the store that was instantiated from the schema
 %%
-%%  onedatafs_credentials: always undefined - the recipe is ignored as there is no parametrization,
-%%  the value will be expanded to credentials required to mount a OnedataFS client
-%%  during actual workflow execution.
+%%  * onedatafs_credentials: always undefined - the recipe is ignored as there is no parametrization,
+%%    the value will be expanded to credentials required to mount a OnedataFS client
+%%    during actual workflow execution.
 %%
 %% @formatter:on
 -type recipe() :: undefined | json_utils:json_term().
@@ -66,7 +66,7 @@
 %%%===================================================================
 
 -spec to_json(record()) -> json_utils:json_map().
-to_json(#atm_argument_value_builder{type = Type, recipe = Recipe}) ->
+to_json(#atm_task_argument_value_builder{type = Type, recipe = Recipe}) ->
     #{
         <<"valueBuilderType">> => type_to_json(Type),
         <<"valueBuilderRecipe">> => recipe_to_json(Type, Recipe)
@@ -76,7 +76,7 @@ to_json(#atm_argument_value_builder{type = Type, recipe = Recipe}) ->
 -spec from_json(json_utils:json_map()) -> record().
 from_json(RecordJson) ->
     Type = type_from_json(maps:get(<<"valueBuilderType">>, RecordJson)),
-    #atm_argument_value_builder{
+    #atm_task_argument_value_builder{
         type = Type,
         recipe = recipe_from_json(Type, maps:get(<<"valueBuilderRecipe">>, RecordJson))
     }.
@@ -125,11 +125,11 @@ recipe_to_json(iterated_item, undefined) ->
 recipe_to_json(iterated_item, List) when is_list(List) ->
     List;
 
-recipe_to_json(const, Val) when is_binary(Val); is_integer(Val); is_float(Val) ->
+recipe_to_json(const, Val) ->
     Val;
 
 recipe_to_json(object, ObjectSpec) ->
-    maps:map(fun(Key, #atm_argument_value_builder{} = NestedBuilder) when is_binary(Key) ->
+    maps:map(fun(Key, #atm_task_argument_value_builder{} = NestedBuilder) when is_binary(Key) ->
         to_json(NestedBuilder)
     end, ObjectSpec);
 
@@ -146,7 +146,7 @@ recipe_from_json(iterated_item, null) ->
 recipe_from_json(iterated_item, List) when is_list(List) ->
     List;
 
-recipe_from_json(const, Val) when is_binary(Val); is_integer(Val); is_float(Val) ->
+recipe_from_json(const, Val) ->
     Val;
 
 recipe_from_json(object, ObjectSpec) ->

@@ -37,6 +37,10 @@
 
 -type store_type() :: single_value | list | map | tree_forest | range | histogram.
 
+% Additional information solely for the potential users of a workflow schema used
+% to improve joint schema management. These states do not impact the ability of
+% schemas to be executed, apart from the fact that a warning may be displayed in
+% graphical interface concerning incompleteness or deprecation of a schema.
 -type workflow_schema_state() :: incomplete | ready | deprecated.
 
 -export_type([id/0, name/0, summary/0, description/0]).

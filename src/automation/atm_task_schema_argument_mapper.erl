@@ -67,7 +67,7 @@ db_decode(RecordJson, NestedRecordDecoder) ->
 encode_with(Record, NestedRecordEncoder) ->
     #{
         <<"argumentName">> => Record#atm_task_schema_argument_mapper.argument_name,
-        <<"valueBuilder">> => NestedRecordEncoder(Record#atm_task_schema_argument_mapper.value_builder, atm_argument_value_builder)
+        <<"valueBuilder">> => NestedRecordEncoder(Record#atm_task_schema_argument_mapper.value_builder, atm_task_argument_value_builder)
     }.
 
 
@@ -76,5 +76,5 @@ encode_with(Record, NestedRecordEncoder) ->
 decode_with(RecordJson, NestedRecordDecoder) ->
     #atm_task_schema_argument_mapper{
         argument_name = maps:get(<<"argumentName">>, RecordJson),
-        value_builder = NestedRecordDecoder(maps:get(<<"valueBuilder">>, RecordJson), atm_argument_value_builder)
+        value_builder = NestedRecordDecoder(maps:get(<<"valueBuilder">>, RecordJson), atm_task_argument_value_builder)
     }.

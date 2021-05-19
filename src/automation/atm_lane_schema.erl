@@ -6,7 +6,7 @@
 %%% @end
 %%%-------------------------------------------------------------------
 %%% @doc
-%%% Record expressing task schema used in automation machinery.
+%%% Record expressing lane schema used in automation machinery.
 %%% @end
 %%%-------------------------------------------------------------------
 -module(atm_lane_schema).
