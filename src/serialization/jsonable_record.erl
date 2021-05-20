@@ -20,6 +20,7 @@
 
 %% API
 -export([to_json/2, from_json/2]).
+-export([list_to_json/2, list_from_json/2]).
 
 -type record() :: tuple().
 -type record_type() :: module().
@@ -56,3 +57,13 @@ to_json(JsonableRecord, RecordType) ->
 -spec from_json(json_utils:json_term(), record_type()) -> record().
 from_json(EncodedRecord, RecordType) ->
     RecordType:from_json(EncodedRecord).
+
+
+-spec list_to_json([record()], record_type()) -> [json_utils:json_term()].
+list_to_json(JsonableRecords, RecordType) ->
+    [RecordType:to_json(R) || R <- JsonableRecords].
+
+
+-spec list_from_json([json_utils:json_term()], record_type()) -> [record()].
+list_from_json(EncodedRecords, RecordType) ->
+    [RecordType:from_json(R) || R <- EncodedRecords].

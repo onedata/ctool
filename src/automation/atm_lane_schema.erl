@@ -6,10 +6,10 @@
 %%% @end
 %%%-------------------------------------------------------------------
 %%% @doc
-%%% Record expressing lambda argument specification used in automation machinery.
+%%% Record expressing lane schema used in automation machinery.
 %%% @end
 %%%-------------------------------------------------------------------
--module(atm_lambda_argument_spec).
+-module(atm_lane_schema).
 -author("Lukasz Opiola").
 
 -behaviour(jsonable_record).
@@ -24,7 +24,7 @@
 -export([version/0, db_encode/2, db_decode/2]).
 
 
--type record() :: #atm_lambda_argument_spec{}.
+-type record() :: #atm_lane_schema{}.
 -export_type([record/0]).
 
 %%%===================================================================
@@ -66,21 +66,19 @@ db_decode(RecordJson, NestedRecordDecoder) ->
     json_utils:json_term().
 encode_with(Record, NestedRecordEncoder) ->
     #{
-        <<"name">> => Record#atm_lambda_argument_spec.name,
-        <<"dataSpec">> => NestedRecordEncoder(Record#atm_lambda_argument_spec.data_spec, atm_data_spec),
-        <<"isBatch">> => Record#atm_lambda_argument_spec.is_batch,
-        <<"isOptional">> => Record#atm_lambda_argument_spec.is_optional,
-        <<"defaultValue">> => Record#atm_lambda_argument_spec.default_value
+        <<"id">> => Record#atm_lane_schema.id,
+        <<"name">> => Record#atm_lane_schema.name,
+        <<"parallelBoxes">> => [NestedRecordEncoder(M, atm_parallel_box_schema) || M <- Record#atm_lane_schema.parallel_boxes],
+        <<"storeIteratorRecord">> => NestedRecordEncoder(Record#atm_lane_schema.store_iterator_spec, atm_store_iterator_spec)
     }.
 
 
 -spec decode_with(json_utils:json_term(), persistent_record:nested_record_decoder()) ->
     record().
 decode_with(RecordJson, NestedRecordDecoder) ->
-    #atm_lambda_argument_spec{
+    #atm_lane_schema{
+        id = maps:get(<<"id">>, RecordJson),
         name = maps:get(<<"name">>, RecordJson),
-        data_spec = NestedRecordDecoder(maps:get(<<"dataSpec">>, RecordJson), atm_data_spec),
-        is_batch = maps:get(<<"isBatch">>, RecordJson),
-        is_optional = maps:get(<<"isOptional">>, RecordJson),
-        default_value = maps:get(<<"defaultValue">>, RecordJson)
+        parallel_boxes = [NestedRecordDecoder(M, atm_parallel_box_schema) || M <- maps:get(<<"parallelBoxes">>, RecordJson)],
+        store_iterator_spec = NestedRecordDecoder(maps:get(<<"storeIteratorRecord">>, RecordJson), atm_store_iterator_spec)
     }.

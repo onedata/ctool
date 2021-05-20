@@ -81,7 +81,8 @@ allowed_api_by_service_type(?OP_WORKER) -> [
     {?OZ_WORKER, all, ?GRI_PATTERN(od_handle, '*', '*', '*')},
     {?OZ_WORKER, get, ?GRI_PATTERN(od_handle_service, '*', '*', '*')},
     {?OZ_WORKER, get, ?GRI_PATTERN(od_atm_inventory, '*', '*', '*')},
-    {?OZ_WORKER, get, ?GRI_PATTERN(od_atm_lambda, '*', '*', '*')}
+    {?OZ_WORKER, get, ?GRI_PATTERN(od_atm_lambda, '*', '*', '*')},
+    {?OZ_WORKER, get, ?GRI_PATTERN(od_atm_workflow_schema, '*', '*', '*')}
 ];
 allowed_api_by_service_type(?OP_PANEL) -> [
     {?OP_PANEL, all, ?GRI_PATTERN('*', '*', '*', '*')},

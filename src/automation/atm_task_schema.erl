@@ -6,10 +6,10 @@
 %%% @end
 %%%-------------------------------------------------------------------
 %%% @doc
-%%% Record expressing lambda argument specification used in automation machinery.
+%%% Record expressing task schema used in automation machinery.
 %%% @end
 %%%-------------------------------------------------------------------
--module(atm_lambda_argument_spec).
+-module(atm_task_schema).
 -author("Lukasz Opiola").
 
 -behaviour(jsonable_record).
@@ -24,7 +24,7 @@
 -export([version/0, db_encode/2, db_decode/2]).
 
 
--type record() :: #atm_lambda_argument_spec{}.
+-type record() :: #atm_task_schema{}.
 -export_type([record/0]).
 
 %%%===================================================================
@@ -66,21 +66,21 @@ db_decode(RecordJson, NestedRecordDecoder) ->
     json_utils:json_term().
 encode_with(Record, NestedRecordEncoder) ->
     #{
-        <<"name">> => Record#atm_lambda_argument_spec.name,
-        <<"dataSpec">> => NestedRecordEncoder(Record#atm_lambda_argument_spec.data_spec, atm_data_spec),
-        <<"isBatch">> => Record#atm_lambda_argument_spec.is_batch,
-        <<"isOptional">> => Record#atm_lambda_argument_spec.is_optional,
-        <<"defaultValue">> => Record#atm_lambda_argument_spec.default_value
+        <<"id">> => Record#atm_task_schema.id,
+        <<"name">> => Record#atm_task_schema.name,
+        <<"lambdaId">> => Record#atm_task_schema.lambda_id,
+        <<"argumentMappings">> => [NestedRecordEncoder(M, atm_task_schema_argument_mapper) || M <- Record#atm_task_schema.argument_mappings],
+        <<"resultMappings">> => [NestedRecordEncoder(M, atm_task_schema_result_mapper) || M <- Record#atm_task_schema.result_mappings]
     }.
 
 
 -spec decode_with(json_utils:json_term(), persistent_record:nested_record_decoder()) ->
     record().
 decode_with(RecordJson, NestedRecordDecoder) ->
-    #atm_lambda_argument_spec{
+    #atm_task_schema{
+        id = maps:get(<<"id">>, RecordJson),
         name = maps:get(<<"name">>, RecordJson),
-        data_spec = NestedRecordDecoder(maps:get(<<"dataSpec">>, RecordJson), atm_data_spec),
-        is_batch = maps:get(<<"isBatch">>, RecordJson),
-        is_optional = maps:get(<<"isOptional">>, RecordJson),
-        default_value = maps:get(<<"defaultValue">>, RecordJson)
+        lambda_id = maps:get(<<"lambdaId">>, RecordJson),
+        argument_mappings = [NestedRecordDecoder(M, atm_task_schema_argument_mapper) || M <- maps:get(<<"argumentMappings">>, RecordJson)],
+        result_mappings = [NestedRecordDecoder(M, atm_task_schema_result_mapper) || M <- maps:get(<<"resultMappings">>, RecordJson)]
     }.

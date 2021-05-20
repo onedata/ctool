@@ -6,10 +6,10 @@
 %%% @end
 %%%-------------------------------------------------------------------
 %%% @doc
-%%% Record expressing onedata function operation spec used in automation machinery.
+%%% Record expressing parallel box schema used in automation machinery.
 %%% @end
 %%%-------------------------------------------------------------------
--module(atm_openfaas_operation_spec).
+-module(atm_parallel_box_schema).
 -author("Lukasz Opiola").
 
 -behaviour(jsonable_record).
@@ -24,7 +24,7 @@
 -export([version/0, db_encode/2, db_decode/2]).
 
 
--type record() :: #atm_openfaas_operation_spec{}.
+-type record() :: #atm_parallel_box_schema{}.
 -export_type([record/0]).
 
 %%%===================================================================
@@ -33,18 +33,12 @@
 
 -spec to_json(record()) -> json_utils:json_term().
 to_json(Record) ->
-    #{
-        <<"dockerImage">> => Record#atm_openfaas_operation_spec.docker_image,
-        <<"dockerExecutionOptions">> => atm_docker_execution_options:to_json(Record#atm_openfaas_operation_spec.docker_execution_options)
-    }.
+    encode_with(Record, fun jsonable_record:to_json/2).
 
 
 -spec from_json(json_utils:json_term()) -> record().
 from_json(RecordJson) ->
-    #atm_openfaas_operation_spec{
-        docker_image = maps:get(<<"dockerImage">>, RecordJson),
-        docker_execution_options = atm_docker_execution_options:from_json(maps:get(<<"dockerExecutionOptions">>, RecordJson, #{}))
-    }.
+    decode_with(RecordJson, fun jsonable_record:from_json/2).
 
 %%%===================================================================
 %%% persistent_record callbacks
@@ -56,10 +50,33 @@ version() ->
 
 
 -spec db_encode(record(), persistent_record:nested_record_encoder()) -> json_utils:json_term().
-db_encode(Record, _NestedRecordEncoder) ->
-    to_json(Record).
+db_encode(Record, NestedRecordEncoder) ->
+    encode_with(Record, NestedRecordEncoder).
 
 
 -spec db_decode(json_utils:json_term(), persistent_record:nested_record_decoder()) -> record().
-db_decode(RecordJson, _NestedRecordDecoder) ->
-    from_json(RecordJson).
+db_decode(RecordJson, NestedRecordDecoder) ->
+    decode_with(RecordJson, NestedRecordDecoder).
+
+%%%===================================================================
+%%% Internal functions
+%%%===================================================================
+
+-spec encode_with(record(), persistent_record:nested_record_encoder()) ->
+    json_utils:json_term().
+encode_with(Record, NestedRecordEncoder) ->
+    #{
+        <<"id">> => Record#atm_parallel_box_schema.id,
+        <<"name">> => Record#atm_parallel_box_schema.name,
+        <<"tasks">> => [NestedRecordEncoder(M, atm_task_schema) || M <- Record#atm_parallel_box_schema.tasks]
+    }.
+
+
+-spec decode_with(json_utils:json_term(), persistent_record:nested_record_decoder()) ->
+    record().
+decode_with(RecordJson, NestedRecordDecoder) ->
+    #atm_parallel_box_schema{
+        id = maps:get(<<"id">>, RecordJson),
+        name = maps:get(<<"name">>, RecordJson),
+        tasks = [NestedRecordDecoder(M, atm_task_schema) || M <- maps:get(<<"tasks">>, RecordJson)]
+    }.

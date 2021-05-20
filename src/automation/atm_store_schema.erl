@@ -6,10 +6,10 @@
 %%% @end
 %%%-------------------------------------------------------------------
 %%% @doc
-%%% Record expressing lambda argument specification used in automation machinery.
+%%% Record expressing store schema used in automation machinery.
 %%% @end
 %%%-------------------------------------------------------------------
--module(atm_lambda_argument_spec).
+-module(atm_store_schema).
 -author("Lukasz Opiola").
 
 -behaviour(jsonable_record).
@@ -24,8 +24,9 @@
 -export([version/0, db_encode/2, db_decode/2]).
 
 
--type record() :: #atm_lambda_argument_spec{}.
+-type record() :: #atm_store_schema{}.
 -export_type([record/0]).
+
 
 %%%===================================================================
 %%% jsonable_record callbacks
@@ -64,23 +65,27 @@ db_decode(RecordJson, NestedRecordDecoder) ->
 
 -spec encode_with(record(), persistent_record:nested_record_encoder()) ->
     json_utils:json_term().
-encode_with(Record, NestedRecordEncoder) ->
+encode_with(Schema, NestedRecordEncoder) ->
     #{
-        <<"name">> => Record#atm_lambda_argument_spec.name,
-        <<"dataSpec">> => NestedRecordEncoder(Record#atm_lambda_argument_spec.data_spec, atm_data_spec),
-        <<"isBatch">> => Record#atm_lambda_argument_spec.is_batch,
-        <<"isOptional">> => Record#atm_lambda_argument_spec.is_optional,
-        <<"defaultValue">> => Record#atm_lambda_argument_spec.default_value
+        <<"id">> => Schema#atm_store_schema.id,
+        <<"name">> => Schema#atm_store_schema.name,
+        <<"description">> => Schema#atm_store_schema.description,
+        <<"type">> => automation:store_type_to_json(Schema#atm_store_schema.type),
+        <<"dataSpec">> => NestedRecordEncoder(Schema#atm_store_schema.data_spec, atm_data_spec),
+        <<"requiresInitialValue">> => Schema#atm_store_schema.requires_initial_value,
+        <<"defaultInitialValue">> => utils:undefined_to_null(Schema#atm_store_schema.default_initial_value)
     }.
 
 
 -spec decode_with(json_utils:json_term(), persistent_record:nested_record_decoder()) ->
     record().
-decode_with(RecordJson, NestedRecordDecoder) ->
-    #atm_lambda_argument_spec{
-        name = maps:get(<<"name">>, RecordJson),
-        data_spec = NestedRecordDecoder(maps:get(<<"dataSpec">>, RecordJson), atm_data_spec),
-        is_batch = maps:get(<<"isBatch">>, RecordJson),
-        is_optional = maps:get(<<"isOptional">>, RecordJson),
-        default_value = maps:get(<<"defaultValue">>, RecordJson)
+decode_with(SchemaJson, NestedRecordDecoder) ->
+    #atm_store_schema{
+        id = maps:get(<<"id">>, SchemaJson),
+        name = maps:get(<<"name">>, SchemaJson),
+        description = maps:get(<<"description">>, SchemaJson),
+        type = automation:store_type_from_json(maps:get(<<"type">>, SchemaJson)),
+        data_spec = NestedRecordDecoder(maps:get(<<"dataSpec">>, SchemaJson), atm_data_spec),
+        requires_initial_value = maps:get(<<"requiresInitialValue">>, SchemaJson),
+        default_initial_value = utils:null_to_undefined(maps:get(<<"defaultInitialValue">>, SchemaJson, null))
     }.

@@ -32,22 +32,22 @@
 %%%===================================================================
 
 -spec to_json(record()) -> json_utils:json_term().
-to_json(Spec) ->
+to_json(Record) ->
     #{
-        <<"readonly">> => Spec#atm_docker_execution_options.readonly,
-        <<"mountOneclient">> => Spec#atm_docker_execution_options.mount_oneclient,
-        <<"oneclientMountPoint">> => Spec#atm_docker_execution_options.oneclient_mount_point,
-        <<"oneclientOptions">> => Spec#atm_docker_execution_options.oneclient_options
+        <<"readonly">> => Record#atm_docker_execution_options.readonly,
+        <<"mountOneclient">> => Record#atm_docker_execution_options.mount_oneclient,
+        <<"oneclientMountPoint">> => Record#atm_docker_execution_options.oneclient_mount_point,
+        <<"oneclientOptions">> => Record#atm_docker_execution_options.oneclient_options
     }.
 
 
 -spec from_json(json_utils:json_term()) -> record().
-from_json(SpecJson) ->
+from_json(RecordJson) ->
     #atm_docker_execution_options{
-        readonly = maps:get(<<"readonly">>, SpecJson, false),
-        mount_oneclient = maps:get(<<"mountOneclient">>, SpecJson, false),
-        oneclient_mount_point = maps:get(<<"oneclientMountPoint">>, SpecJson, <<"/mnt/onedata">>),
-        oneclient_options = maps:get(<<"oneclientOptions">>, SpecJson, <<"">>)
+        readonly = maps:get(<<"readonly">>, RecordJson, false),
+        mount_oneclient = maps:get(<<"mountOneclient">>, RecordJson, false),
+        oneclient_mount_point = maps:get(<<"oneclientMountPoint">>, RecordJson, <<"/mnt/onedata">>),
+        oneclient_options = maps:get(<<"oneclientOptions">>, RecordJson, <<"">>)
     }.
 
 %%%===================================================================
@@ -60,11 +60,11 @@ version() ->
 
 
 -spec db_encode(record(), persistent_record:nested_record_encoder()) -> json_utils:json_term().
-db_encode(Spec, _NestedRecordEncoder) ->
-    to_json(Spec).
+db_encode(Record, _NestedRecordEncoder) ->
+    to_json(Record).
 
 
 -spec db_decode(json_utils:json_term(), persistent_record:nested_record_decoder()) -> record().
-db_decode(SpecJson, _NestedRecordDecoder) ->
-    from_json(SpecJson).
+db_decode(RecordJson, _NestedRecordDecoder) ->
+    from_json(RecordJson).
 

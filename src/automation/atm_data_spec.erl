@@ -56,9 +56,9 @@ to_json(#atm_data_spec{type = Type, value_constraints = ValueConstraints}) ->
 
 
 -spec from_json(json_utils:json_map()) -> record().
-from_json(DataSpecJson) ->
-    Type = atm_data_type:type_from_json(maps:get(<<"type">>, DataSpecJson)),
-    ValueConstraints = maps:get(<<"valueConstraints">>, DataSpecJson, #{}),
+from_json(RecordJson) ->
+    Type = atm_data_type:type_from_json(maps:get(<<"type">>, RecordJson)),
+    ValueConstraints = maps:get(<<"valueConstraints">>, RecordJson, #{}),
     #atm_data_spec{
         type = Type,
         value_constraints = atm_data_type:value_constraints_from_json(Type, ValueConstraints)
@@ -74,11 +74,11 @@ version() ->
 
 
 -spec db_encode(record(), persistent_record:nested_record_encoder()) -> json_utils:json_term().
-db_encode(Spec, _NestedRecordEncoder) ->
-    to_json(Spec).
+db_encode(Record, _NestedRecordEncoder) ->
+    to_json(Record).
 
 
 -spec db_decode(json_utils:json_term(), persistent_record:nested_record_decoder()) -> record().
-db_decode(SpecJson, _NestedRecordDecoder) ->
-    from_json(SpecJson).
+db_decode(RecordJson, _NestedRecordDecoder) ->
+    from_json(RecordJson).
 

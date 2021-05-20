@@ -27,7 +27,7 @@
 value_constraints_to_json(Constraints) ->
     StoreType = maps:get(store_type, Constraints),
     #{
-        <<"storeType">> => store_type_to_json(StoreType)
+        <<"storeType">> => automation:store_type_to_json(StoreType)
     }.
 
 
@@ -35,24 +35,5 @@ value_constraints_to_json(Constraints) ->
 value_constraints_from_json(ConstraintsJson) ->
     StoreTypeJson = maps:get(<<"storeType">>, ConstraintsJson),
     #{
-        store_type => store_type_from_json(StoreTypeJson)
+        store_type => automation:store_type_from_json(StoreTypeJson)
     }.
-
-
--spec store_type_to_json(automation:store_type()) -> json_utils:json_term().
-store_type_to_json(single_value) -> <<"singleValue">>;
-store_type_to_json(list) -> <<"list">>;
-store_type_to_json(map) -> <<"map">>;
-store_type_to_json(forest) -> <<"forest">>;
-store_type_to_json(range) -> <<"range">>;
-store_type_to_json(histogram) -> <<"histogram">>.
-
-
--spec store_type_from_json(json_utils:json_term()) -> automation:store_type().
-store_type_from_json(<<"singleValue">>) -> single_value;
-store_type_from_json(<<"list">>) -> list;
-store_type_from_json(<<"map">>) -> map;
-store_type_from_json(<<"forest">>) -> forest;
-store_type_from_json(<<"range">>) -> range;
-store_type_from_json(<<"histogram">>) -> histogram.
-

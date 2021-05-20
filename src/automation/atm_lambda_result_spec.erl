@@ -32,13 +32,13 @@
 %%%===================================================================
 
 -spec to_json(record()) -> json_utils:json_term().
-to_json(Spec) ->
-    encode_with(Spec, fun jsonable_record:to_json/2).
+to_json(Record) ->
+    encode_with(Record, fun jsonable_record:to_json/2).
 
 
 -spec from_json(json_utils:json_term()) -> record().
-from_json(SpecJson) ->
-    decode_with(SpecJson, fun jsonable_record:from_json/2).
+from_json(RecordJson) ->
+    decode_with(RecordJson, fun jsonable_record:from_json/2).
 
 %%%===================================================================
 %%% persistent_record callbacks
@@ -50,13 +50,13 @@ version() ->
 
 
 -spec db_encode(record(), persistent_record:nested_record_encoder()) -> json_utils:json_term().
-db_encode(Spec, NestedRecordEncoder) ->
-    encode_with(Spec, NestedRecordEncoder).
+db_encode(Record, NestedRecordEncoder) ->
+    encode_with(Record, NestedRecordEncoder).
 
 
 -spec db_decode(json_utils:json_term(), persistent_record:nested_record_decoder()) -> record().
-db_decode(SpecJson, NestedRecordDecoder) ->
-    decode_with(SpecJson, NestedRecordDecoder).
+db_decode(RecordJson, NestedRecordDecoder) ->
+    decode_with(RecordJson, NestedRecordDecoder).
 
 %%%===================================================================
 %%% Internal functions
@@ -64,20 +64,20 @@ db_decode(SpecJson, NestedRecordDecoder) ->
 
 -spec encode_with(record(), persistent_record:nested_record_encoder()) ->
     json_utils:json_term().
-encode_with(Spec, EncodeDataSpecFun) ->
+encode_with(Record, NestedRecordEncoder) ->
     #{
-        <<"name">> => Spec#atm_lambda_result_spec.name,
-        <<"dataSpec">> => EncodeDataSpecFun(Spec#atm_lambda_result_spec.data_spec, atm_data_spec),
-        <<"isBatch">> => Spec#atm_lambda_result_spec.is_batch
+        <<"name">> => Record#atm_lambda_result_spec.name,
+        <<"dataSpec">> => NestedRecordEncoder(Record#atm_lambda_result_spec.data_spec, atm_data_spec),
+        <<"isBatch">> => Record#atm_lambda_result_spec.is_batch
     }.
 
 
 -spec decode_with(json_utils:json_term(), persistent_record:nested_record_decoder()) ->
     record().
-decode_with(SpecJson, DecodeDataSpecFun) ->
+decode_with(RecordJson, NestedRecordDecoder) ->
     #atm_lambda_result_spec{
-        name = maps:get(<<"name">>, SpecJson),
-        data_spec = DecodeDataSpecFun(maps:get(<<"dataSpec">>, SpecJson), atm_data_spec),
-        is_batch = maps:get(<<"isBatch">>, SpecJson)
+        name = maps:get(<<"name">>, RecordJson),
+        data_spec = NestedRecordDecoder(maps:get(<<"dataSpec">>, RecordJson), atm_data_spec),
+        is_batch = maps:get(<<"isBatch">>, RecordJson)
     }.
 

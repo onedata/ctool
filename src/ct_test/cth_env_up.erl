@@ -21,7 +21,7 @@
 
 -include("test/test_utils.hrl").
 
--record(state, {disabled=false}).
+-record(state, {disabled = false}).
 -type state() :: #state{}.
 
 %%--------------------------------------------------------------------
@@ -45,8 +45,15 @@ init(_Id, _Opts) ->
 -spec pre_init_per_suite(Suite :: atom(), _Config :: [term()], State :: state()) ->
     {[term()], state()}.
 pre_init_per_suite(_Suite, Config, State) ->
-    ok = test_utils:load_utility_modules(Config),
-    {Config, State}.
+    try
+        ok = test_utils:load_utility_modules(Config),
+        {Config, State}
+    catch Class:Reason ->
+        ct:print("Failed to load modules during init_per_suite - ~w:~p~nStacktrace: ~s", [
+            Class, Reason, lager:pr_stacktrace(erlang:get_stacktrace())
+        ]),
+        error(failed_to_load_modules)
+    end.
 
 
 %%--------------------------------------------------------------------

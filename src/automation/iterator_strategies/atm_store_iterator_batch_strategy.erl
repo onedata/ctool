@@ -6,10 +6,10 @@
 %%% @end
 %%%-------------------------------------------------------------------
 %%% @doc
-%%% Record expressing onedata function operation spec used in automation machinery.
+%%% Record expressing store iterator batch strategy used in automation machinery.
 %%% @end
 %%%-------------------------------------------------------------------
--module(atm_openfaas_operation_spec).
+-module(atm_store_iterator_batch_strategy).
 -author("Lukasz Opiola").
 
 -behaviour(jsonable_record).
@@ -24,7 +24,7 @@
 -export([version/0, db_encode/2, db_decode/2]).
 
 
--type record() :: #atm_openfaas_operation_spec{}.
+-type record() :: #atm_store_iterator_batch_strategy{}.
 -export_type([record/0]).
 
 %%%===================================================================
@@ -32,19 +32,15 @@
 %%%===================================================================
 
 -spec to_json(record()) -> json_utils:json_term().
-to_json(Record) ->
+to_json(#atm_store_iterator_batch_strategy{size = Size}) ->
     #{
-        <<"dockerImage">> => Record#atm_openfaas_operation_spec.docker_image,
-        <<"dockerExecutionOptions">> => atm_docker_execution_options:to_json(Record#atm_openfaas_operation_spec.docker_execution_options)
+        <<"batchSize">> => Size
     }.
 
 
 -spec from_json(json_utils:json_term()) -> record().
-from_json(RecordJson) ->
-    #atm_openfaas_operation_spec{
-        docker_image = maps:get(<<"dockerImage">>, RecordJson),
-        docker_execution_options = atm_docker_execution_options:from_json(maps:get(<<"dockerExecutionOptions">>, RecordJson, #{}))
-    }.
+from_json(#{<<"batchSize">> := Size}) ->
+    #atm_store_iterator_batch_strategy{size = Size}.
 
 %%%===================================================================
 %%% persistent_record callbacks
