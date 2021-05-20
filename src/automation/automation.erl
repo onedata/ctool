@@ -18,6 +18,7 @@
 %% API
 -export([store_type_to_json/1, store_type_from_json/1]).
 -export([workflow_schema_state_to_json/1, workflow_schema_state_from_json/1]).
+-export([all_workflow_schema_states/0]).
 
 % Identifier of an instance of an automation-related model.
 -type id() :: binary().
@@ -80,3 +81,8 @@ workflow_schema_state_to_json(deprecated) -> <<"deprecated">>.
 workflow_schema_state_from_json(<<"incomplete">>) -> incomplete;
 workflow_schema_state_from_json(<<"ready">>) -> ready;
 workflow_schema_state_from_json(<<"deprecated">>) -> deprecated.
+
+
+-spec all_workflow_schema_states() -> [workflow_schema_state()].
+all_workflow_schema_states() ->
+    [incomplete, ready, deprecated].
