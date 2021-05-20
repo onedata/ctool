@@ -13,6 +13,9 @@
 %%%-------------------------------------------------------------------
 -module(http_utils).
 
+-include("http/codes.hrl").
+
+
 %% Methods understood by rest handlers in Onedata applications.
 -type method() :: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE' | 'OPTIONS'.
 -export_type([method/0]).
@@ -37,6 +40,7 @@
 % Miscellaneous convenience functions
 -export([encode_http_parameters/1, append_url_parameters/2]).
 -export([validate_email/1, normalize_email/1]).
+-export([is_success_code/1]).
 
 %%%===================================================================
 %%% API
@@ -182,3 +186,8 @@ method_to_binary('GET') -> <<"GET">>;
 method_to_binary('PATCH') -> <<"PATCH">>;
 method_to_binary('DELETE') -> <<"DELETE">>;
 method_to_binary('OPTIONS') -> <<"OPTIONS">>.
+
+
+-spec is_success_code(http_client:code()) -> boolean().
+is_success_code(HttpCode) ->
+    lists:member(HttpCode, ?HTTP_SUCCESS_CODES).
