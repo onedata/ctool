@@ -27,28 +27,38 @@
 -define(CORRECT_URL_BATCH, [
     {<<"hostname:80">>, ?URL_MAP(http, <<"hostname">>, 80, <<"/">>, <<>>)},
     {<<"hostname:80/path">>, ?URL_MAP(http, <<"hostname">>, 80, <<"/path">>, <<>>)},
+    {<<"hostname:80/path?key=value">>, ?URL_MAP(http, <<"hostname">>, 80, <<"/path">>, <<"key=value">>)},
     {<<"hostname:443">>, ?URL_MAP(https, <<"hostname">>, 443, <<"/">>, <<>>)},
     {<<"hostname:443/path">>, ?URL_MAP(https, <<"hostname">>, 443, <<"/path">>, <<>>)},
+    {<<"hostname:443/path?key=value">>, ?URL_MAP(https, <<"hostname">>, 443, <<"/path">>, <<"key=value">>)},
 
     {<<"http://hostname">>, ?URL_MAP(http, <<"hostname">>, 80, <<"/">>, <<>>)},
     {<<"http://hostname/path">>, ?URL_MAP(http, <<"hostname">>, 80, <<"/path">>, <<>>)},
+    {<<"http://hostname/path?key=value">>, ?URL_MAP(http, <<"hostname">>, 80, <<"/path">>, <<"key=value">>)},
     {<<"https://hostname">>, ?URL_MAP(https, <<"hostname">>, 443, <<"/">>, <<>>)},
     {<<"https://hostname/path">>, ?URL_MAP(https, <<"hostname">>, 443, <<"/path">>, <<>>)},
+    {<<"https://hostname/path?key=value">>, ?URL_MAP(https, <<"hostname">>, 443, <<"/path">>, <<"key=value">>)},
 
     {<<"http://hostname:80">>, ?URL_MAP(http, <<"hostname">>, 80, <<"/">>, <<>>)},
     {<<"http://hostname:80/path">>, ?URL_MAP(http, <<"hostname">>, 80, <<"/path">>, <<>>)},
+    {<<"http://hostname:80/path?key=value">>, ?URL_MAP(http, <<"hostname">>, 80, <<"/path">>, <<"key=value">>)},
     {<<"https://hostname:443/">>, ?URL_MAP(https, <<"hostname">>, 443, <<"/">>, <<>>)},
     {<<"https://hostname:443/path">>, ?URL_MAP(https, <<"hostname">>, 443, <<"/path">>, <<>>)},
+    {<<"https://hostname:443/path?key=value">>, ?URL_MAP(https, <<"hostname">>, 443, <<"/path">>, <<"key=value">>)},
 
     {<<"http://hostname:443">>, ?URL_MAP(http, <<"hostname">>, 443, <<"/">>, <<>>)},
     {<<"http://hostname:443/path">>, ?URL_MAP(http, <<"hostname">>, 443, <<"/path">>, <<>>)},
+    {<<"http://hostname:443/path?key=value">>, ?URL_MAP(http, <<"hostname">>, 443, <<"/path">>, <<"key=value">>)},
     {<<"https://hostname:80">>, ?URL_MAP(https, <<"hostname">>, 80, <<"/">>, <<>>)},
     {<<"https://hostname:80/path">>, ?URL_MAP(https, <<"hostname">>, 80, <<"/path">>, <<>>)},
+    {<<"https://hostname:80/path?key=value">>, ?URL_MAP(https, <<"hostname">>, 80, <<"/path">>, <<"key=value">>)},
 
     {<<"http://hostname:1234">>, ?URL_MAP(http, <<"hostname">>, 1234, <<"/">>, <<>>)},
     {<<"http://hostname:1234/path">>, ?URL_MAP(http, <<"hostname">>, 1234, <<"/path">>, <<>>)},
+    {<<"http://hostname:1234/path?key=value">>, ?URL_MAP(http, <<"hostname">>, 1234, <<"/path">>, <<"key=value">>)},
     {<<"https://hostname:1234">>, ?URL_MAP(https, <<"hostname">>, 1234, <<"/">>, <<>>)},
     {<<"https://hostname:1234/path">>, ?URL_MAP(https, <<"hostname">>, 1234, <<"/path">>, <<>>)},
+    {<<"https://hostname:1234/path?key=value">>, ?URL_MAP(https, <<"hostname">>, 1234, <<"/path">>, <<"key=value">>)},
 
     {<<" http://hostname:1234">>, ?URL_MAP(http, <<"hostname">>, 1234, <<"/">>, <<>>)},
     {<<" http://hostname:1234/path">>, ?URL_MAP(http, <<"hostname">>, 1234, <<"/path">>, <<>>)},
@@ -80,7 +90,20 @@
     <<"unknown://hostname">>,
     <<"unknown://hostname/path">>,
     <<"unknown://hostname:1234">>,
-    <<"unknown://hostname:1234/path">>
+    <<"unknown://hostname:1234/path">>,
+
+    <<"hostname?key=value">>,
+    <<"hostname/path?key=value">>,
+    <<"hostname:string?key=value">>,
+    <<"hostname:string/path?key=value">>,
+    <<"http://hostname:string?key=value">>,
+    <<"http://hostname:string/path?key=value">>,
+    <<"https://hostname:string?key=value">>,
+    <<"https://hostname:string/path?key=value">>,
+    <<"unknown://hostname?key=value">>,
+    <<"unknown://hostname/path?key=value">>,
+    <<"unknown://hostname:1234?key=value">>,
+    <<"unknown://hostname:1234/path?key=value">>
 ]).
 
 

@@ -23,6 +23,14 @@
 -define(DEFAULT_HTTP_PORT, 80).
 -define(DEFAULT_HTTPS_PORT, 443).
 
+-type components() :: #{
+    scheme => http | https,
+    host => binary(),
+    port => non_neg_integer(),
+    path => binary(),
+    qs => binary()
+}.
+
 %%%===================================================================
 %%% API
 %%%===================================================================
@@ -32,8 +40,7 @@
 %% Parses given URI and returns identified parts.
 %% @end
 %%--------------------------------------------------------------------
--spec parse(Uri :: http_client:url()) -> #{scheme => http | https,
-host => binary(), port => non_neg_integer(), path => binary(), qs => binary()}.
+-spec parse(Uri :: http_client:url()) -> components().
 parse(Uri) ->
     #hackney_url{
         scheme = Scheme, host = Host, port = Port, path = Path, qs = QueryString
@@ -53,8 +60,7 @@ parse(Uri) ->
 %% Function infers missing schema or port in incomplete urls if possible.
 %% @end
 %%--------------------------------------------------------------------
--spec infer_components(http_client:url()) -> #{scheme => http | https,
-host => binary(), port => non_neg_integer(), path => binary(), qs => binary()}.
+-spec infer_components(http_client:url()) -> components().
 infer_components(URL) ->
     try
         infer_components_insecure(URL)
@@ -69,8 +75,7 @@ infer_components(URL) ->
 
 
 %% @private
--spec infer_components_insecure(http_client:url()) -> #{scheme => http | https,
-host => binary(), port => non_neg_integer(), path => binary(), qs => binary()}.
+-spec infer_components_insecure(http_client:url()) -> components().
 infer_components_insecure(URL) ->
     URLTrimmed = list_to_binary(string:trim(binary_to_list(URL))),
     #{
