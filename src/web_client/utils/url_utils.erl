@@ -17,7 +17,8 @@
 %% API
 -export([
     parse/1,
-    infer_components/1
+    infer_components/1,
+    is_valid/1
 ]).
 
 -define(DEFAULT_HTTP_PORT, 80).
@@ -54,6 +55,15 @@ parse(Uri) ->
     }.
 
 
+-spec is_valid(http_client:url()) -> boolean().
+is_valid(Uri) ->
+    try
+        parse(Uri),
+        true
+    catch
+        _:_ ->
+            false
+    end.
 %%--------------------------------------------------------------------
 %% @doc
 %% Parses given URI and returns identified parts.

@@ -26,6 +26,8 @@
 -export([to_binary/1]).
 -export([save_file_on_hosts/3, save_file/2]).
 -export([ensure_list/1]).
+-export([to_atom/1, to_boolean/1]).
+-export([encode_pid/1, decode_pid/1]).
 
 -type time_unit() :: us | ms | s | min | h.
 
@@ -390,6 +392,29 @@ save_file(Path, Content) ->
 -spec ensure_list(T | [T]) -> [T].
 ensure_list(List) when is_list(List) -> List;
 ensure_list(Element) -> [Element].
+
+
+-spec to_atom(term()) -> atom() | no_return().
+to_atom(Atom) when is_atom(Atom) -> Atom;
+to_atom(Binary) when is_binary(Binary) -> binary_to_atom(Binary, utf8).
+
+
+-spec to_boolean(binary() | boolean()) -> boolean() | no_return().
+to_boolean(Boolean) when is_boolean(Boolean) -> Boolean;
+to_boolean(<<"true">>) -> true;
+to_boolean(<<"false">>) -> false.
+
+
+-spec encode_pid(pid()) -> binary().
+encode_pid(Pid) ->
+    % todo remove after VFS-3657
+    list_to_binary(pid_to_list(Pid)).
+
+
+-spec decode_pid(binary()) -> pid().
+decode_pid(Pid) ->
+    % todo remove after VFS-3657
+    list_to_pid(binary_to_list(Pid)).
 
 %%%===================================================================
 %%% Internal functions

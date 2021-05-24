@@ -132,19 +132,24 @@ split(Path) ->
 -spec join(tokens()) -> path().
 join([]) ->
     <<>>;
-join([<<?DIRECTORY_SEPARATOR>> = Sep, <<?DIRECTORY_SEPARATOR>> | Tokens]) ->
-    join([Sep | Tokens]);
-join([<<?DIRECTORY_SEPARATOR>> = Sep | Tokens]) ->
-    <<Sep/binary, (join(Tokens))/binary>>;
-join(Tokens) ->
-    Tokens1 = lists:filtermap(fun(Token) ->
+join([FirstToken | _] = Tokens) ->
+    TrimmedTokens = lists:filtermap(fun(Token) ->
         case string:trim(Token, both, ?DIRECTORY_SEPARATOR) of
             <<>> -> false;
             Bin -> {true, Bin}
         end
     end, Tokens),
 
-    str_utils:join_binary(Tokens1, <<?DIRECTORY_SEPARATOR>>).
+    case FirstToken of
+        <<?DIRECTORY_SEPARATOR, _/binary>> ->
+            AllTokens = case TrimmedTokens of
+                [] -> [<<?DIRECTORY_SEPARATOR>>];
+                _ -> [<<>> | TrimmedTokens]
+            end,
+            str_utils:join_binary(AllTokens, <<?DIRECTORY_SEPARATOR>>);
+        _ ->
+            str_utils:join_binary(TrimmedTokens, <<?DIRECTORY_SEPARATOR>>)
+    end.
 
 
 -spec sanitize(raw_path()) -> {ok, sanitized_path()} | {error, invalid_path}.

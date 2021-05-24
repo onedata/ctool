@@ -35,10 +35,11 @@
 -type entity_type() :: oz_worker | od_user | od_group | od_space | od_share
 | od_provider | od_handle_service | od_handle | od_cluster | od_harvester
 | od_storage | od_token | space_stats | temporary_token_secret
+| od_atm_inventory | od_atm_lambda | od_atm_workflow_schema
 | onp_ceph | onp_cluster | onp_host | onp_panel | onp_provider | onp_service
 | onp_space | onp_storage | onp_user | onp_zone
-| op_file | op_replica | op_transfer | op_user | op_group | op_space | op_share
-| op_provider | op_metrics | op_handle | op_handle_service | op_qos.
+| op_archive | op_dataset | op_file | op_group | op_handle | op_handle_service
+| op_metrics | op_provider | op_qos | op_share | op_space | op_transfer | op_user.
 
 -type entity_type_pattern() :: '*' | entity_type().
 
@@ -190,6 +191,9 @@ serialize_type(od_storage, _) -> <<"storage">>;
 serialize_type(od_token, _) -> <<"token">>;
 serialize_type(space_stats, _) -> <<"space_stats">>;
 serialize_type(temporary_token_secret, _) -> <<"temporary_token_secret">>;
+serialize_type(od_atm_inventory, _) -> <<"atm_inventory">>;
+serialize_type(od_atm_lambda, _) -> <<"atm_lambda">>;
+serialize_type(od_atm_workflow_schema, _) -> <<"atm_workflow_schema">>;
 
 serialize_type(onp_ceph, _) -> <<"onp_ceph">>;
 serialize_type(onp_cluster, _) -> <<"onp_cluster">>;
@@ -202,18 +206,19 @@ serialize_type(onp_storage, _) -> <<"onp_storage">>;
 serialize_type(onp_user, _) -> <<"onp_user">>;
 serialize_type(onp_zone, _) -> <<"onp_zone">>;
 
+serialize_type(op_archive, _) -> <<"op_archive">>;
+serialize_type(op_dataset, _) -> <<"op_dataset">>;
 serialize_type(op_file, _) -> <<"file">>;
-serialize_type(op_replica, _) -> <<"op_replica">>;
-serialize_type(op_transfer, _) -> <<"op_transfer">>;
-serialize_type(op_user, _) -> <<"op_user">>;
 serialize_type(op_group, _) -> <<"op_group">>;
-serialize_type(op_space, _) -> <<"op_space">>;
-serialize_type(op_share, _) -> <<"op_share">>;
-serialize_type(op_provider, _) -> <<"op_provider">>;
-serialize_type(op_metrics, _) -> <<"op_metrics">>;
 serialize_type(op_handle, _) -> <<"op_handle">>;
 serialize_type(op_handle_service, _) -> <<"op_handle_service">>;
+serialize_type(op_metrics, _) -> <<"op_metrics">>;
+serialize_type(op_provider, _) -> <<"op_provider">>;
 serialize_type(op_qos, _) -> <<"op_qos">>;
+serialize_type(op_share, _) -> <<"op_share">>;
+serialize_type(op_space, _) -> <<"op_space">>;
+serialize_type(op_transfer, _) -> <<"op_transfer">>;
+serialize_type(op_user, _) -> <<"op_user">>;
 
 serialize_type(_, _) -> throw(?ERROR_BAD_GRI).
 
@@ -237,6 +242,9 @@ deserialize_type(<<"storage">>, _) -> od_storage;
 deserialize_type(<<"token">>, _) -> od_token;
 deserialize_type(<<"space_stats">>, _) -> space_stats;
 deserialize_type(<<"temporary_token_secret">>, _) -> temporary_token_secret;
+deserialize_type(<<"atm_inventory">>, _) -> od_atm_inventory;
+deserialize_type(<<"atm_lambda">>, _) -> od_atm_lambda;
+deserialize_type(<<"atm_workflow_schema">>, _) -> od_atm_workflow_schema;
 
 deserialize_type(<<"onp_ceph">>, _) -> onp_ceph;
 deserialize_type(<<"onp_cluster">>, _) -> onp_cluster;
@@ -249,18 +257,19 @@ deserialize_type(<<"onp_storage">>, _) -> onp_storage;
 deserialize_type(<<"onp_user">>, _) -> onp_user;
 deserialize_type(<<"onp_zone">>, _) -> onp_zone;
 
+deserialize_type(<<"op_archive">>, _) -> op_archive;
+deserialize_type(<<"op_dataset">>, _) -> op_dataset;
 deserialize_type(<<"file">>, _) -> op_file;
-deserialize_type(<<"op_replica">>, _) -> op_replica;
-deserialize_type(<<"op_transfer">>, _) -> op_transfer;
-deserialize_type(<<"op_user">>, _) -> op_user;
 deserialize_type(<<"op_group">>, _) -> op_group;
-deserialize_type(<<"op_space">>, _) -> op_space;
-deserialize_type(<<"op_share">>, _) -> op_share;
-deserialize_type(<<"op_provider">>, _) -> op_provider;
-deserialize_type(<<"op_metrics">>, _) -> op_metrics;
 deserialize_type(<<"op_handle">>, _) -> op_handle;
 deserialize_type(<<"op_handle_service">>, _) -> op_handle_service;
+deserialize_type(<<"op_metrics">>, _) -> op_metrics;
+deserialize_type(<<"op_provider">>, _) -> op_provider;
 deserialize_type(<<"op_qos">>, _) -> op_qos;
+deserialize_type(<<"op_share">>, _) -> op_share;
+deserialize_type(<<"op_space">>, _) -> op_space;
+deserialize_type(<<"op_transfer">>, _) -> op_transfer;
+deserialize_type(<<"op_user">>, _) -> op_user;
 
 deserialize_type(_, _) -> throw(?ERROR_BAD_GRI).
 

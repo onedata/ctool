@@ -41,7 +41,7 @@
 | unauthorized() | forbidden | not_found | already_exists
 | {file_access, Path :: file:name_all(), errno()}.
 
--type auth() :: user_blocked | bad_basic_credentials | {bad_idp_access_token, IdP :: atom()}
+-type auth() :: user_blocked | bad_basic_credentials | {bad_idp_access_token, IdsP :: atom()}
 | bad_token | {bad_service_token, auth()} | {bad_consumer_token, auth()}
 | token_invalid | token_revoked | not_an_access_token | not_an_identity_token
 | {not_an_invite_token, ExpectedInviteType :: any | token_type:invite_type(), Received :: tokens:type()}
