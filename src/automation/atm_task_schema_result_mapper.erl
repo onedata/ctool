@@ -17,6 +17,8 @@
 
 -include("automation/automation.hrl").
 
+-export([all_dispatch_functions/0]).
+
 %% Jsonable record callbacks
 -export([to_json/1, from_json/1]).
 
@@ -27,6 +29,14 @@
 -type record() :: #atm_task_schema_result_mapper{}.
 -type dispatch_function() :: add | remove | set | append | prepend.
 -export_type([record/0, dispatch_function/0]).
+
+%%%===================================================================
+%%% API
+%%%===================================================================
+
+-spec all_dispatch_functions() -> [dispatch_function()].
+all_dispatch_functions() ->
+    [add, remove, set, append, prepend].
 
 %%%===================================================================
 %%% jsonable_record callbacks

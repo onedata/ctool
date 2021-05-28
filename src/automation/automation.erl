@@ -17,6 +17,7 @@
 
 %% API
 -export([store_type_to_json/1, store_type_from_json/1]).
+-export([all_store_types/0]).
 -export([workflow_schema_state_to_json/1, workflow_schema_state_from_json/1]).
 -export([all_workflow_schema_states/0]).
 
@@ -53,7 +54,7 @@
 %%% API
 %%%===================================================================
 
--spec store_type_to_json(automation:store_type()) -> json_utils:json_term().
+-spec store_type_to_json(store_type()) -> json_utils:json_term().
 store_type_to_json(single_value) -> <<"singleValue">>;
 store_type_to_json(list) -> <<"list">>;
 store_type_to_json(map) -> <<"map">>;
@@ -62,13 +63,18 @@ store_type_to_json(range) -> <<"range">>;
 store_type_to_json(histogram) -> <<"histogram">>.
 
 
--spec store_type_from_json(json_utils:json_term()) -> automation:store_type().
+-spec store_type_from_json(json_utils:json_term()) -> store_type().
 store_type_from_json(<<"singleValue">>) -> single_value;
 store_type_from_json(<<"list">>) -> list;
 store_type_from_json(<<"map">>) -> map;
 store_type_from_json(<<"treeForest">>) -> tree_forest;
 store_type_from_json(<<"range">>) -> range;
 store_type_from_json(<<"histogram">>) -> histogram.
+
+
+-spec all_store_types() -> [store_type()].
+all_store_types() ->
+    [single_value, list, map, tree_forest, range, histogram].
 
 
 -spec workflow_schema_state_to_json(workflow_schema_state()) -> json_utils:json_term().

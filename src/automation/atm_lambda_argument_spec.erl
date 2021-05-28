@@ -70,7 +70,7 @@ encode_with(Record, NestedRecordEncoder) ->
         <<"dataSpec">> => NestedRecordEncoder(Record#atm_lambda_argument_spec.data_spec, atm_data_spec),
         <<"isBatch">> => Record#atm_lambda_argument_spec.is_batch,
         <<"isOptional">> => Record#atm_lambda_argument_spec.is_optional,
-        <<"defaultValue">> => Record#atm_lambda_argument_spec.default_value
+        <<"defaultValue">> => utils:undefined_to_null(Record#atm_lambda_argument_spec.default_value)
     }.
 
 
@@ -82,5 +82,5 @@ decode_with(RecordJson, NestedRecordDecoder) ->
         data_spec = NestedRecordDecoder(maps:get(<<"dataSpec">>, RecordJson), atm_data_spec),
         is_batch = maps:get(<<"isBatch">>, RecordJson),
         is_optional = maps:get(<<"isOptional">>, RecordJson),
-        default_value = maps:get(<<"defaultValue">>, RecordJson)
+        default_value = utils:null_to_undefined(maps:get(<<"defaultValue">>, RecordJson))
     }.

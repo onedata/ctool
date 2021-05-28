@@ -13,6 +13,8 @@
 -module(atm_data_type).
 -author("Lukasz Opiola").
 
+-export([all_data_types/0]).
+-export([is_instance/2]).
 -export([type_to_json/1, type_from_json/1]).
 -export([value_constraints_to_json/2, value_constraints_from_json/2]).
 
@@ -26,6 +28,14 @@
 %%%===================================================================
 %%% atm_data_type behaviour
 %%%===================================================================
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Checks if given value is of the type represented by the implementing module.
+%% @end
+%%--------------------------------------------------------------------
+-callback is_instance(term()) -> boolean().
+
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -45,6 +55,18 @@
 %%%===================================================================
 %%% API functions
 %%%===================================================================
+
+-spec all_data_types() -> [type()].
+all_data_types() -> [
+    atm_integer_type, atm_string_type, atm_object_type, atm_file_type, atm_histogram_type,
+    atm_dataset_type, atm_archive_type, atm_store_credentials_type, atm_onedatafs_credentials_type
+].
+
+
+-spec is_instance(type(), term()) -> boolean().
+is_instance(TypeName, Value) ->
+    TypeName:is_instance(Value).
+
 
 -spec type_to_json(type()) -> json_utils:json_term().
 type_to_json(atm_integer_type) -> <<"integer">>;

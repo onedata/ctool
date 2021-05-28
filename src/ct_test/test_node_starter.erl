@@ -27,9 +27,9 @@
 %% List of tuples {application name, name of node in json output}
 -define(ALL_POSSIBLE_APPS, [
     {op_worker, op_worker_nodes},
+    {oz_worker, oz_worker_nodes},
     {cluster_worker, cluster_worker_nodes},
     {cluster_manager, cluster_manager_nodes},
-    {oz_worker, oz_worker_nodes},
     {onepanel, onepanel_nodes}
 ]).
 
