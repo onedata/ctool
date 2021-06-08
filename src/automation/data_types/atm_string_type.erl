@@ -24,7 +24,7 @@
 %%% atm_data_type callbacks
 %%%===================================================================
 
--spec is_instance(term()) -> boolean().
+-spec is_instance(json_utils:json_term()) -> boolean().
 is_instance(Value) when is_binary(Value) -> true;
 is_instance(_Value) -> false.
 

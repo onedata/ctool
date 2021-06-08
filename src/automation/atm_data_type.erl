@@ -34,7 +34,7 @@
 %% Checks if given value is of the type represented by the implementing module.
 %% @end
 %%--------------------------------------------------------------------
--callback is_instance(term()) -> boolean().
+-callback is_instance(json_utils:json_term()) -> boolean().
 
 
 %%--------------------------------------------------------------------

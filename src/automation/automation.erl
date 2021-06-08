@@ -37,7 +37,7 @@
 %   user_form        -> Id of a user form that should be manually filled by a user to complete the lambda execution.
 -type lambda_operation_ref() :: binary().
 
--type store_type() :: single_value | list | map | tree_forest | range | histogram.
+-type store_type() :: single_value | list | map | tree_forest | range | histogram | audit_log.
 
 % Additional information solely for the potential users of a workflow schema used
 % to improve joint schema management. These states do not impact the ability of
@@ -60,7 +60,8 @@ store_type_to_json(list) -> <<"list">>;
 store_type_to_json(map) -> <<"map">>;
 store_type_to_json(tree_forest) -> <<"treeForest">>;
 store_type_to_json(range) -> <<"range">>;
-store_type_to_json(histogram) -> <<"histogram">>.
+store_type_to_json(histogram) -> <<"histogram">>;
+store_type_to_json(audit_log) -> <<"auditLog">>.
 
 
 -spec store_type_from_json(json_utils:json_term()) -> store_type().
@@ -69,12 +70,13 @@ store_type_from_json(<<"list">>) -> list;
 store_type_from_json(<<"map">>) -> map;
 store_type_from_json(<<"treeForest">>) -> tree_forest;
 store_type_from_json(<<"range">>) -> range;
-store_type_from_json(<<"histogram">>) -> histogram.
+store_type_from_json(<<"histogram">>) -> histogram;
+store_type_from_json(<<"auditLog">>) -> audit_log.
 
 
 -spec all_store_types() -> [store_type()].
 all_store_types() ->
-    [single_value, list, map, tree_forest, range, histogram].
+    [single_value, list, map, tree_forest, range, histogram, audit_log].
 
 
 -spec workflow_schema_state_to_json(workflow_schema_state()) -> json_utils:json_term().
