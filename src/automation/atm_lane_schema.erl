@@ -69,7 +69,7 @@ encode_with(Record, NestedRecordEncoder) ->
         <<"id">> => Record#atm_lane_schema.id,
         <<"name">> => Record#atm_lane_schema.name,
         <<"parallelBoxes">> => [NestedRecordEncoder(M, atm_parallel_box_schema) || M <- Record#atm_lane_schema.parallel_boxes],
-        <<"storeIteratorRecord">> => NestedRecordEncoder(Record#atm_lane_schema.store_iterator_spec, atm_store_iterator_spec)
+        <<"storeIteratorSpec">> => NestedRecordEncoder(Record#atm_lane_schema.store_iterator_spec, atm_store_iterator_spec)
     }.
 
 
@@ -80,5 +80,5 @@ decode_with(RecordJson, NestedRecordDecoder) ->
         id = maps:get(<<"id">>, RecordJson),
         name = maps:get(<<"name">>, RecordJson),
         parallel_boxes = [NestedRecordDecoder(M, atm_parallel_box_schema) || M <- maps:get(<<"parallelBoxes">>, RecordJson)],
-        store_iterator_spec = NestedRecordDecoder(maps:get(<<"storeIteratorRecord">>, RecordJson), atm_store_iterator_spec)
+        store_iterator_spec = NestedRecordDecoder(maps:get(<<"storeIteratorSpec">>, RecordJson), atm_store_iterator_spec)
     }.

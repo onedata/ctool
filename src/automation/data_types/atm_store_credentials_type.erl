@@ -17,11 +17,18 @@
 -include("automation/automation.hrl").
 
 %% atm_data_type callbacks
+-export([is_instance/1]).
 -export([value_constraints_to_json/1, value_constraints_from_json/1]).
 
 %%%===================================================================
 %%% atm_data_type callbacks
 %%%===================================================================
+
+%% @TODO VFS-7687 Implement all automation data types and validators
+-spec is_instance(json_utils:json_term()) -> boolean().
+is_instance(Value) when is_map(Value) -> true;
+is_instance(_Value) -> false.
+
 
 -spec value_constraints_to_json(atm_data_type:value_constraints()) -> json_utils:json_map().
 value_constraints_to_json(Constraints) ->

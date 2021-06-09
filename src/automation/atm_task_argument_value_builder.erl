@@ -78,7 +78,7 @@ from_json(RecordJson) ->
     Type = type_from_json(maps:get(<<"valueBuilderType">>, RecordJson)),
     #atm_task_argument_value_builder{
         type = Type,
-        recipe = recipe_from_json(Type, maps:get(<<"valueBuilderRecipe">>, RecordJson))
+        recipe = recipe_from_json(Type, maps:get(<<"valueBuilderRecipe">>, RecordJson, null))
     }.
 
 %%%===================================================================

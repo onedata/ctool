@@ -93,6 +93,9 @@
 -define(SPACE_REMOVE_ARCHIVES, space_remove_archives).
 -define(SPACE_RECALL_ARCHIVES, space_recall_archives).
 
+-define(SPACE_VIEW_ATM_WORKFLOW_EXECUTIONS, space_view_atm_workflow_executions).
+-define(SPACE_SCHEDULE_ATM_WORKFLOW_EXECUTIONS, space_schedule_atm_workflow_executions).
+
 % Handle service privileges of members (users or groups)
 -define(HANDLE_SERVICE_VIEW, handle_service_view).
 -define(HANDLE_SERVICE_UPDATE, handle_service_update).

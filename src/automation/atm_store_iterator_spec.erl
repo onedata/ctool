@@ -72,23 +72,24 @@ encode_with(Record, NestedRecordEncoder) ->
     StrategyRecord = Record#atm_store_iterator_spec.strategy,
     StrategyRecordType = utils:record_type(StrategyRecord),
     StrategyType = record_type_to_strategy_type(StrategyRecordType),
-    maps:merge(
-        #{
-            <<"type">> => strategy_type_to_json(StrategyType),
-            <<"storeSchemaId">> => Record#atm_store_iterator_spec.store_schema_id
-        },
-        NestedRecordEncoder(StrategyRecord, StrategyRecordType)
-    ).
+    #{
+        <<"strategy">> => maps:merge(
+            #{<<"type">> => strategy_type_to_json(StrategyType)},
+            NestedRecordEncoder(StrategyRecord, StrategyRecordType)
+        ),
+        <<"storeSchemaId">> => Record#atm_store_iterator_spec.store_schema_id
+    }.
 
 
 -spec decode_with(json_utils:json_term(), persistent_record:nested_record_decoder()) ->
     record().
 decode_with(RecordJson, NestedRecordDecoder) ->
-    StrategyType = strategy_type_from_json(maps:get(<<"type">>, RecordJson)),
+    StrategyJson = maps:get(<<"strategy">>, RecordJson),
+    StrategyType = strategy_type_from_json(maps:get(<<"type">>, StrategyJson)),
     StrategyRecordType = strategy_type_to_record_type(StrategyType),
     #atm_store_iterator_spec{
         store_schema_id = maps:get(<<"storeSchemaId">>, RecordJson),
-        strategy = NestedRecordDecoder(RecordJson, StrategyRecordType)
+        strategy = NestedRecordDecoder(StrategyJson, StrategyRecordType)
     }.
 
 

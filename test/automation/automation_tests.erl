@@ -18,6 +18,8 @@
 -include("automation/automation.hrl").
 -include("logging.hrl").
 
+%% @TODO VFS-7687 Add tests for all automation data types and validators
+
 -define(RAND_STR(), str_utils:rand_hex(16)).
 -define(RAND_BOOL(), lists_utils:random_element([true, false])).
 
@@ -129,7 +131,7 @@ encode_decode_store_schema_test() ->
             id = ?RAND_STR(),
             name = ?RAND_STR(),
             description = ?RAND_STR(),
-            type = lists_utils:random_element(all_store_types()),
+            type = lists_utils:random_element(automation:all_store_types()),
             data_spec = DataSpec,
             requires_initial_value = ?RAND_BOOL(),
             default_initial_value = lists_utils:random_element([undefined, gen_json_term()])
@@ -184,21 +186,12 @@ encode_decode_lane_schema_test() ->
 %%% Helper functions
 %%%===================================================================
 
-all_store_types() ->
-    [single_value, list, map, tree_forest, range, histogram].
-
-
 example_data_specs() ->
-    AllTypes = [
-        atm_integer_type, atm_string_type, atm_object_type,
-        atm_file_type, atm_histogram_type, atm_dataset_type, atm_archive_type,
-        atm_store_credentials_type, atm_onedatafs_credentials_type
-    ],
     GenExampleValueConstraints = fun
         (atm_file_type) ->
             lists_utils:random_element([#{file_type => lists_utils:random_element(['REG', 'DIR', 'ANY'])}]);
         (atm_store_credentials_type) ->
-            #{store_type => lists_utils:random_element(all_store_types())};
+            #{store_type => lists_utils:random_element(automation:all_store_types())};
         (_) ->
             #{}
     end,
@@ -207,7 +200,7 @@ example_data_specs() ->
             type = Type,
             value_constraints = GenExampleValueConstraints(Type)
         }
-    end, AllTypes).
+    end, atm_data_type:all_data_types()).
 
 
 example_store_iterator_specs() ->
@@ -239,7 +232,7 @@ example_result_mappers() ->
             store_schema_id = ?RAND_STR(),
             dispatch_function = DispatchFunction
         }
-    end, [add, remove, set, append, prepend]).
+    end, atm_task_schema_result_mapper:all_dispatch_functions()).
 
 
 gen_example_argument_value_builder() ->

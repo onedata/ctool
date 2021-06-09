@@ -309,7 +309,9 @@ space_manager() ->
         ?SPACE_VIEW_QOS,
         ?SPACE_MANAGE_DATASETS,
         ?SPACE_VIEW_ARCHIVES,
-        ?SPACE_CREATE_ARCHIVES
+        ?SPACE_CREATE_ARCHIVES,
+        ?SPACE_VIEW_ATM_WORKFLOW_EXECUTIONS,
+        ?SPACE_SCHEDULE_ATM_WORKFLOW_EXECUTIONS
     ]).
 
 %%--------------------------------------------------------------------
