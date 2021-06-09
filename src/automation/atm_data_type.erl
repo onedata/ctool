@@ -63,7 +63,7 @@ all_data_types() -> [
 ].
 
 
--spec is_instance(type(), term()) -> boolean().
+-spec is_instance(type(), json_utils:json_term()) -> boolean().
 is_instance(TypeName, Value) ->
     TypeName:is_instance(Value).
 

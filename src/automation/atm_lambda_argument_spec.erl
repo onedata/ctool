@@ -77,11 +77,10 @@ encode_with(Record, NestedRecordEncoder) ->
 -spec decode_with(json_utils:json_term(), persistent_record:nested_record_decoder()) ->
     record().
 decode_with(RecordJson, NestedRecordDecoder) ->
-    IsBatch = maps:get(<<"isBatch">>, RecordJson),
     #atm_lambda_argument_spec{
         name = maps:get(<<"name">>, RecordJson),
         data_spec = NestedRecordDecoder(maps:get(<<"dataSpec">>, RecordJson), atm_data_spec),
-        is_batch = IsBatch,
+        is_batch = maps:get(<<"isBatch">>, RecordJson),
         is_optional = maps:get(<<"isOptional">>, RecordJson),
         default_value = utils:null_to_undefined(maps:get(<<"defaultValue">>, RecordJson, null))
     }.
