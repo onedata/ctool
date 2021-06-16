@@ -25,7 +25,7 @@
 -export([hd/1]).
 -export([union/1, union/2, intersect/2, subtract/2]).
 -export([is_subset/2]).
--export([replace/3]).
+-export([replace/3, replace_at/3]).
 -export([ensure_length/2, enumerate/1, index_of/2]).
 -export([shuffle/1, random_element/1, random_sublist/1, random_sublist/3]).
 -export([pmap/2, pforeach/2, pfiltermap/2, pfiltermap/3]).
@@ -104,6 +104,15 @@ replace(Element, Replacement, [H | T]) ->
     [H | replace(Element, Replacement, T)];
 replace(_Element, _Replacement, []) ->
     [].
+
+
+-spec replace_at(term(), pos_integer(), [term()]) -> [term()].
+replace_at(NewValue, 1, [_ | Rest]) ->
+    [NewValue | Rest];
+replace_at(NewValue, Index, [Element | Rest]) ->
+    [Element | replace_at(NewValue, Index - 1, Rest)];
+replace_at(_NewValue, _Index, []) ->
+    error(badarg).
 
 
 %%--------------------------------------------------------------------

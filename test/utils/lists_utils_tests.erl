@@ -29,6 +29,14 @@ replace_test() ->
     ?assertEqual(R(old, new, [0, 0, 0, 0, 0]), [0, 0, 0, 0, 0]).
 
 
+replace_at_test() ->
+    R = fun lists_utils:replace_at/3,
+    ?assertException(error, badarg, R(val, 1, [])),
+    ?assertEqual([val], R(val, 1, [old])),
+    ?assertEqual([1, val, 3], R(val, 2, [1, 20, 3])),
+    ?assertEqual([1, 2, 3, 4, val, 6, 7, 8, 9], R(val, 5, [1, 2, 3, 4, 50, 6, 7, 8, 9])).
+
+
 index_of_test() ->
     L = lists:seq(1, 100),
     ?assertEqual(undefined, lists_utils:index_of(1, [])),
