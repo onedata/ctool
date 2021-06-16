@@ -202,12 +202,12 @@ serialize_deserialize_pattern_testcases() -> [
         #gri_pattern{type = od_atm_workflow_schema, id = '*', aspect = instance, scope = '*'}
     },
     {
-        <<"op_atm_lambda_snapshot.123234345456.instance:*">>,
-        #gri_pattern{type = op_atm_lambda_snapshot, id = <<"123234345456">>, aspect = instance, scope = '*'}
-    },
-    {
         <<"op_atm_inventory.*.atm_workflow_schemas:*">>,
         #gri_pattern{type = op_atm_inventory, id = '*', aspect = atm_workflow_schemas, scope = '*'}
+    },
+    {
+        <<"op_atm_lambda_snapshot.123234345456.instance:*">>,
+        #gri_pattern{type = op_atm_lambda_snapshot, id = <<"123234345456">>, aspect = instance, scope = '*'}
     },
     {
         <<"op_atm_store.*.iterator:*">>,
