@@ -28,7 +28,7 @@
 
 %% @TODO VFS-7687 Implement all automation data types and validators
 -spec is_instance(json_utils:json_term()) -> boolean().
-is_instance(Value) when is_map(Value) -> true;
+is_instance(#{<<"file_id">> := _}) -> true;
 is_instance(_Value) -> false.
 
 

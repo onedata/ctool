@@ -39,6 +39,9 @@
 
 -type store_type() :: single_value | list | map | tree_forest | range | histogram | audit_log.
 
+% Object kept in store and returned when iterating over it.
+-type item() :: json_utils:json_term().
+
 % Additional information solely for the potential users of a workflow schema used
 % to improve joint schema management. These states do not impact the ability of
 % schemas to be executed, apart from the fact that a warning may be displayed in
@@ -47,7 +50,7 @@
 
 -export_type([id/0, name/0, summary/0, description/0]).
 -export_type([lambda_operation_ref/0]).
--export_type([store_type/0]).
+-export_type([store_type/0, item/0]).
 -export_type([workflow_schema_state/0]).
 
 %%%===================================================================

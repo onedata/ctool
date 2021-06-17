@@ -38,7 +38,10 @@
 | od_atm_inventory | od_atm_lambda | od_atm_workflow_schema
 | onp_ceph | onp_cluster | onp_host | onp_panel | onp_provider | onp_service
 | onp_space | onp_storage | onp_user | onp_zone
-| op_archive | op_dataset | op_file | op_group | op_handle | op_handle_service
+| op_archive | op_atm_inventory | op_atm_lambda_snapshot | op_atm_store
+| op_atm_task_execution | op_atm_workflow_execution
+| op_atm_workflow_schema | op_atm_workflow_schema_snapshot
+| op_dataset | op_file | op_group | op_handle | op_handle_service
 | op_metrics | op_provider | op_qos | op_share | op_space | op_transfer | op_user.
 
 -type entity_type_pattern() :: '*' | entity_type().
@@ -207,6 +210,13 @@ serialize_type(onp_user, _) -> <<"onp_user">>;
 serialize_type(onp_zone, _) -> <<"onp_zone">>;
 
 serialize_type(op_archive, _) -> <<"op_archive">>;
+serialize_type(op_atm_inventory, _) -> <<"op_atm_inventory">>;
+serialize_type(op_atm_lambda_snapshot, _) -> <<"op_atm_lambda_snapshot">>;
+serialize_type(op_atm_store, _) -> <<"op_atm_store">>;
+serialize_type(op_atm_task_execution, _) -> <<"op_atm_task_execution">>;
+serialize_type(op_atm_workflow_execution, _) -> <<"op_atm_workflow_execution">>;
+serialize_type(op_atm_workflow_schema, _) -> <<"op_atm_workflow_schema">>;
+serialize_type(op_atm_workflow_schema_snapshot, _) -> <<"op_atm_workflow_schema_snapshot">>;
 serialize_type(op_dataset, _) -> <<"op_dataset">>;
 serialize_type(op_file, _) -> <<"file">>;
 serialize_type(op_group, _) -> <<"op_group">>;
@@ -258,6 +268,13 @@ deserialize_type(<<"onp_user">>, _) -> onp_user;
 deserialize_type(<<"onp_zone">>, _) -> onp_zone;
 
 deserialize_type(<<"op_archive">>, _) -> op_archive;
+deserialize_type(<<"op_atm_inventory">>, _) -> op_atm_inventory;
+deserialize_type(<<"op_atm_lambda_snapshot">>, _) -> op_atm_lambda_snapshot;
+deserialize_type(<<"op_atm_store">>, _) -> op_atm_store;
+deserialize_type(<<"op_atm_task_execution">>, _) -> op_atm_task_execution;
+deserialize_type(<<"op_atm_workflow_execution">>, _) -> op_atm_workflow_execution;
+deserialize_type(<<"op_atm_workflow_schema">>, _) -> op_atm_workflow_schema;
+deserialize_type(<<"op_atm_workflow_schema_snapshot">>, _) -> op_atm_workflow_schema_snapshot;
 deserialize_type(<<"op_dataset">>, _) -> op_dataset;
 deserialize_type(<<"file">>, _) -> op_file;
 deserialize_type(<<"op_group">>, _) -> op_group;
