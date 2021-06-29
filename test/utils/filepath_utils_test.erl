@@ -15,6 +15,7 @@
 -ifdef(TEST).
 
 -include_lib("eunit/include/eunit.hrl").
+-include_lib("errors.hrl").
 
 
 split_test_() ->
@@ -105,6 +106,21 @@ is_descendant_test_() ->
         ?_assertEqual(false, P(<<"a/b/cc">>, <<"a/b/c">>)),
         ?_assertEqual({true, <<"d">>}, P(<<"/a/b/c/d">>, <<"/a/b/c">>)),
         ?_assertEqual({true, <<"b/c/d">>}, P(<<"/a/b/c/d">>, <<"/a">>))
+    ].
+
+relative_test_() ->
+    P = fun filepath_utils:relative/2,
+
+    [
+        ?_assertThrow(?EINVAL, P(<<"/c/b/a">>, <<"/a/b/c">>)),
+        ?_assertThrow(?EINVAL, P(<<"/a/b/c/d">>, <<"/a/b/c">>)),
+        ?_assertThrow(?EINVAL, P(<<"a/b/c/d">>, <<"a/b/c">>)),
+
+        ?_assertEqual(<<>>, P(<<"a/b/c">>, <<"a/b/c">>)),
+        ?_assertEqual(<<>>, P(<<"/a/b/c">>, <<"/a/b/c">>)),
+        ?_assertEqual(<<"c">>, P(<<"/a/b">>, <<"/a/b/c">>)),
+        ?_assertEqual(<<"c">>, P(<<"a/b">>, <<"a/b/c">>)),
+        ?_assertEqual(<<"b/c">>, P(<<"/a">>, <<"/a/b/c">>))
     ].
 
 

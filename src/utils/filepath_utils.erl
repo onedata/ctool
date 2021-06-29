@@ -15,6 +15,7 @@
 -author("Bartosz Walkowicz").
 
 -include("onedata.hrl").
+-include("errors.hrl").
 
 % File path validation
 -export([is_invalid_name/1]).
@@ -28,7 +29,7 @@
 -export([split_and_skip_dots/1, split/1, join/1]).
 
 -export([sanitize/1]).
--export([is_ancestor/2, is_equal_or_descendant/2, is_descendant/2]).
+-export([is_ancestor/2, is_equal_or_descendant/2, is_descendant/2, relative/2]).
 -export([consolidate/1, intersect/2, check_relation/2]).
 
 -type name() :: binary().
@@ -181,6 +182,16 @@ is_equal_or_descendant(PossibleDescendant, ReferencePath) ->
     {true, RelPathFromAncestor :: sanitized_path()} | false.
 is_descendant(PossibleDescendant, ReferencePath) ->
     is_descendant(PossibleDescendant, ReferencePath, byte_size(ReferencePath)).
+
+
+-spec relative(sanitized_path(), sanitized_path()) -> sanitized_path().
+relative(AncestorPath, AncestorPath) ->
+    <<>>;
+relative(AncestorPath, DescendantPath) ->
+    case is_ancestor(AncestorPath, DescendantPath) of
+        {true, RelativePath} -> RelativePath;
+        false -> throw(?EINVAL)
+    end.
 
 
 -spec check_relation(sanitized_path(), sanitized_path()) ->
