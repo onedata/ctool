@@ -8,6 +8,7 @@
 %%%--------------------------------------------------------------------
 %%% @doc
 %%% This file contains various functions operating on file paths
+%%% TODO VFS-7864 check whether all functions properly handle root directory
 %%% @end
 %%%--------------------------------------------------------------------
 -module(filepath_utils).
@@ -168,6 +169,8 @@ sanitize(RawPath) ->
 
 -spec is_ancestor(sanitized_path(), sanitized_path()) ->
     {true, RelPathToDescendant :: sanitized_path()} | false.
+is_ancestor(?DIRECTORY_SEPARATOR_BIN, <<?DIRECTORY_SEPARATOR, RelPathToDescendant/binary>>) ->
+    {true, RelPathToDescendant};
 is_ancestor(PossibleAncestor, ReferencePath) ->
     is_ancestor(PossibleAncestor, byte_size(PossibleAncestor), ReferencePath).
 
@@ -180,6 +183,8 @@ is_equal_or_descendant(PossibleDescendant, ReferencePath) ->
 
 -spec is_descendant(sanitized_path(), sanitized_path()) ->
     {true, RelPathFromAncestor :: sanitized_path()} | false.
+is_descendant(<<?DIRECTORY_SEPARATOR, RelPathFromAncestor/binary>>, ?DIRECTORY_SEPARATOR_BIN) ->
+    {true, RelPathFromAncestor};
 is_descendant(PossibleDescendant, ReferencePath) ->
     is_descendant(PossibleDescendant, ReferencePath, byte_size(ReferencePath)).
 

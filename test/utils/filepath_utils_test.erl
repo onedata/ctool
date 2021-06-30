@@ -77,6 +77,7 @@ is_ancestor_test_() ->
         ?_assertEqual(false, P(<<"a/b/c/d">>, <<"a/b/c">>)),
         ?_assertEqual(false, P(<<"/a/b/c">>, <<"/a/b/c">>)),
 
+        ?_assertEqual({true, <<"a/b/c">>}, P(<<"/">>, <<"/a/b/c">>)),
         ?_assertEqual({true, <<"c">>}, P(<<"/a/b">>, <<"/a/b/c">>)),
         ?_assertEqual({true, <<"c">>}, P(<<"a/b">>, <<"a/b/c">>)),
         ?_assertEqual({true, <<"b/c">>}, P(<<"/a">>, <<"/a/b/c">>))
@@ -104,6 +105,7 @@ is_descendant_test_() ->
         ?_assertEqual(false, P(<<"/a/b/c">>, <<"/a/b/c">>)),
         ?_assertEqual(false, P(<<"/a/b/cc">>, <<"/a/b/c">>)),
         ?_assertEqual(false, P(<<"a/b/cc">>, <<"a/b/c">>)),
+        ?_assertEqual({true, <<"a/b/c">>}, P(<<"/a/b/c">>, <<"/">>)),
         ?_assertEqual({true, <<"d">>}, P(<<"/a/b/c/d">>, <<"/a/b/c">>)),
         ?_assertEqual({true, <<"b/c/d">>}, P(<<"/a/b/c/d">>, <<"/a">>))
     ].
@@ -118,6 +120,7 @@ relative_test_() ->
 
         ?_assertEqual(<<>>, P(<<"a/b/c">>, <<"a/b/c">>)),
         ?_assertEqual(<<>>, P(<<"/a/b/c">>, <<"/a/b/c">>)),
+        ?_assertEqual(<<"a/b/c">>, P(<<"/">>, <<"/a/b/c">>)),
         ?_assertEqual(<<"c">>, P(<<"/a/b">>, <<"/a/b/c">>)),
         ?_assertEqual(<<"c">>, P(<<"a/b">>, <<"a/b/c">>)),
         ?_assertEqual(<<"b/c">>, P(<<"/a">>, <<"/a/b/c">>))
