@@ -98,7 +98,7 @@
 -define(ERROR_MISSING_REQUIRED_VALUE(Key), {error, {missing_required_value, Key}}).
 -define(ERROR_MISSING_AT_LEAST_ONE_VALUE(Keys), {error, {missing_at_least_one_value, Keys}}).
 -define(ERROR_BAD_DATA(Key), {error, {bad_data, Key}}).
--define(ERROR_BAD_DATA(Key, HumanReadableHint), {error, {bad_data, Key, HumanReadableHint}}).
+-define(ERROR_BAD_DATA(Key, SpecificErrorOrHumanReadableHint), {error, {bad_data, Key, SpecificErrorOrHumanReadableHint}}).
 -define(ERROR_BAD_VALUE_EMPTY(Key), {error, {empty_value, Key}}).
 -define(ERROR_BAD_VALUE_BOOLEAN(Key), {error, {bad_value_boolean, Key}}).
 -define(ERROR_BAD_VALUE_ATOM(Key), {error, {bad_value_atom, Key}}).
