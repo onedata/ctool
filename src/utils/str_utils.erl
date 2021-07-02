@@ -198,7 +198,7 @@ format_byte_size(Size, [Unit | _]) ->
     end.
 
 
--spec md5_digest(term() | [term()]) -> binary().
+-spec md5_digest(term() | [binary() | term()]) -> binary().
 md5_digest(Term) when not is_list(Term) ->
     md5_digest([Term]);
 md5_digest(DigestComponents) when length(DigestComponents) > 0 ->
