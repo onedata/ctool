@@ -59,7 +59,8 @@
 % Name of the key in data structure that caused the error, e.g. <<"name">>.
 -type key() :: binary().
 -type data_validation() :: malformed_data | {missing_required_value, key()}
-| {missing_at_least_one_value, [key()]} | {bad_data, key()} | {bad_data, key(), Hint :: binary()}
+| {missing_at_least_one_value, [key()]} | {bad_data, key()}
+| {bad_data, key(), SpecificErrorOrHumanReadableHint :: error() | binary()}
 | {empty_value, key()} | {bad_value_atom, key()}
 | {bad_value_list_of_atoms, key()} | {bad_value_boolean, key()}
 | {bad_value_binary, key()} | {bad_value_binary_too_long, key(), {max, integer()}}
@@ -476,6 +477,14 @@ to_json(?ERROR_MISSING_AT_LEAST_ONE_VALUE(Keys)) -> #{
         <<"keys">> => Keys
     },
     <<"description">> => ?FMT("Missing data, you must provide at least one of: ~p.", [Keys])
+};
+to_json(?ERROR_BAD_DATA(Key, {error, _} = SpecificError)) -> #{
+    <<"id">> => <<"badData">>,
+    <<"details">> => #{
+        <<"key">> => Key,
+        <<"specificError">> => to_json(SpecificError)
+    },
+    <<"description">> => ?FMT("Bad value provided for \"~s\" (see details).", [Key])
 };
 to_json(?ERROR_BAD_DATA(Key, HumanReadableHint)) -> #{
     <<"id">> => <<"badData">>,
@@ -1270,6 +1279,9 @@ from_json(#{<<"id">> := <<"missingRequiredValue">>,
 
 from_json(#{<<"id">> := <<"missingAtLeastOneValue">>, <<"details">> := #{<<"keys">> := Keys}}) ->
     ?ERROR_MISSING_AT_LEAST_ONE_VALUE(Keys);
+
+from_json(#{<<"id">> := <<"badData">>, <<"details">> := #{<<"key">> := Key, <<"specificError">> := SpecificError}}) ->
+    ?ERROR_BAD_DATA(Key, from_json(SpecificError));
 
 from_json(#{<<"id">> := <<"badData">>, <<"details">> := #{<<"key">> := Key, <<"hint">> := HumanReadableHint}}) ->
     ?ERROR_BAD_DATA(Key, HumanReadableHint);

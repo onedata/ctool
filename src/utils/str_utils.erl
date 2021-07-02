@@ -22,6 +22,7 @@
 % String formatting
 -export([format/1, format/2, format_bin/2, format_byte_size/1]).
 
+-export([md5_digest/1]).
 -export([rand_hex/1]).
 -export([pad_left/3, pad_right/3]).
 
@@ -195,6 +196,17 @@ format_byte_size(Size, [Unit | _]) ->
         true -> format("~B ~s", [trunc(Size), Unit]);
         false -> format("~.2f ~s", [Size, Unit])
     end.
+
+
+-spec md5_digest(term() | [binary() | term()]) -> binary().
+md5_digest(Term) when not is_list(Term) ->
+    md5_digest([Term]);
+md5_digest(DigestComponents) when length(DigestComponents) > 0 ->
+    FinalCtx = lists:foldl(fun
+        (Bin, Ctx) when is_binary(Bin) -> crypto:hash_update(Ctx, Bin);
+        (Term, Ctx) -> crypto:hash_update(Ctx, term_to_binary(Term))
+    end, crypto:hash_init(md5), DigestComponents),
+    hex_utils:hex(crypto:hash_final(FinalCtx)).
 
 
 %%--------------------------------------------------------------------
