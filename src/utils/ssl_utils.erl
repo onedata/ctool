@@ -26,4 +26,4 @@
 %%--------------------------------------------------------------------
 -spec safe_ciphers() -> list().
 safe_ciphers() ->
-    [Suite || Suite <- ssl:cipher_suites(), element(1, Suite) =/= rsa].
+    [Suite || #{key_exchange := Kex} = Suite <- ssl:cipher_suites(all, 'tlsv1.3'), Kex =/= rsa].

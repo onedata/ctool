@@ -41,12 +41,19 @@
 -spec start_link(URL :: string(), websocket_req:cookies(), Handler :: module(),
     Args :: list(), TransportOpts :: list()) -> {ok, pid()} | {error, term()}.
 start_link(URL, Cookies, Handler, Args, TransportOpts) ->
-    case http_uri:parse(URL, [{scheme_defaults, [{ws, 80}, {wss, 443}]}]) of
-        {ok, {Protocol, _, Host, Port, Path, Query}} ->
-            proc_lib:start_link(?MODULE, ws_client_init,
-                [Handler, Protocol, Host, Port, Path ++ Query, Cookies, Args, TransportOpts]);
-        {error, _} = Error ->
-            Error
+    case uri_string:parse(URL) of
+        #{scheme := Protocol} when Protocol /= "ws" andalso Protocol /= "wss" ->
+            {error, {bad_url_scheme, URL, Protocol}};
+        #{scheme := Protocol, host := Host} = URIMap ->
+            ProtocolAtom = list_to_atom(Protocol),
+            Port = maps:get(port, URIMap, case ProtocolAtom of ws -> 80; wss -> 443 end),
+            Path = maps:get(path, URIMap, ""),
+            Query = maps:get(query, URIMap, ""),
+            proc_lib:start_link(?MODULE, ws_client_init, [
+                Handler, ProtocolAtom, Host, Port, Path ++ Query, Cookies, Args, TransportOpts
+            ]);
+        {error, _, _} = UrlParsingError ->
+            {error, {bad_url, UrlParsingError}}
     end.
 
 %% Send a frame asynchronously
@@ -66,7 +73,7 @@ ws_client_init(Handler, Protocol, Host, Port, Path, Cookies, Args, TransportOpts
     end,
     SockReply = case Transport of
         ssl ->
-            ExpandedOpts = secure_ssl_opts:expand(Host, TransportOpts ++ [
+            ExpandedOpts = secure_ssl_opts:expand(TransportOpts ++ [
                 binary,
                 {active, false},
                 {packet, 0}
@@ -136,12 +143,12 @@ ws_client_init(Handler, Protocol, Host, Port, Path, Cookies, Args, TransportOpts
             HandlerState, <<>>
         )
     catch
-        Type:Error ->
+        Type:Error:Stk ->
             error_logger:error_msg(
                 "** Websocket client terminating~n"
                 "   for the reason ~p:~p~n"
                 "** Stacktrace: ~p~n~n",
-                [Type, Error, erlang:get_stacktrace()]),
+                [Type, Error, Stk]),
             Transport:close(Socket),
             {error, {Type, Error}}
     end.
@@ -236,7 +243,7 @@ handle_websocket_message(WSReq, HandlerState, Buffer, Message) ->
             try Handler:websocket_info(Msg, WSReq, HandlerState) of
                 HandlerResponse ->
                     handle_response(WSReq, HandlerResponse, Buffer)
-            catch Class:Reason ->
+            catch Class:Reason:Stk ->
                 error_logger:error_msg(
                     "** Websocket client ~p terminating in ~p/~p~n"
                     "   for the reason ~p:~p~n"
@@ -244,7 +251,7 @@ handle_websocket_message(WSReq, HandlerState, Buffer, Message) ->
                     "** Handler state was ~p~n"
                     "** Stacktrace: ~p~n~n",
                     [Handler, websocket_info, 3, Class, Reason, Msg, HandlerState,
-                        erlang:get_stacktrace()]),
+                        Stk]),
                 websocket_close(WSReq, HandlerState, Reason)
             end
     end.
@@ -258,14 +265,14 @@ websocket_close(WSReq, HandlerState, Reason) ->
     Transport:close(Socket),
     try
         Handler:websocket_terminate(Reason, WSReq, HandlerState)
-    catch Class:Reason2 ->
+    catch Class:Reason2:Stk ->
         error_logger:error_msg(
             "** Websocket handler ~p terminating in ~p/~p~n"
             "   for the reason ~p:~p~n"
             "** Handler state was ~p~n"
             "** Stacktrace: ~p~n~n",
             [Handler, websocket_terminate, 3, Class, Reason2, HandlerState,
-                erlang:get_stacktrace()])
+                Stk])
     end.
 
 %% @doc Key sent in initial handshake
@@ -404,7 +411,7 @@ retrieve_frame(WSReq, HandlerState, Opcode, Len, Data, Buffer) ->
                 HandlerResponse ->
                     handle_response(websocket_req:remaining(undefined, WSReq1),
                         HandlerResponse, Rest)
-            catch Class:Reason ->
+            catch Class:Reason:Stk ->
                 error_logger:error_msg(
                     "** Websocket client ~p terminating in ~p/~p~n"
                     "   for the reason ~p:~p~n"
@@ -412,7 +419,7 @@ retrieve_frame(WSReq, HandlerState, Opcode, Len, Data, Buffer) ->
                     "** Handler state was ~p~n"
                     "** Stacktrace: ~p~n~n",
                     [Handler, websocket_handle, 3, Class, Reason, {ContinuationOpcodeName, DefragPayload}, HandlerState,
-                        erlang:get_stacktrace()]),
+                        Stk]),
                 websocket_close(WSReq, HandlerState, Reason)
             end;
         _ ->
@@ -422,14 +429,13 @@ retrieve_frame(WSReq, HandlerState, Opcode, Len, Data, Buffer) ->
                 HandlerResponse ->
                     handle_response(websocket_req:remaining(undefined, WSReq),
                         HandlerResponse, Rest)
-            catch Class:Reason ->
+            catch Class:Reason:Stk ->
                 error_logger:error_msg(
                     "** Websocket client ~p terminating in ~p/~p~n"
                     "   for the reason ~p:~p~n"
                     "** Handler state was ~p~n"
                     "** Stacktrace: ~p~n~n",
-                    [Handler, websocket_handle, 3, Class, Reason, HandlerState,
-                        erlang:get_stacktrace()]),
+                    [Handler, websocket_handle, 3, Class, Reason, HandlerState, Stk]),
                 websocket_close(WSReq, HandlerState, Reason)
             end
     end.

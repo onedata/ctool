@@ -31,7 +31,7 @@ main_test_() ->
         ]
     }.
 
--define(DEFAULT_SSL_OPTS(__Url), secure_ssl_opts:expand(__Url, [])).
+-define(DEFAULT_SSL_OPTS(), secure_ssl_opts:expand([])).
 
 
 % Checks if API function calls are properly translated to hackney calls
@@ -93,7 +93,7 @@ api_t() ->
             with_body,
             {max_body, undefined},
             {pool, false},
-            {ssl_options, ?DEFAULT_SSL_OPTS(HTTPS_URL)}
+            {ssl_options, ?DEFAULT_SSL_OPTS()}
         ]]
     },
 
@@ -108,7 +108,7 @@ api_t() ->
         ]],
         [post, HTTPS_URL, HeadersProplist, Body, [
             option,
-            {ssl_options, [{keyfile, "a"}, {certfile, "b"} | ?DEFAULT_SSL_OPTS(HTTPS_URL)]},
+            {ssl_options, [{keyfile, "a"}, {certfile, "b"} | ?DEFAULT_SSL_OPTS()]},
             with_body,
             {max_body, undefined},
             {pool, false}
@@ -198,7 +198,7 @@ request_return_stream_t() ->
             async,
             option,
             {pool, false},
-            {ssl_options, ?DEFAULT_SSL_OPTS(HTTPS_URL)}
+            {ssl_options, ?DEFAULT_SSL_OPTS()}
         ]]
     },
 
@@ -213,7 +213,7 @@ request_return_stream_t() ->
         [put, HTTPS_URL, HeadersProplist, Body, [
             option,
             {ssl_options, [
-                {keyfile, "a"}, {certfile, "b"} | ?DEFAULT_SSL_OPTS(HTTPS_URL)
+                {keyfile, "a"}, {certfile, "b"} | ?DEFAULT_SSL_OPTS()
             ]},
             async,
             {pool, false}

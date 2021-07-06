@@ -45,7 +45,7 @@ expand_hackney_verify_cacert_opts(Opts) ->
 %% with system bundle
 %% @end
 %%--------------------------------------------------------------------
--spec expand_ssl_verify_cacert_opts([ssl:ssl_option()]) -> [ssl:ssl_option()].
+-spec expand_ssl_verify_cacert_opts([ssl:tls_option()]) -> [ssl:tls_option()].
 expand_ssl_verify_cacert_opts(SslOpts) ->
     Verify = proplists:get_value(verify, SslOpts),
     Cacerts = proplists:get_value(cacerts, SslOpts, []),

@@ -12,10 +12,8 @@
 -module(secure_ssl_opts).
 -author("Lukasz Opiola").
 
--include_lib("public_key/include/OTP-PUB-KEY.hrl").
-
 %% API
--export([expand/2]).
+-export([expand/1]).
 
 %%%===================================================================
 %%% API
@@ -31,8 +29,10 @@
 %% is passed as secure flag and skip any verification.
 %% @end
 %%--------------------------------------------------------------------
--spec expand(http_client:url(), [http_client:ssl_opt()]) -> [http_client:ssl_opt()].
-expand(Url, SslOpts) ->
+-spec expand([http_client:ssl_opt()]) -> [http_client:ssl_opt()].
+expand(SslOpts) ->
+    %% @TODO VFS-7795 it would be better to have 'default_http_client_security' option that
+    %% would be taken if no secure flag is given
     ForceInsecure = ctool:get_env(force_insecure_connections, false),
     SecureFlag = proplists:get_value(secure, SslOpts, true),
     NewOpts = case ForceInsecure orelse SecureFlag =:= false of
@@ -41,77 +41,40 @@ expand(Url, SslOpts) ->
         false ->
             CustomCaCerts = proplists:get_value(cacerts, SslOpts, []),
             CaCerts = CustomCaCerts ++ certifi:cacerts(),
-            CommonOpts = [
-                {verify, verify_peer},
-                {depth, 99},
-                {cacerts, CaCerts},
-                {partial_chain, fun(Certs) -> partial_chain(CaCerts, Certs) end}
-            ],
-            % If provided, use hostname specified in opt for validation,
-            % otherwise use the hostname parsed from URL.
-            HostnameBin = case proplists:get_value(hostname, SslOpts) of
-                undefined -> maps:get(host, url_utils:parse(Url));
-                Val -> Val
-            end,
-            Hostname = binary_to_list(HostnameBin),
-            VerifyFun = case SecureFlag of
+
+            VerifyFunOpt = case SecureFlag of
                 true ->
-                    {fun ssl_verify_hostname:verify_fun/3, [{check_hostname, Hostname}]};
+                    [];
                 only_verify_peercert ->
-                    {fun peercert_only_verify_fun/3, []}
+                    [{verify_fun, {fun peercert_only_verify_fun/3, []}}]
             end,
-            [{verify_fun, VerifyFun}, {server_name_indication, Hostname} | CommonOpts]
+
+            ServerNameIndicationOpt = case proplists:get_value(hostname, SslOpts) of
+                undefined ->
+                    [];
+                HostnameBin ->
+                    [{server_name_indication, string:strip(binary_to_list(HostnameBin), right, $.)}]
+            end,
+
+            VerifyFunOpt ++ ServerNameIndicationOpt ++ [
+                {verify, verify_peer},
+                {cacerts, CaCerts},
+                {customize_hostname_check, [{match_fun, public_key:pkix_verify_hostname_match_fun(https)}]}
+            ]
     end,
     NewOpts ++ proplists:delete(cacerts,
         proplists:delete(secure,
             proplists:delete(hostname, SslOpts))).
 
 %%%===================================================================
-%%% Private functions; code from hackney (MIT licence) and rebar3 (BSD license)
+%%% Internal functions
 %%%===================================================================
 
--spec partial_chain(CaCertDers :: [binary()], CertDers :: [binary()]) ->
-    unknown_ca | {trusted_ca, 'OTPCertificate'}.
-partial_chain(CaCertDers, CertDers) ->
-    Certs = lists:reverse([{Cert, public_key:pkix_decode_cert(Cert, otp)} ||
-        Cert <- CertDers]),
-    CaCerts = [public_key:pkix_decode_cert(Cert, otp) || Cert <- CaCertDers],
-
-    case find(fun({_, Cert}) -> check_cert(CaCerts, Cert) end, Certs) of
-        {ok, Trusted} ->
-            {trusted_ca, element(1, Trusted)};
-        _ ->
-            unknown_ca
-    end.
-
-
--spec check_cert(CaCerts :: [#'OTPCertificate'{}], Cert :: [#'OTPCertificate'{}]) ->
-    boolean().
-check_cert(CaCerts, Cert) ->
-    lists:any(fun(CaCert) ->
-        extract_public_key_info(CaCert) == extract_public_key_info(Cert)
-    end, CaCerts).
-
-
--spec extract_public_key_info(#'OTPCertificate'{}) -> #'SubjectPublicKeyInfo'{}.
-extract_public_key_info(Cert) ->
-    Cert#'OTPCertificate'.tbsCertificate#'OTPTBSCertificate'.subjectPublicKeyInfo.
-
-
--spec find(fun(), list()) -> {ok, term()} | error.
-find(Fun, [Head | Tail]) when is_function(Fun) ->
-    case Fun(Head) of
-        true ->
-            {ok, Head};
-        false ->
-            find(Fun, Tail)
-    end;
-find(_Fun, []) ->
-    error.
-
-
+%% @private
 -spec peercert_only_verify_fun(term(), term(), term()) ->
     {fail | unknown | valid, term()}.
+peercert_only_verify_fun(_, {bad_cert, hostname_check_failed}, UserState) ->
+    {valid, UserState};
 peercert_only_verify_fun(_, {bad_cert, _} = Reason, _) ->
     {fail, Reason};
 peercert_only_verify_fun(_, {extension, _}, UserState) ->

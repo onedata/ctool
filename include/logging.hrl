@@ -17,7 +17,7 @@
 
 % Prints bad request warning (frequently used in gen_servers)
 -define(log_bad_request(Request),
-    ?do_log(3, "~p:~p - bad request ~p", [?MODULE, ?LINE, Request], false)
+    ?do_log(3, "~p:~p - bad request ~p", [?MODULE, ?LINE, Request], undefined)
 ).
 
 % Prints abnormal termination warning
@@ -27,7 +27,7 @@
         shutdown -> ok;
         {shutdown, _} -> ok;
         _ ->
-            ?do_log(3, "~p terminated in state ~p due to: ~p", [?MODULE, State, Reason], false)
+            ?do_log(3, "~p terminated in state ~p due to: ~p", [?MODULE, State, Reason], undefined)
     end
 ).
 
@@ -44,15 +44,15 @@
 
 %% Macros used internally
 
--define(do_log(_LoglevelAsInt, _Message, _IncludeStackTrace),
-    ?do_log(_LoglevelAsInt, _Message, [], _IncludeStackTrace)
+-define(do_log(_LoglevelAsInt, _Message, _Stacktrace),
+    ?do_log(_LoglevelAsInt, _Message, [], _Stacktrace)
 ).
 
--define(do_log(_LoglevelAsInt, _Format, _Args, _IncludeStackTrace),
-    case logger:should_log(_LoglevelAsInt) of
+-define(do_log(_LoglevelAsInt, _Format, _Args, _Stacktrace),
+    case onedata_logger:should_log(_LoglevelAsInt) of
         false -> ok;
         true ->
-            logger:dispatch_log(_LoglevelAsInt, ?gather_metadata, _Format, _Args, _IncludeStackTrace)
+            onedata_logger:dispatch_log(_LoglevelAsInt, ?gather_metadata, _Format, _Args, _Stacktrace)
     end
 ).
 
@@ -61,7 +61,7 @@
 % so that the process info makes sense
 -define(gather_metadata,
     [{pid, self()}, {line, ?LINE}] ++
-    logger:parse_process_info(process_info(self(), current_function))
+    onedata_logger:parse_process_info(process_info(self(), current_function))
 ).
 
 % List of available loglevels in cluster
@@ -85,45 +85,45 @@
 -endif.
 
 -ifndef(skip_debug).
--define(debug(_Message), ?do_log(0, _Message, false)).
--define(debug(_Format, _Args), ?do_log(0, _Format, _Args, false)).
--define(debug_stacktrace(_Message), ?do_log(0, _Message, true)).
--define(debug_stacktrace(_Format, _Args), ?do_log(0, _Format, _Args, true)).
+-define(debug(_Message), ?do_log(0, _Message, undefined)).
+-define(debug(_Format, _Args), ?do_log(0, _Format, _Args, undefined)).
+-define(debug_stacktrace(_Message, _Stacktrace), ?do_log(0, _Message, _Stacktrace)).
+-define(debug_stacktrace(_Format, _Args, _Stacktrace), ?do_log(0, _Format, _Args, _Stacktrace)).
 -endif.
 
--define(info(_Message), ?do_log(1, _Message, false)).
--define(info(_Format, _Args), ?do_log(1, _Format, _Args, false)).
--define(info_stacktrace(_Message), ?do_log(1, _Message, true)).
--define(info_stacktrace(_Format, _Args), ?do_log(1, _Format, _Args, true)).
+-define(info(_Message), ?do_log(1, _Message, undefined)).
+-define(info(_Format, _Args), ?do_log(1, _Format, _Args, undefined)).
+-define(info_stacktrace(_Message, _Stacktrace), ?do_log(1, _Message, _Stacktrace)).
+-define(info_stacktrace(_Format, _Args, _Stacktrace), ?do_log(1, _Format, _Args, _Stacktrace)).
 
--define(notice(_Message), ?do_log(2, _Message, false)).
--define(notice(_Format, _Args), ?do_log(2, _Format, _Args, false)).
--define(notice_stacktrace(_Message), ?do_log(2, _Message, true)).
--define(notice_stacktrace(_Format, _Args), ?do_log(2, _Format, _Args, true)).
+-define(notice(_Message), ?do_log(2, _Message, undefined)).
+-define(notice(_Format, _Args), ?do_log(2, _Format, _Args, undefined)).
+-define(notice_stacktrace(_Message, _Stacktrace), ?do_log(2, _Message, _Stacktrace)).
+-define(notice_stacktrace(_Format, _Args, _Stacktrace), ?do_log(2, _Format, _Args, _Stacktrace)).
 
--define(warning(_Message), ?do_log(3, _Message, false)).
--define(warning(_Format, _Args), ?do_log(3, _Format, _Args, false)).
--define(warning_stacktrace(_Message), ?do_log(3, _Message, true)).
--define(warning_stacktrace(_Format, _Args), ?do_log(3, _Format, _Args, true)).
+-define(warning(_Message), ?do_log(3, _Message, undefined)).
+-define(warning(_Format, _Args), ?do_log(3, _Format, _Args, undefined)).
+-define(warning_stacktrace(_Message, _Stacktrace), ?do_log(3, _Message, _Stacktrace)).
+-define(warning_stacktrace(_Format, _Args, _Stacktrace), ?do_log(3, _Format, _Args, _Stacktrace)).
 
--define(error(_Message), ?do_log(4, _Message, false)).
--define(error(_Format, _Args), ?do_log(4, _Format, _Args, false)).
--define(error_stacktrace(_Message), ?do_log(4, _Message, true)).
--define(error_stacktrace(_Format, _Args), ?do_log(4, _Format, _Args, true)).
+-define(error(_Message), ?do_log(4, _Message, undefined)).
+-define(error(_Format, _Args), ?do_log(4, _Format, _Args, undefined)).
+-define(error_stacktrace(_Message, _Stacktrace), ?do_log(4, _Message, _Stacktrace)).
+-define(error_stacktrace(_Format, _Args, _Stacktrace), ?do_log(4, _Format, _Args, _Stacktrace)).
 
--define(critical(_Message), ?do_log(5, _Message, false)).
--define(critical(_Format, _Args), ?do_log(5, _Format, _Args, false)).
--define(critical_stacktrace(_Message), ?do_log(5, _Message, true)).
--define(critical_stacktrace(_Format, _Args), ?do_log(5, _Format, _Args, true)).
+-define(critical(_Message), ?do_log(5, _Message, undefined)).
+-define(critical(_Format, _Args), ?do_log(5, _Format, _Args, undefined)).
+-define(critical_stacktrace(_Message, _Stacktrace), ?do_log(5, _Message, _Stacktrace)).
+-define(critical_stacktrace(_Format, _Args, _Stacktrace), ?do_log(5, _Format, _Args, _Stacktrace)).
 
--define(alert(_Message), ?do_log(6, _Message, false)).
--define(alert(_Format, _Args), ?do_log(6, _Format, _Args, false)).
--define(alert_stacktrace(_Message), ?do_log(6, _Message, true)).
--define(alert_stacktrace(_Format, _Args), ?do_log(6, _Format, _Args, true)).
+-define(alert(_Message), ?do_log(6, _Message, undefined)).
+-define(alert(_Format, _Args), ?do_log(6, _Format, _Args, undefined)).
+-define(alert_stacktrace(_Message, _Stacktrace), ?do_log(6, _Message, _Stacktrace)).
+-define(alert_stacktrace(_Format, _Args, _Stacktrace), ?do_log(6, _Format, _Args, _Stacktrace)).
 
--define(emergency(_Message), ?do_log(7, _Message, false)).
--define(emergency(_Format, _Args), ?do_log(7, _Format, _Args, false)).
--define(emergency_stacktrace(_Message), ?do_log(7, _Message, true)).
--define(emergency_stacktrace(_Format, _Args), ?do_log(7, _Format, _Args, true)).
+-define(emergency(_Message), ?do_log(7, _Message, undefined)).
+-define(emergency(_Format, _Args), ?do_log(7, _Format, _Args, undefined)).
+-define(emergency_stacktrace(_Message, _Stacktrace), ?do_log(7, _Message, _Stacktrace)).
+-define(emergency_stacktrace(_Format, _Args, _Stacktrace), ?do_log(7, _Format, _Args, _Stacktrace)).
 
 -endif.

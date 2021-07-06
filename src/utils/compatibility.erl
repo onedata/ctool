@@ -221,10 +221,10 @@ check_for_updates(Resolver, Mirrors) ->
                         false ->
                             {cont, {error, not_updated}}
                     end
-                catch Type:Reason ->
+                catch Type:Reason:Stacktrace ->
                     ?error_stacktrace("Error processing newly fetched compatibility registry from mirror: ~s~n~w:~p", [
                         Mirror, Type, Reason
-                    ]),
+                    ], Stacktrace),
                     {cont, {error, not_updated}}
                 end;
             error ->
@@ -538,10 +538,10 @@ parse_registry(RawRegistry) ->
             }
         }}
     catch
-        Type:Reason ->
+        Type:Reason:Stacktrace ->
             ?debug_stacktrace("Cannot parse compatibility registry due to ~p:~p", [
                 Type, Reason
-            ]),
+            ], Stacktrace),
             {error, cannot_parse_registry}
     end.
 

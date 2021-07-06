@@ -17,6 +17,9 @@
 -author("Krzysztof Trzepla").
 -author("Jakub Kudzia").
 
+% Because this module include indirectly eunit.hrl Eunit considers this as a test module by default.
+-define(EUNIT_NOAUTO, 1).
+
 % this file is built by parent project so include_lib must be used
 -include_lib("xmerl/include/xmerl.hrl").
 -include_lib("ctool/include/test/assertions.hrl").
@@ -750,8 +753,7 @@ exec_test_repeat(SuiteName, CaseName, CaseConfig) ->
                 end, lists:flatten([Result]))]}
         end
     catch
-        Error:Reason ->
-            Stacktrace = erlang:get_stacktrace(),
+        Error:Reason:Stacktrace ->
             Message = str_utils:format("~p:~p~n~p", [Error, Reason, Stacktrace]),
             ct:print("~p:~p failed due to: ~w:~w~n"
             "Stacktrace: ~p", [SuiteName, CaseName, Error, Reason, Stacktrace]),

@@ -1,5 +1,5 @@
 % Module taken from erlang-pbkdf2 repo :
-% https://github.com/basho/erlang-pbkdf2/blob/master/src/pbkdf2.erl
+% https://github.com/miniclip/erlang-pbkdf2/blob/master/src/pbkdf2.erl
 % -------------------------------------------------------------------
 %
 % Licensed under the Apache License, Version 2.0 (the "License"); you may not
@@ -17,6 +17,7 @@
 -module(pbkdf2).
 
 -export([pbkdf2/4, pbkdf2/5, compare_secure/2, to_hex/1]).
+-ignore_xref([pbkdf2/4, pbkdf2/5, compare_secure/2, to_hex/1]).
 
 
 %-type(hex_char() :: $0 .. $9 | $a .. $f).
@@ -28,13 +29,15 @@
 
 -type mac_func_info() :: {hmac, digest_func_info()} | digest_func_info().
 
+-export_type([digest_func_info/0]).
+
 
 -define(MAX_DERIVED_KEY_LENGTH, (1 bsl 32 - 1)).
 
-%======================================================================================================================
+%===================================================================================================
 % Public API
 
--spec pbkdf2(MacFunc, Password, Salt, Iterations) -> {ok, Key} | {error, derived_key_too_long} when
+-spec pbkdf2(MacFunc, Password, Salt, Iterations) -> {ok, Key} when
     MacFunc :: mac_func_info(),
     Password :: binary(),
     Salt :: binary(),
@@ -47,9 +50,10 @@ pbkdf2(MacFunc, Password, Salt, Iterations) ->
     Bin = pbkdf2(MacFunc1, Password, Salt, Iterations, DerivedLength, 1, []),
     {ok, Bin}.
 
-%----------------------------------------------------------------------------------------------------------------------
+%---------------------------------------------------------------------------------------------------
 
--spec pbkdf2(MacFunc, Password, Salt, Iterations, DerivedLength) -> {ok, Key} | {error, derived_key_too_long} when
+-spec pbkdf2(MacFunc, Password, Salt, Iterations, DerivedLength)
+        -> {ok, Key} | {error, derived_key_too_long} when
     MacFunc :: mac_func_info(),
     Password :: binary(),
     Salt :: binary(),
@@ -57,7 +61,8 @@ pbkdf2(MacFunc, Password, Salt, Iterations) ->
     DerivedLength :: integer(),
     Key :: binary().
 
-pbkdf2(_MacFunc, _Password, _Salt, _Iterations, DerivedLength) when DerivedLength > ?MAX_DERIVED_KEY_LENGTH ->
+pbkdf2(_MacFunc, _Password, _Salt, _Iterations, DerivedLength)
+    when DerivedLength > ?MAX_DERIVED_KEY_LENGTH ->
     {error, derived_key_too_long};
 
 pbkdf2(MacFunc, Password, Salt, Iterations, DerivedLength) ->
@@ -65,7 +70,7 @@ pbkdf2(MacFunc, Password, Salt, Iterations, DerivedLength) ->
     Bin = pbkdf2(MacFunc1, Password, Salt, Iterations, DerivedLength, 1, []),
     {ok, Bin}.
 
-%----------------------------------------------------------------------------------------------------------------------
+%---------------------------------------------------------------------------------------------------
 
 -spec to_hex(Data) -> HexData when
     Data :: binary() | list(),
@@ -86,7 +91,7 @@ to_hex([]) ->
 to_hex([Char | Rest]) ->
     [to_hex_digit(Char div 16), to_hex_digit(Char rem 16) | to_hex(Rest)].
 
-%======================================================================================================================
+%===================================================================================================
 % Internal Functions
 
 -spec pbkdf2(MacFunc, Password, Salt, Iterations, DerivedLength, BlockIndex, Acc) -> Key when
@@ -106,10 +111,11 @@ pbkdf2(MacFunc, Password, Salt, Iterations, DerivedLength, BlockIndex, Acc) ->
             Bin;
         false ->
             Block = pbkdf2(MacFunc, Password, Salt, Iterations, BlockIndex, 1, <<>>, <<>>),
-            pbkdf2(MacFunc, Password, Salt, Iterations, DerivedLength, BlockIndex + 1, [Block | Acc])
+            pbkdf2(MacFunc, Password, Salt, Iterations, DerivedLength, BlockIndex + 1,
+                [Block | Acc])
     end.
 
-%----------------------------------------------------------------------------------------------------------------------
+%---------------------------------------------------------------------------------------------------
 
 -spec pbkdf2(MacFunc, Password, Salt, Iterations, BlockIndex, Iteration, Prev, Acc) -> Key when
     MacFunc :: fun((binary(), binary()) -> binary()),
@@ -122,7 +128,8 @@ pbkdf2(MacFunc, Password, Salt, Iterations, DerivedLength, BlockIndex, Acc) ->
     Acc :: binary(),
     Key :: binary().
 
-pbkdf2(_MacFunc, _Password, _Salt, Iterations, _BlockIndex, Iteration, _Prev, Acc) when Iteration > Iterations ->
+pbkdf2(_MacFunc, _Password, _Salt, Iterations, _BlockIndex, Iteration, _Prev, Acc)
+    when Iteration > Iterations ->
     Acc;
 
 pbkdf2(MacFunc, Password, Salt, Iterations, BlockIndex, 1, _Prev, _Acc) ->
@@ -131,19 +138,20 @@ pbkdf2(MacFunc, Password, Salt, Iterations, BlockIndex, 1, _Prev, _Acc) ->
 
 pbkdf2(MacFunc, Password, Salt, Iterations, BlockIndex, Iteration, Prev, Acc) ->
     Next = MacFunc(Password, Prev),
-    pbkdf2(MacFunc, Password, Salt, Iterations, BlockIndex, Iteration + 1, Next, crypto:exor(Next, Acc)).
+    pbkdf2(MacFunc, Password, Salt, Iterations, BlockIndex, Iteration + 1, Next,
+        crypto:exor(Next, Acc)).
 
-%----------------------------------------------------------------------------------------------------------------------
+%---------------------------------------------------------------------------------------------------
 
 %-type mac_func_info() :: mac_func() | {hmac, digest_func_info()}
-%	| md4 | md5 | ripemd160 | sha | sha224 | sha256 | sha384 | sha512.
+%    | md4 | md5 | ripemd160 | sha | sha224 | sha256 | sha384 | sha512.
 
 resolve_mac_func({hmac, DigestFunc}) ->
     fun(Key, Data) ->
         %crypto:hmac(DigestFunc, Key, Data)
-        HMAC = crypto:hmac_init(DigestFunc, Key),
-        HMAC1 = crypto:hmac_update(HMAC, Data),
-        crypto:hmac_final(HMAC1)
+        HMAC = hmac_init(DigestFunc, Key),
+        HMAC1 = hmac_update(HMAC, Data),
+        hmac_final(HMAC1)
     end;
 
 resolve_mac_func(MacFunc) when is_function(MacFunc) ->
@@ -158,7 +166,29 @@ resolve_mac_func(sha256) -> resolve_mac_func({hmac, sha256});
 resolve_mac_func(sha384) -> resolve_mac_func({hmac, sha384});
 resolve_mac_func(sha512) -> resolve_mac_func({hmac, sha512}).
 
-%----------------------------------------------------------------------------------------------------------------------
+-ifdef(old_hmac_api).
+hmac_init(Type, Key) ->
+    crypto:hmac_init(Type, Key).
+
+hmac_update(State, Data) ->
+    crypto:hmac_update(State, Data).
+
+hmac_final(State) ->
+    crypto:hmac_final(State).
+
+-else.
+hmac_init(Type, Key) ->
+    crypto:mac_init(hmac, Type, Key).
+
+hmac_update(State, Data) ->
+    crypto:mac_update(State, Data).
+
+hmac_final(State) ->
+    crypto:mac_final(State).
+
+-endif.
+
+%---------------------------------------------------------------------------------------------------
 
 %% Compare two strings or binaries for equality without short-circuits to avoid timing attacks.
 
@@ -190,7 +220,7 @@ compare_secure([X|RestX], [Y|RestY], Result) ->
 compare_secure([], [], Result) ->
     Result == 0.
 
-%----------------------------------------------------------------------------------------------------------------------
+%---------------------------------------------------------------------------------------------------
 
 -spec to_hex_digit(Nyble) -> hex_char() when
     Nyble :: 0 .. 15.

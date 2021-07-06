@@ -66,7 +66,7 @@
 -record(stream, {
     buffer = <<>> :: bytes(),
     current_file_size = 0 :: non_neg_integer(),
-    zstream = undefined :: zlib:zstream()
+    zstream = undefined :: zlib:zstream() | undefined
 }).
 
 

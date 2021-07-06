@@ -151,7 +151,7 @@ is_any_module_whitelisted(Modules) ->
 -spec mocked_current_time_millis() -> time:millis().
 mocked_current_time_millis() ->
     CurrentTimeMillis = current_time_millis(),
-    CallingModules = try throw(dummy) catch _:_ -> [M || {M, _, _, _} <- erlang:get_stacktrace()] end,
+    CallingModules = try throw(dummy) catch _:_:Stacktrace -> [M || {M, _, _, _} <- Stacktrace] end,
     case is_any_module_whitelisted(CallingModules) of
         true -> CurrentTimeMillis;
         false -> meck:passthrough([])

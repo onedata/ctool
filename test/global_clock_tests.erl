@@ -319,7 +319,7 @@ monotonic_timestamp_test_() ->
 monotonicity_and_warnings() ->
     CountAllWarningLogs = fun() ->
         % logger is mocked in setup, warning is on loglevel = 3
-        meck:num_calls(logger, dispatch_log, [3, '_', '_', '_', '_'])
+        meck:num_calls(onedata_logger, dispatch_log, [3, '_', '_', '_', '_'])
     end,
 
     lists:foreach(fun({TimeUnit, MonotonicTimestampFun}) ->
@@ -407,10 +407,10 @@ setup() ->
             meck:passthrough([Node, Module, Function, Args])
     end),
 
-    meck:new(logger, []),
-    meck:expect(logger, should_log, fun(_) -> true end),
-    meck:expect(logger, parse_process_info, fun(_) -> [] end),
-    meck:expect(logger, dispatch_log, fun(_, _, _, _, _) -> ok end).
+    meck:new(onedata_logger, []),
+    meck:expect(onedata_logger, should_log, fun(_) -> true end),
+    meck:expect(onedata_logger, parse_process_info, fun(_) -> [] end),
+    meck:expect(onedata_logger, dispatch_log, fun(_, _, _, _, _) -> ok end).
 
 
 %% @private
@@ -423,7 +423,7 @@ teardown(_) ->
     mochitemp:rmtempdir(TmpPath),
 
     ok = meck:unload(rpc),
-    ok = meck:unload(logger).
+    ok = meck:unload(onedata_logger).
 
 
 %% @private

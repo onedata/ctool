@@ -36,8 +36,7 @@ post_compile(Config, AppFile) ->
                 ok
         end
     catch
-        Error:Reason ->
-            Stacktrace = erlang:get_stacktrace(),
+        Error:Reason:Stacktrace ->
             apply(rebar_log, log, [error, "~s - Failed to set git metadata due to: "
             "~p:~p~nStacktrace:~n~p~n", [?MODULE_STRING, Error, Reason, Stacktrace]]),
             {Error, Reason}

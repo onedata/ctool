@@ -37,7 +37,7 @@
 %% @end
 %%--------------------------------------------------------------------
 -spec verify(cv_api(), onedata:service(), operation(), gri:gri()) ->
-    ok | {errors:error()}.
+    ok | errors:error().
 verify(#cv_api{whitelist = Whitelist} = Cv, Service, Operation, GRI) ->
     case is_operation_whitelisted(Whitelist, Service, Operation, GRI) of
         true -> ok;

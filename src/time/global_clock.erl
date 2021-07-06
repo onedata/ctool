@@ -161,8 +161,8 @@ synchronize_local_with_remote_server(FetchRemoteTimestamp) ->
         throw:{error, _} = Error ->
             ?error("Failed to synchronize with remote clock due to ~w", [Error]),
             error;
-        Class:Reason ->
-            ?error_stacktrace("Failed to synchronize with remote clock - ~w:~p", [Class, Reason]),
+        Class:Reason:Stacktrace ->
+            ?error_stacktrace("Failed to synchronize with remote clock - ~w:~p", [Class, Reason], Stacktrace),
             error
     end.
 
@@ -190,8 +190,8 @@ synchronize_remote_with_local(Node) ->
         throw:{error, _} = Error ->
             ?error("Failed to synchronize node's clock (~p) with local due to ~w", [Node, Error]),
             error;
-        Class:Reason ->
-            ?error_stacktrace("Failed to synchronize node's clock (~p) with local - ~w:~p", [Node, Class, Reason]),
+        Class:Reason:Stacktrace ->
+            ?error_stacktrace("Failed to synchronize node's clock (~p) with local - ~w:~p", [Node, Class, Reason], Stacktrace),
             error
     end.
 
@@ -341,8 +341,8 @@ recover_bias_from_disk() ->
                     true -> {up_to_date, Bias};
                     false -> stale
                 end
-            catch Class:Reason ->
-                ?debug_stacktrace("Cannot parse the time synchronization backup file - ~w:~p", [Class, Reason]),
+            catch Class:Reason:Stacktrace ->
+                ?debug_stacktrace("Cannot parse the time synchronization backup file - ~w:~p", [Class, Reason], Stacktrace),
                 not_found
             end;
         Other ->

@@ -203,8 +203,8 @@ pmap(Fun, Elements) ->
         spawn(fun() ->
             Result = try
                 Fun(Element)
-            catch Type:Reason ->
-                {'$pmap_error', self(), Type, Reason, erlang:get_stacktrace()}
+            catch Type:Reason:Stacktrace ->
+                {'$pmap_error', self(), Type, Reason, Stacktrace}
             end,
             Parent ! {Ref, self(), Result}
         end)
