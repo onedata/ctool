@@ -236,7 +236,7 @@ example_result_mappers() ->
 
 
 gen_example_argument_value_builder() ->
-    case rand:uniform(5) of
+    case rand:uniform(6) of
         1 -> #atm_task_argument_value_builder{
             type = iterated_item, recipe = lists_utils:random_element([
                 undefined,
@@ -257,6 +257,9 @@ gen_example_argument_value_builder() ->
             type = store_credentials, recipe = ?RAND_STR()
         };
         5 -> #atm_task_argument_value_builder{
+            type = single_value_store_content, recipe = ?RAND_STR()
+        };
+        6 -> #atm_task_argument_value_builder{
             type = onedatafs_credentials, recipe = undefined
         }
     end.
