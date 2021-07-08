@@ -149,6 +149,8 @@ get_port_from_url(URL, Hostname) ->
 %% @private
 -spec verify_hackney_result_correctness(string(), binary()) -> ok | errors:error().
 verify_hackney_result_correctness(Host, Path) ->
+    %% @TODO: VFS-7682 - improve url parsing to get rid of such hacks
+    %% @TODO: VFS-7682 - maybe use erlang's url parser?
     case Host of
         "http" -> error(badarg);
         "https" -> error(badarg);

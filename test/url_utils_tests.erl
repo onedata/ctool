@@ -84,7 +84,7 @@
     {<<" https://hostname:1234  ">>, ?URL_MAP(https, <<"hostname">>, 1234, <<>>, <<>>)},
     {<<" https://hostname:1234/path  ">>, ?URL_MAP(https, <<"hostname">>, 1234, <<"/path">>, <<>>)},
     
-    %% TODO: VFS-7682 - move following cases to INCORRECT_URL_BATCH, as they should cause an error
+    %% @TODO: VFS-7682 - move following cases to INCORRECT_URL_BATCH, as they should cause an error
     {<<"hostname:1234">>, ?URL_MAP(http, <<"hostname">>, 1234, <<>>, <<>>)},
     {<<"hostname:1234/path">>, ?URL_MAP(http, <<"hostname">>, 1234, <<"/path">>, <<>>)}
 ]).
@@ -114,7 +114,12 @@
     <<"unknown://hostname?key=value">>,
     <<"unknown://hostname/path?key=value">>,
     <<"unknown://hostname:1234?key=value">>,
-    <<"unknown://hostname:1234/path?key=value">>
+    <<"unknown://hostname:1234/path?key=value">>,
+
+    <<"htp:/hostname.org?key=value">>,
+    <<"htp:/hostname.org/path?key=value">>,
+    <<"htp:/hostname.org:1234?key=value">>,
+    <<"htp:/hostname.org:1234/path?key=value">>
 ]).
 
 
@@ -180,5 +185,8 @@ validate_incorrect_url_test_() ->
     [
         ?_assertEqual(false, url_utils:is_valid(<<"abc://hostname.org">>)),
         ?_assertEqual(false, url_utils:is_valid(<<"http://hostname.org:port">>)),
-        ?_assertEqual(false, url_utils:is_valid(<<"http:/hostname.org">>))
+        ?_assertEqual(false, url_utils:is_valid(<<"http:/hostname.org">>)),
+        ?_assertEqual(false, url_utils:is_valid(<<"htp://hostname.org">>)),
+        %% @TODO: VFS-7682 - this should cause an error but can be fixed only after the s3 charts are
+        ?_assertEqual(true, url_utils:is_valid(<<"htp:/hostname.org">>))
     ].
