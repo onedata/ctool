@@ -48,9 +48,9 @@ pre_init_per_suite(_Suite, Config, State) ->
     try
         ok = test_utils:load_utility_modules(Config),
         {Config, State}
-    catch Class:Reason ->
+    catch Class:Reason:Stacktrace ->
         ct:print("Failed to load modules during init_per_suite - ~w:~p~nStacktrace: ~s", [
-            Class, Reason, lager:pr_stacktrace(erlang:get_stacktrace())
+            Class, Reason, lager:pr_stacktrace(Stacktrace)
         ]),
         error(failed_to_load_modules)
     end.

@@ -209,8 +209,8 @@ get_cpu_stats(CpuStats) ->
                 {[], []}
         end
     catch
-        T:M ->
-            ?error_stacktrace("Cannot calculate CPU usage - ~p:~p", [T, M]),
+        T:M:Stacktrace ->
+            ?error_stacktrace("Cannot calculate CPU usage - ~p:~p", [T, M], Stacktrace),
             {[], []}
     end.
 
@@ -283,8 +283,8 @@ get_memory_stats() ->
                 []
         end
     catch
-        T:M ->
-            ?error_stacktrace("Cannot calculate memory usage - ~p:~p", [T, M]),
+        T:M:Stacktrace ->
+            ?error_stacktrace("Cannot calculate memory usage - ~p:~p", [T, M], Stacktrace),
             []
     end.
 
@@ -363,8 +363,8 @@ get_network_stats(NetworkStats, TimeElapsed) ->
                 {[], []}
         end
     catch
-        T:M ->
-            ?error_stacktrace("Cannot calculate network usage - ~p:~p", [T, M]),
+        T:M:Stacktrace ->
+            ?error_stacktrace("Cannot calculate network usage - ~p:~p", [T, M], Stacktrace),
             {[], []}
     end.
 

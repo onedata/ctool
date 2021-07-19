@@ -46,6 +46,12 @@ parse(Uri) ->
     #hackney_url{
         scheme = Scheme, host = Host, port = Port, path = Path, qs = QueryString
     } = hackney_url:parse_url(Uri),
+
+    % Function hackney_url:parse/1 does not verify if given Uri
+    % is formatted correctly, and produces bad results.
+    % Therefore, some additional verification is needed.
+    verify_hackney_result_correctness(Host, Path),
+
     #{
         scheme => Scheme,
         host => list_to_binary(Host),
@@ -138,3 +144,21 @@ get_port_from_url(URL, Hostname) ->
         _ ->
             undefined
     end.
+
+
+%% @private
+-spec verify_hackney_result_correctness(string(), binary()) -> ok | errors:error().
+verify_hackney_result_correctness(Host, Path) ->
+    %% @TODO: VFS-7682 - improve url parsing to get rid of such hacks
+    %% @TODO: VFS-7682 - maybe use erlang's url parser?
+    case Host of
+        "http" -> error(badarg);
+        "https" -> error(badarg);
+        _ -> ok
+    end,
+
+    case Path of
+        <<"//", _Rest/binary>> -> error(badarg);
+        _ -> ok
+    end.
+

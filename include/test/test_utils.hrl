@@ -20,7 +20,9 @@
 -define(TEMP_DIR, "/tmp").
 
 %% Returns absolute path to given file in the test data directory
--define(TEST_FILE(Config, X), filename:join(test_utils:data_dir(Config), X)).
+-define(TEST_FILE(Config, Path), filename:join(test_utils:data_dir(Config), Path)).
+
+-define(TEST_RELEASE_ETC_DIR(Path), filename:join("/root/bin/node/etc", Path)).
 
 -define(DEFAULT_ENV_DESCRIPTION, "env_desc.json").
 

@@ -9,7 +9,7 @@
 %%% @end
 %%%-------------------------------------------------------------------
 
--module(logger).
+-module(onedata_logger).
 
 -export([should_log/1, dispatch_log/5, parse_process_info/1, log_with_rotation/4]).
 -export([set_loglevel/1, set_console_loglevel/1, set_include_stacktrace/1]).
@@ -32,11 +32,11 @@ should_log(LevelAsInt) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec dispatch_log(LoglevelAsInt :: integer(), Metadata :: [tuple()], Format :: string(),
-    Args :: [term()], IncludeStacktrace :: boolean()) -> ok | {error, lager_not_running}.
-dispatch_log(LoglevelAsInt, Metadata, Format, Args, IncludeStacktrace) ->
+    Args :: [term()], Stacktrace :: list() | undefined) -> ok | {error, lager_not_running}.
+dispatch_log(LoglevelAsInt, Metadata, Format, Args, Stacktrace) ->
     Severity = loglevel_int_to_atom(LoglevelAsInt),
     lager:log(Severity, Metadata, "~ts", [
-        compute_message(Format, Args, IncludeStacktrace)
+        compute_message(Format, Args, Stacktrace)
     ]).
 
 %%--------------------------------------------------------------------
@@ -194,7 +194,6 @@ log_with_rotation(LogFile, Format, Args, MaxSize) ->
         _ ->
             ok
     end,
-
     file:write_file(LogFile,
         io_lib:format("~n~s, ~s: " ++ Format, [Date, Time | Args]), [append]),
     ok.
@@ -207,15 +206,15 @@ log_with_rotation(LogFile, Format, Args, MaxSize) ->
 %% @private @doc Computes a log message string, possibly including stacktrace.
 %% @end
 %%--------------------------------------------------------------------
--spec compute_message(string(), list(), boolean()) -> string().
-compute_message(Format, Args, IncludeStackTrace) ->
-    {Format2, Args2} = case (IncludeStackTrace and get_include_stacktrace()) of
+-spec compute_message(string(), list(), list() | undefined) -> string().
+compute_message(Format, Args, Stacktrace) ->
+    {Format2, Args2} = case (get_include_stacktrace() andalso Stacktrace =/= undefined) of
         false ->
             {Format, Args};
         true ->
             {
                     Format ++ "~nStacktrace:~s",
-                    Args ++ [lager:pr_stacktrace(erlang:get_stacktrace())]
+                    Args ++ [iolist_to_binary(lager:pr_stacktrace(Stacktrace))]
             }
     end,
     lists:flatten(io_lib:format(Format2, Args2)).

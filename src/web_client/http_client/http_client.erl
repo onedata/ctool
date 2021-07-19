@@ -32,6 +32,19 @@
 
 -include_lib("hackney/include/hackney_lib.hrl").
 
+%% API - convenience functions
+-export([get/1, get/2, get/3, get/4]).
+-export([post/1, post/2, post/3, post/4]).
+-export([put/1, put/2, put/3, put/4]).
+-export([patch/1, patch/2, patch/3, patch/4]).
+-export([delete/1, delete/2, delete/3, delete/4]).
+-export([request/1, request/2, request/3, request/4]).
+% Performs the request
+-export([request/5]).
+% Performs the request, but instead the body return the ref for streaming.
+-export([request_return_stream/5]).
+
+%% @formatter:off
 % Allowed methods - standard HTTP/1.1 and some more
 -type method() :: delete | get | head | post | put | connect | options | trace |
 copy | lock | mkcol | move | propfind | proppatch | search | unlock | %% WEBDAV
@@ -117,25 +130,20 @@ binary() |
 {socks5, Host :: binary(), Port :: binary()} |
 %% Host and Port to connect to
 {connect, Host :: binary(), Port :: binary()}.
+%% @formatter:on
 
 % Options passed to hackney
 -type hackney_opts() :: [term()].
 
-%% API - convenience functions
--export([get/1, get/2, get/3, get/4]).
--export([post/1, post/2, post/3, post/4]).
--export([put/1, put/2, put/3, put/4]).
--export([patch/1, patch/2, patch/3, patch/4]).
--export([delete/1, delete/2, delete/3, delete/4]).
--export([request/1, request/2, request/3, request/4]).
-% Performs the request
--export([request/5]).
-% Performs the request, but instead the body return the ref for streaming.
--export([request_return_stream/5]).
-
 -export_type([method/0, url/0, headers/0, body/0, request_body/0, code/0, opts/0,
     response/0, secure_flag/0, opt/0, ssl_opt/0, proxy_opt/0, hackney_opts/0]).
 
+%% @TODO VFS-7795 do we still need custom hostname checks in OTP 24?
+%% @TODO VFS-7795 introduce trusted cacerts location as env variable so its reused automatically
+%% @TODO VFS-7795 think of a better way to make follow_redirects option work with hackney
+%%                (currently it does not due to our custom SSL opts that include the original
+%%                hostname as server name indication and hostname check target - after the redirection
+%%                to another host, verification always fails as the SSL opts remain the same).
 
 %%%===================================================================
 %%% API
@@ -444,7 +452,7 @@ do_request(Method, URL, Headers, Body, Opts) ->
         true ->
             SslOpts = proplists:get_value(ssl_options, Opts, []),
             % resolve SSL opts based on secure flag.
-            store_option({ssl_options, secure_ssl_opts:expand(URL, SslOpts)}, Opts2);
+            store_option({ssl_options, secure_ssl_opts:expand(SslOpts)}, Opts2);
         false ->
             Opts2
     end,

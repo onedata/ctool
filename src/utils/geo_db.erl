@@ -81,10 +81,11 @@ ensure_db_loaded(DbType) ->
                         [Error, ?LOAD_ATTEMPT_BACKOFF_SEC]
                     ),
                     {ok, not_loaded, ?LOAD_ATTEMPT_BACKOFF_SEC}
-            catch Type:Reason ->
+            catch Type:Reason:Stacktrace ->
                 ?error_stacktrace(
                     "Unexpected error when loading GEO DB (~p) - ~p:~p, next attempt in ~B seconds",
-                    [DbType, Type, Reason, ?LOAD_ATTEMPT_BACKOFF_SEC]
+                    [DbType, Type, Reason, ?LOAD_ATTEMPT_BACKOFF_SEC],
+                    Stacktrace
                 ),
                 {ok, not_loaded, ?LOAD_ATTEMPT_BACKOFF_SEC}
             end

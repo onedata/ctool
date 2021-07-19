@@ -31,35 +31,35 @@
 run({Module, Function, Arity}, RequestBody) ->
     try
         RequestBody()
-    catch
-        Reason ->
-            %% Manually thrown error, normal interrupt case.
-            ErrorDetails = get_error_details(Reason),
-            ?debug_stacktrace("Error in function ~p:~p/~p: ~p",
-                [Module, Function, Arity, ErrorDetails]),
-            {error, ErrorDetails};
-        error:{badmatch, Reason} ->
+    catch 
+        error:{badmatch, Reason}:Stacktrace ->
             %% Bad Match assertion - something went wrong,
             %% but it could be expected.
             ErrorDetails = get_error_details(Reason),
             ?warning("Error in function ~p:~p/~p: ~p",
                 [Module, Function, Arity, ErrorDetails]),
             ?debug_stacktrace("Error in function ~p:~p/~p: ~p",
-                [Module, Function, Arity, ErrorDetails]),
+                [Module, Function, Arity, ErrorDetails], Stacktrace),
             {error, ErrorDetails};
-        error:{case_clause, Reason} ->
+        error:{case_clause, Reason}:Stacktrace ->
             %% Case clause assertion - something went seriously wrong
             %% and we should know about it.
             ErrorDetails = get_error_details(Reason),
             ?error_stacktrace("Error in function ~p:~p/~p: ~p",
-                [Module, Function, Arity, ErrorDetails]),
+                [Module, Function, Arity, ErrorDetails], Stacktrace),
             {error, ErrorDetails};
-        error:UnknownError ->
+        error:UnknownError:Stacktrace ->
             %% Unknown error - something went horribly wrong.
             %% This should not happen.
             ?error_stacktrace("Error in function ~p:~p/~p: ~p",
-                [Module, Function, Arity, UnknownError]),
-            {error, UnknownError}
+                [Module, Function, Arity, UnknownError], Stacktrace),
+            {error, UnknownError};
+        _:Reason:Stacktrace ->
+            %% Manually thrown error, normal interrupt case.
+            ErrorDetails = get_error_details(Reason),
+            ?debug_stacktrace("Error in function ~p:~p/~p: ~p",
+                [Module, Function, Arity, ErrorDetails], Stacktrace),
+            {error, ErrorDetails}
     end.
 
 %%--------------------------------------------------------------------

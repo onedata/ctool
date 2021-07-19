@@ -158,7 +158,7 @@ create_temp_ca_dir(Hostname) ->
     ConfigFile = filename:join(Root, "openssl.cfg"),
     IndexFile = filename:join(Root, "index.txt"),
     SerialFile = filename:join(Root, "serial"),
-    RandomSerial = httpd_util:integer_to_hexlist(999999999 + rand:uniform(999999999)),
+    RandomSerial = integer_to_list(999999999 + rand:uniform(999999999), 16),
     file:write_file(ConfigFile, openssl_cnf(Root, Hostname)),
     file:write_file(IndexFile, <<"">>),
     file:write_file(SerialFile, RandomSerial),

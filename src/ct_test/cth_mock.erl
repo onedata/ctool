@@ -64,11 +64,11 @@ post_end_per_suite(_Suite, Config, Return, State) ->
         catch
             _:{badmatch, {badrpc, nodedown}} ->
                 ok; % Test can kill nodes
-            Type:Reason ->
+            Type:Reason:Stacktrace ->
                 ct:print(
                     "WARNING: Stopping mock manager on node ~p failed - ~p:~p~n"
                     "Stacktrace: ~p", [
-                        Node, Type, Reason, erlang:get_stacktrace()
+                        Node, Type, Reason, Stacktrace
                     ])
         end
     end, mock_manager_nodes(Config)),

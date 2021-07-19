@@ -108,20 +108,20 @@ prepare_test_environment(Config, TestModule, Apps) ->
                 rebar_git_plugin:get_git_metadata()
             ])
         catch
-            E11:E12 ->
+            E11:E12:Stk11 ->
                 ct:print("Preparation of environment failed ~p:~p~n" ++
                     "For details, check:~n" ++
                     "    prepare_test_environment_error.log~n" ++
                     "    prepare_test_environment.log~n" ++
-                    "Stacktrace: ~p", [E11, E12, erlang:get_stacktrace()]),
+                    "Stacktrace: ~p", [E11, E12, Stk11]),
                 clean_environment(EnvDesc),
                 {fail, {init_failed, E11, E12}}
         end
 
     catch
-        E21:E22 ->
+        E21:E22:Stk21 ->
             ct:print("Prepare of environment failed ~p:~p~n~p",
-                [E21, E22, erlang:get_stacktrace()]),
+                [E21, E22, Stk21]),
             {fail, {init_failed, E21, E22}}
     end.
 
@@ -148,9 +148,9 @@ clean_environment(Config, Apps) ->
     StopStatus = try
         maybe_gather_cover(Config, Apps)
     catch
-        E1:E2 ->
+        E1:E2:Stacktrace ->
             ct:print("Environment cleanup failed - ~p:~p~n" ++
-            "Stacktrace: ~p", [E1, E2, erlang:get_stacktrace()]),
+            "Stacktrace: ~p", [E1, E2, Stacktrace]),
             E2
     end,
 
@@ -321,11 +321,11 @@ stop_applications(Config, Apps) ->
                 catch
                     _:{badmatch, {badrpc, nodedown}} ->
                         ok; % Test can kill nodes
-                    Type:Reason ->
+                    Type:Reason:Stacktrace ->
                         ct:print(
                             "WARNING: Stopping application ~p on node ~p failed - ~p:~p~n"
                             "Stacktrace: ~p", [
-                                AppName, Node, Type, Reason, erlang:get_stacktrace()
+                                AppName, Node, Type, Reason, Stacktrace
                             ])
                 end
             end, Nodes)
