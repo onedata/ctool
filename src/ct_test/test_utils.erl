@@ -252,7 +252,7 @@ get_env(Node, Application, Name) ->
 -spec set_env(Nodes :: node() | [node()], Application :: atom(),
     Name :: atom(), Value :: term()) -> ok.
 set_env(Nodes, Application, Name, Value) ->
-    {Results, []} = rpc:multicall(as_list(Nodes), application, set_env,
+    {Results, []} = utils:rpc_multicall(as_list(Nodes), application, set_env,
         [Application, Name, Value]),
     true = lists:all(fun(X) -> X == ok end, Results),
     ok.

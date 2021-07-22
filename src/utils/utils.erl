@@ -28,6 +28,7 @@
 -export([ensure_list/1]).
 -export([to_atom/1, to_boolean/1]).
 -export([encode_pid/1, decode_pid/1]).
+-export([rpc_multicall/4, rpc_multicall/5]).
 
 -type time_unit() :: us | ms | s | min | h.
 
@@ -415,6 +416,44 @@ encode_pid(Pid) ->
 decode_pid(Pid) ->
     % todo remove after VFS-3657
     list_to_pid(binary_to_list(Pid)).
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Sometimes, rpc:multicall may crash if the list of nodes is empty
+%% (as of OTP 24.0.2), using this wrapper mitigates the risk of a crash.
+%% @end
+%%--------------------------------------------------------------------
+-spec rpc_multicall(Nodes, Module, Function, Args) -> {ResL, BadNodes} when
+    Nodes :: [node()],
+    Module :: module(),
+    Function :: atom(),
+    Args :: [term()],
+    ResL :: [term()],
+    BadNodes :: [node()];
+    (Module, Function, Args, Timeout) -> {ResL, BadNodes} when
+    Module :: module(),
+    Function :: atom(),
+    Args :: [term()],
+    Timeout :: timeout(),
+    ResL :: [term()],
+    BadNodes :: [node()].
+rpc_multicall(Nodes, Module, Function, Args) ->
+    rpc_multicall(Nodes, Module, Function, Args, infinity).
+
+-spec rpc_multicall(Nodes, Module, Function, Args, timeout()) -> {ResL, BadNodes} when
+    Nodes :: [node()],
+    Module :: module(),
+    Function :: atom(),
+    Args :: [term()],
+    ResL :: [term()],
+    BadNodes :: [node()].
+rpc_multicall([], _, _, _, _) ->
+    {[], []};
+rpc_multicall([ThisNode], Module, Function, Args, infinity) when ThisNode =:= node() ->
+    {[erlang:apply(Module, Function, Args)], []};
+rpc_multicall(Nodes, Module, Function, Args, Timeout) ->
+    rpc:multicall(Nodes, Module, Function, Args, Timeout).
 
 %%%===================================================================
 %%% Internal functions

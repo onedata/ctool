@@ -209,7 +209,7 @@ init_cluster_resizing(AllNodes) ->
 finalize_cluster_resizing() ->
     % Finalize on all nodes. Use nodes from current and future rings as they can differ.
     Nodes = lists:usort(get_all_nodes() ++ get_all_nodes(?FUTURE_RING)),
-    {Ans, BadNodes} = FullAns = rpc:multicall(Nodes, ?MODULE, finalize_cluster_resizing_locally, []),
+    {Ans, BadNodes} = FullAns = utils:rpc_multicall(Nodes, ?MODULE, finalize_cluster_resizing_locally, []),
     Errors = lists:filter(fun(NodeAns) -> NodeAns =/= ok end, Ans),
     case {Errors, BadNodes} of
         {[], []} ->
@@ -244,7 +244,7 @@ init_ring(Nodes, NodesAssignedPerLabel) ->
 
 -spec replicate_ring_to_nodes([node()], ring_generation(), ring()) -> ok | {error, term()}.
 replicate_ring_to_nodes(Nodes, RingGeneration, Ring) ->
-    {Ans, BadNodes} = FullAns = rpc:multicall(Nodes, ?MODULE, set_ring, [RingGeneration, Ring]),
+    {Ans, BadNodes} = FullAns = utils:rpc_multicall(Nodes, ?MODULE, set_ring, [RingGeneration, Ring]),
     Errors = lists:filter(fun(NodeAns) -> NodeAns =/= ok end, Ans),
     case {Errors, BadNodes} of
         {[], []} ->
