@@ -37,14 +37,14 @@ helpers_test_() ->
 start() ->
     node_cache:init(),
     consistent_hashing:cleanup(),
-    meck:new(rpc, [passthrough, unstick]),
-    meck:expect(rpc, multicall, fun(_, consistent_hashing, Fun, Args) ->
+    meck:new(utils, [passthrough]),
+    meck:expect(utils, rpc_multicall, fun(_, consistent_hashing, Fun, Args) ->
         {[apply(consistent_hashing, Fun, Args)], []}
     end).
 
 stop(_) ->
     node_cache:destroy(),
-    meck:unload(rpc).
+    meck:unload(utils).
 
 chash_should_create_single_node_ring() ->
     ?assertEqual(ok, consistent_hashing:init([node()], 1)).
