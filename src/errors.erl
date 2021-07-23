@@ -86,7 +86,7 @@
 
 -type oz_worker() :: basic_auth_not_supported | basic_auth_disabled
 | subdomain_delegation_not_supported | subdomain_delegation_disabled
-| protected_group
+| protected_group | {atm_lambda_in_use, AtmWorkflowIds :: [gri:entity_id()]}
 | {cannot_remove_last_owner, gri:entity_type(), gri:entity_id()}
 | {cannot_delete_entity, gri:entity_type(), gri:entity_id()}
 | cannot_add_relation_to_self
@@ -791,6 +791,16 @@ to_json(?ERROR_PROTECTED_GROUP) -> #{
     <<"id">> => <<"protectedGroup">>,
     <<"description">> => <<"Specified group is protected and cannot be deleted.">>
 };
+to_json(?ERROR_ATM_LAMBDA_IN_USE(AtmWorkflowSchemas)) -> #{
+    <<"id">> => <<"atmLambdaInUse">>,
+    <<"details">> => #{
+        <<"atmWorkflowSchemas">> => AtmWorkflowSchemas
+    },
+    <<"description">> => ?FMT(
+        "This lambda cannot be removed because it is used by the following workflow schemas: ~s.",
+        [join_values_with_commas(AtmWorkflowSchemas)]
+    )
+};
 to_json(?ERROR_CANNOT_REMOVE_LAST_OWNER(EntityType, EntityId)) -> #{
     <<"id">> => <<"cannotRemoveLastOwner">>,
     <<"details">> => #{
@@ -1423,6 +1433,9 @@ from_json(#{<<"id">> := <<"subdomainDelegationDisabled">>}) ->
 from_json(#{<<"id">> := <<"protectedGroup">>}) ->
     ?ERROR_PROTECTED_GROUP;
 
+from_json(#{<<"id">> := <<"atmLambdaInUse">>, <<"details">> := #{<<"atmWorkflowSchemas">> := AtmWorkflowSchemas}}) ->
+    ?ERROR_ATM_LAMBDA_IN_USE(AtmWorkflowSchemas);
+
 from_json(#{<<"id">> := <<"cannotRemoveLastOwner">>, <<"details">> := #{<<"entityType">> := EntType, <<"entityId">> := EntId}}) ->
     ?ERROR_CANNOT_REMOVE_LAST_OWNER(binary_to_existing_atom(EntType, utf8), EntId);
 
@@ -1709,6 +1722,7 @@ to_http_code(?ERROR_BASIC_AUTH_DISABLED) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_SUBDOMAIN_DELEGATION_NOT_SUPPORTED) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_SUBDOMAIN_DELEGATION_DISABLED) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_PROTECTED_GROUP) -> ?HTTP_403_FORBIDDEN;
+to_http_code(?ERROR_ATM_LAMBDA_IN_USE(_)) -> ?HTTP_403_FORBIDDEN;
 to_http_code(?ERROR_CANNOT_REMOVE_LAST_OWNER(_, _)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_CANNOT_DELETE_ENTITY(_, _)) -> ?HTTP_500_INTERNAL_SERVER_ERROR;
 to_http_code(?ERROR_CANNOT_ADD_RELATION_TO_SELF) -> ?HTTP_400_BAD_REQUEST;
