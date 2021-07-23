@@ -54,6 +54,11 @@
         %% CLOCK SYNCHRONIZATION
         %% ===================================================================
 
+        % Causes the clock bias corrections to be ignored - the bias will not
+        % change when this setting is set to true, but the previously existing
+        % bias will be still applied. Note that this does not turn off the
+        % synchronization, only ignores the corrections.
+        {clock_sync_ignore_bias_corrections, false},
         % How many times a synchronization request is repeated to
         % estimate clocks bias and communication delay.
         {clock_sync_request_repeats, 5},

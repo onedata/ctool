@@ -40,11 +40,11 @@
 build_token_caveats_test_() ->
     {foreach,
         fun() ->
-            clock_freezer_mock:setup_locally([?MODULE]),
+            clock_freezer_mock:setup_for_eunit([?MODULE]),
             node_cache:init()
         end,
         fun(_) ->
-            clock_freezer_mock:teardown_locally(),
+            clock_freezer_mock:teardown_for_eunit(),
             node_cache:destroy()
         end,
         [

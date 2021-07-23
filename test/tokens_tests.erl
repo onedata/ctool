@@ -533,11 +533,11 @@ filter_caveats_test() ->
 infer_ttl_and_expiration_timestamp_test_() ->
     {setup,
         fun() ->
-            clock_freezer_mock:setup_locally([caveats]),
+            clock_freezer_mock:setup_for_eunit([caveats]),
             node_cache:init()
         end,
         fun(_) ->
-            clock_freezer_mock:teardown_locally(),
+            clock_freezer_mock:teardown_for_eunit(),
             node_cache:destroy()
         end,
         fun() ->
