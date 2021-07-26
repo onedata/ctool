@@ -16,6 +16,7 @@
 
 -include("oz/oz_spaces.hrl").
 -include("oz/oz_providers.hrl").
+-include_lib("ctool/include/http/headers.hrl").
 -include_lib("eunit/include/eunit.hrl").
 
 %%%===================================================================
@@ -66,9 +67,9 @@ setup() ->
         (client, "/provider", patch, <<"body">>) ->
             {ok, 204, response_headers, response_body};
         (client, "/provider/spaces", post, <<"body">>) ->
-            {ok, 201, #{<<"Location">> => <<"https://onedata.org/api/v3/onezone/spaces/spaceId">>}, response_body};
+            {ok, 201, #{?HDR_LOCATION => <<"https://onedata.org/api/v3/onezone/spaces/spaceId">>}, response_body};
         (client, "/provider/spaces/support", post, <<"body">>) ->
-            {ok, 201, #{<<"Location">> => <<"https://onedata.org/api/v3/onezone/provider/spaces/spaceId">>},
+            {ok, 201, #{?HDR_LOCATION => <<"https://onedata.org/api/v3/onezone/provider/spaces/spaceId">>},
                 response_body}
     end),
     meck:expect(oz_endpoint, request, fun

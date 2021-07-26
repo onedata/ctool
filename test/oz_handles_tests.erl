@@ -15,6 +15,7 @@
 -ifdef(TEST).
 
 -include("oz/oz_handles.hrl").
+-include_lib("ctool/include/http/headers.hrl").
 -include_lib("eunit/include/eunit.hrl").
 
 %%%===================================================================
@@ -46,7 +47,7 @@ setup() ->
     end),
     meck:expect(oz_endpoint, request, fun
         (client, "/handles", post, <<"body">>) ->
-            {ok, 201, #{<<"Location">> => <<"https://onedata.org/api/v3/onezone/handles/handleId">>}, response_body}
+            {ok, 201, #{?HDR_LOCATION => <<"https://onedata.org/api/v3/onezone/handles/handleId">>}, response_body}
     end).
 
 
