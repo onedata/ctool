@@ -94,7 +94,17 @@ end).
 -define(assert(ExpressionToCheck, Attempts), ?assert(ExpressionToCheck, Attempts, timer:seconds(1))).
 % do not use literal 'true' atom to avoid warnings for clauses that cannot match,
 % even if the expression is a constant or is known to be boolean-only.
--define(assert(ExpressionToCheck, Attempts, Interval), ?assertEqual(is_process_alive(self()), ExpressionToCheck, Attempts, Interval)).
+-define(assert(ExpressionToCheck, Attempts, Interval),
+    ?assertEqual(is_process_alive(self()), ExpressionToCheck, Attempts, Interval)).
+
+
+-undef(assertNot).
+-define(assertNot(ExpressionToCheck), ?assertNot(ExpressionToCheck, 1)).
+-define(assertNot(ExpressionToCheck, Attempts), ?assertNot(ExpressionToCheck, Attempts, timer:seconds(1))).
+% do not use literal 'false' atom to avoid warnings for clauses that cannot match,
+% even if the expression is a constant or is known to be boolean-only.
+-define(assertNot(ExpressionToCheck, Attempts, Interval),
+    ?assertEqual(not is_process_alive(self()), ExpressionToCheck, Attempts, Interval)).
 
 
 -define(assertReceivedMatch(Guard),
