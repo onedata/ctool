@@ -299,7 +299,8 @@ store_bias(local_clock, Bias) ->
     case ctool:get_env(clock_sync_ignore_bias_corrections, false) of
         true ->
             ?warning("Ignoring clock bias correction (forced in config)");
-        false ->% log on info level upon the first synchronization
+        false ->
+            % log on info level upon the first synchronization
             case is_synchronized() of
                 false -> ?info("Local clock has been synchronized, current bias: ~Bms", [Bias]);
                 true -> ?debug("Local clock has been synchronized, current bias: ~Bms", [Bias])
