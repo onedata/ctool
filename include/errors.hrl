@@ -152,6 +152,7 @@
 % Subdomain delegation is disabled for given Oneprovider
 -define(ERROR_SUBDOMAIN_DELEGATION_DISABLED, {error, subdomain_delegation_disabled}).
 -define(ERROR_PROTECTED_GROUP, {error, protected_group}).
+-define(ERROR_ATM_LAMBDA_IN_USE(AtmWorkflowSchemas), {error, {atm_lambda_in_use, AtmWorkflowSchemas}}).
 -define(ERROR_CANNOT_REMOVE_LAST_OWNER(EntityType, EntityId), {error, {cannot_remove_last_owner, EntityType, EntityId}}).
 -define(ERROR_CANNOT_DELETE_ENTITY(EntityType, EntityId), {error, {cannot_delete_entity, EntityType, EntityId}}).
 -define(ERROR_CANNOT_ADD_RELATION_TO_SELF, {error, cannot_add_relation_to_self}).
