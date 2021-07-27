@@ -13,7 +13,7 @@
 -ifndef(OZ_RUNNER_HRL).
 -define(OZ_RUNNER_HRL, 1).
 
--include_lib("ctool/include/http/headers.hrl").
+-include("http/headers.hrl").
 
 -define(run(RequestBody),
     begin
