@@ -13,6 +13,8 @@
 -ifndef(OZ_RUNNER_HRL).
 -define(OZ_RUNNER_HRL, 1).
 
+-include("http/headers.hrl").
+
 -define(run(RequestBody),
     begin
         {current_function, CurrentFunction} = process_info(self(), current_function),

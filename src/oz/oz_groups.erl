@@ -43,7 +43,7 @@ create(Auth, Parameters) ->
         Body = json_utils:encode_deprecated(Parameters),
         {ok, 201, ResponseHeaders, _ResponseBody} =
             oz_endpoint:request(Auth, URN, post, Body),
-        GroupId = http_utils:last_url_part(maps:get(<<"Location">>, ResponseHeaders)),
+        GroupId = http_utils:last_url_part(maps:get(?HDR_LOCATION, ResponseHeaders)),
         {ok, GroupId}
     end).
 
@@ -352,7 +352,7 @@ join_group(Auth, GroupId, Parameters) ->
         Body = json_utils:encode_deprecated(Parameters),
         {ok, 201, ResponseHeaders, _ResponseBody} =
             oz_endpoint:request(Auth, URN, post, Body),
-        NestedGroupId = http_utils:last_url_part(maps:get(<<"Location">>, ResponseHeaders)),
+        NestedGroupId = http_utils:last_url_part(maps:get(?HDR_LOCATION, ResponseHeaders)),
         {ok, NestedGroupId}
     end).
 
@@ -385,7 +385,7 @@ create_space(Auth, GroupId, Parameters) ->
         Body = json_utils:encode_deprecated(Parameters),
         {ok, 201, ResponseHeaders, _ResponseBody} =
             oz_endpoint:request(Auth, URN, post, Body),
-        SpaceId = http_utils:last_url_part(maps:get(<<"Location">>, ResponseHeaders)),
+        SpaceId = http_utils:last_url_part(maps:get(?HDR_LOCATION, ResponseHeaders)),
         {ok, SpaceId}
     end).
 
@@ -403,7 +403,7 @@ join_space(Auth, GroupId, Parameters) ->
         Body = json_utils:encode_deprecated(Parameters),
         {ok, 201, ResponseHeaders, _ResponseBody} =
             oz_endpoint:request(Auth, URN, post, Body),
-        SpaceId = http_utils:last_url_part(maps:get(<<"Location">>, ResponseHeaders)),
+        SpaceId = http_utils:last_url_part(maps:get(?HDR_LOCATION, ResponseHeaders)),
         {ok, SpaceId}
     end).
 

@@ -50,7 +50,7 @@ create(Auth, Parameters) ->
         Body = json_utils:encode_deprecated(Parameters),
         {ok, 201, ResponseHeaders, _ResponseBody} =
             oz_endpoint:request(Auth, URN, post, Body),
-        SpaceId = http_utils:last_url_part(maps:get(<<"Location">>, ResponseHeaders)),
+        SpaceId = http_utils:last_url_part(maps:get(?HDR_LOCATION, ResponseHeaders)),
         {ok, SpaceId}
     end).
 
