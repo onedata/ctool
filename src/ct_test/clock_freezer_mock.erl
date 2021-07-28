@@ -27,8 +27,8 @@
 -author("Lukasz Opiola").
 
 %% API
--export([setup_locally/1, teardown_locally/0]).
--export([setup_on_nodes/2, teardown_on_nodes/1]).
+-export([setup_for_eunit/1, teardown_for_eunit/0]).
+-export([setup_for_ct/2, teardown_for_ct/1]).
 -export([simulate_seconds_passing/1]).
 -export([simulate_millis_passing/1]).
 -export([set_current_time_millis/1]).
@@ -42,35 +42,34 @@
 %%% API
 %%%===================================================================
 
--spec setup_locally([atom()]) -> ok.
-setup_locally(WhitelistedModules) ->
-    set_target_nodes([node()]),
-    set_whitelisted_modules_on_target_nodes(WhitelistedModules),
-    set_current_time_millis(starting_frozen_time()),
+-spec setup_for_eunit([atom()]) -> ok.
+setup_for_eunit(WhitelistedModules) ->
+    setup_common([node()], WhitelistedModules),
     ok = meck:new(native_node_clock, [passthrough]),
     ok = meck:expect(native_node_clock, system_time_millis, fun mocked_current_time_millis/0),
     ok = meck:expect(native_node_clock, monotonic_time_millis, fun mocked_current_time_millis/0),
     ok = meck:expect(native_node_clock, monotonic_time_nanos, fun mocked_current_time_nanos/0).
 
 
--spec teardown_locally() -> ok.
-teardown_locally() ->
+-spec teardown_for_eunit() -> ok.
+teardown_for_eunit() ->
     ok = meck:unload(native_node_clock).
 
 
--spec setup_on_nodes(node() | [node()], [atom()]) -> ok.
-setup_on_nodes(NodeOrNodes, WhitelistedModules) ->
-    set_target_nodes(utils:ensure_list(NodeOrNodes)),
-    set_whitelisted_modules_on_target_nodes(WhitelistedModules),
-    set_current_time_millis(starting_frozen_time()),
+-spec setup_for_ct(node() | [node()], [atom()]) -> ok.
+setup_for_ct(NodeOrNodes, WhitelistedModules) ->
+    setup_common(NodeOrNodes, WhitelistedModules),
+    % NOTE: this call assumes that during CT tests all nodes
+    % have node_cache initialized (required by global clock)
+    rpc_call_each_node(get_target_nodes(), global_clock, reset_to_system_time, []),
     ok = test_utils:mock_new(NodeOrNodes, native_node_clock, [passthrough]),
     ok = test_utils:mock_expect(NodeOrNodes, native_node_clock, system_time_millis, fun mocked_current_time_millis/0),
     ok = test_utils:mock_expect(NodeOrNodes, native_node_clock, monotonic_time_millis, fun mocked_current_time_millis/0),
     ok = test_utils:mock_expect(NodeOrNodes, native_node_clock, monotonic_time_nanos, fun mocked_current_time_nanos/0).
 
 
--spec teardown_on_nodes(node() | [node()]) -> ok.
-teardown_on_nodes(NodeOrNodes) ->
+-spec teardown_for_ct(node() | [node()]) -> ok.
+teardown_for_ct(NodeOrNodes) ->
     ok = test_utils:mock_unload(NodeOrNodes, native_node_clock).
 
 
@@ -119,6 +118,15 @@ current_time_nanos() ->
 %%% Internal functions
 %%%===================================================================
 
+%% @private
+setup_common(NodeOrNodes, WhitelistedModules) ->
+    Nodes = utils:ensure_list(NodeOrNodes),
+    set_target_nodes(Nodes),
+    ignore_clock_sync_on_target_nodes(),
+    set_whitelisted_modules_on_target_nodes(WhitelistedModules),
+    set_current_time_millis(starting_frozen_time()).
+
+
 %% NOTE: env variables are used rather than the node_cache to avoid a circular dependency
 %% and a non-obvious requirement to init node cache whenever the clock is mocked
 
@@ -132,6 +140,13 @@ set_target_nodes(Nodes) ->
 -spec get_target_nodes() -> [node()].
 get_target_nodes() ->
     ctool:get_env(clock_freezer_target_nodes).
+
+
+%% @private
+-spec ignore_clock_sync_on_target_nodes() -> ok.
+ignore_clock_sync_on_target_nodes() ->
+    rpc_call_each_node(get_target_nodes(), ctool, set_env, [clock_sync_ignore_bias_corrections, true]).
+
 
 %% @private
 -spec set_whitelisted_modules_on_target_nodes([atom()]) -> ok.

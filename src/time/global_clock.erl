@@ -296,13 +296,18 @@ examine_delay(Delay, Bias) ->
 store_bias({remote_clock, Node}, Bias) ->
     ok = rpc:call(Node, ?MODULE, ?FUNCTION_NAME, [local_clock, Bias]);
 store_bias(local_clock, Bias) ->
-    % log on info level upon the first synchronization
-    case is_synchronized() of
-        false -> ?info("Local clock has been synchronized, current bias: ~Bms", [Bias]);
-        true -> ?debug("Local clock has been synchronized, current bias: ~Bms", [Bias])
-    end,
-    store_bias_in_cache(Bias),
-    store_bias_on_disk(Bias).
+    case ctool:get_env(clock_sync_ignore_bias_corrections, false) of
+        true ->
+            ?warning("Ignoring clock bias correction (forced in config)");
+        false ->
+            % log on info level upon the first synchronization
+            case is_synchronized() of
+                false -> ?info("Local clock has been synchronized, current bias: ~Bms", [Bias]);
+                true -> ?debug("Local clock has been synchronized, current bias: ~Bms", [Bias])
+            end,
+            store_bias_in_cache(Bias),
+            store_bias_on_disk(Bias)
+    end.
 
 
 %% @private

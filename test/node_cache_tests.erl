@@ -50,11 +50,11 @@
 node_cache_test_() ->
     {foreach,
         fun() ->
-            clock_freezer_mock:setup_locally([node_cache]),
+            clock_freezer_mock:setup_for_eunit([node_cache]),
             node_cache:init()
         end,
         fun(_) ->
-            clock_freezer_mock:teardown_locally(),
+            clock_freezer_mock:teardown_for_eunit(),
             node_cache:destroy()
         end,
         lists:flatmap(fun({TestDescription, Fun}) ->

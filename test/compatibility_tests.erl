@@ -57,7 +57,7 @@ compatibility_verification_test_() ->
 %%%===================================================================
 
 setup() ->
-    clock_freezer_mock:setup_locally([compatibility]),
+    clock_freezer_mock:setup_for_eunit([compatibility]),
     node_cache:init(),
 
     TmpPath = mochitemp:mkdtemp(),
@@ -97,7 +97,7 @@ teardown(_) ->
     ok = meck:unload(rpc),
 
     node_cache:destroy(),
-    clock_freezer_mock:teardown_locally().
+    clock_freezer_mock:teardown_for_eunit().
 
 
 mock_current_registry(JsonMap) when is_map(JsonMap) ->

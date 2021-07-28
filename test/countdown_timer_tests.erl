@@ -19,8 +19,8 @@
 
 countdown_timer_test_() ->
     {foreach,
-        fun() -> clock_freezer_mock:setup_locally([?MODULE]) end,
-        fun(_) -> clock_freezer_mock:teardown_locally() end,
+        fun() -> clock_freezer_mock:setup_for_eunit([?MODULE]) end,
+        fun(_) -> clock_freezer_mock:teardown_for_eunit() end,
         [
             {"count down seconds", fun count_down_seconds/0},
             {"count down millis", fun count_down_millis/0}

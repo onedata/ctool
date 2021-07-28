@@ -40,7 +40,8 @@ local_clock_sync_test_() ->
             {"timed out", fun timed_out_synchronize_local_clock_with_remote/0},
             {"delay ok", fun delay_ok_synchronize_local_clock_with_remote/0},
             {"delay too high", fun delay_too_high_synchronize_local_clock_with_remote/0},
-            {"fail does not change bias", fun failed_synchronize_local_clock_with_remote_does_not_change_previous_bias/0}
+            {"fail does not change bias", fun failed_synchronize_local_clock_with_remote_does_not_change_previous_bias/0},
+            {"bias correction ignored", fun ignore_bias_correction_local_clock_with_remote/0}
         ]
     }.
 
@@ -126,6 +127,20 @@ assert_local_clock_time_does_not_change_upon_sync_fail(FetchRemoteTimestamp) ->
     ?assertEqual(WasClockSynchronized, global_clock:is_synchronized()),
     ?assert(are_clocks_in_sync(local_clock, PreviousReferenceClock)).
 
+
+ignore_bias_correction_local_clock_with_remote() ->
+    ?assert(are_clocks_in_sync(local_clock, local_system_clock)),
+    ?assertNot(global_clock:is_synchronized()),
+
+    ctool:set_env(clock_sync_ignore_bias_corrections, true),
+
+    ?assertEqual(ok, global_clock:synchronize_local_with_remote_server(gen_delayed_timestamp_callback(
+        rand:uniform(90),
+        fun() -> {ok, ?REMOTE_SYSTEM_TIMESTAMP()} end)
+    )),
+    ?assertNot(are_clocks_in_sync(local_clock, remote_system_clock)),
+    ?assertNot(global_clock:is_synchronized()).
+
 %%%===================================================================
 %%% Eunit tests - synchronize_node_clock_with_local/1
 %%%===================================================================
@@ -141,7 +156,8 @@ remote_node_clock_sync_test_() ->
             {"timed out", fun timed_out_synchronize_node_clock_with_local/0},
             {"delay ok", fun delay_ok_synchronize_node_clock_with_local/0},
             {"delay too high", fun delay_too_high_synchronize_node_clock_with_local/0},
-            {"fail does not change bias", fun failed_synchronize_node_clock_with_local_does_not_change_previous_bias/0}
+            {"fail does not change bias", fun failed_synchronize_node_clock_with_local_does_not_change_previous_bias/0},
+            {"bias correction ignored", fun ignore_bias_correction_node_clock_with_local/0}
         ]
     }.
 
@@ -235,6 +251,26 @@ assert_remote_clock_time_does_not_change_upon_sync_fail(MockedTimestampResponse)
     % as the synchronization failed, the clock should continue to show the same time as before
     ?assertEqual(WasClockSynchronized, is_clock_synchronized_on_remote_node()),
     ?assert(are_clocks_in_sync(remote_clock, PreviousReferenceClock)).
+
+
+ignore_bias_correction_node_clock_with_local() ->
+    % remote node clock synchronization should converge to the local_clock (rather than system_clock)
+    % randomize some initial local bias to make sure this works as expected
+    RandomBiasSeconds = lists_utils:random_element([0, (60 + rand:uniform(1000))]),
+    global_clock:store_bias(local_clock, RandomBiasSeconds * 1000),
+
+    set_ignore_bias_corrections_at_remote_node(true),
+
+    ?assert(are_clocks_in_sync(remote_clock, remote_system_clock)),
+    ?assertNot(is_clock_synchronized_on_remote_node()),
+
+    mock_next_remote_timestamp_rpc_response(gen_delayed_timestamp_callback(
+        rand:uniform(?TEST_SATISFYING_SYNC_DELAY_MILLIS - 10),
+        fun() -> ?REMOTE_SYSTEM_TIMESTAMP() end
+    )),
+    ?assertEqual(ok, global_clock:synchronize_remote_with_local(?DUMMY_REMOTE_NODE)),
+    ?assertNot(is_clock_synchronized_on_remote_node()),
+    ?assertNot(are_clocks_in_sync(remote_clock, local_clock)).
 
 %%%===================================================================
 %%% Eunit tests - time sync backup
@@ -383,7 +419,7 @@ monotonicity_and_warnings() ->
 
 %% @private
 setup() ->
-    clock_freezer_mock:setup_locally([global_clock, ?MODULE]),
+    clock_freezer_mock:setup_for_eunit([global_clock, ?MODULE]),
     node_cache:init(),
 
     global_clock:reset_to_system_time(),
@@ -391,6 +427,9 @@ setup() ->
     ctool:set_env(clock_sync_max_allowed_delay, ?TEST_MAX_ALLOWED_SYNC_DELAY_MILLIS),
     ctool:set_env(clock_sync_backup_validity_secs, ?TEST_BIAS_BACKUP_VALIDITY_SECONDS),
     unset_bias_at_remote_node(),
+
+    ctool:set_env(clock_sync_ignore_bias_corrections, false),
+    set_ignore_bias_corrections_at_remote_node(false),
 
     TmpPath = mochitemp:mkdtemp(),
     BackupFile = filename:join(TmpPath, "time_synchronization_data.json"),
@@ -416,7 +455,7 @@ setup() ->
 %% @private
 teardown(_) ->
     node_cache:destroy(),
-    clock_freezer_mock:teardown_locally(),
+    clock_freezer_mock:teardown_for_eunit(),
 
     BackupFile = ctool:get_env(clock_sync_backup_file),
     TmpPath = filename:dirname(BackupFile),
@@ -429,7 +468,12 @@ teardown(_) ->
 %% @private
 %% simulates the bias being set on a remote node with RPC
 set_bias_at_remote_node(Bias) ->
-    node_cache:put(mocked_remote_node_bias, Bias).
+    case node_cache:get(mocked_ignore_bias_corrections) of
+        true ->
+            ok;
+        false ->
+            node_cache:put(mocked_remote_node_bias, Bias)
+    end.
 
 
 %% @private
@@ -441,6 +485,11 @@ get_bias_at_remote_node() ->
 %% @private
 unset_bias_at_remote_node() ->
     node_cache:clear(mocked_remote_node_bias).
+
+
+%% @private
+set_ignore_bias_corrections_at_remote_node(Flag) ->
+    node_cache:put(mocked_ignore_bias_corrections, Flag).
 
 
 %% @private
