@@ -20,6 +20,16 @@
 -define(DESCRIPTION_SIZE_LIMIT, 100000).
 
 
+% Predefined store schemas that are implicitly defined in each workflow schema.
+% Can be perceived as virtual store schemas - they do not appear in the
+% workflow schema structure, but can be referenced in result mappers to apply
+% operations on corresponding audit log stores that are created during workflow
+% execution. Each task gets its own audit log store, and the whole workflow
+% executions gets one global audit log store.
+-define(CURRENT_TASK_SYSTEM_AUDIT_LOG_STORE_SCHEMA_ID, <<"CURRENT_TASK_SYSTEM_AUDIT_LOG">>).
+-define(WORKFLOW_SYSTEM_AUDIT_LOG_STORE_SCHEMA_ID, <<"WORKFLOW_SYSTEM_AUDIT_LOG">>).
+
+
 -record(atm_data_spec, {
     type :: atm_data_type:type(),
     value_constraints = #{} :: atm_data_type:value_constraints()
