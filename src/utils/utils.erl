@@ -29,8 +29,11 @@
 -export([to_atom/1, to_boolean/1]).
 -export([encode_pid/1, decode_pid/1]).
 -export([rpc_multicall/4, rpc_multicall/5]).
+-export([wait_until/1, wait_until/2]).
 
 -type time_unit() :: us | ms | s | min | h.
+
+-define(DEFAULT_WAIT_UNTIL_INTERVAL, 250).
 
 %%%===================================================================
 %%% API
@@ -454,6 +457,21 @@ rpc_multicall([ThisNode], Module, Function, Args, infinity) when ThisNode =:= no
     {[erlang:apply(Module, Function, Args)], []};
 rpc_multicall(Nodes, Module, Function, Args, Timeout) ->
     rpc:multicall(Nodes, Module, Function, Args, Timeout).
+
+
+-spec wait_until(fun(() -> boolean())) -> ok.
+wait_until(Condition) ->
+    wait_until(Condition, ?DEFAULT_WAIT_UNTIL_INTERVAL).
+
+-spec wait_until(fun(() -> boolean()), integer()) -> ok.
+wait_until(Condition, Interval) ->
+    case Condition() of
+        true ->
+            ok;
+        false ->
+            timer:sleep(Interval),
+            wait_until(Condition)
+    end.
 
 %%%===================================================================
 %%% Internal functions

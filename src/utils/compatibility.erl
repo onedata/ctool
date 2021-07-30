@@ -511,7 +511,7 @@ parse_registry(RawRegistry) ->
         OPvsOZ = maps:fold(fun(OzVersion, CompatibleOpVersions, OuterAcc) ->
             lists:foldl(fun(OpVersion, InnerAcc) ->
                 maps:update_with(OpVersion, fun(CompOzVersions) ->
-                    [OzVersion | CompOzVersions]
+                    lists:usort([OzVersion | CompOzVersions])
                 end, [OzVersion], InnerAcc)
             end, OuterAcc, CompatibleOpVersions)
         end, #{}, OZvsOPSection),
