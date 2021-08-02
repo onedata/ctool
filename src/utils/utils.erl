@@ -451,7 +451,7 @@ rpc_multicall(Nodes, Module, Function, Args) ->
 rpc_multicall([], _, _, _, _) ->
     {[], []};
 rpc_multicall([ThisNode], Module, Function, Args, infinity) when ThisNode =:= node() ->
-    {[erlang:apply(Module, Function, Args)], []};
+    {[catch erlang:apply(Module, Function, Args)], []};
 rpc_multicall(Nodes, Module, Function, Args, Timeout) ->
     rpc:multicall(Nodes, Module, Function, Args, Timeout).
 
