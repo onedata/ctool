@@ -283,16 +283,16 @@ op_oz_compatibility_check() ->
     ?assertEqual(true, ?OPvsOZ(<<"17.06.3">>, <<"17.06.1">>)),
     ?assertEqual(true, ?OPvsOZ(<<"17.06.3">>, <<"17.06.2">>)),
 
-    ?assertEqual({false, [<<"17.06.3">>, <<"17.06.2">>, <<"17.06.1">>]}, ?OPvsOZ(<<"17.06.3">>, <<"18.02.1">>)),
-    ?assertEqual({false, [<<"18.02.1">>, <<"17.06.3">>]}, ?OPvsOZ(<<"18.02.1">>, <<"17.06.1">>)),
+    ?assertEqual({false, [<<"17.06.1">>, <<"17.06.2">>, <<"17.06.3">>]}, ?OPvsOZ(<<"17.06.3">>, <<"18.02.1">>)),
+    ?assertEqual({false, [<<"17.06.3">>, <<"18.02.1">>]}, ?OPvsOZ(<<"18.02.1">>, <<"17.06.1">>)),
 
     ?assertEqual({error, {unknown_version, <<"17.06.1">>, {revision, 2019010100}}}, ?OPvsOZ(<<"17.06.1">>, <<"18.02.1">>)),
     ?assertEqual({error, {unknown_version, <<"17.06.2">>, {revision, 2019010100}}}, ?OPvsOZ(<<"17.06.2">>, <<"18.02.1">>)),
     ?assertEqual({error, {unknown_version, <<"17.06.4">>, {revision, 2019010100}}}, ?OPvsOZ(<<"17.06.4">>, <<"18.02.1">>)),
     ?assertEqual({error, {unknown_version, <<"18.02.2">>, {revision, 2019010100}}}, ?OPvsOZ(<<"18.02.2">>, <<"18.02.1">>)),
 
-    ?assertEqual({ok, [<<"17.06.3">>, <<"17.06.2">>, <<"17.06.1">>]}, ?OPvsOZVersions(<<"17.06.3">>)),
-    ?assertEqual({ok, [<<"18.02.1">>, <<"17.06.3">>]}, ?OPvsOZVersions(<<"18.02.1">>)),
+    ?assertEqual({ok, [<<"17.06.1">>, <<"17.06.2">>, <<"17.06.3">>]}, ?OPvsOZVersions(<<"17.06.3">>)),
+    ?assertEqual({ok, [<<"17.06.3">>, <<"18.02.1">>]}, ?OPvsOZVersions(<<"18.02.1">>)),
     ?assertEqual({error, {unknown_version, <<"18.02.2">>, {revision, 2019010100}}}, ?OPvsOZVersions(<<"18.02.2">>)).
 
 op_op_compatibility_check() ->

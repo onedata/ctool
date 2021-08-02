@@ -29,8 +29,12 @@
 -export([to_atom/1, to_boolean/1]).
 -export([encode_pid/1, decode_pid/1]).
 -export([rpc_multicall/4, rpc_multicall/5]).
+-export([wait_until/1, wait_until/2, wait_until/3]).
 
 -type time_unit() :: us | ms | s | min | h.
+
+-define(DEFAULT_WAIT_UNTIL_TIMEOUT, timer:minutes(1)).
+-define(DEFAULT_WAIT_UNTIL_INTERVAL, 250).
 
 %%%===================================================================
 %%% API
@@ -454,6 +458,28 @@ rpc_multicall([ThisNode], Module, Function, Args, infinity) when ThisNode =:= no
     {[erlang:apply(Module, Function, Args)], []};
 rpc_multicall(Nodes, Module, Function, Args, Timeout) ->
     rpc:multicall(Nodes, Module, Function, Args, Timeout).
+
+
+-spec wait_until(fun(() -> boolean())) -> ok | no_return().
+wait_until(Condition) ->
+    wait_until(Condition, ?DEFAULT_WAIT_UNTIL_INTERVAL).
+
+-spec wait_until(fun(() -> boolean()), time:millis()) -> ok | no_return().
+wait_until(Condition, Interval) ->
+    wait_until(Condition, Interval, ?DEFAULT_WAIT_UNTIL_TIMEOUT).
+
+-spec wait_until(fun(() -> boolean()), time:millis(), time:millis()) -> ok | no_return().
+wait_until(_Condition, _Interval, Timeout) when Timeout < 0 ->
+    error(timeout);
+wait_until(Condition, Interval, Timeout) ->
+    Stopwatch = stopwatch:start(),
+    case Condition() of
+        true ->
+            ok;
+        false ->
+            timer:sleep(Interval),
+            wait_until(Condition, Interval, Timeout - stopwatch:read_millis(Stopwatch))
+    end.
 
 %%%===================================================================
 %%% Internal functions
