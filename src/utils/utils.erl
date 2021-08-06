@@ -33,8 +33,8 @@
 
 -type time_unit() :: us | ms | s | min | h.
 
--define(DEFAULT_WAIT_UNTIL_TIMEOUT, timer:minutes(1)).
 -define(DEFAULT_WAIT_UNTIL_INTERVAL, 250).
+-define(DEFAULT_WAIT_UNTIL_ATTEMPTS, 240).
 
 %%%===================================================================
 %%% API
@@ -466,19 +466,18 @@ wait_until(Condition) ->
 
 -spec wait_until(fun(() -> boolean()), time:millis()) -> ok | no_return().
 wait_until(Condition, Interval) ->
-    wait_until(Condition, Interval, ?DEFAULT_WAIT_UNTIL_TIMEOUT).
+    wait_until(Condition, Interval, ?DEFAULT_WAIT_UNTIL_ATTEMPTS).
 
--spec wait_until(fun(() -> boolean()), time:millis(), time:millis()) -> ok | no_return().
-wait_until(_Condition, _Interval, Timeout) when Timeout < 0 ->
+-spec wait_until(fun(() -> boolean()), time:millis(), non_neg_integer()) -> ok | no_return().
+wait_until(_Condition, _Interval, Attempts) when Attempts =< 0 ->
     error(timeout);
-wait_until(Condition, Interval, Timeout) ->
-    Stopwatch = stopwatch:start(),
+wait_until(Condition, Interval, Attempts) ->
     case Condition() of
         true ->
             ok;
         false ->
             timer:sleep(Interval),
-            wait_until(Condition, Interval, Timeout - stopwatch:read_millis(Stopwatch))
+            wait_until(Condition, Interval, Attempts - 1)
     end.
 
 %%%===================================================================
