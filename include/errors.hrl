@@ -194,7 +194,6 @@
 -define(ERROR_VIEW_QUERY_FAILED(Category, Description), {error, {view_query_failed, Category, Description}}).
 -define(ERROR_QUOTA_EXCEEDED, {error, quota_exceeded}).
 
--define(ERROR_ATM_BAD_DATA, {error, atm_bad_data}).
 -define(ERROR_ATM_BAD_DATA(__KEY, __REASON),
     {error, {atm_bad_data, __KEY, __REASON}}
 ).
@@ -204,8 +203,8 @@
 -define(ERROR_ATM_DATA_TYPE_UNVERIFIED(__VALUE, __EXP_TYPE),
     {error, {atm_data_type_unverified, __VALUE, __EXP_TYPE}}
 ).
--define(ERROR_ATM_DATA_VALUE_CONSTRAINT_UNVERIFIED(__VALUE_CONSTRAINT),
-    {error, {atm_data_value_constraint_unverified, __VALUE_CONSTRAINT}}
+-define(ERROR_ATM_DATA_VALUE_CONSTRAINT_UNVERIFIED(__VALUE, __TYPE, __VALUE_CONSTRAINT),
+    {error, {atm_data_value_constraint_unverified, __VALUE, __TYPE, __VALUE_CONSTRAINT}}
 ).
 
 -define(ERROR_ATM_STORE_MISSING_REQUIRED_INITIAL_VALUE,
@@ -217,8 +216,8 @@
 -define(ERROR_ATM_STORE_FROZEN(__ATM_STORE_SCHEMA__ID),
     {error, {atm_store_frozen, __ATM_STORE_SCHEMA__ID}}
 ).
--define(ERROR_ATM_STORE_TYPE_DISALLOWED(__TYPE, __ALLOWED_TYPES),
-    {error, {atm_store_type_unverified, __TYPE, __ALLOWED_TYPES}}
+-define(ERROR_ATM_STORE_TYPE_DISALLOWED(__STORE_SCHEMA_ID, __ALLOWED_TYPES),
+    {error, {atm_store_type_unverified, __STORE_SCHEMA_ID, __ALLOWED_TYPES}}
 ).
 -define(ERROR_ATM_STORE_EMPTY(__ATM_STORE_SCHEMA__ID),
     {error, {atm_store_empty, __ATM_STORE_SCHEMA__ID}}
@@ -246,7 +245,7 @@
     {error, {atm_parallel_box_execution_creation_failed, __PARALLEL_BOX_SCHEMA_ID, __REASON}}
 ).
 -define(ERROR_ATM_PARALLEL_BOX_EXECUTION_PREPARATION_FAILED(__PARALLEL_BOX_SCHEMA_ID, __REASON),
-    {error, {atm_parallel_box_preparation_creation_failed, __PARALLEL_BOX_SCHEMA_ID, __REASON}}
+    {error, {atm_parallel_box_execution_preparation_failed, __PARALLEL_BOX_SCHEMA_ID, __REASON}}
 ).
 
 -define(ERROR_ATM_TASK_EXECUTION_CREATION_FAILED(__TASK_SCHEMA_ID, __REASON),
@@ -260,10 +259,10 @@
     {error, {atm_task_arg_mapper_for_required_lambda_arg_missing, __ARG_NAME}}
 ).
 -define(ERROR_ATM_TASK_ARG_MAPPER_FOR_NONEXISTENT_LAMBDA_ARG(__ARG_NAME),
-    {error, {atm_task_arg_mapper_for_nonexistent_arg, __ARG_NAME}}
+    {error, {atm_task_arg_mapper_for_nonexistent_lambda_arg, __ARG_NAME}}
 ).
--define(ERROR_ATM_TASK_ARG_MAPPER_INVALID_INPUT_SPEC,
-    {error, atm_task_arg_mapper_invalid_input_spec}
+-define(ERROR_ATM_TASK_ARG_MAPPER_UNSUPPORTED_VALUE_BUILDER(__TYPE, __SUPPORTED_TYPES),
+    {error, {atm_task_arg_mapper_unknown_value_builder, __TYPE, __SUPPORTED_TYPES}}
 ).
 -define(ERROR_ATM_TASK_ARG_MAPPER_ITEM_QUERY_FAILED(__ITEM, __QUERY),
     {error, {atm_task_arg_item_query_failed, __ITEM, __QUERY}}

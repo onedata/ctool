@@ -19,6 +19,7 @@
 
 %% Jsonable record callbacks
 -export([to_json/1, from_json/1]).
+-export([type_to_json/1, type_from_json/1]).
 
 %% persistent_record callbacks
 -export([version/0, db_encode/2, db_decode/2]).
@@ -86,6 +87,24 @@ from_json(RecordJson) ->
         recipe = recipe_from_json(Type, maps:get(<<"valueBuilderRecipe">>, RecordJson, null))
     }.
 
+
+-spec type_to_json(type()) -> json_utils:json_term().
+type_to_json(iterated_item) -> <<"iteratedItem">>;
+type_to_json(const) -> <<"const">>;
+type_to_json(object) -> <<"object">>;
+type_to_json(store_credentials) -> <<"storeCredentials">>;
+type_to_json(single_value_store_content) -> <<"singleValueStoreContent">>;
+type_to_json(onedatafs_credentials) -> <<"onedatafsCredentials">>.
+
+
+-spec type_from_json(json_utils:json_term()) -> type().
+type_from_json(<<"iteratedItem">>) -> iterated_item;
+type_from_json(<<"const">>) -> const;
+type_from_json(<<"object">>) -> object;
+type_from_json(<<"storeCredentials">>) -> store_credentials;
+type_from_json(<<"singleValueStoreContent">>) -> single_value_store_content;
+type_from_json(<<"onedatafsCredentials">>) -> onedatafs_credentials.
+
 %%%===================================================================
 %%% persistent_record callbacks
 %%%===================================================================
@@ -107,23 +126,6 @@ db_decode(RecordJson, _NestedRecordDecoder) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
-
--spec type_to_json(type()) -> json_utils:json_term().
-type_to_json(iterated_item) -> <<"iteratedItem">>;
-type_to_json(const) -> <<"const">>;
-type_to_json(object) -> <<"object">>;
-type_to_json(store_credentials) -> <<"storeCredentials">>;
-type_to_json(single_value_store_content) -> <<"singleValueStoreContent">>;
-type_to_json(onedatafs_credentials) -> <<"onedatafsCredentials">>.
-
-
--spec type_from_json(json_utils:json_term()) -> type().
-type_from_json(<<"iteratedItem">>) -> iterated_item;
-type_from_json(<<"const">>) -> const;
-type_from_json(<<"object">>) -> object;
-type_from_json(<<"storeCredentials">>) -> store_credentials;
-type_from_json(<<"singleValueStoreContent">>) -> single_value_store_content;
-type_from_json(<<"onedatafsCredentials">>) -> onedatafs_credentials.
 
 
 -spec recipe_to_json(type(), recipe()) -> json_utils:json_term().
