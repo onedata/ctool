@@ -1240,17 +1240,18 @@ to_json(?ERROR_ATM_TASK_ARG_MAPPING_FAILED(ArgName, {error, _} = SpecificError))
     )
 };
 to_json(?ERROR_ATM_TASK_ARG_MAPPER_UNSUPPORTED_VALUE_BUILDER(Type, SupportedTypes)) ->
+    TypeJson = atm_task_argument_value_builder:type_to_json(Type),
     SupportedTypesJson = lists:map(fun atm_task_argument_value_builder:type_to_json/1, SupportedTypes),
 
     #{
         <<"id">> => <<"atmTaskArgMapperUnsupportedValueBuilder">>,
         <<"details">> => #{
-            <<"type">> => atm_task_argument_value_builder:type_to_json(Type),
+            <<"type">> => TypeJson,
             <<"supported">> => SupportedTypesJson
         },
         <<"description">> => ?FMT(
             "Bad atm task argument value builder: type \"~s\" not supported - must be one of: ~ts.",
-            [join_values_with_commas(SupportedTypesJson)]
+            [TypeJson, join_values_with_commas(SupportedTypesJson)]
         )
     };
 to_json(?ERROR_ATM_TASK_ARG_MAPPER_ITEM_QUERY_FAILED(Value, Query)) -> #{
@@ -2126,9 +2127,6 @@ from_json(#{<<"id">> := <<"atmOpenFaasNotConfigured">>}) ->
 from_json(#{<<"id">> := <<"atmOpenFaasUnreachable">>}) ->
     ?ERROR_ATM_OPENFAAS_UNREACHABLE;
 
-from_json(#{<<"id">> := <<"atmOpenFaasQueryFailed">>}) ->
-    ?ERROR_ATM_OPENFAAS_QUERY_FAILED;
-
 from_json(#{
     <<"id">> := <<"atmOpenFaasQueryFailed">>,
     <<"details">> := #{
@@ -2136,6 +2134,9 @@ from_json(#{
     }
 }) ->
     ?ERROR_ATM_OPENFAAS_QUERY_FAILED(Reason);
+
+from_json(#{<<"id">> := <<"atmOpenFaasQueryFailed">>}) ->
+    ?ERROR_ATM_OPENFAAS_QUERY_FAILED;
 
 from_json(#{<<"id">> := <<"atmOpenFaasFunctionRegistrationFailed">>}) ->
     ?ERROR_ATM_OPENFAAS_FUNCTION_REGISTRATION_FAILED;
@@ -2369,7 +2370,7 @@ to_http_code(?ERROR_ATM_DATA_VALUE_CONSTRAINT_UNVERIFIED(_, _, _)) -> ?HTTP_400_
 
 to_http_code(?ERROR_ATM_STORE_CREATION_FAILED(_, _)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_ATM_STORE_MISSING_REQUIRED_INITIAL_VALUE) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_ATM_STORE_FROZEN(_)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_ATM_STORE_FROZEN(_)) -> ?HTTP_403_FORBIDDEN;
 to_http_code(?ERROR_ATM_STORE_TYPE_DISALLOWED(_, _)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_ATM_STORE_EMPTY(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_ATM_STORE_NOT_FOUND(_)) -> ?HTTP_400_BAD_REQUEST;

@@ -230,6 +230,56 @@ testcases() -> [
     ?ERROR_QUOTA_EXCEEDED,
 
     %%--------------------------------------------------------------------
+    %% op_worker atm errors
+    %%--------------------------------------------------------------------
+    ?ERROR_ATM_BAD_DATA(<<"range">>, <<"invalid range specification">>),
+    ?ERROR_ATM_BAD_DATA(<<"step">>, ?ERROR_ATM_DATA_TYPE_UNVERIFIED(<<"NaN">>, atm_integer_type)),
+    ?ERROR_ATM_UNSUPPORTED_DATA_TYPE(atm_string_type, [atm_integer_type]),
+    ?ERROR_ATM_DATA_TYPE_UNVERIFIED(<<"NaN">>, atm_integer_type),
+    ?ERROR_ATM_DATA_VALUE_CONSTRAINT_UNVERIFIED(#{<<"fileId">> => <<"REG">>}, atm_file_type, #{file_type => 'DIR'}),
+
+    ?ERROR_ATM_STORE_MISSING_REQUIRED_INITIAL_VALUE,
+    ?ERROR_ATM_STORE_CREATION_FAILED(<<"id">>, ?ERROR_ATM_STORE_MISSING_REQUIRED_INITIAL_VALUE),
+    ?ERROR_ATM_STORE_FROZEN(<<"id">>),
+    ?ERROR_ATM_STORE_TYPE_DISALLOWED(<<"id">>, [single_value]),
+    ?ERROR_ATM_STORE_EMPTY(<<"id">>),
+    ?ERROR_ATM_STORE_NOT_FOUND(<<"id">>),
+
+    ?ERROR_ATM_WORKFLOW_EMPTY,
+
+    ?ERROR_ATM_LANE_EMPTY(<<"id">>),
+    ?ERROR_ATM_LANE_EXECUTION_CREATION_FAILED(<<"id">>, ?ERROR_ATM_INTERNAL_SERVER_ERROR),
+    ?ERROR_ATM_LANE_EXECUTION_PREPARATION_FAILED(<<"id">>, ?ERROR_ATM_OPENFAAS_NOT_CONFIGURED),
+
+    ?ERROR_ATM_PARALLEL_BOX_EMPTY(<<"id">>),
+    ?ERROR_ATM_PARALLEL_BOX_EXECUTION_CREATION_FAILED(<<"id">>, ?ERROR_ATM_INTERNAL_SERVER_ERROR),
+    ?ERROR_ATM_PARALLEL_BOX_EXECUTION_PREPARATION_FAILED(<<"id">>, ?ERROR_ATM_OPENFAAS_NOT_CONFIGURED),
+
+    ?ERROR_ATM_TASK_EXECUTION_CREATION_FAILED(<<"id">>, ?ERROR_ATM_INTERNAL_SERVER_ERROR),
+    ?ERROR_ATM_TASK_EXECUTION_PREPARATION_FAILED(<<"id">>, ?ERROR_ATM_OPENFAAS_NOT_CONFIGURED),
+    ?ERROR_ATM_TASK_ARG_MAPPER_FOR_REQUIRED_LAMBDA_ARG_MISSING(<<"arg">>),
+    ?ERROR_ATM_TASK_ARG_MAPPER_FOR_NONEXISTENT_LAMBDA_ARG(<<"arg">>),
+    ?ERROR_ATM_TASK_ARG_MAPPER_UNSUPPORTED_VALUE_BUILDER(store_credentials, [iterated_item]),
+    ?ERROR_ATM_TASK_ARG_MAPPER_ITEM_QUERY_FAILED([1, 2], [0]),
+    ?ERROR_ATM_TASK_ARG_MAPPING_FAILED(<<"arg">>, ?ERROR_ATM_INTERNAL_SERVER_ERROR),
+
+    ?ERROR_ATM_TASK_RESULT_MISSING(<<"result">>),
+    ?ERROR_ATM_TASK_RESULT_DISPATCH_FAILED(<<"id">>, ?ERROR_ATM_INTERNAL_SERVER_ERROR),
+    ?ERROR_ATM_TASK_RESULT_MAPPING_FAILED(<<"result">>, ?ERROR_ATM_INTERNAL_SERVER_ERROR),
+
+    ?ERROR_ATM_TASK_EXECUTION_ENDED,
+
+    ?ERROR_ATM_OPENFAAS_NOT_CONFIGURED,
+    ?ERROR_ATM_OPENFAAS_UNREACHABLE,
+    ?ERROR_ATM_OPENFAAS_QUERY_FAILED,
+    ?ERROR_ATM_OPENFAAS_QUERY_FAILED(<<"dns resolution error...">>),
+    ?ERROR_ATM_OPENFAAS_FUNCTION_REGISTRATION_FAILED,
+
+    ?ERROR_ATM_INVALID_STATUS_TRANSITION(active, scheduled),
+
+    ?ERROR_ATM_INTERNAL_SERVER_ERROR,
+
+    %%--------------------------------------------------------------------
     %% onepanel errors
     %%--------------------------------------------------------------------
     ?ERROR_ON_NODES(?ERROR_FILE_ACCESS(<<"/path">>, ?EACCES), [<<"node1.example.com">>]),

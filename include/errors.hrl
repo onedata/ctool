@@ -283,14 +283,14 @@
 
 -define(ERROR_ATM_TASK_EXECUTION_ENDED, {error, atm_task_execution_ended}).
 
--define(ERROR_ATM_OPENFAAS_NOT_CONFIGURED, {error, openfaas_not_configured}).
--define(ERROR_ATM_OPENFAAS_UNREACHABLE, {error, openfaas_unreachable}).
--define(ERROR_ATM_OPENFAAS_QUERY_FAILED, {error, openfaas_query_failed}).
+-define(ERROR_ATM_OPENFAAS_NOT_CONFIGURED, {error, atm_openfaas_not_configured}).
+-define(ERROR_ATM_OPENFAAS_UNREACHABLE, {error, atm_openfaas_unreachable}).
+-define(ERROR_ATM_OPENFAAS_QUERY_FAILED, {error, atm_openfaas_query_failed}).
 -define(ERROR_ATM_OPENFAAS_QUERY_FAILED(__REASON),
-    {error, {openfaas_query_failed, __REASON}}
+    {error, {atm_openfaas_query_failed, __REASON}}
 ).
 -define(ERROR_ATM_OPENFAAS_FUNCTION_REGISTRATION_FAILED,
-    {error, openfaas_function_registration_failed}
+    {error, atm_openfaas_function_registration_failed}
 ).
 
 -define(ERROR_ATM_INVALID_STATUS_TRANSITION(__PREV_STATUS, __NEW_STATUS),
