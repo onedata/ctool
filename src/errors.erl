@@ -119,7 +119,47 @@
 | {stat_operation_not_supported, StorageId :: binary}
 | {view_not_exists_on, ProviderId :: binary()}
 | {view_query_failed, Category :: binary(), Description :: binary()}
-| quota_exceeded.
+| quota_exceeded
+| {atm_unsupported_data_type, UnsupportedType :: atm_data_type:type(), SupportedTypes :: [atm_data_type:type()]}
+| {atm_data_type_unverified, Value :: json_utils:json_term(), ExpType :: atm_data_type:type()}
+| {atm_data_value_constraint_unverified,
+    Value :: json_utils:json_term(),
+    Type :: atm_data_type:type(),
+    ValueConstraintsJson :: json_utils:json_map()}
+| atm_store_missing_required_initial_value
+| {atm_store_creation_failed, AtmStoreSchemaId :: binary(), SpecificError :: error()}
+| {atm_store_frozen, AtmStoreSchemaId :: binary()}
+| {atm_store_type_disallowed, AtmStoreSchemaId :: binary(), AllowedTypes :: [automation:store_type()]}
+| {atm_store_empty, AtmStoreSchemaId :: binary()}
+| {atm_store_not_found, AtmStoreSchemaId :: binary()}
+| atm_workflow_empty
+| {atm_lane_empty, AtmLaneSchemaId :: binary()}
+| {atm_lane_execution_creation_failed, AtmLaneSchemaId :: binary(), SpecificError :: error()}
+| {atm_lane_execution_preparation_failed, AtmLaneSchemaId :: binary(), SpecificError :: error()}
+| {atm_parallel_box_empty, AtmParallelBoxSchemaId :: binary()}
+| {atm_parallel_box_execution_creation_failed, AtmParallelBoxSchemaId :: binary(), SpecificError :: error()}
+| {atm_parallel_box_execution_preparation_failed, AtmParallelBoxSchemaId :: binary(), SpecificError :: error()}
+| {atm_task_execution_creation_failed, AtmTaskSchemaId :: binary(), SpecificError :: error()}
+| {atm_task_execution_preparation_failed, AtmTaskSchemaId :: binary(), SpecificError :: error()}
+| {atm_task_arg_mapper_for_required_lambda_arg_missing, ArgName :: binary()}
+| {atm_task_arg_mapper_for_nonexistent_lambda_arg, ArgName :: binary()}
+| {atm_task_arg_mapper_unsupported_value_builder,
+    Type :: atm_task_argument_value_builder:type(),
+    SupportedTypes :: [atm_task_argument_value_builder:type()]}
+| {atm_task_arg_mapper_iterated_item_query_failed,
+    IteratedItem :: json_utils:json_term(),
+    Query :: json_utils:query()}
+| {atm_task_arg_mapping_failed, ArgName :: binary(), SpecificError :: error()}
+| {atm_task_result_missing, ResultName :: binary()}
+| {atm_task_result_dispatch_failed, AtmStoreSchemaId :: binary(), SpecificError :: error()}
+| {atm_task_result_mapping_failed, ResultName :: binary(), SpecificError :: error()}
+| atm_task_execution_ended
+| atm_openfaas_not_configured
+| atm_openfaas_unreachable
+| atm_openfaas_query_failed
+| {atm_openfaas_query_failed, Reason :: binary()}
+| atm_openfaas_function_registration_failed
+| {atm_invalid_status_transition, PrevStatus :: atom(), NewStatus :: atom()}.
 
 -type onepanel() :: {error_on_nodes, error(), Hostnames :: [binary()]}
 | {dns_servers_unreachable, [ip_utils:ip() | default]}
@@ -1080,7 +1120,7 @@ to_json(?ERROR_ATM_STORE_TYPE_DISALLOWED(AtmStoreSchemaId, AllowedTypes)) ->
             <<"allowed">> => AllowedTypesJson
         },
         <<"description">> => ?FMT(
-            "Bad automation store: the type of specified \"~s\" must be one of: ~ts.",
+            "Bad automation store: the type of store (id: \"~s\") must be one of: ~ts.",
             [AtmStoreSchemaId, join_values_with_commas(AllowedTypesJson)]
         )
     };
@@ -1100,7 +1140,7 @@ to_json(?ERROR_ATM_STORE_NOT_FOUND(AtmStoreSchemaId)) -> #{
         <<"atmStoreSchemaId">> => AtmStoreSchemaId
     },
     <<"description">> => ?FMT(
-        "Bad automation store: specified (\"~s\") does not exist.",
+        "Bad automation store: store (id: \"~s\") does not exist.",
         [AtmStoreSchemaId]
     )
 };

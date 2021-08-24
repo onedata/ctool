@@ -271,11 +271,11 @@
 -define(ERROR_ATM_TASK_RESULT_MISSING(ResultName),
     {error, {atm_task_result_missing, ResultName}}
 ).
--define(ERROR_ATM_TASK_RESULT_DISPATCH_FAILED(AtmStoreSchemaId, Reason),
-    {error, {atm_task_result_dispatch_failed, AtmStoreSchemaId, Reason}}
+-define(ERROR_ATM_TASK_RESULT_DISPATCH_FAILED(AtmStoreSchemaId, SpecificError),
+    {error, {atm_task_result_dispatch_failed, AtmStoreSchemaId, SpecificError}}
 ).
--define(ERROR_ATM_TASK_RESULT_MAPPING_FAILED(ResultName, Reason),
-    {error, {atm_task_result_mapping_failed, ResultName, Reason}}
+-define(ERROR_ATM_TASK_RESULT_MAPPING_FAILED(ResultName, SpecificError),
+    {error, {atm_task_result_mapping_failed, ResultName, SpecificError}}
 ).
 
 -define(ERROR_ATM_TASK_EXECUTION_ENDED, {error, atm_task_execution_ended}).
