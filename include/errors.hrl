@@ -194,91 +194,88 @@
 -define(ERROR_VIEW_QUERY_FAILED(Category, Description), {error, {view_query_failed, Category, Description}}).
 -define(ERROR_QUOTA_EXCEEDED, {error, quota_exceeded}).
 
--define(ERROR_ATM_BAD_DATA(__KEY, __REASON),
-    {error, {atm_bad_data, __KEY, __REASON}}
+-define(ERROR_ATM_UNSUPPORTED_DATA_TYPE(UnsupportedType, SupportedTypes),
+    {error, {atm_unsupported_data_type, UnsupportedType, SupportedTypes}}
 ).
--define(ERROR_ATM_UNSUPPORTED_DATA_TYPE(__UNSUPPORTED_TYPE, __SUPPORTED_TYPES),
-    {error, {atm_unsupported_data_type, __UNSUPPORTED_TYPE, __SUPPORTED_TYPES}}
+-define(ERROR_ATM_DATA_TYPE_UNVERIFIED(Value, ExpType),
+    {error, {atm_data_type_unverified, Value, ExpType}}
 ).
--define(ERROR_ATM_DATA_TYPE_UNVERIFIED(__VALUE, __EXP_TYPE),
-    {error, {atm_data_type_unverified, __VALUE, __EXP_TYPE}}
-).
--define(ERROR_ATM_DATA_VALUE_CONSTRAINT_UNVERIFIED(__VALUE, __TYPE, __VALUE_CONSTRAINT_JSON),
-    {error, {atm_data_value_constraint_unverified, __VALUE, __TYPE, __VALUE_CONSTRAINT_JSON}}
+-define(ERROR_ATM_DATA_VALUE_CONSTRAINT_UNVERIFIED(Value, Type, ValueConstraintsJson),
+    {error, {atm_data_value_constraint_unverified, Value, Type, ValueConstraintsJson}}
 ).
 
 -define(ERROR_ATM_STORE_MISSING_REQUIRED_INITIAL_VALUE,
     {error, atm_store_missing_required_initial_value}
 ).
--define(ERROR_ATM_STORE_CREATION_FAILED(__STORE_SCHEMA_ID, __REASON),
-    {error, {atm_store_creation_failed, __STORE_SCHEMA_ID, __REASON}}
+-define(ERROR_ATM_STORE_CREATION_FAILED(AtmStoreSchemaId, SpecificError),
+    {error, {atm_store_creation_failed, AtmStoreSchemaId, SpecificError}}
 ).
--define(ERROR_ATM_STORE_FROZEN(__ATM_STORE_SCHEMA__ID),
-    {error, {atm_store_frozen, __ATM_STORE_SCHEMA__ID}}
+-define(ERROR_ATM_STORE_FROZEN(AtmStoreSchemaId),
+    {error, {atm_store_frozen, AtmStoreSchemaId}}
 ).
--define(ERROR_ATM_STORE_TYPE_DISALLOWED(__STORE_SCHEMA_ID, __ALLOWED_TYPES),
-    {error, {atm_store_type_disallowed, __STORE_SCHEMA_ID, __ALLOWED_TYPES}}
+-define(ERROR_ATM_STORE_TYPE_DISALLOWED(AtmStoreSchemaId, AllowedTypes),
+    {error, {atm_store_type_disallowed, AtmStoreSchemaId, AllowedTypes}}
 ).
--define(ERROR_ATM_STORE_EMPTY(__ATM_STORE_SCHEMA__ID),
-    {error, {atm_store_empty, __ATM_STORE_SCHEMA__ID}}
+-define(ERROR_ATM_STORE_EMPTY(AtmStoreSchemaId),
+    {error, {atm_store_empty, AtmStoreSchemaId}}
 ).
--define(ERROR_ATM_STORE_NOT_FOUND(__STORE_SCHEMA_ID),
-    {error, {atm_store_not_found, __STORE_SCHEMA_ID}}
+-define(ERROR_ATM_STORE_NOT_FOUND(AtmStoreSchemaId),
+    {error, {atm_store_not_found, AtmStoreSchemaId}}
 ).
 
 -define(ERROR_ATM_WORKFLOW_EMPTY, {error, atm_workflow_empty}).
 
--define(ERROR_ATM_LANE_EMPTY(__LANE_SCHEMA_ID),
-    {error, {atm_lane_empty, __LANE_SCHEMA_ID}}
+-define(ERROR_ATM_LANE_EMPTY(AtmLaneSchemaId),
+    {error, {atm_lane_empty, AtmLaneSchemaId}}
 ).
--define(ERROR_ATM_LANE_EXECUTION_CREATION_FAILED(__LANE_SCHEMA_ID, __REASON),
-    {error, {atm_lane_execution_creation_failed, __LANE_SCHEMA_ID, __REASON}}
+-define(ERROR_ATM_LANE_EXECUTION_CREATION_FAILED(AtmLaneSchemaId, SpecificError),
+    {error, {atm_lane_execution_creation_failed, AtmLaneSchemaId, SpecificError}}
 ).
--define(ERROR_ATM_LANE_EXECUTION_PREPARATION_FAILED(__LANE_SCHEMA_ID, __REASON),
-    {error, {atm_lane_execution_preparation_failed, __LANE_SCHEMA_ID, __REASON}}
-).
-
--define(ERROR_ATM_PARALLEL_BOX_EMPTY(__PARALLEL_BOX_SCHEMA_ID),
-    {error, {atm_parallel_box_empty, __PARALLEL_BOX_SCHEMA_ID}}
-).
--define(ERROR_ATM_PARALLEL_BOX_EXECUTION_CREATION_FAILED(__PARALLEL_BOX_SCHEMA_ID, __REASON),
-    {error, {atm_parallel_box_execution_creation_failed, __PARALLEL_BOX_SCHEMA_ID, __REASON}}
-).
--define(ERROR_ATM_PARALLEL_BOX_EXECUTION_PREPARATION_FAILED(__PARALLEL_BOX_SCHEMA_ID, __REASON),
-    {error, {atm_parallel_box_execution_preparation_failed, __PARALLEL_BOX_SCHEMA_ID, __REASON}}
+-define(ERROR_ATM_LANE_EXECUTION_PREPARATION_FAILED(AtmLaneSchemaId, SpecificError),
+    {error, {atm_lane_execution_preparation_failed, AtmLaneSchemaId, SpecificError}}
 ).
 
--define(ERROR_ATM_TASK_EXECUTION_CREATION_FAILED(__TASK_SCHEMA_ID, __REASON),
-    {error, {atm_task_execution_creation_failed, __TASK_SCHEMA_ID, __REASON}}
+-define(ERROR_ATM_PARALLEL_BOX_EMPTY(AtmParallelBoxSchemaId),
+    {error, {atm_parallel_box_empty, AtmParallelBoxSchemaId}}
 ).
--define(ERROR_ATM_TASK_EXECUTION_PREPARATION_FAILED(__TASK_SCHEMA_ID, __REASON),
-    {error, {atm_task_execution_preparation_failed, __TASK_SCHEMA_ID, __REASON}}
+-define(ERROR_ATM_PARALLEL_BOX_EXECUTION_CREATION_FAILED(AtmParallelBoxSchemaId, SpecificError),
+    {error, {atm_parallel_box_execution_creation_failed, AtmParallelBoxSchemaId, SpecificError}}
 ).
-
--define(ERROR_ATM_TASK_ARG_MAPPER_FOR_REQUIRED_LAMBDA_ARG_MISSING(__ARG_NAME),
-    {error, {atm_task_arg_mapper_for_required_lambda_arg_missing, __ARG_NAME}}
-).
--define(ERROR_ATM_TASK_ARG_MAPPER_FOR_NONEXISTENT_LAMBDA_ARG(__ARG_NAME),
-    {error, {atm_task_arg_mapper_for_nonexistent_lambda_arg, __ARG_NAME}}
-).
--define(ERROR_ATM_TASK_ARG_MAPPER_UNSUPPORTED_VALUE_BUILDER(__TYPE, __SUPPORTED_TYPES),
-    {error, {atm_task_arg_mapper_unsupported_value_builder, __TYPE, __SUPPORTED_TYPES}}
-).
--define(ERROR_ATM_TASK_ARG_MAPPER_ITERATED_ITEM_QUERY_FAILED(__ITEM, __QUERY),
-    {error, {atm_task_arg_iterated_item_query_failed, __ITEM, __QUERY}}
-).
--define(ERROR_ATM_TASK_ARG_MAPPING_FAILED(__ARG_NAME, __REASON),
-    {error, {atm_task_arg_mapping_failed, __ARG_NAME, __REASON}}
+-define(ERROR_ATM_PARALLEL_BOX_EXECUTION_PREPARATION_FAILED(AtmParallelBoxSchemaId, SpecificError),
+    {error, {atm_parallel_box_execution_preparation_failed, AtmParallelBoxSchemaId, SpecificError}}
 ).
 
--define(ERROR_ATM_TASK_RESULT_MISSING(__RESULT_NAME),
-    {error, {atm_task_result_missing, __RESULT_NAME}}
+-define(ERROR_ATM_TASK_EXECUTION_CREATION_FAILED(AtmTaskSchemaId, SpecificError),
+    {error, {atm_task_execution_creation_failed, AtmTaskSchemaId, SpecificError}}
 ).
--define(ERROR_ATM_TASK_RESULT_DISPATCH_FAILED(__STORE_SCHEMA_ID, __REASON),
-    {error, {atm_task_result_dispatch_failed, __STORE_SCHEMA_ID, __REASON}}
+-define(ERROR_ATM_TASK_EXECUTION_PREPARATION_FAILED(AtmTaskSchemaId, SpecificError),
+    {error, {atm_task_execution_preparation_failed, AtmTaskSchemaId, SpecificError}}
 ).
--define(ERROR_ATM_TASK_RESULT_MAPPING_FAILED(__RESULT_NAME, __REASON),
-    {error, {atm_task_result_mapping_failed, __RESULT_NAME, __REASON}}
+
+-define(ERROR_ATM_TASK_ARG_MAPPER_FOR_REQUIRED_LAMBDA_ARG_MISSING(ArgName),
+    {error, {atm_task_arg_mapper_for_required_lambda_arg_missing, ArgName}}
+).
+-define(ERROR_ATM_TASK_ARG_MAPPER_FOR_NONEXISTENT_LAMBDA_ARG(ArgName),
+    {error, {atm_task_arg_mapper_for_nonexistent_lambda_arg, ArgName}}
+).
+-define(ERROR_ATM_TASK_ARG_MAPPER_UNSUPPORTED_VALUE_BUILDER(Type, SupportedTypes),
+    {error, {atm_task_arg_mapper_unsupported_value_builder, Type, SupportedTypes}}
+).
+-define(ERROR_ATM_TASK_ARG_MAPPER_ITERATED_ITEM_QUERY_FAILED(IteratedItem, Query),
+    {error, {atm_task_arg_mapper_iterated_item_query_failed, IteratedItem, Query}}
+).
+-define(ERROR_ATM_TASK_ARG_MAPPING_FAILED(ArgName, SpecificError),
+    {error, {atm_task_arg_mapping_failed, ArgName, SpecificError}}
+).
+
+-define(ERROR_ATM_TASK_RESULT_MISSING(ResultName),
+    {error, {atm_task_result_missing, ResultName}}
+).
+-define(ERROR_ATM_TASK_RESULT_DISPATCH_FAILED(AtmStoreSchemaId, Reason),
+    {error, {atm_task_result_dispatch_failed, AtmStoreSchemaId, Reason}}
+).
+-define(ERROR_ATM_TASK_RESULT_MAPPING_FAILED(ResultName, Reason),
+    {error, {atm_task_result_mapping_failed, ResultName, Reason}}
 ).
 
 -define(ERROR_ATM_TASK_EXECUTION_ENDED, {error, atm_task_execution_ended}).
@@ -286,18 +283,16 @@
 -define(ERROR_ATM_OPENFAAS_NOT_CONFIGURED, {error, atm_openfaas_not_configured}).
 -define(ERROR_ATM_OPENFAAS_UNREACHABLE, {error, atm_openfaas_unreachable}).
 -define(ERROR_ATM_OPENFAAS_QUERY_FAILED, {error, atm_openfaas_query_failed}).
--define(ERROR_ATM_OPENFAAS_QUERY_FAILED(__REASON),
-    {error, {atm_openfaas_query_failed, __REASON}}
+-define(ERROR_ATM_OPENFAAS_QUERY_FAILED(Reason),
+    {error, {atm_openfaas_query_failed, Reason}}
 ).
 -define(ERROR_ATM_OPENFAAS_FUNCTION_REGISTRATION_FAILED,
     {error, atm_openfaas_function_registration_failed}
 ).
 
--define(ERROR_ATM_INVALID_STATUS_TRANSITION(__PREV_STATUS, __NEW_STATUS),
-    {error, {atm_invalid_status_transition, __PREV_STATUS, __NEW_STATUS}}
+-define(ERROR_ATM_INVALID_STATUS_TRANSITION(PrevStatus, NewStatus),
+    {error, {atm_invalid_status_transition, PrevStatus, NewStatus}}
 ).
-
--define(ERROR_ATM_INTERNAL_SERVER_ERROR, {error, atm_internal_server_error}).
 
 
 %%--------------------------------------------------------------------

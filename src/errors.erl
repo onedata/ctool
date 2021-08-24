@@ -1012,22 +1012,6 @@ to_json(?ERROR_QUOTA_EXCEEDED) -> #{
     <<"description">> => <<"Space's storage quota has been exceeded.">>
 };
 
-to_json(?ERROR_ATM_BAD_DATA(Key, {error, _} = SpecificError)) -> #{
-    <<"id">> => <<"atmBadData">>,
-    <<"details">> => #{
-        <<"key">> => Key,
-        <<"specificError">> => to_json(SpecificError)
-    },
-    <<"description">> => ?FMT("Bad value provided for \"~s\" (see details).", [Key])
-};
-to_json(?ERROR_ATM_BAD_DATA(Key, HumanReadableHint)) -> #{
-    <<"id">> => <<"atmBadData">>,
-    <<"details">> => #{
-        <<"key">> => Key,
-        <<"hint">> => HumanReadableHint
-    },
-    <<"description">> => ?FMT("Bad value provided for \"~s\": ~ts.", [Key, HumanReadableHint])
-};
 to_json(?ERROR_ATM_UNSUPPORTED_DATA_TYPE(Type, SupportedTypes)) ->
     TypeJson = atm_data_type:type_to_json(Type),
     SupportedTypesJson = lists:map(fun atm_data_type:type_to_json/1, SupportedTypes),
@@ -1096,7 +1080,7 @@ to_json(?ERROR_ATM_STORE_TYPE_DISALLOWED(AtmStoreSchemaId, AllowedTypes)) ->
             <<"allowed">> => AllowedTypesJson
         },
         <<"description">> => ?FMT(
-            "Bad automation store: specified \"~s\" must be one of type: ~ts.",
+            "Bad automation store: the type of specified \"~s\" must be one of: ~ts.",
             [AtmStoreSchemaId, join_values_with_commas(AllowedTypesJson)]
         )
     };
@@ -1236,7 +1220,7 @@ to_json(?ERROR_ATM_TASK_ARG_MAPPER_FOR_NONEXISTENT_LAMBDA_ARG(ArgName)) -> #{
         <<"argument">> => ArgName
     },
     <<"description">> => ?FMT(
-        "Specified argument mapper for nonexistent lambda argument: ~s.",
+        "Found excessive argument mapper for nonexistent lambda argument: ~s.",
         [ArgName]
     )
 };
@@ -1314,7 +1298,7 @@ to_json(?ERROR_ATM_OPENFAAS_NOT_CONFIGURED) -> #{
 };
 to_json(?ERROR_ATM_OPENFAAS_UNREACHABLE) -> #{
     <<"id">> => <<"atmOpenfaasUnreachable">>,
-    <<"description">> => <<"Can not connect to OpenFaaS service.">>
+    <<"description">> => <<"Cannot connect to OpenFaaS service.">>
 };
 to_json(?ERROR_ATM_OPENFAAS_QUERY_FAILED) -> #{
     <<"id">> => <<"atmOpenfaasQueryFailed">>,
@@ -1338,12 +1322,7 @@ to_json(?ERROR_ATM_INVALID_STATUS_TRANSITION(PrevStatus, NewStatus)) -> #{
         <<"prevStatus">> => atom_to_binary(PrevStatus, utf8),
         <<"newStatus">> => atom_to_binary(NewStatus, utf8)
     },
-    <<"description">> => <<"Invalid status transition blocked (see details).">>
-};
-
-to_json(?ERROR_ATM_INTERNAL_SERVER_ERROR) -> #{
-    <<"id">> => <<"atmInternalServerError">>,
-    <<"description">> => <<"The server has encountered an error while processing the request.">>
+    <<"description">> => <<"Invalid status transition (see details).">>
 };
 
 %%--------------------------------------------------------------------
@@ -1882,24 +1861,6 @@ from_json(#{<<"id">> := <<"quotaExceeded">>}) ->
     ?ERROR_QUOTA_EXCEEDED;
 
 from_json(#{
-    <<"id">> := <<"atmBadData">>,
-    <<"details">> := #{
-        <<"key">> := Key,
-        <<"specificError">> := SpecificErrorJson
-    }
-}) ->
-    ?ERROR_ATM_BAD_DATA(Key, from_json(SpecificErrorJson));
-
-from_json(#{
-    <<"id">> := <<"atmBadData">>,
-    <<"details">> := #{
-        <<"key">> := Key,
-        <<"hint">> := HumanReadableHint
-    }
-}) ->
-    ?ERROR_ATM_BAD_DATA(Key, HumanReadableHint);
-
-from_json(#{
     <<"id">> := <<"atmUnsupportedDataType">>,
     <<"details">> := #{
         <<"type">> := TypeJson,
@@ -2164,9 +2125,6 @@ from_json(#{
         binary_to_atom(NewStatusBin, utf8)
     );
 
-from_json(#{<<"id">> := <<"atmInternalServerError">>}) ->
-    ?ERROR_ATM_INTERNAL_SERVER_ERROR;
-
 %%--------------------------------------------------------------------
 %% onepanel errors
 %%--------------------------------------------------------------------
@@ -2374,7 +2332,6 @@ to_http_code(?ERROR_VIEW_NOT_EXISTS_ON(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_VIEW_QUERY_FAILED(_, _)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_QUOTA_EXCEEDED) -> ?HTTP_400_BAD_REQUEST;
 
-to_http_code(?ERROR_ATM_BAD_DATA(_, _)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_ATM_UNSUPPORTED_DATA_TYPE(_, _)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_ATM_DATA_TYPE_UNVERIFIED(_, _)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_ATM_DATA_VALUE_CONSTRAINT_UNVERIFIED(_, _, _)) -> ?HTTP_400_BAD_REQUEST;
@@ -2415,8 +2372,6 @@ to_http_code(?ERROR_ATM_OPENFAAS_QUERY_FAILED(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_ATM_OPENFAAS_FUNCTION_REGISTRATION_FAILED) -> ?HTTP_400_BAD_REQUEST;
 
 to_http_code(?ERROR_ATM_INVALID_STATUS_TRANSITION(_, _)) -> ?HTTP_400_BAD_REQUEST;
-
-to_http_code(?ERROR_ATM_INTERNAL_SERVER_ERROR) -> ?HTTP_500_INTERNAL_SERVER_ERROR;
 
 %%--------------------------------------------------------------------
 %% onepanel errors
