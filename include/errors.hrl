@@ -203,8 +203,8 @@
 -define(ERROR_ATM_DATA_TYPE_UNVERIFIED(__VALUE, __EXP_TYPE),
     {error, {atm_data_type_unverified, __VALUE, __EXP_TYPE}}
 ).
--define(ERROR_ATM_DATA_VALUE_CONSTRAINT_UNVERIFIED(__VALUE, __TYPE, __VALUE_CONSTRAINT),
-    {error, {atm_data_value_constraint_unverified, __VALUE, __TYPE, __VALUE_CONSTRAINT}}
+-define(ERROR_ATM_DATA_VALUE_CONSTRAINT_UNVERIFIED(__VALUE, __TYPE, __VALUE_CONSTRAINT_JSON),
+    {error, {atm_data_value_constraint_unverified, __VALUE, __TYPE, __VALUE_CONSTRAINT_JSON}}
 ).
 
 -define(ERROR_ATM_STORE_MISSING_REQUIRED_INITIAL_VALUE,
@@ -217,7 +217,7 @@
     {error, {atm_store_frozen, __ATM_STORE_SCHEMA__ID}}
 ).
 -define(ERROR_ATM_STORE_TYPE_DISALLOWED(__STORE_SCHEMA_ID, __ALLOWED_TYPES),
-    {error, {atm_store_type_unverified, __STORE_SCHEMA_ID, __ALLOWED_TYPES}}
+    {error, {atm_store_type_disallowed, __STORE_SCHEMA_ID, __ALLOWED_TYPES}}
 ).
 -define(ERROR_ATM_STORE_EMPTY(__ATM_STORE_SCHEMA__ID),
     {error, {atm_store_empty, __ATM_STORE_SCHEMA__ID}}
@@ -262,10 +262,10 @@
     {error, {atm_task_arg_mapper_for_nonexistent_lambda_arg, __ARG_NAME}}
 ).
 -define(ERROR_ATM_TASK_ARG_MAPPER_UNSUPPORTED_VALUE_BUILDER(__TYPE, __SUPPORTED_TYPES),
-    {error, {atm_task_arg_mapper_unknown_value_builder, __TYPE, __SUPPORTED_TYPES}}
+    {error, {atm_task_arg_mapper_unsupported_value_builder, __TYPE, __SUPPORTED_TYPES}}
 ).
--define(ERROR_ATM_TASK_ARG_MAPPER_ITEM_QUERY_FAILED(__ITEM, __QUERY),
-    {error, {atm_task_arg_item_query_failed, __ITEM, __QUERY}}
+-define(ERROR_ATM_TASK_ARG_MAPPER_ITERATED_ITEM_QUERY_FAILED(__ITEM, __QUERY),
+    {error, {atm_task_arg_iterated_item_query_failed, __ITEM, __QUERY}}
 ).
 -define(ERROR_ATM_TASK_ARG_MAPPING_FAILED(__ARG_NAME, __REASON),
     {error, {atm_task_arg_mapping_failed, __ARG_NAME, __REASON}}

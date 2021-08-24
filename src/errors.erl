@@ -1039,7 +1039,7 @@ to_json(?ERROR_ATM_UNSUPPORTED_DATA_TYPE(Type, SupportedTypes)) ->
             <<"allowed">> => SupportedTypesJson
         },
         <<"description">> => ?FMT(
-            "Bad atm data type: provided \"~s\" is not one of: ~ts.",
+            "Bad automation data type: provided \"~s\" is not one of: ~ts.",
             [TypeJson, join_values_with_commas(SupportedTypesJson)]
         )
     };
@@ -1051,12 +1051,12 @@ to_json(?ERROR_ATM_DATA_TYPE_UNVERIFIED(Value, ExpType)) -> #{
     },
     <<"description">> => <<"Provided value is not of expected type (see details).">>
 };
-to_json(?ERROR_ATM_DATA_VALUE_CONSTRAINT_UNVERIFIED(Value, Type, ValueConstraint)) -> #{
+to_json(?ERROR_ATM_DATA_VALUE_CONSTRAINT_UNVERIFIED(Value, Type, ValueConstraintJson)) -> #{
     <<"id">> => <<"atmDataValueConstraintUnverified">>,
     <<"details">> => #{
         <<"value">> => Value,
         <<"type">> => atm_data_type:type_to_json(Type),
-        <<"valueConstraints">> => atm_data_type:value_constraints_to_json(Type, ValueConstraint)
+        <<"valueConstraints">> => ValueConstraintJson
     },
     <<"description">> => <<"Provided value doesn't meet the constraints (see details).">>
 };
@@ -1067,11 +1067,14 @@ to_json(?ERROR_ATM_STORE_CREATION_FAILED(AtmStoreSchemaId, {error, _} = Specific
         <<"atmStoreSchemaId">> => AtmStoreSchemaId,
         <<"specificError">> => to_json(SpecificError)
     },
-    <<"description">> => ?FMT("Failed to create atm store \"~s\" (see details).", [AtmStoreSchemaId])
+    <<"description">> => ?FMT(
+        "Failed to create automation store \"~s\" (see details).",
+        [AtmStoreSchemaId]
+    )
 };
 to_json(?ERROR_ATM_STORE_MISSING_REQUIRED_INITIAL_VALUE) -> #{
     <<"id">> => <<"atmStoreMissingRequiredInitialValue">>,
-    <<"description">> => <<"Missing initial value required to create atm store.">>
+    <<"description">> => <<"Missing initial value required to create automation store.">>
 };
 to_json(?ERROR_ATM_STORE_FROZEN(AtmStoreSchemaId)) -> #{
     <<"id">> => <<"atmStoreFrozen">>,
@@ -1079,7 +1082,7 @@ to_json(?ERROR_ATM_STORE_FROZEN(AtmStoreSchemaId)) -> #{
         <<"atmStoreSchemaId">> => AtmStoreSchemaId
     },
     <<"description">> => ?FMT(
-        "Failed to perform operation on atm store \"~s\" as any modification is forbidden.",
+        "Failed to perform operation on automation store \"~s\" as any modification is forbidden.",
         [AtmStoreSchemaId]
     )
 };
@@ -1093,7 +1096,7 @@ to_json(?ERROR_ATM_STORE_TYPE_DISALLOWED(AtmStoreSchemaId, AllowedTypes)) ->
             <<"allowed">> => AllowedTypesJson
         },
         <<"description">> => ?FMT(
-            "Bad atm store: specified \"~s\" must be one of type: ~ts.",
+            "Bad automation store: specified \"~s\" must be one of type: ~ts.",
             [AtmStoreSchemaId, join_values_with_commas(AllowedTypesJson)]
         )
     };
@@ -1102,7 +1105,10 @@ to_json(?ERROR_ATM_STORE_EMPTY(AtmStoreSchemaId)) -> #{
     <<"details">> => #{
         <<"atmStoreSchemaId">> => AtmStoreSchemaId
     },
-    <<"description">> => ?FMT("Bad atm store: specified \"~s\" must not be empty.", [AtmStoreSchemaId])
+    <<"description">> => ?FMT(
+        "Bad automation store: store (id: \"~s\") must not be empty.",
+        [AtmStoreSchemaId]
+    )
 };
 to_json(?ERROR_ATM_STORE_NOT_FOUND(AtmStoreSchemaId)) -> #{
     <<"id">> => <<"atmStoreNotFound">>,
@@ -1110,14 +1116,14 @@ to_json(?ERROR_ATM_STORE_NOT_FOUND(AtmStoreSchemaId)) -> #{
         <<"atmStoreSchemaId">> => AtmStoreSchemaId
     },
     <<"description">> => ?FMT(
-        "Bad atm store: specified (\"~s\") does not exist.",
+        "Bad automation store: specified (\"~s\") does not exist.",
         [AtmStoreSchemaId]
     )
 };
 
 to_json(?ERROR_ATM_WORKFLOW_EMPTY) -> #{
     <<"id">> => <<"atmWorkflowEmpty">>,
-    <<"description">> => <<"Bad atm workflow: no lanes defined.">>
+    <<"description">> => <<"Bad automation workflow: no lanes defined.">>
 };
 
 to_json(?ERROR_ATM_LANE_EMPTY(AtmLaneSchemaId)) -> #{
@@ -1125,7 +1131,10 @@ to_json(?ERROR_ATM_LANE_EMPTY(AtmLaneSchemaId)) -> #{
     <<"details">> => #{
         <<"atmLaneSchemaId">> => AtmLaneSchemaId
     },
-    <<"description">> => ?FMT("Bad atm lane: specified \"~s\" must not be empty.", [AtmLaneSchemaId])
+    <<"description">> => ?FMT(
+        "Bad automation lane: lane (id: \"~s\") must not be empty.",
+        [AtmLaneSchemaId]
+    )
 };
 to_json(?ERROR_ATM_LANE_EXECUTION_CREATION_FAILED(AtmLaneSchemaId, {error, _} = SpecificError)) -> #{
     <<"id">> => <<"atmLaneExecutionCreationFailed">>,
@@ -1134,7 +1143,7 @@ to_json(?ERROR_ATM_LANE_EXECUTION_CREATION_FAILED(AtmLaneSchemaId, {error, _} = 
         <<"specificError">> => to_json(SpecificError)
     },
     <<"description">> => ?FMT(
-        "Failed to create atm lane execution \"~s\" (see details).",
+        "Failed to create automation lane execution \"~s\" (see details).",
         [AtmLaneSchemaId]
     )
 };
@@ -1145,7 +1154,7 @@ to_json(?ERROR_ATM_LANE_EXECUTION_PREPARATION_FAILED(AtmLaneSchemaId, {error, _}
         <<"specificError">> => to_json(SpecificError)
     },
     <<"description">> => ?FMT(
-        "Failed to prepare atm lane execution \"~s\" (see details).",
+        "Failed to prepare automation lane execution \"~s\" (see details).",
         [AtmLaneSchemaId]
     )
 };
@@ -1156,7 +1165,7 @@ to_json(?ERROR_ATM_PARALLEL_BOX_EMPTY(AtmParallelBoxSchemaId)) -> #{
         <<"atmParallelBoxSchemaId">> => AtmParallelBoxSchemaId
     },
     <<"description">> => ?FMT(
-        "Bad atm parallel box: specified \"~s\" must not be empty.",
+        "Bad automation parallel box: parallel box (id: \"~s\") must not be empty.",
         [AtmParallelBoxSchemaId]
     )
 };
@@ -1170,7 +1179,7 @@ to_json(?ERROR_ATM_PARALLEL_BOX_EXECUTION_CREATION_FAILED(
         <<"specificError">> => to_json(SpecificError)
     },
     <<"description">> => ?FMT(
-        "Failed to create atm parallel box execution \"~s\" (see details).",
+        "Failed to create automation parallel box execution \"~s\" (see details).",
         [AtmParallelBoxSchemaId]
     )
 };
@@ -1184,7 +1193,7 @@ to_json(?ERROR_ATM_PARALLEL_BOX_EXECUTION_PREPARATION_FAILED(
         <<"specificError">> => to_json(SpecificError)
     },
     <<"description">> => ?FMT(
-        "Failed to prepare atm parallel box execution \"~s\" (see details).",
+        "Failed to prepare automation parallel box execution \"~s\" (see details).",
         [AtmParallelBoxSchemaId]
     )
 };
@@ -1196,7 +1205,7 @@ to_json(?ERROR_ATM_TASK_EXECUTION_CREATION_FAILED(AtmTaskSchemaId, {error, _} = 
         <<"specificError">> => to_json(SpecificError)
     },
     <<"description">> => ?FMT(
-        "Failed to create atm task execution \"~s\" (see details).",
+        "Failed to create automation task execution \"~s\" (see details).",
         [AtmTaskSchemaId]
     )
 };
@@ -1207,7 +1216,7 @@ to_json(?ERROR_ATM_TASK_EXECUTION_PREPARATION_FAILED(AtmTaskSchemaId, {error, _}
         <<"specificError">> => to_json(SpecificError)
     },
     <<"description">> => ?FMT(
-        "Failed to prepare atm task execution \"~s\" (see details).",
+        "Failed to prepare automation task execution \"~s\" (see details).",
         [AtmTaskSchemaId]
     )
 };
@@ -1216,7 +1225,10 @@ to_json(?ERROR_ATM_TASK_ARG_MAPPER_FOR_REQUIRED_LAMBDA_ARG_MISSING(ArgName)) -> 
     <<"details">> => #{
         <<"argument">> => ArgName
     },
-    <<"description">> => ?FMT("Missing required value for argument: ~s.", [ArgName])
+    <<"description">> => ?FMT(
+        "Missing argument mapper for required lambda argument: ~s.",
+        [ArgName]
+    )
 };
 to_json(?ERROR_ATM_TASK_ARG_MAPPER_FOR_NONEXISTENT_LAMBDA_ARG(ArgName)) -> #{
     <<"id">> => <<"atmTaskArgMapperForNonexistentLambdaArg">>,
@@ -1235,7 +1247,7 @@ to_json(?ERROR_ATM_TASK_ARG_MAPPING_FAILED(ArgName, {error, _} = SpecificError))
         <<"specificError">> => to_json(SpecificError)
     },
     <<"description">> => ?FMT(
-        "Failed to map atm task execution arguemnt \"~s\" (see details).",
+        "Failed to map automation task execution argument \"~s\" (see details).",
         [ArgName]
     )
 };
@@ -1250,17 +1262,17 @@ to_json(?ERROR_ATM_TASK_ARG_MAPPER_UNSUPPORTED_VALUE_BUILDER(Type, SupportedType
             <<"supported">> => SupportedTypesJson
         },
         <<"description">> => ?FMT(
-            "Bad atm task argument value builder: type \"~s\" not supported - must be one of: ~ts.",
+            "Bad automation task argument value builder: type \"~s\" not supported - must be one of: ~ts.",
             [TypeJson, join_values_with_commas(SupportedTypesJson)]
         )
     };
-to_json(?ERROR_ATM_TASK_ARG_MAPPER_ITEM_QUERY_FAILED(Value, Query)) -> #{
-    <<"id">> => <<"atmDataTypeUnverified">>,
+to_json(?ERROR_ATM_TASK_ARG_MAPPER_ITERATED_ITEM_QUERY_FAILED(Value, Query)) -> #{
+    <<"id">> => <<"atmTaskArgMapperIteratedItemQueryFailed">>,
     <<"details">> => #{
         <<"value">> => Value,
         <<"query">> => Query
     },
-    <<"description">> => <<"Failed to perform query on data (see details).">>
+    <<"description">> => <<"Failed to perform query on iterated item (see details).">>
 };
 to_json(?ERROR_ATM_TASK_RESULT_MISSING(ResultName)) -> #{
     <<"id">> => <<"atmTaskResultMissing">>,
@@ -1276,7 +1288,7 @@ to_json(?ERROR_ATM_TASK_RESULT_MAPPING_FAILED(ResultName, {error, _} = SpecificE
         <<"specificError">> => to_json(SpecificError)
     },
     <<"description">> => ?FMT(
-        "Failed to map atm task execution result \"~s\" (see details).",
+        "Failed to map automation task execution result \"~s\" (see details).",
         [ResultName]
     )
 };
@@ -1287,37 +1299,37 @@ to_json(?ERROR_ATM_TASK_RESULT_DISPATCH_FAILED(AtmStoreSchemaId, {error, _} = Sp
         <<"specificError">> => to_json(SpecificError)
     },
     <<"description">> => ?FMT(
-        "Failed to dispatch atm task execution result to atm store \"~s\" (see details).",
+        "Failed to dispatch automation task execution result to automation store \"~s\" (see details).",
         [AtmStoreSchemaId]
     )
 };
 to_json(?ERROR_ATM_TASK_EXECUTION_ENDED) -> #{
     <<"id">> => <<"atmTaskExecutionEnded">>,
-    <<"description">> => <<"Specified atm task execution has already ended.">>
+    <<"description">> => <<"Specified automation task execution has already ended.">>
 };
 
 to_json(?ERROR_ATM_OPENFAAS_NOT_CONFIGURED) -> #{
-    <<"id">> => <<"atmOpenFaasNotConfigured">>,
-    <<"description">> => <<"OpenFaas service is not configured.">>
+    <<"id">> => <<"atmOpenfaasNotConfigured">>,
+    <<"description">> => <<"OpenFaaS service is not configured.">>
 };
 to_json(?ERROR_ATM_OPENFAAS_UNREACHABLE) -> #{
-    <<"id">> => <<"atmOpenFaasUnreachable">>,
-    <<"description">> => <<"Can not connect to OpenFaas service.">>
+    <<"id">> => <<"atmOpenfaasUnreachable">>,
+    <<"description">> => <<"Can not connect to OpenFaaS service.">>
 };
 to_json(?ERROR_ATM_OPENFAAS_QUERY_FAILED) -> #{
-    <<"id">> => <<"atmOpenFaasQueryFailed">>,
-    <<"description">> => <<"Failed to query OpenFaas service.">>
+    <<"id">> => <<"atmOpenfaasQueryFailed">>,
+    <<"description">> => <<"Failed to query OpenFaaS service.">>
 };
 to_json(?ERROR_ATM_OPENFAAS_QUERY_FAILED(Reason)) -> #{
-    <<"id">> => <<"atmOpenFaasQueryFailed">>,
+    <<"id">> => <<"atmOpenfaasQueryFailed">>,
     <<"details">> => #{
         <<"reason">> => Reason
     },
-    <<"description">> => <<"Failed to query OpenFaas service (see details).">>
+    <<"description">> => <<"Failed to query OpenFaaS service (see details).">>
 };
 to_json(?ERROR_ATM_OPENFAAS_FUNCTION_REGISTRATION_FAILED) -> #{
-    <<"id">> => <<"atmOpenFaasFunctionRegistrationFailed">>,
-    <<"description">> => <<"Failed to register function in OpenFaas service.">>
+    <<"id">> => <<"atmOpenfaasFunctionRegistrationFailed">>,
+    <<"description">> => <<"Failed to register function in OpenFaaS service.">>
 };
 
 to_json(?ERROR_ATM_INVALID_STATUS_TRANSITION(PrevStatus, NewStatus)) -> #{
@@ -1917,9 +1929,8 @@ from_json(#{
     }
 }) ->
     Type = atm_data_type:type_from_json(TypeJson),
-    ValueConstraints = atm_data_type:value_constraints_from_json(Type, ValueConstraintsJson),
 
-    ?ERROR_ATM_DATA_VALUE_CONSTRAINT_UNVERIFIED(Value, Type, ValueConstraints);
+    ?ERROR_ATM_DATA_VALUE_CONSTRAINT_UNVERIFIED(Value, Type, ValueConstraintsJson);
 
 from_json(#{
     <<"id">> := <<"atmStoreCreationFailed">>,
@@ -2084,13 +2095,13 @@ from_json(#{
     ?ERROR_ATM_TASK_ARG_MAPPER_UNSUPPORTED_VALUE_BUILDER(Type, SupportedTypes);
 
 from_json(#{
-    <<"id">> := <<"atmDataTypeUnverified">>,
+    <<"id">> := <<"atmTaskArgMapperIteratedItemQueryFailed">>,
     <<"details">> := #{
         <<"value">> := Value,
         <<"query">> := Query
     }
 }) ->
-    ?ERROR_ATM_TASK_ARG_MAPPER_ITEM_QUERY_FAILED(Value, Query);
+    ?ERROR_ATM_TASK_ARG_MAPPER_ITERATED_ITEM_QUERY_FAILED(Value, Query);
 
 from_json(#{
     <<"id">> := <<"atmTaskResultMissing">>,
@@ -2121,24 +2132,24 @@ from_json(#{
 from_json(#{<<"id">> := <<"atmTaskExecutionEnded">>}) ->
     ?ERROR_ATM_TASK_EXECUTION_ENDED;
 
-from_json(#{<<"id">> := <<"atmOpenFaasNotConfigured">>}) ->
+from_json(#{<<"id">> := <<"atmOpenfaasNotConfigured">>}) ->
     ?ERROR_ATM_OPENFAAS_NOT_CONFIGURED;
 
-from_json(#{<<"id">> := <<"atmOpenFaasUnreachable">>}) ->
+from_json(#{<<"id">> := <<"atmOpenfaasUnreachable">>}) ->
     ?ERROR_ATM_OPENFAAS_UNREACHABLE;
 
 from_json(#{
-    <<"id">> := <<"atmOpenFaasQueryFailed">>,
+    <<"id">> := <<"atmOpenfaasQueryFailed">>,
     <<"details">> := #{
         <<"reason">> := Reason
     }
 }) ->
     ?ERROR_ATM_OPENFAAS_QUERY_FAILED(Reason);
 
-from_json(#{<<"id">> := <<"atmOpenFaasQueryFailed">>}) ->
+from_json(#{<<"id">> := <<"atmOpenfaasQueryFailed">>}) ->
     ?ERROR_ATM_OPENFAAS_QUERY_FAILED;
 
-from_json(#{<<"id">> := <<"atmOpenFaasFunctionRegistrationFailed">>}) ->
+from_json(#{<<"id">> := <<"atmOpenfaasFunctionRegistrationFailed">>}) ->
     ?ERROR_ATM_OPENFAAS_FUNCTION_REGISTRATION_FAILED;
 
 from_json(#{
@@ -2391,7 +2402,7 @@ to_http_code(?ERROR_ATM_TASK_ARG_MAPPER_FOR_REQUIRED_LAMBDA_ARG_MISSING(_)) -> ?
 to_http_code(?ERROR_ATM_TASK_ARG_MAPPER_FOR_NONEXISTENT_LAMBDA_ARG(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_ATM_TASK_ARG_MAPPING_FAILED(_, _)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_ATM_TASK_ARG_MAPPER_UNSUPPORTED_VALUE_BUILDER(_, _)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_ATM_TASK_ARG_MAPPER_ITEM_QUERY_FAILED(_, _)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_ATM_TASK_ARG_MAPPER_ITERATED_ITEM_QUERY_FAILED(_, _)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_ATM_TASK_RESULT_MISSING(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_ATM_TASK_RESULT_MAPPING_FAILED(_, _)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_ATM_TASK_RESULT_DISPATCH_FAILED(_, _)) -> ?HTTP_400_BAD_REQUEST;
