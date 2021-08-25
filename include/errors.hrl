@@ -194,6 +194,7 @@
 -define(ERROR_VIEW_QUERY_FAILED(Category, Description), {error, {view_query_failed, Category, Description}}).
 -define(ERROR_QUOTA_EXCEEDED, {error, quota_exceeded}).
 
+%% TODO VFS-8272 move all internal atm errors (those that will never be returned via REST/gs) to op
 -define(ERROR_ATM_UNSUPPORTED_DATA_TYPE(UnsupportedType, SupportedTypes),
     {error, {atm_unsupported_data_type, UnsupportedType, SupportedTypes}}
 ).

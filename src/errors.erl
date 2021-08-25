@@ -1092,7 +1092,7 @@ to_json(?ERROR_ATM_STORE_CREATION_FAILED(AtmStoreSchemaId, {error, _} = Specific
         <<"specificError">> => to_json(SpecificError)
     },
     <<"description">> => ?FMT(
-        "Failed to create automation store \"~s\" (see details).",
+        "Failed to create automation store (id: \"~s\") (see details).",
         [AtmStoreSchemaId]
     )
 };
@@ -1106,7 +1106,7 @@ to_json(?ERROR_ATM_STORE_FROZEN(AtmStoreSchemaId)) -> #{
         <<"atmStoreSchemaId">> => AtmStoreSchemaId
     },
     <<"description">> => ?FMT(
-        "Failed to perform operation on automation store \"~s\" as any modification is forbidden.",
+        "Failed to perform operation on automation store (id: \"~s\") as any modification is forbidden.",
         [AtmStoreSchemaId]
     )
 };
@@ -1167,7 +1167,7 @@ to_json(?ERROR_ATM_LANE_EXECUTION_CREATION_FAILED(AtmLaneSchemaId, {error, _} = 
         <<"specificError">> => to_json(SpecificError)
     },
     <<"description">> => ?FMT(
-        "Failed to create automation lane execution \"~s\" (see details).",
+        "Failed to create automation lane execution (id: \"~s\") (see details).",
         [AtmLaneSchemaId]
     )
 };
@@ -1178,7 +1178,7 @@ to_json(?ERROR_ATM_LANE_EXECUTION_PREPARATION_FAILED(AtmLaneSchemaId, {error, _}
         <<"specificError">> => to_json(SpecificError)
     },
     <<"description">> => ?FMT(
-        "Failed to prepare automation lane execution \"~s\" (see details).",
+        "Failed to prepare automation lane execution (id: \"~s\") (see details).",
         [AtmLaneSchemaId]
     )
 };
@@ -1203,7 +1203,7 @@ to_json(?ERROR_ATM_PARALLEL_BOX_EXECUTION_CREATION_FAILED(
         <<"specificError">> => to_json(SpecificError)
     },
     <<"description">> => ?FMT(
-        "Failed to create automation parallel box execution \"~s\" (see details).",
+        "Failed to create automation parallel box execution (id: \"~s\") (see details).",
         [AtmParallelBoxSchemaId]
     )
 };
@@ -1217,7 +1217,7 @@ to_json(?ERROR_ATM_PARALLEL_BOX_EXECUTION_PREPARATION_FAILED(
         <<"specificError">> => to_json(SpecificError)
     },
     <<"description">> => ?FMT(
-        "Failed to prepare automation parallel box execution \"~s\" (see details).",
+        "Failed to prepare automation parallel box execution (id: \"~s\") (see details).",
         [AtmParallelBoxSchemaId]
     )
 };
@@ -1229,7 +1229,7 @@ to_json(?ERROR_ATM_TASK_EXECUTION_CREATION_FAILED(AtmTaskSchemaId, {error, _} = 
         <<"specificError">> => to_json(SpecificError)
     },
     <<"description">> => ?FMT(
-        "Failed to create automation task execution \"~s\" (see details).",
+        "Failed to create automation task execution (id: \"~s\") (see details).",
         [AtmTaskSchemaId]
     )
 };
@@ -1240,7 +1240,7 @@ to_json(?ERROR_ATM_TASK_EXECUTION_PREPARATION_FAILED(AtmTaskSchemaId, {error, _}
         <<"specificError">> => to_json(SpecificError)
     },
     <<"description">> => ?FMT(
-        "Failed to prepare automation task execution \"~s\" (see details).",
+        "Failed to prepare automation task execution (id: \"~s\") (see details).",
         [AtmTaskSchemaId]
     )
 };
