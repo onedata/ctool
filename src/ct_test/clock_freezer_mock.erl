@@ -38,6 +38,9 @@
 -export([current_time_micros/0]).
 -export([current_time_nanos/0]).
 
+%% Exported for internal RPC
+-export([reset_global_clock_on_current_node/0]).
+
 %%%===================================================================
 %%% API
 %%%===================================================================
@@ -59,9 +62,7 @@ teardown_for_eunit() ->
 -spec setup_for_ct(node() | [node()], [atom()]) -> ok.
 setup_for_ct(NodeOrNodes, WhitelistedModules) ->
     setup_common(NodeOrNodes, WhitelistedModules),
-    % NOTE: this call assumes that during CT tests all nodes
-    % have node_cache initialized (required by global clock)
-    rpc_call_each_node(get_target_nodes(), global_clock, reset_to_system_time, []),
+    rpc_call_each_node(get_target_nodes(), ?MODULE, reset_global_clock_on_current_node, []),
     ok = test_utils:mock_new(NodeOrNodes, native_node_clock, [passthrough]),
     ok = test_utils:mock_expect(NodeOrNodes, native_node_clock, system_time_millis, fun mocked_current_time_millis/0),
     ok = test_utils:mock_expect(NodeOrNodes, native_node_clock, monotonic_time_millis, fun mocked_current_time_millis/0),
@@ -115,10 +116,29 @@ current_time_nanos() ->
     current_time_millis() * 1000000.
 
 %%%===================================================================
+%%% Exported for internal RPC
+%%%===================================================================
+
+-spec reset_global_clock_on_current_node() -> ok.
+reset_global_clock_on_current_node() ->
+    [AppName | _] = binary:split(atom_to_binary(node(), utf8), <<"@">>),
+    % NOTE: this procedure assumes that during CT tests all nodes have node_cache initialized
+    % (required by global clock), with exception of some cluster manager nodes - in multinode
+    % deployments, backup cluster manager nodes do not have node_cache initialized and will
+    % produce badarg errors from node_cache ETS
+    try
+        global_clock:reset_to_system_time()
+    catch
+        error:badarg when AppName =:= <<"cluster_manager">> ->
+            ok
+    end.
+
+%%%===================================================================
 %%% Internal functions
 %%%===================================================================
 
 %% @private
+-spec setup_common(node() | [node()], [atom()]) -> ok.
 setup_common(NodeOrNodes, WhitelistedModules) ->
     Nodes = utils:ensure_list(NodeOrNodes),
     set_target_nodes(Nodes),
