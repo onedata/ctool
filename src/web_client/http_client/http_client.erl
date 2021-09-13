@@ -445,6 +445,16 @@ request_return_stream(Method, URL, Headers, Body, Opts) ->
     Headers :: headers(), Body :: request_body(), Opts :: hackney_opts()) ->
     Response :: response() | {ok, StreamRef :: term()}.
 do_request(Method, URL, Headers, Body, Opts) ->
+    do_request_internal(Method, URL, Headers, Body, Opts, 8).
+
+
+%% @private
+-spec do_request_internal(Method :: method(), URL :: url(), Headers :: headers(), 
+    Body :: request_body(), Opts :: hackney_opts(), Retries :: non_neg_integer()) ->
+    Response :: response() | {ok, StreamRef :: term()}.
+do_request_internal(_Method, _URL, _Headers, _Body, _Opts, 0) ->
+    {error, closed};
+do_request_internal(Method, URL, Headers, Body, Opts, Retries) ->
     HeadersProplist = maps:to_list(Headers),
     % Do not use connection pools
     Opts2 = [{pool, false} | Opts],
@@ -461,6 +471,10 @@ do_request(Method, URL, Headers, Body, Opts) ->
             {ok, RespCode, maps:from_list(RespHeaders), RespBody};
         {ok, RespCode, RespHeaders} ->
             {ok, RespCode, maps:from_list(RespHeaders)};
+        %% @TODO VFS-8364 - sometimes hackney request fails with {error, closed}, so it needs to be 
+        %% repeated. Remove after hackney is fixed/underlying http client is changed.
+        {error, closed} ->
+            do_request_internal(Method, URL, Headers, Body, Opts, Retries - 1);
         Other ->
             Other
     end.
