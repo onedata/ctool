@@ -22,7 +22,7 @@
 -define(CLEANING_PROC_NAME, cleaning_proc).
 
 -define(ENV_UP_RETRIES_NUMBER, 3).
--define(ENV_UP_TIMEOUT_SECONDS, 900).
+-define(ENV_UP_TIMEOUT_SECONDS, 1800).  % 30 minutes
 
 %% This is list of all applications that possibly could be started by test_node_starter
 %% Update when adding new application (if you want to use callbacks without specifying apps list)
