@@ -17,10 +17,12 @@
     clean_environment/1, clean_environment/2, load_modules/2,
     maybe_start_cover/0, maybe_stop_cover/0, maybe_gather_cover/1]).
 
--define(CLEANING_PROC_NAME, cleaning_proc).
--define(TIMEOUT, timer:seconds(60)).
+-define(NODE_CALL_TIMEOUT, timer:seconds(60)).
 -define(COOKIE_KEY, "vm.args/setcookie").
--define(ENV_UP_RETRIES_NUMBER, 5).
+-define(CLEANING_PROC_NAME, cleaning_proc).
+
+-define(ENV_UP_RETRIES_NUMBER, 3).
+-define(ENV_UP_TIMEOUT_SECONDS, 1800).  % 30 minutes
 
 %% This is list of all applications that possibly could be started by test_node_starter
 %% Update when adding new application (if you want to use callbacks without specifying apps list)
@@ -109,7 +111,7 @@ prepare_test_environment(Config, TestModule, Apps) ->
             ])
         catch
             E11:E12:Stk11 ->
-                ct:print("Preparation of environment failed ~p:~p~n" ++
+                ct:pal("Preparation of environment failed ~p:~p~n" ++
                     "For details, check:~n" ++
                     "    prepare_test_environment_error.log~n" ++
                     "    prepare_test_environment.log~n" ++
@@ -120,7 +122,7 @@ prepare_test_environment(Config, TestModule, Apps) ->
 
     catch
         E21:E22:Stk21 ->
-            ct:print("Prepare of environment failed ~p:~p~n~p",
+            ct:pal("Prepare of environment failed ~p:~p~n~p",
                 [E21, E22, Stk21]),
             {fail, {init_failed, E21, E22}}
     end.
@@ -149,7 +151,7 @@ clean_environment(Config, Apps) ->
         maybe_gather_cover(Config, Apps)
     catch
         E1:E2:Stacktrace ->
-            ct:print("Environment cleanup failed - ~p:~p~n" ++
+            ct:pal("Environment cleanup failed - ~p:~p~n" ++
             "Stacktrace: ~p", [E1, E2, Stacktrace]),
             E2
     end,
@@ -209,8 +211,8 @@ maybe_gather_cover(Config, Apps, _) ->
                 ok = cover:import(CoverFile),
                 file:delete(CoverFile)
         after
-            ?TIMEOUT ->
-                ct:print(
+            ?NODE_CALL_TIMEOUT ->
+                ct:pal(
                     "WARNING: Could not collect cover data from node: ~p", [
                         Node
                     ])
@@ -322,7 +324,7 @@ stop_applications(Config, Apps) ->
                     _:{badmatch, {badrpc, nodedown}} ->
                         ok; % Test can kill nodes
                     Type:Reason:Stacktrace ->
-                        ct:print(
+                        ct:pal(
                             "WARNING: Stopping application ~p on node ~p failed - ~p:~p~n"
                             "Stacktrace: ~p", [
                                 AppName, Node, Type, Reason, Stacktrace
@@ -367,10 +369,10 @@ load_modules(Nodes, Modules) ->
     lists:foreach(fun(Node) ->
         lists:foreach(fun(Module) ->
             {Module, Binary, Filename} = code:get_object_code(Module),
-            rpc:call(Node, code, delete, [Module], ?TIMEOUT),
-            rpc:call(Node, code, purge, [Module], ?TIMEOUT),
+            rpc:call(Node, code, delete, [Module], ?NODE_CALL_TIMEOUT),
+            rpc:call(Node, code, purge, [Module], ?NODE_CALL_TIMEOUT),
             ?assertEqual({module, Module}, rpc:call(
-                Node, code, load_binary, [Module, Filename, Binary], ?TIMEOUT
+                Node, code, load_binary, [Module, Filename, Binary], ?NODE_CALL_TIMEOUT
             ))
         end, Modules)
     end, Nodes).
@@ -459,16 +461,24 @@ set_cookies(NodesWithCookies) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec retry_running_env_up_script_until(string(), string(), string(), string(),
-    string(), integer()) -> any().
+    string(), integer()) -> binary().
 retry_running_env_up_script_until(ProjectRoot, AppmockRoot, CmRoot,
     LogsDir, DescriptionFile, RetriesNumber) ->
 
-    StartLog = run_env_up_script(ProjectRoot, AppmockRoot, CmRoot, LogsDir, DescriptionFile),
+    case run_env_up_script(ProjectRoot, AppmockRoot, CmRoot, LogsDir, DescriptionFile) of
+        {success, StartLog} ->
+            StartLog;
+        {failure, StartLog} ->
+            ct:pal(
+                "ERROR: the env_up command failed with output:~n"
+                "---------------------------------------------~n"
+                "~s",
+                [case StartLog of
+                    <<"">> -> <<"<empty string>">>;
+                    Other -> Other
+                end]
+            ),
 
-    case StartLog of
-        % if env_up.py failed, last line of output will start with "Using default image for",
-        % because stderr is redirected to prepare_test_environment.log
-        <<"Using default image for", _/binary>> ->
             Ids = string:tokens(string:strip(os:cmd(
                 "docker ps -aq"
             ), right, $\n), "\n"),
@@ -477,16 +487,15 @@ retry_running_env_up_script_until(ProjectRoot, AppmockRoot, CmRoot,
             ), right, $\n),
             remove_dockers(ProjectRoot, lists:delete(MasterId, Ids)),
 
-
             case RetriesNumber > 0 of
                 true ->
-                    ct:print("Retrying to run env_up.py. Number of retries left: ~p~n", [RetriesNumber]),
+                    ct:pal("Retrying to run env_up.py. Number of retries left: ~p~n", [RetriesNumber]),
                     timer:sleep(timer:seconds(1)),
                     retry_running_env_up_script_until(ProjectRoot, AppmockRoot, CmRoot,
                         LogsDir, DescriptionFile, RetriesNumber - 1);
-                _ -> error(env_up_failed)
-            end;
-        Other -> Other
+                _ ->
+                    error(env_up_failed)
+            end
     end.
 
 %%--------------------------------------------------------------------
@@ -495,10 +504,13 @@ retry_running_env_up_script_until(ProjectRoot, AppmockRoot, CmRoot,
 %% Run env_up.py script
 %% @end
 %%--------------------------------------------------------------------
--spec run_env_up_script(string(), string(), string(), string(), string()) -> binary().
+-spec run_env_up_script(string(), string(), string(), string(), string()) -> {success | failure, binary()}.
 run_env_up_script(ProjectRoot, AppmockRoot, CmRoot, LogsDir, DescriptionFile) ->
     EnvUpScript = filename:join([ProjectRoot, "bamboos", "docker", "env_up.py"]),
-    StartLogRaw = list_to_binary(utils:cmd([EnvUpScript,
+    TimeoutStr = integer_to_list(?ENV_UP_TIMEOUT_SECONDS),
+
+    StartLogRaw = str_utils:unicode_list_to_binary(utils:cmd([
+        "timeout", TimeoutStr, EnvUpScript,
         %% Function is used during OP or OZ tests so starts OP or OZ - not both
         "--bin-cluster-worker", ProjectRoot,
         "--bin-worker", ProjectRoot,
@@ -508,14 +520,39 @@ run_env_up_script(ProjectRoot, AppmockRoot, CmRoot, LogsDir, DescriptionFile) ->
         "--bin-appmock", AppmockRoot,
         "--bin-cm", CmRoot,
         "--logdir", LogsDir,
-        DescriptionFile, "2>> prepare_test_environment_error.log"])),
+        DescriptionFile, "2>> prepare_test_environment_error.log",
+        "
+        EXIT_CODE=$?
+        if [ \"$EXIT_CODE\" -ne 0 ]; then
+            echo \"\\n---------------------------------------------\\n\"
+            if [ \"$EXIT_CODE\" -eq 124 ]; then
+                echo \"ERROR: interrupted environment preparation due to timeout\\n\"
+            fi
+            echo \"Result of the docker ps command:\\n\"
+            docker ps -a
+            echo \"\"
+            if [ \"$EXIT_CODE\" -eq 124 ]; then
+                echo \"ERROR: environment failed to start within " ++ TimeoutStr ++ " seconds (see above for more info)\"
+            else
+                echo \"ERROR: environment preparation returned non-zero exit code: $EXIT_CODE (see above for more info)\"
+            fi
+        fi
+        "
+    ])),
 
     % TODO VFS-1816 remove log filter
     % Some of env_up logs goes to stdout instead of stderr, they need to be
     % removed for proper parsing of JSON with env_up result
     case binary:split(StartLogRaw, <<"\n">>, [global, trim]) of
-        [] -> <<"">>;
-        NotEmptyList -> lists:last(NotEmptyList)
+        [] ->
+            {failure, <<"">>};
+        NonEmptyList ->
+            case lists:last(NonEmptyList) of
+                <<"ERROR", _/binary>> ->
+                    {failure, StartLogRaw};
+                LastOutputLine ->
+                    {success, LastOutputLine}
+            end
     end.
 
 %%--------------------------------------------------------------------
