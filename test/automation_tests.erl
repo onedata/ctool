@@ -22,6 +22,11 @@
 
 -define(RAND_STR(), str_utils:rand_hex(16)).
 -define(RAND_BOOL(), lists_utils:random_element([true, false])).
+-define(RAND_INT(From, To), From + rand:uniform(To - From + 1) - 1).
+
+encode_decode_atm_resource_spec_test() ->
+    ?assert(is_equal_after_json_encode_and_decode(example_resource_spec())).
+
 
 encode_decode_atm_data_spec_test() ->
     lists:foreach(fun(DataSpec) ->
@@ -183,8 +188,63 @@ encode_decode_lane_schema_test() ->
     end, example_lane_schemas()).
 
 %%%===================================================================
+%%% Tests of upgraded models
+%%%===================================================================
+
+atm_lane_schema_backward_compatibility_test() ->
+    lists:foreach(fun(LaneSchema) ->
+        check_backward_compatibility_of_newly_added_field(
+            LaneSchema#atm_lane_schema{max_retries = 0},
+            <<"maxRetries">>
+        )
+    end, example_lane_schemas()).
+
+
+atm_task_schema_backward_compatibility_test() ->
+    lists:foreach(fun(TaskSchema) ->
+        check_backward_compatibility_of_newly_added_field(
+            TaskSchema#atm_task_schema{result_spec_override = undefined},
+            <<"resourceSpecOverride">>
+        )
+    end, example_task_schemas()).
+
+
+% In case a new field is added with default value, no upgrader is obligatory.
+% This procedure checks that the previous version of the record without the field is correctly parsed
+check_backward_compatibility_of_newly_added_field(SubjectRecord, FieldName) ->
+    RecordType = utils:record_type(SubjectRecord),
+
+    EncodedPersistentRecord = persistent_record:encode(SubjectRecord, RecordType),
+    PersistentRecordJson = json_utils:decode(EncodedPersistentRecord),
+    EncodedPersistentRecordWithoutField = json_utils:encode(maps:remove(FieldName, PersistentRecordJson)),
+    ?assertEqual(
+        SubjectRecord,
+        persistent_record:decode(EncodedPersistentRecordWithoutField, RecordType)
+    ),
+
+    JsonableRecord = jsonable_record:to_json(SubjectRecord, RecordType),
+    JsonableRecordWithoutField = maps:remove(FieldName, JsonableRecord),
+    ?assertEqual(
+        SubjectRecord,
+        jsonable_record:from_json(JsonableRecordWithoutField, RecordType)
+    ).
+
+%%%===================================================================
 %%% Helper functions
 %%%===================================================================
+
+example_resource_spec() ->
+    #atm_resource_spec{
+        cpu_requested = lists_utils:random_element([undefined, rand:uniform() * 10]),
+        cpu_limit = lists_utils:random_element([undefined, rand:uniform() * 10]),
+
+        memory_requested = lists_utils:random_element([undefined, ?RAND_INT(10000, 1000000000)]),
+        memory_limit = lists_utils:random_element([undefined, ?RAND_INT(10000, 1000000000)]),
+
+        ephemeral_storage_requested = lists_utils:random_element([undefined, ?RAND_INT(1000, 10000000000)]),
+        ephemeral_storage_limit = lists_utils:random_element([undefined, ?RAND_INT(1000, 10000000000)])
+    }.
+
 
 example_data_specs() ->
     GenExampleValueConstraints = fun
@@ -272,7 +332,8 @@ example_task_schemas() ->
             name = ?RAND_STR(),
             lambda_id = ?RAND_STR(),
             argument_mappings = lists_utils:random_sublist(example_argument_mappers()),
-            result_mappings = lists_utils:random_sublist(example_result_mappers())
+            result_mappings = lists_utils:random_sublist(example_result_mappers()),
+            result_spec_override = lists_utils:random_element([undefined, example_resource_spec()])
         }
     end, lists:seq(1, 10)).
 
@@ -293,7 +354,8 @@ example_lane_schemas() ->
             id = ?RAND_STR(),
             name = ?RAND_STR(),
             parallel_boxes = lists_utils:random_sublist(example_parallel_box_schemas()),
-            store_iterator_spec = lists_utils:random_element(example_store_iterator_specs())
+            store_iterator_spec = lists_utils:random_element(example_store_iterator_specs()),
+            max_retries = ?RAND_INT(0, 10)
         }
     end, lists:seq(1, 10)).
 
