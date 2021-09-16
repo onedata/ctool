@@ -74,7 +74,7 @@ load_utility_modules(Config) ->
             {module, ModuleName} = code:load_file(ModuleName),
 
             RecompiledModules
-        end,
+    end,
         []
     ),
 
@@ -307,17 +307,26 @@ do_action(Fun) ->
 do_action(Fun, 0) ->
     ?assertMatch(ok, Fun());
 do_action(Fun, Num) ->
-    try
-        case Fun() of
-            ok ->
-                ok;
-            Other ->
-                ct:print("Action ~p failed with ans: ~p", [Fun, Other]),
-                do_action(Fun, Num - 1)
-        end
+    Result = try Fun() of
+        ok ->
+            success;
+        {badrpc, nodedown} = Error ->
+            {failure, Error};
+        Other ->
+            ct:print("Action ~p failed with ans: ~p", [Fun, Other]),
+            retry
     catch
         E1:E2 ->
             ct:print("Action ~p failed with error: ~p", [Fun, {E1, E2}]),
+            retry
+    end,
+    case Result of
+        success ->
+            ok;
+        {failure, Reason} ->
+            error(Reason);
+        retry ->
+            timer:sleep(100),
             do_action(Fun, Num - 1)
     end.
 
