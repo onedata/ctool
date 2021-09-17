@@ -203,7 +203,7 @@ atm_lane_schema_backward_compatibility_test() ->
 atm_task_schema_backward_compatibility_test() ->
     lists:foreach(fun(TaskSchema) ->
         check_backward_compatibility_of_newly_added_field(
-            TaskSchema#atm_task_schema{result_spec_override = undefined},
+            TaskSchema#atm_task_schema{resource_spec_override = undefined},
             <<"resourceSpecOverride">>
         )
     end, example_task_schemas()).
@@ -333,7 +333,7 @@ example_task_schemas() ->
             lambda_id = ?RAND_STR(),
             argument_mappings = lists_utils:random_sublist(example_argument_mappers()),
             result_mappings = lists_utils:random_sublist(example_result_mappers()),
-            result_spec_override = lists_utils:random_element([undefined, example_resource_spec()])
+            resource_spec_override = lists_utils:random_element([undefined, example_resource_spec()])
         }
     end, lists:seq(1, 10)).
 

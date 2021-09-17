@@ -131,7 +131,7 @@
     lambda_id :: automation:id(),
     argument_mappings :: [atm_task_schema_argument_mapper:record()],
     result_mappings :: [atm_task_schema_result_mapper:record()],
-    result_spec_override :: undefined | atm_resource_spec:record()
+    resource_spec_override :: undefined | atm_resource_spec:record()
 }).
 
 -record(atm_parallel_box_schema, {
@@ -145,7 +145,7 @@
     name :: automation:name(),
     parallel_boxes :: [atm_parallel_box_schema:record()],
     store_iterator_spec :: atm_store_iterator_spec:record(),
-    % if the lane fails, it will be automatically rerun (at most) this many times
+    % if the lane fails, it will be automatically retried (at most) this many times
     max_retries :: non_neg_integer()
 }).
 

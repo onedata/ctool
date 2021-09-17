@@ -71,7 +71,7 @@ encode_with(Record, NestedRecordEncoder) ->
         <<"lambdaId">> => Record#atm_task_schema.lambda_id,
         <<"argumentMappings">> => [NestedRecordEncoder(M, atm_task_schema_argument_mapper) || M <- Record#atm_task_schema.argument_mappings],
         <<"resultMappings">> => [NestedRecordEncoder(M, atm_task_schema_result_mapper) || M <- Record#atm_task_schema.result_mappings],
-        <<"resourceSpecOverride">> => case Record#atm_task_schema.result_spec_override of
+        <<"resourceSpecOverride">> => case Record#atm_task_schema.resource_spec_override of
             undefined -> null;
             ResourceSpec -> NestedRecordEncoder(ResourceSpec, atm_resource_spec)
         end
@@ -87,7 +87,7 @@ decode_with(RecordJson, NestedRecordDecoder) ->
         lambda_id = maps:get(<<"lambdaId">>, RecordJson),
         argument_mappings = [NestedRecordDecoder(M, atm_task_schema_argument_mapper) || M <- maps:get(<<"argumentMappings">>, RecordJson)],
         result_mappings = [NestedRecordDecoder(M, atm_task_schema_result_mapper) || M <- maps:get(<<"resultMappings">>, RecordJson)],
-        result_spec_override = case maps:get(<<"resourceSpecOverride">>, RecordJson, null) of
+        resource_spec_override = case maps:get(<<"resourceSpecOverride">>, RecordJson, null) of
             null -> undefined;
             ResourceSpecJson -> NestedRecordDecoder(ResourceSpecJson, atm_resource_spec)
         end
