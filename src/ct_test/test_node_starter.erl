@@ -479,17 +479,19 @@ retry_running_env_up_script_until(ProjectRoot, AppmockRoot, CmRoot,
                 end]
             ),
 
-            Ids = string:tokens(string:strip(os:cmd(
-                "docker ps -aq"
-            ), right, $\n), "\n"),
-            MasterId = string:strip(os:cmd(
+            TestmasterDockerId = string:strip(os:cmd(
                 "docker ps -a | grep testmaster | awk '{print $1}'"
             ), right, $\n),
-            remove_dockers(ProjectRoot, lists:delete(MasterId, Ids)),
+            AllEnvUpDockerIds = string:tokens(string:strip(os:cmd(
+                "docker ps -a | egrep '[0-9]+\.test' | awk '{print $1}'"
+            ), right, $\n), "\n"),
+            DockersToRemove = lists:delete(TestmasterDockerId, AllEnvUpDockerIds),
+            ct:pal("Removing the following dockers: ~p", [DockersToRemove]),
+            remove_dockers(ProjectRoot, DockersToRemove),
 
             case RetriesNumber > 0 of
                 true ->
-                    ct:pal("Retrying to run env_up.py. Number of retries left: ~p~n", [RetriesNumber]),
+                    ct:pal("Retrying to run env_up.py. Number of retries left: ~p", [RetriesNumber]),
                     timer:sleep(timer:seconds(1)),
                     retry_running_env_up_script_until(ProjectRoot, AppmockRoot, CmRoot,
                         LogsDir, DescriptionFile, RetriesNumber - 1);
