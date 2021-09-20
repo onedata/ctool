@@ -30,6 +30,18 @@
 -define(WORKFLOW_SYSTEM_AUDIT_LOG_STORE_SCHEMA_ID, <<"WORKFLOW_SYSTEM_AUDIT_LOG">>).
 
 
+-record(atm_resource_spec, {
+    % CPU as number of cores (1.0 = 1 core)
+    cpu_requested = undefined :: undefined | float(),
+    cpu_limit = undefined :: undefined | float(),
+    % memory in Bytes
+    memory_requested = undefined :: undefined | integer(),
+    memory_limit = undefined :: undefined | integer(),
+    % storage in Bytes
+    ephemeral_storage_requested = undefined :: undefined | integer(),
+    ephemeral_storage_limit = undefined :: undefined | integer()
+}).
+
 -record(atm_data_spec, {
     type :: atm_data_type:type(),
     value_constraints = #{} :: atm_data_type:value_constraints()
@@ -118,7 +130,8 @@
     name :: automation:name(),
     lambda_id :: automation:id(),
     argument_mappings :: [atm_task_schema_argument_mapper:record()],
-    result_mappings :: [atm_task_schema_result_mapper:record()]
+    result_mappings :: [atm_task_schema_result_mapper:record()],
+    resource_spec_override :: undefined | atm_resource_spec:record()
 }).
 
 -record(atm_parallel_box_schema, {
@@ -131,7 +144,9 @@
     id :: automation:id(),
     name :: automation:name(),
     parallel_boxes :: [atm_parallel_box_schema:record()],
-    store_iterator_spec :: atm_store_iterator_spec:record()
+    store_iterator_spec :: atm_store_iterator_spec:record(),
+    % if the lane fails, it will be automatically retried (at most) this many times
+    max_retries :: non_neg_integer()
 }).
 
 -endif.
