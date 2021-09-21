@@ -16,6 +16,7 @@
 -behaviour(persistent_record).
 
 -include("automation/automation.hrl").
+-include("errors.hrl").
 
 %% Jsonable record callbacks
 -export([to_json/1, from_json/1]).
@@ -32,26 +33,26 @@
 %%%===================================================================
 
 -spec to_json(record()) -> json_utils:json_map().
-to_json(Record) ->
+to_json(R) ->
     #{
-        <<"cpuRequested">> => utils:undefined_to_null(Record#atm_resource_spec.cpu_requested),
-        <<"cpuLimit">> => utils:undefined_to_null(Record#atm_resource_spec.cpu_limit),
-        <<"memoryRequested">> => utils:undefined_to_null(Record#atm_resource_spec.memory_requested),
-        <<"memoryLimit">> => utils:undefined_to_null(Record#atm_resource_spec.memory_limit),
-        <<"ephemeralStorageRequested">> => utils:undefined_to_null(Record#atm_resource_spec.ephemeral_storage_requested),
-        <<"ephemeralStorageLimit">> => utils:undefined_to_null(Record#atm_resource_spec.ephemeral_storage_limit)
+        <<"cpuRequested">> => parse_value(R#atm_resource_spec.cpu_requested, float, disallow_undefined, to_json),
+        <<"cpuLimit">> => parse_value(R#atm_resource_spec.cpu_limit, float, allow_undefined, to_json),
+        <<"memoryRequested">> => parse_value(R#atm_resource_spec.memory_requested, integer, disallow_undefined, to_json),
+        <<"memoryLimit">> => parse_value(R#atm_resource_spec.memory_limit, integer, allow_undefined, to_json),
+        <<"ephemeralStorageRequested">> => parse_value(R#atm_resource_spec.ephemeral_storage_requested, integer, disallow_undefined, to_json),
+        <<"ephemeralStorageLimit">> => parse_value(R#atm_resource_spec.ephemeral_storage_limit, integer, allow_undefined, to_json)
     }.
 
 
 -spec from_json(json_utils:json_map()) -> record().
-from_json(RecordJson) ->
+from_json(J) ->
     #atm_resource_spec{
-        cpu_requested = utils:null_to_undefined(maps:get(<<"cpuRequested">>, RecordJson)),
-        cpu_limit = utils:null_to_undefined(maps:get(<<"cpuLimit">>, RecordJson)),
-        memory_requested = utils:null_to_undefined(maps:get(<<"memoryRequested">>, RecordJson)),
-        memory_limit = utils:null_to_undefined(maps:get(<<"memoryLimit">>, RecordJson)),
-        ephemeral_storage_requested = utils:null_to_undefined(maps:get(<<"ephemeralStorageRequested">>, RecordJson)),
-        ephemeral_storage_limit = utils:null_to_undefined(maps:get(<<"ephemeralStorageLimit">>, RecordJson))
+        cpu_requested = parse_value(maps:get(<<"cpuRequested">>, J), float, disallow_undefined, from_json),
+        cpu_limit = parse_value(maps:get(<<"cpuLimit">>, J), float, allow_undefined, from_json),
+        memory_requested = parse_value(maps:get(<<"memoryRequested">>, J), integer, disallow_undefined, from_json),
+        memory_limit = parse_value(maps:get(<<"memoryLimit">>, J), integer, allow_undefined, from_json),
+        ephemeral_storage_requested = parse_value(maps:get(<<"ephemeralStorageRequested">>, J), integer, disallow_undefined, from_json),
+        ephemeral_storage_limit = parse_value(maps:get(<<"ephemeralStorageLimit">>, J), integer, allow_undefined, from_json)
     }.
 
 %%%===================================================================
@@ -72,3 +73,20 @@ db_encode(Record, _NestedRecordEncoder) ->
 db_decode(RecordJson, _NestedRecordDecoder) ->
     from_json(RecordJson).
 
+%%%===================================================================
+%%% Helper functions
+%%%===================================================================
+
+%% @private
+-spec parse_value(term(), float | integer, allow_undefined | disallow_undefined, to_json | from_json) ->
+    float() | integer() | undefined | null.
+parse_value(undefined, _, allow_undefined, to_json) ->
+    null;
+parse_value(null, _, allow_undefined, from_json) ->
+    undefined;
+parse_value(Value, integer, _, _) when is_integer(Value) andalso Value > 0 ->
+    Value;
+parse_value(Value, float, _, _) when is_float(Value) andalso Value > 0.0 ->
+    Value;
+parse_value(_, _, _, _) ->
+    throw(?ERROR_BAD_DATA(<<"atmResourceSpec">>)).
