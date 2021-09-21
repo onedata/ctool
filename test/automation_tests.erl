@@ -16,6 +16,7 @@
 
 -include_lib("eunit/include/eunit.hrl").
 -include("automation/automation.hrl").
+-include("errors.hrl").
 -include("logging.hrl").
 
 %% @TODO VFS-7687 Add tests for all automation data types and validators
@@ -25,7 +26,27 @@
 -define(RAND_INT(From, To), From + rand:uniform(To - From + 1) - 1).
 
 encode_decode_atm_resource_spec_test() ->
-    ?assert(is_equal_after_json_encode_and_decode(example_resource_spec())).
+    Example = example_resource_spec(),
+    ExampleJson = atm_resource_spec:to_json(Example),
+    ?assert(is_equal_after_json_encode_and_decode(Example)),
+    ?assertThrow(?ERROR_BAD_DATA(<<"atmResourceSpec">>), atm_resource_spec:to_json(Example#atm_resource_spec{
+        cpu_requested = undefined
+    })),
+    ?assertThrow(?ERROR_BAD_DATA(<<"atmResourceSpec">>), atm_resource_spec:from_json(ExampleJson#{
+        <<"cpuLimit">> => <<"text">>
+    })),
+    ?assertThrow(?ERROR_BAD_DATA(<<"atmResourceSpec">>), atm_resource_spec:from_json(ExampleJson#{
+        <<"memoryRequested">> => 17.8
+    })),
+    ?assertThrow(?ERROR_BAD_DATA(<<"atmResourceSpec">>), atm_resource_spec:to_json(Example#atm_resource_spec{
+        memory_limit = #{<<"map">> => <<"val">>}
+    })),
+    ?assertThrow(?ERROR_BAD_DATA(<<"atmResourceSpec">>), atm_resource_spec:to_json(Example#atm_resource_spec{
+        ephemeral_storage_requested = null
+    })),
+    ?assertThrow(?ERROR_BAD_DATA(<<"atmResourceSpec">>), atm_resource_spec:from_json(ExampleJson#{
+        <<"ephemeralStorageLimit">> => -16
+    })).
 
 
 encode_decode_atm_data_spec_test() ->
@@ -235,13 +256,13 @@ check_backward_compatibility_of_newly_added_field(SubjectRecord, FieldName) ->
 
 example_resource_spec() ->
     #atm_resource_spec{
-        cpu_requested = lists_utils:random_element([undefined, rand:uniform() * 10]),
+        cpu_requested = rand:uniform() * 10,
         cpu_limit = lists_utils:random_element([undefined, rand:uniform() * 10]),
 
-        memory_requested = lists_utils:random_element([undefined, ?RAND_INT(10000, 1000000000)]),
+        memory_requested = ?RAND_INT(10000, 1000000000),
         memory_limit = lists_utils:random_element([undefined, ?RAND_INT(10000, 1000000000)]),
 
-        ephemeral_storage_requested = lists_utils:random_element([undefined, ?RAND_INT(1000, 10000000000)]),
+        ephemeral_storage_requested = ?RAND_INT(1000, 10000000000),
         ephemeral_storage_limit = lists_utils:random_element([undefined, ?RAND_INT(1000, 10000000000)])
     }.
 

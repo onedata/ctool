@@ -32,14 +32,14 @@
 
 -record(atm_resource_spec, {
     % CPU as number of cores (1.0 = 1 core)
-    cpu_requested = undefined :: undefined | float(),
-    cpu_limit = undefined :: undefined | float(),
+    cpu_requested :: float(),
+    cpu_limit :: undefined | float(),
     % memory in Bytes
-    memory_requested = undefined :: undefined | integer(),
-    memory_limit = undefined :: undefined | integer(),
+    memory_requested :: integer(),
+    memory_limit :: undefined | integer(),
     % storage in Bytes
-    ephemeral_storage_requested = undefined :: undefined | integer(),
-    ephemeral_storage_limit = undefined :: undefined | integer()
+    ephemeral_storage_requested :: integer(),
+    ephemeral_storage_limit :: undefined | integer()
 }).
 
 -record(atm_data_spec, {
