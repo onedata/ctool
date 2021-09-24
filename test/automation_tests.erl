@@ -29,6 +29,19 @@ encode_decode_atm_resource_spec_test() ->
     Example = example_resource_spec(),
     ExampleJson = atm_resource_spec:to_json(Example),
     ?assert(is_equal_after_json_encode_and_decode(Example)),
+
+    % CPU spec should be accepted as integers and converted to floats
+    ExampleWithRoundCpuResources = Example#atm_resource_spec{
+        cpu_requested = 1.0,
+        cpu_limit = 8.0
+    },
+    ExampleJsonWithIntegerCpuResources = ExampleJson#{
+        <<"cpuRequested">> => 1,
+        <<"cpuLimit">> => 8
+    },
+    ?assertEqual(ExampleWithRoundCpuResources, atm_resource_spec:from_json(ExampleJsonWithIntegerCpuResources)),
+
+    % test validation of values
     ?assertThrow(?ERROR_BAD_DATA(<<"atmResourceSpec">>), atm_resource_spec:to_json(Example#atm_resource_spec{
         cpu_requested = undefined
     })),
@@ -45,7 +58,7 @@ encode_decode_atm_resource_spec_test() ->
         ephemeral_storage_requested = null
     })),
     ?assertThrow(?ERROR_BAD_DATA(<<"atmResourceSpec">>), atm_resource_spec:from_json(ExampleJson#{
-        <<"ephemeralStorageLimit">> => -16
+        <<"ephemeralStorageLimit">> => 0
     })).
 
 
