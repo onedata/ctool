@@ -88,5 +88,8 @@ parse_value(Value, integer, _, _) when is_integer(Value) andalso Value > 0 ->
     Value;
 parse_value(Value, float, _, _) when is_float(Value) andalso Value > 0.0 ->
     Value;
+parse_value(Value, float, UndefinedValuePolicy, Conversion) ->
+    % accept also integers and convert them to float
+    parse_value(Value, integer, UndefinedValuePolicy, Conversion) * 1.0;
 parse_value(_, _, _, _) ->
     throw(?ERROR_BAD_DATA(<<"atmResourceSpec">>)).
