@@ -165,19 +165,10 @@ encode_decode_lambda_result_spec_test() ->
 
 
 encode_decode_store_schema_test() ->
-    lists:foreach(fun(DataSpec) ->
-        StoreSchema = #atm_store_schema{
-            id = ?RAND_STR(),
-            name = ?RAND_STR(),
-            description = ?RAND_STR(),
-            type = lists_utils:random_element(automation:all_store_types()),
-            data_spec = DataSpec,
-            requires_initial_value = ?RAND_BOOL(),
-            default_initial_value = lists_utils:random_element([undefined, gen_json_term()])
-        },
+    lists:foreach(fun(StoreSchema) ->
         ?assert(is_equal_after_json_encode_and_decode(StoreSchema)),
         ?assert(is_equal_after_db_encode_and_decode(StoreSchema))
-    end, example_data_specs()).
+    end, example_store_schemas()).
 
 
 encode_decode_store_iterator_spec_test() ->
@@ -220,6 +211,20 @@ encode_decode_lane_schema_test() ->
         ?assert(is_equal_after_json_encode_and_decode(LaneSchema)),
         ?assert(is_equal_after_db_encode_and_decode(LaneSchema))
     end, example_lane_schemas()).
+
+
+encode_decode_workflow_schema_revision_test() ->
+    lists:foreach(fun(WorkflowSchemaRevision) ->
+        ?assert(is_equal_after_json_encode_and_decode(WorkflowSchemaRevision)),
+        ?assert(is_equal_after_db_encode_and_decode(WorkflowSchemaRevision))
+    end, example_workflow_schema_revisions()).
+
+
+encode_decode_workflow_schema_revision_registry_test() ->
+    lists:foreach(fun(WorkflowSchemaRevisionRegistry) ->
+        ?assert(is_equal_after_json_encode_and_decode(WorkflowSchemaRevisionRegistry)),
+        ?assert(is_equal_after_db_encode_and_decode(WorkflowSchemaRevisionRegistry))
+    end, example_workflow_schema_revision_registries()).
 
 %%%===================================================================
 %%% Tests of upgraded models
@@ -297,6 +302,20 @@ example_data_specs() ->
     end, atm_data_type:all_data_types()).
 
 
+example_store_schemas() ->
+    lists:map(fun(DataSpec) ->
+        #atm_store_schema{
+            id = ?RAND_STR(),
+            name = ?RAND_STR(),
+            description = ?RAND_STR(),
+            type = lists_utils:random_element(automation:all_store_types()),
+            data_spec = DataSpec,
+            requires_initial_value = ?RAND_BOOL(),
+            default_initial_value = lists_utils:random_element([undefined, gen_json_term()])
+        }
+    end, example_data_specs()).
+
+
 example_store_iterator_specs() ->
     [
         #atm_store_iterator_spec{
@@ -360,36 +379,66 @@ gen_example_argument_value_builder() ->
 
 
 example_task_schemas() ->
+    ExampleArgumentMappers = example_argument_mappers(),
+    ExampleResultMappers = example_result_mappers(),
     lists:map(fun(_) ->
         #atm_task_schema{
             id = ?RAND_STR(),
             name = ?RAND_STR(),
             lambda_id = ?RAND_STR(),
-            argument_mappings = lists_utils:random_sublist(example_argument_mappers()),
-            result_mappings = lists_utils:random_sublist(example_result_mappers()),
+            argument_mappings = lists_utils:random_sublist(ExampleArgumentMappers),
+            result_mappings = lists_utils:random_sublist(ExampleResultMappers),
             resource_spec_override = lists_utils:random_element([undefined, example_resource_spec()])
         }
     end, lists:seq(1, 10)).
 
 
 example_parallel_box_schemas() ->
+    ExampleTaskSchemas = example_task_schemas(),
     lists:map(fun(_) ->
         #atm_parallel_box_schema{
             id = ?RAND_STR(),
             name = ?RAND_STR(),
-            tasks = lists_utils:random_sublist(example_task_schemas())
+            tasks = lists_utils:random_sublist(ExampleTaskSchemas)
         }
     end, lists:seq(1, 10)).
 
 
 example_lane_schemas() ->
+    ExampleParallelBoxSchemas = example_parallel_box_schemas(),
+    ExampleStoreIteratorSpecs = example_store_iterator_specs(),
     lists:map(fun(_) ->
         #atm_lane_schema{
             id = ?RAND_STR(),
             name = ?RAND_STR(),
-            parallel_boxes = lists_utils:random_sublist(example_parallel_box_schemas()),
-            store_iterator_spec = lists_utils:random_element(example_store_iterator_specs()),
+            parallel_boxes = lists_utils:random_sublist(ExampleParallelBoxSchemas),
+            store_iterator_spec = lists_utils:random_element(ExampleStoreIteratorSpecs),
             max_retries = ?RAND_INT(0, 10)
+        }
+    end, lists:seq(1, 10)).
+
+
+example_workflow_schema_revisions() ->
+    ExampleStoreSchemas = example_store_schemas(),
+    ExampleLaneSchemas = example_lane_schemas(),
+    lists:map(fun(_) ->
+        #atm_workflow_schema_revision{
+            description = lists_utils:random_element([<<>>, ?RAND_STR()]),
+            stores = lists_utils:random_sublist(ExampleStoreSchemas),
+            lanes = lists_utils:random_sublist(ExampleLaneSchemas),
+            state = lists_utils:random_element(automation:all_lifecycle_states())
+        }
+    end, lists:seq(1, 10)).
+
+
+example_workflow_schema_revision_registries() ->
+    ExampleWorkflowSchemaRevisions = example_workflow_schema_revisions(),
+    lists:map(fun(_) ->
+        #atm_workflow_schema_revision_registry{
+            registry = maps:from_list(lists:map(fun(WorkflowSchemaRevision) ->
+                RevisionNumber = rand:uniform(100),
+                {RevisionNumber, WorkflowSchemaRevision}
+            end, lists_utils:random_sublist(ExampleWorkflowSchemaRevisions)))
         }
     end, lists:seq(1, 10)).
 

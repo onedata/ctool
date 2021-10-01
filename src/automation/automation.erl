@@ -18,8 +18,8 @@
 %% API
 -export([store_type_to_json/1, store_type_from_json/1]).
 -export([all_store_types/0]).
--export([workflow_schema_state_to_json/1, workflow_schema_state_from_json/1]).
--export([all_workflow_schema_states/0]).
+-export([lifecycle_state_to_json/1, lifecycle_state_from_json/1]).
+-export([all_lifecycle_states/0]).
 
 % Identifier of an instance of an automation-related model.
 -type id() :: binary().
@@ -42,16 +42,16 @@
 % Object kept in store and returned when iterating over it.
 -type item() :: json_utils:json_term().
 
-% Additional information solely for the potential users of a workflow schema used
-% to improve joint schema management. These states do not impact the ability of
-% schemas to be executed, apart from the fact that a warning may be displayed in
-% graphical interface concerning incompleteness or deprecation of a schema.
--type workflow_schema_state() :: incomplete | ready | deprecated.
+% Additional information solely for the potential users to improve joint management
+% of lambdas and workflow schemas. These states do not impact the ability to
+% execute a workflow, apart from the fact that a warning may be displayed in
+% graphical interface concerning incompleteness or deprecation.
+-type lifecycle_state() :: draft | stable | deprecated.
 
 -export_type([id/0, name/0, summary/0, description/0]).
 -export_type([lambda_operation_ref/0]).
 -export_type([store_type/0, item/0]).
--export_type([workflow_schema_state/0]).
+-export_type([lifecycle_state/0]).
 
 %%%===================================================================
 %%% API
@@ -82,18 +82,18 @@ all_store_types() ->
     [single_value, list, map, tree_forest, range, histogram, audit_log].
 
 
--spec workflow_schema_state_to_json(workflow_schema_state()) -> json_utils:json_term().
-workflow_schema_state_to_json(incomplete) -> <<"incomplete">>;
-workflow_schema_state_to_json(ready) -> <<"ready">>;
-workflow_schema_state_to_json(deprecated) -> <<"deprecated">>.
+-spec lifecycle_state_to_json(lifecycle_state()) -> json_utils:json_term().
+lifecycle_state_to_json(draft) -> <<"draft">>;
+lifecycle_state_to_json(stable) -> <<"stable">>;
+lifecycle_state_to_json(deprecated) -> <<"deprecated">>.
 
 
--spec workflow_schema_state_from_json(json_utils:json_term()) -> workflow_schema_state().
-workflow_schema_state_from_json(<<"incomplete">>) -> incomplete;
-workflow_schema_state_from_json(<<"ready">>) -> ready;
-workflow_schema_state_from_json(<<"deprecated">>) -> deprecated.
+-spec lifecycle_state_from_json(json_utils:json_term()) -> lifecycle_state().
+lifecycle_state_from_json(<<"draft">>) -> draft;
+lifecycle_state_from_json(<<"stable">>) -> stable;
+lifecycle_state_from_json(<<"deprecated">>) -> deprecated.
 
 
--spec all_workflow_schema_states() -> [workflow_schema_state()].
-all_workflow_schema_states() ->
-    [incomplete, ready, deprecated].
+-spec all_lifecycle_states() -> [lifecycle_state()].
+all_lifecycle_states() ->
+    [draft, stable, deprecated].

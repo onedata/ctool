@@ -149,4 +149,15 @@
     max_retries :: non_neg_integer()
 }).
 
+-record(atm_workflow_schema_revision, {
+    description = <<>> :: automation:description(),
+    stores = [] :: [atm_store_schema:record()],
+    lanes = [] :: [atm_lane_schema:record()],
+    state = draft :: automation:lifecycle_state()
+}).
+
+-record(atm_workflow_schema_revision_registry, {
+    registry = #{} :: #{atm_workflow_schema_revision:revision_number() => atm_workflow_schema_revision:record()}
+}).
+
 -endif.
