@@ -104,7 +104,7 @@
 
 -type op_worker() :: user_not_supported | auto_cleaning_disabled
 | file_popularity_disabled
-| {space_not_supported, SpaceId :: binary()}
+| {space_not_supported_locally, SpaceId :: binary()}
 | {space_not_supported_by, ProviderId :: binary()}
 | {not_a_local_storage_supporting_space, ProviderId :: binary(), StorageId :: binary(), SpaceId :: binary()}
 | storage_in_use
@@ -930,8 +930,8 @@ to_json(?ERROR_FILE_POPULARITY_DISABLED) -> #{
     <<"id">> => <<"filePopularityDisabled">>,
     <<"description">> => <<"File popularity is disabled.">>
 };
-to_json(?ERROR_SPACE_NOT_SUPPORTED(SpaceId)) -> #{
-    <<"id">> => <<"spaceNotSupported">>,
+to_json(?ERROR_SPACE_NOT_SUPPORTED_LOCALLY(SpaceId)) -> #{
+    <<"id">> => <<"spaceNotSupportedLocally">>,
     <<"details">> => #{
         <<"spaceId">> => SpaceId
     },
@@ -1837,7 +1837,7 @@ from_json(#{<<"id">> := <<"filePopularityDisabled">>}) ->
     ?ERROR_FILE_POPULARITY_DISABLED;
 
 from_json(#{<<"id">> := <<"spaceNotSupported">>, <<"details">> := #{<<"spaceId">> := SpaceId}}) ->
-    ?ERROR_SPACE_NOT_SUPPORTED(SpaceId);
+    ?ERROR_SPACE_NOT_SUPPORTED_LOCALLY(SpaceId);
 
 from_json(#{<<"id">> := <<"spaceNotSupportedBy">>, <<"details">> := #{<<"providerId">> := ProviderId}}) ->
     ?ERROR_SPACE_NOT_SUPPORTED_BY(ProviderId);
@@ -2365,7 +2365,7 @@ to_http_code(?ERROR_SPACE_ALREADY_SUPPORTED_WITH_IMPORTED_STORAGE(_, _)) -> ?HTT
 to_http_code(?ERROR_USER_NOT_SUPPORTED) -> ?HTTP_403_FORBIDDEN;
 to_http_code(?ERROR_AUTO_CLEANING_DISABLED) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_FILE_POPULARITY_DISABLED) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_SPACE_NOT_SUPPORTED(_)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_SPACE_NOT_SUPPORTED_LOCALLY(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_SPACE_NOT_SUPPORTED_BY(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_NOT_A_LOCAL_STORAGE_SUPPORTING_SPACE(_, _, _)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_STORAGE_IN_USE) -> ?HTTP_400_BAD_REQUEST;
