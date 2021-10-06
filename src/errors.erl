@@ -77,6 +77,7 @@
 | {values_not_allowed, key(), {allowed, [term()]}} | {id_not_found, key()}
 | {ambiguous_id, key()} | {bad_identifier, key()} | {identifier_occupied, key()}
 | {bad_value_octal, Key :: key()}
+| invalid_path
 | bad_full_name | bad_username | bad_password | bad_value_email | bad_name
 | bad_value_domain | bad_value_subdomain
 | {bad_value_caveat, Caveat :: binary() | json_utils:json_map()} | bad_gui_package
@@ -734,6 +735,10 @@ to_json(?ERROR_BAD_VALUE_OCTAL(Key)) -> #{
     <<"id">> => <<"badValueOctal">>,
     <<"details">> => #{<<"key">> => Key},
     <<"description">> => ?FMT("Bad value: provided \"~s\" is not a valid octal number.", [Key])
+};
+to_json(?ERROR_BAD_VALUE_PATH) -> #{
+    <<"id">> => <<"badValuePath">>,
+    <<"description">> => <<"Bad value: provided path is invalid.">>
 };
 to_json(?ERROR_BAD_VALUE_FULL_NAME) -> #{
     <<"id">> => <<"badValueFullName">>,
@@ -1729,6 +1734,9 @@ from_json(#{<<"id">> := <<"badValueIdentifierOccupied">>, <<"details">> := #{<<"
 from_json(#{<<"id">> := <<"badValueOctal">>, <<"details">> := #{<<"key">> := Key}}) ->
     ?ERROR_BAD_VALUE_OCTAL(Key);
 
+from_json(#{<<"id">> := <<"badValuePath">>}) ->
+    ?ERROR_BAD_VALUE_PATH;
+
 from_json(#{<<"id">> := <<"badValueFullName">>}) ->
     ?ERROR_BAD_VALUE_FULL_NAME;
 
@@ -2328,6 +2336,7 @@ to_http_code(?ERROR_BAD_VALUE_AMBIGUOUS_ID(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_BAD_VALUE_IDENTIFIER(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_BAD_VALUE_IDENTIFIER_OCCUPIED(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_BAD_VALUE_OCTAL(_)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_BAD_VALUE_PATH) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_BAD_VALUE_FULL_NAME) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_BAD_VALUE_USERNAME) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_BAD_VALUE_PASSWORD) -> ?HTTP_400_BAD_REQUEST;

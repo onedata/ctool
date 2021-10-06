@@ -124,6 +124,7 @@
 -define(ERROR_BAD_VALUE_IDENTIFIER(Key), {error, {bad_identifier, Key}}).
 -define(ERROR_BAD_VALUE_IDENTIFIER_OCCUPIED(Key), {error, {identifier_occupied, Key}}).
 -define(ERROR_BAD_VALUE_OCTAL(Key), {error, {bad_value_octal, Key}}).
+-define(ERROR_BAD_VALUE_PATH, {error, invalid_path}).
 -define(ERROR_BAD_VALUE_FULL_NAME, {error, bad_full_name}).
 -define(ERROR_BAD_VALUE_USERNAME, {error, bad_username}).
 -define(ERROR_BAD_VALUE_PASSWORD, {error, bad_password}).
