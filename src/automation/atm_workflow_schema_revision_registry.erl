@@ -6,7 +6,7 @@
 %%% @end
 %%%-------------------------------------------------------------------
 %%% @doc
-%%% Record expressing store schema used in automation machinery.
+%%% Record expressing workflow schema revision registry used in automation machinery.
 %%% @end
 %%%-------------------------------------------------------------------
 -module(atm_workflow_schema_revision_registry).
@@ -21,7 +21,7 @@
 -export([empty/0]).
 -export([get_revision/2]).
 -export([insert_revision/3]).
--export([take_revision/2]).
+-export([delete_revision/2]).
 -export([size/1]).
 -export([has_revision/2]).
 -export([fold_revisions/3]).
@@ -69,8 +69,8 @@ insert_revision(RevisionNumber, Revision, Record = #atm_workflow_schema_revision
     }}.
 
 
--spec take_revision(atm_workflow_schema_revision:revision_number(), record()) -> error | {ok, record()}.
-take_revision(RevisionNumber, Record = #atm_workflow_schema_revision_registry{registry = Registry}) ->
+-spec delete_revision(atm_workflow_schema_revision:revision_number(), record()) -> error | {ok, record()}.
+delete_revision(RevisionNumber, Record = #atm_workflow_schema_revision_registry{registry = Registry}) ->
     case maps:take(RevisionNumber, Registry) of
         error ->
             error;

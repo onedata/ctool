@@ -379,15 +379,13 @@ gen_example_argument_value_builder() ->
 
 
 example_task_schemas() ->
-    ExampleArgumentMappers = example_argument_mappers(),
-    ExampleResultMappers = example_result_mappers(),
     lists:map(fun(_) ->
         #atm_task_schema{
             id = ?RAND_STR(),
             name = ?RAND_STR(),
             lambda_id = ?RAND_STR(),
-            argument_mappings = lists_utils:random_sublist(ExampleArgumentMappers),
-            result_mappings = lists_utils:random_sublist(ExampleResultMappers),
+            argument_mappings = lists_utils:random_sublist(example_argument_mappers()),
+            result_mappings = lists_utils:random_sublist(example_result_mappers()),
             resource_spec_override = lists_utils:random_element([undefined, example_resource_spec()])
         }
     end, lists:seq(1, 10)).

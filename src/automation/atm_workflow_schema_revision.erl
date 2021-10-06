@@ -6,7 +6,7 @@
 %%% @end
 %%%-------------------------------------------------------------------
 %%% @doc
-%%% Record expressing store schema used in automation machinery.
+%%% Record expressing workflow schema revision used in automation machinery.
 %%% @end
 %%%-------------------------------------------------------------------
 -module(atm_workflow_schema_revision).
