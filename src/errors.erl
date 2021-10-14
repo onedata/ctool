@@ -138,12 +138,12 @@
 | atm_workflow_execution_ended
 | {atm_lane_empty, AtmLaneSchemaId :: binary()}
 | {atm_lane_execution_creation_failed, AtmLaneSchemaId :: binary(), SpecificError :: error()}
-| {atm_lane_execution_setup_failed, AtmLaneSchemaId :: binary(), SpecificError :: error()}
+| {atm_lane_execution_initiation_failed, AtmLaneSchemaId :: binary(), SpecificError :: error()}
 | {atm_parallel_box_empty, AtmParallelBoxSchemaId :: binary()}
 | {atm_parallel_box_execution_creation_failed, AtmParallelBoxSchemaId :: binary(), SpecificError :: error()}
-| {atm_parallel_box_execution_setup_failed, AtmParallelBoxSchemaId :: binary(), SpecificError :: error()}
+| {atm_parallel_box_execution_initiation_failed, AtmParallelBoxSchemaId :: binary(), SpecificError :: error()}
 | {atm_task_execution_creation_failed, AtmTaskSchemaId :: binary(), SpecificError :: error()}
-| {atm_task_execution_setup_failed, AtmTaskSchemaId :: binary(), SpecificError :: error()}
+| {atm_task_execution_initiation_failed, AtmTaskSchemaId :: binary(), SpecificError :: error()}
 | {atm_task_arg_mapper_for_required_lambda_arg_missing, ArgName :: binary()}
 | {atm_task_arg_mapper_for_nonexistent_lambda_arg, ArgName :: binary()}
 | {atm_task_arg_mapper_unsupported_value_builder,
@@ -1189,14 +1189,14 @@ to_json(?ERROR_ATM_LANE_EXECUTION_CREATION_FAILED(AtmLaneSchemaId, {error, _} = 
         [AtmLaneSchemaId]
     )
 };
-to_json(?ERROR_ATM_LANE_EXECUTION_SETUP_FAILED(AtmLaneSchemaId, {error, _} = SpecificError)) -> #{
-    <<"id">> => <<"atmLaneExecutionSetupFailed">>,
+to_json(?ERROR_ATM_LANE_EXECUTION_INITIATION_FAILED(AtmLaneSchemaId, {error, _} = SpecificError)) -> #{
+    <<"id">> => <<"atmLaneExecutionInitiationFailed">>,
     <<"details">> => #{
         <<"atmLaneSchemaId">> => AtmLaneSchemaId,
         <<"specificError">> => to_json(SpecificError)
     },
     <<"description">> => ?FMT(
-        "Failed to setup automation lane execution (id: \"~s\") (see details).",
+        "Failed to initiate automation lane execution (id: \"~s\") (see details).",
         [AtmLaneSchemaId]
     )
 };
@@ -1225,17 +1225,17 @@ to_json(?ERROR_ATM_PARALLEL_BOX_EXECUTION_CREATION_FAILED(
         [AtmParallelBoxSchemaId]
     )
 };
-to_json(?ERROR_ATM_PARALLEL_BOX_EXECUTION_SETUP_FAILED(
+to_json(?ERROR_ATM_PARALLEL_BOX_EXECUTION_INITIATION_FAILED(
     AtmParallelBoxSchemaId,
     {error, _} = SpecificError
 )) -> #{
-    <<"id">> => <<"atmParallelBoxExecutionSetupFailed">>,
+    <<"id">> => <<"atmParallelBoxExecutionInitiationFailed">>,
     <<"details">> => #{
         <<"atmParallelBoxSchemaId">> => AtmParallelBoxSchemaId,
         <<"specificError">> => to_json(SpecificError)
     },
     <<"description">> => ?FMT(
-        "Failed to setup automation parallel box execution (id: \"~s\") (see details).",
+        "Failed to initiate automation parallel box execution (id: \"~s\") (see details).",
         [AtmParallelBoxSchemaId]
     )
 };
@@ -1251,14 +1251,14 @@ to_json(?ERROR_ATM_TASK_EXECUTION_CREATION_FAILED(AtmTaskSchemaId, {error, _} = 
         [AtmTaskSchemaId]
     )
 };
-to_json(?ERROR_ATM_TASK_EXECUTION_SETUP_FAILED(AtmTaskSchemaId, {error, _} = SpecificError)) -> #{
-    <<"id">> => <<"atmTaskExecutionSetupFailed">>,
+to_json(?ERROR_ATM_TASK_EXECUTION_INITIATION_FAILED(AtmTaskSchemaId, {error, _} = SpecificError)) -> #{
+    <<"id">> => <<"atmTaskExecutionInitiationFailed">>,
     <<"details">> => #{
         <<"atmTaskSchemaId">> => AtmTaskSchemaId,
         <<"specificError">> => to_json(SpecificError)
     },
     <<"description">> => ?FMT(
-        "Failed to setup automation task execution (id: \"~s\") (see details).",
+        "Failed to initiate automation task execution (id: \"~s\") (see details).",
         [AtmTaskSchemaId]
     )
 };
@@ -2030,13 +2030,13 @@ from_json(#{
     ?ERROR_ATM_LANE_EXECUTION_CREATION_FAILED(AtmLaneSchemaId, from_json(SpecificErrorJson));
 
 from_json(#{
-    <<"id">> := <<"atmLaneExecutionSetupFailed">>,
+    <<"id">> := <<"atmLaneExecutionInitiationFailed">>,
     <<"details">> := #{
         <<"atmLaneSchemaId">> := AtmLaneSchemaId,
         <<"specificError">> := SpecificErrorJson
     }
 }) ->
-    ?ERROR_ATM_LANE_EXECUTION_SETUP_FAILED(AtmLaneSchemaId, from_json(SpecificErrorJson));
+    ?ERROR_ATM_LANE_EXECUTION_INITIATION_FAILED(AtmLaneSchemaId, from_json(SpecificErrorJson));
 
 from_json(#{
     <<"id">> := <<"atmParallelBoxEmpty">>,
@@ -2059,13 +2059,13 @@ from_json(#{
     );
 
 from_json(#{
-    <<"id">> := <<"atmParallelBoxExecutionSetupFailed">>,
+    <<"id">> := <<"atmParallelBoxExecutionInitiationFailed">>,
     <<"details">> := #{
         <<"atmParallelBoxSchemaId">> := AtmParallelBoxSchemaId,
         <<"specificError">> := SpecificErrorJson
     }
 }) ->
-    ?ERROR_ATM_PARALLEL_BOX_EXECUTION_SETUP_FAILED(
+    ?ERROR_ATM_PARALLEL_BOX_EXECUTION_INITIATION_FAILED(
         AtmParallelBoxSchemaId,
         from_json(SpecificErrorJson)
     );
@@ -2080,13 +2080,13 @@ from_json(#{
     ?ERROR_ATM_TASK_EXECUTION_CREATION_FAILED(AtmTaskSchemaId, from_json(SpecificErrorJson));
 
 from_json(#{
-    <<"id">> := <<"atmTaskExecutionSetupFailed">>,
+    <<"id">> := <<"atmTaskExecutionInitiationFailed">>,
     <<"details">> := #{
         <<"atmTaskSchemaId">> := AtmTaskSchemaId,
         <<"specificError">> := SpecificErrorJson
     }
 }) ->
-    ?ERROR_ATM_TASK_EXECUTION_SETUP_FAILED(AtmTaskSchemaId, from_json(SpecificErrorJson));
+    ?ERROR_ATM_TASK_EXECUTION_INITIATION_FAILED(AtmTaskSchemaId, from_json(SpecificErrorJson));
 
 from_json(#{
     <<"id">> := <<"atmTaskArgMapperForRequiredLambdaArgMissing">>,
@@ -2420,14 +2420,14 @@ to_http_code(?ERROR_ATM_WORKFLOW_EXECUTION_ENDED) -> ?HTTP_400_BAD_REQUEST;
 
 to_http_code(?ERROR_ATM_LANE_EMPTY(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_ATM_LANE_EXECUTION_CREATION_FAILED(_, _)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_ATM_LANE_EXECUTION_SETUP_FAILED(_, _)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_ATM_LANE_EXECUTION_INITIATION_FAILED(_, _)) -> ?HTTP_400_BAD_REQUEST;
 
 to_http_code(?ERROR_ATM_PARALLEL_BOX_EMPTY(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_ATM_PARALLEL_BOX_EXECUTION_CREATION_FAILED(_, _)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_ATM_PARALLEL_BOX_EXECUTION_SETUP_FAILED(_, _)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_ATM_PARALLEL_BOX_EXECUTION_INITIATION_FAILED(_, _)) -> ?HTTP_400_BAD_REQUEST;
 
 to_http_code(?ERROR_ATM_TASK_EXECUTION_CREATION_FAILED(_, _)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_ATM_TASK_EXECUTION_SETUP_FAILED(_, _)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_ATM_TASK_EXECUTION_INITIATION_FAILED(_, _)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_ATM_TASK_ARG_MAPPER_FOR_REQUIRED_LAMBDA_ARG_MISSING(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_ATM_TASK_ARG_MAPPER_FOR_NONEXISTENT_LAMBDA_ARG(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_ATM_TASK_ARG_MAPPING_FAILED(_, _)) -> ?HTTP_400_BAD_REQUEST;

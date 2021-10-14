@@ -235,8 +235,8 @@
 -define(ERROR_ATM_LANE_EXECUTION_CREATION_FAILED(AtmLaneSchemaId, SpecificError),
     {error, {atm_lane_execution_creation_failed, AtmLaneSchemaId, SpecificError}}
 ).
--define(ERROR_ATM_LANE_EXECUTION_SETUP_FAILED(AtmLaneSchemaId, SpecificError),
-    {error, {atm_lane_execution_setup_failed, AtmLaneSchemaId, SpecificError}}
+-define(ERROR_ATM_LANE_EXECUTION_INITIATION_FAILED(AtmLaneSchemaId, SpecificError),
+    {error, {atm_lane_execution_initiation_failed, AtmLaneSchemaId, SpecificError}}
 ).
 
 -define(ERROR_ATM_PARALLEL_BOX_EMPTY(AtmParallelBoxSchemaId),
@@ -245,15 +245,15 @@
 -define(ERROR_ATM_PARALLEL_BOX_EXECUTION_CREATION_FAILED(AtmParallelBoxSchemaId, SpecificError),
     {error, {atm_parallel_box_execution_creation_failed, AtmParallelBoxSchemaId, SpecificError}}
 ).
--define(ERROR_ATM_PARALLEL_BOX_EXECUTION_SETUP_FAILED(AtmParallelBoxSchemaId, SpecificError),
-    {error, {atm_parallel_box_execution_setup_failed, AtmParallelBoxSchemaId, SpecificError}}
+-define(ERROR_ATM_PARALLEL_BOX_EXECUTION_INITIATION_FAILED(AtmParallelBoxSchemaId, SpecificError),
+    {error, {atm_parallel_box_execution_initiation_failed, AtmParallelBoxSchemaId, SpecificError}}
 ).
 
 -define(ERROR_ATM_TASK_EXECUTION_CREATION_FAILED(AtmTaskSchemaId, SpecificError),
     {error, {atm_task_execution_creation_failed, AtmTaskSchemaId, SpecificError}}
 ).
--define(ERROR_ATM_TASK_EXECUTION_SETUP_FAILED(AtmTaskSchemaId, SpecificError),
-    {error, {atm_task_execution_setup_failed, AtmTaskSchemaId, SpecificError}}
+-define(ERROR_ATM_TASK_EXECUTION_INITIATION_FAILED(AtmTaskSchemaId, SpecificError),
+    {error, {atm_task_execution_initiation_failed, AtmTaskSchemaId, SpecificError}}
 ).
 
 -define(ERROR_ATM_TASK_ARG_MAPPER_FOR_REQUIRED_LAMBDA_ARG_MISSING(ArgName),
