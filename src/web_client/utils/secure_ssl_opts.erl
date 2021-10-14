@@ -46,7 +46,10 @@ expand(SslOpts) ->
                 true ->
                     [];
                 only_verify_peercert ->
-                    [{verify_fun, {fun peercert_only_verify_fun/3, []}}]
+                    [
+                        {verify_fun, {fun peercert_only_verify_fun/3, []}},
+                        {partial_chain, fun(Certs) -> partial_chain(Certs, CaCerts) end}
+                    ]
             end,
 
             ServerNameIndicationOpt = case proplists:get_value(hostname, SslOpts) of
@@ -83,3 +86,24 @@ peercert_only_verify_fun(_, valid, UserState) ->
     {valid, UserState};
 peercert_only_verify_fun(_Cert, valid_peer, UserState) ->
     {valid, UserState}.
+
+
+%% @private
+%% Code adapted from hackney (MIT licence) and rebar3 (BSD license)
+-spec partial_chain([binary()], [binary()]) -> unknown_ca | {trusted_ca, 'OTPCertificate'}.
+partial_chain(ChainDers, CaCertsDers) ->
+    CertsToCheck = lists:reverse([{Cert, public_key:pkix_decode_cert(Cert, otp)} || Cert <- ChainDers]),
+    CaCertPublicKeyInfos = lists:map(fun(Cert) ->
+        Dec = public_key:pkix_decode_cert(Cert, otp),
+        hackney_ssl_certificate:public_key_info(Dec)
+    end, CaCertsDers),
+
+    case lists:search(fun({_, Cert}) ->
+        PublicKeyInfo = hackney_ssl_certificate:public_key_info(Cert),
+        lists:member(PublicKeyInfo, CaCertPublicKeyInfos)
+    end, CertsToCheck) of
+        {value, {OtpCertificate, _}} ->
+            {trusted_ca, OtpCertificate};
+        false ->
+            unknown_ca
+    end.
