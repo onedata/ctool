@@ -738,7 +738,7 @@ to_json(?ERROR_BAD_VALUE_OCTAL(Key)) -> #{
 };
 to_json(?ERROR_BAD_VALUE_FILE_PATH) -> #{
     <<"id">> => <<"badValueFilePath">>,
-    <<"description">> => <<"Bad value: provided path is invalid.">>
+    <<"description">> => <<"Bad value: provided file path is invalid.">>
 };
 to_json(?ERROR_BAD_VALUE_FULL_NAME) -> #{
     <<"id">> => <<"badValueFullName">>,
