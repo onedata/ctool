@@ -124,7 +124,7 @@
 -define(ERROR_BAD_VALUE_IDENTIFIER(Key), {error, {bad_identifier, Key}}).
 -define(ERROR_BAD_VALUE_IDENTIFIER_OCCUPIED(Key), {error, {identifier_occupied, Key}}).
 -define(ERROR_BAD_VALUE_OCTAL(Key), {error, {bad_value_octal, Key}}).
--define(ERROR_BAD_VALUE_FILE_PATH, {error, invalid_file_path}).
+-define(ERROR_BAD_VALUE_FILE_PATH, {error, bad_file_path}).
 -define(ERROR_BAD_VALUE_FULL_NAME, {error, bad_full_name}).
 -define(ERROR_BAD_VALUE_USERNAME, {error, bad_username}).
 -define(ERROR_BAD_VALUE_PASSWORD, {error, bad_password}).
@@ -174,8 +174,7 @@
 -define(ERROR_USER_NOT_SUPPORTED, {error, user_not_supported}).
 -define(ERROR_AUTO_CLEANING_DISABLED, {error, auto_cleaning_disabled}).
 -define(ERROR_FILE_POPULARITY_DISABLED, {error, file_popularity_disabled}).
--define(ERROR_SPACE_NOT_SUPPORTED_LOCALLY(SpaceId), {error, {space_not_supported_locally, SpaceId}}).
--define(ERROR_SPACE_NOT_SUPPORTED_BY(ProviderId), {error, {space_not_supported_by, ProviderId}}).
+-define(ERROR_SPACE_NOT_SUPPORTED_BY(SpaceId, ProviderId), {error, {space_not_supported_by, SpaceId, ProviderId}}).
 -define(ERROR_NOT_A_LOCAL_STORAGE_SUPPORTING_SPACE(ProviderId, StorageId, SpaceId),
     {error, {not_a_local_storage_supporting_space, ProviderId, StorageId, SpaceId}}).
 -define(ERROR_STORAGE_IN_USE, {error, storage_in_use}).
