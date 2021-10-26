@@ -177,22 +177,29 @@ websocket_handshake(WSReq) ->
     Transport = websocket_req:transport(WSReq),
     Socket = websocket_req:socket(WSReq),
     Transport:send(Socket, Handshake),
-    {ok, HandshakeResponse} = receive_handshake(<<>>, Transport, Socket),
-    validate_handshake(HandshakeResponse, Key).
+    case receive_handshake(<<>>, Transport, Socket) of
+        {ok, HandshakeResponse} ->
+            validate_handshake(HandshakeResponse, Key);
+        {error, _} = Error ->
+            Error
+    end.
 
 %% @doc Blocks and waits until handshake response data is received
 -spec receive_handshake(Buffer :: binary(),
     Transport :: module(),
     Socket :: term()) ->
-    {ok, binary()}.
+    {ok, binary()} | {error, term()}.
 receive_handshake(Buffer, Transport, Socket) ->
     case re:run(Buffer, "\\r\\n\\r\\n") of
         {match, _} ->
             {ok, Buffer};
         _ ->
-            {ok, Data} = Transport:recv(Socket, 0, 30000),
-            receive_handshake(<<Buffer/binary, Data/binary>>,
-                Transport, Socket)
+            case Transport:recv(Socket, 0, 30000) of
+                {ok, Data} ->
+                    receive_handshake(<<Buffer/binary, Data/binary>>, Transport, Socket);
+                {error, _} = Error ->
+                    Error
+            end
     end.
 
 %% @doc Send frame to server
