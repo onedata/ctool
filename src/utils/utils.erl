@@ -30,6 +30,7 @@
 -export([encode_pid/1, decode_pid/1]).
 -export([rpc_multicall/4, rpc_multicall/5]).
 -export([wait_until/1, wait_until/2, wait_until/3]).
+-export([repeat/2]).
 
 -type time_unit() :: us | ms | s | min | h.
 
@@ -479,6 +480,14 @@ wait_until(Condition, Interval, Attempts) ->
             timer:sleep(Interval),
             wait_until(Condition, Interval, Attempts - 1)
     end.
+
+
+-spec repeat(non_neg_integer(), fun(() -> term())) -> ok.
+repeat(Count, _Fun) when Count =< 0 ->
+    ok;
+repeat(Count, Fun) ->
+    Fun(),
+    repeat(Count - 1, Fun).
 
 %%%===================================================================
 %%% Internal functions

@@ -14,8 +14,10 @@
 -author("Lukasz Opiola").
 
 -include("automation/automation.hrl").
+-include("errors.hrl").
 
 %% API
+-export([sanitize_binary/3]).
 -export([store_type_to_json/1, store_type_from_json/1]).
 -export([all_store_types/0]).
 -export([lifecycle_state_to_json/1, lifecycle_state_from_json/1]).
@@ -56,6 +58,16 @@
 %%%===================================================================
 %%% API
 %%%===================================================================
+
+%% @TODO VFS-8507 Implement data sanitizers for all fields in automation models
+-spec sanitize_binary(binary(), term(), pos_integer()) -> binary() | no_return().
+sanitize_binary(_Key, Value, SizeLimit) when is_binary(Value) andalso byte_size(Value) =< SizeLimit ->
+    Value;
+sanitize_binary(Key, Value, SizeLimit) when is_binary(Value) ->
+    throw(?ERROR_BAD_VALUE_BINARY_TOO_LARGE(Key, SizeLimit));
+sanitize_binary(Key, _Value, _SizeLimit) ->
+    throw(?ERROR_BAD_VALUE_BINARY(Key)).
+
 
 -spec store_type_to_json(store_type()) -> json_utils:json_term().
 store_type_to_json(single_value) -> <<"singleValue">>;

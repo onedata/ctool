@@ -18,7 +18,7 @@
 -include("automation/automation.hrl").
 
 %% API
--export([fold_tasks/3, map_tasks/2, extract_referenced_atm_lambdas/1]).
+-export([fold_tasks/3, map_tasks/2, extract_atm_lambda_references/1]).
 
 %% jsonable_record callbacks
 -export([to_json/1, from_json/1]).
@@ -35,7 +35,13 @@
 % sequentially incremented revision number, but in general it is up to the users how they use revisions.
 -type revision_number() :: pos_integer().
 
--export_type([revision_number/0]).
+%% Carries information what atm_lambdas in what revisions are referenced by a workflow schema.
+%% Structurally, a map where the key is the referenced lambda id
+%% and the value is the corresponding list of revisions of the lambda
+%% (different revision numbers of the same lambda can be referenced in different tasks).
+-type atm_lambda_references() :: #{AtmLambdaId :: automation:id() => [atm_lambda_revision:revision_number()]}.
+
+-export_type([revision_number/0, atm_lambda_references/0]).
 
 %%%===================================================================
 %%% API
@@ -73,11 +79,13 @@ map_tasks(MappingFunction, #atm_workflow_schema_revision{lanes = Lanes} = AtmWor
     AtmWorkflowSchemaRevision#atm_workflow_schema_revision{lanes = NewLanes}.
 
 
--spec extract_referenced_atm_lambdas(record()) -> [automation:id()].
-extract_referenced_atm_lambdas(AtmWorkflowSchemaRevision) ->
-    ordsets:to_list(fold_tasks(fun(#atm_task_schema{lambda_id = LambdaId}, Acc) ->
-        ordsets:add_element(LambdaId, Acc)
-    end, ordsets:new(), AtmWorkflowSchemaRevision)).
+-spec extract_atm_lambda_references(record()) -> atm_lambda_references().
+extract_atm_lambda_references(AtmWorkflowSchemaRevision) ->
+    fold_tasks(fun(#atm_task_schema{lambda_id = AtmLambdaId, lambda_revision_number = RevisionNumber}, Acc) ->
+        maps:update_with(AtmLambdaId, fun(ReferencedRevisionNumbers) ->
+            lists_utils:union([RevisionNumber], ReferencedRevisionNumbers)
+        end, [RevisionNumber], Acc)
+    end, #{}, AtmWorkflowSchemaRevision).
 
 %%%===================================================================
 %%% jsonable_record callbacks
@@ -129,7 +137,11 @@ encode_with(Record, NestedRecordEncoder) ->
     record().
 decode_with(RecordJson, NestedRecordDecoder) ->
     #atm_workflow_schema_revision{
-        description = maps:get(<<"description">>, RecordJson),
+        description = automation:sanitize_binary(
+            <<"description">>,
+            maps:get(<<"description">>, RecordJson, ?DEFAULT_DESCRIPTION),
+            ?DESCRIPTION_SIZE_LIMIT
+        ),
         stores = [NestedRecordDecoder(S, atm_store_schema) || S <- maps:get(<<"stores">>, RecordJson)],
         lanes = [NestedRecordDecoder(S, atm_lane_schema) || S <- maps:get(<<"lanes">>, RecordJson)],
         state = automation:lifecycle_state_from_json(maps:get(<<"state">>, RecordJson))

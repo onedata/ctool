@@ -17,6 +17,11 @@
 -export([remove_undefined/1, undefined_to_null/1]).
 -export([is_submap/2]).
 -export([put_if_defined/3, put_if_defined/4]).
+-export([rebuild/2]).
+-export([build_from_list/2]).
+-export([generate/2]).
+-export([random_submap/1, random_submap/3]).
+-export([fold_while/3]).
 
 %%%===================================================================
 %%% API functions
@@ -81,3 +86,59 @@ put_if_defined(Map, _Key, UndefinedValue, UndefinedValue) ->
     Map;
 put_if_defined(Map, Key, DefinedValue, _UndefinedValue) ->
     maps:put(Key, DefinedValue, Map).
+
+
+-spec rebuild(fun((OldKey, OldValue) -> {NewKey, NewValue}), #{OldKey => OldValue}) -> #{NewKey => NewValue}.
+rebuild(MapKeyValueFun, Map) ->
+    maps:fold(fun(OldKey, OldValue, Acc) ->
+        {NewKey, NewValue} = MapKeyValueFun(OldKey, OldValue),
+        Acc#{NewKey => NewValue}
+    end, #{}, Map).
+
+
+-spec build_from_list(fun((Element) -> {Key, Value}), [Element]) -> #{Key => Value}.
+build_from_list(BuildFun, Elements) ->
+    lists:foldl(fun(Element, Acc) ->
+        {Key, Value} = BuildFun(Element),
+        Acc#{Key => Value}
+    end, #{}, Elements).
+
+
+-spec generate(non_neg_integer(), fun(() -> {Key, Value})) -> #{Key => Value}.
+generate(Count, Generator) ->
+    build_from_list(fun(_) -> Generator() end, lists:seq(1, Count)).
+
+
+-spec random_submap(#{Key => Value}) -> #{Key => Value}.
+random_submap(Map) ->
+    random_submap(Map, 0, maps:size(Map)).
+
+-spec random_submap(#{Key => Value}, non_neg_integer(), all | non_neg_integer()) -> #{Key => Value}.
+random_submap(Map, MinSize, all) ->
+    random_submap(Map, MinSize, maps:size(Map));
+random_submap(Map, MinSize, MaxSize) ->
+    maps:with(lists_utils:random_sublist(maps:keys(Map), MinSize, MaxSize), Map).
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Works like fold, but allows stopping the folding with `{halt, Acc}`
+%% to immediately return the Acc. Otherwise, `{cont, Acc}` should be used
+%% to continue the folding.
+%% @end
+%%--------------------------------------------------------------------
+-spec fold_while(fun((K, V, Acc) -> {cont, Acc} | {halt, Acc}), Acc, #{K => V}) -> Acc.
+fold_while(Fun, InitialAcc, Map) ->
+    do_fold_while(Fun, {cont, InitialAcc}, maps:iterator(Map)).
+
+%% @private
+-spec do_fold_while(fun((K, V, Acc) -> {cont, Acc} | {halt, Acc}), Acc, maps:iterator(K, V)) -> Acc.
+do_fold_while(_Fun, {halt, Acc}, _) ->
+    Acc;
+do_fold_while(Fun, {cont, Acc}, Iterator) ->
+    case maps:next(Iterator) of
+        none ->
+            Acc;
+        {Key, Value, NewIterator} ->
+            do_fold_while(Fun, Fun(Key, Value, Acc), NewIterator)
+    end.
