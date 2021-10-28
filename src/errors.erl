@@ -77,6 +77,7 @@
 | {values_not_allowed, key(), {allowed, [term()]}} | {id_not_found, key()}
 | {ambiguous_id, key()} | {bad_identifier, key()} | {identifier_occupied, key()}
 | {bad_value_octal, Key :: key()}
+| bad_file_path
 | bad_full_name | bad_username | bad_password | bad_value_email | bad_name
 | bad_value_domain | bad_value_subdomain
 | {bad_value_caveat, Caveat :: binary() | json_utils:json_map()} | bad_gui_package
@@ -104,7 +105,7 @@
 
 -type op_worker() :: user_not_supported | auto_cleaning_disabled
 | file_popularity_disabled
-| {space_not_supported_by, ProviderId :: binary()}
+| {space_not_supported_by, SpaceId :: binary(), ProviderId :: binary()}
 | {not_a_local_storage_supporting_space, ProviderId :: binary(), StorageId :: binary(), SpaceId :: binary()}
 | storage_in_use
 | requires_auto_storage_import_mode
@@ -734,6 +735,10 @@ to_json(?ERROR_BAD_VALUE_OCTAL(Key)) -> #{
     <<"details">> => #{<<"key">> => Key},
     <<"description">> => ?FMT("Bad value: provided \"~s\" is not a valid octal number.", [Key])
 };
+to_json(?ERROR_BAD_VALUE_FILE_PATH) -> #{
+    <<"id">> => <<"badValueFilePath">>,
+    <<"description">> => <<"Bad value: provided file path is invalid.">>
+};
 to_json(?ERROR_BAD_VALUE_FULL_NAME) -> #{
     <<"id">> => <<"badValueFullName">>,
     <<"description">> => <<"Bad value: ", (?FULL_NAME_REQUIREMENTS_DESCRIPTION)/binary>>
@@ -929,12 +934,13 @@ to_json(?ERROR_FILE_POPULARITY_DISABLED) -> #{
     <<"id">> => <<"filePopularityDisabled">>,
     <<"description">> => <<"File popularity is disabled.">>
 };
-to_json(?ERROR_SPACE_NOT_SUPPORTED_BY(ProviderId)) -> #{
+to_json(?ERROR_SPACE_NOT_SUPPORTED_BY(SpaceId, ProviderId)) -> #{
     <<"id">> => <<"spaceNotSupportedBy">>,
     <<"details">> => #{
+        <<"spaceId">> => SpaceId,
         <<"providerId">> => ProviderId
     },
-    <<"description">> => ?FMT("Specified space is not supported by provider ~s.", [ProviderId])
+    <<"description">> => ?FMT("Specified space: ~s is not supported by provider ~s.", [SpaceId, ProviderId])
 };
 to_json(?ERROR_NOT_A_LOCAL_STORAGE_SUPPORTING_SPACE(ProviderId, StorageId, SpaceId)) -> #{
     <<"id">> => <<"notALocalStorageSupportingSpace">>,
@@ -1721,6 +1727,9 @@ from_json(#{<<"id">> := <<"badValueIdentifierOccupied">>, <<"details">> := #{<<"
 from_json(#{<<"id">> := <<"badValueOctal">>, <<"details">> := #{<<"key">> := Key}}) ->
     ?ERROR_BAD_VALUE_OCTAL(Key);
 
+from_json(#{<<"id">> := <<"badValueFilePath">>}) ->
+    ?ERROR_BAD_VALUE_FILE_PATH;
+
 from_json(#{<<"id">> := <<"badValueFullName">>}) ->
     ?ERROR_BAD_VALUE_FULL_NAME;
 
@@ -1828,8 +1837,11 @@ from_json(#{<<"id">> := <<"autoCleaningDisabled">>}) ->
 from_json(#{<<"id">> := <<"filePopularityDisabled">>}) ->
     ?ERROR_FILE_POPULARITY_DISABLED;
 
-from_json(#{<<"id">> := <<"spaceNotSupportedBy">>, <<"details">> := #{<<"providerId">> := ProviderId}}) ->
-    ?ERROR_SPACE_NOT_SUPPORTED_BY(ProviderId);
+from_json(#{<<"id">> := <<"spaceNotSupportedBy">>, <<"details">> := #{
+    <<"spaceId">> := SpaceId,
+    <<"providerId">> := ProviderId
+}}) ->
+    ?ERROR_SPACE_NOT_SUPPORTED_BY(SpaceId, ProviderId);
 
 from_json(#{<<"id">> := <<"notALocalStorageSupportingSpace">>, <<"details">> := #{
     <<"providerId">> := ProviderId,
@@ -2317,6 +2329,7 @@ to_http_code(?ERROR_BAD_VALUE_AMBIGUOUS_ID(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_BAD_VALUE_IDENTIFIER(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_BAD_VALUE_IDENTIFIER_OCCUPIED(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_BAD_VALUE_OCTAL(_)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_BAD_VALUE_FILE_PATH) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_BAD_VALUE_FULL_NAME) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_BAD_VALUE_USERNAME) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_BAD_VALUE_PASSWORD) -> ?HTTP_400_BAD_REQUEST;
@@ -2354,7 +2367,7 @@ to_http_code(?ERROR_SPACE_ALREADY_SUPPORTED_WITH_IMPORTED_STORAGE(_, _)) -> ?HTT
 to_http_code(?ERROR_USER_NOT_SUPPORTED) -> ?HTTP_403_FORBIDDEN;
 to_http_code(?ERROR_AUTO_CLEANING_DISABLED) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_FILE_POPULARITY_DISABLED) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_SPACE_NOT_SUPPORTED_BY(_)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_SPACE_NOT_SUPPORTED_BY(_, _)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_NOT_A_LOCAL_STORAGE_SUPPORTING_SPACE(_, _, _)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_STORAGE_IN_USE) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_REQUIRES_AUTO_STORAGE_IMPORT_MODE) -> ?HTTP_400_BAD_REQUEST;
