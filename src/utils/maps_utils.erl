@@ -95,9 +95,9 @@ map_key_value(MapKeyValueFun, Map) ->
     end, #{}, Map).
 
 
--spec generate(non_neg_integer(), fun(() -> {Key, Value}) | fun((Ordinal :: non_neg_integer()) ->
-    {Key, Value})) -> #{Key => Value}.
-generate(Count, Generator) ->
+-spec generate(fun(() -> {Key, Value}) | fun((Ordinal :: non_neg_integer()) -> {Key, Value}), non_neg_integer()) ->
+    #{Key => Value}.
+generate(Generator, Count) ->
     generate_from_list(fun
         (Ordinal) when is_function(Generator, 1) -> Generator(Ordinal);
         (_Ordinal) when is_function(Generator, 0) -> Generator()
@@ -105,9 +105,9 @@ generate(Count, Generator) ->
 
 
 -spec generate_from_list(fun((Element) -> {Key, Value}), [Element]) -> #{Key => Value}.
-generate_from_list(BuildFun, Elements) ->
+generate_from_list(Generator, Elements) ->
     lists:foldl(fun(Element, Acc) ->
-        {Key, Value} = BuildFun(Element),
+        {Key, Value} = Generator(Element),
         Acc#{Key => Value}
     end, #{}, Elements).
 

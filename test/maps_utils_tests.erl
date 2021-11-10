@@ -1,6 +1,6 @@
 %%%--------------------------------------------------------------------
 %%% @author Lukasz Opiola
-%%% @copyright (C) 2020 ACK CYFRONET AGH
+%%% @copyright (C) 2021 ACK CYFRONET AGH
 %%% This software is released under the MIT license
 %%% cited in 'LICENSE.txt'.
 %%% @end
@@ -40,15 +40,15 @@ generate_from_list_test() ->
 
 
 generate_test() ->
-    ?assertEqual(#{}, maps_utils:generate(0, fun() -> {key, value} end)),
-    ?assertEqual(#{key => value}, maps_utils:generate(1, fun() -> {key, value} end)),
-    ?assertEqual(#{key => value}, maps_utils:generate(17, fun() -> {key, value} end)),
-    ?assertEqual(#{}, maps_utils:generate(0, fun(Ordinal) -> {Ordinal, value} end)),
-    ?assertEqual(#{1 => value, 2 => value}, maps_utils:generate(2, fun(Ordinal) -> {Ordinal, value} end)).
+    ?assertEqual(#{}, maps_utils:generate(fun() -> {key, value} end, 0)),
+    ?assertEqual(#{key => value}, maps_utils:generate(fun() -> {key, value} end, 1)),
+    ?assertEqual(#{key => value}, maps_utils:generate(fun() -> {key, value} end, 17)),
+    ?assertEqual(#{}, maps_utils:generate(fun(Ordinal) -> {Ordinal, value} end, 0)),
+    ?assertEqual(#{1 => value, 2 => value}, maps_utils:generate(fun(Ordinal) -> {Ordinal, value} end, 2)).
 
 
 random_submap_test() ->
-    OriginalMap = maps_utils:generate(17, fun() -> {rand:uniform(100), rand:uniform(100)} end),
+    OriginalMap = maps_utils:generate(fun() -> {rand:uniform(100), rand:uniform(100)} end, 17),
     ?assert(maps_utils:is_submap(maps_utils:random_submap(OriginalMap), OriginalMap)),
     ?assert(maps_utils:is_submap(maps_utils:random_submap(OriginalMap, 0, all), OriginalMap)),
     ?assert(maps_utils:is_submap(maps_utils:random_submap(OriginalMap, 0, 16), OriginalMap)),

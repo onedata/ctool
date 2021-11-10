@@ -430,9 +430,9 @@ example_argument_value_builder(StoreSchemaIds, Depth) ->
             type = const, recipe = lists_utils:random_element([?RAND_STR(), 0, 151, 27.8])
         };
         object -> #atm_task_argument_value_builder{
-            type = object, recipe = maps_utils:generate(?RAND_INT(1, 5), fun() ->
+            type = object, recipe = maps_utils:generate(fun() ->
                 {?RAND_STR(), example_argument_value_builder(StoreSchemaIds, Depth + 1)}
-            end)
+            end, ?RAND_INT(1, 5))
         };
         store_credentials ->
             #atm_task_argument_value_builder{
@@ -470,9 +470,9 @@ example_task_schema(AvailableLambdasWithRegistries, StoreSchemaIds) ->
 
 -spec example_task_schemas() -> [atm_task_schema:record()].
 example_task_schemas() ->
-    AvailableLambdasWithRegistries = maps_utils:generate(7, fun() ->
+    AvailableLambdasWithRegistries = maps_utils:generate(fun() ->
         {example_id(), example_lambda_revision_registry()}
-    end),
+    end, 7),
     StoreSchemaIds = lists_utils:generate(7, fun example_id/0),
     example_task_schemas(AvailableLambdasWithRegistries, StoreSchemaIds).
 
