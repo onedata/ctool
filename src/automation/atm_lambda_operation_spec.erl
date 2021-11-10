@@ -16,6 +16,7 @@
 -behaviour(persistent_record).
 
 -include("automation/automation.hrl").
+-include("errors.hrl").
 
 %% API
 -export([get_engine/1]).
@@ -60,7 +61,9 @@ get_engine(#atm_user_form_operation_spec{}) -> user_form.
 %%--------------------------------------------------------------------
 -spec allowed_engines_for_custom_lambdas() -> [engine()].
 allowed_engines_for_custom_lambdas() ->
-    [openfaas, atm_workflow, user_form].
+    % @TODO VFS-8582 Implement automation engines other than OpenFaaS
+    % [openfaas, atm_workflow, user_form].
+    [openfaas].
 
 
 -spec engine_to_json(engine()) -> json_utils:json_term().
@@ -126,6 +129,12 @@ encode_with(Record, NestedRecordEncoder) ->
     record().
 decode_with(RecordJson, NestedRecordDecoder) ->
     Engine = engine_from_json(maps:get(<<"engine">>, RecordJson)),
+
+    lists:member(Engine, allowed_engines_for_custom_lambdas()) orelse throw(?ERROR_BAD_VALUE_NOT_ALLOWED(
+        <<"operationSpec.engine">>,
+        lists:map(fun engine_to_json/1, allowed_engines_for_custom_lambdas())
+    )),
+
     RecordType = engine_to_record_type(Engine),
     NestedRecordDecoder(RecordJson, RecordType).
 

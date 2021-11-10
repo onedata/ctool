@@ -129,6 +129,7 @@
     id :: automation:id(),
     name :: automation:name(),
     lambda_id :: automation:id(),
+    lambda_revision_number :: atm_lambda_revision:revision_number(),
     argument_mappings :: [atm_task_schema_argument_mapper:record()],
     result_mappings :: [atm_task_schema_result_mapper:record()],
     resource_spec_override :: undefined | atm_resource_spec:record()
@@ -147,6 +148,22 @@
     store_iterator_spec :: atm_store_iterator_spec:record(),
     % if the lane fails, it will be automatically retried (at most) this many times
     max_retries :: non_neg_integer()
+}).
+
+-record(atm_lambda_revision, {
+    name :: automation:name(),
+    summary :: automation:summary(),
+    description :: automation:description(),
+    operation_spec :: atm_lambda_operation_spec:record(),
+    argument_specs :: [atm_lambda_argument_spec:record()],
+    result_specs :: [atm_lambda_result_spec:record()],
+    resource_spec :: atm_resource_spec:record(),
+    checksum :: atm_lambda_revision:checksum(),
+    state :: automation:lifecycle_state()
+}).
+
+-record(atm_lambda_revision_registry, {
+    registry = #{} :: #{atm_lambda_revision:revision_number() => atm_lambda_revision:record()}
 }).
 
 -record(atm_workflow_schema_revision, {

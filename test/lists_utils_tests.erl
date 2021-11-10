@@ -47,6 +47,18 @@ index_of_test() ->
     ?assertEqual(undefined, lists_utils:index_of(<<"another missing value">>, L)).
 
 
+searchmap_test() ->
+    L = lists:seq(1, 100),
+    ?assertEqual(error, lists_utils:searchmap(fun(_) -> {true, any} end, [])),
+    ?assertEqual(error, lists_utils:searchmap(fun(_) -> false end, L)),
+    ?assertEqual({ok, {found, 13}}, lists_utils:searchmap(fun(Element) ->
+        case Element of
+            13 -> {true, {found, 13}};
+            _ -> false
+        end
+    end, L)).
+
+
 pmap_pforeach_pfiltermap_test_() ->
     {timeout, 60, fun() ->
         List = lists:seq(1, 100),
@@ -110,6 +122,14 @@ pmap_pforeach_pfiltermap_test_() ->
             lists_utils:pfiltermap(CrashingFun, List)
         )
     end}.
+
+
+generate_test() ->
+    ?assertEqual([], lists_utils:generate(0, fun() -> {key, value} end)),
+    ?assertEqual([value], lists_utils:generate(1, fun() -> value end)),
+    ?assertEqual(lists:duplicate(17, value), lists_utils:generate(17, fun() -> value end)),
+    ?assertEqual([], lists_utils:generate(0, fun(Ordinal) -> Ordinal * 2 end)),
+    ?assertEqual([2, 4], lists_utils:generate(2, fun(Ordinal) -> Ordinal * 2 end)).
 
 
 -endif.

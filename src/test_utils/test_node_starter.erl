@@ -368,12 +368,22 @@ ping_nodes(Nodes, Tries) ->
 load_modules(Nodes, Modules) ->
     lists:foreach(fun(Node) ->
         lists:foreach(fun(Module) ->
-            {Module, Binary, Filename} = code:get_object_code(Module),
-            rpc:call(Node, code, delete, [Module], ?NODE_CALL_TIMEOUT),
-            rpc:call(Node, code, purge, [Module], ?NODE_CALL_TIMEOUT),
-            ?assertEqual({module, Module}, rpc:call(
-                Node, code, load_binary, [Module, Filename, Binary], ?NODE_CALL_TIMEOUT
-            ))
+            try
+                {Module, Binary, Filename} = code:get_object_code(Module),
+                rpc:call(Node, code, delete, [Module], ?NODE_CALL_TIMEOUT),
+                rpc:call(Node, code, purge, [Module], ?NODE_CALL_TIMEOUT),
+                ?assertEqual({module, Module}, rpc:call(
+                    Node, code, load_binary, [Module, Filename, Binary], ?NODE_CALL_TIMEOUT
+                ))
+            catch Class:Reason:Stacktrace ->
+                ct:print(
+                    "Cannot load module '~w' on node ~w, does the module exist in 'test_distributed' directory?~n"
+                    "Error was: ~w:~p~n"
+                    "Stacktrace: ~s",
+                    [Module, Node, Class, Reason, lager:pr_stacktrace(Stacktrace)]
+                ),
+                error({cannot_load_module, Module})
+            end
         end, Modules)
     end, Nodes).
 
