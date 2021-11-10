@@ -38,7 +38,7 @@
 % but in general the numbering is up to the users.
 -type revision_number() :: pos_integer().
 
-% used to compare two lambdas - they are considered the same from the functional
+% used to compare two lambda revisions - they are considered the same from the functional
 % point of view if their checksums are the same
 -type checksum() :: binary().
 
@@ -68,7 +68,7 @@ to_json(Record) ->
 
 -spec from_json(json_utils:json_term()) -> record().
 from_json(RecordJson) ->
-    decode_with(RecordJson, fun jsonable_record:from_json/2).
+    decode_with(json, RecordJson, fun jsonable_record:from_json/2).
 
 %%%===================================================================
 %%% persistent_record callbacks
@@ -86,7 +86,7 @@ db_encode(Record, NestedRecordEncoder) ->
 
 -spec db_decode(json_utils:json_term(), persistent_record:nested_record_decoder()) -> record().
 db_decode(RecordJson, NestedRecordDecoder) ->
-    decode_with(RecordJson, NestedRecordDecoder).
+    decode_with(db, RecordJson, NestedRecordDecoder).
 
 %%%===================================================================
 %%% Internal functions
@@ -108,21 +108,27 @@ encode_with(Record, NestedRecordEncoder) ->
     }.
 
 
--spec decode_with(json_utils:json_term(), persistent_record:nested_record_decoder()) ->
+-spec decode_with(json | db, json_utils:json_term(), persistent_record:nested_record_decoder()) ->
     record().
-decode_with(RecordJson, NestedRecordDecoder) ->
+decode_with(DecoderType, RecordJson, NestedRecordDecoder) ->
+    %% @TODO VFS-8507 Rework along with new data sanitizers for all atm models (data_spec callback?)
+    InputSummary = maps:get(<<"summary">>, RecordJson, ?DEFAULT_SUMMARY),
+    Summary = case DecoderType of
+        json -> automation:sanitize_binary(<<"summary">>, InputSummary, ?SUMMARY_SIZE_LIMIT);
+        db -> InputSummary
+    end,
+
+    %% @TODO VFS-8507 Rework along with new data sanitizers for all atm models (data_spec callback?)
+    InputDescription = maps:get(<<"description">>, RecordJson, ?DEFAULT_DESCRIPTION),
+    Description = case DecoderType of
+        json -> automation:sanitize_binary(<<"description">>, InputDescription, ?DESCRIPTION_SIZE_LIMIT);
+        db -> InputDescription
+    end,
+
     RevisionWithoutChecksum = #atm_lambda_revision{
         name = maps:get(<<"name">>, RecordJson),
-        summary = automation:sanitize_binary(
-            <<"summary">>,
-            maps:get(<<"summary">>, RecordJson, ?DEFAULT_SUMMARY),
-            ?SUMMARY_SIZE_LIMIT
-        ),
-        description = automation:sanitize_binary(
-            <<"description">>,
-            maps:get(<<"description">>, RecordJson, ?DEFAULT_DESCRIPTION),
-            ?DESCRIPTION_SIZE_LIMIT
-        ),
+        summary = Summary,
+        description = Description,
         operation_spec = NestedRecordDecoder(maps:get(<<"operationSpec">>, RecordJson), atm_lambda_operation_spec),
         argument_specs = [NestedRecordDecoder(S, atm_lambda_argument_spec) || S <- maps:get(<<"argumentSpecs">>, RecordJson)],
         result_specs = [NestedRecordDecoder(S, atm_lambda_result_spec) || S <- maps:get(<<"resultSpecs">>, RecordJson)],
@@ -130,6 +136,12 @@ decode_with(RecordJson, NestedRecordDecoder) ->
         checksum = <<>>,
         state = automation:lifecycle_state_from_json(maps:get(<<"state">>, RecordJson))
     },
+
     RevisionWithoutChecksum#atm_lambda_revision{
-        checksum = calculate_checksum(RevisionWithoutChecksum)
+        checksum = case {DecoderType, maps:find(<<"checksum">>, RecordJson)} of
+            {db, {ok, PersistedChecksum}} ->
+                PersistedChecksum;
+            {_, _} ->
+                calculate_checksum(RevisionWithoutChecksum)
+        end
     }.

@@ -17,9 +17,8 @@
 -export([remove_undefined/1, undefined_to_null/1]).
 -export([is_submap/2]).
 -export([put_if_defined/3, put_if_defined/4]).
--export([rebuild/2]).
--export([build_from_list/2]).
--export([generate/2]).
+-export([map_key_value/2]).
+-export([generate/2, generate_from_list/2]).
 -export([random_submap/1, random_submap/3]).
 -export([fold_while/3]).
 
@@ -88,25 +87,29 @@ put_if_defined(Map, Key, DefinedValue, _UndefinedValue) ->
     maps:put(Key, DefinedValue, Map).
 
 
--spec rebuild(fun((OldKey, OldValue) -> {NewKey, NewValue}), #{OldKey => OldValue}) -> #{NewKey => NewValue}.
-rebuild(MapKeyValueFun, Map) ->
+-spec map_key_value(fun((OldKey, OldValue) -> {NewKey, NewValue}), #{OldKey => OldValue}) -> #{NewKey => NewValue}.
+map_key_value(MapKeyValueFun, Map) ->
     maps:fold(fun(OldKey, OldValue, Acc) ->
         {NewKey, NewValue} = MapKeyValueFun(OldKey, OldValue),
         Acc#{NewKey => NewValue}
     end, #{}, Map).
 
 
--spec build_from_list(fun((Element) -> {Key, Value}), [Element]) -> #{Key => Value}.
-build_from_list(BuildFun, Elements) ->
+-spec generate(non_neg_integer(), fun(() -> {Key, Value}) | fun((Ordinal :: non_neg_integer()) ->
+    {Key, Value})) -> #{Key => Value}.
+generate(Count, Generator) ->
+    generate_from_list(fun
+        (Ordinal) when is_function(Generator, 1) -> Generator(Ordinal);
+        (_Ordinal) when is_function(Generator, 0) -> Generator()
+    end, lists:seq(1, Count)).
+
+
+-spec generate_from_list(fun((Element) -> {Key, Value}), [Element]) -> #{Key => Value}.
+generate_from_list(BuildFun, Elements) ->
     lists:foldl(fun(Element, Acc) ->
         {Key, Value} = BuildFun(Element),
         Acc#{Key => Value}
     end, #{}, Elements).
-
-
--spec generate(non_neg_integer(), fun(() -> {Key, Value})) -> #{Key => Value}.
-generate(Count, Generator) ->
-    build_from_list(fun(_) -> Generator() end, lists:seq(1, Count)).
 
 
 -spec random_submap(#{Key => Value}) -> #{Key => Value}.

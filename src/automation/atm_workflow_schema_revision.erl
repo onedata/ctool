@@ -98,7 +98,7 @@ to_json(Record) ->
 
 -spec from_json(json_utils:json_term()) -> record().
 from_json(RecordJson) ->
-    decode_with(RecordJson, fun jsonable_record:from_json/2).
+    decode_with(json, RecordJson, fun jsonable_record:from_json/2).
 
 %%%===================================================================
 %%% persistent_record callbacks
@@ -116,7 +116,7 @@ db_encode(Record, NestedRecordEncoder) ->
 
 -spec db_decode(json_utils:json_term(), persistent_record:nested_record_decoder()) -> record().
 db_decode(RecordJson, NestedRecordDecoder) ->
-    decode_with(RecordJson, NestedRecordDecoder).
+    decode_with(db, RecordJson, NestedRecordDecoder).
 
 %%%===================================================================
 %%% Internal functions
@@ -133,15 +133,17 @@ encode_with(Record, NestedRecordEncoder) ->
     }.
 
 
--spec decode_with(json_utils:json_term(), persistent_record:nested_record_decoder()) ->
+-spec decode_with(json | db, json_utils:json_term(), persistent_record:nested_record_decoder()) ->
     record().
-decode_with(RecordJson, NestedRecordDecoder) ->
+decode_with(DecoderType, RecordJson, NestedRecordDecoder) ->
+    %% @TODO VFS-8507 Rework along with new data sanitizers for all atm models (data_spec callback?)
+    InputDescription = maps:get(<<"description">>, RecordJson, ?DEFAULT_DESCRIPTION),
+    Description = case DecoderType of
+        json -> automation:sanitize_binary(<<"description">>, InputDescription, ?DESCRIPTION_SIZE_LIMIT);
+        db -> InputDescription
+    end,
     #atm_workflow_schema_revision{
-        description = automation:sanitize_binary(
-            <<"description">>,
-            maps:get(<<"description">>, RecordJson, ?DEFAULT_DESCRIPTION),
-            ?DESCRIPTION_SIZE_LIMIT
-        ),
+        description = Description,
         stores = [NestedRecordDecoder(S, atm_store_schema) || S <- maps:get(<<"stores">>, RecordJson)],
         lanes = [NestedRecordDecoder(S, atm_lane_schema) || S <- maps:get(<<"lanes">>, RecordJson)],
         state = automation:lifecycle_state_from_json(maps:get(<<"state">>, RecordJson))

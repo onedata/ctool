@@ -61,7 +61,7 @@ get_engine(#atm_user_form_operation_spec{}) -> user_form.
 %%--------------------------------------------------------------------
 -spec allowed_engines_for_custom_lambdas() -> [engine()].
 allowed_engines_for_custom_lambdas() ->
-    % NOTE: currently, only OpenFaaS engine is implemented.
+    % @TODO VFS-8582 Implement automation engines other than OpenFaaS
     % [openfaas, atm_workflow, user_form].
     [openfaas].
 

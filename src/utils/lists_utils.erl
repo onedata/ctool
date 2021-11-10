@@ -337,8 +337,10 @@ searchmap(Fun, Elements) ->
     end, error, Elements).
 
 
--spec generate(non_neg_integer(), fun(() -> Element)) -> [Element].
+-spec generate(non_neg_integer(), fun(() -> Element) | fun((Ordinal :: non_neg_integer()) -> Element)) ->
+    [Element].
 generate(Count, Generator) ->
-    lists:map(fun(_) ->
-        Generator()
+    lists:map(fun
+        (Ordinal) when is_function(Generator, 1) -> Generator(Ordinal);
+        (_Ordinal) when is_function(Generator, 0) -> Generator()
     end, lists:seq(1, Count)).

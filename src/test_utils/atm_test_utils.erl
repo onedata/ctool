@@ -99,7 +99,7 @@ example_operation_specs() ->
                 oneclient_options = lists_utils:random_element([<<"">>, <<"--a --b">>])
             }
         }
-        % NOTE: currently, only OpenFaaS engine is implemented.
+        % @TODO VFS-8582 Implement automation engines other than OpenFaaS
 %%        #atm_onedata_function_operation_spec{
 %%            function_id = example_id()
 %%        },
@@ -553,7 +553,7 @@ example_lambda_revision_registry() ->
 
 example_lambda_revision_registry(LambdaRevisions) ->
     #atm_lambda_revision_registry{
-        registry = maps_utils:build_from_list(fun(LambdaRevision) ->
+        registry = maps_utils:generate_from_list(fun(LambdaRevision) ->
             RevisionNumber = rand:uniform(100),
             {RevisionNumber, LambdaRevision}
         end, LambdaRevisions)
@@ -584,7 +584,7 @@ example_workflow_schema_revision_registries() ->
     ExampleWorkflowSchemaRevisions = example_workflow_schema_revisions(),
     lists_utils:generate(5, fun() ->
         #atm_workflow_schema_revision_registry{
-            registry = maps_utils:build_from_list(fun(WorkflowSchemaRevision) ->
+            registry = maps_utils:generate_from_list(fun(WorkflowSchemaRevision) ->
                 RevisionNumber = rand:uniform(100),
                 {RevisionNumber, WorkflowSchemaRevision}
             end, lists_utils:random_sublist(ExampleWorkflowSchemaRevisions))

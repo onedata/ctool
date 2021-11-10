@@ -25,7 +25,6 @@
 -export([size/1]).
 -export([has_revision/2]).
 -export([get_all_revision_numbers/1]).
--export([get_latest_revision_number/1]).
 
 %% jsonable_record callbacks
 -export([to_json/1, from_json/1]).
@@ -101,16 +100,6 @@ size(#atm_lambda_revision_registry{registry = Registry}) ->
 -spec get_all_revision_numbers(record()) -> [atm_lambda_revision:revision_number()].
 get_all_revision_numbers(#atm_lambda_revision_registry{registry = Registry}) ->
     maps:keys(Registry).
-
-
--spec get_latest_revision_number(record()) -> undefined | atm_lambda_revision:revision_number().
-get_latest_revision_number(RevisionRegistry) ->
-    case get_all_revision_numbers(RevisionRegistry) of
-        [] ->
-            undefined;
-        Revisions ->
-            lists:max(Revisions)
-    end.
 
 %%%===================================================================
 %%% jsonable_record callbacks

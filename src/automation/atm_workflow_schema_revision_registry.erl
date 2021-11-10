@@ -26,7 +26,6 @@
 -export([has_revision/2]).
 -export([fold_revisions/3]).
 -export([get_all_revision_numbers/1]).
--export([get_latest_revision_number/1]).
 
 %% jsonable_record callbacks
 -export([to_json/1, from_json/1]).
@@ -104,16 +103,6 @@ fold_revisions(Callback, AccIn, #atm_workflow_schema_revision_registry{registry 
 -spec get_all_revision_numbers(record()) -> [atm_workflow_schema_revision:revision_number()].
 get_all_revision_numbers(#atm_workflow_schema_revision_registry{registry = Registry}) ->
     maps:keys(Registry).
-
-
--spec get_latest_revision_number(record()) -> undefined | atm_workflow_schema_revision:revision_number().
-get_latest_revision_number(RevisionRegistry) ->
-    case get_all_revision_numbers(RevisionRegistry) of
-        [] ->
-            undefined;
-        Revisions ->
-            lists:max(Revisions)
-    end.
 
 %%%===================================================================
 %%% jsonable_record callbacks
