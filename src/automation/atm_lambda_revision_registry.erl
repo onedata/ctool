@@ -22,6 +22,7 @@
 -export([get_revision/2]).
 -export([add_revision/3]).
 -export([update_revision_lifecycle_state/3]).
+-export([with/2]).
 -export([size/1]).
 -export([has_revision/2]).
 -export([get_all_revision_numbers/1]).
@@ -85,6 +86,11 @@ update_revision_lifecycle_state(RevisionNumber, NewState, Record = #atm_lambda_r
             AtmLambdaRevision#atm_lambda_revision{state = NewState}
         end, Registry)
     }.
+
+
+-spec with([atm_lambda_revision:revision_number()], record()) -> record().
+with(RevisionNumbers, Record = #atm_lambda_revision_registry{registry = Registry}) ->
+    Record#atm_lambda_revision_registry{registry = maps:with(RevisionNumbers, Registry)}.
 
 
 -spec has_revision(atm_lambda_revision:revision_number(), record()) -> boolean().
