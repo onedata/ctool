@@ -47,5 +47,5 @@ eunit:
 	@for tout in `find test -name "TEST-*.xml"`; do awk '/testcase/{gsub("_[0-9]+\"", "_" ++i "\"")}1' $$tout > $$tout.tmp; mv $$tout.tmp $$tout; done
 
 codetag-tracker:
-	./bamboos/scripts/codetag-tracker.sh --branch=${BRANCH}
+	./bamboos/scripts/codetag-tracker.sh --branch=${BRANCH} --excluded-files=utils.erl
 
