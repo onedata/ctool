@@ -425,7 +425,7 @@ decode_pid(Pid) ->
 
 %%--------------------------------------------------------------------
 %% @doc
-%% Sometimes, rpc:multicall may crash if the list of nodes is empty
+%% Sometimes, rpc:multicall may crash if the list of nodes is empty    %% @codetag-tracker-ignore
 %% (as of OTP 24.0.2), using this wrapper mitigates the risk of a crash.
 %% @end
 %%--------------------------------------------------------------------
@@ -458,7 +458,7 @@ rpc_multicall([], _, _, _, _) ->
 rpc_multicall([ThisNode], Module, Function, Args, infinity) when ThisNode =:= node() ->
     {[catch erlang:apply(Module, Function, Args)], []};
 rpc_multicall(Nodes, Module, Function, Args, Timeout) ->
-    rpc:multicall(Nodes, Module, Function, Args, Timeout).
+    rpc:multicall(Nodes, Module, Function, Args, Timeout). % @codetag-tracker-ignore
 
 
 -spec wait_until(fun(() -> boolean())) -> ok | no_return().
