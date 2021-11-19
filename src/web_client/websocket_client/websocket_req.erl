@@ -29,7 +29,7 @@
 %% ===================================================================
 %% @doc Accessor module for the #websocket_req{} record.
 %% This module is taken from 'websocket_client' project
-%% and slightly adopted for onedata needs.
+%% and slightly adopted for Onedata needs.
 %%
 %% @end
 %% ===================================================================
@@ -40,7 +40,7 @@
     host :: string(),
     port :: inet:port_number(),
     path :: string(),
-    headers = #{} :: http_client:headers(),
+    headers = [] :: headers(),
     keepalive = infinity :: infinity | integer(),
     keepalive_timer = undefined :: undefined | reference(),
     socket :: inet:socket() | ssl:sslsocket(),
@@ -59,7 +59,7 @@
 
 -type protocol() :: ws | wss.
 
--type headers() :: #{binary() => binary()}.
+-type headers() :: [{Key :: binary(), Value :: binary()}].
 -export_type([headers/0]).
 
 -type frame() :: close | ping | pong
@@ -167,11 +167,11 @@ path(P, Req) ->
 
 
 -spec headers(req()) -> headers().
-headers(#websocket_req{headers = C}) -> C.
+headers(#websocket_req{headers = H}) -> H.
 
 -spec headers(headers(), req()) -> req().
-headers(C, Req) ->
-    Req#websocket_req{headers = C}.
+headers(H, Req) ->
+    Req#websocket_req{headers = H}.
 
 
 -spec keepalive(req()) -> integer().

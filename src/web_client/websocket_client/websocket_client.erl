@@ -160,7 +160,7 @@ websocket_handshake(WSReq) ->
     [Protocol, Path, Host, Headers, Key, Transport, Socket] = websocket_req:get([
         protocol, path, host, headers, key, transport, socket
     ], WSReq),
-    EncodedHeaders = maps:fold(fun(HeaderKey, HeaderValue, Acc) ->
+    EncodedHeaders = lists:foldl(fun({HeaderKey, HeaderValue}, Acc) ->
         <<Acc/binary, "\r\n", HeaderKey/binary, ": ", HeaderValue/binary>>
     end, <<"">>, Headers),
     Handshake = [<<"GET ">>, Path,
