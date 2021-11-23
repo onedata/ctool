@@ -67,8 +67,7 @@ db_decode(RecordJson, NestedRecordDecoder) ->
 encode_with(Record, NestedRecordEncoder) ->
     #{
         <<"name">> => Record#atm_lambda_result_spec.name,
-        <<"dataSpec">> => NestedRecordEncoder(Record#atm_lambda_result_spec.data_spec, atm_data_spec),
-        <<"isBatch">> => Record#atm_lambda_result_spec.is_batch
+        <<"dataSpec">> => NestedRecordEncoder(Record#atm_lambda_result_spec.data_spec, atm_data_spec)
     }.
 
 
@@ -77,7 +76,6 @@ encode_with(Record, NestedRecordEncoder) ->
 decode_with(RecordJson, NestedRecordDecoder) ->
     #atm_lambda_result_spec{
         name = maps:get(<<"name">>, RecordJson),
-        data_spec = NestedRecordDecoder(maps:get(<<"dataSpec">>, RecordJson), atm_data_spec),
-        is_batch = maps:get(<<"isBatch">>, RecordJson)
+        data_spec = NestedRecordDecoder(maps:get(<<"dataSpec">>, RecordJson), atm_data_spec)
     }.
 

@@ -27,7 +27,7 @@
 -export([example_store_type/0]).
 -export([example_operation_spec/0, example_operation_specs/0]).
 -export([example_docker_execution_options/0]).
--export([example_argument_spec/0, example_argument_spec/1, example_argument_spec/3, example_argument_specs/0]).
+-export([example_argument_spec/0, example_argument_spec/1, example_argument_spec/2, example_argument_specs/0]).
 -export([example_result_spec/0, example_result_spec/1, example_result_specs/0]).
 -export([example_resource_specs/0]).
 -export([example_data_spec/0, example_data_spec/1, example_data_specs/0]).
@@ -146,26 +146,14 @@ example_argument_spec() ->
 
 -spec example_argument_spec(atm_data_spec:record()) -> atm_lambda_argument_spec:record().
 example_argument_spec(DataSpec) ->
-    IsBatch = ?RAND_BOOL(),
-    DefaultValue = case IsBatch of
-        false ->
-            lists_utils:random_element([undefined, example_initial_value(DataSpec#atm_data_spec.type)]);
-        true ->
-            lists:filtermap(fun(_) ->
-                case example_initial_value(DataSpec#atm_data_spec.type) of
-                    undefined -> false;
-                    Value -> {true, Value}
-                end
-            end, lists:seq(1, ?RAND_INT(0, 5)))
-    end,
-    example_argument_spec(DataSpec, IsBatch, DefaultValue).
+    DefaultValue = lists_utils:random_element([undefined, example_initial_value(DataSpec#atm_data_spec.type)]),
+    example_argument_spec(DataSpec, DefaultValue).
 
--spec example_argument_spec(atm_data_spec:record(), boolean(), term()) -> atm_lambda_argument_spec:record().
-example_argument_spec(DataSpec, IsBatch, DefaultValue) ->
+-spec example_argument_spec(atm_data_spec:record(), term()) -> atm_lambda_argument_spec:record().
+example_argument_spec(DataSpec, DefaultValue) ->
     #atm_lambda_argument_spec{
         name = ?RAND_STR(),
         data_spec = DataSpec,
-        is_batch = IsBatch,
         is_optional = ?RAND_BOOL(),
         default_value = DefaultValue
     }.
@@ -183,8 +171,7 @@ example_result_spec() ->
 example_result_spec(DataSpec) ->
     #atm_lambda_result_spec{
         name = example_name(),
-        data_spec = DataSpec,
-        is_batch = ?RAND_BOOL()
+        data_spec = DataSpec
     }.
 
 -spec example_result_specs() -> [atm_lambda_result_spec:record()].
@@ -532,6 +519,7 @@ example_lambda_revision() ->
         summary = example_summary(),
         description = example_description(),
         operation_spec = example_operation_spec(),
+        batch_mode = ?RAND_BOOL(),
         argument_specs = lists_utils:random_sublist(example_argument_specs()),
         result_specs = lists_utils:random_sublist(example_result_specs()),
         resource_spec = example_resource_spec(),

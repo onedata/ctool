@@ -172,6 +172,20 @@ atm_task_schema_backward_compatibility_test() ->
         )
     end, atm_test_utils:example_task_schemas()).
 
+
+atm_lambda_revision_backward_compatibility_test() ->
+    lists:foreach(fun(AtmLambdaRevision) ->
+        AtmLambdaRevisionWithDefaultBatchMode = AtmLambdaRevision#atm_lambda_revision{
+            batch_mode = false
+        },
+        check_backward_compatibility_of_newly_added_field(
+            AtmLambdaRevisionWithDefaultBatchMode#atm_lambda_revision{
+                checksum = atm_lambda_revision:calculate_checksum(AtmLambdaRevisionWithDefaultBatchMode)
+            },
+            <<"batchMode">>
+        )
+    end, atm_test_utils:example_lambda_revisions()).
+
 %%%===================================================================
 %%% Helpers
 %%%===================================================================

@@ -76,7 +76,6 @@
 -record(atm_lambda_argument_spec, {
     name :: automation:name(),
     data_spec :: atm_data_spec:record(),
-    is_batch :: boolean(),
     % the is_optional flag is ignored if the default_value is specified
     % (default_value guarantees that a value for the argument will be given)
     is_optional :: boolean(),
@@ -87,8 +86,7 @@
 % Each function has a list of result specs.
 -record(atm_lambda_result_spec, {
     name :: automation:name(),
-    data_spec :: atm_data_spec:record(),
-    is_batch :: boolean()
+    data_spec :: atm_data_spec:record()
 }).
 
 -record(atm_store_schema, {
@@ -155,6 +153,7 @@
     summary :: automation:summary(),
     description :: automation:description(),
     operation_spec :: atm_lambda_operation_spec:record(),
+    batch_mode :: boolean(),
     argument_specs :: [atm_lambda_argument_spec:record()],
     result_specs :: [atm_lambda_result_spec:record()],
     resource_spec :: atm_resource_spec:record(),

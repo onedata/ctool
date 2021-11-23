@@ -53,6 +53,7 @@ calculate_checksum(AtmLambdaRevision) ->
     str_utils:md5_digest([
         AtmLambdaRevision#atm_lambda_revision.name,
         AtmLambdaRevision#atm_lambda_revision.operation_spec,
+        AtmLambdaRevision#atm_lambda_revision.batch_mode,
         AtmLambdaRevision#atm_lambda_revision.argument_specs,
         AtmLambdaRevision#atm_lambda_revision.result_specs
     ]).
@@ -100,6 +101,7 @@ encode_with(Record, NestedRecordEncoder) ->
         <<"summary">> => Record#atm_lambda_revision.summary,
         <<"description">> => Record#atm_lambda_revision.description,
         <<"operationSpec">> => NestedRecordEncoder(Record#atm_lambda_revision.operation_spec, atm_lambda_operation_spec),
+        <<"batchMode">> => Record#atm_lambda_revision.batch_mode,
         <<"argumentSpecs">> => [NestedRecordEncoder(S, atm_lambda_argument_spec) || S <- Record#atm_lambda_revision.argument_specs],
         <<"resultSpecs">> => [NestedRecordEncoder(S, atm_lambda_result_spec) || S <- Record#atm_lambda_revision.result_specs],
         <<"resourceSpec">> => NestedRecordEncoder(Record#atm_lambda_revision.resource_spec, atm_resource_spec),
@@ -130,6 +132,7 @@ decode_with(DecoderType, RecordJson, NestedRecordDecoder) ->
         summary = Summary,
         description = Description,
         operation_spec = NestedRecordDecoder(maps:get(<<"operationSpec">>, RecordJson), atm_lambda_operation_spec),
+        batch_mode = maps:get(<<"batchMode">>, RecordJson, false),
         argument_specs = [NestedRecordDecoder(S, atm_lambda_argument_spec) || S <- maps:get(<<"argumentSpecs">>, RecordJson)],
         result_specs = [NestedRecordDecoder(S, atm_lambda_result_spec) || S <- maps:get(<<"resultSpecs">>, RecordJson)],
         resource_spec = NestedRecordDecoder(maps:get(<<"resourceSpec">>, RecordJson), atm_resource_spec),
