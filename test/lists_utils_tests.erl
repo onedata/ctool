@@ -125,11 +125,11 @@ pmap_pforeach_pfiltermap_test_() ->
 
 
 generate_test() ->
-    ?assertEqual([], lists_utils:generate(0, fun() -> {key, value} end)),
-    ?assertEqual([value], lists_utils:generate(1, fun() -> value end)),
-    ?assertEqual(lists:duplicate(17, value), lists_utils:generate(17, fun() -> value end)),
-    ?assertEqual([], lists_utils:generate(0, fun(Ordinal) -> Ordinal * 2 end)),
-    ?assertEqual([2, 4], lists_utils:generate(2, fun(Ordinal) -> Ordinal * 2 end)).
+    ?assertEqual([], lists_utils:generate(fun() -> {key, value} end, 0)),
+    ?assertEqual([value], lists_utils:generate(fun() -> value end, 1)),
+    ?assertEqual(lists:duplicate(17, value), lists_utils:generate(fun() -> value end, 17)),
+    ?assertEqual([], lists_utils:generate(fun(Ordinal) -> Ordinal * 2 end, 0)),
+    ?assertEqual([2, 4], lists_utils:generate(fun(Ordinal) -> Ordinal * 2 end, 2)).
 
 
 -endif.

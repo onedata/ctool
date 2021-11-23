@@ -337,9 +337,9 @@ searchmap(Fun, Elements) ->
     end, error, Elements).
 
 
--spec generate(non_neg_integer(), fun(() -> Element) | fun((Ordinal :: non_neg_integer()) -> Element)) ->
+-spec generate(fun(() -> Element) | fun((Ordinal :: non_neg_integer()) -> Element), non_neg_integer()) ->
     [Element].
-generate(Count, Generator) ->
+generate(Generator, Count) ->
     lists:map(fun
         (Ordinal) when is_function(Generator, 1) -> Generator(Ordinal);
         (_Ordinal) when is_function(Generator, 0) -> Generator()
