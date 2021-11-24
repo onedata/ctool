@@ -515,8 +515,8 @@ example_lambda_revision() ->
         operation_spec = example_operation_spec(),
         argument_specs = lists_utils:random_sublist(example_argument_specs()),
         result_specs = lists_utils:random_sublist(example_result_specs()),
-        resource_spec = example_resource_spec(),
         preferred_batch_size = ?RAND_INT(1, 1000),
+        resource_spec = example_resource_spec(),
         checksum = <<>>,
         state = example_lifecycle_state()
     },

@@ -152,8 +152,8 @@
     operation_spec :: atm_lambda_operation_spec:record(),
     argument_specs :: [atm_lambda_argument_spec:record()],
     result_specs :: [atm_lambda_result_spec:record()],
-    resource_spec :: atm_resource_spec:record(),
     preferred_batch_size :: pos_integer(),
+    resource_spec :: atm_resource_spec:record(),
     checksum :: atm_lambda_revision:checksum(),
     state :: automation:lifecycle_state()
 }).
