@@ -292,16 +292,10 @@ example_store_schemas() ->
 
 -spec example_store_iterator_spec([automation:id()]) -> atm_store_iterator_spec:record().
 example_store_iterator_spec(StoreSchemaIds) ->
-    lists_utils:random_element([
-        #atm_store_iterator_spec{
-            store_schema_id = lists_utils:random_element(StoreSchemaIds),
-            strategy = #atm_store_iterator_serial_strategy{}
-        },
-        #atm_store_iterator_spec{
-            store_schema_id = lists_utils:random_element(StoreSchemaIds),
-            strategy = #atm_store_iterator_batch_strategy{size = ?RAND_INT(1, 1000)}
-        }
-    ]).
+    #atm_store_iterator_spec{
+        max_batch_size = ?RAND_INT(1, 1000),
+        store_schema_id = lists_utils:random_element(StoreSchemaIds)
+    }.
 
 
 -spec example_store_iterator_specs() -> [atm_store_iterator_spec:record()].
@@ -519,10 +513,10 @@ example_lambda_revision() ->
         summary = example_summary(),
         description = example_description(),
         operation_spec = example_operation_spec(),
-        batch_mode = ?RAND_BOOL(),
         argument_specs = lists_utils:random_sublist(example_argument_specs()),
         result_specs = lists_utils:random_sublist(example_result_specs()),
         resource_spec = example_resource_spec(),
+        preferred_batch_size = ?RAND_INT(1, 1000),
         checksum = <<>>,
         state = example_lifecycle_state()
     },

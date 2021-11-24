@@ -151,15 +151,6 @@ encode_decode_workflow_schema_revision_registry_test() ->
 %%% Tests of upgraded models
 %%%===================================================================
 
-atm_lane_schema_backward_compatibility_test() ->
-    lists:foreach(fun(LaneSchema) ->
-        check_backward_compatibility_of_newly_added_field(
-            LaneSchema#atm_lane_schema{max_retries = 0},
-            <<"maxRetries">>
-        )
-    end, atm_test_utils:example_lane_schemas()).
-
-
 atm_task_schema_backward_compatibility_test() ->
     lists:foreach(fun(TaskSchema) ->
         check_backward_compatibility_of_newly_added_field(
@@ -173,16 +164,31 @@ atm_task_schema_backward_compatibility_test() ->
     end, atm_test_utils:example_task_schemas()).
 
 
+atm_store_iterator_spec_backward_compatibility_test() ->
+    lists:foreach(fun(StoreIteratorSpec) ->
+        check_backward_compatibility_of_newly_added_field(
+            StoreIteratorSpec#atm_store_iterator_spec{max_batch_size = 100},
+            <<"maxBatchSize">>
+        )
+    end, atm_test_utils:example_store_iterator_specs()).
+
+
+atm_lane_schema_backward_compatibility_test() ->
+    lists:foreach(fun(LaneSchema) ->
+        check_backward_compatibility_of_newly_added_field(
+            LaneSchema#atm_lane_schema{max_retries = 0},
+            <<"maxRetries">>
+        )
+    end, atm_test_utils:example_lane_schemas()).
+
+
 atm_lambda_revision_backward_compatibility_test() ->
     lists:foreach(fun(AtmLambdaRevision) ->
-        AtmLambdaRevisionWithDefaultBatchMode = AtmLambdaRevision#atm_lambda_revision{
-            batch_mode = false
-        },
         check_backward_compatibility_of_newly_added_field(
-            AtmLambdaRevisionWithDefaultBatchMode#atm_lambda_revision{
-                checksum = atm_lambda_revision:calculate_checksum(AtmLambdaRevisionWithDefaultBatchMode)
+            AtmLambdaRevision#atm_lambda_revision{
+                preferred_batch_size = 100
             },
-            <<"batchMode">>
+            <<"preferredBatchSize">>
         )
     end, atm_test_utils:example_lambda_revisions()).
 

@@ -99,12 +99,9 @@
     default_initial_value :: undefined | json_utils:json_term()
 }).
 
--record(atm_store_iterator_serial_strategy, {}).
--record(atm_store_iterator_batch_strategy, {size :: pos_integer()}).
-
 -record(atm_store_iterator_spec, {
-    strategy :: atm_store_iterator_spec:strategy(),
-    store_schema_id :: automation:id()
+    store_schema_id :: automation:id(),
+    max_batch_size :: pos_integer()
 }).
 
 -record(atm_task_argument_value_builder, {
@@ -153,10 +150,10 @@
     summary :: automation:summary(),
     description :: automation:description(),
     operation_spec :: atm_lambda_operation_spec:record(),
-    batch_mode :: boolean(),
     argument_specs :: [atm_lambda_argument_spec:record()],
     result_specs :: [atm_lambda_result_spec:record()],
     resource_spec :: atm_resource_spec:record(),
+    preferred_batch_size :: pos_integer(),
     checksum :: atm_lambda_revision:checksum(),
     state :: automation:lifecycle_state()
 }).
