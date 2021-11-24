@@ -136,9 +136,12 @@
 | atm_workflow_empty
 | atm_workflow_execution_aborting
 | atm_workflow_execution_ended
+| atm_workflow_execution_not_ended
 | {atm_lane_empty, AtmLaneSchemaId :: binary()}
 | {atm_lane_execution_creation_failed, AtmLaneSchemaId :: binary(), SpecificError :: error()}
 | {atm_lane_execution_initiation_failed, AtmLaneSchemaId :: binary(), SpecificError :: error()}
+| atm_lane_execution_retry_failed
+| atm_lane_execution_rerun_failed
 | {atm_parallel_box_empty, AtmParallelBoxSchemaId :: binary()}
 | {atm_parallel_box_execution_creation_failed, AtmParallelBoxSchemaId :: binary(), SpecificError :: error()}
 | {atm_parallel_box_execution_initiation_failed, AtmParallelBoxSchemaId :: binary(), SpecificError :: error()}
@@ -1168,6 +1171,11 @@ to_json(?ERROR_ATM_WORKFLOW_EXECUTION_ENDED) -> #{
     <<"description">> => <<"Specified automation workflow execution has already ended.">>
 };
 
+to_json(?ERROR_ATM_WORKFLOW_EXECUTION_NOT_ENDED) -> #{
+    <<"id">> => <<"atmWorkflowExecutionNotEnded">>,
+    <<"description">> => <<"Specified automation workflow execution has not ended yet.">>
+};
+
 to_json(?ERROR_ATM_LANE_EMPTY(AtmLaneSchemaId)) -> #{
     <<"id">> => <<"atmLaneEmpty">>,
     <<"details">> => #{
@@ -1199,6 +1207,20 @@ to_json(?ERROR_ATM_LANE_EXECUTION_INITIATION_FAILED(AtmLaneSchemaId, {error, _} 
         "Failed to initiate automation lane execution (id: \"~s\") (see details).",
         [AtmLaneSchemaId]
     )
+};
+to_json(?ERROR_ATM_LANE_EXECUTION_RETRY_FAILED) -> #{
+    <<"id">> => <<"atmLaneExecutionRetryFailed">>,
+    <<"description">> => <<
+        "Failed to retry specified lane execution. Lane execution can be retried
+        only if all items have been processed but some of them failed."
+    >>
+};
+to_json(?ERROR_ATM_LANE_EXECUTION_RERUN_FAILED) -> #{
+    <<"id">> => <<"atmLaneExecutionRerunFailed">>,
+    <<"description">> => <<
+        "Failed to rerun specified lane execution. Lane execution can be rerun only if
+        it is in one of the following states: 'finished', 'failed', 'cancelled'."
+    >>
 };
 
 to_json(?ERROR_ATM_PARALLEL_BOX_EMPTY(AtmParallelBoxSchemaId)) -> #{
@@ -2012,6 +2034,9 @@ from_json(#{<<"id">> := <<"atmWorkflowExecutionAborting">>}) ->
 from_json(#{<<"id">> := <<"atmWorkflowExecutionEnded">>}) ->
     ?ERROR_ATM_WORKFLOW_EXECUTION_ENDED;
 
+from_json(#{<<"id">> := <<"atmWorkflowExecutionNotEnded">>}) ->
+    ?ERROR_ATM_WORKFLOW_EXECUTION_NOT_ENDED;
+
 from_json(#{
     <<"id">> := <<"atmLaneEmpty">>,
     <<"details">> := #{
@@ -2037,6 +2062,12 @@ from_json(#{
     }
 }) ->
     ?ERROR_ATM_LANE_EXECUTION_INITIATION_FAILED(AtmLaneSchemaId, from_json(SpecificErrorJson));
+
+from_json(#{<<"id">> := <<"atmLaneExecutionRetryFailed">>}) ->
+    ?ERROR_ATM_LANE_EXECUTION_RETRY_FAILED;
+
+from_json(#{<<"id">> := <<"atmLaneExecutionRerunFailed">>}) ->
+    ?ERROR_ATM_LANE_EXECUTION_RERUN_FAILED;
 
 from_json(#{
     <<"id">> := <<"atmParallelBoxEmpty">>,
@@ -2417,10 +2448,13 @@ to_http_code(?ERROR_ATM_STORE_NOT_FOUND(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_ATM_WORKFLOW_EMPTY) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_ATM_WORKFLOW_EXECUTION_ABORTING) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_ATM_WORKFLOW_EXECUTION_ENDED) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_ATM_WORKFLOW_EXECUTION_NOT_ENDED) -> ?HTTP_400_BAD_REQUEST;
 
 to_http_code(?ERROR_ATM_LANE_EMPTY(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_ATM_LANE_EXECUTION_CREATION_FAILED(_, _)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_ATM_LANE_EXECUTION_INITIATION_FAILED(_, _)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_ATM_LANE_EXECUTION_RETRY_FAILED) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_ATM_LANE_EXECUTION_RERUN_FAILED) -> ?HTTP_400_BAD_REQUEST;
 
 to_http_code(?ERROR_ATM_PARALLEL_BOX_EMPTY(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_ATM_PARALLEL_BOX_EXECUTION_CREATION_FAILED(_, _)) -> ?HTTP_400_BAD_REQUEST;

@@ -228,6 +228,7 @@
 -define(ERROR_ATM_WORKFLOW_EMPTY, {error, atm_workflow_empty}).
 -define(ERROR_ATM_WORKFLOW_EXECUTION_ABORTING, {error, atm_workflow_execution_aborting}).
 -define(ERROR_ATM_WORKFLOW_EXECUTION_ENDED, {error, atm_workflow_execution_ended}).
+-define(ERROR_ATM_WORKFLOW_EXECUTION_NOT_ENDED, {error, atm_workflow_execution_not_ended}).
 
 -define(ERROR_ATM_LANE_EMPTY(AtmLaneSchemaId),
     {error, {atm_lane_empty, AtmLaneSchemaId}}
@@ -238,6 +239,9 @@
 -define(ERROR_ATM_LANE_EXECUTION_INITIATION_FAILED(AtmLaneSchemaId, SpecificError),
     {error, {atm_lane_execution_initiation_failed, AtmLaneSchemaId, SpecificError}}
 ).
+
+-define(ERROR_ATM_LANE_EXECUTION_RETRY_FAILED, {error, atm_lane_execution_retry_failed}).
+-define(ERROR_ATM_LANE_EXECUTION_RERUN_FAILED, {error, atm_lane_execution_rerun_failed}).
 
 -define(ERROR_ATM_PARALLEL_BOX_EMPTY(AtmParallelBoxSchemaId),
     {error, {atm_parallel_box_empty, AtmParallelBoxSchemaId}}
