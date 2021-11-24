@@ -136,9 +136,12 @@
 | atm_workflow_empty
 | atm_workflow_execution_aborting
 | atm_workflow_execution_ended
+| atm_workflow_execution_not_ended
 | {atm_lane_empty, AtmLaneSchemaId :: binary()}
 | {atm_lane_execution_creation_failed, AtmLaneSchemaId :: binary(), SpecificError :: error()}
 | {atm_lane_execution_initiation_failed, AtmLaneSchemaId :: binary(), SpecificError :: error()}
+| atm_lane_execution_retry_failed
+| atm_lane_execution_rerun_failed
 | {atm_parallel_box_empty, AtmParallelBoxSchemaId :: binary()}
 | {atm_parallel_box_execution_creation_failed, AtmParallelBoxSchemaId :: binary(), SpecificError :: error()}
 | {atm_parallel_box_execution_initiation_failed, AtmParallelBoxSchemaId :: binary(), SpecificError :: error()}
