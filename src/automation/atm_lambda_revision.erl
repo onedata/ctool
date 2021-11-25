@@ -44,8 +44,6 @@
 
 -export_type([revision_number/0, checksum/0]).
 
--define(DEFAULT_PREFERRED_BATCH_SIZE, 100).
-
 %%%===================================================================
 %%% API
 %%%===================================================================
@@ -135,7 +133,7 @@ decode_with(DecoderType, RecordJson, NestedRecordDecoder) ->
         operation_spec = NestedRecordDecoder(maps:get(<<"operationSpec">>, RecordJson), atm_lambda_operation_spec),
         argument_specs = [NestedRecordDecoder(S, atm_lambda_argument_spec) || S <- maps:get(<<"argumentSpecs">>, RecordJson)],
         result_specs = [NestedRecordDecoder(S, atm_lambda_result_spec) || S <- maps:get(<<"resultSpecs">>, RecordJson)],
-        preferred_batch_size = maps:get(<<"preferredBatchSize">>, RecordJson, ?DEFAULT_PREFERRED_BATCH_SIZE),
+        preferred_batch_size = maps:get(<<"preferredBatchSize">>, RecordJson),
         resource_spec = NestedRecordDecoder(maps:get(<<"resourceSpec">>, RecordJson), atm_resource_spec),
         checksum = <<>>,
         state = automation:lifecycle_state_from_json(maps:get(<<"state">>, RecordJson))

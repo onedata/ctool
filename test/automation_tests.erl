@@ -148,75 +148,8 @@ encode_decode_workflow_schema_revision_registry_test() ->
     encode_decode_test_base(atm_test_utils:example_workflow_schema_revision_registries()).
 
 %%%===================================================================
-%%% Tests of upgraded models
-%%%===================================================================
-
-atm_task_schema_backward_compatibility_test() ->
-    lists:foreach(fun(TaskSchema) ->
-        check_backward_compatibility_of_newly_added_field(
-            TaskSchema#atm_task_schema{resource_spec_override = undefined},
-            <<"resourceSpecOverride">>
-        ),
-        check_backward_compatibility_of_newly_added_field(
-            TaskSchema#atm_task_schema{lambda_revision_number = 1},
-            <<"lambdaRevisionNumber">>
-        )
-    end, atm_test_utils:example_task_schemas()).
-
-
-atm_store_iterator_spec_backward_compatibility_test() ->
-    lists:foreach(fun(StoreIteratorSpec) ->
-        check_backward_compatibility_of_newly_added_field(
-            StoreIteratorSpec#atm_store_iterator_spec{max_batch_size = 100},
-            <<"maxBatchSize">>
-        )
-    end, atm_test_utils:example_store_iterator_specs()).
-
-
-atm_lane_schema_backward_compatibility_test() ->
-    lists:foreach(fun(LaneSchema) ->
-        check_backward_compatibility_of_newly_added_field(
-            LaneSchema#atm_lane_schema{max_retries = 0},
-            <<"maxRetries">>
-        )
-    end, atm_test_utils:example_lane_schemas()).
-
-
-atm_lambda_revision_backward_compatibility_test() ->
-    lists:foreach(fun(AtmLambdaRevision) ->
-        check_backward_compatibility_of_newly_added_field(
-            AtmLambdaRevision#atm_lambda_revision{
-                preferred_batch_size = 100
-            },
-            <<"preferredBatchSize">>
-        )
-    end, atm_test_utils:example_lambda_revisions()).
-
-%%%===================================================================
 %%% Helpers
 %%%===================================================================
-
-% In case a new field is added with default value, no upgrader is obligatory.
-% This procedure checks that the previous version of the record without the field is correctly parsed.
-%% @private
-check_backward_compatibility_of_newly_added_field(SubjectRecord, FieldName) ->
-    RecordType = utils:record_type(SubjectRecord),
-
-    EncodedPersistentRecord = persistent_record:encode(SubjectRecord, RecordType),
-    PersistentRecordJson = json_utils:decode(EncodedPersistentRecord),
-    EncodedPersistentRecordWithoutField = json_utils:encode(maps:remove(FieldName, PersistentRecordJson)),
-    ?assertEqual(
-        SubjectRecord,
-        persistent_record:decode(EncodedPersistentRecordWithoutField, RecordType)
-    ),
-
-    JsonableRecord = jsonable_record:to_json(SubjectRecord, RecordType),
-    JsonableRecordWithoutField = maps:remove(FieldName, JsonableRecord),
-    ?assertEqual(
-        SubjectRecord,
-        jsonable_record:from_json(JsonableRecordWithoutField, RecordType)
-    ).
-
 
 %% @private
 check_binary_sanitization(RecordType, Record, DataKey, SizeLimit) ->

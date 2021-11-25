@@ -86,7 +86,7 @@ decode_with(RecordJson, NestedRecordDecoder) ->
         id = maps:get(<<"id">>, RecordJson),
         name = maps:get(<<"name">>, RecordJson),
         lambda_id = maps:get(<<"lambdaId">>, RecordJson),
-        lambda_revision_number = maps:get(<<"lambdaRevisionNumber">>, RecordJson, 1),
+        lambda_revision_number = maps:get(<<"lambdaRevisionNumber">>, RecordJson),
         argument_mappings = [NestedRecordDecoder(M, atm_task_schema_argument_mapper) || M <- maps:get(<<"argumentMappings">>, RecordJson)],
         result_mappings = [NestedRecordDecoder(M, atm_task_schema_result_mapper) || M <- maps:get(<<"resultMappings">>, RecordJson)],
         resource_spec_override = case maps:get(<<"resourceSpecOverride">>, RecordJson, null) of
