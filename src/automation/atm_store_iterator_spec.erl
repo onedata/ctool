@@ -27,8 +27,6 @@
 -type record() :: #atm_store_iterator_spec{}.
 -export_type([record/0]).
 
--define(DEFAULT_MAXIMUM_BATCH_SIZE, 100).
-
 %%%===================================================================
 %%% jsonable_record callbacks
 %%%===================================================================
@@ -78,5 +76,5 @@ encode_with(Record, _NestedRecordEncoder) ->
 decode_with(RecordJson, _NestedRecordDecoder) ->
     #atm_store_iterator_spec{
         store_schema_id = maps:get(<<"storeSchemaId">>, RecordJson),
-        max_batch_size = maps:get(<<"maxBatchSize">>, RecordJson, ?DEFAULT_MAXIMUM_BATCH_SIZE)
+        max_batch_size = maps:get(<<"maxBatchSize">>, RecordJson)
     }.

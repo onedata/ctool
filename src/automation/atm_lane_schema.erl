@@ -82,5 +82,5 @@ decode_with(RecordJson, NestedRecordDecoder) ->
         name = maps:get(<<"name">>, RecordJson),
         parallel_boxes = [NestedRecordDecoder(M, atm_parallel_box_schema) || M <- maps:get(<<"parallelBoxes">>, RecordJson)],
         store_iterator_spec = NestedRecordDecoder(maps:get(<<"storeIteratorSpec">>, RecordJson), atm_store_iterator_spec),
-        max_retries = maps:get(<<"maxRetries">>, RecordJson, 0)
+        max_retries = maps:get(<<"maxRetries">>, RecordJson)
     }.
