@@ -30,6 +30,8 @@
 -export([shuffle/1, random_element/1, random_sublist/1, random_sublist/3]).
 -export([pmap/2, pforeach/2, pfiltermap/2, pfiltermap/3]).
 -export([foldl_while/3]).
+-export([searchmap/2]).
+-export([generate/2]).
 
 
 %%%===================================================================
@@ -268,10 +270,7 @@ pforeach(Fun, Elements) ->
     Elements :: [X :: A],
     MaxProcesses :: pos_integer()
 ) -> [X :: B].
-pfiltermap(Fun, Elements, MaxProcesses)
-    when is_integer(MaxProcesses)
-    andalso MaxProcesses > 0
-->
+pfiltermap(Fun, Elements, MaxProcesses) when is_integer(MaxProcesses) andalso MaxProcesses > 0 ->
     Length = length(Elements),
     case Length > MaxProcesses of
         true ->
@@ -304,30 +303,44 @@ pfiltermap(Fun, Elements) ->
 
 %%--------------------------------------------------------------------
 %% @doc
-%% Foldls the list until Fun returns {halt, Term}.
-%% The return value for Fun is expected to be
-%% {cont, Acc} to continue the fold with Acc as the new accumulator or
-%% {halt, Acc} to halt the fold and return Acc as the return value of this function
+%% Works like foldl, but allows stopping the folding with `{halt, Acc}`
+%% to immediately return the Acc. Otherwise, `{cont, Acc}` should be used
+%% to continue the folding.
 %% @end
 %%--------------------------------------------------------------------
--spec foldl_while(F, Accu, List) -> Accu1 when
-    F :: fun((Elem :: T, AccIn) -> AccOut),
-    Accu :: term(), Accu1 :: term(),
-    AccIn :: term(), AccOut :: {cont, term()} | {halt, term()},
-    List :: [T], T :: term().
-foldl_while(F, Accu, List) ->
-    do_foldl(F, {cont, Accu}, List).
-
-
-%%%===================================================================
-%%% Internal functions
-%%%===================================================================
+-spec foldl_while(fun((T, Acc) -> {cont, Acc} | {halt, Acc}), Acc, [T]) -> Acc.
+foldl_while(Fun, InitialAcc, List) ->
+    do_foldl_while(Fun, {cont, InitialAcc}, List).
 
 %% @private
--spec do_foldl(F, AccOut, List) -> AccIn when
-    F :: fun((Elem :: T, AccIn) -> AccOut),
-    AccIn :: term(), AccOut :: {cont, term()} | {halt, term()},
-    List :: [T], T :: term().
-do_foldl(_F, {halt, Acc}, _) -> Acc;
-do_foldl(_F, {cont, Acc}, []) -> Acc;
-do_foldl(F, {cont, Acc}, [Hd | Tail]) -> do_foldl(F, F(Hd, Acc), Tail).
+-spec do_foldl_while(fun((T, Acc) -> {cont, Acc} | {halt, Acc}), {cont, Acc} | {halt, Acc}, [T]) -> Acc.
+do_foldl_while(_Fun, {halt, Acc}, _) -> Acc;
+do_foldl_while(_Fun, {cont, Acc}, []) -> Acc;
+do_foldl_while(Fun, {cont, Acc}, [Head | Tail]) -> do_foldl_while(Fun, Fun(Head, Acc), Tail).
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Works like filtermap that stops on the first element matching the predicate;
+%% returns `{ok, MappedValue}` in such case, or `error` if no element was matched.
+%% @end
+%%--------------------------------------------------------------------
+-spec searchmap(fun((Element) -> {true, MappedValue} | false), [Element]) -> {ok, MappedValue} | error.
+searchmap(Fun, Elements) ->
+    foldl_while(fun(Element, _) ->
+        case Fun(Element) of
+            false ->
+                {cont, error};
+            {true, MappedValue} ->
+                {halt, {ok, MappedValue}}
+        end
+    end, error, Elements).
+
+
+-spec generate(fun(() -> Element) | fun((Ordinal :: non_neg_integer()) -> Element), non_neg_integer()) ->
+    [Element].
+generate(Generator, Count) ->
+    lists:map(fun
+        (Ordinal) when is_function(Generator, 1) -> Generator(Ordinal);
+        (_Ordinal) when is_function(Generator, 0) -> Generator()
+    end, lists:seq(1, Count)).

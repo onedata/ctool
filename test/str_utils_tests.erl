@@ -14,8 +14,6 @@
 
 -include_lib("eunit/include/eunit.hrl").
 
--export([ensure_suffix_test_/0]).
-
 ensure_suffix_test_() ->
     [{Name,
         ?_assertEqual(Expected, str_utils:ensure_suffix(String, Suffix))

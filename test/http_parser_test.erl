@@ -18,13 +18,14 @@
 
 
 parse_bytes_ranges_test_() ->
-    ContentSize = 100,
     PBase = fun
         (undefined, ContentSize) ->
             http_parser:parse_range_header(#{headers => #{}}, ContentSize);
         (RangeBin, ContentSize) ->
             http_parser:parse_range_header(#{headers => #{?HDR_RANGE => RangeBin}}, ContentSize)
     end,
+
+    ContentSize = 100,
     P = fun(RangeOrUndefined) -> PBase(RangeOrUndefined, ContentSize) end,
 
     [
