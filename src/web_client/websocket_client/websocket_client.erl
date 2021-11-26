@@ -33,6 +33,8 @@
 %% ===================================================================
 -module(websocket_client).
 
+-define(CONNECT_TIMEOUT, timer:seconds(15)).
+
 -export([start_link/5, cast/2, send/2]).
 -export([ws_client_init/8]).
 
@@ -78,13 +80,13 @@ ws_client_init(Handler, Protocol, Host, Port, Path, Headers, Args, TransportOpts
                 {active, false},
                 {packet, 0}
             ]),
-            ssl:connect(Host, Port, ExpandedOpts, 6000);
+            ssl:connect(Host, Port, ExpandedOpts, ?CONNECT_TIMEOUT);
         gen_tcp ->
             gen_tcp:connect(Host, Port, TransportOpts ++ [
                 binary,
                 {active, false},
                 {packet, 0}
-            ], 6000)
+            ], ?CONNECT_TIMEOUT)
     end,
     {ok, Socket} = case SockReply of
         {ok, Sock} ->

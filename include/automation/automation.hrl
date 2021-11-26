@@ -76,7 +76,6 @@
 -record(atm_lambda_argument_spec, {
     name :: automation:name(),
     data_spec :: atm_data_spec:record(),
-    is_batch :: boolean(),
     % the is_optional flag is ignored if the default_value is specified
     % (default_value guarantees that a value for the argument will be given)
     is_optional :: boolean(),
@@ -87,8 +86,7 @@
 % Each function has a list of result specs.
 -record(atm_lambda_result_spec, {
     name :: automation:name(),
-    data_spec :: atm_data_spec:record(),
-    is_batch :: boolean()
+    data_spec :: atm_data_spec:record()
 }).
 
 -record(atm_store_schema, {
@@ -101,12 +99,9 @@
     default_initial_value :: undefined | json_utils:json_term()
 }).
 
--record(atm_store_iterator_serial_strategy, {}).
--record(atm_store_iterator_batch_strategy, {size :: pos_integer()}).
-
 -record(atm_store_iterator_spec, {
-    strategy :: atm_store_iterator_spec:strategy(),
-    store_schema_id :: automation:id()
+    store_schema_id :: automation:id(),
+    max_batch_size :: pos_integer()
 }).
 
 -record(atm_task_argument_value_builder, {
@@ -157,6 +152,7 @@
     operation_spec :: atm_lambda_operation_spec:record(),
     argument_specs :: [atm_lambda_argument_spec:record()],
     result_specs :: [atm_lambda_result_spec:record()],
+    preferred_batch_size :: pos_integer(),
     resource_spec :: atm_resource_spec:record(),
     checksum :: atm_lambda_revision:checksum(),
     state :: automation:lifecycle_state()

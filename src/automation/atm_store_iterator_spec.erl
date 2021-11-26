@@ -25,11 +25,7 @@
 
 
 -type record() :: #atm_store_iterator_spec{}.
--type strategy() :: atm_store_iterator_serial_strategy:record() | atm_store_iterator_batch_strategy:record().
--type strategy_record_type() :: atm_store_iterator_serial_strategy | atm_store_iterator_batch_strategy.
--type strategy_type() :: serial | batch.
-
--export_type([record/0, strategy/0]).
+-export_type([record/0]).
 
 %%%===================================================================
 %%% jsonable_record callbacks
@@ -68,46 +64,17 @@ db_decode(RecordJson, NestedRecordDecoder) ->
 
 -spec encode_with(record(), persistent_record:nested_record_encoder()) ->
     json_utils:json_term().
-encode_with(Record, NestedRecordEncoder) ->
-    StrategyRecord = Record#atm_store_iterator_spec.strategy,
-    StrategyRecordType = utils:record_type(StrategyRecord),
-    StrategyType = record_type_to_strategy_type(StrategyRecordType),
+encode_with(Record, _NestedRecordEncoder) ->
     #{
-        <<"strategy">> => maps:merge(
-            #{<<"type">> => strategy_type_to_json(StrategyType)},
-            NestedRecordEncoder(StrategyRecord, StrategyRecordType)
-        ),
-        <<"storeSchemaId">> => Record#atm_store_iterator_spec.store_schema_id
+        <<"storeSchemaId">> => Record#atm_store_iterator_spec.store_schema_id,
+        <<"maxBatchSize">> => Record#atm_store_iterator_spec.max_batch_size
     }.
 
 
 -spec decode_with(json_utils:json_term(), persistent_record:nested_record_decoder()) ->
     record().
-decode_with(RecordJson, NestedRecordDecoder) ->
-    StrategyJson = maps:get(<<"strategy">>, RecordJson),
-    StrategyType = strategy_type_from_json(maps:get(<<"type">>, StrategyJson)),
-    StrategyRecordType = strategy_type_to_record_type(StrategyType),
+decode_with(RecordJson, _NestedRecordDecoder) ->
     #atm_store_iterator_spec{
         store_schema_id = maps:get(<<"storeSchemaId">>, RecordJson),
-        strategy = NestedRecordDecoder(StrategyJson, StrategyRecordType)
+        max_batch_size = maps:get(<<"maxBatchSize">>, RecordJson)
     }.
-
-
--spec record_type_to_strategy_type(strategy_record_type()) -> strategy_type().
-record_type_to_strategy_type(atm_store_iterator_serial_strategy) -> serial;
-record_type_to_strategy_type(atm_store_iterator_batch_strategy) -> batch.
-
-
--spec strategy_type_to_record_type(strategy_type()) -> strategy_record_type().
-strategy_type_to_record_type(serial) -> atm_store_iterator_serial_strategy;
-strategy_type_to_record_type(batch) -> atm_store_iterator_batch_strategy.
-
-
--spec strategy_type_to_json(strategy_type()) -> json_utils:json_term().
-strategy_type_to_json(serial) -> <<"serial">>;
-strategy_type_to_json(batch) -> <<"batch">>.
-
-
--spec strategy_type_from_json(json_utils:json_term()) -> strategy_type().
-strategy_type_from_json(<<"serial">>) -> serial;
-strategy_type_from_json(<<"batch">>) -> batch.
