@@ -212,6 +212,11 @@ example_data_spec(atm_store_credentials_type) ->
         type = atm_store_credentials_type,
         value_constraints = #{store_type => example_store_type()}
     };
+example_data_spec(atm_array_type) ->
+    #atm_data_spec{
+        type = atm_array_type,
+        value_constraints = #{item_data_spec => example_data_spec()}
+    };
 example_data_spec(DataType) ->
     #atm_data_spec{
         type = DataType,
@@ -243,7 +248,11 @@ example_initial_value(atm_archive_type) ->
 example_initial_value(atm_store_credentials_type) ->
     undefined;
 example_initial_value(atm_onedatafs_credentials_type) ->
-    undefined.
+    undefined;
+example_initial_value(atm_array_type) ->
+    lists:duplicate(?RAND_INT(0, 50), example_initial_value(
+        lists_utils:random_element(atm_data_type:all_data_types())
+    )).
 
 
 -spec example_store_schema() -> atm_store_schema:record().
