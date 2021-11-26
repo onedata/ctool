@@ -146,7 +146,7 @@ example_argument_spec() ->
 
 -spec example_argument_spec(atm_data_spec:record()) -> atm_lambda_argument_spec:record().
 example_argument_spec(DataSpec) ->
-    DefaultValue = lists_utils:random_element([undefined, example_initial_value(DataSpec#atm_data_spec.type)]),
+    DefaultValue = lists_utils:random_element([undefined, example_initial_value(DataSpec)]),
     example_argument_spec(DataSpec, DefaultValue).
 
 -spec example_argument_spec(atm_data_spec:record(), term()) -> atm_lambda_argument_spec:record().
@@ -229,30 +229,35 @@ example_data_specs() ->
     lists:map(fun example_data_spec/1, atm_data_type:all_data_types()).
 
 
--spec example_initial_value(atm_data_type:type()) -> json_utils:json_term().
-example_initial_value(atm_integer_type) ->
+-spec example_initial_value(atm_data_spec:record()) -> json_utils:json_term().
+example_initial_value(#atm_data_spec{type = atm_integer_type}) ->
     ?RAND_INT(0, 1000);
-example_initial_value(atm_string_type) ->
+example_initial_value(#atm_data_spec{type = atm_string_type}) ->
     ?RAND_STR(?RAND_INT(1, 25));
-example_initial_value(atm_object_type) ->
+example_initial_value(#atm_data_spec{type = atm_object_type}) ->
     lists_utils:random_element([#{}, #{<<"key">> => 984.222}, #{<<"key">> => #{<<"nested">> => 984.222}}]);
 %% @TODO VFS-7687 Implement all automation data types and validators
-example_initial_value(atm_file_type) ->
+example_initial_value(#atm_data_spec{type = atm_file_type}) ->
     #{<<"file_id">> => ?RAND_STR()};
-example_initial_value(atm_histogram_type) ->
+example_initial_value(#atm_data_spec{type = atm_histogram_type}) ->
     [1, 2, 3, 4];
-example_initial_value(atm_dataset_type) ->
+example_initial_value(#atm_data_spec{type = atm_dataset_type}) ->
     #{<<"datasetId">> => ?RAND_STR()};
-example_initial_value(atm_archive_type) ->
+example_initial_value(#atm_data_spec{type = atm_archive_type}) ->
     #{<<"atm_archive_type">> => <<"value">>};
-example_initial_value(atm_store_credentials_type) ->
+example_initial_value(#atm_data_spec{type = atm_store_credentials_type}) ->
     undefined;
-example_initial_value(atm_onedatafs_credentials_type) ->
+example_initial_value(#atm_data_spec{type = atm_onedatafs_credentials_type}) ->
     undefined;
-example_initial_value(atm_array_type) ->
-    lists:duplicate(?RAND_INT(0, 50), example_initial_value(
-        lists_utils:random_element(atm_data_type:all_data_types())
-    )).
+example_initial_value(#atm_data_spec{type = atm_array_type, value_constraints = #{
+    item_data_spec := ItemDataSpec
+}}) ->
+    case example_initial_value(ItemDataSpec) of
+        undefined ->
+            [];
+        Value ->
+            lists:duplicate(?RAND_INT(0, 20), Value)
+    end.
 
 
 -spec example_store_schema() -> atm_store_schema:record().
@@ -271,14 +276,14 @@ example_store_schema(DataSpec) ->
                     undefined;
                 false ->
                     lists_utils:random_sublist(lists:filtermap(fun(_) ->
-                        case example_initial_value(DataSpec#atm_data_spec.type) of
+                        case example_initial_value(DataSpec) of
                             undefined -> false;
                             Value -> {true, Value}
                         end
                     end, lists:seq(1, ?RAND_INT(0, 10))))
             end;
         _ ->
-            lists_utils:random_element([undefined, example_initial_value(DataSpec#atm_data_spec.type)])
+            lists_utils:random_element([undefined, example_initial_value(DataSpec)])
     end,
     example_store_schema(StoreType, DataSpec, DefaultInitialValue).
 
