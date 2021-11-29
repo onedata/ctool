@@ -27,7 +27,7 @@
 
 
 -type record() :: #atm_task_schema_result_mapper{}.
--type dispatch_function() :: add | remove | set | append | prepend.
+-type dispatch_function() :: add | remove | set | append | extend.
 -export_type([record/0, dispatch_function/0]).
 
 %%%===================================================================
@@ -36,7 +36,7 @@
 
 -spec all_dispatch_functions() -> [dispatch_function()].
 all_dispatch_functions() ->
-    [add, remove, set, append, prepend].
+    [add, remove, set, append, extend].
 
 %%%===================================================================
 %%% jsonable_record callbacks
@@ -86,7 +86,7 @@ dispatch_function_to_json(add) -> <<"add">>;
 dispatch_function_to_json(remove) -> <<"remove">>;
 dispatch_function_to_json(set) -> <<"set">>;
 dispatch_function_to_json(append) -> <<"append">>;
-dispatch_function_to_json(prepend) -> <<"prepend">>.
+dispatch_function_to_json(extend) -> <<"extend">>.
 
 
 -spec dispatch_function_from_json(json_utils:json_term()) -> dispatch_function().
@@ -94,4 +94,4 @@ dispatch_function_from_json(<<"add">>) -> add;
 dispatch_function_from_json(<<"remove">>) -> remove;
 dispatch_function_from_json(<<"set">>) -> set;
 dispatch_function_from_json(<<"append">>) -> append;
-dispatch_function_from_json(<<"prepend">>) -> prepend.
+dispatch_function_from_json(<<"extend">>) -> extend.

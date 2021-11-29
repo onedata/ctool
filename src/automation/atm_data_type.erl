@@ -21,7 +21,8 @@
 -type type() :: atm_integer_type | atm_string_type | atm_object_type
 | atm_file_type | atm_histogram_type
 | atm_dataset_type | atm_archive_type
-| atm_store_credentials_type | atm_onedatafs_credentials_type.
+| atm_store_credentials_type | atm_onedatafs_credentials_type
+| atm_array_type.
 -type value_constraints() :: map().
 -export_type([type/0, value_constraints/0]).
 
@@ -58,8 +59,11 @@
 
 -spec all_data_types() -> [type()].
 all_data_types() -> [
-    atm_integer_type, atm_string_type, atm_object_type, atm_file_type, atm_histogram_type,
-    atm_dataset_type, atm_archive_type, atm_store_credentials_type, atm_onedatafs_credentials_type
+    atm_integer_type, atm_string_type, atm_object_type,
+    atm_file_type, atm_histogram_type,
+    atm_dataset_type, atm_archive_type,
+    atm_store_credentials_type, atm_onedatafs_credentials_type,
+    atm_array_type
 ].
 
 
@@ -77,7 +81,8 @@ type_to_json(atm_histogram_type) -> <<"histogram">>;
 type_to_json(atm_dataset_type) -> <<"dataset">>;
 type_to_json(atm_archive_type) -> <<"archive">>;
 type_to_json(atm_store_credentials_type) -> <<"storeCredentials">>;
-type_to_json(atm_onedatafs_credentials_type) -> <<"onedatafsCredentials">>.
+type_to_json(atm_onedatafs_credentials_type) -> <<"onedatafsCredentials">>;
+type_to_json(atm_array_type) -> <<"array">>.
 
 
 -spec type_from_json(json_utils:json_term()) -> type().
@@ -89,7 +94,8 @@ type_from_json(<<"histogram">>) -> atm_histogram_type;
 type_from_json(<<"dataset">>) -> atm_dataset_type;
 type_from_json(<<"archive">>) -> atm_archive_type;
 type_from_json(<<"storeCredentials">>) -> atm_store_credentials_type;
-type_from_json(<<"onedatafsCredentials">>) -> atm_onedatafs_credentials_type.
+type_from_json(<<"onedatafsCredentials">>) -> atm_onedatafs_credentials_type;
+type_from_json(<<"array">>) -> atm_array_type.
 
 
 -spec value_constraints_to_json(type(), value_constraints()) -> json_utils:json_term().
