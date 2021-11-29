@@ -17,7 +17,7 @@
 -export([load_ders/1, load_ders_in_dir/1]).
 -export([pem_to_ders/1, ders_to_pem/1]).
 -export([create_key/1]).
--export([create_csr/3]).
+-export([create_csr/4]).
 -export([create_signed_webcert/5]).
 
 %%%===================================================================
@@ -101,17 +101,20 @@ create_key(Path) ->
 %% Used only for test/development purposes.
 %% @end
 %%--------------------------------------------------------------------
--spec create_csr(KeyPath :: file:filename_all(),
-    OutputPath :: file:filename_all(), string() | binary()) -> ok.
-create_csr(KeyPath, OutputPath, CommonName) ->
+-spec create_csr(
+    KeyPath :: file:filename_all(),
+    OutputPath :: file:filename_all(),
+    string() | binary(),
+    string() | binary()
+) -> ok.
+create_csr(KeyPath, OutputPath, CommonName, Hostname) ->
     [] = shell_cmd([
         "openssl req",
         "-new",
         "-key", KeyPath,
         "-out", OutputPath,
-        "-subj", str_utils:format("'/C=PL/L=OneDataTest/O=OneDataTest/CN=~s'", [
-            CommonName
-        ])
+        "-subj", str_utils:format("'/C=PL/L=OneDataTest/O=OneDataTest/CN=~s'", [CommonName]),
+        "-addext", str_utils:format("subjectAltName = DNS:~s", [Hostname])
     ]),
     ok.
 
@@ -128,7 +131,12 @@ create_signed_webcert(KeyPath, CertPath, Hostname, CaKeyPath, CaCertPath) ->
     {Root, ConfigFile} = create_temp_ca_dir(Hostname),
     CsrPath = filename:join(Root, "temp.csr"),
     create_key(KeyPath),
-    create_csr(KeyPath, CsrPath, Hostname),
+    % common name may be no longer than 64 characters
+    CommonName = case byte_size(Hostname) =< 64 of
+        true -> Hostname;
+        false -> binary:part(Hostname, 0, 64)
+    end,
+    create_csr(KeyPath, CsrPath, CommonName, Hostname),
     shell_cmd(["openssl ca -batch",
         "-config", ConfigFile,
         "-extensions server_cert ",
