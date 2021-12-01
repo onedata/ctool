@@ -114,7 +114,7 @@ create_csr(KeyPath, OutputPath, CommonName, Hostname) ->
         "-key", KeyPath,
         "-out", OutputPath,
         "-subj", str_utils:format("'/C=PL/L=OneDataTest/O=OneDataTest/CN=~s'", [CommonName]),
-        "-addext", str_utils:format("subjectAltName = DNS:~s", [Hostname])
+        "-addext", str_utils:format("'subjectAltName = DNS:~s'", [Hostname])
     ]),
     ok.
 
@@ -125,7 +125,7 @@ create_csr(KeyPath, OutputPath, CommonName, Hostname) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec create_signed_webcert(KeyPath :: file:filename_all(),
-    CertPath :: file:filename_all(), Hostname :: string() | binary(),
+    CertPath :: file:filename_all(), Hostname :: binary(),
     CaKeyPath :: file:filename_all(), CaCertPath :: file:filename_all()) -> ok.
 create_signed_webcert(KeyPath, CertPath, Hostname, CaKeyPath, CaCertPath) ->
     {Root, ConfigFile} = create_temp_ca_dir(Hostname),
