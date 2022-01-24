@@ -17,7 +17,6 @@
 
 -include("automation/automation.hrl").
 
--export([all_dispatch_functions/0]).
 
 %% Jsonable record callbacks
 -export([to_json/1, from_json/1]).
@@ -27,16 +26,8 @@
 
 
 -type record() :: #atm_task_schema_result_mapper{}.
--type dispatch_function() :: add | remove | set | append | extend.
+-type dispatch_function() :: add | remove | set | append | extend | {update_time_series, automation:name()}.
 -export_type([record/0, dispatch_function/0]).
-
-%%%===================================================================
-%%% API
-%%%===================================================================
-
--spec all_dispatch_functions() -> [dispatch_function()].
-all_dispatch_functions() ->
-    [add, remove, set, append, extend].
 
 %%%===================================================================
 %%% jsonable_record callbacks
@@ -86,7 +77,8 @@ dispatch_function_to_json(add) -> <<"add">>;
 dispatch_function_to_json(remove) -> <<"remove">>;
 dispatch_function_to_json(set) -> <<"set">>;
 dispatch_function_to_json(append) -> <<"append">>;
-dispatch_function_to_json(extend) -> <<"extend">>.
+dispatch_function_to_json(extend) -> <<"extend">>;
+dispatch_function_to_json({update_time_series, TimeSeriesName}) -> <<"updateTimeSeries:", TimeSeriesName/binary>>.
 
 
 -spec dispatch_function_from_json(json_utils:json_term()) -> dispatch_function().
@@ -94,4 +86,5 @@ dispatch_function_from_json(<<"add">>) -> add;
 dispatch_function_from_json(<<"remove">>) -> remove;
 dispatch_function_from_json(<<"set">>) -> set;
 dispatch_function_from_json(<<"append">>) -> append;
-dispatch_function_from_json(<<"extend">>) -> extend.
+dispatch_function_from_json(<<"extend">>) -> extend;
+dispatch_function_from_json(<<"updateTimeSeries:", TimeSeriesName/binary>>) -> {update_time_series, TimeSeriesName}.

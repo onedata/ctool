@@ -16,9 +16,12 @@
 -behaviour(persistent_record).
 
 -include("automation/automation.hrl").
+-include("errors.hrl").
+
 
 %% API
 -export([get_type/1, get_value_constraints/1]).
+-export([assert_has_allowed_data_type/3]).
 
 %% Jsonable record callbacks
 -export([to_json/1, from_json/1]).
@@ -42,6 +45,15 @@ get_type(#atm_data_spec{type = Type}) ->
 -spec get_value_constraints(record()) -> atm_data_type:value_constraints().
 get_value_constraints(#atm_data_spec{value_constraints = ValueConstraints}) ->
     ValueConstraints.
+
+
+-spec assert_has_allowed_data_type(binary(), record(), [atm_data_type:type()]) -> ok | no_return().
+assert_has_allowed_data_type(DataKeyName, DataSpec, AllowedDataTypes) ->
+    EffectiveDataType = find_effective_data_type(DataSpec),
+    lists:member(EffectiveDataType, AllowedDataTypes) orelse throw(
+        ?ERROR_BAD_VALUE_NOT_ALLOWED(DataKeyName, [atm_data_type:type_to_json(T) || T <- AllowedDataTypes])
+    ),
+    ok.
 
 %%%===================================================================
 %%% jsonable_record callbacks
@@ -82,3 +94,13 @@ db_encode(Record, _NestedRecordEncoder) ->
 db_decode(RecordJson, _NestedRecordDecoder) ->
     from_json(RecordJson).
 
+%%%===================================================================
+%%% Internal functions
+%%%===================================================================
+
+%% @private
+-spec find_effective_data_type(atm_data_spec:record()) -> atm_data_type:type().
+find_effective_data_type(#atm_data_spec{type = atm_array_type, value_constraints = ValueConstraints}) ->
+    find_effective_data_type(maps:get(item_data_spec, ValueConstraints));
+find_effective_data_type(#atm_data_spec{type = DataType}) ->
+    DataType.

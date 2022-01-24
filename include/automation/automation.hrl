@@ -23,11 +23,13 @@
 % Predefined store schemas that are implicitly defined in each workflow schema.
 % Can be perceived as virtual store schemas - they do not appear in the
 % workflow schema structure, but can be referenced in result mappers to apply
-% operations on corresponding audit log stores that are created during workflow
-% execution. Each task gets its own audit log store, and the whole workflow
+% operations on corresponding stores that are created during workflow execution.
+% Each task gets its own audit log store (always) and time series store
+% (if time series spec was specified for the task), and the whole workflow
 % executions gets one global audit log store.
 -define(CURRENT_TASK_SYSTEM_AUDIT_LOG_STORE_SCHEMA_ID, <<"CURRENT_TASK_SYSTEM_AUDIT_LOG">>).
 -define(WORKFLOW_SYSTEM_AUDIT_LOG_STORE_SCHEMA_ID, <<"WORKFLOW_SYSTEM_AUDIT_LOG">>).
+-define(CURRENT_TASK_TIME_SERIES_STORE_SCHEMA_ID, <<"CURRENT_TASK_TIME_SERIES">>).
 
 
 -record(atm_resource_spec, {
@@ -94,9 +96,35 @@
     name :: automation:name(),
     description :: automation:description(),
     type :: automation:store_type(),
-    data_spec :: atm_data_spec:record(),
-    requires_initial_value :: boolean(),
-    default_initial_value :: undefined | json_utils:json_term()
+    config :: atm_store_config:record(),
+    requires_initial_content :: boolean(),
+    default_initial_content :: undefined | json_utils:json_term()
+}).
+
+-record(atm_single_value_store_config, {
+    data_spec :: atm_data_spec:record()
+}).
+
+-record(atm_list_store_config, {
+    data_spec :: atm_data_spec:record()
+}).
+
+-record(atm_map_store_config, {
+    data_spec :: atm_data_spec:record()
+}).
+
+-record(atm_tree_forest_store_config, {
+    data_spec :: atm_data_spec:record()
+}).
+
+-record(atm_range_store_config, {
+}).
+
+-record(atm_time_series_store_config, {
+    specs :: [atm_time_series_spec:record()]
+}).
+
+-record(atm_audit_log_store_config, {
 }).
 
 -record(atm_store_iterator_spec, {
@@ -127,7 +155,9 @@
     lambda_revision_number :: atm_lambda_revision:revision_number(),
     argument_mappings :: [atm_task_schema_argument_mapper:record()],
     result_mappings :: [atm_task_schema_result_mapper:record()],
-    resource_spec_override :: undefined | atm_resource_spec:record()
+    resource_spec_override :: undefined | atm_resource_spec:record(),
+    % optional time series spec; if defined, a time series store assigned to this task will be automatically created
+    time_series_spec :: undefined | atm_time_series_spec:record()
 }).
 
 -record(atm_parallel_box_schema, {
@@ -172,5 +202,26 @@
 -record(atm_workflow_schema_revision_registry, {
     registry = #{} :: #{atm_workflow_schema_revision:revision_number() => atm_workflow_schema_revision:record()}
 }).
+
+-record(atm_time_series_data_spec, {
+    name_selector :: atm_time_series_data_spec:name_selector(),
+    name :: automation:name(),
+    unit :: atm_time_series_data_spec:unit()
+}).
+
+-record(atm_time_series_metric_spec, {
+    id :: automation:id(),
+    resolution :: atm_time_series_metric_spec:resolution(),
+    retention :: atm_time_series_metric_spec:retention(),
+    aggregator :: atm_time_series_metric_spec:aggregator()
+}).
+
+-record(atm_time_series_spec, {
+    name_selector :: atm_time_series_data_spec:name_selector(),
+    name :: automation:name(),
+    unit :: atm_time_series_data_spec:unit(),
+    metrics :: [atm_time_series_metric_spec:record()]
+}).
+
 
 -endif.
