@@ -302,6 +302,8 @@
     {error, {atm_invalid_status_transition, PrevStatus, NewStatus}}
 ).
 
+-define(ERROR_STATS_FOR_SPACE_DISABLED, {error, stats_for_space_disabled}).
+
 
 %%--------------------------------------------------------------------
 %% onepanel errors
