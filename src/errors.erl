@@ -166,7 +166,7 @@
 | {atm_openfaas_query_failed, Reason :: binary()}
 | atm_openfaas_function_registration_failed
 | {atm_invalid_status_transition, PrevStatus :: atom(), NewStatus :: atom()}
-| stats_for_space_disabled.
+| dir_stats_disabled_for_space.
 
 -type onepanel() :: {error_on_nodes, error(), Hostnames :: [binary()]}
 | {dns_servers_unreachable, [ip_utils:ip() | default]}
