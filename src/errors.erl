@@ -1406,9 +1406,9 @@ to_json(?ERROR_ATM_INVALID_STATUS_TRANSITION(PrevStatus, NewStatus)) -> #{
     <<"description">> => <<"Invalid status transition (see details).">>
 };
 
-to_json(?ERROR_STATS_FOR_SPACE_DISABLED) -> #{
-    <<"id">> => <<"statsForSpaceDisabled">>,
-    <<"description">> => <<"Cannot get statistcs - statistcs gathering disabled for space.">>
+to_json(?ERROR_DIR_STATS_DISABLED_FOR_SPACE) -> #{
+    <<"id">> => <<"dirStatsDisabledForSpace">>,
+    <<"description">> => <<"Directory statistics collection is disabled for this space.">>
 };
 
 %%--------------------------------------------------------------------
@@ -2232,8 +2232,8 @@ from_json(#{
         binary_to_atom(NewStatusBin, utf8)
     );
 
-from_json(#{<<"id">> := <<"statsForSpaceDisabled">>}) ->
-    ?ERROR_STATS_FOR_SPACE_DISABLED;
+from_json(#{<<"id">> := <<"dirStatsDisabledForSpace">>}) ->
+    ?ERROR_DIR_STATS_DISABLED_FOR_SPACE;
 
 %%--------------------------------------------------------------------
 %% onepanel errors
@@ -2489,7 +2489,7 @@ to_http_code(?ERROR_ATM_OPENFAAS_FUNCTION_REGISTRATION_FAILED) -> ?HTTP_400_BAD_
 
 to_http_code(?ERROR_ATM_INVALID_STATUS_TRANSITION(_, _)) -> ?HTTP_400_BAD_REQUEST;
 
-to_http_code(?ERROR_STATS_FOR_SPACE_DISABLED) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_DIR_STATS_DISABLED_FOR_SPACE) -> ?HTTP_400_BAD_REQUEST;
 
 %%--------------------------------------------------------------------
 %% onepanel errors

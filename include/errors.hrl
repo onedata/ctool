@@ -302,7 +302,7 @@
     {error, {atm_invalid_status_transition, PrevStatus, NewStatus}}
 ).
 
--define(ERROR_STATS_FOR_SPACE_DISABLED, {error, stats_for_space_disabled}).
+-define(ERROR_DIR_STATS_DISABLED_FOR_SPACE, {error, dir_stats_disabled_for_space}).
 
 
 %%--------------------------------------------------------------------
