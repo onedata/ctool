@@ -280,13 +280,13 @@ end).
         catch
             Class:Term ->
                 ok;
-            ActualClass:ActualTerm ->
+            ActualClass:ActualTerm:Stacktrace ->
                 FailureSummary = [
                     {module, ?MODULE},
                     {line, ?LINE},
                     {expression, (??ExpressionToCheck)},
                     {expected, "{ " ++ (??Class) ++ " , " ++ (??Term) ++ " , [...] }"},
-                    {unexpected_exception, {ActualClass, ActualTerm, erlang:get_stacktrace()}}
+                    {unexpected_exception, {ActualClass, ActualTerm, Stacktrace}}
                 ],
                 ct:print("assertException failed: ~p", [FailureSummary]),
                 erlang:error({assertException_failed, FailureSummary})
