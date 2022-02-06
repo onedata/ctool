@@ -67,7 +67,7 @@ db_decode(RecordJson, NestedRecordDecoder) ->
     json_utils:json_term().
 encode_with(Record, NestedRecordEncoder) ->
     #{
-        <<"dataSpec">> => NestedRecordEncoder(Record#atm_single_value_store_config.data_spec, atm_data_spec)
+        <<"itemDataSpec">> => NestedRecordEncoder(Record#atm_single_value_store_config.item_data_spec, atm_data_spec)
     }.
 
 
@@ -75,6 +75,6 @@ encode_with(Record, NestedRecordEncoder) ->
     record().
 decode_with(RecordJson, NestedRecordDecoder) ->
     #atm_single_value_store_config{
-        data_spec = NestedRecordDecoder(maps:get(<<"dataSpec">>, RecordJson), atm_data_spec)
+        item_data_spec = NestedRecordDecoder(maps:get(<<"itemDataSpec">>, RecordJson), atm_data_spec)
     }.
 

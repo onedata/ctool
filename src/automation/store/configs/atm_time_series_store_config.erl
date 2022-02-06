@@ -6,10 +6,10 @@
 %%% @end
 %%%-------------------------------------------------------------------
 %%% @doc
-%%% Record expressing tree forest store config used in automation machinery.
+%%% Record expressing time series store config used in automation machinery.
 %%% @end
 %%%-------------------------------------------------------------------
--module(atm_tree_forest_store_config).
+-module(atm_time_series_store_config).
 -author("Lukasz Opiola").
 
 -behaviour(jsonable_record).
@@ -25,7 +25,7 @@
 -export([version/0, db_encode/2, db_decode/2]).
 
 
--type record() :: #atm_tree_forest_store_config{}.
+-type record() :: #atm_time_series_store_config{}.
 -export_type([record/0]).
 
 %%%===================================================================
@@ -39,7 +39,7 @@ to_json(Record) ->
 
 -spec from_json(json_utils:json_term()) -> record().
 from_json(RecordJson) ->
-    decode_with(json, RecordJson, fun jsonable_record:from_json/2).
+    decode_with(RecordJson, fun jsonable_record:from_json/2).
 
 %%%===================================================================
 %%% persistent_record callbacks
@@ -57,7 +57,7 @@ db_encode(Record, NestedRecordEncoder) ->
 
 -spec db_decode(json_utils:json_term(), persistent_record:nested_record_decoder()) -> record().
 db_decode(RecordJson, NestedRecordDecoder) ->
-    decode_with(db, RecordJson, NestedRecordDecoder).
+    decode_with(RecordJson, NestedRecordDecoder).
 
 %%%===================================================================
 %%% Internal functions
@@ -67,21 +67,13 @@ db_decode(RecordJson, NestedRecordDecoder) ->
     json_utils:json_term().
 encode_with(Record, NestedRecordEncoder) ->
     #{
-        <<"dataSpec">> => NestedRecordEncoder(Record#atm_tree_forest_store_config.data_spec, atm_data_spec)
+        <<"schemas">> => [NestedRecordEncoder(S, atm_time_series_schema) || S <- Record#atm_time_series_store_config.schemas]
     }.
 
 
--spec decode_with(json | db, json_utils:json_term(), persistent_record:nested_record_decoder()) ->
+-spec decode_with(json_utils:json_term(), persistent_record:nested_record_decoder()) ->
     record().
-decode_with(db, RecordJson, NestedRecordDecoder) ->
-    #atm_tree_forest_store_config{
-        data_spec = NestedRecordDecoder(maps:get(<<"dataSpec">>, RecordJson), atm_data_spec)
-    };
-decode_with(json, RecordJson, NestedRecordDecoder) ->
-    Spec = decode_with(db, RecordJson, NestedRecordDecoder),
-    atm_data_spec:assert_has_allowed_data_type(
-        <<"treeForestStoreConfig.dataSpec.type">>,
-        Spec#atm_tree_forest_store_config.data_spec,
-        [atm_file_type, atm_dataset_type]
-    ),
-    Spec.
+decode_with(RecordJson, NestedRecordDecoder) ->
+    #atm_time_series_store_config{
+        schemas = [NestedRecordDecoder(S, atm_time_series_schema) || S <- maps:get(<<"schemas">>, RecordJson)]
+    }.

@@ -40,7 +40,7 @@ to_json(Record) ->
 
 -spec from_json(json_utils:json_term()) -> record().
 from_json(RecordJson) ->
-    decode_with(json, RecordJson, fun jsonable_record:from_json/2).
+    decode_with(validate, RecordJson, fun jsonable_record:from_json/2).
 
 %%%===================================================================
 %%% persistent_record callbacks
@@ -58,7 +58,7 @@ db_encode(Record, NestedRecordEncoder) ->
 
 -spec db_decode(json_utils:json_term(), persistent_record:nested_record_decoder()) -> record().
 db_decode(RecordJson, NestedRecordDecoder) ->
-    decode_with(db, RecordJson, NestedRecordDecoder).
+    decode_with(skip_validation, RecordJson, NestedRecordDecoder).
 
 %%%===================================================================
 %%% Internal functions
@@ -79,9 +79,9 @@ encode_with(Schema, NestedRecordEncoder) ->
     }.
 
 
--spec decode_with(db | json, json_utils:json_term(), persistent_record:nested_record_decoder()) ->
+-spec decode_with(validate | skip_validation, json_utils:json_term(), persistent_record:nested_record_decoder()) ->
     record().
-decode_with(db, SchemaJson, NestedRecordDecoder) ->
+decode_with(skip_validation, SchemaJson, NestedRecordDecoder) ->
     Type = automation:store_type_from_json(maps:get(<<"type">>, SchemaJson)),
     #atm_store_schema{
         id = maps:get(<<"id">>, SchemaJson),
@@ -92,8 +92,8 @@ decode_with(db, SchemaJson, NestedRecordDecoder) ->
         requires_initial_content = maps:get(<<"requiresInitialContent">>, SchemaJson),
         default_initial_content = utils:null_to_undefined(maps:get(<<"defaultInitialContent">>, SchemaJson, null))
     };
-decode_with(json, SchemaJson, NestedRecordDecoder) ->
-    Schema = decode_with(db, SchemaJson, NestedRecordDecoder),
+decode_with(validate, SchemaJson, NestedRecordDecoder) ->
+    Schema = decode_with(skip_validation, SchemaJson, NestedRecordDecoder),
     % these two stores do not allow initial content to be specified - implicitly adjust corresponding fields
     case Schema#atm_store_schema.type == time_series orelse Schema#atm_store_schema.type == audit_log of
         true ->

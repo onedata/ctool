@@ -16,7 +16,6 @@
 -behaviour(persistent_record).
 
 -include("automation/automation.hrl").
--include("errors.hrl").
 
 
 %% jsonable_record callbacks
@@ -40,7 +39,7 @@ to_json(Record) ->
 
 -spec from_json(json_utils:json_term()) -> record().
 from_json(RecordJson) ->
-    decode_with(json, RecordJson, fun jsonable_record:from_json/2).
+    decode_with(RecordJson, fun jsonable_record:from_json/2).
 
 %%%===================================================================
 %%% persistent_record callbacks
@@ -58,7 +57,7 @@ db_encode(Record, NestedRecordEncoder) ->
 
 -spec db_decode(json_utils:json_term(), persistent_record:nested_record_decoder()) -> record().
 db_decode(RecordJson, NestedRecordDecoder) ->
-    decode_with(db, RecordJson, NestedRecordDecoder).
+    decode_with(RecordJson, NestedRecordDecoder).
 
 %%%===================================================================
 %%% Internal functions
@@ -77,20 +76,12 @@ encode_with(Record, NestedRecordEncoder) ->
 
 
 %% @private
--spec decode_with(json | db, json_utils:json_term(), persistent_record:nested_record_decoder()) ->
+-spec decode_with(json_utils:json_term(), persistent_record:nested_record_decoder()) ->
     record().
-decode_with(db, RecordJson, NestedRecordDecoder) ->
+decode_with(RecordJson, NestedRecordDecoder) ->
     #atm_lambda_argument_spec{
         name = maps:get(<<"name">>, RecordJson),
         data_spec = NestedRecordDecoder(maps:get(<<"dataSpec">>, RecordJson), atm_data_spec),
         is_optional = maps:get(<<"isOptional">>, RecordJson),
         default_value = utils:null_to_undefined(maps:get(<<"defaultValue">>, RecordJson, null))
-    };
-decode_with(json, RecordJson, NestedRecordDecoder) ->
-    Spec = decode_with(db, RecordJson, NestedRecordDecoder),
-    atm_data_spec:assert_has_allowed_data_type(
-        <<"argumentSpec.dataSpec.type">>,
-        Spec#atm_lambda_argument_spec.data_spec,
-        atm_data_type:all_data_types() -- [atm_time_series_data_type]
-    ),
-    Spec.
+    }.

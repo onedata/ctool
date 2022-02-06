@@ -7,9 +7,13 @@
 %%%-------------------------------------------------------------------
 %%% @doc
 %%% Record expressing time series specification used in automation machinery.
+%%%
+%%% Provides a template for metric configuration and is used by time series schema.
+%%% Each time series schema defines a list of metrics, which will be created
+%%% within the corresponding time series instance.
 %%% @end
 %%%-------------------------------------------------------------------
--module(atm_time_series_metric_spec).
+-module(atm_time_series_metric_schema).
 -author("Lukasz Opiola").
 
 -behaviour(jsonable_record).
@@ -42,7 +46,7 @@
 -type aggregator() :: sum | max | min | last | first.
 -export_type([resolution/0, retention/0, aggregator/0]).
 
--type record() :: #atm_time_series_metric_spec{}.
+-type record() :: #atm_time_series_metric_schema{}.
 -export_type([record/0]).
 
 %%%===================================================================
@@ -70,7 +74,7 @@ to_json(Record) ->
 
 -spec from_json(json_utils:json_map()) -> record().
 from_json(RecordJson) ->
-    decode(json, RecordJson).
+    decode(validate, RecordJson).
 
 %%%===================================================================
 %%% persistent_record callbacks
@@ -88,7 +92,7 @@ db_encode(Record, _NestedRecordEncoder) ->
 
 -spec db_decode(json_utils:json_term(), persistent_record:nested_record_decoder()) -> record().
 db_decode(RecordJson, _NestedRecordDecoder) ->
-    decode(db, RecordJson).
+    decode(skip_validation, RecordJson).
 
 %%%===================================================================
 %%% Internal functions
@@ -119,25 +123,25 @@ aggregator_from_json(<<"last">>) -> last.
 -spec encode(record()) -> json_utils:json_term().
 encode(Record) ->
     #{
-        <<"id">> => Record#atm_time_series_metric_spec.id,
-        <<"resolution">> => Record#atm_time_series_metric_spec.resolution,
-        <<"retention">> => Record#atm_time_series_metric_spec.retention,
-        <<"aggregator">> => aggregator_to_json(Record#atm_time_series_metric_spec.aggregator)
+        <<"id">> => Record#atm_time_series_metric_schema.id,
+        <<"resolution">> => Record#atm_time_series_metric_schema.resolution,
+        <<"retention">> => Record#atm_time_series_metric_schema.retention,
+        <<"aggregator">> => aggregator_to_json(Record#atm_time_series_metric_schema.aggregator)
     }.
 
 
 %% @private
--spec decode(json | db, json_utils:json_term()) -> record().
-decode(db, RecordJson) ->
-    #atm_time_series_metric_spec{
+-spec decode(validate | skip_validation, json_utils:json_term()) -> record().
+decode(skip_validation, RecordJson) ->
+    #atm_time_series_metric_schema{
         id = maps:get(<<"id">>, RecordJson),
         resolution = maps:get(<<"resolution">>, RecordJson),
         retention = maps:get(<<"retention">>, RecordJson),
         aggregator = aggregator_from_json(maps:get(<<"aggregator">>, RecordJson))
     };
-decode(json, RecordJson) ->
-    Spec = decode(db, RecordJson),
-    lists:member(Spec#atm_time_series_metric_spec.resolution, allowed_resolutions()) orelse throw(
+decode(validate, RecordJson) ->
+    Spec = decode(skip_validation, RecordJson),
+    lists:member(Spec#atm_time_series_metric_schema.resolution, allowed_resolutions()) orelse throw(
         ?ERROR_BAD_VALUE_NOT_ALLOWED(<<"resolution">>, allowed_resolutions())
     ),
     Spec.

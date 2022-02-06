@@ -6,10 +6,10 @@
 %%% @end
 %%%-------------------------------------------------------------------
 %%% @doc
-%%% Record expressing map store config used in automation machinery.
+%%% Record expressing list store config used in automation machinery.
 %%% @end
 %%%-------------------------------------------------------------------
--module(atm_map_store_config).
+-module(atm_list_store_config).
 -author("Lukasz Opiola").
 
 -behaviour(jsonable_record).
@@ -25,7 +25,7 @@
 -export([version/0, db_encode/2, db_decode/2]).
 
 
--type record() :: #atm_map_store_config{}.
+-type record() :: #atm_list_store_config{}.
 -export_type([record/0]).
 
 %%%===================================================================
@@ -67,14 +67,14 @@ db_decode(RecordJson, NestedRecordDecoder) ->
     json_utils:json_term().
 encode_with(Record, NestedRecordEncoder) ->
     #{
-        <<"dataSpec">> => NestedRecordEncoder(Record#atm_map_store_config.data_spec, atm_data_spec)
+        <<"itemDataSpec">> => NestedRecordEncoder(Record#atm_list_store_config.item_data_spec, atm_data_spec)
     }.
 
 
 -spec decode_with(json_utils:json_term(), persistent_record:nested_record_decoder()) ->
     record().
 decode_with(RecordJson, NestedRecordDecoder) ->
-    #atm_map_store_config{
-        data_spec = NestedRecordDecoder(maps:get(<<"dataSpec">>, RecordJson), atm_data_spec)
+    #atm_list_store_config{
+        item_data_spec = NestedRecordDecoder(maps:get(<<"itemDataSpec">>, RecordJson), atm_data_spec)
     }.
 

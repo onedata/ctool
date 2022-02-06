@@ -102,29 +102,26 @@
 }).
 
 -record(atm_single_value_store_config, {
-    data_spec :: atm_data_spec:record()
+    item_data_spec :: atm_data_spec:record()
 }).
 
 -record(atm_list_store_config, {
-    data_spec :: atm_data_spec:record()
-}).
-
--record(atm_map_store_config, {
-    data_spec :: atm_data_spec:record()
+    item_data_spec :: atm_data_spec:record()
 }).
 
 -record(atm_tree_forest_store_config, {
-    data_spec :: atm_data_spec:record()
+    item_data_spec :: atm_data_spec:record()
 }).
 
 -record(atm_range_store_config, {
 }).
 
 -record(atm_time_series_store_config, {
-    specs :: [atm_time_series_spec:record()]
+    schemas :: [atm_time_series_schema:record()]
 }).
 
 -record(atm_audit_log_store_config, {
+    log_content_data_spec :: atm_data_spec:record()
 }).
 
 -record(atm_store_iterator_spec, {
@@ -157,7 +154,7 @@
     result_mappings :: [atm_task_schema_result_mapper:record()],
     resource_spec_override :: undefined | atm_resource_spec:record(),
     % optional time series spec; if defined, a time series store assigned to this task will be automatically created
-    time_series_spec :: undefined | atm_time_series_spec:record()
+    time_series_spec :: undefined | atm_time_series_schema:record()
 }).
 
 -record(atm_parallel_box_schema, {
@@ -203,24 +200,24 @@
     registry = #{} :: #{atm_workflow_schema_revision:revision_number() => atm_workflow_schema_revision:record()}
 }).
 
--record(atm_time_series_data_spec, {
-    name_selector :: atm_time_series_data_spec:name_selector(),
-    name :: automation:name(),
-    unit :: atm_time_series_data_spec:unit()
+-record(atm_time_series_measurements_spec, {
+    name_selector :: atm_time_series_attribute:name_selector(),
+    name :: atm_time_series_attribute:name(),
+    unit :: atm_time_series_attribute:unit()
 }).
 
--record(atm_time_series_metric_spec, {
+-record(atm_time_series_metric_schema, {
     id :: automation:id(),
-    resolution :: atm_time_series_metric_spec:resolution(),
-    retention :: atm_time_series_metric_spec:retention(),
-    aggregator :: atm_time_series_metric_spec:aggregator()
+    resolution :: atm_time_series_metric_schema:resolution(),
+    retention :: atm_time_series_metric_schema:retention(),
+    aggregator :: atm_time_series_metric_schema:aggregator()
 }).
 
--record(atm_time_series_spec, {
-    name_selector :: atm_time_series_data_spec:name_selector(),
-    name :: automation:name(),
-    unit :: atm_time_series_data_spec:unit(),
-    metrics :: [atm_time_series_metric_spec:record()]
+-record(atm_time_series_schema, {
+    name_selector :: atm_time_series_attribute:name_selector(),
+    name :: atm_time_series_attribute:name(),
+    unit :: atm_time_series_attribute:unit(),
+    metrics :: [atm_time_series_metric_schema:record()]
 }).
 
 

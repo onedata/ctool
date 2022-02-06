@@ -78,7 +78,7 @@ encode_with(Record, NestedRecordEncoder) ->
         end,
         <<"timeSeriesSpec">> => case Record#atm_task_schema.time_series_spec of
             undefined -> null;
-            TimeSeriesSpec -> NestedRecordEncoder(TimeSeriesSpec, atm_time_series_spec)
+            TimeSeriesSpec -> NestedRecordEncoder(TimeSeriesSpec, atm_time_series_schema)
         end
     }.
 
@@ -99,6 +99,6 @@ decode_with(RecordJson, NestedRecordDecoder) ->
         end,
         time_series_spec = case maps:get(<<"timeSeriesSpec">>, RecordJson, null) of
             null -> undefined;
-            TimeSeriesSpecJson -> NestedRecordDecoder(TimeSeriesSpecJson, atm_time_series_spec)
+            TimeSeriesSpecJson -> NestedRecordDecoder(TimeSeriesSpecJson, atm_time_series_schema)
         end
     }.

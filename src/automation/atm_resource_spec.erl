@@ -39,7 +39,7 @@ to_json(Record) ->
 
 -spec from_json(json_utils:json_map()) -> record().
 from_json(RecordJson) ->
-    decode(json, RecordJson).
+    decode(validate, RecordJson).
 
 %%%===================================================================
 %%% persistent_record callbacks
@@ -57,7 +57,7 @@ db_encode(Record, _NestedRecordEncoder) ->
 
 -spec db_decode(json_utils:json_term(), persistent_record:nested_record_decoder()) -> record().
 db_decode(RecordJson, _NestedRecordDecoder) ->
-    decode(db, RecordJson).
+    decode(skip_validation, RecordJson).
 
 %%%===================================================================
 %%% Internal functions
@@ -77,8 +77,8 @@ encode(Record) ->
 
 
 %% @private
--spec decode(json | db, json_utils:json_term()) -> record().
-decode(db, RecordJson) ->
+-spec decode(validate | skip_validation, json_utils:json_term()) -> record().
+decode(skip_validation, RecordJson) ->
     #atm_resource_spec{
         cpu_requested = utils:null_to_undefined(maps:get(<<"cpuRequested">>, RecordJson)),
         cpu_limit = utils:null_to_undefined(maps:get(<<"cpuLimit">>, RecordJson)),
@@ -87,8 +87,8 @@ decode(db, RecordJson) ->
         ephemeral_storage_requested = utils:null_to_undefined(maps:get(<<"ephemeralStorageRequested">>, RecordJson)),
         ephemeral_storage_limit = utils:null_to_undefined(maps:get(<<"ephemeralStorageLimit">>, RecordJson))
     };
-decode(json, RecordJson) ->
-    Spec = decode(db, RecordJson),
+decode(validate, RecordJson) ->
+    Spec = decode(skip_validation, RecordJson),
     #atm_resource_spec{
         cpu_requested = sanitize_value(Spec#atm_resource_spec.cpu_requested, float, disallow_undefined),
         cpu_limit = sanitize_value(Spec#atm_resource_spec.cpu_limit, float, allow_undefined),
@@ -97,6 +97,7 @@ decode(json, RecordJson) ->
         ephemeral_storage_requested = sanitize_value(Spec#atm_resource_spec.ephemeral_storage_requested, integer, disallow_undefined),
         ephemeral_storage_limit = sanitize_value(Spec#atm_resource_spec.ephemeral_storage_limit, integer, allow_undefined)
     }.
+
 
 %% @private
 -spec sanitize_value(term(), float | integer, allow_undefined | disallow_undefined) ->

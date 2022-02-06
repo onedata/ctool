@@ -90,7 +90,7 @@ to_json(Record) ->
 
 -spec from_json(json_utils:json_term()) -> record().
 from_json(RecordJson) ->
-    decode_with(json, RecordJson, fun jsonable_record:from_json/2).
+    decode_with(validate, RecordJson, fun jsonable_record:from_json/2).
 
 %%%===================================================================
 %%% persistent_record callbacks
@@ -108,7 +108,7 @@ db_encode(Record, NestedRecordEncoder) ->
 
 -spec db_decode(json_utils:json_term(), persistent_record:nested_record_decoder()) -> record().
 db_decode(RecordJson, NestedRecordDecoder) ->
-    decode_with(db, RecordJson, NestedRecordDecoder).
+    decode_with(skip_validation, RecordJson, NestedRecordDecoder).
 
 %%%===================================================================
 %%% Internal functions
@@ -125,14 +125,14 @@ encode_with(Record, NestedRecordEncoder) ->
     ).
 
 
--spec decode_with(json | db, json_utils:json_term(), persistent_record:nested_record_decoder()) ->
+-spec decode_with(validate | skip_validation, json_utils:json_term(), persistent_record:nested_record_decoder()) ->
     record().
-decode_with(db, RecordJson, NestedRecordDecoder) ->
+decode_with(skip_validation, RecordJson, NestedRecordDecoder) ->
     Engine = engine_from_json(maps:get(<<"engine">>, RecordJson)),
     RecordType = engine_to_record_type(Engine),
     NestedRecordDecoder(RecordJson, RecordType);
-decode_with(json, RecordJson, NestedRecordDecoder) ->
-    Record = decode_with(db, RecordJson, NestedRecordDecoder),
+decode_with(validate, RecordJson, NestedRecordDecoder) ->
+    Record = decode_with(skip_validation, RecordJson, NestedRecordDecoder),
     RecordType = utils:record_type(Record),
     Engine = record_type_to_engine(RecordType),
     lists:member(Engine, allowed_engines_for_custom_lambdas()) orelse throw(?ERROR_BAD_VALUE_NOT_ALLOWED(
