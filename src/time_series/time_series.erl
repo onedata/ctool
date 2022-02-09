@@ -15,15 +15,15 @@
 -author("Lukasz Opiola").
 
 
--type time() :: time:seconds().
--export_type([time/0]).
+-type time_unit() :: time:seconds().
+-export_type([time_unit/0]).
 
-% user defined name of the metric
--type metric_legend() ::  binary().
+% user defined label of the metric that will be used during presentation
+-type metric_label() ::  binary().
 % width of a single time window
--type metric_resolution() ::  time().  % 0 means infinity
+-type metric_resolution() ::  time_unit().  % 0 means infinity
 % number of windows to store in the metric (older windows are pruned)
 -type metric_retention() ::  pos_integer().
 % aggregator function applied when a new measurement is inserted into a time window
 -type metric_aggregator() ::  sum | max | min | last | first. % | {gather, Max}. % TODO VFS-8164 - extend functions list
--export_type([metric_legend/0, metric_resolution/0, metric_retention/0, metric_aggregator/0]).
+-export_type([metric_label/0, metric_resolution/0, metric_retention/0, metric_aggregator/0]).
