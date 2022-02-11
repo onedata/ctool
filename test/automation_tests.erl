@@ -180,7 +180,7 @@ encode_decode_time_series_metric_spec_test() ->
     encode_decode_test_base(ExampleTimeSeriesMetricSpecs),
 
     check_error_during_decode_from_json(
-        ?ERROR_BAD_VALUE_NOT_ALLOWED(<<"resolution">>, atm_time_series_metric_schema:allowed_resolutions()),
+        ?ERROR_BAD_VALUE_NOT_ALLOWED(<<"resolution">>, time_series:allowed_metric_resolutions()),
         Example#atm_time_series_metric_schema{resolution = 1337}
     ).
 

@@ -520,7 +520,7 @@ example_task_schema(AvailableLambdasWithRegistries, StoreSchemaIds) ->
         argument_mappings = example_argument_mappers(AtmLambdaRevision, StoreSchemaIds),
         result_mappings = example_result_mappers(AtmLambdaRevision, StoreSchemaIds),
         resource_spec_override = ?RAND_ELEMENT([undefined, example_resource_spec()]),
-        time_series_spec = ?RAND_ELEMENT([undefined, example_time_series_spec()])
+        time_series_schema = ?RAND_ELEMENT([undefined, example_time_series_spec()])
     }.
 
 -spec example_task_schemas() -> [atm_task_schema:record()].
@@ -678,9 +678,9 @@ example_time_series_metric_specs() ->
             id = example_id(),
             resolution = Resolution,
             retention = ?RAND_INT(1, 1000),
-            aggregator = ?RAND_ELEMENT(atm_time_series_metric_schema:all_aggregators())
+            aggregator = ?RAND_ELEMENT(time_series:all_metric_aggregators())
         }
-    end, atm_time_series_metric_schema:allowed_resolutions()).
+    end, time_series:allowed_metric_resolutions()).
 
 
 -spec example_time_series_spec() -> atm_time_series_schema:record().

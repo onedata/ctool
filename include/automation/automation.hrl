@@ -154,7 +154,7 @@
     result_mappings :: [atm_task_schema_result_mapper:record()],
     resource_spec_override :: undefined | atm_resource_spec:record(),
     % optional time series spec; if defined, a time series store assigned to this task will be automatically created
-    time_series_spec :: undefined | atm_time_series_schema:record()
+    time_series_schema :: undefined | atm_time_series_schema:record()
 }).
 
 -record(atm_parallel_box_schema, {
@@ -208,9 +208,9 @@
 
 -record(atm_time_series_metric_schema, {
     id :: automation:id(),
-    resolution :: atm_time_series_metric_schema:resolution(),
-    retention :: atm_time_series_metric_schema:retention(),
-    aggregator :: atm_time_series_metric_schema:aggregator()
+    resolution :: time_series:metric_resolution(),
+    retention :: time_series:metric_retention(),
+    aggregator :: time_series:metric_aggregator()
 }).
 
 -record(atm_time_series_schema, {
