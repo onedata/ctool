@@ -227,6 +227,7 @@ serialize_type(op_provider, _) -> <<"op_provider">>;
 serialize_type(op_qos, _) -> <<"op_qos">>;
 serialize_type(op_share, _) -> <<"op_share">>;
 serialize_type(op_space, _) -> <<"op_space">>;
+serialize_type(op_storage, _) -> <<"op_storage">>;
 serialize_type(op_transfer, _) -> <<"op_transfer">>;
 serialize_type(op_user, _) -> <<"op_user">>;
 
@@ -285,6 +286,7 @@ deserialize_type(<<"op_provider">>, _) -> op_provider;
 deserialize_type(<<"op_qos">>, _) -> op_qos;
 deserialize_type(<<"op_share">>, _) -> op_share;
 deserialize_type(<<"op_space">>, _) -> op_space;
+deserialize_type(<<"op_storage">>, _) -> op_storage;
 deserialize_type(<<"op_transfer">>, _) -> op_transfer;
 deserialize_type(<<"op_user">>, _) -> op_user;
 
