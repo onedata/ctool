@@ -88,7 +88,7 @@ decode_with(skip_validation, SchemaJson, NestedRecordDecoder) ->
         name = maps:get(<<"name">>, SchemaJson),
         description = maps:get(<<"description">>, SchemaJson),
         type = Type,
-        config = atm_store_config:decode(maps:get(<<"config">>, SchemaJson), Type, NestedRecordDecoder),
+        config = atm_store_config:decode(maps:get(<<"config">>, SchemaJson, #{}), Type, NestedRecordDecoder),
         requires_initial_content = maps:get(<<"requiresInitialContent">>, SchemaJson),
         default_initial_content = utils:null_to_undefined(maps:get(<<"defaultInitialContent">>, SchemaJson, null))
     };
