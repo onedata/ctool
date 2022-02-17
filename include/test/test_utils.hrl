@@ -60,4 +60,13 @@
 -type mock_opt() :: passthrough | non_strict | unstick | no_link | no_history.
 
 
+-define(RAND_ELEMENT(List), lists_utils:random_element(List)).
+-define(RAND_SUBLIST(List), lists_utils:random_sublist(List)).
+-define(RAND_SUBLIST(List, MinLength, MaxLength), lists_utils:random_sublist(List, MinLength, MaxLength)).
+-define(RAND_STR(), ?RAND_STR(16)).
+-define(RAND_STR(Size), string:slice(str_utils:rand_hex(Size), 0, Size)).
+-define(RAND_BOOL(), ?RAND_ELEMENT([true, false])).
+-define(RAND_INT(From, To), From + rand:uniform(To - From + 1) - 1).
+
+
 -endif.

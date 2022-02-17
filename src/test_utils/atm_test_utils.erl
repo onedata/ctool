@@ -13,14 +13,7 @@
 -author("Lukasz Opiola").
 
 -include("automation/automation.hrl").
-
--define(RAND_ELEMENT(List), lists_utils:random_element(List)).
--define(RAND_SUBLIST(List), lists_utils:random_sublist(List)).
--define(RAND_SUBLIST(List, MinLength, MaxLength), lists_utils:random_sublist(List, MinLength, MaxLength)).
--define(RAND_STR(), ?RAND_STR(16)).
--define(RAND_STR(Bytes), str_utils:rand_hex(Bytes)).
--define(RAND_BOOL(), ?RAND_ELEMENT([true, false])).
--define(RAND_INT(From, To), From + rand:uniform(To - From + 1) - 1).
+-include("test/test_utils.hrl").
 
 -export([example_id/0]).
 -export([example_name/0]).
