@@ -112,6 +112,10 @@ serialize_deserialize_testcases() -> [
         #gri{type = op_user, id = <<"u987">>, aspect = {space, <<"hr1ade">>}, scope = auto}
     },
     {
+        <<"op_storage.83e8dfab7b8ec9674a5ea95f7ce4aeb6ch9afa.instance:shared">>,
+        #gri{type = op_storage, id = <<"83e8dfab7b8ec9674a5ea95f7ce4aeb6ch9afa">>, aspect = instance, scope = shared}
+    },
+    {
         <<"op_handle.null.instance:private">>,
         #gri{type = op_handle, id = undefined, aspect = instance, scope = private}
     },
