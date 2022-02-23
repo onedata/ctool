@@ -16,6 +16,8 @@
 -behaviour(persistent_record).
 
 -include("automation/automation.hrl").
+-include("errors.hrl").
+
 
 %% API
 -export([get_type/1, get_value_constraints/1]).
@@ -81,4 +83,3 @@ db_encode(Record, _NestedRecordEncoder) ->
 -spec db_decode(json_utils:json_term(), persistent_record:nested_record_decoder()) -> record().
 db_decode(RecordJson, _NestedRecordDecoder) ->
     from_json(RecordJson).
-

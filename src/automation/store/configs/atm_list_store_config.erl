@@ -1,21 +1,22 @@
 %%%-------------------------------------------------------------------
 %%% @author Lukasz Opiola
-%%% @copyright (C) 2021 ACK CYFRONET AGH
+%%% @copyright (C) 2022 ACK CYFRONET AGH
 %%% This software is released under the MIT license
 %%% cited in 'LICENSE.txt'.
 %%% @end
 %%%-------------------------------------------------------------------
 %%% @doc
-%%% Record expressing task schema used in automation machinery.
+%%% Record expressing list store config used in automation machinery.
 %%% @end
 %%%-------------------------------------------------------------------
--module(atm_task_schema).
+-module(atm_list_store_config).
 -author("Lukasz Opiola").
 
 -behaviour(jsonable_record).
 -behaviour(persistent_record).
 
 -include("automation/automation.hrl").
+
 
 %% jsonable_record callbacks
 -export([to_json/1, from_json/1]).
@@ -24,7 +25,7 @@
 -export([version/0, db_encode/2, db_decode/2]).
 
 
--type record() :: #atm_task_schema{}.
+-type record() :: #atm_list_store_config{}.
 -export_type([record/0]).
 
 %%%===================================================================
@@ -66,39 +67,14 @@ db_decode(RecordJson, NestedRecordDecoder) ->
     json_utils:json_term().
 encode_with(Record, NestedRecordEncoder) ->
     #{
-        <<"id">> => Record#atm_task_schema.id,
-        <<"name">> => Record#atm_task_schema.name,
-        <<"lambdaId">> => Record#atm_task_schema.lambda_id,
-        <<"lambdaRevisionNumber">> => Record#atm_task_schema.lambda_revision_number,
-        <<"argumentMappings">> => [NestedRecordEncoder(M, atm_task_schema_argument_mapper) || M <- Record#atm_task_schema.argument_mappings],
-        <<"resultMappings">> => [NestedRecordEncoder(M, atm_task_schema_result_mapper) || M <- Record#atm_task_schema.result_mappings],
-        <<"resourceSpecOverride">> => case Record#atm_task_schema.resource_spec_override of
-            undefined -> null;
-            ResourceSpec -> NestedRecordEncoder(ResourceSpec, atm_resource_spec)
-        end,
-        <<"timeSeriesSchema">> => case Record#atm_task_schema.time_series_schema of
-            undefined -> null;
-            TimeSeriesSpec -> NestedRecordEncoder(TimeSeriesSpec, atm_time_series_schema)
-        end
+        <<"itemDataSpec">> => NestedRecordEncoder(Record#atm_list_store_config.item_data_spec, atm_data_spec)
     }.
 
 
 -spec decode_with(json_utils:json_term(), persistent_record:nested_record_decoder()) ->
     record().
 decode_with(RecordJson, NestedRecordDecoder) ->
-    #atm_task_schema{
-        id = maps:get(<<"id">>, RecordJson),
-        name = maps:get(<<"name">>, RecordJson),
-        lambda_id = maps:get(<<"lambdaId">>, RecordJson),
-        lambda_revision_number = maps:get(<<"lambdaRevisionNumber">>, RecordJson),
-        argument_mappings = [NestedRecordDecoder(M, atm_task_schema_argument_mapper) || M <- maps:get(<<"argumentMappings">>, RecordJson)],
-        result_mappings = [NestedRecordDecoder(M, atm_task_schema_result_mapper) || M <- maps:get(<<"resultMappings">>, RecordJson)],
-        resource_spec_override = case maps:get(<<"resourceSpecOverride">>, RecordJson, null) of
-            null -> undefined;
-            ResourceSpecJson -> NestedRecordDecoder(ResourceSpecJson, atm_resource_spec)
-        end,
-        time_series_schema = case maps:get(<<"timeSeriesSchema">>, RecordJson, null) of
-            null -> undefined;
-            TimeSeriesSpecJson -> NestedRecordDecoder(TimeSeriesSpecJson, atm_time_series_schema)
-        end
+    #atm_list_store_config{
+        item_data_spec = NestedRecordDecoder(maps:get(<<"itemDataSpec">>, RecordJson), atm_data_spec)
     }.
+

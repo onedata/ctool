@@ -127,7 +127,7 @@
     Value :: json_utils:json_term(),
     Type :: atm_data_type:type(),
     ValueConstraintsJson :: json_utils:json_map()}
-| atm_store_missing_required_initial_value
+| atm_store_missing_required_initial_content
 | {atm_store_creation_failed, AtmStoreSchemaId :: binary(), SpecificError :: error()}
 | {atm_store_frozen, AtmStoreSchemaId :: binary()}
 | {atm_store_type_disallowed, AtmStoreSchemaId :: binary(), AllowedTypes :: [automation:store_type()]}
@@ -1108,9 +1108,9 @@ to_json(?ERROR_ATM_STORE_CREATION_FAILED(AtmStoreSchemaId, {error, _} = Specific
         [AtmStoreSchemaId]
     )
 };
-to_json(?ERROR_ATM_STORE_MISSING_REQUIRED_INITIAL_VALUE) -> #{
-    <<"id">> => <<"atmStoreMissingRequiredInitialValue">>,
-    <<"description">> => <<"Missing initial value required to create automation store.">>
+to_json(?ERROR_ATM_STORE_MISSING_REQUIRED_INITIAL_CONTENT) -> #{
+    <<"id">> => <<"atmStoreMissingRequiredInitialContent">>,
+    <<"description">> => <<"Missing initial content required to create automation store.">>
 };
 to_json(?ERROR_ATM_STORE_FROZEN(AtmStoreSchemaId)) -> #{
     <<"id">> => <<"atmStoreFrozen">>,
@@ -1994,8 +1994,8 @@ from_json(#{
 }) ->
     ?ERROR_ATM_STORE_CREATION_FAILED(AtmStoreSchemaId, from_json(SpecificErrorJson));
 
-from_json(#{<<"id">> := <<"atmStoreMissingRequiredInitialValue">>}) ->
-    ?ERROR_ATM_STORE_MISSING_REQUIRED_INITIAL_VALUE;
+from_json(#{<<"id">> := <<"atmStoreMissingRequiredInitialContent">>}) ->
+    ?ERROR_ATM_STORE_MISSING_REQUIRED_INITIAL_CONTENT;
 
 from_json(#{
     <<"id">> := <<"atmStoreFrozen">>,
@@ -2448,7 +2448,7 @@ to_http_code(?ERROR_ATM_DATA_TYPE_UNVERIFIED(_, _)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_ATM_DATA_VALUE_CONSTRAINT_UNVERIFIED(_, _, _)) -> ?HTTP_400_BAD_REQUEST;
 
 to_http_code(?ERROR_ATM_STORE_CREATION_FAILED(_, _)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_ATM_STORE_MISSING_REQUIRED_INITIAL_VALUE) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_ATM_STORE_MISSING_REQUIRED_INITIAL_CONTENT) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_ATM_STORE_FROZEN(_)) -> ?HTTP_403_FORBIDDEN;
 to_http_code(?ERROR_ATM_STORE_TYPE_DISALLOWED(_, _)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_ATM_STORE_EMPTY(_)) -> ?HTTP_400_BAD_REQUEST;

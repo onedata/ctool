@@ -17,6 +17,8 @@
 
 -include("automation/automation.hrl").
 
+
+%% API
 -export([all_dispatch_functions/0]).
 
 %% Jsonable record callbacks
@@ -27,6 +29,7 @@
 
 
 -type record() :: #atm_task_schema_result_mapper{}.
+%%% @TODO VFS-8958 Refine and implement time series selectors and store mappers - add missing dispatch function
 -type dispatch_function() :: add | remove | set | append | extend.
 -export_type([record/0, dispatch_function/0]).
 

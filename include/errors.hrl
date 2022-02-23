@@ -206,8 +206,8 @@
     {error, {atm_data_value_constraint_unverified, Value, Type, ValueConstraintsJson}}
 ).
 
--define(ERROR_ATM_STORE_MISSING_REQUIRED_INITIAL_VALUE,
-    {error, atm_store_missing_required_initial_value}
+-define(ERROR_ATM_STORE_MISSING_REQUIRED_INITIAL_CONTENT,
+    {error, atm_store_missing_required_initial_content}
 ).
 -define(ERROR_ATM_STORE_CREATION_FAILED(AtmStoreSchemaId, SpecificError),
     {error, {atm_store_creation_failed, AtmStoreSchemaId, SpecificError}}

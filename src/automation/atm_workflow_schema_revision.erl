@@ -98,7 +98,7 @@ to_json(Record) ->
 
 -spec from_json(json_utils:json_term()) -> record().
 from_json(RecordJson) ->
-    decode_with(json, RecordJson, fun jsonable_record:from_json/2).
+    decode_with(validate, RecordJson, fun jsonable_record:from_json/2).
 
 %%%===================================================================
 %%% persistent_record callbacks
@@ -116,7 +116,7 @@ db_encode(Record, NestedRecordEncoder) ->
 
 -spec db_decode(json_utils:json_term(), persistent_record:nested_record_decoder()) -> record().
 db_decode(RecordJson, NestedRecordDecoder) ->
-    decode_with(db, RecordJson, NestedRecordDecoder).
+    decode_with(skip_validation, RecordJson, NestedRecordDecoder).
 
 %%%===================================================================
 %%% Internal functions
@@ -133,14 +133,14 @@ encode_with(Record, NestedRecordEncoder) ->
     }.
 
 
--spec decode_with(json | db, json_utils:json_term(), persistent_record:nested_record_decoder()) ->
+-spec decode_with(validate | skip_validation, json_utils:json_term(), persistent_record:nested_record_decoder()) ->
     record().
-decode_with(DecoderType, RecordJson, NestedRecordDecoder) ->
+decode_with(ValidationStrategy, RecordJson, NestedRecordDecoder) ->
     %% @TODO VFS-8507 Rework along with new data sanitizers for all atm models (data_spec callback?)
     InputDescription = maps:get(<<"description">>, RecordJson, ?DEFAULT_DESCRIPTION),
-    Description = case DecoderType of
-        json -> automation:sanitize_binary(<<"description">>, InputDescription, ?DESCRIPTION_SIZE_LIMIT);
-        db -> InputDescription
+    Description = case ValidationStrategy of
+        validate -> automation:sanitize_binary(<<"description">>, InputDescription, ?DESCRIPTION_SIZE_LIMIT);
+        skip_validation -> InputDescription
     end,
     #atm_workflow_schema_revision{
         description = Description,
