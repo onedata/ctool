@@ -15,7 +15,7 @@
 %% API
 -export([prepare_test_environment/3, prepare_test_environment/2,
     clean_environment/1, clean_environment/2, load_modules/2,
-    maybe_start_cover/0, maybe_stop_cover/0, maybe_gather_cover/1]).
+    maybe_start_cover/0, maybe_stop_cover/0, finalize/1]).
 
 -define(NODE_CALL_TIMEOUT, timer:seconds(60)).
 -define(COOKIE_KEY, "vm.args/setcookie").
@@ -148,7 +148,7 @@ clean_environment(Config) ->
     Apps :: [{AppName :: atom(), ConfigName :: atom()}]) -> ok.
 clean_environment(Config, Apps) ->
     StopStatus = try
-        maybe_gather_cover(Config, Apps)
+        finalize(Config, Apps)
     catch
         E1:E2:Stacktrace ->
             ct:pal("Environment cleanup failed - ~p:~p~n" ++
@@ -172,25 +172,23 @@ clean_environment(Config, Apps) ->
     end.
 
 
--spec maybe_gather_cover(Config :: list() | test_config:config()) -> ok.
-maybe_gather_cover(Config) ->
-    maybe_gather_cover(Config, ?ALL_POSSIBLE_APPS).
+-spec finalize(Config :: list() | test_config:config()) -> ok.
+finalize(Config) ->
+    finalize(Config, ?ALL_POSSIBLE_APPS).
 
 
--spec maybe_gather_cover(Config :: list() | test_config:config(),
+-spec finalize(Config :: list() | test_config:config(), 
     Apps :: [{AppName :: atom(), ConfigName :: atom()}]) -> ok.
-maybe_gather_cover(Config, Apps) ->
-    maybe_gather_cover(Config, Apps, cover:modules()).
+finalize(Config, Apps) ->
+    NodesWithCover = get_nodes_with_cover(Config, Apps),
+    stop_applications(Config, Apps),
+    gather_cover(NodesWithCover).
 
 
--spec maybe_gather_cover(Config :: list() | test_config:config(),
-    Apps :: [{AppName :: atom(), ConfigName :: atom()}], [module()]) -> ok.
-maybe_gather_cover(_Config, _Apps, []) ->
-    ok;
-maybe_gather_cover(Config, Apps, _) ->
-    erlang:register(?CLEANING_PROC_NAME, self()),
-
-    NodesWithCover = lists:flatmap(fun({AppName, ConfigName}) ->
+-spec get_nodes_with_cover(Config :: list() | test_config:config(), 
+    Apps :: [{AppName :: atom(), ConfigName :: atom()}]) -> [node()].
+get_nodes_with_cover(Config, Apps) ->
+    lists:flatmap(fun({AppName, ConfigName}) ->
         Nodes = test_config:get_custom(Config, ConfigName, []),
         lists:filter(fun(Node) ->
             case rpc:call(Node, application, get_env, [AppName, covered_dirs]) of
@@ -199,10 +197,16 @@ maybe_gather_cover(Config, Apps, _) ->
                 _ -> false
             end
         end, Nodes)
-    end, Apps),
-    stop_applications(Config, Apps),
+    end, Apps).
 
-    NodesWithCover /= [] andalso ct:pal("Gathering cover from nodes: ~s", [?FORMAT_ATOM_LIST(NodesWithCover)]),
+
+-spec gather_cover([node()]) -> ok.
+gather_cover([]) ->
+    ok;
+gather_cover(NodesWithCover) ->
+    erlang:register(?CLEANING_PROC_NAME, self()),
+
+    ct:pal("Gathering cover from nodes: ~s", [?FORMAT_ATOM_LIST(NodesWithCover)]),
     lists:foreach(fun(Node) ->
         receive
             {app_ended, CoverNode, FileData} ->
