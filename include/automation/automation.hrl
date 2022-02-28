@@ -14,8 +14,8 @@
 -define(AUTOMATION_HRL, 1).
 
 
--include("time_series/common.hrl").
--include("errors.hrl").
+-include("../time_series/common.hrl").
+-include("../errors.hrl").
 
 
 -define(DEFAULT_SUMMARY, <<"Missing summary">>).
