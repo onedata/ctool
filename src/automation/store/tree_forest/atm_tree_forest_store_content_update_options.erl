@@ -7,10 +7,10 @@
 %%%-------------------------------------------------------------------
 %%% @doc
 %%% Record expressing store content update options specialization for
-%%% single_value store used in automation machinery.
+%%% tree_forest store used in automation machinery.
 %%% @end
 %%%-------------------------------------------------------------------
--module(atm_single_value_content_update_options).
+-module(atm_tree_forest_store_content_update_options).
 -author("Lukasz Opiola").
 
 -behaviour(jsonable_record).
@@ -25,7 +25,7 @@
 -export([version/0, db_encode/2, db_decode/2]).
 
 
--type record() :: #atm_single_value_content_update_options{}.
+-type record() :: #atm_tree_forest_store_content_update_options{}.
 -export_type([record/0]).
 
 
@@ -34,13 +34,21 @@
 %%%===================================================================
 
 -spec to_json(record()) -> json_utils:json_term().
-to_json(_Record) ->
-    #{}.
+to_json(Record) ->
+    #{
+        <<"function">> => atm_list_store_content_update_options:function_to_json(
+            Record#atm_tree_forest_store_content_update_options.function
+        )
+    }.
 
 
 -spec from_json(json_utils:json_term()) -> record().
-from_json(_RecordJson) ->
-    #atm_single_value_content_update_options{}.
+from_json(RecordJson) ->
+    #atm_tree_forest_store_content_update_options{
+        function = atm_list_store_content_update_options:function_from_json(
+            maps:get(<<"function">>, RecordJson)
+        )
+    }.
 
 %%%===================================================================
 %%% persistent_record callbacks

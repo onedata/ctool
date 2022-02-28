@@ -109,28 +109,22 @@ decode_with(validate, RecordJson, NestedRecordDecoder) ->
 -spec are_name_generators_conflicting(atm_time_series_schema:record(), atm_time_series_schema:record()) ->
     boolean().
 are_name_generators_conflicting(
-    #atm_time_series_schema{name_generator_type = exact, name_generator = NameGeneratorA},
-    #atm_time_series_schema{name_generator_type = exact, name_generator = NameGeneratorB}
+    #atm_time_series_schema{name_generator_type = exact, name_generator = NameGenA},
+    #atm_time_series_schema{name_generator_type = exact, name_generator = NameGenB}
 ) ->
-    NameGeneratorA =:= NameGeneratorB;
+    NameGenA =:= NameGenB;
 are_name_generators_conflicting(
-    #atm_time_series_schema{name_generator_type = add_prefix, name_generator = NameGeneratorA},
-    #atm_time_series_schema{name_generator_type = exact, name_generator = NameGeneratorB}
+    #atm_time_series_schema{name_generator_type = add_prefix, name_generator = NameGenA},
+    #atm_time_series_schema{name_generator_type = exact, name_generator = NameGenB}
 ) ->
-    is_prefix_of(NameGeneratorA, NameGeneratorB);
+    str_utils:binary_starts_with(NameGenB, NameGenA);
 are_name_generators_conflicting(
-    #atm_time_series_schema{name_generator_type = exact, name_generator = NameGeneratorA},
-    #atm_time_series_schema{name_generator_type = add_prefix, name_generator = NameGeneratorB}
+    #atm_time_series_schema{name_generator_type = exact, name_generator = NameGenA},
+    #atm_time_series_schema{name_generator_type = add_prefix, name_generator = NameGenB}
 ) ->
-    is_prefix_of(NameGeneratorB, NameGeneratorA);
+    str_utils:binary_starts_with(NameGenA, NameGenB);
 are_name_generators_conflicting(
-    #atm_time_series_schema{name_generator_type = add_prefix, name_generator = NameGeneratorA},
-    #atm_time_series_schema{name_generator_type = add_prefix, name_generator = NameGeneratorB}
+    #atm_time_series_schema{name_generator_type = add_prefix, name_generator = NameGenA},
+    #atm_time_series_schema{name_generator_type = add_prefix, name_generator = NameGenB}
 ) ->
-    is_prefix_of(NameGeneratorA, NameGeneratorB) orelse is_prefix_of(NameGeneratorB, NameGeneratorA).
-
-
-%% @private
--spec is_prefix_of(binary(), binary()) -> boolean().
-is_prefix_of(PossiblePrefix, String) ->
-    string:prefix(String, PossiblePrefix) /= nomatch.
+    str_utils:binary_starts_with(NameGenA, NameGenB) orelse str_utils:binary_starts_with(NameGenB, NameGenA).

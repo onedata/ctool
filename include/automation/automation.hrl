@@ -149,29 +149,29 @@
     store_content_update_options :: atm_store_content_update_options:record()
 }).
 
--record(atm_single_value_content_update_options, {
+-record(atm_single_value_store_content_update_options, {
 }).
 
--record(atm_list_content_update_options, {
-    function :: atm_list_content_update_options:update_function()
+-record(atm_list_store_content_update_options, {
+    function :: atm_list_store_content_update_options:update_function()
 }).
 
--record(atm_tree_forest_content_update_options, {
-    function :: atm_list_content_update_options:update_function()
+-record(atm_tree_forest_store_content_update_options, {
+    function :: atm_list_store_content_update_options:update_function()
 }).
 
--record(atm_range_content_update_options, {
-    start_num :: atm_range_content_update_options:start_num(),
-    end_num :: atm_range_content_update_options:end_num(),
-    step :: atm_range_content_update_options:step()
+-record(atm_range_store_content_update_options, {
+    start_num :: atm_range_store_content_update_options:start_num(),
+    end_num :: atm_range_store_content_update_options:end_num(),
+    step :: atm_range_store_content_update_options:step()
 }).
 
--record(atm_time_series_content_update_options, {
+-record(atm_time_series_store_content_update_options, {
     dispatch_rules :: [atm_time_series_dispatch_rule:record()]
 }).
 
--record(atm_audit_log_content_update_options, {
-    function :: atm_list_content_update_options:update_function()
+-record(atm_audit_log_store_content_update_options, {
+    function :: atm_list_store_content_update_options:update_function()
 }).
 
 -record(atm_time_series_dispatch_rule, {

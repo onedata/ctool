@@ -17,6 +17,9 @@
 
 -include("automation/automation.hrl").
 
+%% API
+-export([infer_store_type/1]).
+
 %% jsonable_record callbacks
 -export([to_json/1, from_json/1]).
 
@@ -24,22 +27,34 @@
 -export([version/0, db_encode/2, db_decode/2]).
 
 
--type record() :: atm_single_value_content_update_options:record()
-| atm_list_content_update_options:record()
-| atm_tree_forest_content_update_options:record()
-| atm_range_content_update_options:record()
-| atm_time_series_content_update_options:record()
-| atm_audit_log_content_update_options:record().
--type record_type() :: atm_single_value_content_update_options
-| atm_list_content_update_options
-| atm_tree_forest_content_update_options
-| atm_range_content_update_options
-| atm_time_series_content_update_options
-| atm_audit_log_content_update_options.
+-type record() :: atm_audit_log_store_content_update_options:record()
+| atm_list_store_content_update_options:record()
+| atm_range_store_content_update_options:record()
+| atm_single_value_store_content_update_options:record()
+| atm_time_series_store_content_update_options:record()
+| atm_tree_forest_store_content_update_options:record().
+-type record_type() :: atm_audit_log_store_content_update_options
+| atm_list_store_content_update_options
+| atm_range_store_content_update_options
+| atm_single_value_store_content_update_options
+| atm_time_series_store_content_update_options
+| atm_tree_forest_store_content_update_options.
 -type type() :: record_type().
 
 -export_type([record/0]).
 
+
+%%%===================================================================
+%%% API
+%%%===================================================================
+
+-spec infer_store_type(record()) -> automation:store_type().
+infer_store_type(#atm_audit_log_store_content_update_options{}) -> audit_log;
+infer_store_type(#atm_list_store_content_update_options{}) -> list;
+infer_store_type(#atm_range_store_content_update_options{}) -> range;
+infer_store_type(#atm_single_value_store_content_update_options{}) -> single_value;
+infer_store_type(#atm_time_series_store_content_update_options{}) -> time_series;
+infer_store_type(#atm_tree_forest_store_content_update_options{}) -> tree_forest.
 
 %%%===================================================================
 %%% jsonable_record callbacks
@@ -97,19 +112,19 @@ decode_with(RecordJson, NestedRecordDecoder) ->
 
 %% @private
 -spec type_to_json(type()) -> json_utils:json_term().
-type_to_json(atm_single_value_content_update_options) -> <<"singleValueContentUpdateOptions">>;
-type_to_json(atm_list_content_update_options) -> <<"listContentUpdateOptions">>;
-type_to_json(atm_tree_forest_content_update_options) -> <<"treeForestContentUpdateOptions">>;
-type_to_json(atm_range_content_update_options) -> <<"rangeContentUpdateOptions">>;
-type_to_json(atm_time_series_content_update_options) -> <<"timeSeriesContentUpdateOptions">>;
-type_to_json(atm_audit_log_content_update_options) -> <<"auditLogContentUpdateOptions">>.
+type_to_json(atm_audit_log_store_content_update_options) -> <<"auditLogStoreContentUpdateOptions">>;
+type_to_json(atm_list_store_content_update_options) -> <<"listStoreContentUpdateOptions">>;
+type_to_json(atm_range_store_content_update_options) -> <<"rangeStoreContentUpdateOptions">>;
+type_to_json(atm_single_value_store_content_update_options) -> <<"singleValueStoreContentUpdateOptions">>;
+type_to_json(atm_time_series_store_content_update_options) -> <<"timeSeriesStoreContentUpdateOptions">>;
+type_to_json(atm_tree_forest_store_content_update_options) -> <<"treeForestStoreContentUpdateOptions">>.
 
 
 %% @private
 -spec type_from_json(json_utils:json_term()) -> type().
-type_from_json(<<"singleValueContentUpdateOptions">>) -> atm_single_value_content_update_options;
-type_from_json(<<"listContentUpdateOptions">>) -> atm_list_content_update_options;
-type_from_json(<<"treeForestContentUpdateOptions">>) -> atm_tree_forest_content_update_options;
-type_from_json(<<"rangeContentUpdateOptions">>) -> atm_range_content_update_options;
-type_from_json(<<"timeSeriesContentUpdateOptions">>) -> atm_time_series_content_update_options;
-type_from_json(<<"auditLogContentUpdateOptions">>) -> atm_audit_log_content_update_options.
+type_from_json(<<"auditLogStoreContentUpdateOptions">>) -> atm_audit_log_store_content_update_options;
+type_from_json(<<"listStoreContentUpdateOptions">>) -> atm_list_store_content_update_options;
+type_from_json(<<"rangeStoreContentUpdateOptions">>) -> atm_range_store_content_update_options;
+type_from_json(<<"singleValueStoreContentUpdateOptions">>) -> atm_single_value_store_content_update_options;
+type_from_json(<<"timeSeriesStoreContentUpdateOptions">>) -> atm_time_series_store_content_update_options;
+type_from_json(<<"treeForestStoreContentUpdateOptions">>) -> atm_tree_forest_store_content_update_options.

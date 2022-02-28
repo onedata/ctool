@@ -7,10 +7,10 @@
 %%%-------------------------------------------------------------------
 %%% @doc
 %%% Record expressing store content update options specialization for
-%%% range store used in automation machinery.
+%%% list store used in automation machinery.
 %%% @end
 %%%-------------------------------------------------------------------
--module(atm_range_content_update_options).
+-module(atm_list_store_content_update_options).
 -author("Lukasz Opiola").
 
 -behaviour(jsonable_record).
@@ -19,6 +19,9 @@
 -include("automation/automation.hrl").
 
 
+%% API
+-export([function_to_json/1, function_from_json/1]).
+
 %% jsonable_record callbacks
 -export([to_json/1, from_json/1]).
 
@@ -26,14 +29,27 @@
 -export([version/0, db_encode/2, db_decode/2]).
 
 
--type start_num() :: undefined | integer().  % optional, defaults to 0
--type end_num() :: integer().
--type step() :: undefined | integer().  % optional, defaults to 1
--export_type([start_num/0, end_num/0, step/0]).
+-type update_function() :: append | extend.
+-export_type([update_function/0]).
 
--type record() :: #atm_range_content_update_options{}.
+-type record() :: #atm_list_store_content_update_options{}.
 -export_type([record/0]).
 
+
+%%%===================================================================
+%%% API
+%%%===================================================================
+
+%% @private
+-spec function_to_json(update_function()) -> json_utils:json_term().
+function_to_json(append) -> <<"append">>;
+function_to_json(extend) -> <<"extend">>.
+
+
+%% @private
+-spec function_from_json(json_utils:json_term()) -> update_function().
+function_from_json(<<"append">>) -> append;
+function_from_json(<<"extend">>) -> extend.
 
 %%%===================================================================
 %%% jsonable_record callbacks
@@ -42,18 +58,14 @@
 -spec to_json(record()) -> json_utils:json_term().
 to_json(Record) ->
     #{
-        <<"start">> => utils:undefined_to_null(Record#atm_range_content_update_options.start_num),
-        <<"end">> => Record#atm_range_content_update_options.end_num,
-        <<"step">> => utils:undefined_to_null(Record#atm_range_content_update_options.step)
+        <<"function">> => function_to_json(Record#atm_list_store_content_update_options.function)
     }.
 
 
 -spec from_json(json_utils:json_term()) -> record().
 from_json(RecordJson) ->
-    #atm_range_content_update_options{
-        start_num = utils:null_to_undefined(maps:get(<<"start">>, RecordJson, undefined)),
-        end_num = maps:get(<<"end">>, RecordJson),
-        step = utils:null_to_undefined(maps:get(<<"step">>, RecordJson, undefined))
+    #atm_list_store_content_update_options{
+        function = function_from_json(maps:get(<<"function">>, RecordJson))
     }.
 
 %%%===================================================================

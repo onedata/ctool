@@ -446,18 +446,18 @@ example_result_mappers_for_specs(ResultSpecs, StoreSchemaIds) ->
 
 -spec example_store_content_update_options_records() -> [atm_store_content_update_options:record()].
 example_store_content_update_options_records() -> [
-    #atm_single_value_content_update_options{},
-    #atm_list_content_update_options{function = ?RAND_ELEMENT([append, extend])},
-    #atm_tree_forest_content_update_options{function = ?RAND_ELEMENT([append, extend])},
-    #atm_range_content_update_options{
-        start_num = ?RAND_ELEMENT([undefined, ?RAND_INT(1000)]),
+    #atm_single_value_store_content_update_options{},
+    #atm_list_store_content_update_options{function = ?RAND_ELEMENT([append, extend])},
+    #atm_tree_forest_store_content_update_options{function = ?RAND_ELEMENT([append, extend])},
+    #atm_range_store_content_update_options{
+        start_num = ?RAND_INT(1000),
         end_num = ?RAND_INT(1000),
-        step = ?RAND_ELEMENT([undefined, ?RAND_INT(1, 1000)])
+        step = ?RAND_INT(1, 1000)
     },
-    #atm_time_series_content_update_options{
+    #atm_time_series_store_content_update_options{
         dispatch_rules = ?RAND_SUBLIST(example_time_series_dispatch_rules())
     },
-    #atm_audit_log_content_update_options{function = ?RAND_ELEMENT([append, extend])}
+    #atm_audit_log_store_content_update_options{function = ?RAND_ELEMENT([append, extend])}
 ].
 
 

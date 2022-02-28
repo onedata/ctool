@@ -185,7 +185,7 @@ encode_decode_store_content_update_options_test() ->
         <<"dispatchRules">>,
         <<"There cannot be two dispatch rules with the same name matcher">>
     ),
-    check_error_during_decode_from_json(ExpError, #atm_time_series_content_update_options{
+    check_error_during_decode_from_json(ExpError, #atm_time_series_store_content_update_options{
         dispatch_rules = [hd(ExampleDispatchRules) | ExampleDispatchRules]
     }).
 

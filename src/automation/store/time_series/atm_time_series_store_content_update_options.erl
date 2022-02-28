@@ -10,7 +10,7 @@
 %%% time_series store used in automation machinery.
 %%% @end
 %%%-------------------------------------------------------------------
--module(atm_time_series_content_update_options).
+-module(atm_time_series_store_content_update_options).
 -author("Lukasz Opiola").
 
 -behaviour(jsonable_record).
@@ -29,7 +29,7 @@
 -type measurement_time_series_name_matcher() :: binary().
 -export_type([measurement_time_series_name_matcher/0]).
 
--type record() :: #atm_time_series_content_update_options{}.
+-type record() :: #atm_time_series_store_content_update_options{}.
 -export_type([record/0]).
 
 
@@ -72,7 +72,7 @@ db_decode(RecordJson, NestedRecordDecoder) ->
 -spec encode_with(record(), persistent_record:nested_record_encoder()) ->
     json_utils:json_term().
 encode_with(Record, NestedRecordEncoder) ->
-    DispatchRules = Record#atm_time_series_content_update_options.dispatch_rules,
+    DispatchRules = Record#atm_time_series_store_content_update_options.dispatch_rules,
     #{
         <<"dispatchRules">> => [NestedRecordEncoder(R, atm_time_series_dispatch_rule) || R <- DispatchRules]
     }.
@@ -83,7 +83,7 @@ encode_with(Record, NestedRecordEncoder) ->
     record().
 decode_with(skip_validation, RecordJson, NestedRecordDecoder) ->
     EncodedDispatchRules = maps:get(<<"dispatchRules">>, RecordJson),
-    #atm_time_series_content_update_options{
+    #atm_time_series_store_content_update_options{
         dispatch_rules = [NestedRecordDecoder(R, atm_time_series_dispatch_rule) || R <- EncodedDispatchRules]
     };
 decode_with(validate, RecordJson, NestedRecordDecoder) ->
@@ -95,5 +95,5 @@ decode_with(validate, RecordJson, NestedRecordDecoder) ->
             ?ERROR_BAD_DATA(<<"dispatchRules">>, <<"There cannot be two dispatch rules with the same name matcher">>)
         ),
         ordsets:add_element(NameMatcher, AlreadyUsedNameMatchers)
-    end, ordsets:new(), Spec#atm_time_series_content_update_options.dispatch_rules),
+    end, ordsets:new(), Spec#atm_time_series_store_content_update_options.dispatch_rules),
     Spec.

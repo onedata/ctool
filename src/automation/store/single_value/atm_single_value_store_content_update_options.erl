@@ -7,10 +7,10 @@
 %%%-------------------------------------------------------------------
 %%% @doc
 %%% Record expressing store content update options specialization for
-%%% audit_log store used in automation machinery.
+%%% single_value store used in automation machinery.
 %%% @end
 %%%-------------------------------------------------------------------
--module(atm_audit_log_content_update_options).
+-module(atm_single_value_store_content_update_options).
 -author("Lukasz Opiola").
 
 -behaviour(jsonable_record).
@@ -25,7 +25,7 @@
 -export([version/0, db_encode/2, db_decode/2]).
 
 
--type record() :: #atm_audit_log_content_update_options{}.
+-type record() :: #atm_single_value_store_content_update_options{}.
 -export_type([record/0]).
 
 
@@ -34,21 +34,13 @@
 %%%===================================================================
 
 -spec to_json(record()) -> json_utils:json_term().
-to_json(Record) ->
-    #{
-        <<"function">> => atm_list_content_update_options:function_to_json(
-            Record#atm_audit_log_content_update_options.function
-        )
-    }.
+to_json(_Record) ->
+    #{}.
 
 
 -spec from_json(json_utils:json_term()) -> record().
-from_json(RecordJson) ->
-    #atm_audit_log_content_update_options{
-        function = atm_list_content_update_options:function_from_json(
-            maps:get(<<"function">>, RecordJson)
-        )
-    }.
+from_json(_RecordJson) ->
+    #atm_single_value_store_content_update_options{}.
 
 %%%===================================================================
 %%% persistent_record callbacks
