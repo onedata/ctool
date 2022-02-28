@@ -29,9 +29,11 @@
 -export([example_data_spec/0, example_data_spec/1, example_data_specs/0]).
 -export([example_predefined_value/1]).
 -export([example_store_schema/0, example_store_schema/1, example_store_schema/3, example_store_schemas/0]).
+-export([example_store_config/1, example_store_configs/0]).
 -export([example_store_iterator_spec/1, example_store_iterator_specs/0]).
 -export([example_argument_mappers/0, example_argument_mappers/2, example_argument_mappers_for_specs/2]).
 -export([example_result_mappers/0, example_result_mappers/2, example_result_mappers_for_specs/2]).
+-export([example_store_content_update_options_records/0, example_time_series_dispatch_rules/0]).
 -export([example_argument_value_builder/0, example_argument_value_builder/1]).
 -export([example_task_schema/2, example_task_schemas/0, example_task_schemas/2]).
 -export([example_parallel_box_schema_with_tasks/1, example_parallel_box_schemas/0]).
@@ -41,8 +43,8 @@
 -export([example_workflow_schema_revisions/0]).
 -export([example_workflow_schema_revision_registries/0]).
 -export([example_time_series_measurements_specs/0]).
--export([example_time_series_metric_specs/0]).
--export([example_time_series_specs/0]).
+-export([example_metric_configs/0]).
+-export([example_time_series_schema/0, example_time_series_schemas/0]).
 -export([example_time_series_units/0]).
 
 -type lambda_registries() :: #{AtmLambdaId :: automation:id() => atm_lambda_revision_registry:record()}.
@@ -325,9 +327,13 @@ example_store_config(tree_forest) ->
 example_store_config(range) ->
     #atm_range_store_config{};
 example_store_config(time_series) ->
-    #atm_time_series_store_config{schemas = ?RAND_SUBLIST(example_time_series_specs())};
+    #atm_time_series_store_config{schemas = ?RAND_SUBLIST(example_time_series_schemas())};
 example_store_config(audit_log) ->
     #atm_audit_log_store_config{log_content_data_spec = example_data_spec()}.
+
+-spec example_store_configs() -> [atm_store_config:record()].
+example_store_configs() ->
+    lists:map(fun example_store_config/1, automation:all_store_types()).
 
 
 -spec example_store_initial_content(automation:store_type(), atm_store_config:record()) -> json_utils:json_term().
@@ -433,9 +439,37 @@ example_result_mappers_for_specs(ResultSpecs, StoreSchemaIds) ->
                 ?WORKFLOW_SYSTEM_AUDIT_LOG_STORE_SCHEMA_ID
                 | StoreSchemaIds
             ]),
-            dispatch_function = ?RAND_ELEMENT(atm_task_schema_result_mapper:all_dispatch_functions())
+            store_content_update_options = ?RAND_ELEMENT(example_store_content_update_options_records())
         }
     end, lists_utils:shuffle(ResultSpecs)).
+
+
+-spec example_store_content_update_options_records() -> [atm_store_content_update_options:record()].
+example_store_content_update_options_records() -> [
+    #atm_single_value_content_update_options{},
+    #atm_list_content_update_options{function = ?RAND_ELEMENT([append, extend])},
+    #atm_tree_forest_content_update_options{function = ?RAND_ELEMENT([append, extend])},
+    #atm_range_content_update_options{
+        start_num = ?RAND_ELEMENT([undefined, ?RAND_INT(1000)]),
+        end_num = ?RAND_INT(1000),
+        step = ?RAND_ELEMENT([undefined, ?RAND_INT(1, 1000)])
+    },
+    #atm_time_series_content_update_options{
+        dispatch_rules = ?RAND_SUBLIST(example_time_series_dispatch_rules())
+    },
+    #atm_audit_log_content_update_options{function = ?RAND_ELEMENT([append, extend])}
+].
+
+
+-spec example_time_series_dispatch_rules() -> [atm_time_series_dispatch_rule:record()].
+example_time_series_dispatch_rules() ->
+    lists_utils:generate(fun(Ordinal) ->
+        #atm_time_series_dispatch_rule{
+            measurement_ts_name_matcher = str_utils:format_bin("~B~s", [Ordinal, example_name()]),
+            target_ts_name_generator = example_name(),
+            prefix_combiner = ?RAND_ELEMENT([concatenate, converge, overwrite])
+        }
+    end, 5).
 
 
 -spec example_argument_value_builder() -> atm_task_argument_value_builder:record().
@@ -513,7 +547,7 @@ example_task_schema(AvailableLambdasWithRegistries, StoreSchemaIds) ->
         argument_mappings = example_argument_mappers(AtmLambdaRevision, StoreSchemaIds),
         result_mappings = example_result_mappers(AtmLambdaRevision, StoreSchemaIds),
         resource_spec_override = ?RAND_ELEMENT([undefined, example_resource_spec()]),
-        time_series_schema = ?RAND_ELEMENT([undefined, example_time_series_spec()])
+        time_series_schema = ?RAND_ELEMENT([undefined, example_time_series_schema()])
     }.
 
 -spec example_task_schemas() -> [atm_task_schema:record()].
@@ -641,62 +675,58 @@ example_workflow_schema_revision_registries() ->
     end, 5).
 
 
--spec example_time_series_measurements_spec() -> atm_time_series_measurements_spec:record().
-example_time_series_measurements_spec() ->
-    NameSelector = ?RAND_ELEMENT([fixed, pattern]),
+-spec example_time_series_measurements_spec(atm_time_series_names:measurement_ts_name_matcher()) ->
+    atm_time_series_measurements_spec:record().
+example_time_series_measurements_spec(NameMatcher) ->
     #atm_time_series_measurements_spec{
-        name_selector = NameSelector,
-        name = case NameSelector of
-            fixed ->
-                example_name();
-            pattern ->
-                str_utils:format_bin("~s*~s", [
-                    str_utils:rand_hex(?RAND_INT(0, 5)),
-                    str_utils:rand_hex(?RAND_INT(0, 5))
-                ])
-        end,
+        name_matcher_type = ?RAND_ELEMENT([exact, has_prefix]),
+        name_matcher = NameMatcher,
         unit = ?RAND_ELEMENT(example_time_series_units())
     }.
 
 
 -spec example_time_series_measurements_specs() -> [atm_time_series_measurements_spec:record()].
 example_time_series_measurements_specs() ->
-    lists_utils:generate(fun example_time_series_measurements_spec/0, 5).
+    lists_utils:generate(fun(Ordinal) ->
+        example_time_series_measurements_spec(str_utils:format_bin("~B~s", [Ordinal, example_name()]))
+    end, 5).
 
 
--spec example_time_series_metric_specs() -> [atm_time_series_metric_schema:record()].
-example_time_series_metric_specs() ->
+-spec example_metric_configs() -> [metric_config:record()].
+example_metric_configs() ->
     lists:map(fun(Resolution) ->
-        #atm_time_series_metric_schema{
-            id = example_id(),
+        #metric_config{
+            label = str_utils:format_bin("~B~s", [Resolution, example_name()]),
             resolution = Resolution,
             retention = ?RAND_INT(1, 1000),
-            aggregator = ?RAND_ELEMENT(time_series:all_metric_aggregators())
+            aggregator = ?RAND_ELEMENT(metric_config:all_aggregators())
         }
-    end, time_series:allowed_metric_resolutions()).
+    end, metric_config:allowed_resolutions()).
 
 
--spec example_time_series_spec() -> atm_time_series_schema:record().
-example_time_series_spec() ->
-    example_time_series_spec(example_time_series_measurements_spec()).
+-spec example_time_series_schema() -> atm_time_series_schema:record().
+example_time_series_schema() ->
+    example_time_series_schema(example_name()).
 
-
--spec example_time_series_spec(atm_time_series_measurements_spec:record()) -> atm_time_series_schema:record().
-example_time_series_spec(TimeSeriesMeasurementsSpec) ->
+-spec example_time_series_schema(atm_time_series_names:target_ts_name_generator()) ->
+    atm_time_series_schema:record().
+example_time_series_schema(NameGenerator) ->
     #atm_time_series_schema{
-        name_selector = TimeSeriesMeasurementsSpec#atm_time_series_measurements_spec.name_selector,
-        name = TimeSeriesMeasurementsSpec#atm_time_series_measurements_spec.name,
-        unit = TimeSeriesMeasurementsSpec#atm_time_series_measurements_spec.unit,
-        metrics = ?RAND_SUBLIST(example_time_series_metric_specs(), 1, all)
+        name_generator_type = ?RAND_ELEMENT([exact, add_prefix]),
+        name_generator = NameGenerator,
+        unit = ?RAND_ELEMENT(example_time_series_units()),
+        metrics = ?RAND_SUBLIST(example_metric_configs(), 1, all)
     }.
 
 
--spec example_time_series_specs() -> [atm_time_series_schema:record()].
-example_time_series_specs() ->
-    lists:map(fun example_time_series_spec/1, example_time_series_measurements_specs()).
+-spec example_time_series_schemas() -> [atm_time_series_schema:record()].
+example_time_series_schemas() ->
+    lists_utils:generate(fun(Ordinal) ->
+        example_time_series_schema(str_utils:format_bin("~B~s", [Ordinal, example_name()]))
+    end, 5).
 
 
--spec example_time_series_units() -> [atm_time_series_attribute:unit()].
+-spec example_time_series_units() -> [time_series:unit()].
 example_time_series_units() -> [
     none,
     milliseconds, seconds,

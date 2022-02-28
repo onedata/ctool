@@ -14,7 +14,6 @@
 -author("Lukasz Opiola").
 
 -include("automation/automation.hrl").
--include("errors.hrl").
 
 %% API
 -export([sanitize_binary/3]).

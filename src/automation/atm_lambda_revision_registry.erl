@@ -142,6 +142,7 @@ db_decode(RecordJson, NestedRecordDecoder) ->
 %%% Internal functions
 %%%===================================================================
 
+%% @private
 -spec encode_with(record(), persistent_record:nested_record_encoder()) ->
     json_utils:json_term().
 encode_with(#atm_lambda_revision_registry{registry = RevisionRegistry}, NestedRecordEncoder) ->
@@ -152,6 +153,7 @@ encode_with(#atm_lambda_revision_registry{registry = RevisionRegistry}, NestedRe
     end, #{}, RevisionRegistry).
 
 
+%% @private
 -spec decode_with(json_utils:json_term(), persistent_record:nested_record_decoder()) ->
     record().
 decode_with(RevisionRegistryJson, NestedRecordDecoder) ->

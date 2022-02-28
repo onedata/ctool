@@ -14,6 +14,10 @@
 -define(AUTOMATION_HRL, 1).
 
 
+-include("time_series/common.hrl").
+-include("errors.hrl").
+
+
 -define(DEFAULT_SUMMARY, <<"Missing summary">>).
 -define(SUMMARY_SIZE_LIMIT, 200).
 -define(DEFAULT_DESCRIPTION, <<"Missing description">>).
@@ -142,7 +146,38 @@
 -record(atm_task_schema_result_mapper, {
     result_name :: automation:name(),
     store_schema_id :: automation:id(),
-    dispatch_function :: atm_task_schema_result_mapper:dispatch_function()
+    store_content_update_options :: atm_store_content_update_options:record()
+}).
+
+-record(atm_single_value_content_update_options, {
+}).
+
+-record(atm_list_content_update_options, {
+    function :: atm_list_content_update_options:update_function()
+}).
+
+-record(atm_tree_forest_content_update_options, {
+    function :: atm_list_content_update_options:update_function()
+}).
+
+-record(atm_range_content_update_options, {
+    start_num :: atm_range_content_update_options:start_num(),
+    end_num :: atm_range_content_update_options:end_num(),
+    step :: atm_range_content_update_options:step()
+}).
+
+-record(atm_time_series_content_update_options, {
+    dispatch_rules :: [atm_time_series_dispatch_rule:record()]
+}).
+
+-record(atm_audit_log_content_update_options, {
+    function :: atm_list_content_update_options:update_function()
+}).
+
+-record(atm_time_series_dispatch_rule, {
+    measurement_ts_name_matcher :: atm_time_series_names:measurement_ts_name_matcher(),
+    target_ts_name_generator :: atm_time_series_names:target_ts_name_generator(),
+    prefix_combiner :: atm_time_series_names:prefix_combiner()
 }).
 
 -record(atm_task_schema, {
@@ -201,23 +236,16 @@
 }).
 
 -record(atm_time_series_measurements_spec, {
-    name_selector :: atm_time_series_attribute:name_selector(),
-    name :: atm_time_series_attribute:name(),
-    unit :: atm_time_series_attribute:unit()
-}).
-
--record(atm_time_series_metric_schema, {
-    id :: automation:id(),
-    resolution :: time_series:metric_resolution(),
-    retention :: time_series:metric_retention(),
-    aggregator :: time_series:metric_aggregator()
+    name_matcher_type :: atm_time_series_names:measurement_ts_name_matcher_type(),
+    name_matcher :: atm_time_series_names:measurement_ts_name_matcher(),
+    unit :: time_series:unit()
 }).
 
 -record(atm_time_series_schema, {
-    name_selector :: atm_time_series_attribute:name_selector(),
-    name :: atm_time_series_attribute:name(),
-    unit :: atm_time_series_attribute:unit(),
-    metrics :: [atm_time_series_metric_schema:record()]
+    name_generator_type :: atm_time_series_names:target_ts_name_generator_type(),
+    name_generator :: atm_time_series_names:target_ts_name_generator(),
+    unit :: time_series:unit(),
+    metrics :: [metric_config:record()]
 }).
 
 

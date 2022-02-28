@@ -16,7 +16,6 @@
 -behaviour(persistent_record).
 
 -include("automation/automation.hrl").
--include("errors.hrl").
 
 %% Jsonable record callbacks
 -export([to_json/1, from_json/1]).

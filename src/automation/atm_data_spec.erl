@@ -16,7 +16,6 @@
 -behaviour(persistent_record).
 
 -include("automation/automation.hrl").
--include("errors.hrl").
 
 
 %% API

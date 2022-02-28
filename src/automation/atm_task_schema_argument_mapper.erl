@@ -62,6 +62,7 @@ db_decode(RecordJson, NestedRecordDecoder) ->
 %%% Internal functions
 %%%===================================================================
 
+%% @private
 -spec encode_with(record(), persistent_record:nested_record_encoder()) ->
     json_utils:json_term().
 encode_with(Record, NestedRecordEncoder) ->
@@ -71,6 +72,7 @@ encode_with(Record, NestedRecordEncoder) ->
     }.
 
 
+%% @private
 -spec decode_with(json_utils:json_term(), persistent_record:nested_record_decoder()) ->
     record().
 decode_with(RecordJson, NestedRecordDecoder) ->

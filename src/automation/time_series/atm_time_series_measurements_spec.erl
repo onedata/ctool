@@ -8,8 +8,7 @@
 %%% @doc
 %%% Record expressing time series measurements specification used in automation machinery.
 %%%
-%%% This record is used as value constraints of the atm_time_series_measurements_type - see
-%%% the module for more information.
+%%% This record is used as value constraints of the @see atm_time_series_measurements_type.
 %%% @end
 %%%-------------------------------------------------------------------
 -module(atm_time_series_measurements_spec).
@@ -19,7 +18,6 @@
 -behaviour(persistent_record).
 
 -include("automation/automation.hrl").
--include("errors.hrl").
 
 
 %% Jsonable record callbacks
@@ -42,7 +40,7 @@ to_json(Record) ->
 
 -spec from_json(json_utils:json_map()) -> record().
 from_json(RecordJson) ->
-    decode(validate, RecordJson).
+    decode(RecordJson).
 
 %%%===================================================================
 %%% persistent_record callbacks
@@ -60,7 +58,7 @@ db_encode(Record, _NestedRecordEncoder) ->
 
 -spec db_decode(json_utils:json_term(), persistent_record:nested_record_decoder()) -> record().
 db_decode(RecordJson, _NestedRecordDecoder) ->
-    decode(skip_validation, RecordJson).
+    decode(RecordJson).
 
 %%%===================================================================
 %%% Internal functions
@@ -70,24 +68,29 @@ db_decode(RecordJson, _NestedRecordDecoder) ->
 -spec encode(record()) -> json_utils:json_term().
 encode(Record) ->
     #{
-        <<"nameSelector">> => atm_time_series_attribute:name_selector_to_json(Record#atm_time_series_measurements_spec.name_selector),
-        <<"name">> => atm_time_series_attribute:name_to_json(Record#atm_time_series_measurements_spec.name),
-        <<"unit">> => atm_time_series_attribute:unit_to_json(Record#atm_time_series_measurements_spec.unit)
+        <<"nameMatcherType">> => atm_time_series_names:measurement_ts_name_matcher_type_to_json(
+            Record#atm_time_series_measurements_spec.name_matcher_type
+        ),
+        <<"nameMatcher">> => atm_time_series_names:measurement_ts_name_matcher_to_json(
+            Record#atm_time_series_measurements_spec.name_matcher
+        ),
+        <<"unit">> => time_series:unit_to_json(
+            Record#atm_time_series_measurements_spec.unit
+        )
     }.
 
 
 %% @private
--spec decode(validate | skip_validation, json_utils:json_term()) -> record().
-decode(skip_validation, RecordJson) ->
+-spec decode(json_utils:json_term()) -> record().
+decode(RecordJson) ->
     #atm_time_series_measurements_spec{
-        name_selector = atm_time_series_attribute:name_selector_from_json(maps:get(<<"nameSelector">>, RecordJson)),
-        name = atm_time_series_attribute:name_from_json(maps:get(<<"name">>, RecordJson)),
-        unit = atm_time_series_attribute:unit_from_json(maps:get(<<"unit">>, RecordJson))
-    };
-decode(validate, RecordJson) ->
-    Spec = decode(skip_validation, RecordJson),
-    atm_time_series_attribute:validate_name(
-        Spec#atm_time_series_measurements_spec.name_selector,
-        Spec#atm_time_series_measurements_spec.name
-    ),
-    Spec.
+        name_matcher_type = atm_time_series_names:measurement_ts_name_matcher_type_from_json(
+            maps:get(<<"nameMatcherType">>, RecordJson)
+        ),
+        name_matcher = atm_time_series_names:measurement_ts_name_matcher_from_json(
+            maps:get(<<"nameMatcher">>, RecordJson)
+        ),
+        unit = time_series:unit_from_json(
+            maps:get(<<"unit">>, RecordJson)
+        )
+    }.

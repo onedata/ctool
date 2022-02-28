@@ -6,10 +6,11 @@
 %%% @end
 %%%-------------------------------------------------------------------
 %%% @doc
-%%% Record expressing tree forest store config used in automation machinery.
+%%% Record expressing store content update options specialization for
+%%% time_series store used in automation machinery.
 %%% @end
 %%%-------------------------------------------------------------------
--module(atm_tree_forest_store_config).
+-module(atm_time_series_content_update_options).
 -author("Lukasz Opiola").
 
 -behaviour(jsonable_record).
@@ -25,11 +26,12 @@
 -export([version/0, db_encode/2, db_decode/2]).
 
 
--type record() :: #atm_tree_forest_store_config{}.
+-type measurement_time_series_name_matcher() :: binary().
+-export_type([measurement_time_series_name_matcher/0]).
+
+-type record() :: #atm_time_series_content_update_options{}.
 -export_type([record/0]).
 
-
--define(ALLOWED_DATA_TYPES, [atm_file_type, atm_dataset_type]).
 
 %%%===================================================================
 %%% jsonable_record callbacks
@@ -70,8 +72,9 @@ db_decode(RecordJson, NestedRecordDecoder) ->
 -spec encode_with(record(), persistent_record:nested_record_encoder()) ->
     json_utils:json_term().
 encode_with(Record, NestedRecordEncoder) ->
+    DispatchRules = Record#atm_time_series_content_update_options.dispatch_rules,
     #{
-        <<"itemDataSpec">> => NestedRecordEncoder(Record#atm_tree_forest_store_config.item_data_spec, atm_data_spec)
+        <<"dispatchRules">> => [NestedRecordEncoder(R, atm_time_series_dispatch_rule) || R <- DispatchRules]
     }.
 
 
@@ -79,15 +82,18 @@ encode_with(Record, NestedRecordEncoder) ->
 -spec decode_with(validate | skip_validation, json_utils:json_term(), persistent_record:nested_record_decoder()) ->
     record().
 decode_with(skip_validation, RecordJson, NestedRecordDecoder) ->
-    #atm_tree_forest_store_config{
-        item_data_spec = NestedRecordDecoder(maps:get(<<"itemDataSpec">>, RecordJson), atm_data_spec)
+    EncodedDispatchRules = maps:get(<<"dispatchRules">>, RecordJson),
+    #atm_time_series_content_update_options{
+        dispatch_rules = [NestedRecordDecoder(R, atm_time_series_dispatch_rule) || R <- EncodedDispatchRules]
     };
 decode_with(validate, RecordJson, NestedRecordDecoder) ->
     Spec = decode_with(skip_validation, RecordJson, NestedRecordDecoder),
-    lists:member(Spec#atm_tree_forest_store_config.item_data_spec#atm_data_spec.type, ?ALLOWED_DATA_TYPES) orelse throw(
-        ?ERROR_BAD_VALUE_NOT_ALLOWED(
-            <<"treeForestStoreConfig.dataSpec.type">>,
-            [atm_data_type:type_to_json(T) || T <- ?ALLOWED_DATA_TYPES]
-        )
-    ),
+    % name matchers in different rules must be unique (there can be at most one rule for each name matcher)
+    lists:foldl(fun(DispatchRule, AlreadyUsedNameMatchers) ->
+        #atm_time_series_dispatch_rule{measurement_ts_name_matcher = NameMatcher} = DispatchRule,
+        ordsets:is_element(NameMatcher, AlreadyUsedNameMatchers) andalso throw(
+            ?ERROR_BAD_DATA(<<"dispatchRules">>, <<"There cannot be two dispatch rules with the same name matcher">>)
+        ),
+        ordsets:add_element(NameMatcher, AlreadyUsedNameMatchers)
+    end, ordsets:new(), Spec#atm_time_series_content_update_options.dispatch_rules),
     Spec.

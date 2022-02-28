@@ -6,22 +6,21 @@
 %%% @end
 %%%-------------------------------------------------------------------
 %%% @doc
-%%% Record expressing time series metric schema used in automation machinery.
-%%%
-%%% Provides a template for metric configuration and is used by time series schema.
-%%% Each time series schema defines a list of metrics, which will be created
-%%% within the corresponding time series instance.
+%%% Record expressing configuration of a time series metric.
 %%% @end
 %%%-------------------------------------------------------------------
--module(atm_time_series_metric_schema).
+-module(metric_config).
 -author("Lukasz Opiola").
 
 -behaviour(jsonable_record).
 -behaviour(persistent_record).
 
--include("automation/automation.hrl").
+-include("time_series/common.hrl").
 -include("errors.hrl").
 
+
+%% API
+-export([all_aggregators/0, allowed_resolutions/0]).
 
 %% Jsonable record callbacks
 -export([to_json/1, from_json/1]).
@@ -29,12 +28,42 @@
 %% persistent_record callbacks
 -export([version/0, db_encode/2, db_decode/2]).
 
--type record() :: #atm_time_series_metric_schema{}.
+
+% user defined label of the metric that will be used during presentation
+-type label() :: binary().
+% width of a single time window
+-type resolution() :: time_series:time_seconds().  % 0 means infinity
+% number of windows to store in the metric (older windows are pruned)
+-type retention() :: pos_integer().
+% aggregator function applied when a new measurement is inserted into a time window
+-type aggregator() :: sum | max | min | last | first. % | {gather, Max}. % TODO VFS-8164 - extend functions list
+-export_type([label/0, resolution/0, retention/0, aggregator/0]).
+
+-type record() :: #metric_config{}.
 -export_type([record/0]).
+
 
 %%%===================================================================
 %%% API
 %%%===================================================================
+
+-spec all_aggregators() -> [aggregator()].
+all_aggregators() -> [
+    sum, max, min, first, last
+].
+
+
+-spec allowed_resolutions() -> [resolution()].
+allowed_resolutions() -> [
+    ?INFINITY_RESOLUTION,
+    ?FIVE_SECONDS_RESOLUTION,
+    ?MINUTE_RESOLUTION,
+    ?HOUR_RESOLUTION,
+    ?DAY_RESOLUTION,
+    ?WEEK_RESOLUTION,
+    ?MONTH_RESOLUTION,
+    ?YEAR_RESOLUTION
+].
 
 %%%===================================================================
 %%% jsonable_record callbacks
@@ -71,8 +100,9 @@ db_decode(RecordJson, _NestedRecordDecoder) ->
 %%% Internal functions
 %%%===================================================================
 
+% TODO VFS-8164 - extend functions list
 %% @private
--spec aggregator_to_json(time_series:metric_aggregator()) -> json_utils:json_term().
+-spec aggregator_to_json(metric_config:aggregator()) -> json_utils:json_term().
 aggregator_to_json(sum) -> <<"sum">>;
 aggregator_to_json(max) -> <<"max">>;
 aggregator_to_json(min) -> <<"min">>;
@@ -81,7 +111,7 @@ aggregator_to_json(last) -> <<"last">>.
 
 
 %% @private
--spec aggregator_from_json(json_utils:json_term()) -> time_series:metric_aggregator().
+-spec aggregator_from_json(json_utils:json_term()) -> metric_config:aggregator().
 aggregator_from_json(<<"sum">>) -> sum;
 aggregator_from_json(<<"max">>) -> max;
 aggregator_from_json(<<"min">>) -> min;
@@ -96,25 +126,25 @@ aggregator_from_json(<<"last">>) -> last.
 -spec encode(record()) -> json_utils:json_term().
 encode(Record) ->
     #{
-        <<"id">> => Record#atm_time_series_metric_schema.id,
-        <<"resolution">> => Record#atm_time_series_metric_schema.resolution,
-        <<"retention">> => Record#atm_time_series_metric_schema.retention,
-        <<"aggregator">> => aggregator_to_json(Record#atm_time_series_metric_schema.aggregator)
+        <<"label">> => Record#metric_config.label,
+        <<"resolution">> => Record#metric_config.resolution,
+        <<"retention">> => Record#metric_config.retention,
+        <<"aggregator">> => aggregator_to_json(Record#metric_config.aggregator)
     }.
 
 
 %% @private
 -spec decode(validate | skip_validation, json_utils:json_term()) -> record().
 decode(skip_validation, RecordJson) ->
-    #atm_time_series_metric_schema{
-        id = maps:get(<<"id">>, RecordJson),
+    #metric_config{
+        label = maps:get(<<"label">>, RecordJson),
         resolution = maps:get(<<"resolution">>, RecordJson),
         retention = maps:get(<<"retention">>, RecordJson),
         aggregator = aggregator_from_json(maps:get(<<"aggregator">>, RecordJson))
     };
 decode(validate, RecordJson) ->
     Spec = decode(skip_validation, RecordJson),
-    lists:member(Spec#atm_time_series_metric_schema.resolution, time_series:allowed_metric_resolutions()) orelse throw(
-        ?ERROR_BAD_VALUE_NOT_ALLOWED(<<"resolution">>, time_series:allowed_metric_resolutions())
+    lists:member(Spec#metric_config.resolution, metric_config:allowed_resolutions()) orelse throw(
+        ?ERROR_BAD_VALUE_NOT_ALLOWED(<<"resolution">>, metric_config:allowed_resolutions())
     ),
     Spec.

@@ -16,15 +16,13 @@
 %%%        {tsName: video_files, timestamp: 14321, value: 385}
 %%%    ]
 %%%
-%%% The purpose of this data type is to be consumed by a time series store,
-%%% @TODO VFS-8958 The information below is preliminary, the concepts will be reworked
-%%% using result mappers that specify the mapping between time series names
-%%% specified in data points and actual time series names in the target store
-%%% (@see atm_time_series_attribute).
+%%% The @see atm_time_series_measurements_spec record defining value constraints serves as
+%%% a contract that specifies what data points are expected in the array. If a data point
+%%% that do not match any spec appears, the whole array is considered invalid.
 %%%
-%%% The time series measurements spec record defining value constraints serves as
-%%% a contract that specifies what data points are expected in the array. Data points
-%%% that do not match any spec are discarded.
+%%% The purpose of this data type is to be consumed by a time series store.
+%%% The target time series in the store is selected using the procedure described
+%%% in @see atm_time_series_names.
 %%% @end
 %%%-------------------------------------------------------------------
 -module(atm_time_series_measurements_type).

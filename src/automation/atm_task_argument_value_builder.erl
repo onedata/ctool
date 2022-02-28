@@ -127,7 +127,7 @@ db_decode(RecordJson, _NestedRecordDecoder) ->
 %%% Internal functions
 %%%===================================================================
 
-
+%% @private
 -spec recipe_to_json(type(), recipe()) -> json_utils:json_term().
 recipe_to_json(iterated_item, undefined) ->
     null;
@@ -152,6 +152,7 @@ recipe_to_json(onedatafs_credentials, _) ->
     null.
 
 
+%% @private
 -spec recipe_from_json(type(), json_utils:json_term()) -> recipe().
 recipe_from_json(iterated_item, null) ->
     undefined;
