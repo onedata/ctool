@@ -44,21 +44,13 @@
 %%%===================================================================
 
 -spec to_json(record()) -> json_utils:json_term().
-to_json(Record) ->
-    #{
-        <<"start">> => Record#atm_range_store_content_update_options.start_num,
-        <<"end">> => Record#atm_range_store_content_update_options.end_num,
-        <<"step">> => Record#atm_range_store_content_update_options.step
-    }.
+to_json(_Record) ->
+    #{}.
 
 
 -spec from_json(json_utils:json_term()) -> record().
-from_json(RecordJson) ->
-    #atm_range_store_content_update_options{
-        start_num = maps:get(<<"start">>, RecordJson, ?DEFAULT_START_NUM),
-        end_num = maps:get(<<"end">>, RecordJson),
-        step = maps:get(<<"step">>, RecordJson, ?DEFAULT_STEP)
-    }.
+from_json(_RecordJson) ->
+    #atm_range_store_content_update_options{}.
 
 %%%===================================================================
 %%% persistent_record callbacks

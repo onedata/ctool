@@ -161,9 +161,6 @@
 }).
 
 -record(atm_range_store_content_update_options, {
-    start_num :: atm_range_store_content_update_options:start_num(),
-    end_num :: atm_range_store_content_update_options:end_num(),
-    step :: atm_range_store_content_update_options:step()
 }).
 
 -record(atm_time_series_store_content_update_options, {
