@@ -48,22 +48,15 @@ get_value_constraints(#atm_data_spec{value_constraints = ValueConstraints}) ->
 %%% jsonable_record callbacks
 %%%===================================================================
 
--spec to_json(record()) -> json_utils:json_map().
-to_json(#atm_data_spec{type = Type, value_constraints = ValueConstraints}) ->
-    #{
-        <<"type">> => atm_data_type:type_to_json(Type),
-        <<"valueConstraints">> => atm_data_type:value_constraints_to_json(Type, ValueConstraints)
-    }.
+
+-spec to_json(record()) -> json_utils:json_term().
+to_json(Record) ->
+    encode_with(Record, fun jsonable_record:to_json/2).
 
 
--spec from_json(json_utils:json_map()) -> record().
+-spec from_json(json_utils:json_term()) -> record().
 from_json(RecordJson) ->
-    Type = atm_data_type:type_from_json(maps:get(<<"type">>, RecordJson)),
-    ValueConstraints = maps:get(<<"valueConstraints">>, RecordJson, #{}),
-    #atm_data_spec{
-        type = Type,
-        value_constraints = atm_data_type:value_constraints_from_json(Type, ValueConstraints)
-    }.
+    decode_with(validate, RecordJson, fun jsonable_record:from_json/2).
 
 %%%===================================================================
 %%% persistent_record callbacks
@@ -75,10 +68,39 @@ version() ->
 
 
 -spec db_encode(record(), persistent_record:nested_record_encoder()) -> json_utils:json_term().
-db_encode(Record, _NestedRecordEncoder) ->
-    to_json(Record).
+db_encode(Record, NestedRecordEncoder) ->
+    encode_with(Record, NestedRecordEncoder).
 
 
 -spec db_decode(json_utils:json_term(), persistent_record:nested_record_decoder()) -> record().
-db_decode(RecordJson, _NestedRecordDecoder) ->
-    from_json(RecordJson).
+db_decode(RecordJson, NestedRecordDecoder) ->
+    decode_with(skip_validation, RecordJson, NestedRecordDecoder).
+
+%%%===================================================================
+%%% Internal functions
+%%%===================================================================
+
+%% @private
+-spec encode_with(record(), persistent_record:nested_record_encoder()) ->
+    json_utils:json_map().
+encode_with(#atm_data_spec{type = Type, value_constraints = ValueConstraints}, NestedRecordEncoder) ->
+    #{
+        <<"type">> => atm_data_type:type_to_json(Type),
+        <<"valueConstraints">> => atm_data_type:encode_value_constraints(
+            Type, ValueConstraints, NestedRecordEncoder
+        )
+    }.
+
+
+%% @private
+-spec decode_with(automation:validation_strategy(), json_utils:json_map(), persistent_record:nested_record_decoder()) ->
+    record().
+decode_with(ValidationStrategy, RecordJson, NestedRecordDecoder) ->
+    Type = atm_data_type:type_from_json(maps:get(<<"type">>, RecordJson)),
+    ValueConstraints = maps:get(<<"valueConstraints">>, RecordJson, #{}),
+    #atm_data_spec{
+        type = Type,
+        value_constraints = atm_data_type:decode_value_constraints(
+            Type, ValidationStrategy, ValueConstraints, NestedRecordDecoder
+        )
+    }.

@@ -49,7 +49,22 @@ encode_decode_atm_resource_spec_test() ->
 
 
 encode_decode_atm_data_spec_test() ->
-    encode_decode_test_base(atm_test_utils:example_data_specs()).
+    encode_decode_test_base(atm_test_utils:example_data_specs()),
+
+    ExpDuplicateNameMatchersError = ?ERROR_BAD_DATA(
+        <<"valueConstraints.specs">>,
+        <<"There cannot be two measurement specs with the same name matcher">>
+    ),
+    check_error_during_decode_from_json(ExpDuplicateNameMatchersError, atm_data_spec, #atm_data_spec{
+        type = atm_time_series_measurements_type,
+        value_constraints = #{specs => [
+            #atm_time_series_measurements_spec{name_matcher_type = exact, name_matcher = <<"latency">>, unit = milliseconds},
+            #atm_time_series_measurements_spec{name_matcher_type = exact, name_matcher = <<"throughput">>, unit = bytes_per_sec},
+            #atm_time_series_measurements_spec{name_matcher_type = has_prefix, name_matcher = <<"latency">>, unit = milliseconds}
+        ]}
+    }).
+
+
 
 
 encode_decode_operation_spec_test() ->

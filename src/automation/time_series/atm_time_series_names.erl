@@ -63,22 +63,28 @@
 %%%           * `atm_time_series_dispatch_rule`
 %%%       The dispatch rule's `prefix_combiner` defines how the prefixes will be processed.
 %%%       In this example, both the matcher and generator use prefixes and they are converged
-%%%       to finally yield `<<"file_count_mp3">>` time series name in the target store.
+%%%       to finally yield `<<"file_count_mp3">>` target time series name in the target store.
 %%%
 %%%
 %%% Below table shows some possible combinations of the name mapping.
 %%%
-%%% | MEAS. TS NAME | TS NAME MATCHER      | TS NAME GENERATOR  | PREFIX COMB. | FINAL TS NAME
+%%% | MEAS. TS NAME | MEAS. TS NAME MATCHER  | TARGET TS NAME GENERATOR  | PREFIX COMB. | FINAL TS NAME
 %%% ---------------------------------------------------------------------------------------------
-%%% | files_mp3     | exact : files_mp3    | exact: count_mp3   | <ignored>    |  count_mp3
-%%% | files_mp3     | has_prefix : files_  | exact: count_mp3   | <ignored>    |  count_mp3
-%%% | files_mp3     | exact : files_mp3    | add_prefix: count_ | <ignored>    |  count_files_mp3
-%%% | files_mp3     | has_prefix : files_  | add_prefix: count_ | concatenate  |  count_files_mp3
-%%% | files_mp3     | has_prefix : files_  | add_prefix: count_ | converge     |  count_files_mp3
-%%% | files_mp3     | has_prefix : files_  | add_prefix: count_ | overwrite    |  count_mp3
-%%% | count_mp3     | has_prefix : count_  | add_prefix: count_ | concatenate  |  count_count_mp3
-%%% | count_mp3     | has_prefix : count_  | add_prefix: count_ | converge     |  count_mp3
-%%% | count_mp3     | has_prefix : count_  | add_prefix: count_ | overwrite    |  count_mp3
+%%% | files_mp3     | exact : files_mp3      | exact: count_mp3          | <ignored>    |  count_mp3
+%%% | files_mp3     | has_prefix : files_    | exact: count_mp3          | <ignored>    |  count_mp3
+%%% | files_mp3     | exact : files_mp3      | add_prefix: count_        | <ignored>    |  count_files_mp3
+%%% | files_mp3     | has_prefix : files_    | add_prefix: count_        | concatenate  |  count_files_mp3
+%%% | files_mp3     | has_prefix : files_    | add_prefix: count_        | converge     |  count_files_mp3
+%%% | files_mp3     | has_prefix : files_    | add_prefix: count_        | overwrite    |  count_mp3
+%%% | count_mp3     | has_prefix : count_    | add_prefix: count_        | concatenate  |  count_count_mp3
+%%% | count_mp3     | has_prefix : count_    | add_prefix: count_        | converge     |  count_mp3
+%%% | count_mp3     | has_prefix : count_    | add_prefix: count_        | overwrite    |  count_mp3
+%%% | count_f_mp3   | has_prefix : count_f_  | add_prefix: count_        | concatenate  |  count_count_f_mp3
+%%% | count_f_mp3   | has_prefix : count_f_  | add_prefix: count_        | converge     |  count_f_mp3
+%%% | count_f_mp3   | has_prefix : count_f_  | add_prefix: count_        | overwrite    |  count_mp3
+%%% | cmp3          | has_prefix : c         | add_prefix: count_        | concatenate  |  count_cmp3
+%%% | cmp3          | has_prefix : c         | add_prefix: count_        | converge     |  count_cmp3
+%%% | cmp3          | has_prefix : c         | add_prefix: count_        | overwrite    |  count_mp3
 %%%
 %%% Consult the types in this module for detailed explanation and possible values.
 %%%
@@ -98,6 +104,16 @@
 -export([target_ts_name_generator_to_json/1, target_ts_name_generator_from_json/1]).
 -export([prefix_combiner_to_json/1, prefix_combiner_from_json/1]).
 
+-export([find_matching_measurements_spec/2]).
+-export([find_referencing_dispatch_rule/2]).
+-export([find_referenced_time_series_schema/2]).
+-export([resolve_target_ts_name/4]).
+
+
+% Name of a time series assigned to a single entry in the array of measurements represented
+% by atm_time_series_measurements_type data type.
+-type measurement_ts_name() :: binary().
+-export_type([measurement_ts_name/0]).
 
 % This pair defines if the corresponding name matcher should match only the exact same
 % time series names, or those that start with specified prefix, e.g.
@@ -131,10 +147,18 @@
 % should be combined when determining the target time series name for dispatching measurements:
 %   * concatenate - the prefixes are concatenated (the matcher's prefix goes first),
 %   * overwrite - only the generator's prefix is added to the target name,
-%   * converge - if the matcher's prefix is a substring of the name generator, works like
-%                overwrite, otherwise works like concatenate.
+%   * converge - if the name generator is a prefix of the name matcher, the prefix part
+%                is not repeated (effectively the original measurement ts name is taken as final),
+%                otherwise works like concatenate.
 -type prefix_combiner() :: concatenate | converge | overwrite.
 -export_type([prefix_combiner/0]).
+
+
+% Name of a target time series in the target time series store, obtained by applying
+% a matching dispatch rule on a measurement time series name. Indicates to which time
+% series in the store's collection the measurement should be inserted.
+-type target_ts_name() :: binary().
+-export_type([target_ts_name/0]).
 
 
 %%%===================================================================
@@ -183,4 +207,83 @@ prefix_combiner_from_json(<<"concatenate">>) -> concatenate;
 prefix_combiner_from_json(<<"converge">>) -> converge;
 prefix_combiner_from_json(<<"overwrite">>) -> overwrite.
 
-% @TODO utils for matching/generating/dispatching names + eunit tests
+
+-spec find_matching_measurements_spec(measurement_ts_name(), [atm_time_series_measurements_spec:record()]) ->
+    {ok, atm_time_series_measurements_spec:record()} | error.
+find_matching_measurements_spec(MeasurementTSName, TimeSeriesMeasurementsSpecs) ->
+    lists_utils:find(fun
+        (#atm_time_series_measurements_spec{name_matcher_type = exact, name_matcher = NameMatcher}) ->
+            NameMatcher =:= MeasurementTSName;
+        (#atm_time_series_measurements_spec{name_matcher_type = has_prefix, name_matcher = NameMatcher}) ->
+            str_utils:binary_starts_with(MeasurementTSName, NameMatcher)
+    end, TimeSeriesMeasurementsSpecs).
+
+
+-spec find_referencing_dispatch_rule(atm_time_series_measurements_spec:record(), [atm_time_series_dispatch_rule:record()]) ->
+    {ok, atm_time_series_dispatch_rule:record()} | error.
+find_referencing_dispatch_rule(#atm_time_series_measurements_spec{
+    name_matcher = NameMatcher
+}, DispatchRules) ->
+    lists_utils:find(fun(#atm_time_series_dispatch_rule{measurement_ts_name_matcher = MeasurementTsNameMatcher}) ->
+        MeasurementTsNameMatcher =:= NameMatcher
+    end, DispatchRules).
+
+
+-spec find_referenced_time_series_schema(atm_time_series_dispatch_rule:record(), [atm_time_series_schema:record()]) ->
+    {ok, atm_time_series_schema:record()} | error.
+find_referenced_time_series_schema(#atm_time_series_dispatch_rule{
+    target_ts_name_generator = TargetTsNameGenerator
+}, TimeSeriesSchemas) ->
+    lists_utils:find(fun(#atm_time_series_schema{name_generator = NameGenerator}) ->
+        TargetTsNameGenerator =:= NameGenerator
+    end, TimeSeriesSchemas).
+
+
+-spec resolve_target_ts_name(
+    measurement_ts_name(),
+    atm_time_series_measurements_spec:record(),
+    atm_time_series_schema:record(),
+    prefix_combiner()
+) ->
+    target_ts_name().
+resolve_target_ts_name(
+    _MeasurementTSName,
+    _TimeSeriesMeasurementsSpec,
+    #atm_time_series_schema{name_generator_type = exact, name_generator = NameGenerator},
+    _PrefixCombiner
+) ->
+    NameGenerator;
+resolve_target_ts_name(
+    MeasurementTSName,
+    #atm_time_series_measurements_spec{name_matcher_type = exact},
+    #atm_time_series_schema{name_generator_type = add_prefix, name_generator = NameGenerator},
+    _PrefixCombiner
+) ->
+    <<NameGenerator/binary, MeasurementTSName/binary>>;
+resolve_target_ts_name(
+    MeasurementTSName,
+    #atm_time_series_measurements_spec{name_matcher_type = has_prefix, name_matcher = _NameMatcher},
+    #atm_time_series_schema{name_generator_type = add_prefix, name_generator = NameGenerator},
+    concatenate
+) ->
+    <<NameGenerator/binary, MeasurementTSName/binary>>;
+resolve_target_ts_name(
+    MeasurementTSName,
+    #atm_time_series_measurements_spec{name_matcher_type = has_prefix, name_matcher = NameMatcher} = TSMeasurementsSpec,
+    #atm_time_series_schema{name_generator_type = add_prefix, name_generator = NameGenerator} = TSSchema,
+    converge
+) ->
+    case str_utils:binary_starts_with(NameMatcher, NameGenerator) of
+        true ->
+            MeasurementTSName;
+        false ->
+            resolve_target_ts_name(MeasurementTSName, TSMeasurementsSpec, TSSchema, concatenate)
+    end;
+resolve_target_ts_name(
+    MeasurementTSName,
+    #atm_time_series_measurements_spec{name_matcher_type = has_prefix, name_matcher = NameMatcher},
+    #atm_time_series_schema{name_generator_type = add_prefix, name_generator = NameGenerator},
+    overwrite
+) ->
+    Suffix = string:prefix(MeasurementTSName, NameMatcher),
+    <<NameGenerator/binary, Suffix/binary>>.

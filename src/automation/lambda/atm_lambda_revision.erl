@@ -111,7 +111,7 @@ encode_with(Record, NestedRecordEncoder) ->
 
 
 %% @private
--spec decode_with(validate | skip_validation, json_utils:json_term(), persistent_record:nested_record_decoder()) ->
+-spec decode_with(automation:validation_strategy(), json_utils:json_term(), persistent_record:nested_record_decoder()) ->
     record().
 decode_with(ValidationStrategy, RecordJson, NestedRecordDecoder) ->
     %% @TODO VFS-8507 Rework along with new data sanitizers for all atm models (data_spec callback?)

@@ -49,10 +49,14 @@
 % graphical interface concerning incompleteness or deprecation.
 -type lifecycle_state() :: draft | stable | deprecated.
 
+% Indicates if record validation should be performed.
+-type validation_strategy() :: validate | skip_validation.
+
 -export_type([id/0, name/0, summary/0, description/0]).
 -export_type([lambda_operation_ref/0]).
 -export_type([store_type/0, item/0]).
 -export_type([lifecycle_state/0]).
+-export_type([validation_strategy/0]).
 
 %%%===================================================================
 %%% API

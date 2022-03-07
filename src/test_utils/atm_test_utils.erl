@@ -251,26 +251,10 @@ example_data_specs_except(DisallowedTypes) ->
     end, atm_data_type:all_data_types() -- DisallowedTypes).
 
 
--spec example_predefined_value(atm_data_spec:record()) -> json_utils:json_term().
-example_predefined_value(#atm_data_spec{type = atm_integer_type}) ->
-    ?RAND_INT(0, 1000);
-example_predefined_value(#atm_data_spec{type = atm_string_type}) ->
-    ?RAND_STR(?RAND_INT(1, 25));
-example_predefined_value(#atm_data_spec{type = atm_object_type}) ->
-    ?RAND_ELEMENT([#{}, #{<<"key">> => 984.222}, #{<<"key">> => #{<<"nested">> => 984.222}}]);
 %% @TODO VFS-7687 Implement all automation data types and validators
-example_predefined_value(#atm_data_spec{type = atm_file_type}) ->
-    #{<<"file_id">> => ?RAND_STR()};
-example_predefined_value(#atm_data_spec{type = atm_time_series_measurements_type}) ->
-    undefined;
-example_predefined_value(#atm_data_spec{type = atm_dataset_type}) ->
-    #{<<"datasetId">> => ?RAND_STR()};
+-spec example_predefined_value(atm_data_spec:record()) -> json_utils:json_term().
 example_predefined_value(#atm_data_spec{type = atm_archive_type}) ->
     #{<<"atm_archive_type">> => <<"value">>};
-example_predefined_value(#atm_data_spec{type = atm_store_credentials_type}) ->
-    undefined;
-example_predefined_value(#atm_data_spec{type = atm_onedatafs_credentials_type}) ->
-    undefined;
 example_predefined_value(#atm_data_spec{type = atm_array_type, value_constraints = #{
     item_data_spec := ItemDataSpec
 }}) ->
@@ -279,7 +263,25 @@ example_predefined_value(#atm_data_spec{type = atm_array_type, value_constraints
             [];
         Value ->
             lists:duplicate(?RAND_INT(0, 20), Value)
-    end.
+    end;
+example_predefined_value(#atm_data_spec{type = atm_dataset_type}) ->
+    #{<<"datasetId">> => ?RAND_STR()};
+example_predefined_value(#atm_data_spec{type = atm_file_type}) ->
+    #{<<"file_id">> => ?RAND_STR()};
+example_predefined_value(#atm_data_spec{type = atm_integer_type}) ->
+    ?RAND_INT(0, 1000);
+example_predefined_value(#atm_data_spec{type = atm_object_type}) ->
+    ?RAND_ELEMENT([#{}, #{<<"key">> => 984.222}, #{<<"key">> => #{<<"nested">> => 984.222}}]);
+example_predefined_value(#atm_data_spec{type = atm_onedatafs_credentials_type}) ->
+    undefined;
+example_predefined_value(#atm_data_spec{type = atm_range_type}) ->
+    #{<<"start">> => ?RAND_INT(0, 10), <<"end">> => ?RAND_INT(10, 20), <<"step">> => ?RAND_INT(0, 5)};
+example_predefined_value(#atm_data_spec{type = atm_string_type}) ->
+    ?RAND_STR(?RAND_INT(1, 25));
+example_predefined_value(#atm_data_spec{type = atm_store_credentials_type}) ->
+    undefined;
+example_predefined_value(#atm_data_spec{type = atm_time_series_measurements_type}) ->
+    undefined.
 
 
 -spec example_store_schema() -> atm_store_schema:record().
@@ -354,7 +356,7 @@ example_store_initial_content(list, #atm_list_store_config{item_data_spec = Data
 example_store_initial_content(tree_forest, #atm_tree_forest_store_config{item_data_spec = DataSpec}) ->
     example_store_initial_content(list, #atm_list_store_config{item_data_spec = DataSpec});
 example_store_initial_content(range, #atm_range_store_config{}) ->
-    #{<<"start">> => ?RAND_INT(0, 10), <<"end">> => ?RAND_INT(10, 20), <<"step">> => ?RAND_INT(0, 5)};
+    example_predefined_value(#atm_data_spec{type = atm_range_type});
 example_store_initial_content(time_series, #atm_time_series_store_config{}) ->
     undefined;
 example_store_initial_content(audit_log, #atm_audit_log_store_config{}) ->

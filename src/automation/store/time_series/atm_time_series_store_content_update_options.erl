@@ -79,7 +79,7 @@ encode_with(Record, NestedRecordEncoder) ->
 
 
 %% @private
--spec decode_with(validate | skip_validation, json_utils:json_term(), persistent_record:nested_record_decoder()) ->
+-spec decode_with(automation:validation_strategy(), json_utils:json_term(), persistent_record:nested_record_decoder()) ->
     record().
 decode_with(skip_validation, RecordJson, NestedRecordDecoder) ->
     EncodedDispatchRules = maps:get(<<"dispatchRules">>, RecordJson),

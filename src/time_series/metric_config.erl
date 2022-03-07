@@ -134,7 +134,7 @@ encode(Record) ->
 
 
 %% @private
--spec decode(validate | skip_validation, json_utils:json_term()) -> record().
+-spec decode(automation:validation_strategy(), json_utils:json_term()) -> record().
 decode(skip_validation, RecordJson) ->
     #metric_config{
         label = maps:get(<<"label">>, RecordJson),

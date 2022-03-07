@@ -18,7 +18,7 @@
 
 %% atm_data_type callbacks
 -export([is_instance/1]).
--export([value_constraints_to_json/1, value_constraints_from_json/1]).
+-export([encode_value_constraints/2, decode_value_constraints/3]).
 
 -type file_type() :: 'REG' | 'DIR' | 'SYMLNK' | 'ANY'.
 
@@ -32,16 +32,22 @@ is_instance(#{<<"file_id">> := _}) -> true;
 is_instance(_Value) -> false.
 
 
--spec value_constraints_to_json(atm_data_type:value_constraints()) -> json_utils:json_map().
-value_constraints_to_json(Constraints) ->
+-spec encode_value_constraints(atm_data_type:value_constraints(), persistent_record:nested_record_encoder()) ->
+    json_utils:json_term().
+encode_value_constraints(Constraints, _NestedRecordEncoder) ->
     FileType = maps:get(file_type, Constraints, 'ANY'),
     #{
         <<"fileType">> => file_type_to_json(FileType)
     }.
 
 
--spec value_constraints_from_json(json_utils:json_map()) -> atm_data_type:value_constraints().
-value_constraints_from_json(ConstraintsJson) ->
+-spec decode_value_constraints(
+    automation:validation_strategy(),
+    json_utils:json_term(),
+    persistent_record:nested_record_decoder()
+) ->
+    atm_data_type:value_constraints().
+decode_value_constraints(_ValidationStrategy, ConstraintsJson, _NestedRecordDecoder) ->
     FileTypeJson = maps:get(<<"fileType">>, ConstraintsJson, <<"ANY">>),
     #{
         file_type => file_type_from_json(FileTypeJson)

@@ -18,7 +18,7 @@
 
 %% atm_data_type callbacks
 -export([is_instance/1]).
--export([value_constraints_to_json/1, value_constraints_from_json/1]).
+-export([encode_value_constraints/2, decode_value_constraints/3]).
 
 %%%===================================================================
 %%% atm_data_type callbacks
@@ -29,11 +29,17 @@ is_instance(Value) when is_map(Value) -> true;
 is_instance(_Value) -> false.
 
 
--spec value_constraints_to_json(atm_data_type:value_constraints()) -> json_utils:json_map().
-value_constraints_to_json(_Constraints) ->
+-spec encode_value_constraints(atm_data_type:value_constraints(), persistent_record:nested_record_encoder()) ->
+    json_utils:json_term().
+encode_value_constraints(_Constraints, _Encoder) ->
     #{}.
 
 
--spec value_constraints_from_json(json_utils:json_map()) -> atm_data_type:value_constraints().
-value_constraints_from_json(_ConstraintsJson) ->
+-spec decode_value_constraints(
+    automation:validation_strategy(),
+    json_utils:json_term(),
+    persistent_record:nested_record_decoder()
+) ->
+    atm_data_type:value_constraints().
+decode_value_constraints(_ValidationStrategy, _ConstraintsJson, _Decoder) ->
     #{}.

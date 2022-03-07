@@ -9,7 +9,7 @@
 %%% Module implementing the archive data type used in automation machinery.
 %%% @end
 %%%-------------------------------------------------------------------
--module(atm_archive_type).
+-module(atm_range_type).
 -author("Lukasz Opiola").
 
 -behaviour(atm_data_type).
@@ -26,7 +26,7 @@
 
 %% @TODO VFS-7687 Implement all automation data types and validators
 -spec is_instance(json_utils:json_term()) -> boolean().
-is_instance(Value) when is_map(Value) -> true;
+is_instance(#{<<"end">> := _}) -> true;
 is_instance(_Value) -> false.
 
 

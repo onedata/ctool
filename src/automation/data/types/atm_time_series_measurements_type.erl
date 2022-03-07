@@ -34,7 +34,7 @@
 
 %% atm_data_type callbacks
 -export([is_instance/1]).
--export([value_constraints_to_json/1, value_constraints_from_json/1]).
+-export([encode_value_constraints/2, decode_value_constraints/3]).
 
 %%%===================================================================
 %%% atm_data_type callbacks
@@ -52,11 +52,29 @@ is_instance(Measurements) ->
     end, Measurements).
 
 
--spec value_constraints_to_json(atm_data_type:value_constraints()) -> json_utils:json_map().
-value_constraints_to_json(#{specs := Specs}) ->
-    #{<<"specs">> => jsonable_record:list_to_json(Specs, atm_time_series_measurements_spec)}.
+-spec encode_value_constraints(atm_data_type:value_constraints(), persistent_record:nested_record_encoder()) ->
+    json_utils:json_term().
+encode_value_constraints(#{specs := Specs}, NestedRecordEncoder) ->
+    #{<<"specs">> => [NestedRecordEncoder(S, atm_time_series_measurements_spec) || S <- Specs]}.
 
 
--spec value_constraints_from_json(json_utils:json_map()) -> atm_data_type:value_constraints().
-value_constraints_from_json(#{<<"specs">> := SpecsJson}) ->
-    #{specs => jsonable_record:list_from_json(SpecsJson, atm_time_series_measurements_spec)}.
+-spec decode_value_constraints(
+    automation:validation_strategy(),
+    json_utils:json_term(),
+    persistent_record:nested_record_decoder()
+) ->
+    atm_data_type:value_constraints().
+decode_value_constraints(skip_validation, #{<<"specs">> := SpecsJson}, NestedRecordDecoder) ->
+    #{specs => [NestedRecordDecoder(S, atm_time_series_measurements_spec) || S <- SpecsJson]};
+decode_value_constraints(validate, DataJson, NestedRecordDecoder) ->
+    Result = #{specs := Specs} = decode_value_constraints(skip_validation, DataJson, NestedRecordDecoder),
+    lists:foldl(fun(#atm_time_series_measurements_spec{name_matcher = NameMatcher}, AlreadyUsedNameMatchers) ->
+        ordsets:is_element(NameMatcher, AlreadyUsedNameMatchers) andalso throw(
+            ?ERROR_BAD_DATA(
+                <<"valueConstraints.specs">>,
+                <<"There cannot be two measurement specs with the same name matcher">>
+            )
+        ),
+        ordsets:add_element(NameMatcher, AlreadyUsedNameMatchers)
+    end, ordsets:new(), Specs),
+    Result.
