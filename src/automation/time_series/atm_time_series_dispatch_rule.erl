@@ -70,6 +70,9 @@ db_decode(RecordJson, _NestedRecordDecoder) ->
 -spec encode(record()) -> json_utils:json_term().
 encode(Record) ->
     #{
+        <<"measurementTimeSeriesNameMatcherType">> => atm_time_series_names:measurement_ts_name_matcher_type_to_json(
+            Record#atm_time_series_dispatch_rule.measurement_ts_name_matcher_type
+        ),
         <<"measurementTimeSeriesNameMatcher">> => atm_time_series_names:measurement_ts_name_matcher_to_json(
             Record#atm_time_series_dispatch_rule.measurement_ts_name_matcher
         ),
@@ -86,6 +89,9 @@ encode(Record) ->
 -spec decode(json_utils:json_term()) -> record().
 decode(RecordJson) ->
     #atm_time_series_dispatch_rule{
+        measurement_ts_name_matcher_type = atm_time_series_names:measurement_ts_name_matcher_type_from_json(
+            maps:get(<<"measurementTimeSeriesNameMatcherType">>, RecordJson)
+        ),
         measurement_ts_name_matcher = atm_time_series_names:measurement_ts_name_matcher_from_json(
             maps:get(<<"measurementTimeSeriesNameMatcher">>, RecordJson)
         ),

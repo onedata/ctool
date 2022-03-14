@@ -18,43 +18,87 @@
 -include("automation/automation.hrl").
 
 
-find_matching_measurements_spec_test() ->
+find_matching_matcher_test() ->
     MeasurementTSName = <<"file_count_mp3">>,
 
-    MatchingSpecAlpha = #atm_time_series_measurements_spec{name_matcher_type = exact, name_matcher = <<"file_count_mp3">>},
-    MatchingSpecGamma = #atm_time_series_measurements_spec{name_matcher_type = has_prefix, name_matcher = <<"file_count_">>},
-    MatchingSpecDelta = #atm_time_series_measurements_spec{name_matcher_type = has_prefix, name_matcher = <<"f">>},
+    MatchingMatcherAlpha = {exact, <<"file_count_mp3">>},
+    MatchingMatcherGamma = {has_prefix, <<"file_count_">>},
+    MatchingMatcherDelta = {has_prefix, <<"f">>},
 
-    NonmatchingSpecTheta = #atm_time_series_measurements_spec{name_matcher_type = exact, name_matcher = <<"file_count_">>},
-    NonmatchingSpecKappa = #atm_time_series_measurements_spec{name_matcher_type = has_prefix, name_matcher = <<"count_">>},
-    NonmatchingSpecOmega = #atm_time_series_measurements_spec{name_matcher_type = has_prefix, name_matcher = <<"mp3">>},
+    NonmatchingMatcherTheta = {exact, <<"file_count_">>},
+    NonmatchingMatcherKappa = {has_prefix, <<"count_">>},
+    NonmatchingMatcherOmega = {has_prefix, <<"mp3">>},
 
-    ?assertEqual(error, atm_time_series_names:find_matching_measurements_spec(MeasurementTSName, [])),
-    ?assertEqual(error, atm_time_series_names:find_matching_measurements_spec(MeasurementTSName, [
-        NonmatchingSpecKappa,
-        NonmatchingSpecOmega,
-        NonmatchingSpecTheta
-    ])),
-    ?assertEqual({ok, MatchingSpecAlpha}, atm_time_series_names:find_matching_measurements_spec(MeasurementTSName, [
-        NonmatchingSpecKappa,
-        NonmatchingSpecOmega,
-        MatchingSpecAlpha,
-        NonmatchingSpecTheta,
-        MatchingSpecGamma
-    ])),
-    ?assertEqual({ok, MatchingSpecDelta}, atm_time_series_names:find_matching_measurements_spec(MeasurementTSName, [
-        MatchingSpecDelta,
-        NonmatchingSpecKappa,
-        NonmatchingSpecOmega,
-        MatchingSpecAlpha,
-        NonmatchingSpecTheta
-    ])),
-    ?assertEqual({ok, MatchingSpecGamma}, atm_time_series_names:find_matching_measurements_spec(MeasurementTSName, [
-        NonmatchingSpecKappa,
-        NonmatchingSpecOmega,
-        NonmatchingSpecTheta,
-        MatchingSpecGamma
-    ])).
+    find_matching_matcher_test_base(MeasurementTSName, error, []),
+    find_matching_matcher_test_base(MeasurementTSName, error, [
+        NonmatchingMatcherKappa,
+        NonmatchingMatcherOmega,
+        NonmatchingMatcherTheta
+    ]),
+    find_matching_matcher_test_base(MeasurementTSName, {ok, MatchingMatcherAlpha}, [
+        NonmatchingMatcherKappa,
+        NonmatchingMatcherOmega,
+        MatchingMatcherAlpha,
+        NonmatchingMatcherTheta,
+        MatchingMatcherGamma
+    ]),
+    find_matching_matcher_test_base(MeasurementTSName, {ok, MatchingMatcherDelta}, [
+        MatchingMatcherDelta,
+        NonmatchingMatcherKappa,
+        NonmatchingMatcherOmega,
+        MatchingMatcherAlpha,
+        NonmatchingMatcherTheta
+    ]),
+    find_matching_matcher_test_base(MeasurementTSName, {ok, MatchingMatcherGamma}, [
+        NonmatchingMatcherKappa,
+        NonmatchingMatcherOmega,
+        NonmatchingMatcherTheta,
+        MatchingMatcherGamma
+    ]).
+
+%% @private
+find_matching_matcher_test_base(MeasurementTSName, ExpectedResult, MatchersToCheck) ->
+    FindMeasurementsSpecExpectedResult = case ExpectedResult of
+        error ->
+            error;
+        {ok, Matcher1} ->
+            {ok, matcher_to_measurements_spec(Matcher1)}
+    end,
+    ?assertEqual(
+        FindMeasurementsSpecExpectedResult,
+        atm_time_series_names:find_matching_measurements_spec(
+            MeasurementTSName,
+            [matcher_to_measurements_spec(M) || M <- MatchersToCheck]
+        )
+    ),
+
+    FindDispatchRuleExpectedResult = case ExpectedResult of
+        error ->
+            error;
+        {ok, Matcher2} ->
+            {ok, matcher_to_dispatch_rule(Matcher2)}
+    end,
+    ?assertEqual(
+        FindDispatchRuleExpectedResult,
+        atm_time_series_names:find_matching_dispatch_rule(
+            MeasurementTSName,
+            [matcher_to_dispatch_rule(M) || M <- MatchersToCheck]
+        )
+    ).
+
+%% @private
+matcher_to_measurements_spec({NameMatcherType, NameMatcher}) ->
+    #atm_time_series_measurements_spec{
+        name_matcher_type = NameMatcherType,
+        name_matcher = NameMatcher
+    }.
+
+%% @private
+matcher_to_dispatch_rule({NameMatcherType, NameMatcher}) ->
+    #atm_time_series_dispatch_rule{
+        measurement_ts_name_matcher_type = NameMatcherType,
+        measurement_ts_name_matcher = NameMatcher
+    }.
 
 
 -record(testcase, {
@@ -160,29 +204,23 @@ run_testcase(#testcase{
     expected_final_ts_name = ExpectedFinalTsName
 }) ->
     lists:foreach(fun(PrefixCombiner) ->
-        TimeSeriesMeasurementsSpec = #atm_time_series_measurements_spec{
-            name_matcher_type = MeasurementTsNameMatcherType,
-            name_matcher = MeasurementTsNameMatcher
-        },
         TimeSeriesSchema = #atm_time_series_schema{
             name_generator_type = TargetTsNameMatcherType,
             name_generator = TargetTsNameMatcher
         },
         TimeSeriesDispatchRule = #atm_time_series_dispatch_rule{
+            measurement_ts_name_matcher_type = MeasurementTsNameMatcherType,
             measurement_ts_name_matcher = MeasurementTsNameMatcher,
             target_ts_name_generator = TargetTsNameMatcher,
             prefix_combiner = PrefixCombiner
         },
 
-        ?assertEqual({ok, TimeSeriesDispatchRule}, atm_time_series_names:find_referencing_dispatch_rule(
-            TimeSeriesMeasurementsSpec, [TimeSeriesDispatchRule]
-        )),
         ?assertEqual({ok, TimeSeriesSchema}, atm_time_series_names:find_referenced_time_series_schema(
             TimeSeriesDispatchRule, [TimeSeriesSchema]
         )),
 
         ?assertEqual(ExpectedFinalTsName, atm_time_series_names:resolve_target_ts_name(
-            MeasurementTsName, TimeSeriesMeasurementsSpec, TimeSeriesSchema, PrefixCombiner
+            MeasurementTsName, TimeSeriesSchema, TimeSeriesDispatchRule
         ))
     end, PrefixCombinerVariants).
 

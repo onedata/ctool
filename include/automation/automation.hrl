@@ -172,6 +172,7 @@
 }).
 
 -record(atm_time_series_dispatch_rule, {
+    measurement_ts_name_matcher_type :: atm_time_series_names:measurement_ts_name_matcher_type(),
     measurement_ts_name_matcher :: atm_time_series_names:measurement_ts_name_matcher(),
     target_ts_name_generator :: atm_time_series_names:target_ts_name_generator(),
     prefix_combiner :: atm_time_series_names:prefix_combiner()
@@ -185,8 +186,8 @@
     argument_mappings :: [atm_task_schema_argument_mapper:record()],
     result_mappings :: [atm_task_schema_result_mapper:record()],
     resource_spec_override :: undefined | atm_resource_spec:record(),
-    % optional time series spec; if defined, a time series store assigned to this task will be automatically created
-    time_series_schema :: undefined | atm_time_series_schema:record()
+    % optional; if defined, a time series store assigned to this task will be automatically created
+    time_series_store_config :: undefined | atm_time_series_store_config:record()
 }).
 
 -record(atm_parallel_box_schema, {

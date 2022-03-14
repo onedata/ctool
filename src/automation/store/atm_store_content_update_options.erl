@@ -43,6 +43,10 @@
 
 -export_type([record/0]).
 
+% @TODO VFS-8042 Consider making store update options optional. For simple
+% stores that do not have any options, this will be more convenient.
+% For the other, where sane defaults are not possible, the defaults may be
+% empty to trigger errors about missing fields.
 
 %%%===================================================================
 %%% API

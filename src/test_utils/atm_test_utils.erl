@@ -463,6 +463,7 @@ example_store_content_update_options_records() -> [
 example_time_series_dispatch_rules() ->
     lists_utils:generate(fun(Ordinal) ->
         #atm_time_series_dispatch_rule{
+            measurement_ts_name_matcher_type = ?RAND_ELEMENT([exact, has_prefix]),
             measurement_ts_name_matcher = str_utils:format_bin("~B~s", [Ordinal, example_name()]),
             target_ts_name_generator = example_name(),
             prefix_combiner = ?RAND_ELEMENT([concatenate, converge, overwrite])
@@ -545,7 +546,7 @@ example_task_schema(AvailableLambdasWithRegistries, StoreSchemaIds) ->
         argument_mappings = example_argument_mappers(AtmLambdaRevision, StoreSchemaIds),
         result_mappings = example_result_mappers(AtmLambdaRevision, StoreSchemaIds),
         resource_spec_override = ?RAND_ELEMENT([undefined, example_resource_spec()]),
-        time_series_schema = ?RAND_ELEMENT([undefined, example_time_series_schema()])
+        time_series_store_config = ?RAND_ELEMENT([undefined, example_store_config(time_series)])
     }.
 
 -spec example_task_schemas() -> [atm_task_schema:record()].
