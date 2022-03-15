@@ -1,12 +1,12 @@
 %%%-------------------------------------------------------------------
 %%% @author Lukasz Opiola
-%%% @copyright (C) 2021 ACK CYFRONET AGH
+%%% @copyright (C) 2022 ACK CYFRONET AGH
 %%% This software is released under the MIT license
 %%% cited in 'LICENSE.txt'.
 %%% @end
 %%%-------------------------------------------------------------------
 %%% @doc
-%%% Module implementing the archive data type used in automation machinery.
+%%% Module implementing the range data type used in automation machinery.
 %%% @end
 %%%-------------------------------------------------------------------
 -module(atm_range_type).

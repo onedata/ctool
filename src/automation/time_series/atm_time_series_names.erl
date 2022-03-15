@@ -24,8 +24,8 @@
 %%% argument that was produced by a store iterator, or as a lambda result that is to be
 %%% mapped to a store), it undergoes validation. The list of `atm_time_series_measurements_spec`
 %%% specified as value constraints in the data type is analyzed top-down to find a matching
-%%% spec. If there is such spec, validation succeeds. If there is none, workflow execution
-%%% fails with an error.
+%%% spec. If there is such spec, validation succeeds. If there is none, it is considered
+%%% as an error during workflow execution.
 %%%
 %%% The measurements can be inserted into a time series store in two ways:
 %%%     * During lambda result mapping - using a proper `atm_task_schema_result_mapper`
@@ -57,10 +57,10 @@
 %%%           }
 %%%       NOTE: The dispatch rules reuse the `name_matcher_type` and `name_matcher` fields
 %%%       of `atm_time_series_measurements_spec`. In case of lambda result mapping, the
-%%%       values of these fields in the dispatch rule must be the same as the corresponding
-%%%       values for one of `atm_time_series_measurements_spec` records specified in the type
-%%%       constraints. This ensures that during mapping, only the measurements specified
-%%%       in the lambda contract can be mapped. When using the store update API, the name matcher
+%%%       values of these fields in a dispatch rule are validated against
+%%%       `atm_time_series_measurements_spec` records specified in the lambda's result
+%%%       type constraints, making sure that the matcher has a chance of matching an actual
+%%%       time series name produced by a lambda. When using the store update API, the name matcher
 %%%       in the dispatch rules can be arbitrary, as there is no input data contract in this
 %%%       context. In both scenarios, the `target_time_series_name_generator` field must
 %%%       reference `atm_time_series_schema` that exists in the store schema, by specifying
@@ -162,7 +162,8 @@
 % Prefix combiner is employed only when a dispatch rule specifies a name matcher of type
 % `has_prefix` and name generator of type `add_prefix`. It indicates how the prefixes
 % should be combined when determining the target time series name for dispatching measurements:
-%   * concatenate - the prefixes are concatenated (the matcher's prefix goes first),
+%   * concatenate - the prefixes are concatenated, as a result the final name starts with
+%                   concatenated generator and matcher prefixes (in this order),
 %   * overwrite - only the generator's prefix is added to the target name,
 %   * converge - if the name generator is a prefix of the name matcher, the prefix part
 %                is not repeated (effectively the original measurement ts name is taken as final),

@@ -130,6 +130,14 @@ encode_decode_store_config_test() ->
         })
     end, atm_data_type:all_data_types() -- AllowedDataTypes),
 
+    % time series store must have at least one schema defined
+    check_error_during_decode_from_json(
+        ?ERROR_BAD_VALUE_EMPTY(<<"schemas">>),
+        #atm_time_series_store_config{
+            schemas = []
+        }
+    ),
+
     % time series store cannot have conflicting name generators
     MakeSchema = fun(NameGeneratorType, NameGenerator) ->
         ExampleSchema = atm_test_utils:example_time_series_schema(),
@@ -271,18 +279,16 @@ encode_decode_time_series_schema_test() ->
     encode_decode_test_base(ExampleTimeSeriesSpecs),
 
     check_error_during_decode_from_json(
-        ?ERROR_BAD_DATA(<<"metrics">>, <<"There cannot be two metrics with the same label">>),
-        Example#atm_time_series_schema{metrics = [
-            #metric_config{label = <<"label1">>, resolution = 3600, retention = 12, aggregator = sum},
-            #metric_config{label = <<"label1">>, resolution = 3600, retention = 12, aggregator = min}
-        ]}
+        ?ERROR_BAD_VALUE_EMPTY(<<"metrics">>),
+        Example#atm_time_series_schema{metrics = #{}}
     ),
+
     check_error_during_decode_from_json(
         ?ERROR_BAD_DATA(<<"metrics">>, <<"There cannot be two metrics with the same resolution and aggregator">>),
-        Example#atm_time_series_schema{metrics = [
-            #metric_config{label = <<"label1">>, resolution = 3600, retention = 12, aggregator = sum},
-            #metric_config{label = <<"label2">>, resolution = 3600, retention = 13, aggregator = sum}
-        ]}
+        Example#atm_time_series_schema{metrics = #{
+            <<"metric1">> => #metric_config{resolution = 3600, retention = 12, aggregator = sum},
+            <<"metric2">> => #metric_config{resolution = 3600, retention = 13, aggregator = sum}
+        }}
     ).
 
 %%%===================================================================

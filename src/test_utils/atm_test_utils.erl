@@ -329,7 +329,7 @@ example_store_config(tree_forest) ->
 example_store_config(range) ->
     #atm_range_store_config{};
 example_store_config(time_series) ->
-    #atm_time_series_store_config{schemas = ?RAND_SUBLIST(example_time_series_schemas())};
+    #atm_time_series_store_config{schemas = ?RAND_SUBLIST(example_time_series_schemas(), 1, all)};
 example_store_config(audit_log) ->
     #atm_audit_log_store_config{log_content_data_spec = example_data_spec()}.
 
@@ -695,7 +695,6 @@ example_time_series_measurements_specs() ->
 example_metric_configs() ->
     lists:map(fun(Resolution) ->
         #metric_config{
-            label = str_utils:format_bin("~B~s", [Resolution, example_name()]),
             resolution = Resolution,
             retention = ?RAND_INT(1, 1000),
             aggregator = ?RAND_ELEMENT(metric_config:all_aggregators())
@@ -714,7 +713,9 @@ example_time_series_schema(NameGenerator) ->
         name_generator_type = ?RAND_ELEMENT([exact, add_prefix]),
         name_generator = NameGenerator,
         unit = ?RAND_ELEMENT(example_time_series_units()),
-        metrics = ?RAND_SUBLIST(example_metric_configs(), 1, all)
+        metrics = maps_utils:generate_from_list(fun(MetricConfig) ->
+            {example_name(), MetricConfig}
+        end, ?RAND_SUBLIST(example_metric_configs(), 1, all))
     }.
 
 
@@ -730,8 +731,8 @@ example_time_series_units() -> [
     none,
     milliseconds, seconds,
     bits, bytes,
-    hertz, counts_per_sec, bytes_per_sec, ops_per_sec, requests_per_sec,
-    reads_per_sec, writes_per_sec, io_ops_per_sec,
+    hertz, counts_per_sec, bytes_per_sec, operations_per_sec, requests_per_sec,
+    reads_per_sec, writes_per_sec, io_operations_per_sec,
     percent, percent_normalized,
     boolean,
     {custom, example_name()}

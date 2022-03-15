@@ -81,6 +81,9 @@ decode_with(skip_validation, RecordJson, NestedRecordDecoder) ->
     };
 decode_with(validate, RecordJson, NestedRecordDecoder) ->
     Config = decode_with(skip_validation, RecordJson, NestedRecordDecoder),
+
+    Config#atm_time_series_store_config.schemas == [] andalso throw(?ERROR_BAD_VALUE_EMPTY(<<"schemas">>)),
+
     lists:foldl(fun(TimeSeriesSchema, AlreadyCheckedSchemas) ->
         lists:foreach(fun(AlreadyCheckedSchema) ->
             are_name_generators_conflicting(TimeSeriesSchema, AlreadyCheckedSchema) andalso throw(
