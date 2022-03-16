@@ -218,8 +218,8 @@
 -define(ERROR_ATM_STORE_TYPE_DISALLOWED(AtmStoreSchemaId, AllowedTypes),
     {error, {atm_store_type_disallowed, AtmStoreSchemaId, AllowedTypes}}
 ).
--define(ERROR_ATM_STORE_EMPTY(AtmStoreSchemaId),
-    {error, {atm_store_empty, AtmStoreSchemaId}}
+-define(ERROR_ATM_STORE_CONTENT_NOT_SET(AtmStoreSchemaId),
+    {error, {atm_store_content_not_set, AtmStoreSchemaId}}
 ).
 -define(ERROR_ATM_STORE_NOT_FOUND(AtmStoreSchemaId),
     {error, {atm_store_not_found, AtmStoreSchemaId}}

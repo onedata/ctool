@@ -131,7 +131,7 @@
 | {atm_store_creation_failed, AtmStoreSchemaId :: binary(), SpecificError :: error()}
 | {atm_store_frozen, AtmStoreSchemaId :: binary()}
 | {atm_store_type_disallowed, AtmStoreSchemaId :: binary(), AllowedTypes :: [automation:store_type()]}
-| {atm_store_empty, AtmStoreSchemaId :: binary()}
+| {atm_store_content_not_set, AtmStoreSchemaId :: binary()}
 | {atm_store_not_found, AtmStoreSchemaId :: binary()}
 | atm_workflow_empty
 | atm_workflow_execution_aborting
@@ -1104,7 +1104,7 @@ to_json(?ERROR_ATM_STORE_CREATION_FAILED(AtmStoreSchemaId, {error, _} = Specific
         <<"specificError">> => to_json(SpecificError)
     },
     <<"description">> => ?FMT(
-        "Failed to create automation store (id: \"~s\") (see details).",
+        "Failed to create automation store (schema id: \"~s\") (see details).",
         [AtmStoreSchemaId]
     )
 };
@@ -1118,7 +1118,7 @@ to_json(?ERROR_ATM_STORE_FROZEN(AtmStoreSchemaId)) -> #{
         <<"atmStoreSchemaId">> => AtmStoreSchemaId
     },
     <<"description">> => ?FMT(
-        "Failed to perform operation on automation store (id: \"~s\") as any modification is forbidden.",
+        "Failed to perform operation on automation store (schema id: \"~s\") as any modification is forbidden.",
         [AtmStoreSchemaId]
     )
 };
@@ -1132,17 +1132,17 @@ to_json(?ERROR_ATM_STORE_TYPE_DISALLOWED(AtmStoreSchemaId, AllowedTypes)) ->
             <<"allowed">> => AllowedTypesJson
         },
         <<"description">> => ?FMT(
-            "Bad automation store: the type of store (id: \"~s\") must be one of: ~ts.",
+            "Bad automation store: the type of store (schema id: \"~s\") must be one of: ~ts.",
             [AtmStoreSchemaId, join_values_with_commas(AllowedTypesJson)]
         )
     };
-to_json(?ERROR_ATM_STORE_EMPTY(AtmStoreSchemaId)) -> #{
-    <<"id">> => <<"atmStoreEmpty">>,
+to_json(?ERROR_ATM_STORE_CONTENT_NOT_SET(AtmStoreSchemaId)) -> #{
+    <<"id">> => <<"atmStoreContentNotSet">>,
     <<"details">> => #{
         <<"atmStoreSchemaId">> => AtmStoreSchemaId
     },
     <<"description">> => ?FMT(
-        "Bad automation store: store (id: \"~s\") must not be empty.",
+        "No content has been set for this store (schema id: \"~s\").",
         [AtmStoreSchemaId]
     )
 };
@@ -1152,7 +1152,7 @@ to_json(?ERROR_ATM_STORE_NOT_FOUND(AtmStoreSchemaId)) -> #{
         <<"atmStoreSchemaId">> => AtmStoreSchemaId
     },
     <<"description">> => ?FMT(
-        "Bad automation store: store (id: \"~s\") does not exist.",
+        "Bad automation store: store (schema id: \"~s\") does not exist.",
         [AtmStoreSchemaId]
     )
 };
@@ -2016,12 +2016,12 @@ from_json(#{
     ?ERROR_ATM_STORE_TYPE_DISALLOWED(AtmStoreSchemaId, AllowedTypes);
 
 from_json(#{
-    <<"id">> := <<"atmStoreEmpty">>,
+    <<"id">> := <<"atmStoreContentNotSet">>,
     <<"details">> := #{
         <<"atmStoreSchemaId">> := AtmStoreSchemaId
     }
 }) ->
-    ?ERROR_ATM_STORE_EMPTY(AtmStoreSchemaId);
+    ?ERROR_ATM_STORE_CONTENT_NOT_SET(AtmStoreSchemaId);
 
 from_json(#{
     <<"id">> := <<"atmStoreNotFound">>,
@@ -2451,7 +2451,7 @@ to_http_code(?ERROR_ATM_STORE_CREATION_FAILED(_, _)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_ATM_STORE_MISSING_REQUIRED_INITIAL_CONTENT) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_ATM_STORE_FROZEN(_)) -> ?HTTP_403_FORBIDDEN;
 to_http_code(?ERROR_ATM_STORE_TYPE_DISALLOWED(_, _)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_ATM_STORE_EMPTY(_)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_ATM_STORE_CONTENT_NOT_SET(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_ATM_STORE_NOT_FOUND(_)) -> ?HTTP_400_BAD_REQUEST;
 
 to_http_code(?ERROR_ATM_WORKFLOW_EMPTY) -> ?HTTP_400_BAD_REQUEST;
