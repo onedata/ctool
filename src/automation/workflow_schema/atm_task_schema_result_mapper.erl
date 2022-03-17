@@ -6,10 +6,10 @@
 %%% @end
 %%%-------------------------------------------------------------------
 %%% @doc
-%%% Record expressing store iterator spec used in automation machinery.
+%%% Base model for task result mapper used in automation machinery.
 %%% @end
 %%%-------------------------------------------------------------------
--module(atm_store_iterator_spec).
+-module(atm_task_schema_result_mapper).
 -author("Lukasz Opiola").
 
 -behaviour(jsonable_record).
@@ -17,26 +17,28 @@
 
 -include("automation/automation.hrl").
 
-%% jsonable_record callbacks
+
+%% Jsonable record callbacks
 -export([to_json/1, from_json/1]).
 
 %% persistent_record callbacks
 -export([version/0, db_encode/2, db_decode/2]).
 
 
--type record() :: #atm_store_iterator_spec{}.
+-type record() :: #atm_task_schema_result_mapper{}.
 -export_type([record/0]).
+
 
 %%%===================================================================
 %%% jsonable_record callbacks
 %%%===================================================================
 
--spec to_json(record()) -> json_utils:json_term().
+-spec to_json(record()) -> json_utils:json_map().
 to_json(Record) ->
     encode_with(Record, fun jsonable_record:to_json/2).
 
 
--spec from_json(json_utils:json_term()) -> record().
+-spec from_json(json_utils:json_map()) -> record().
 from_json(RecordJson) ->
     decode_with(RecordJson, fun jsonable_record:from_json/2).
 
@@ -65,18 +67,24 @@ db_decode(RecordJson, NestedRecordDecoder) ->
 %% @private
 -spec encode_with(record(), persistent_record:nested_record_encoder()) ->
     json_utils:json_term().
-encode_with(Record, _NestedRecordEncoder) ->
+encode_with(Record, NestedRecordEncoder) ->
     #{
-        <<"storeSchemaId">> => Record#atm_store_iterator_spec.store_schema_id,
-        <<"maxBatchSize">> => Record#atm_store_iterator_spec.max_batch_size
+        <<"resultName">> => Record#atm_task_schema_result_mapper.result_name,
+        <<"storeSchemaId">> => Record#atm_task_schema_result_mapper.store_schema_id,
+        <<"storeContentUpdateOptions">> => NestedRecordEncoder(
+            Record#atm_task_schema_result_mapper.store_content_update_options, atm_store_content_update_options
+        )
     }.
 
 
 %% @private
 -spec decode_with(json_utils:json_term(), persistent_record:nested_record_decoder()) ->
     record().
-decode_with(RecordJson, _NestedRecordDecoder) ->
-    #atm_store_iterator_spec{
+decode_with(RecordJson, NestedRecordDecoder) ->
+    #atm_task_schema_result_mapper{
+        result_name = maps:get(<<"resultName">>, RecordJson),
         store_schema_id = maps:get(<<"storeSchemaId">>, RecordJson),
-        max_batch_size = maps:get(<<"maxBatchSize">>, RecordJson)
+        store_content_update_options = NestedRecordDecoder(
+            maps:get(<<"storeContentUpdateOptions">>, RecordJson), atm_store_content_update_options
+        )
     }.

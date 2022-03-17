@@ -6,10 +6,10 @@
 %%% @end
 %%%-------------------------------------------------------------------
 %%% @doc
-%%% Record expressing store iterator spec used in automation machinery.
+%%% Record expressing lane schema used in automation machinery.
 %%% @end
 %%%-------------------------------------------------------------------
--module(atm_store_iterator_spec).
+-module(atm_lane_schema).
 -author("Lukasz Opiola").
 
 -behaviour(jsonable_record).
@@ -24,7 +24,7 @@
 -export([version/0, db_encode/2, db_decode/2]).
 
 
--type record() :: #atm_store_iterator_spec{}.
+-type record() :: #atm_lane_schema{}.
 -export_type([record/0]).
 
 %%%===================================================================
@@ -65,18 +65,24 @@ db_decode(RecordJson, NestedRecordDecoder) ->
 %% @private
 -spec encode_with(record(), persistent_record:nested_record_encoder()) ->
     json_utils:json_term().
-encode_with(Record, _NestedRecordEncoder) ->
+encode_with(Record, NestedRecordEncoder) ->
     #{
-        <<"storeSchemaId">> => Record#atm_store_iterator_spec.store_schema_id,
-        <<"maxBatchSize">> => Record#atm_store_iterator_spec.max_batch_size
+        <<"id">> => Record#atm_lane_schema.id,
+        <<"name">> => Record#atm_lane_schema.name,
+        <<"parallelBoxes">> => [NestedRecordEncoder(M, atm_parallel_box_schema) || M <- Record#atm_lane_schema.parallel_boxes],
+        <<"storeIteratorSpec">> => NestedRecordEncoder(Record#atm_lane_schema.store_iterator_spec, atm_store_iterator_spec),
+        <<"maxRetries">> => Record#atm_lane_schema.max_retries
     }.
 
 
 %% @private
 -spec decode_with(json_utils:json_term(), persistent_record:nested_record_decoder()) ->
     record().
-decode_with(RecordJson, _NestedRecordDecoder) ->
-    #atm_store_iterator_spec{
-        store_schema_id = maps:get(<<"storeSchemaId">>, RecordJson),
-        max_batch_size = maps:get(<<"maxBatchSize">>, RecordJson)
+decode_with(RecordJson, NestedRecordDecoder) ->
+    #atm_lane_schema{
+        id = maps:get(<<"id">>, RecordJson),
+        name = maps:get(<<"name">>, RecordJson),
+        parallel_boxes = [NestedRecordDecoder(M, atm_parallel_box_schema) || M <- maps:get(<<"parallelBoxes">>, RecordJson)],
+        store_iterator_spec = NestedRecordDecoder(maps:get(<<"storeIteratorSpec">>, RecordJson), atm_store_iterator_spec),
+        max_retries = maps:get(<<"maxRetries">>, RecordJson)
     }.

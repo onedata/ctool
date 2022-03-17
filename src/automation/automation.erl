@@ -14,7 +14,6 @@
 -author("Lukasz Opiola").
 
 -include("automation/automation.hrl").
--include("errors.hrl").
 
 %% API
 -export([sanitize_binary/3]).
@@ -39,7 +38,7 @@
 %   user_form        -> Id of a user form that should be manually filled by a user to complete the lambda execution.
 -type lambda_operation_ref() :: binary().
 
--type store_type() :: single_value | list | tree_forest | range | time_series | audit_log.
+-type store_type() :: audit_log | list | range | single_value | time_series | tree_forest.
 
 % Object kept in store and returned when iterating over it.
 -type item() :: json_utils:json_term().
@@ -50,10 +49,14 @@
 % graphical interface concerning incompleteness or deprecation.
 -type lifecycle_state() :: draft | stable | deprecated.
 
+% Indicates if record validation should be performed.
+-type validation_strategy() :: validate | skip_validation.
+
 -export_type([id/0, name/0, summary/0, description/0]).
 -export_type([lambda_operation_ref/0]).
 -export_type([store_type/0, item/0]).
 -export_type([lifecycle_state/0]).
+-export_type([validation_strategy/0]).
 
 %%%===================================================================
 %%% API
@@ -70,26 +73,26 @@ sanitize_binary(Key, _Value, _SizeLimit) ->
 
 
 -spec store_type_to_json(store_type()) -> json_utils:json_term().
-store_type_to_json(single_value) -> <<"singleValue">>;
+store_type_to_json(audit_log) -> <<"auditLog">>;
 store_type_to_json(list) -> <<"list">>;
-store_type_to_json(tree_forest) -> <<"treeForest">>;
 store_type_to_json(range) -> <<"range">>;
+store_type_to_json(single_value) -> <<"singleValue">>;
 store_type_to_json(time_series) -> <<"timeSeries">>;
-store_type_to_json(audit_log) -> <<"auditLog">>.
+store_type_to_json(tree_forest) -> <<"treeForest">>.
 
 
 -spec store_type_from_json(json_utils:json_term()) -> store_type().
-store_type_from_json(<<"singleValue">>) -> single_value;
+store_type_from_json(<<"auditLog">>) -> audit_log;
 store_type_from_json(<<"list">>) -> list;
-store_type_from_json(<<"treeForest">>) -> tree_forest;
 store_type_from_json(<<"range">>) -> range;
+store_type_from_json(<<"singleValue">>) -> single_value;
 store_type_from_json(<<"timeSeries">>) -> time_series;
-store_type_from_json(<<"auditLog">>) -> audit_log.
+store_type_from_json(<<"treeForest">>) -> tree_forest.
 
 
 -spec all_store_types() -> [store_type()].
 all_store_types() ->
-    [single_value, list, tree_forest, range, time_series, audit_log].
+    [audit_log, list, range, single_value, time_series, tree_forest].
 
 
 -spec lifecycle_state_to_json(lifecycle_state()) -> json_utils:json_term().

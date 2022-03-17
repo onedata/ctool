@@ -1,21 +1,23 @@
 %%%-------------------------------------------------------------------
 %%% @author Lukasz Opiola
-%%% @copyright (C) 2021 ACK CYFRONET AGH
+%%% @copyright (C) 2022 ACK CYFRONET AGH
 %%% This software is released under the MIT license
 %%% cited in 'LICENSE.txt'.
 %%% @end
 %%%-------------------------------------------------------------------
 %%% @doc
-%%% Record expressing store schema used in automation machinery.
+%%% Record expressing store content update options specialization for
+%%% time_series store used in automation machinery.
 %%% @end
 %%%-------------------------------------------------------------------
--module(atm_store_schema).
+-module(atm_time_series_store_content_update_options).
 -author("Lukasz Opiola").
 
 -behaviour(jsonable_record).
 -behaviour(persistent_record).
 
 -include("automation/automation.hrl").
+
 
 %% jsonable_record callbacks
 -export([to_json/1, from_json/1]).
@@ -24,11 +26,13 @@
 -export([version/0, db_encode/2, db_decode/2]).
 
 
--type record() :: #atm_store_schema{}.
+-type measurement_time_series_name_matcher() :: binary().
+-export_type([measurement_time_series_name_matcher/0]).
+
+-type record() :: #atm_time_series_store_content_update_options{}.
 -export_type([record/0]).
 
 
-%% @TODO VFS-7687 Limit available data specs for certain store types
 %%%===================================================================
 %%% jsonable_record callbacks
 %%%===================================================================
@@ -67,42 +71,29 @@ db_decode(RecordJson, NestedRecordDecoder) ->
 %% @private
 -spec encode_with(record(), persistent_record:nested_record_encoder()) ->
     json_utils:json_term().
-encode_with(Schema, NestedRecordEncoder) ->
-    Type = Schema#atm_store_schema.type,
+encode_with(Record, NestedRecordEncoder) ->
+    DispatchRules = Record#atm_time_series_store_content_update_options.dispatch_rules,
     #{
-        <<"id">> => Schema#atm_store_schema.id,
-        <<"name">> => Schema#atm_store_schema.name,
-        <<"description">> => Schema#atm_store_schema.description,
-        <<"type">> => automation:store_type_to_json(Type),
-        <<"config">> => atm_store_config:encode(Schema#atm_store_schema.config, Type, NestedRecordEncoder),
-        <<"requiresInitialContent">> => Schema#atm_store_schema.requires_initial_content,
-        <<"defaultInitialContent">> => utils:undefined_to_null(Schema#atm_store_schema.default_initial_content)
+        <<"dispatchRules">> => [NestedRecordEncoder(R, atm_time_series_dispatch_rule) || R <- DispatchRules]
     }.
 
 
 %% @private
 -spec decode_with(automation:validation_strategy(), json_utils:json_term(), persistent_record:nested_record_decoder()) ->
     record().
-decode_with(skip_validation, SchemaJson, NestedRecordDecoder) ->
-    Type = automation:store_type_from_json(maps:get(<<"type">>, SchemaJson)),
-    #atm_store_schema{
-        id = maps:get(<<"id">>, SchemaJson),
-        name = maps:get(<<"name">>, SchemaJson),
-        description = maps:get(<<"description">>, SchemaJson),
-        type = Type,
-        config = atm_store_config:decode(maps:get(<<"config">>, SchemaJson, #{}), Type, NestedRecordDecoder),
-        requires_initial_content = maps:get(<<"requiresInitialContent">>, SchemaJson),
-        default_initial_content = utils:null_to_undefined(maps:get(<<"defaultInitialContent">>, SchemaJson, null))
+decode_with(skip_validation, RecordJson, NestedRecordDecoder) ->
+    EncodedDispatchRules = maps:get(<<"dispatchRules">>, RecordJson),
+    #atm_time_series_store_content_update_options{
+        dispatch_rules = [NestedRecordDecoder(R, atm_time_series_dispatch_rule) || R <- EncodedDispatchRules]
     };
-decode_with(validate, SchemaJson, NestedRecordDecoder) ->
-    Schema = decode_with(skip_validation, SchemaJson, NestedRecordDecoder),
-    % these two stores do not allow initial content to be specified - implicitly adjust corresponding fields
-    case Schema#atm_store_schema.type == time_series orelse Schema#atm_store_schema.type == audit_log of
-        true ->
-            Schema#atm_store_schema{
-                requires_initial_content = false,
-                default_initial_content = undefined
-            };
-        false ->
-            Schema
-    end.
+decode_with(validate, RecordJson, NestedRecordDecoder) ->
+    Spec = decode_with(skip_validation, RecordJson, NestedRecordDecoder),
+    % name matchers in different rules must be unique (there can be at most one rule for each name matcher)
+    lists:foldl(fun(DispatchRule, AlreadyUsedNameMatchers) ->
+        #atm_time_series_dispatch_rule{measurement_ts_name_matcher = NameMatcher} = DispatchRule,
+        ordsets:is_element(NameMatcher, AlreadyUsedNameMatchers) andalso throw(
+            ?ERROR_BAD_DATA(<<"dispatchRules">>, <<"There cannot be two dispatch rules with the same name matcher">>)
+        ),
+        ordsets:add_element(NameMatcher, AlreadyUsedNameMatchers)
+    end, ordsets:new(), Spec#atm_time_series_store_content_update_options.dispatch_rules),
+    Spec.

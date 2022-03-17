@@ -1,21 +1,22 @@
 %%%-------------------------------------------------------------------
 %%% @author Lukasz Opiola
-%%% @copyright (C) 2021 ACK CYFRONET AGH
+%%% @copyright (C) 2022 ACK CYFRONET AGH
 %%% This software is released under the MIT license
 %%% cited in 'LICENSE.txt'.
 %%% @end
 %%%-------------------------------------------------------------------
 %%% @doc
-%%% Record expressing store iterator spec used in automation machinery.
+%%% Record expressing tree forest store config used in automation machinery.
 %%% @end
 %%%-------------------------------------------------------------------
--module(atm_store_iterator_spec).
+-module(atm_tree_forest_store_config).
 -author("Lukasz Opiola").
 
 -behaviour(jsonable_record).
 -behaviour(persistent_record).
 
 -include("automation/automation.hrl").
+
 
 %% jsonable_record callbacks
 -export([to_json/1, from_json/1]).
@@ -24,8 +25,11 @@
 -export([version/0, db_encode/2, db_decode/2]).
 
 
--type record() :: #atm_store_iterator_spec{}.
+-type record() :: #atm_tree_forest_store_config{}.
 -export_type([record/0]).
+
+
+-define(ALLOWED_DATA_TYPES, [atm_file_type, atm_dataset_type]).
 
 %%%===================================================================
 %%% jsonable_record callbacks
@@ -38,7 +42,7 @@ to_json(Record) ->
 
 -spec from_json(json_utils:json_term()) -> record().
 from_json(RecordJson) ->
-    decode_with(RecordJson, fun jsonable_record:from_json/2).
+    decode_with(validate, RecordJson, fun jsonable_record:from_json/2).
 
 %%%===================================================================
 %%% persistent_record callbacks
@@ -56,7 +60,7 @@ db_encode(Record, NestedRecordEncoder) ->
 
 -spec db_decode(json_utils:json_term(), persistent_record:nested_record_decoder()) -> record().
 db_decode(RecordJson, NestedRecordDecoder) ->
-    decode_with(RecordJson, NestedRecordDecoder).
+    decode_with(skip_validation, RecordJson, NestedRecordDecoder).
 
 %%%===================================================================
 %%% Internal functions
@@ -65,18 +69,25 @@ db_decode(RecordJson, NestedRecordDecoder) ->
 %% @private
 -spec encode_with(record(), persistent_record:nested_record_encoder()) ->
     json_utils:json_term().
-encode_with(Record, _NestedRecordEncoder) ->
+encode_with(Record, NestedRecordEncoder) ->
     #{
-        <<"storeSchemaId">> => Record#atm_store_iterator_spec.store_schema_id,
-        <<"maxBatchSize">> => Record#atm_store_iterator_spec.max_batch_size
+        <<"itemDataSpec">> => NestedRecordEncoder(Record#atm_tree_forest_store_config.item_data_spec, atm_data_spec)
     }.
 
 
 %% @private
--spec decode_with(json_utils:json_term(), persistent_record:nested_record_decoder()) ->
+-spec decode_with(automation:validation_strategy(), json_utils:json_term(), persistent_record:nested_record_decoder()) ->
     record().
-decode_with(RecordJson, _NestedRecordDecoder) ->
-    #atm_store_iterator_spec{
-        store_schema_id = maps:get(<<"storeSchemaId">>, RecordJson),
-        max_batch_size = maps:get(<<"maxBatchSize">>, RecordJson)
-    }.
+decode_with(skip_validation, RecordJson, NestedRecordDecoder) ->
+    #atm_tree_forest_store_config{
+        item_data_spec = NestedRecordDecoder(maps:get(<<"itemDataSpec">>, RecordJson), atm_data_spec)
+    };
+decode_with(validate, RecordJson, NestedRecordDecoder) ->
+    Spec = decode_with(skip_validation, RecordJson, NestedRecordDecoder),
+    lists:member(Spec#atm_tree_forest_store_config.item_data_spec#atm_data_spec.type, ?ALLOWED_DATA_TYPES) orelse throw(
+        ?ERROR_BAD_VALUE_NOT_ALLOWED(
+            <<"treeForestStoreConfig.dataSpec.type">>,
+            [atm_data_type:type_to_json(T) || T <- ?ALLOWED_DATA_TYPES]
+        )
+    ),
+    Spec.

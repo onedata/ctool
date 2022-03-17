@@ -6,52 +6,75 @@
 %%% @end
 %%%-------------------------------------------------------------------
 %%% @doc
-%%% This module encapsulates common concepts related to time series  -
-%%% collections of data points (measurements) aggregated within time
+%%% This module encapsulates common concepts related to time series,
+%%% i.e. collections of data points (measurements) aggregated within time
 %%% windows of constant width.
 %%% @end
 %%%-------------------------------------------------------------------
 -module(time_series).
 -author("Lukasz Opiola").
 
--include("time_series/common.hrl").
-
 
 %% API
--export([all_metric_aggregators/0, allowed_metric_resolutions/0]).
+-export([unit_to_json/1, unit_from_json/1]).
 
 
--type time_unit() :: time:seconds().
--export_type([time_unit/0]).
+% expresses time (either a timestamp, or a time interval) in unit common across time series implementation
+-type time_seconds() :: time:seconds().
+-export_type([time_seconds/0]).
 
-% user defined label of the metric that will be used during presentation
--type metric_label() :: binary().
-% width of a single time window
--type metric_resolution() :: time_unit().  % 0 means infinity
-% number of windows to store in the metric (older windows are pruned)
--type metric_retention() :: pos_integer().
-% aggregator function applied when a new measurement is inserted into a time window
--type metric_aggregator() :: sum | max | min | last | first. % | {gather, Max}. % TODO VFS-8164 - extend functions list
--export_type([metric_label/0, metric_resolution/0, metric_retention/0, metric_aggregator/0]).
+%% @formatter:off
+-type unit() :: none
+| milliseconds | seconds
+| bits | bytes
+| hertz | counts_per_sec | bytes_per_sec | operations_per_sec | requests_per_sec
+| reads_per_sec | writes_per_sec | io_operations_per_sec
+| percent | percent_normalized
+| boolean
+| {custom, automation:name()}.
+-export_type([unit/0]).
+%% @formatter:on
+
 
 %%%===================================================================
 %%% API
 %%%===================================================================
 
--spec all_metric_aggregators() -> [metric_aggregator()].
-all_metric_aggregators() -> [
-    sum, max, min, first, last
-].
+-spec unit_to_json(unit()) -> json_utils:json_term().
+unit_to_json(none) -> <<"none">>;
+unit_to_json(milliseconds) -> <<"milliseconds">>;
+unit_to_json(seconds) -> <<"seconds">>;
+unit_to_json(bits) -> <<"bits">>;
+unit_to_json(bytes) -> <<"bytes">>;
+unit_to_json(hertz) -> <<"hertz">>;
+unit_to_json(counts_per_sec) -> <<"countsPerSec">>;
+unit_to_json(bytes_per_sec) -> <<"bytesPerSec">>;
+unit_to_json(operations_per_sec) -> <<"operationsPerSec">>;
+unit_to_json(requests_per_sec) -> <<"requestsPerSec">>;
+unit_to_json(reads_per_sec) -> <<"readsPerSec">>;
+unit_to_json(writes_per_sec) -> <<"writesPerSec">>;
+unit_to_json(io_operations_per_sec) -> <<"ioOperationsPerSec">>;
+unit_to_json(percent) -> <<"percent">>;
+unit_to_json(percent_normalized) -> <<"percentNormalized">>;
+unit_to_json(boolean) -> <<"boolean">>;
+unit_to_json({custom, UnitName}) -> <<"custom:", UnitName/binary>>.
 
 
--spec allowed_metric_resolutions() -> [metric_resolution()].
-allowed_metric_resolutions() -> [
-    ?INFINITY_RESOLUTION,
-    ?FIVE_SECONDS_RESOLUTION,
-    ?MINUTE_RESOLUTION,
-    ?HOUR_RESOLUTION,
-    ?DAY_RESOLUTION,
-    ?WEEK_RESOLUTION,
-    ?MONTH_RESOLUTION,
-    ?YEAR_RESOLUTION
-].
+-spec unit_from_json(json_utils:json_term()) -> unit().
+unit_from_json(<<"none">>) -> none;
+unit_from_json(<<"milliseconds">>) -> milliseconds;
+unit_from_json(<<"seconds">>) -> seconds;
+unit_from_json(<<"bits">>) -> bits;
+unit_from_json(<<"bytes">>) -> bytes;
+unit_from_json(<<"hertz">>) -> hertz;
+unit_from_json(<<"countsPerSec">>) -> counts_per_sec;
+unit_from_json(<<"bytesPerSec">>) -> bytes_per_sec;
+unit_from_json(<<"operationsPerSec">>) -> operations_per_sec;
+unit_from_json(<<"requestsPerSec">>) -> requests_per_sec;
+unit_from_json(<<"readsPerSec">>) -> reads_per_sec;
+unit_from_json(<<"writesPerSec">>) -> writes_per_sec;
+unit_from_json(<<"ioOperationsPerSec">>) -> io_operations_per_sec;
+unit_from_json(<<"percent">>) -> percent;
+unit_from_json(<<"percentNormalized">>) -> percent_normalized;
+unit_from_json(<<"boolean">>) -> boolean;
+unit_from_json(<<"custom:", UnitName/binary>>) -> {custom, UnitName}.

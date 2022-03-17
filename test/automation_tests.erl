@@ -49,7 +49,22 @@ encode_decode_atm_resource_spec_test() ->
 
 
 encode_decode_atm_data_spec_test() ->
-    encode_decode_test_base(atm_test_utils:example_data_specs()).
+    encode_decode_test_base(atm_test_utils:example_data_specs()),
+
+    ExpDuplicateNameMatchersError = ?ERROR_BAD_DATA(
+        <<"valueConstraints.specs">>,
+        <<"There cannot be two measurement specs with the same name matcher">>
+    ),
+    check_error_during_decode_from_json(ExpDuplicateNameMatchersError, atm_data_spec, #atm_data_spec{
+        type = atm_time_series_measurements_type,
+        value_constraints = #{specs => [
+            #atm_time_series_measurements_spec{name_matcher_type = exact, name_matcher = <<"latency">>, unit = milliseconds},
+            #atm_time_series_measurements_spec{name_matcher_type = exact, name_matcher = <<"throughput">>, unit = bytes_per_sec},
+            #atm_time_series_measurements_spec{name_matcher_type = has_prefix, name_matcher = <<"latency">>, unit = milliseconds}
+        ]}
+    }).
+
+
 
 
 encode_decode_operation_spec_test() ->
@@ -97,26 +112,109 @@ encode_decode_store_schema_test() ->
                 default_initial_content = atm_test_utils:example_predefined_value(atm_test_utils:example_data_spec())
             }, atm_store_schema), atm_store_schema)
         )
-    end, [time_series, audit_log]),
+    end, [time_series, audit_log]).
+
+
+encode_decode_store_config_test() ->
+    encode_decode_test_base(atm_test_utils:example_store_configs()),
 
     % tree forest store limits available data types to those compatible with tree models
-    TreeForestStoreExample = atm_test_utils:example_store_schema(tree_forest),
     AllowedDataTypes = [atm_file_type, atm_dataset_type],
-    ExpError = ?ERROR_BAD_VALUE_NOT_ALLOWED(
+    ExpTreeForestCfgError = ?ERROR_BAD_VALUE_NOT_ALLOWED(
         <<"treeForestStoreConfig.dataSpec.type">>,
         [atm_data_type:type_to_json(T) || T <- AllowedDataTypes]
     ),
     lists:foreach(fun(DisallowedDataType) ->
-        check_error_during_decode_from_json(ExpError, TreeForestStoreExample#atm_store_schema{
-            config = #atm_tree_forest_store_config{
-                item_data_spec = atm_test_utils:example_data_spec(DisallowedDataType)
-            }
+        check_error_during_decode_from_json(ExpTreeForestCfgError, #atm_tree_forest_store_config{
+            item_data_spec = atm_test_utils:example_data_spec(DisallowedDataType)
         })
-    end, atm_data_type:all_data_types() -- AllowedDataTypes).
+    end, atm_data_type:all_data_types() -- AllowedDataTypes),
+
+    % time series store must have at least one schema defined
+    check_error_during_decode_from_json(
+        ?ERROR_BAD_VALUE_EMPTY(<<"schemas">>),
+        #atm_time_series_store_config{
+            schemas = []
+        }
+    ),
+
+    % time series store cannot have conflicting name generators
+    MakeSchema = fun(NameGeneratorType, NameGenerator) ->
+        ExampleSchema = atm_test_utils:example_time_series_schema(),
+        ExampleSchema#atm_time_series_schema{
+            name_generator_type = NameGeneratorType,
+            name_generator = NameGenerator
+        }
+    end,
+    SchemasTestCases = [
+        {conflict, [
+            MakeSchema(exact, <<"throughput">>),
+            MakeSchema(add_prefix, <<"count_">>),
+            MakeSchema(exact, <<"throughput">>)
+        ]},
+        {correct, [
+            MakeSchema(exact, <<"throughput">>),
+            MakeSchema(add_prefix, <<"files_">>),
+            MakeSchema(exact, <<"count_mp3">>)
+        ]},
+        {conflict, [
+            MakeSchema(exact, <<"throughput">>),
+            MakeSchema(exact, <<"count_mp3">>),
+            MakeSchema(add_prefix, <<"count_">>)
+        ]},
+        {correct, [
+            MakeSchema(exact, <<"throughput">>),
+            MakeSchema(exact, <<"count/mp3">>),
+            MakeSchema(add_prefix, <<"count_">>)
+        ]},
+        {conflict, [
+            MakeSchema(exact, <<"throughput">>),
+            MakeSchema(add_prefix, <<"files_">>),
+            MakeSchema(add_prefix, <<"files_count_">>)
+        ]},
+        {correct, [
+            MakeSchema(exact, <<"throughput">>),
+            MakeSchema(add_prefix, <<"files_">>),
+            MakeSchema(add_prefix, <<"file_count_">>)
+        ]}
+    ],
+    ExpTimeSeriesCfgError = ?ERROR_BAD_DATA(<<"schemas">>, <<
+        "Provided time series schemas have conflicting name generators; the generators "
+        "cannot have the same values and no 'add_prefix' generator can be a prefix "
+        "of any other generator."
+    >>),
+    lists:foreach(fun
+        ({conflict, ConflictingSchemaSet}) ->
+            check_error_during_decode_from_json(ExpTimeSeriesCfgError, #atm_time_series_store_config{
+                schemas = lists_utils:shuffle(ConflictingSchemaSet)
+            });
+        ({correct, CorrectSchemaSet}) ->
+            encode_decode_test_base(#atm_time_series_store_config{
+                schemas = lists_utils:shuffle(CorrectSchemaSet)
+            })
+    end, SchemasTestCases).
 
 
 encode_decode_store_iterator_spec_test() ->
     encode_decode_test_base(atm_test_utils:example_store_iterator_specs()).
+
+
+encode_decode_store_content_update_options_test() ->
+    encode_decode_test_base(atm_test_utils:example_store_content_update_options_records()),
+
+    ExampleDispatchRules = atm_test_utils:example_time_series_dispatch_rules(),
+
+    ExpError = ?ERROR_BAD_DATA(
+        <<"dispatchRules">>,
+        <<"There cannot be two dispatch rules with the same name matcher">>
+    ),
+    check_error_during_decode_from_json(ExpError, #atm_time_series_store_content_update_options{
+        dispatch_rules = [hd(ExampleDispatchRules) | ExampleDispatchRules]
+    }).
+
+
+encode_decode_time_series_dispatch_rule_test() ->
+    encode_decode_test_base(atm_test_utils:example_time_series_dispatch_rules()).
 
 
 encode_decode_task_argument_mapper_test() ->
@@ -163,52 +261,34 @@ encode_decode_workflow_schema_revision_registry_test() ->
 
 
 encode_decode_time_series_measurements_spec_test() ->
-    [Example | _] = ExampleTimeSeriesMeasurementsSpecs = atm_test_utils:example_time_series_measurements_specs(),
-    encode_decode_test_base(ExampleTimeSeriesMeasurementsSpecs),
-
-    check_error_during_decode_from_json(
-        ?ERROR_BAD_DATA(<<"name">>, <<"The name pattern must contain exacly one wildcard character (*)">>), [
-            Example#atm_time_series_measurements_spec{name_selector = pattern, name = <<"no wildcard char">>},
-            Example#atm_time_series_measurements_spec{name_selector = pattern, name = <<"*more than * one wildcard char">>},
-            Example#atm_time_series_measurements_spec{name_selector = pattern, name = <<"a lot of wildcard chars******">>}
-        ]
-    ).
+    encode_decode_test_base(atm_test_utils:example_time_series_measurements_specs()).
 
 
 encode_decode_time_series_metric_spec_test() ->
-    [Example | _] = ExampleTimeSeriesMetricSpecs = atm_test_utils:example_time_series_metric_specs(),
+    [Example | _] = ExampleTimeSeriesMetricSpecs = atm_test_utils:example_metric_configs(),
     encode_decode_test_base(ExampleTimeSeriesMetricSpecs),
 
     check_error_during_decode_from_json(
-        ?ERROR_BAD_VALUE_NOT_ALLOWED(<<"resolution">>, time_series:allowed_metric_resolutions()),
-        Example#atm_time_series_metric_schema{resolution = 1337}
+        ?ERROR_BAD_VALUE_NOT_ALLOWED(<<"resolution">>, metric_config:allowed_resolutions()),
+        Example#metric_config{resolution = 1337}
     ).
 
 
-encode_decode_time_series_spec_test() ->
-    [Example | _] = ExampleTimeSeriesSpecs = atm_test_utils:example_time_series_specs(),
+encode_decode_time_series_schema_test() ->
+    [Example | _] = ExampleTimeSeriesSpecs = atm_test_utils:example_time_series_schemas(),
     encode_decode_test_base(ExampleTimeSeriesSpecs),
 
     check_error_during_decode_from_json(
-        ?ERROR_BAD_DATA(<<"name">>, <<"The name pattern must contain exacly one wildcard character (*)">>), [
-            Example#atm_time_series_schema{name_selector = pattern, name = <<"no wildcard char">>},
-            Example#atm_time_series_schema{name_selector = pattern, name = <<"more than one* wildcard char*">>},
-            Example#atm_time_series_schema{name_selector = pattern, name = <<"***a lot of ** wildcard chars***">>}
-        ]
+        ?ERROR_BAD_VALUE_EMPTY(<<"metrics">>),
+        Example#atm_time_series_schema{metrics = #{}}
     ),
-    check_error_during_decode_from_json(
-        ?ERROR_BAD_DATA(<<"metrics">>, <<"There cannot be two metrics with the same ID">>),
-        Example#atm_time_series_schema{metrics = [
-            #atm_time_series_metric_schema{id = <<"id1">>, resolution = 3600, retention = 12, aggregator = sum},
-            #atm_time_series_metric_schema{id = <<"id1">>, resolution = 3600, retention = 12, aggregator = min}
-        ]}
-    ),
+
     check_error_during_decode_from_json(
         ?ERROR_BAD_DATA(<<"metrics">>, <<"There cannot be two metrics with the same resolution and aggregator">>),
-        Example#atm_time_series_schema{metrics = [
-            #atm_time_series_metric_schema{id = <<"id1">>, resolution = 3600, retention = 12, aggregator = sum},
-            #atm_time_series_metric_schema{id = <<"id2">>, resolution = 3600, retention = 13, aggregator = sum}
-        ]}
+        Example#atm_time_series_schema{metrics = #{
+            <<"metric1">> => #metric_config{resolution = 3600, retention = 12, aggregator = sum},
+            <<"metric2">> => #metric_config{resolution = 3600, retention = 13, aggregator = sum}
+        }}
     ).
 
 %%%===================================================================
@@ -250,6 +330,8 @@ check_error_during_decode_from_json(ExpError, RecordType, Record) ->
 
 
 %% @private
+encode_decode_test_base(Record) when not is_list(Record) ->
+    encode_decode_test_base([Record]);
 encode_decode_test_base(Records) ->
     lists:foreach(fun(Record) ->
         ?assert(is_equal_after_json_encode_and_decode(Record)),

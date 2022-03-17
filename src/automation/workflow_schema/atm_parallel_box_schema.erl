@@ -6,10 +6,10 @@
 %%% @end
 %%%-------------------------------------------------------------------
 %%% @doc
-%%% Record expressing store iterator spec used in automation machinery.
+%%% Record expressing parallel box schema used in automation machinery.
 %%% @end
 %%%-------------------------------------------------------------------
--module(atm_store_iterator_spec).
+-module(atm_parallel_box_schema).
 -author("Lukasz Opiola").
 
 -behaviour(jsonable_record).
@@ -24,7 +24,7 @@
 -export([version/0, db_encode/2, db_decode/2]).
 
 
--type record() :: #atm_store_iterator_spec{}.
+-type record() :: #atm_parallel_box_schema{}.
 -export_type([record/0]).
 
 %%%===================================================================
@@ -65,18 +65,20 @@ db_decode(RecordJson, NestedRecordDecoder) ->
 %% @private
 -spec encode_with(record(), persistent_record:nested_record_encoder()) ->
     json_utils:json_term().
-encode_with(Record, _NestedRecordEncoder) ->
+encode_with(Record, NestedRecordEncoder) ->
     #{
-        <<"storeSchemaId">> => Record#atm_store_iterator_spec.store_schema_id,
-        <<"maxBatchSize">> => Record#atm_store_iterator_spec.max_batch_size
+        <<"id">> => Record#atm_parallel_box_schema.id,
+        <<"name">> => Record#atm_parallel_box_schema.name,
+        <<"tasks">> => [NestedRecordEncoder(M, atm_task_schema) || M <- Record#atm_parallel_box_schema.tasks]
     }.
 
 
 %% @private
 -spec decode_with(json_utils:json_term(), persistent_record:nested_record_decoder()) ->
     record().
-decode_with(RecordJson, _NestedRecordDecoder) ->
-    #atm_store_iterator_spec{
-        store_schema_id = maps:get(<<"storeSchemaId">>, RecordJson),
-        max_batch_size = maps:get(<<"maxBatchSize">>, RecordJson)
+decode_with(RecordJson, NestedRecordDecoder) ->
+    #atm_parallel_box_schema{
+        id = maps:get(<<"id">>, RecordJson),
+        name = maps:get(<<"name">>, RecordJson),
+        tasks = [NestedRecordDecoder(M, atm_task_schema) || M <- maps:get(<<"tasks">>, RecordJson)]
     }.

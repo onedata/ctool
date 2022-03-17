@@ -6,10 +6,10 @@
 %%% @end
 %%%-------------------------------------------------------------------
 %%% @doc
-%%% Record expressing store iterator spec used in automation machinery.
+%%% Record expressing task argument mapper used in automation machinery.
 %%% @end
 %%%-------------------------------------------------------------------
--module(atm_store_iterator_spec).
+-module(atm_task_schema_argument_mapper).
 -author("Lukasz Opiola").
 
 -behaviour(jsonable_record).
@@ -24,7 +24,7 @@
 -export([version/0, db_encode/2, db_decode/2]).
 
 
--type record() :: #atm_store_iterator_spec{}.
+-type record() :: #atm_task_schema_argument_mapper{}.
 -export_type([record/0]).
 
 %%%===================================================================
@@ -65,18 +65,18 @@ db_decode(RecordJson, NestedRecordDecoder) ->
 %% @private
 -spec encode_with(record(), persistent_record:nested_record_encoder()) ->
     json_utils:json_term().
-encode_with(Record, _NestedRecordEncoder) ->
+encode_with(Record, NestedRecordEncoder) ->
     #{
-        <<"storeSchemaId">> => Record#atm_store_iterator_spec.store_schema_id,
-        <<"maxBatchSize">> => Record#atm_store_iterator_spec.max_batch_size
+        <<"argumentName">> => Record#atm_task_schema_argument_mapper.argument_name,
+        <<"valueBuilder">> => NestedRecordEncoder(Record#atm_task_schema_argument_mapper.value_builder, atm_task_argument_value_builder)
     }.
 
 
 %% @private
 -spec decode_with(json_utils:json_term(), persistent_record:nested_record_decoder()) ->
     record().
-decode_with(RecordJson, _NestedRecordDecoder) ->
-    #atm_store_iterator_spec{
-        store_schema_id = maps:get(<<"storeSchemaId">>, RecordJson),
-        max_batch_size = maps:get(<<"maxBatchSize">>, RecordJson)
+decode_with(RecordJson, NestedRecordDecoder) ->
+    #atm_task_schema_argument_mapper{
+        argument_name = maps:get(<<"argumentName">>, RecordJson),
+        value_builder = NestedRecordDecoder(maps:get(<<"valueBuilder">>, RecordJson), atm_task_argument_value_builder)
     }.

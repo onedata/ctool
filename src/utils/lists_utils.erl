@@ -30,6 +30,7 @@
 -export([shuffle/1, random_element/1, random_sublist/1, random_sublist/3]).
 -export([pmap/2, pforeach/2, pfiltermap/2, pfiltermap/3]).
 -export([foldl_while/3]).
+-export([find/2]).
 -export([searchmap/2]).
 -export([generate/2]).
 
@@ -317,6 +318,19 @@ foldl_while(Fun, InitialAcc, List) ->
 do_foldl_while(_Fun, {halt, Acc}, _) -> Acc;
 do_foldl_while(_Fun, {cont, Acc}, []) -> Acc;
 do_foldl_while(Fun, {cont, Acc}, [Head | Tail]) -> do_foldl_while(Fun, Fun(Head, Acc), Tail).
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Merely a wrapper for @see lists:search/2, but with a saner returned values.
+%% @end
+%%--------------------------------------------------------------------
+-spec find(fun((T) -> boolean()), [T]) -> {ok, T} | error.
+find(Predicate, List) ->
+    case lists:search(Predicate, List) of
+        {value, Result} -> {ok, Result};
+        false -> error
+    end.
 
 
 %%--------------------------------------------------------------------

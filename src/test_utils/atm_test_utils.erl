@@ -29,9 +29,11 @@
 -export([example_data_spec/0, example_data_spec/1, example_data_specs/0]).
 -export([example_predefined_value/1]).
 -export([example_store_schema/0, example_store_schema/1, example_store_schema/3, example_store_schemas/0]).
+-export([example_store_config/1, example_store_configs/0]).
 -export([example_store_iterator_spec/1, example_store_iterator_specs/0]).
 -export([example_argument_mappers/0, example_argument_mappers/2, example_argument_mappers_for_specs/2]).
 -export([example_result_mappers/0, example_result_mappers/2, example_result_mappers_for_specs/2]).
+-export([example_store_content_update_options_records/0, example_time_series_dispatch_rules/0]).
 -export([example_argument_value_builder/0, example_argument_value_builder/1]).
 -export([example_task_schema/2, example_task_schemas/0, example_task_schemas/2]).
 -export([example_parallel_box_schema_with_tasks/1, example_parallel_box_schemas/0]).
@@ -41,8 +43,8 @@
 -export([example_workflow_schema_revisions/0]).
 -export([example_workflow_schema_revision_registries/0]).
 -export([example_time_series_measurements_specs/0]).
--export([example_time_series_metric_specs/0]).
--export([example_time_series_specs/0]).
+-export([example_metric_configs/0]).
+-export([example_time_series_schema/0, example_time_series_schemas/0]).
 -export([example_time_series_units/0]).
 
 -type lambda_registries() :: #{AtmLambdaId :: automation:id() => atm_lambda_revision_registry:record()}.
@@ -249,26 +251,10 @@ example_data_specs_except(DisallowedTypes) ->
     end, atm_data_type:all_data_types() -- DisallowedTypes).
 
 
--spec example_predefined_value(atm_data_spec:record()) -> json_utils:json_term().
-example_predefined_value(#atm_data_spec{type = atm_integer_type}) ->
-    ?RAND_INT(0, 1000);
-example_predefined_value(#atm_data_spec{type = atm_string_type}) ->
-    ?RAND_STR(?RAND_INT(1, 25));
-example_predefined_value(#atm_data_spec{type = atm_object_type}) ->
-    ?RAND_ELEMENT([#{}, #{<<"key">> => 984.222}, #{<<"key">> => #{<<"nested">> => 984.222}}]);
 %% @TODO VFS-7687 Implement all automation data types and validators
-example_predefined_value(#atm_data_spec{type = atm_file_type}) ->
-    #{<<"file_id">> => ?RAND_STR()};
-example_predefined_value(#atm_data_spec{type = atm_time_series_measurements_type}) ->
-    undefined;
-example_predefined_value(#atm_data_spec{type = atm_dataset_type}) ->
-    #{<<"datasetId">> => ?RAND_STR()};
+-spec example_predefined_value(atm_data_spec:record()) -> json_utils:json_term().
 example_predefined_value(#atm_data_spec{type = atm_archive_type}) ->
     #{<<"atm_archive_type">> => <<"value">>};
-example_predefined_value(#atm_data_spec{type = atm_store_credentials_type}) ->
-    undefined;
-example_predefined_value(#atm_data_spec{type = atm_onedatafs_credentials_type}) ->
-    undefined;
 example_predefined_value(#atm_data_spec{type = atm_array_type, value_constraints = #{
     item_data_spec := ItemDataSpec
 }}) ->
@@ -277,7 +263,25 @@ example_predefined_value(#atm_data_spec{type = atm_array_type, value_constraints
             [];
         Value ->
             lists:duplicate(?RAND_INT(0, 20), Value)
-    end.
+    end;
+example_predefined_value(#atm_data_spec{type = atm_dataset_type}) ->
+    #{<<"datasetId">> => ?RAND_STR()};
+example_predefined_value(#atm_data_spec{type = atm_file_type}) ->
+    #{<<"file_id">> => ?RAND_STR()};
+example_predefined_value(#atm_data_spec{type = atm_integer_type}) ->
+    ?RAND_INT(0, 1000);
+example_predefined_value(#atm_data_spec{type = atm_object_type}) ->
+    ?RAND_ELEMENT([#{}, #{<<"key">> => 984.222}, #{<<"key">> => #{<<"nested">> => 984.222}}]);
+example_predefined_value(#atm_data_spec{type = atm_onedatafs_credentials_type}) ->
+    undefined;
+example_predefined_value(#atm_data_spec{type = atm_range_type}) ->
+    #{<<"start">> => ?RAND_INT(0, 10), <<"end">> => ?RAND_INT(10, 20), <<"step">> => ?RAND_INT(0, 5)};
+example_predefined_value(#atm_data_spec{type = atm_string_type}) ->
+    ?RAND_STR(?RAND_INT(1, 25));
+example_predefined_value(#atm_data_spec{type = atm_store_credentials_type}) ->
+    undefined;
+example_predefined_value(#atm_data_spec{type = atm_time_series_measurements_type}) ->
+    undefined.
 
 
 -spec example_store_schema() -> atm_store_schema:record().
@@ -325,9 +329,13 @@ example_store_config(tree_forest) ->
 example_store_config(range) ->
     #atm_range_store_config{};
 example_store_config(time_series) ->
-    #atm_time_series_store_config{schemas = ?RAND_SUBLIST(example_time_series_specs())};
+    #atm_time_series_store_config{schemas = ?RAND_SUBLIST(example_time_series_schemas(), 1, all)};
 example_store_config(audit_log) ->
     #atm_audit_log_store_config{log_content_data_spec = example_data_spec()}.
+
+-spec example_store_configs() -> [atm_store_config:record()].
+example_store_configs() ->
+    lists:map(fun example_store_config/1, automation:all_store_types()).
 
 
 -spec example_store_initial_content(automation:store_type(), atm_store_config:record()) -> json_utils:json_term().
@@ -348,7 +356,7 @@ example_store_initial_content(list, #atm_list_store_config{item_data_spec = Data
 example_store_initial_content(tree_forest, #atm_tree_forest_store_config{item_data_spec = DataSpec}) ->
     example_store_initial_content(list, #atm_list_store_config{item_data_spec = DataSpec});
 example_store_initial_content(range, #atm_range_store_config{}) ->
-    #{<<"start">> => ?RAND_INT(0, 10), <<"end">> => ?RAND_INT(10, 20), <<"step">> => ?RAND_INT(0, 5)};
+    example_predefined_value(#atm_data_spec{type = atm_range_type});
 example_store_initial_content(time_series, #atm_time_series_store_config{}) ->
     undefined;
 example_store_initial_content(audit_log, #atm_audit_log_store_config{}) ->
@@ -433,9 +441,34 @@ example_result_mappers_for_specs(ResultSpecs, StoreSchemaIds) ->
                 ?WORKFLOW_SYSTEM_AUDIT_LOG_STORE_SCHEMA_ID
                 | StoreSchemaIds
             ]),
-            dispatch_function = ?RAND_ELEMENT(atm_task_schema_result_mapper:all_dispatch_functions())
+            store_content_update_options = ?RAND_ELEMENT(example_store_content_update_options_records())
         }
     end, lists_utils:shuffle(ResultSpecs)).
+
+
+-spec example_store_content_update_options_records() -> [atm_store_content_update_options:record()].
+example_store_content_update_options_records() -> [
+    #atm_single_value_store_content_update_options{},
+    #atm_list_store_content_update_options{function = ?RAND_ELEMENT([append, extend])},
+    #atm_tree_forest_store_content_update_options{function = ?RAND_ELEMENT([append, extend])},
+    #atm_range_store_content_update_options{},
+    #atm_time_series_store_content_update_options{
+        dispatch_rules = ?RAND_SUBLIST(example_time_series_dispatch_rules())
+    },
+    #atm_audit_log_store_content_update_options{function = ?RAND_ELEMENT([append, extend])}
+].
+
+
+-spec example_time_series_dispatch_rules() -> [atm_time_series_dispatch_rule:record()].
+example_time_series_dispatch_rules() ->
+    lists_utils:generate(fun(Ordinal) ->
+        #atm_time_series_dispatch_rule{
+            measurement_ts_name_matcher_type = ?RAND_ELEMENT([exact, has_prefix]),
+            measurement_ts_name_matcher = str_utils:format_bin("~B~s", [Ordinal, example_name()]),
+            target_ts_name_generator = example_name(),
+            prefix_combiner = ?RAND_ELEMENT([concatenate, converge, overwrite])
+        }
+    end, 5).
 
 
 -spec example_argument_value_builder() -> atm_task_argument_value_builder:record().
@@ -513,7 +546,7 @@ example_task_schema(AvailableLambdasWithRegistries, StoreSchemaIds) ->
         argument_mappings = example_argument_mappers(AtmLambdaRevision, StoreSchemaIds),
         result_mappings = example_result_mappers(AtmLambdaRevision, StoreSchemaIds),
         resource_spec_override = ?RAND_ELEMENT([undefined, example_resource_spec()]),
-        time_series_schema = ?RAND_ELEMENT([undefined, example_time_series_spec()])
+        time_series_store_config = ?RAND_ELEMENT([undefined, example_store_config(time_series)])
     }.
 
 -spec example_task_schemas() -> [atm_task_schema:record()].
@@ -641,68 +674,65 @@ example_workflow_schema_revision_registries() ->
     end, 5).
 
 
--spec example_time_series_measurements_spec() -> atm_time_series_measurements_spec:record().
-example_time_series_measurements_spec() ->
-    NameSelector = ?RAND_ELEMENT([fixed, pattern]),
+-spec example_time_series_measurements_spec(atm_time_series_names:measurement_ts_name_matcher()) ->
+    atm_time_series_measurements_spec:record().
+example_time_series_measurements_spec(NameMatcher) ->
     #atm_time_series_measurements_spec{
-        name_selector = NameSelector,
-        name = case NameSelector of
-            fixed ->
-                example_name();
-            pattern ->
-                str_utils:format_bin("~s*~s", [
-                    str_utils:rand_hex(?RAND_INT(0, 5)),
-                    str_utils:rand_hex(?RAND_INT(0, 5))
-                ])
-        end,
+        name_matcher_type = ?RAND_ELEMENT([exact, has_prefix]),
+        name_matcher = NameMatcher,
         unit = ?RAND_ELEMENT(example_time_series_units())
     }.
 
 
 -spec example_time_series_measurements_specs() -> [atm_time_series_measurements_spec:record()].
 example_time_series_measurements_specs() ->
-    lists_utils:generate(fun example_time_series_measurements_spec/0, 5).
+    lists_utils:generate(fun(Ordinal) ->
+        example_time_series_measurements_spec(str_utils:format_bin("~B~s", [Ordinal, example_name()]))
+    end, 5).
 
 
--spec example_time_series_metric_specs() -> [atm_time_series_metric_schema:record()].
-example_time_series_metric_specs() ->
+-spec example_metric_configs() -> [metric_config:record()].
+example_metric_configs() ->
     lists:map(fun(Resolution) ->
-        #atm_time_series_metric_schema{
-            id = example_id(),
+        #metric_config{
             resolution = Resolution,
             retention = ?RAND_INT(1, 1000),
-            aggregator = ?RAND_ELEMENT(time_series:all_metric_aggregators())
+            aggregator = ?RAND_ELEMENT(metric_config:all_aggregators())
         }
-    end, time_series:allowed_metric_resolutions()).
+    end, metric_config:allowed_resolutions()).
 
 
--spec example_time_series_spec() -> atm_time_series_schema:record().
-example_time_series_spec() ->
-    example_time_series_spec(example_time_series_measurements_spec()).
+-spec example_time_series_schema() -> atm_time_series_schema:record().
+example_time_series_schema() ->
+    example_time_series_schema(example_name()).
 
-
--spec example_time_series_spec(atm_time_series_measurements_spec:record()) -> atm_time_series_schema:record().
-example_time_series_spec(TimeSeriesMeasurementsSpec) ->
+-spec example_time_series_schema(atm_time_series_names:target_ts_name_generator()) ->
+    atm_time_series_schema:record().
+example_time_series_schema(NameGenerator) ->
     #atm_time_series_schema{
-        name_selector = TimeSeriesMeasurementsSpec#atm_time_series_measurements_spec.name_selector,
-        name = TimeSeriesMeasurementsSpec#atm_time_series_measurements_spec.name,
-        unit = TimeSeriesMeasurementsSpec#atm_time_series_measurements_spec.unit,
-        metrics = ?RAND_SUBLIST(example_time_series_metric_specs(), 1, all)
+        name_generator_type = ?RAND_ELEMENT([exact, add_prefix]),
+        name_generator = NameGenerator,
+        unit = ?RAND_ELEMENT(example_time_series_units()),
+        metrics = maps_utils:generate_from_list(fun(MetricConfig) ->
+            {example_name(), MetricConfig}
+        end, ?RAND_SUBLIST(example_metric_configs(), 1, all))
     }.
 
 
--spec example_time_series_specs() -> [atm_time_series_schema:record()].
-example_time_series_specs() ->
-    lists:map(fun example_time_series_spec/1, example_time_series_measurements_specs()).
+-spec example_time_series_schemas() -> [atm_time_series_schema:record()].
+example_time_series_schemas() ->
+    lists_utils:generate(fun(Ordinal) ->
+        example_time_series_schema(str_utils:format_bin("~B~s", [Ordinal, example_name()]))
+    end, 5).
 
 
--spec example_time_series_units() -> [atm_time_series_attribute:unit()].
+-spec example_time_series_units() -> [time_series:unit()].
 example_time_series_units() -> [
     none,
     milliseconds, seconds,
     bits, bytes,
-    hertz, counts_per_sec, bytes_per_sec, ops_per_sec, requests_per_sec,
-    reads_per_sec, writes_per_sec, io_ops_per_sec,
+    hertz, counts_per_sec, bytes_per_sec, operations_per_sec, requests_per_sec,
+    reads_per_sec, writes_per_sec, io_operations_per_sec,
     percent, percent_normalized,
     boolean,
     {custom, example_name()}
