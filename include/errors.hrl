@@ -133,7 +133,8 @@
 -define(ERROR_BAD_VALUE_DOMAIN, {error, bad_value_domain}).
 -define(ERROR_BAD_VALUE_SUBDOMAIN, {error, bad_value_subdomain}).
 -define(ERROR_BAD_VALUE_CAVEAT(Caveat), {error, {bad_value_caveat, Caveat}}).
--define(ERROR_BAD_VALUE_QOS_PARAMETERS, {error, bad_qos_parameters}).
+-define(ERROR_BAD_VALUE_QOS_PARAMETERS, {error, bad_value_qos_parameters}).
+-define(ERROR_BAD_VALUE_TIME_SERIES_COLLECTION_LAYOUT(MissingLayout), {error, {bad_value_time_series_collection_layout, MissingLayout}}).
 -define(ERROR_BAD_GUI_PACKAGE, {error, bad_gui_package}).
 -define(ERROR_GUI_PACKAGE_TOO_LARGE, {error, gui_package_too_large}).
 -define(ERROR_GUI_PACKAGE_UNVERIFIED(ShaSum), {error, {gui_package_unverified, ShaSum}}).

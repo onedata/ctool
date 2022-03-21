@@ -13,6 +13,7 @@
 -author("Krzysztof Trzepla").
 
 %% API
+-export([is_empty/1]).
 -export([merge/1]).
 -export([remove_undefined/1, undefined_to_null/1]).
 -export([is_submap/2]).
@@ -25,6 +26,11 @@
 %%%===================================================================
 %%% API functions
 %%%===================================================================
+
+-spec is_empty(#{}) -> boolean().
+is_empty(Map) ->
+    maps:size(Map) == 0.
+
 
 %%--------------------------------------------------------------------
 %% @doc

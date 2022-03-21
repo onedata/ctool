@@ -22,6 +22,7 @@
 -export_type([key/0, value/0, terms/0, kvlist/0, kvlist/2]).
 
 %% API
+-export([is_empty/1]).
 -export([hd/1]).
 -export([union/1, union/2, intersect/2, subtract/2]).
 -export([is_subset/2]).
@@ -38,6 +39,11 @@
 %%%===================================================================
 %%% API functions
 %%%===================================================================
+
+-spec is_empty(list()) -> boolean().
+is_empty([]) -> true;
+is_empty(_) -> false.
+
 
 %%--------------------------------------------------------------------
 %% @doc Returns head of the list or 'undefined' if the lists is empty.
