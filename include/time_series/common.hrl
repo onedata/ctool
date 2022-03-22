@@ -16,7 +16,6 @@
 
 % Record expressing configuration of a single metric in a time series
 -record(metric_config, {
-    label = <<>> :: metric_config:label(),
     resolution :: metric_config:resolution(),
     retention :: metric_config:retention(),
     aggregator :: metric_config:aggregator()

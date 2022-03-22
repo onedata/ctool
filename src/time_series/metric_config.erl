@@ -29,15 +29,13 @@
 -export([version/0, db_encode/2, db_decode/2]).
 
 
-% user defined label of the metric that will be used during presentation
--type label() :: binary().
 % width of a single time window
 -type resolution() :: time_series:time_seconds().  % 0 means infinity
 % number of windows to store in the metric (older windows are pruned)
 -type retention() :: pos_integer().
 % aggregator function applied when a new measurement is inserted into a time window
 -type aggregator() :: sum | max | min | last | first. % | {gather, Max}. % TODO VFS-8164 - extend functions list
--export_type([label/0, resolution/0, retention/0, aggregator/0]).
+-export_type([resolution/0, retention/0, aggregator/0]).
 
 -type record() :: #metric_config{}.
 -export_type([record/0]).
@@ -126,7 +124,6 @@ aggregator_from_json(<<"last">>) -> last.
 -spec encode(record()) -> json_utils:json_term().
 encode(Record) ->
     #{
-        <<"label">> => Record#metric_config.label,
         <<"resolution">> => Record#metric_config.resolution,
         <<"retention">> => Record#metric_config.retention,
         <<"aggregator">> => aggregator_to_json(Record#metric_config.aggregator)
@@ -137,7 +134,6 @@ encode(Record) ->
 -spec decode(automation:validation_strategy(), json_utils:json_term()) -> record().
 decode(skip_validation, RecordJson) ->
     #metric_config{
-        label = maps:get(<<"label">>, RecordJson),
         resolution = maps:get(<<"resolution">>, RecordJson),
         retention = maps:get(<<"retention">>, RecordJson),
         aggregator = aggregator_from_json(maps:get(<<"aggregator">>, RecordJson))

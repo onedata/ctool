@@ -243,7 +243,7 @@
     name_generator_type :: atm_time_series_names:target_ts_name_generator_type(),
     name_generator :: atm_time_series_names:target_ts_name_generator(),
     unit :: time_series:unit(),
-    metrics :: #{metric_config:label() => metric_config:record()}  % @TODO VFS-8941 introduce metric name, get rid of labels
+    metrics :: #{automation:name() => metric_config:record()}
 }).
 
 
