@@ -459,7 +459,7 @@ rpc_multicall([ThisNode], Module, Function, Args, infinity) when ThisNode =:= no
     {[catch erlang:apply(Module, Function, Args)], []};
 rpc_multicall(Nodes, Module, Function, Args, Timeout) ->
     ERpcRes = try
-        erpc:multicall(Nodes, Module, Function, Args, Timeout)
+        erpc:multicall(Nodes, Module, Function, Args, Timeout) % @codetag-tracker-ignore
     catch
         error:{erpc, badarg} ->
             error(badarg)
