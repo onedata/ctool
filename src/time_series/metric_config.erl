@@ -19,9 +19,6 @@
 -include("errors.hrl").
 
 
-%% API
--export([all_aggregators/0, allowed_resolutions/0]).
-
 %% Jsonable record callbacks
 -export([to_json/1, from_json/1]).
 
@@ -40,28 +37,6 @@
 -type record() :: #metric_config{}.
 -export_type([record/0]).
 
-
-%%%===================================================================
-%%% API
-%%%===================================================================
-
--spec all_aggregators() -> [aggregator()].
-all_aggregators() -> [
-    sum, max, min, first, last
-].
-
-
--spec allowed_resolutions() -> [resolution()].
-allowed_resolutions() -> [
-    ?INFINITY_RESOLUTION,
-    ?FIVE_SECONDS_RESOLUTION,
-    ?MINUTE_RESOLUTION,
-    ?HOUR_RESOLUTION,
-    ?DAY_RESOLUTION,
-    ?WEEK_RESOLUTION,
-    ?MONTH_RESOLUTION,
-    ?YEAR_RESOLUTION
-].
 
 %%%===================================================================
 %%% jsonable_record callbacks
@@ -140,7 +115,7 @@ decode(skip_validation, RecordJson) ->
     };
 decode(validate, RecordJson) ->
     Spec = decode(skip_validation, RecordJson),
-    lists:member(Spec#metric_config.resolution, metric_config:allowed_resolutions()) orelse throw(
-        ?ERROR_BAD_VALUE_NOT_ALLOWED(<<"resolution">>, metric_config:allowed_resolutions())
+    lists:member(Spec#metric_config.resolution, ?ALLOWED_METRIC_RESOLUTIONS) orelse throw(
+        ?ERROR_BAD_VALUE_NOT_ALLOWED(<<"resolution">>, ?ALLOWED_METRIC_RESOLUTIONS)
     ),
     Spec.

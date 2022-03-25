@@ -10,6 +10,8 @@
 %%%-------------------------------------------------------------------
 -module(str_utils).
 
+-include("validation.hrl").
+
 % Conversion
 -export([to_list/1, to_binary/1]).
 -export([join_as_binaries/2, join_binary/1, join_binary/2,
@@ -25,6 +27,7 @@
 -export([md5_digest/1]).
 -export([rand_hex/1]).
 -export([pad_left/3, pad_right/3]).
+-export([validate_name/1, validate_name/5]).
 
 
 %%%===================================================================
@@ -233,3 +236,39 @@ pad_right(Binary, ExpectedSize, Char) ->
     BytesToFill = max(ExpectedSize - byte_size(Binary), 0),
     Padding = binary:copy(Char, BytesToFill),
     <<Binary/binary, Padding/binary>>.
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Validates a name against universal name format.
+%% @end
+%%--------------------------------------------------------------------
+-spec validate_name(binary()) -> boolean().
+validate_name(Name) ->
+    validate_name(
+        Name, ?NAME_FIRST_CHARS_ALLOWED, ?NAME_MIDDLE_CHARS_ALLOWED,
+        ?NAME_LAST_CHARS_ALLOWED, ?NAME_MAXIMUM_LENGTH
+    ).
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Validates a name against given format.
+%% @end
+%%--------------------------------------------------------------------
+-spec validate_name(Name :: binary(), FirstRgx :: binary(), MiddleRgx :: binary(),
+    LastRgx :: binary(), MaxLength :: non_neg_integer()) -> boolean().
+validate_name(Name, _, _, _, _) when not is_binary(Name) ->
+    false;
+validate_name(Name, FirstRgx, MiddleRgx, LastRgx, MaxLength) ->
+    Regexp = <<
+        "^[", FirstRgx/binary, "][", MiddleRgx/binary,
+        "]{0,", (integer_to_binary(MaxLength - 2))/binary,
+        "}[", LastRgx/binary, "]$"
+    >>,
+    try re:run(Name, Regexp, [{capture, none}, unicode, ucp]) of
+        match -> true;
+        _ -> false
+    catch _:_ ->
+        false
+    end.
