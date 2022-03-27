@@ -458,7 +458,13 @@ rpc_multicall([], _, _, _, _) ->
 rpc_multicall([ThisNode], Module, Function, Args, infinity) when ThisNode =:= node() ->
     {[catch erlang:apply(Module, Function, Args)], []};
 rpc_multicall(Nodes, Module, Function, Args, Timeout) ->
-    rpc:multicall(Nodes, Module, Function, Args, Timeout). % @codetag-tracker-ignore
+    ERpcRes = try
+        erpc:multicall(Nodes, Module, Function, Args, Timeout) % @codetag-tracker-ignore
+    catch
+        error:{erpc, badarg} ->
+            error(badarg)
+    end,
+    rpcmulticallify(Nodes, ERpcRes, [], []).
 
 
 -spec wait_until(fun(() -> boolean())) -> ok | no_return().
@@ -506,3 +512,47 @@ next_time_unit(ms) -> {s, 1000};
 next_time_unit(s) -> {min, 60};
 next_time_unit(min) -> {h, 60};
 next_time_unit(h) -> {undefined, undefiend}.
+
+
+%%%===================================================================
+%%% Functions copied from kernel/rpc.erl to translate erpc errors
+%%% to old rpc format.
+%%%===================================================================
+
+rpcmulticallify([], [], Ok, Err) ->
+    {lists:reverse(Ok), lists:reverse(Err)};
+rpcmulticallify([_N|Ns], [{ok, {'EXIT', _} = Exit}|Rlts], Ok, Err) ->
+    rpcmulticallify(Ns, Rlts, [{badrpc, Exit}|Ok], Err);
+rpcmulticallify([_N|Ns], [{ok, Return}|Rlts], Ok, Err) ->
+    rpcmulticallify(Ns, Rlts, [Return|Ok], Err);
+rpcmulticallify([N|Ns], [{error, {erpc, Reason}}|Rlts], Ok, Err)
+    when Reason == timeout; Reason == noconnection ->
+    rpcmulticallify(Ns, Rlts, Ok, [N|Err]);
+rpcmulticallify([_N|Ns], [{Class, Reason}|Rlts], Ok, Err) ->
+    rpcmulticallify(Ns, Rlts, [rpcify_exception(Class, Reason)|Ok], Err).
+
+
+rpcify_exception(throw, {'EXIT', _} = BadRpc) ->
+    {badrpc, BadRpc};
+rpcify_exception(throw, Return) ->
+    Return;
+rpcify_exception(exit, {exception, Exit}) ->
+    {badrpc, {'EXIT', Exit}};
+rpcify_exception(exit, {signal, Reason}) ->
+    {badrpc, {'EXIT', Reason}};
+rpcify_exception(exit, Reason) ->
+    exit(Reason);
+rpcify_exception(error, {exception, Error, Stack}) ->
+    {badrpc, {'EXIT', {Error, Stack}}};
+rpcify_exception(error, {erpc, badarg}) ->
+    error(badarg);
+rpcify_exception(error, {erpc, noconnection}) ->
+    {badrpc, nodedown};
+rpcify_exception(error, {erpc, timeout}) ->
+    {badrpc, timeout};
+rpcify_exception(error, {erpc, notsup}) ->
+    {badrpc, notsup};
+rpcify_exception(error, {erpc, Error}) ->
+    {badrpc, {'EXIT', Error}};
+rpcify_exception(error, Reason) ->
+    error(Reason).
