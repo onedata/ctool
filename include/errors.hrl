@@ -135,7 +135,7 @@
 -define(ERROR_BAD_VALUE_SUBDOMAIN, {error, bad_value_subdomain}).
 -define(ERROR_BAD_VALUE_CAVEAT(Caveat), {error, {bad_value_caveat, Caveat}}).
 -define(ERROR_BAD_VALUE_QOS_PARAMETERS, {error, bad_value_qos_parameters}).
--define(ERROR_BAD_VALUE_TSC_LAYOUT(MissingLayout), {error, {bad_value_tsc_layout, MissingLayout}}).
+-define(ERROR_TSC_MISSING_LAYOUT(MissingLayout), {error, {tsc_missing_layout, MissingLayout}}).
 -define(ERROR_TSC_TOO_MANY_METRICS(Limit), {error, {tsc_too_many_metrics, Limit}}).
 -define(ERROR_BAD_VALUE_TSC_CONFLICTING_METRIC_CONFIG(TSName, MetricName, ExistingMetricConfig, ConflictingMetricConfig),
     {error, {bad_value_tsc_conflicting_metric_configs, TSName, MetricName, ExistingMetricConfig, ConflictingMetricConfig}}

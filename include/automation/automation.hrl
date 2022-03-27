@@ -243,7 +243,7 @@
     name_generator_type :: atm_time_series_names:target_ts_name_generator_type(),
     name_generator :: atm_time_series_names:target_ts_name_generator(),
     unit :: time_series:unit(),
-    metrics :: #{automation:name() => metric_config:record()}
+    metrics :: time_series:metric_composition()
 }).
 
 

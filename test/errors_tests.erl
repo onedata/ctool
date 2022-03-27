@@ -180,7 +180,7 @@ testcases() -> [
     ?ERROR_BAD_VALUE_SUBDOMAIN,
     ?ERROR_BAD_VALUE_CAVEAT(#{<<"foo">> => <<"bar">>}),
     ?ERROR_BAD_VALUE_QOS_PARAMETERS,
-    ?ERROR_BAD_VALUE_TSC_LAYOUT(#{<<"TS1">> => [<<"M1">>, <<"M2">>]}),
+    ?ERROR_TSC_MISSING_LAYOUT(#{<<"TS1">> => [<<"M1">>, <<"M2">>]}),
     ?ERROR_TSC_TOO_MANY_METRICS(10000),
     ?ERROR_BAD_VALUE_TSC_CONFLICTING_METRIC_CONFIG(
         <<"TS1">>, <<"M1">>,

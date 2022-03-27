@@ -13,7 +13,7 @@
 -author("Lukasz Opiola").
 
 %% API
--export([debug_log/2]).
+-export([debug_log/2, dump/1]).
 
 
 %%%===================================================================
@@ -33,3 +33,8 @@ debug_log(Format, Args) ->
         [FormattedOutput]
     ),
     io:put_chars(<<>>).  % force flush the log to eunit output
+
+
+-spec dump(term()) -> ok.
+dump(Term) ->
+    debug_log("~p", [Term]).

@@ -82,7 +82,7 @@
 | bad_value_name | {bad_value_name, key()}
 | bad_value_domain | bad_value_subdomain
 | {bad_value_caveat, Caveat :: binary() | json_utils:json_map()} | bad_value_qos_parameter
-| {bad_value_tsc_layout, map()} | {tsc_too_many_metrics, pos_integer()}
+| {tsc_missing_layout, map()} | {tsc_too_many_metrics, pos_integer()}
 | {bad_value_tsc_conflicting_metric_configs, binary(), binary(), metric_config:record(), metric_config:record()}
 | bad_gui_package | gui_package_too_large | {gui_package_unverified, onedata:gui_hash()}
 | {invalid_qos_expression, Reason :: binary()}
@@ -792,20 +792,21 @@ to_json(?ERROR_BAD_VALUE_QOS_PARAMETERS) -> #{
     <<"id">> => <<"badValueQoSParameters">>,
     <<"description">> => <<"Provided QoS parameters are invalid.">>
 };
-to_json(?ERROR_BAD_VALUE_TSC_LAYOUT(MissingLayout)) -> #{
-    <<"id">> => <<"badValueTimeSeriesCollectionLayout">>,
+to_json(?ERROR_TSC_MISSING_LAYOUT(MissingLayout)) -> #{
+    <<"id">> => <<"timeSeriesCollectionMissingLayout">>,
     <<"details">> => #{
         <<"missingLayout">> => MissingLayout
     },
     <<"description">> => ?FMT(
-        "The following metrics do not exist in the time series collection: ~s.", [
+        "The request refers to a layout that is not reflected in the time series collection; "
+        "the following part of the layout is missing (time series name -> metric names): ~s.", [
             join_values_with_commas(maps:fold(fun(TimeSeriesName, MetricNames, Acc) ->
-                Acc ++ [<<TimeSeriesName/binary, ".", M/binary>> || M <- MetricNames]
+                Acc ++ [?FMT("~s -> [~s]", [TimeSeriesName, join_values_with_commas(MetricNames)])]
             end, [], MissingLayout))
         ])
 };
 to_json(?ERROR_TSC_TOO_MANY_METRICS(Limit)) -> #{
-    <<"id">> => <<"badValueTimeSeriesCollectionTooManyMetrics">>,
+    <<"id">> => <<"timeSeriesCollectionTooManyMetrics">>,
     <<"details">> => #{
         <<"limit">> => Limit
     },
@@ -1840,10 +1841,10 @@ from_json(#{<<"id">> := <<"badValueCaveat">>, <<"details">> := #{<<"caveat">> :=
 from_json(#{<<"id">> := <<"badValueQoSParameters">>}) ->
     ?ERROR_BAD_VALUE_QOS_PARAMETERS;
 
-from_json(#{<<"id">> := <<"badValueTimeSeriesCollectionLayout">>, <<"details">> := #{<<"missingLayout">> := MissingLayout}}) ->
-    ?ERROR_BAD_VALUE_TSC_LAYOUT(MissingLayout);
+from_json(#{<<"id">> := <<"timeSeriesCollectionMissingLayout">>, <<"details">> := #{<<"missingLayout">> := MissingLayout}}) ->
+    ?ERROR_TSC_MISSING_LAYOUT(MissingLayout);
 
-from_json(#{<<"id">> := <<"badValueTimeSeriesCollectionTooManyMetrics">>, <<"details">> := #{<<"limit">> := Limit}}) ->
+from_json(#{<<"id">> := <<"timeSeriesCollectionTooManyMetrics">>, <<"details">> := #{<<"limit">> := Limit}}) ->
     ?ERROR_TSC_TOO_MANY_METRICS(Limit);
 
 from_json(#{<<"id">> := <<"badValueTimeSeriesCollectionConflictingMetricConfig">>, <<"details">> := #{
@@ -2459,7 +2460,7 @@ to_http_code(?ERROR_BAD_VALUE_DOMAIN) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_BAD_VALUE_SUBDOMAIN) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_BAD_VALUE_CAVEAT(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_BAD_VALUE_QOS_PARAMETERS) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_BAD_VALUE_TSC_LAYOUT(_)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_TSC_MISSING_LAYOUT(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_TSC_TOO_MANY_METRICS(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_BAD_VALUE_TSC_CONFLICTING_METRIC_CONFIG(_, _, _, _)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_BAD_GUI_PACKAGE) -> ?HTTP_400_BAD_REQUEST;
