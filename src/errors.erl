@@ -166,7 +166,8 @@
 | {atm_openfaas_query_failed, Reason :: binary()}
 | atm_openfaas_function_registration_failed
 | {atm_invalid_status_transition, PrevStatus :: atom(), NewStatus :: atom()}
-| dir_stats_disabled_for_space.
+| dir_stats_disabled_for_space
+| dir_stats_not_ready.
 
 -type onepanel() :: {error_on_nodes, error(), Hostnames :: [binary()]}
 | {dns_servers_unreachable, [ip_utils:ip() | default]}
@@ -1411,6 +1412,11 @@ to_json(?ERROR_DIR_STATS_DISABLED_FOR_SPACE) -> #{
     <<"description">> => <<"Directory statistics collection is disabled for this space.">>
 };
 
+to_json(?ERROR_DIR_STATS_NOT_READY) -> #{
+    <<"id">> => <<"dirStatsNotReady">>,
+    <<"description">> => <<"Directory statistics collection is not ready.">>
+};
+
 %%--------------------------------------------------------------------
 %% onepanel errors
 %%--------------------------------------------------------------------
@@ -2235,6 +2241,9 @@ from_json(#{
 from_json(#{<<"id">> := <<"dirStatsDisabledForSpace">>}) ->
     ?ERROR_DIR_STATS_DISABLED_FOR_SPACE;
 
+from_json(#{<<"id">> := <<"dirStatsNotReady">>}) ->
+    ?ERROR_DIR_STATS_NOT_READY;
+
 %%--------------------------------------------------------------------
 %% onepanel errors
 %%--------------------------------------------------------------------
@@ -2490,6 +2499,7 @@ to_http_code(?ERROR_ATM_OPENFAAS_FUNCTION_REGISTRATION_FAILED) -> ?HTTP_400_BAD_
 to_http_code(?ERROR_ATM_INVALID_STATUS_TRANSITION(_, _)) -> ?HTTP_400_BAD_REQUEST;
 
 to_http_code(?ERROR_DIR_STATS_DISABLED_FOR_SPACE) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_DIR_STATS_NOT_READY) -> ?HTTP_400_BAD_REQUEST;
 
 %%--------------------------------------------------------------------
 %% onepanel errors
