@@ -1414,7 +1414,7 @@ to_json(?ERROR_DIR_STATS_DISABLED_FOR_SPACE) -> #{
 
 to_json(?ERROR_DIR_STATS_NOT_READY) -> #{
     <<"id">> => <<"dirStatsNotReady">>,
-    <<"description">> => <<"Directory statistics collection is not ready.">>
+    <<"description">> => <<"Requested directory statistics are not ready yet - calculation is in progress.">>
 };
 
 %%--------------------------------------------------------------------
