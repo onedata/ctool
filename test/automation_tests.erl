@@ -334,40 +334,9 @@ encode_decode_test_base(Record) when not is_list(Record) ->
     encode_decode_test_base([Record]);
 encode_decode_test_base(Records) ->
     lists:foreach(fun(Record) ->
-        ?assert(is_equal_after_json_encode_and_decode(Record)),
-        ?assert(is_equal_after_db_encode_and_decode(Record))
+        ?assert(eunit_utils:is_equal_after_json_encode_and_decode(Record)),
+        ?assert(eunit_utils:is_equal_after_db_encode_and_decode(Record))
     end, Records).
 
-
-%% @private
-is_equal_after_json_encode_and_decode(Record) ->
-    is_equal_after_json_encode_and_decode(Record, utils:record_type(Record)).
-
-is_equal_after_json_encode_and_decode(Record, RecordType) ->
-    case jsonable_record:from_json(jsonable_record:to_json(Record, RecordType), RecordType) of
-        Record ->
-            true;
-        Other ->
-            io:format(user, "Record different after json encode and decode!~nExpected: ~p~nGot:      ~p", [
-                Record, Other
-            ]),
-            false
-    end.
-
-
-%% @private
-is_equal_after_db_encode_and_decode(Record) ->
-    is_equal_after_db_encode_and_decode(Record, utils:record_type(Record)).
-
-is_equal_after_db_encode_and_decode(Record, RecordType) ->
-    case persistent_record:decode(persistent_record:encode(Record, RecordType), RecordType) of
-        Record ->
-            true;
-        Other ->
-            io:format(user, "Record different after DB encode and decode!~nExpected: ~p~nGot:      ~p", [
-                Record, Other
-            ]),
-            false
-    end.
 
 -endif.
