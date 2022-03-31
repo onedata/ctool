@@ -282,6 +282,7 @@ testcases() -> [
     ?ERROR_ATM_INVALID_STATUS_TRANSITION(active, scheduled),
 
     ?ERROR_DIR_STATS_DISABLED_FOR_SPACE,
+    ?ERROR_DIR_STATS_NOT_READY,
 
     %%--------------------------------------------------------------------
     %% onepanel errors

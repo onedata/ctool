@@ -78,7 +78,8 @@ update(MonitoringState) ->
     #node_monitoring_state{
         last_update_timer = LastUpdateTimer,
         cpu_last = CPULast,
-        net_last = NetLast
+        net_last = NetLast,
+        erlang_vm_cpu = VM_CPU
     } = MonitoringState,
 
     % make sure the time difference is not zero in case the update function is
@@ -88,6 +89,10 @@ update(MonitoringState) ->
     {CPUStats, NewCPULast} = get_cpu_stats(CPULast),
     {NetStats, NewNetLast} = get_network_stats(NetLast, TimeDiffSeconds),
     MemStats = get_memory_stats(),
+    NewVM_CPU = case cpu_sup:util() of
+        {error, _} -> VM_CPU;
+        Other -> Other
+    end,
     MonitoringState#node_monitoring_state{
         last_update_timer = stopwatch:start(),
         cpu_stats = CPUStats,
@@ -95,7 +100,7 @@ update(MonitoringState) ->
         mem_stats = MemStats,
         net_stats = NetStats,
         net_last = NewNetLast,
-        erlang_vm_cpu = cpu_sup:util(),
+        erlang_vm_cpu = NewVM_CPU,
         erlang_vm_mem = erlang:memory(),
         erlang_vm_processes_num = length(erlang:processes())}.
 
