@@ -35,7 +35,7 @@
 -export_type([unit/0]).
 %% @formatter:on
 
-% A set of metrics along with their configs, where is metric is identified by name;
+% A set of metrics along with their configs, where each metric is identified by name;
 % an integral part of time series configuration (each time series has a set of metrics,
 % identified by unique names within the time series).
 -type metric_composition() :: #{Name :: binary() => metric_config:record()}.
