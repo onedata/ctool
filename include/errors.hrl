@@ -308,6 +308,7 @@
 ).
 
 -define(ERROR_DIR_STATS_DISABLED_FOR_SPACE, {error, dir_stats_disabled_for_space}).
+-define(ERROR_DIR_STATS_NOT_READY, {error, dir_stats_not_ready}).
 
 
 %%--------------------------------------------------------------------
