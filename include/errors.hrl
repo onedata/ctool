@@ -129,17 +129,22 @@
 -define(ERROR_BAD_VALUE_USERNAME, {error, bad_username}).
 -define(ERROR_BAD_VALUE_PASSWORD, {error, bad_password}).
 -define(ERROR_BAD_VALUE_EMAIL, {error, bad_value_email}).
--define(ERROR_BAD_VALUE_NAME, {error, bad_name}).
+-define(ERROR_BAD_VALUE_NAME, {error, bad_value_name}).
+-define(ERROR_BAD_VALUE_NAME(Key), {error, {bad_value_name, Key}}).
 -define(ERROR_BAD_VALUE_DOMAIN, {error, bad_value_domain}).
 -define(ERROR_BAD_VALUE_SUBDOMAIN, {error, bad_value_subdomain}).
 -define(ERROR_BAD_VALUE_CAVEAT(Caveat), {error, {bad_value_caveat, Caveat}}).
--define(ERROR_BAD_VALUE_QOS_PARAMETERS, {error, bad_qos_parameters}).
+-define(ERROR_BAD_VALUE_QOS_PARAMETERS, {error, bad_value_qos_parameters}).
+-define(ERROR_TSC_MISSING_LAYOUT(MissingLayout), {error, {tsc_missing_layout, MissingLayout}}).
+-define(ERROR_TSC_TOO_MANY_METRICS(Limit), {error, {tsc_too_many_metrics, Limit}}).
+-define(ERROR_BAD_VALUE_TSC_CONFLICTING_METRIC_CONFIG(TSName, MetricName, ExistingMetricConfig, ConflictingMetricConfig),
+    {error, {bad_value_tsc_conflicting_metric_configs, TSName, MetricName, ExistingMetricConfig, ConflictingMetricConfig}}
+).
 -define(ERROR_BAD_GUI_PACKAGE, {error, bad_gui_package}).
 -define(ERROR_GUI_PACKAGE_TOO_LARGE, {error, gui_package_too_large}).
 -define(ERROR_GUI_PACKAGE_UNVERIFIED(ShaSum), {error, {gui_package_unverified, ShaSum}}).
 -define(ERROR_INVALID_QOS_EXPRESSION(Reason), {error, {invalid_qos_expression, Reason}}).
 -define(ERROR_ILLEGAL_SUPPORT_STAGE_TRANSITION(ProviderStage, StorageStage), {error, {illegal_support_stage_transition, ProviderStage, StorageStage}}).
-
 
 %%--------------------------------------------------------------------
 %% oz_worker errors

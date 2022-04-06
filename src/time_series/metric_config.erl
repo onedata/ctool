@@ -19,9 +19,6 @@
 -include("errors.hrl").
 
 
-%% API
--export([all_aggregators/0, allowed_resolutions/0]).
-
 %% Jsonable record callbacks
 -export([to_json/1, from_json/1]).
 
@@ -29,41 +26,17 @@
 -export([version/0, db_encode/2, db_decode/2]).
 
 
-% user defined label of the metric that will be used during presentation
--type label() :: binary().
 % width of a single time window
 -type resolution() :: time_series:time_seconds().  % 0 means infinity
 % number of windows to store in the metric (older windows are pruned)
 -type retention() :: pos_integer().
 % aggregator function applied when a new measurement is inserted into a time window
 -type aggregator() :: sum | max | min | last | first. % | {gather, Max}. % TODO VFS-8164 - extend functions list
--export_type([label/0, resolution/0, retention/0, aggregator/0]).
+-export_type([resolution/0, retention/0, aggregator/0]).
 
 -type record() :: #metric_config{}.
 -export_type([record/0]).
 
-
-%%%===================================================================
-%%% API
-%%%===================================================================
-
--spec all_aggregators() -> [aggregator()].
-all_aggregators() -> [
-    sum, max, min, first, last
-].
-
-
--spec allowed_resolutions() -> [resolution()].
-allowed_resolutions() -> [
-    ?INFINITY_RESOLUTION,
-    ?FIVE_SECONDS_RESOLUTION,
-    ?MINUTE_RESOLUTION,
-    ?HOUR_RESOLUTION,
-    ?DAY_RESOLUTION,
-    ?WEEK_RESOLUTION,
-    ?MONTH_RESOLUTION,
-    ?YEAR_RESOLUTION
-].
 
 %%%===================================================================
 %%% jsonable_record callbacks
@@ -126,7 +99,6 @@ aggregator_from_json(<<"last">>) -> last.
 -spec encode(record()) -> json_utils:json_term().
 encode(Record) ->
     #{
-        <<"label">> => Record#metric_config.label,
         <<"resolution">> => Record#metric_config.resolution,
         <<"retention">> => Record#metric_config.retention,
         <<"aggregator">> => aggregator_to_json(Record#metric_config.aggregator)
@@ -137,14 +109,13 @@ encode(Record) ->
 -spec decode(automation:validation_strategy(), json_utils:json_term()) -> record().
 decode(skip_validation, RecordJson) ->
     #metric_config{
-        label = maps:get(<<"label">>, RecordJson),
         resolution = maps:get(<<"resolution">>, RecordJson),
         retention = maps:get(<<"retention">>, RecordJson),
         aggregator = aggregator_from_json(maps:get(<<"aggregator">>, RecordJson))
     };
 decode(validate, RecordJson) ->
     Spec = decode(skip_validation, RecordJson),
-    lists:member(Spec#metric_config.resolution, metric_config:allowed_resolutions()) orelse throw(
-        ?ERROR_BAD_VALUE_NOT_ALLOWED(<<"resolution">>, metric_config:allowed_resolutions())
+    lists:member(Spec#metric_config.resolution, ?ALLOWED_METRIC_RESOLUTIONS) orelse throw(
+        ?ERROR_BAD_VALUE_NOT_ALLOWED(<<"resolution">>, ?ALLOWED_METRIC_RESOLUTIONS)
     ),
     Spec.

@@ -12,7 +12,10 @@
 -module(str_utils_tests).
 -author("Wojciech Geisler").
 
+-ifdef(TEST).
 -include_lib("eunit/include/eunit.hrl").
+
+-define(TOO_LONG_NAME, <<"very_very_very_looong_name_with_at_least_50_characters">>).
 
 ensure_suffix_test_() ->
     [{Name,
@@ -35,3 +38,33 @@ padding_test() ->
     ?assertEqual(<<"test">>, str_utils:pad_right(<<"test">>, 0, <<"0">>)),
     ?assertEqual(<<"0000test">>, str_utils:pad_left(<<"test">>, 8, <<"0">>)),
     ?assertEqual(<<"test0000">>, str_utils:pad_right(<<"test">>, 8, <<"0">>)).
+
+
+name_validation_test() ->
+    V = fun str_utils:validate_name/1,
+
+    ?assertEqual(false, V(<<"aaa*&:|}{][,a"/utf8>>)),
+    ?assertEqual(false, V(<<"][aaa*&:|}{][,a]["/utf8>>)),
+    ?assertEqual(false, V(<<"A">>)),
+    ?assertEqual(false, V(<<"|group_name">>)),
+    ?assertEqual(false, V(<<"group_name|">>)),
+    ?assertEqual(false, V(<<"-group_name">>)),
+    ?assertEqual(false, V(<<".group_name">>)),
+    ?assertEqual(false, V(<<" group_name">>)),
+    ?assertEqual(false, V(<<"group_name-">>)),
+    ?assertEqual(false, V(<<"group_name.">>)),
+    ?assertEqual(false, V(<<"group_name ">>)),
+    ?assertEqual(false, V(?TOO_LONG_NAME)),
+    ?assertEqual(true, V(<<"AB">>)),
+    ?assertEqual(true, V(<<"_group_name">>)),
+    ?assertEqual(true, V(<<"group_name_">>)),
+    ?assertEqual(true, V(<<"group_name">>)),
+    ?assertEqual(true, V(<<"_group-name_">>)),
+    ?assertEqual(true, V(<<"(group_name)">>)),
+    ?assertEqual(true, V(<<"(group) (name)">>)),
+    ?assertEqual(true, V(<<"group.- _name">>)),
+    ?assertEqual(true, V(<<"My Group Name">>)),
+    ?assertEqual(true, V(<<"µńż_źć-21.3(1)"/utf8>>)).
+
+
+-endif.

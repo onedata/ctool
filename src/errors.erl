@@ -78,10 +78,13 @@
 | {ambiguous_id, key()} | {bad_identifier, key()} | {identifier_occupied, key()}
 | {bad_value_octal, Key :: key()}
 | bad_file_path
-| bad_full_name | bad_username | bad_password | bad_value_email | bad_name
+| bad_full_name | bad_username | bad_password | bad_value_email
+| bad_value_name | {bad_value_name, key()}
 | bad_value_domain | bad_value_subdomain
-| {bad_value_caveat, Caveat :: binary() | json_utils:json_map()} | bad_gui_package
-| gui_package_too_large | {gui_package_unverified, onedata:gui_hash()}
+| {bad_value_caveat, Caveat :: binary() | json_utils:json_map()} | bad_value_qos_parameter
+| {tsc_missing_layout, map()} | {tsc_too_many_metrics, pos_integer()}
+| {bad_value_tsc_conflicting_metric_configs, binary(), binary(), metric_config:record(), metric_config:record()}
+| bad_gui_package | gui_package_too_large | {gui_package_unverified, onedata:gui_hash()}
 | {invalid_qos_expression, Reason :: binary()}
 | {illegal_support_stage_transition, support_stage:provider_support_stage(), support_stage:storage_support_stage()}.
 
@@ -766,6 +769,11 @@ to_json(?ERROR_BAD_VALUE_NAME) -> #{
     <<"id">> => <<"badValueName">>,
     <<"description">> => <<"Bad value: ", (?NAME_REQUIREMENTS_DESCRIPTION)/binary>>
 };
+to_json(?ERROR_BAD_VALUE_NAME(Key)) -> #{
+    <<"id">> => <<"badValueName">>,
+    <<"details">> => #{<<"key">> => Key},
+    <<"description">> => <<"Bad value provided for \"~s\": ", (?NAME_REQUIREMENTS_DESCRIPTION)/binary>>
+};
 to_json(?ERROR_BAD_VALUE_DOMAIN) -> #{
     <<"id">> => <<"badValueDomain">>,
     <<"description">> => <<"Bad value: provided domain is not valid.">>
@@ -784,6 +792,39 @@ to_json(?ERROR_BAD_VALUE_CAVEAT(CaveatJson)) -> #{
 to_json(?ERROR_BAD_VALUE_QOS_PARAMETERS) -> #{
     <<"id">> => <<"badValueQoSParameters">>,
     <<"description">> => <<"Provided QoS parameters are invalid.">>
+};
+to_json(?ERROR_TSC_MISSING_LAYOUT(MissingLayout)) -> #{
+    <<"id">> => <<"timeSeriesCollectionMissingLayout">>,
+    <<"details">> => #{
+        <<"missingLayout">> => MissingLayout
+    },
+    <<"description">> => ?FMT(
+        "The request refers to a layout that is not reflected in the time series collection; "
+        "the following part of the layout is missing (time series name -> metric names): ~s.", [
+            join_values_with_commas(maps:fold(fun(TimeSeriesName, MetricNames, Acc) ->
+                Acc ++ [?FMT("~s -> [~s]", [TimeSeriesName, join_values_with_commas(MetricNames)])]
+            end, [], MissingLayout))
+        ])
+};
+to_json(?ERROR_TSC_TOO_MANY_METRICS(Limit)) -> #{
+    <<"id">> => <<"timeSeriesCollectionTooManyMetrics">>,
+    <<"details">> => #{
+        <<"limit">> => Limit
+    },
+    <<"description">> => ?FMT("The time series collection cannot have more than ~B metrics.", [Limit])
+};
+to_json(?ERROR_BAD_VALUE_TSC_CONFLICTING_METRIC_CONFIG(TSName, MetricName, ExistingMetricConfig, ConflictingMetricConfig)) -> #{
+    <<"id">> => <<"badValueTimeSeriesCollectionConflictingMetricConfig">>,
+    <<"details">> => #{
+        <<"timeSeriesName">> => TSName,
+        <<"metricName">> => MetricName,
+        <<"existingMetricConfig">> => jsonable_record:to_json(ExistingMetricConfig, metric_config),
+        <<"conflictingMetricConfig">> => jsonable_record:to_json(ConflictingMetricConfig, metric_config)
+    },
+    <<"description">> => ?FMT(
+        "Provided metric config for 'time series' ~s and metric '~s' conflicts with existing metric config (see details).", [
+            TSName, MetricName
+        ])
 };
 to_json(?ERROR_BAD_GUI_PACKAGE) -> #{
     <<"id">> => <<"badGuiPackage">>,
@@ -1788,6 +1829,9 @@ from_json(#{<<"id">> := <<"badValuePassword">>}) ->
 from_json(#{<<"id">> := <<"badValueEmail">>}) ->
     ?ERROR_BAD_VALUE_EMAIL;
 
+from_json(#{<<"id">> := <<"badValueName">>, <<"details">> := #{<<"key">> := Key}}) ->
+    ?ERROR_BAD_VALUE_NAME(Key);
+
 from_json(#{<<"id">> := <<"badValueName">>}) ->
     ?ERROR_BAD_VALUE_NAME;
 
@@ -1802,6 +1846,24 @@ from_json(#{<<"id">> := <<"badValueCaveat">>, <<"details">> := #{<<"caveat">> :=
 
 from_json(#{<<"id">> := <<"badValueQoSParameters">>}) ->
     ?ERROR_BAD_VALUE_QOS_PARAMETERS;
+
+from_json(#{<<"id">> := <<"timeSeriesCollectionMissingLayout">>, <<"details">> := #{<<"missingLayout">> := MissingLayout}}) ->
+    ?ERROR_TSC_MISSING_LAYOUT(MissingLayout);
+
+from_json(#{<<"id">> := <<"timeSeriesCollectionTooManyMetrics">>, <<"details">> := #{<<"limit">> := Limit}}) ->
+    ?ERROR_TSC_TOO_MANY_METRICS(Limit);
+
+from_json(#{<<"id">> := <<"badValueTimeSeriesCollectionConflictingMetricConfig">>, <<"details">> := #{
+    <<"timeSeriesName">> := TSName,
+    <<"metricName">> := MetricName,
+    <<"existingMetricConfig">> := ExistingMetricConfig,
+    <<"conflictingMetricConfig">> := ConflictingMetricConfig
+}}) ->
+    ?ERROR_BAD_VALUE_TSC_CONFLICTING_METRIC_CONFIG(
+        TSName, MetricName,
+        jsonable_record:from_json(ExistingMetricConfig, metric_config),
+        jsonable_record:from_json(ConflictingMetricConfig, metric_config)
+    );
 
 from_json(#{<<"id">> := <<"badGuiPackage">>}) ->
     ?ERROR_BAD_GUI_PACKAGE;
@@ -2402,10 +2464,14 @@ to_http_code(?ERROR_BAD_VALUE_USERNAME) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_BAD_VALUE_PASSWORD) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_BAD_VALUE_EMAIL) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_BAD_VALUE_NAME) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_BAD_VALUE_NAME(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_BAD_VALUE_DOMAIN) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_BAD_VALUE_SUBDOMAIN) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_BAD_VALUE_CAVEAT(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_BAD_VALUE_QOS_PARAMETERS) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_TSC_MISSING_LAYOUT(_)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_TSC_TOO_MANY_METRICS(_)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_BAD_VALUE_TSC_CONFLICTING_METRIC_CONFIG(_, _, _, _)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_BAD_GUI_PACKAGE) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_GUI_PACKAGE_TOO_LARGE) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_GUI_PACKAGE_UNVERIFIED(_)) -> ?HTTP_400_BAD_REQUEST;

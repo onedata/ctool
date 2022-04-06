@@ -13,6 +13,7 @@
 
 -ifdef(TEST).
 -include_lib("eunit/include/eunit.hrl").
+-include("time_series/common.hrl").
 -include("graph_sync/gri.hrl").
 -include("errors.hrl").
 -include("aai/aai.hrl").
@@ -174,10 +175,18 @@ testcases() -> [
     ?ERROR_BAD_VALUE_PASSWORD,
     ?ERROR_BAD_VALUE_EMAIL,
     ?ERROR_BAD_VALUE_NAME,
+    ?ERROR_BAD_VALUE_NAME(<<"key">>),
     ?ERROR_BAD_VALUE_DOMAIN,
     ?ERROR_BAD_VALUE_SUBDOMAIN,
     ?ERROR_BAD_VALUE_CAVEAT(#{<<"foo">> => <<"bar">>}),
     ?ERROR_BAD_VALUE_QOS_PARAMETERS,
+    ?ERROR_TSC_MISSING_LAYOUT(#{<<"TS1">> => [<<"M1">>, <<"M2">>]}),
+    ?ERROR_TSC_TOO_MANY_METRICS(10000),
+    ?ERROR_BAD_VALUE_TSC_CONFLICTING_METRIC_CONFIG(
+        <<"TS1">>, <<"M1">>,
+        #metric_config{resolution = 60, retention = 5, aggregator = max},
+        #metric_config{resolution = 3600, retention = 24, aggregator = sum}
+    ),
     ?ERROR_BAD_GUI_PACKAGE,
     ?ERROR_GUI_PACKAGE_TOO_LARGE,
     ?ERROR_GUI_PACKAGE_UNVERIFIED(<<"5f38fb2e288be67bacc9c206e40f28ee42f9bba9c521f5d6036a4217abd146ba">>),

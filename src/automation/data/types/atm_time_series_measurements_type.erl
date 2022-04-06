@@ -45,10 +45,15 @@
 is_instance(Value) when not is_list(Value) ->
     false;
 is_instance(Measurements) ->
-    lists:all(fun(Measurement) ->
-        maps:is_key(<<"tsName">>, Measurement) andalso
-            maps:is_key(<<"timestamp">>, Measurement) andalso
-            maps:is_key(<<"value">>, Measurement)
+    lists:all(fun
+        (#{
+            <<"tsName">> := TsName,
+            <<"timestamp">> := Timestamp,
+            <<"value">> := Value
+        }) when is_binary(TsName), is_integer(Timestamp), is_number(Value) ->
+            true;
+        (_) ->
+            false
     end, Measurements).
 
 

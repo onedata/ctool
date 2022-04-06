@@ -269,7 +269,7 @@ encode_decode_time_series_metric_spec_test() ->
     encode_decode_test_base(ExampleTimeSeriesMetricSpecs),
 
     check_error_during_decode_from_json(
-        ?ERROR_BAD_VALUE_NOT_ALLOWED(<<"resolution">>, metric_config:allowed_resolutions()),
+        ?ERROR_BAD_VALUE_NOT_ALLOWED(<<"resolution">>, ?ALLOWED_METRIC_RESOLUTIONS),
         Example#metric_config{resolution = 1337}
     ).
 

@@ -697,9 +697,9 @@ example_metric_configs() ->
         #metric_config{
             resolution = Resolution,
             retention = ?RAND_INT(1, 1000),
-            aggregator = ?RAND_ELEMENT(metric_config:all_aggregators())
+            aggregator = ?RAND_ELEMENT(?ALLOWED_METRIC_AGGREGATORS)
         }
-    end, metric_config:allowed_resolutions()).
+    end, ?ALLOWED_METRIC_RESOLUTIONS).
 
 
 -spec example_time_series_schema() -> atm_time_series_schema:record().
