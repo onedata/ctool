@@ -99,6 +99,6 @@ decode(RecordJson) ->
             maps:get(<<"targetTimeSeriesNameGenerator">>, RecordJson)
         ),
         prefix_combiner = atm_time_series_names:prefix_combiner_from_json(
-            maps:get(<<"prefixCombiner">>, RecordJson)
+            maps:get(<<"prefixCombiner">>, RecordJson, <<"overwrite">>)
         )
     }.
