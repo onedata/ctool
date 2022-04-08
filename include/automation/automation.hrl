@@ -121,7 +121,9 @@
 }).
 
 -record(atm_time_series_store_config, {
-    schemas :: [atm_time_series_schema:record()]
+    schemas :: [atm_time_series_schema:record()],
+    % @TODO VFS-8948 Implement chart specs record - currently, this is only a pass-through field
+    chart_specs :: list()
 }).
 
 -record(atm_audit_log_store_config, {
