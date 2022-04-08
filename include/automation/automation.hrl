@@ -92,7 +92,8 @@
 % Each function has a list of result specs.
 -record(atm_lambda_result_spec, {
     name :: automation:name(),
-    data_spec :: atm_data_spec:record()
+    data_spec :: atm_data_spec:record(),
+    relay_method :: atm_lambda_result_spec:relay_method()
 }).
 
 -record(atm_store_schema, {
@@ -235,7 +236,7 @@
     registry = #{} :: #{atm_workflow_schema_revision:revision_number() => atm_workflow_schema_revision:record()}
 }).
 
--record(atm_time_series_measurements_spec, {
+-record(atm_time_series_measurement_spec, {
     name_matcher_type :: atm_time_series_names:measurement_ts_name_matcher_type(),
     name_matcher :: atm_time_series_names:measurement_ts_name_matcher(),
     unit :: time_series:unit()

@@ -8,7 +8,7 @@
 %%% @doc
 %%% Module implementing the time series data type used in automation machinery.
 %%%
-%%% Time series measurements data is represented as an array of data points, each specifying
+%%% Time series measurement represents as an input measurement for time series, specifying
 %%% the target time series name, measurement time and measurement value, e.g.:
 %%%    [
 %%%        {tsName: data_transferred, timestamp: 12345, value: 17},
@@ -16,16 +16,16 @@
 %%%        {tsName: video_files, timestamp: 14321, value: 385}
 %%%    ]
 %%%
-%%% The @see atm_time_series_measurements_spec record defining value constraints serves as
-%%% a contract that specifies what data points are expected in the array. If a data point
-%%% that do not match any spec appears, the whole array is considered invalid.
+%%% A list of @see atm_time_series_measurement_spec records defining value constraints
+%%% serve as a contract that specifies what data points are allowed. If a measurement
+%%% does not match any of the specs, it is considered invalid.
 %%%
 %%% The purpose of this data type is to be consumed by a time series store.
 %%% The target time series in the store is selected using the procedure described
 %%% in @see atm_time_series_names.
 %%% @end
 %%%-------------------------------------------------------------------
--module(atm_time_series_measurements_type).
+-module(atm_time_series_measurement_type).
 -author("Lukasz Opiola").
 
 -behaviour(atm_data_type).
@@ -42,25 +42,20 @@
 
 %% @TODO VFS-7687 Implement all automation data types and validators
 -spec is_instance(json_utils:json_term()) -> boolean().
-is_instance(Value) when not is_list(Value) ->
-    false;
-is_instance(Measurements) ->
-    lists:all(fun
-        (#{
-            <<"tsName">> := TsName,
-            <<"timestamp">> := Timestamp,
-            <<"value">> := Value
-        }) when is_binary(TsName), is_integer(Timestamp), is_number(Value) ->
-            true;
-        (_) ->
-            false
-    end, Measurements).
+is_instance(#{
+    <<"tsName">> := TsName,
+    <<"timestamp">> := Timestamp,
+    <<"value">> := Value
+}) when is_binary(TsName), is_integer(Timestamp), is_number(Value) ->
+    true;
+is_instance(_) ->
+    false.
 
 
 -spec encode_value_constraints(atm_data_type:value_constraints(), persistent_record:nested_record_encoder()) ->
     json_utils:json_term().
 encode_value_constraints(#{specs := Specs}, NestedRecordEncoder) ->
-    #{<<"specs">> => [NestedRecordEncoder(S, atm_time_series_measurements_spec) || S <- Specs]}.
+    #{<<"specs">> => [NestedRecordEncoder(S, atm_time_series_measurement_spec) || S <- Specs]}.
 
 
 -spec decode_value_constraints(
@@ -70,10 +65,10 @@ encode_value_constraints(#{specs := Specs}, NestedRecordEncoder) ->
 ) ->
     atm_data_type:value_constraints().
 decode_value_constraints(skip_validation, #{<<"specs">> := SpecsJson}, NestedRecordDecoder) ->
-    #{specs => [NestedRecordDecoder(S, atm_time_series_measurements_spec) || S <- SpecsJson]};
+    #{specs => [NestedRecordDecoder(S, atm_time_series_measurement_spec) || S <- SpecsJson]};
 decode_value_constraints(validate, DataJson, NestedRecordDecoder) ->
     Result = #{specs := Specs} = decode_value_constraints(skip_validation, DataJson, NestedRecordDecoder),
-    lists:foldl(fun(#atm_time_series_measurements_spec{name_matcher = NameMatcher}, AlreadyUsedNameMatchers) ->
+    lists:foldl(fun(#atm_time_series_measurement_spec{name_matcher = NameMatcher}, AlreadyUsedNameMatchers) ->
         ordsets:is_element(NameMatcher, AlreadyUsedNameMatchers) andalso throw(
             ?ERROR_BAD_DATA(
                 <<"valueConstraints.specs">>,
