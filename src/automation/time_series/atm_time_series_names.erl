@@ -123,7 +123,7 @@
 
 -export([find_matching_measurements_spec/2]).
 -export([find_matching_dispatch_rule/2]).
--export([find_referenced_time_series_schema/2]).
+-export([select_referenced_time_series_schema/2]).
 -export([resolve_target_ts_name/3]).
 
 
@@ -248,14 +248,24 @@ find_matching_dispatch_rule(MeasurementTSName, DispatchRules) ->
     end, DispatchRules).
 
 
--spec find_referenced_time_series_schema(atm_time_series_dispatch_rule:record(), [atm_time_series_schema:record()]) ->
-    {ok, atm_time_series_schema:record()} | error.
-find_referenced_time_series_schema(#atm_time_series_dispatch_rule{
+-spec select_referenced_time_series_schema(atm_time_series_dispatch_rule:record(), [atm_time_series_schema:record()]) ->
+    atm_time_series_schema:record() | no_return().
+select_referenced_time_series_schema(#atm_time_series_dispatch_rule{
     target_ts_name_generator = TargetTsNameGenerator
 }, TimeSeriesSchemas) ->
-    lists_utils:find(fun(#atm_time_series_schema{name_generator = NameGenerator}) ->
+    FindResult = lists_utils:find(fun(#atm_time_series_schema{name_generator = NameGenerator}) ->
         TargetTsNameGenerator =:= NameGenerator
-    end, TimeSeriesSchemas).
+    end, TimeSeriesSchemas),
+    case FindResult of
+        {ok, TimeSeriesSchema} ->
+            TimeSeriesSchema;
+        error ->
+            throw(?ERROR_BAD_DATA(<<"dispatchRules">>, str_utils:format_bin(
+                "Time series name generator '~s' specified in one of the dispatch rules "
+                "does not reference any defined time series schema",
+                [TargetTsNameGenerator]
+            )))
+    end.
 
 
 -spec resolve_target_ts_name(
