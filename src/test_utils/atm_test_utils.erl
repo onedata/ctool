@@ -351,7 +351,7 @@ example_store_initial_content(list, #atm_list_store_config{item_data_spec = Data
                     undefined -> false;
                     Value -> {true, Value}
                 end
-            end, lists:seq(1, ?RAND_INT(0, 10))))
+            end, lists:seq(1, ?RAND_INT(0, 7))))
     end;
 example_store_initial_content(tree_forest, #atm_tree_forest_store_config{item_data_spec = DataSpec}) ->
     example_store_initial_content(list, #atm_list_store_config{item_data_spec = DataSpec});
@@ -373,14 +373,14 @@ example_store_iterator_spec(StoreSchemaIds) ->
 
 -spec example_store_iterator_specs() -> [atm_store_iterator_spec:record()].
 example_store_iterator_specs() ->
-    StoreSchemaIds = lists_utils:generate(fun example_id/0, 5),
+    StoreSchemaIds = lists_utils:generate(fun example_id/0, 4),
     lists_utils:generate(fun() -> example_store_iterator_spec(StoreSchemaIds) end, 4).
 
 
 -spec example_argument_mappers() -> [atm_task_schema_argument_mapper:record()].
 example_argument_mappers() ->
     AtmLambdaRevision = example_lambda_revision(),
-    StoreSchemaIds = lists_utils:generate(fun example_id/0, 5),
+    StoreSchemaIds = lists_utils:generate(fun example_id/0, 4),
     example_argument_mappers(AtmLambdaRevision, StoreSchemaIds).
 
 -spec example_argument_mappers(atm_lambda_revision:record(), [automation:id()]) ->
@@ -412,7 +412,7 @@ example_argument_mappers_for_specs(ArgumentSpecs, StoreSchemaIds) ->
 -spec example_result_mappers() -> [atm_task_schema_result_mapper:record()].
 example_result_mappers() ->
     AtmLambdaRevision = example_lambda_revision(),
-    StoreSchemaIds = lists_utils:generate(fun example_id/0, 5),
+    StoreSchemaIds = lists_utils:generate(fun example_id/0, 4),
     example_result_mappers(AtmLambdaRevision, StoreSchemaIds).
 
 -spec example_result_mappers(atm_lambda_revision:record(), [automation:id()]) ->
@@ -473,7 +473,7 @@ example_time_series_dispatch_rules() ->
 
 -spec example_argument_value_builder() -> atm_task_argument_value_builder:record().
 example_argument_value_builder() ->
-    StoreSchemaIds = lists_utils:generate(fun example_id/0, 5),
+    StoreSchemaIds = lists_utils:generate(fun example_id/0, 4),
     example_argument_value_builder(StoreSchemaIds).
 
 -spec example_argument_value_builder([automation:id()]) -> atm_task_argument_value_builder:record().
@@ -511,7 +511,7 @@ example_argument_value_builder(StoreSchemaIds, Depth) ->
         object -> #atm_task_argument_value_builder{
             type = object, recipe = maps_utils:generate(fun() ->
                 {?RAND_STR(), example_argument_value_builder(StoreSchemaIds, Depth + 1)}
-            end, ?RAND_INT(1, 5))
+            end, ?RAND_INT(1, 3))
         };
         store_credentials ->
             #atm_task_argument_value_builder{
@@ -553,8 +553,8 @@ example_task_schema(AvailableLambdasWithRegistries, StoreSchemaIds) ->
 example_task_schemas() ->
     AvailableLambdasWithRegistries = maps_utils:generate(fun() ->
         {example_id(), example_lambda_revision_registry()}
-    end, 7),
-    StoreSchemaIds = lists_utils:generate(fun example_id/0, 7),
+    end, 5),
+    StoreSchemaIds = lists_utils:generate(fun example_id/0, 5),
     example_task_schemas(AvailableLambdasWithRegistries, StoreSchemaIds).
 
 -spec example_task_schemas(lambda_registries(), [automation:id()]) -> [atm_task_schema:record()].
@@ -564,7 +564,7 @@ example_task_schemas(AvailableLambdasWithRegistries, StoreSchemaIds) ->
             maps_utils:random_submap(AvailableLambdasWithRegistries, 1, all),
             ?RAND_SUBLIST(StoreSchemaIds)
         )
-    end, 7).
+    end, 5).
 
 
 -spec example_parallel_box_schema_with_tasks([atm_task_schema:record()]) -> atm_parallel_box_schema:record().
@@ -580,7 +580,7 @@ example_parallel_box_schemas() ->
     ExampleTaskSchemas = example_task_schemas(),
     lists_utils:generate(fun() ->
         example_parallel_box_schema_with_tasks(?RAND_SUBLIST(ExampleTaskSchemas))
-    end, 7).
+    end, 5).
 
 
 -spec example_lane_schema_with_parallel_boxes([atm_parallel_box_schema:record()], [automation:id()]) ->
@@ -597,13 +597,13 @@ example_lane_schema_with_parallel_boxes(ExampleParallelBoxSchemas, StoreSchemaId
 -spec example_lane_schemas() -> [atm_lane_schema:record()].
 example_lane_schemas() ->
     ExampleParallelBoxSchemas = example_parallel_box_schemas(),
-    StoreSchemaIds = lists_utils:generate(fun example_id/0, 7),
+    StoreSchemaIds = lists_utils:generate(fun example_id/0, 5),
     lists_utils:generate(fun() ->
         example_lane_schema_with_parallel_boxes(
             ?RAND_SUBLIST(ExampleParallelBoxSchemas),
             ?RAND_SUBLIST(StoreSchemaIds, 1, all)
         )
-    end, 7).
+    end, 5).
 
 
 -spec example_lambda_revision() -> atm_lambda_revision:record().
@@ -626,7 +626,7 @@ example_lambda_revision() ->
 
 -spec example_lambda_revisions() -> [atm_lambda_revision:record()].
 example_lambda_revisions() ->
-    lists_utils:generate(fun example_lambda_revision/0, 5).
+    lists_utils:generate(fun example_lambda_revision/0, 4).
 
 
 -spec example_lambda_revision_registry() -> atm_lambda_revision_registry:record().
@@ -644,7 +644,7 @@ example_lambda_revision_registry(LambdaRevisions) ->
 -spec example_lambda_revision_registries() -> [atm_lambda_revision_registry:record()].
 example_lambda_revision_registries() ->
     ExampleLambdaRevisions = example_lambda_revisions(),
-    lists_utils:generate(fun() -> example_lambda_revision_registry(ExampleLambdaRevisions) end, 5).
+    lists_utils:generate(fun() -> example_lambda_revision_registry(ExampleLambdaRevisions) end, 4).
 
 
 -spec example_workflow_schema_revisions() -> [atm_workflow_schema_revision:record()].
@@ -658,7 +658,7 @@ example_workflow_schema_revisions() ->
             lanes = ?RAND_SUBLIST(ExampleLaneSchemas),
             state = example_lifecycle_state()
         }
-    end, 5).
+    end, 4).
 
 
 -spec example_workflow_schema_revision_registries() -> [atm_workflow_schema_revision_registry:record()].
@@ -671,7 +671,7 @@ example_workflow_schema_revision_registries() ->
                 {RevisionNumber, WorkflowSchemaRevision}
             end, ?RAND_SUBLIST(ExampleWorkflowSchemaRevisions))
         }
-    end, 5).
+    end, 4).
 
 
 -spec example_time_series_measurements_spec(atm_time_series_names:measurement_ts_name_matcher()) ->

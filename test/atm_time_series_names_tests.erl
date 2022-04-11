@@ -215,8 +215,14 @@ run_testcase(#testcase{
             prefix_combiner = PrefixCombiner
         },
 
-        ?assertEqual({ok, TimeSeriesSchema}, atm_time_series_names:find_referenced_time_series_schema(
+        ?assertEqual(TimeSeriesSchema, atm_time_series_names:select_referenced_time_series_schema(
             TimeSeriesDispatchRule, [TimeSeriesSchema]
+        )),
+        ?assertThrow(?ERROR_BAD_DATA(_, _), atm_time_series_names:select_referenced_time_series_schema(
+            TimeSeriesDispatchRule, []
+        )),
+        ?assertThrow(?ERROR_BAD_DATA(_, _), atm_time_series_names:select_referenced_time_series_schema(
+            TimeSeriesDispatchRule, atm_test_utils:example_time_series_schemas()
         )),
 
         ?assertEqual(ExpectedFinalTsName, atm_time_series_names:resolve_target_ts_name(
