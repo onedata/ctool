@@ -65,8 +65,6 @@ encode_decode_atm_data_spec_test() ->
     }).
 
 
-
-
 encode_decode_operation_spec_test() ->
     encode_decode_test_base(atm_test_utils:example_operation_specs()),
 

@@ -103,7 +103,7 @@ type_to_json(atm_onedatafs_credentials_type) -> <<"onedatafsCredentials">>;
 type_to_json(atm_range_type) -> <<"range">>;
 type_to_json(atm_store_credentials_type) -> <<"storeCredentials">>;
 type_to_json(atm_string_type) -> <<"string">>;
-type_to_json(atm_time_series_measurement_type) -> <<"timeSeriesMeasurements">>.
+type_to_json(atm_time_series_measurement_type) -> <<"timeSeriesMeasurement">>.
 
 
 -spec type_from_json(json_utils:json_term()) -> type().
@@ -117,7 +117,7 @@ type_from_json(<<"onedatafsCredentials">>) -> atm_onedatafs_credentials_type;
 type_from_json(<<"range">>) -> atm_range_type;
 type_from_json(<<"storeCredentials">>) -> atm_store_credentials_type;
 type_from_json(<<"string">>) -> atm_string_type;
-type_from_json(<<"timeSeriesMeasurements">>) -> atm_time_series_measurement_type.
+type_from_json(<<"timeSeriesMeasurement">>) -> atm_time_series_measurement_type.
 
 
 -spec encode_value_constraints(
