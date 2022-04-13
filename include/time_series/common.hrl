@@ -52,4 +52,11 @@
     sum, max, min, first, last
 ]).
 
+% Special placeholders that can be used when requesting operations
+% on a time series collection, to specify that the operation concerns
+% all time series in the collection or all metrics in the time series.
+-define(ALL_TIME_SERIES, <<"*">>).
+-define(ALL_METRICS, <<"*">>).
+-define(COMPLETE_LAYOUT, #{?ALL_TIME_SERIES => [?ALL_METRICS]}).
+
 -endif.

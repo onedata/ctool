@@ -314,7 +314,7 @@
 %%--------------------------------------------------------------------
 %% onepanel errors
 %%--------------------------------------------------------------------
-% error wrapper to indicate nodes where error occured
+% error wrapper to indicate nodes where error occurred
 -define(ERROR_ON_NODES(Error, Hostnames), {error, {error_on_nodes, Error, Hostnames}}).
 -define(ERROR_DNS_SERVERS_UNREACHABLE(UsedServers), {error, {dns_servers_unreachable, UsedServers}}).
 -define(ERROR_FILE_ALLOCATION(ActualSize, TargetSize), {error, {file_allocation, ActualSize, TargetSize}}).
