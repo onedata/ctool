@@ -46,7 +46,7 @@ is_instance(#{
     <<"tsName">> := TsName,
     <<"timestamp">> := Timestamp,
     <<"value">> := Value
-}) when is_binary(TsName), is_integer(Timestamp), is_number(Value) ->
+}) when is_binary(TsName), is_integer(Timestamp), Timestamp >= 0, is_number(Value) ->
     true;
 is_instance(_) ->
     false.

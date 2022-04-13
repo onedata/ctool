@@ -26,8 +26,13 @@
 
 %% @TODO VFS-7687 Implement all automation data types and validators
 -spec is_instance(json_utils:json_term()) -> boolean().
-is_instance(Value) when is_map(Value) -> true;
-is_instance(_Value) -> false.
+is_instance(#{
+    <<"host">> := Host,
+    <<"accessToken">> := AccessToken
+}) when is_binary(Host), is_binary(AccessToken) ->
+    true;
+is_instance(_Value) ->
+    false.
 
 
 -spec encode_value_constraints(atm_data_type:value_constraints(), persistent_record:nested_record_encoder()) ->

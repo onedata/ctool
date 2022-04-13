@@ -26,8 +26,11 @@
 
 %% @TODO VFS-7687 Implement all automation data types and validators
 -spec is_instance(json_utils:json_term()) -> boolean().
-is_instance(#{<<"end">> := _}) -> true;
-is_instance(_Value) -> false.
+is_instance(#{<<"end">> := End} = Range) when is_integer(End) ->
+    % the "end" parameter is required, others are optional
+    is_integer(maps:get(<<"start">>, Range, 0)) andalso is_integer(maps:get(<<"step">>, Range, 1));
+is_instance(_Value) ->
+    false.
 
 
 -spec encode_value_constraints(atm_data_type:value_constraints(), persistent_record:nested_record_encoder()) ->

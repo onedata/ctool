@@ -26,7 +26,7 @@
 
 %% @TODO VFS-7687 Implement all automation data types and validators
 -spec is_instance(json_utils:json_term()) -> boolean().
-is_instance(#{<<"datasetId">> := _}) -> true;
+is_instance(#{<<"datasetId">> := DatasetId}) when is_binary(DatasetId) -> true;
 is_instance(_Value) -> false.
 
 
