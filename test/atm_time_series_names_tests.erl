@@ -88,7 +88,7 @@ find_matching_matcher_test_base(MeasurementTSName, ExpectedResult, MatchersToChe
 
 %% @private
 matcher_to_measurements_spec({NameMatcherType, NameMatcher}) ->
-    #atm_time_series_measurements_spec{
+    #atm_time_series_measurement_spec{
         name_matcher_type = NameMatcherType,
         name_matcher = NameMatcher
     }.

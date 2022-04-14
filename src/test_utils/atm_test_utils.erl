@@ -143,7 +143,7 @@ example_docker_execution_options() ->
 
 -spec example_argument_spec() -> atm_lambda_argument_spec:record().
 example_argument_spec() ->
-    example_argument_spec(example_data_spec_except([atm_time_series_measurements_type])).
+    example_argument_spec(example_data_spec_except([atm_time_series_measurement_type])).
 
 -spec example_argument_spec(atm_data_spec:record()) -> atm_lambda_argument_spec:record().
 example_argument_spec(DataSpec) ->
@@ -161,7 +161,7 @@ example_argument_spec(DataSpec, DefaultValue) ->
 
 -spec example_argument_specs() -> [atm_lambda_argument_spec:record()].
 example_argument_specs() ->
-    lists:map(fun example_argument_spec/1, example_data_specs_except([atm_time_series_measurements_type])).
+    lists:map(fun example_argument_spec/1, example_data_specs_except([atm_time_series_measurement_type])).
 
 
 -spec example_result_spec() -> atm_lambda_result_spec:record().
@@ -172,7 +172,8 @@ example_result_spec() ->
 example_result_spec(DataSpec) ->
     #atm_lambda_result_spec{
         name = example_name(),
-        data_spec = DataSpec
+        data_spec = DataSpec,
+        relay_method = ?RAND_ELEMENT([return_value, file_pipe])
     }.
 
 -spec example_result_specs() -> [atm_lambda_result_spec:record()].
@@ -229,9 +230,9 @@ example_data_spec_except(atm_array_type, DisallowedTypes) ->
         type = atm_array_type,
         value_constraints = #{item_data_spec => example_data_spec_except(DisallowedTypes)}
     };
-example_data_spec_except(atm_time_series_measurements_type, _) ->
+example_data_spec_except(atm_time_series_measurement_type, _) ->
     #atm_data_spec{
-        type = atm_time_series_measurements_type,
+        type = atm_time_series_measurement_type,
         value_constraints = #{specs => ?RAND_SUBLIST(example_time_series_measurements_specs())}
     };
 example_data_spec_except(DataType, _) ->
@@ -280,7 +281,7 @@ example_predefined_value(#atm_data_spec{type = atm_string_type}) ->
     ?RAND_STR(?RAND_INT(1, 25));
 example_predefined_value(#atm_data_spec{type = atm_store_credentials_type}) ->
     undefined;
-example_predefined_value(#atm_data_spec{type = atm_time_series_measurements_type}) ->
+example_predefined_value(#atm_data_spec{type = atm_time_series_measurement_type}) ->
     undefined.
 
 
@@ -329,7 +330,8 @@ example_store_config(tree_forest) ->
 example_store_config(range) ->
     #atm_range_store_config{};
 example_store_config(time_series) ->
-    #atm_time_series_store_config{schemas = ?RAND_SUBLIST(example_time_series_schemas(), 1, all)};
+    % @TODO VFS-8948 Implement chart specs record - currently, this is only a pass-through field
+    #atm_time_series_store_config{schemas = ?RAND_SUBLIST(example_time_series_schemas(), 1, all), chart_specs = []};
 example_store_config(audit_log) ->
     #atm_audit_log_store_config{log_content_data_spec = example_data_spec()}.
 
@@ -675,16 +677,16 @@ example_workflow_schema_revision_registries() ->
 
 
 -spec example_time_series_measurements_spec(atm_time_series_names:measurement_ts_name_matcher()) ->
-    atm_time_series_measurements_spec:record().
+    atm_time_series_measurement_spec:record().
 example_time_series_measurements_spec(NameMatcher) ->
-    #atm_time_series_measurements_spec{
+    #atm_time_series_measurement_spec{
         name_matcher_type = ?RAND_ELEMENT([exact, has_prefix]),
         name_matcher = NameMatcher,
         unit = ?RAND_ELEMENT(example_time_series_units())
     }.
 
 
--spec example_time_series_measurements_specs() -> [atm_time_series_measurements_spec:record()].
+-spec example_time_series_measurements_specs() -> [atm_time_series_measurement_spec:record()].
 example_time_series_measurements_specs() ->
     lists_utils:generate(fun(Ordinal) ->
         example_time_series_measurements_spec(str_utils:format_bin("~B~s", [Ordinal, example_name()]))

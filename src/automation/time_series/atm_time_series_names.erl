@@ -9,20 +9,20 @@
 %%% Helper module encapsulating the logic of time series naming, especially
 %%% mapping of names specified in measurements to names in time series stores.
 %%%
-%%% Time series measurements are expressed using `atm_time_series_measurements_type`,
-%%% which carries an array of measurements. A single measurement looks like the following:
+%%% Time series measurements are expressed using `atm_time_series_measurement_type`,
+%%% which carries a single measurement that looks like the following:
 %%%
 %%%     `{"tsName": "file_mp3", "timestamp": 16416319480, "value": 17}`
 %%%
-%%% It must conform to one of `atm_time_series_measurements_spec` records that serve as
+%%% It must conform to one of `atm_time_series_measurement_spec` records that serve as
 %%% value constraints for the data type and limit the time series names of measurements
 %%% that can be returned from a lambda. Another role of the measurements specs is to
 %%% provide a clear contract so that a lambda user can learn what kind of measurements
 %%% are expected to be produced by the lambda.
 %%%
-%%% Whenever a value of `atm_time_series_measurements_type` is passed (either as a lambda
+%%% Whenever a value of `atm_time_series_measurement_type` is passed (either as a lambda
 %%% argument that was produced by a store iterator, or as a lambda result that is to be
-%%% mapped to a store), it undergoes validation. The list of `atm_time_series_measurements_spec`
+%%% mapped to a store), it undergoes validation. The list of `atm_time_series_measurement_spec`
 %%% specified as value constraints in the data type is analyzed top-down to find a matching
 %%% spec. If there is such spec, validation succeeds. If there is none, it is considered
 %%% as an error during workflow execution.
@@ -38,10 +38,9 @@
 %%% series store where the measurement will be inserted, referencing a concrete
 %%% `atm_time_series_schema`.
 %%%
-%%% Below is an example of time series name mapping process applied when measurements are
-%%% inserted into a store. The process is applied for every entry in the array of
-%%% measurements carried by the `atm_time_series_measurements_type` data object.
-%%% In the example, a measurement with `{"tsName": "file_mp3"}` is processed.
+%%% Below is an example of time series name mapping process applied when a
+%%% measurement is inserted into a store. In the example, a measurement with
+%%% `{"tsName": "file_mp3"}` is processed.
 %%%
 %%%   1.  The list of dispatch rules in `atm_time_series_content_update_options` is
 %%%       analyzed top-down to find a matching rule.
@@ -56,9 +55,9 @@
 %%%               prefix_combiner = converge
 %%%           }
 %%%       NOTE: The dispatch rules reuse the `name_matcher_type` and `name_matcher` fields
-%%%       of `atm_time_series_measurements_spec`. In case of lambda result mapping, the
+%%%       of `atm_time_series_measurement_spec`. In case of lambda result mapping, the
 %%%       values of these fields in a dispatch rule are validated against
-%%%       `atm_time_series_measurements_spec` records specified in the lambda's result
+%%%       `atm_time_series_measurement_spec` records specified in the lambda's result
 %%%       type constraints, making sure that the matcher has a chance of matching an actual
 %%%       time series name produced by a lambda. When using the store update API, the name matcher
 %%%       in the dispatch rules can be arbitrary, as there is no input data contract in this
@@ -127,8 +126,8 @@
 -export([resolve_target_ts_name/3]).
 
 
-% Name of a time series assigned to a single entry in the array of measurements represented
-% by atm_time_series_measurements_type data type.
+% Name of a time series assigned to a single measurement represented
+% by atm_time_series_measurement_type data type.
 -type measurement_ts_name() :: binary().
 -export_type([measurement_ts_name/0]).
 
@@ -226,10 +225,10 @@ prefix_combiner_from_json(<<"converge">>) -> converge;
 prefix_combiner_from_json(<<"overwrite">>) -> overwrite.
 
 
--spec find_matching_measurements_spec(measurement_ts_name(), [atm_time_series_measurements_spec:record()]) ->
-    {ok, atm_time_series_measurements_spec:record()} | error.
+-spec find_matching_measurements_spec(measurement_ts_name(), [atm_time_series_measurement_spec:record()]) ->
+    {ok, atm_time_series_measurement_spec:record()} | error.
 find_matching_measurements_spec(MeasurementTSName, TimeSeriesMeasurementsSpecs) ->
-    lists_utils:find(fun(#atm_time_series_measurements_spec{
+    lists_utils:find(fun(#atm_time_series_measurement_spec{
         name_matcher_type = NameMatcherType,
         name_matcher = NameMatcher
     }) ->

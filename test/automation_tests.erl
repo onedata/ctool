@@ -56,15 +56,13 @@ encode_decode_atm_data_spec_test() ->
         <<"There cannot be two measurement specs with the same name matcher">>
     ),
     check_error_during_decode_from_json(ExpDuplicateNameMatchersError, atm_data_spec, #atm_data_spec{
-        type = atm_time_series_measurements_type,
+        type = atm_time_series_measurement_type,
         value_constraints = #{specs => [
-            #atm_time_series_measurements_spec{name_matcher_type = exact, name_matcher = <<"latency">>, unit = milliseconds},
-            #atm_time_series_measurements_spec{name_matcher_type = exact, name_matcher = <<"throughput">>, unit = bytes_per_sec},
-            #atm_time_series_measurements_spec{name_matcher_type = has_prefix, name_matcher = <<"latency">>, unit = milliseconds}
+            #atm_time_series_measurement_spec{name_matcher_type = exact, name_matcher = <<"latency">>, unit = milliseconds},
+            #atm_time_series_measurement_spec{name_matcher_type = exact, name_matcher = <<"throughput">>, unit = bytes_per_sec},
+            #atm_time_series_measurement_spec{name_matcher_type = has_prefix, name_matcher = <<"latency">>, unit = milliseconds}
         ]}
     }).
-
-
 
 
 encode_decode_operation_spec_test() ->
@@ -134,7 +132,9 @@ encode_decode_store_config_test() ->
     check_error_during_decode_from_json(
         ?ERROR_BAD_VALUE_EMPTY(<<"schemas">>),
         #atm_time_series_store_config{
-            schemas = []
+            schemas = [],
+            % @TODO VFS-8948 Implement chart specs record - currently, this is only a pass-through field
+            chart_specs = []
         }
     ),
 
@@ -186,11 +186,15 @@ encode_decode_store_config_test() ->
     lists:foreach(fun
         ({conflict, ConflictingSchemaSet}) ->
             check_error_during_decode_from_json(ExpTimeSeriesCfgError, #atm_time_series_store_config{
-                schemas = lists_utils:shuffle(ConflictingSchemaSet)
+                schemas = lists_utils:shuffle(ConflictingSchemaSet),
+                % @TODO VFS-8948 Implement chart specs record - currently, this is only a pass-through field
+                chart_specs = []
             });
         ({correct, CorrectSchemaSet}) ->
             encode_decode_test_base(#atm_time_series_store_config{
-                schemas = lists_utils:shuffle(CorrectSchemaSet)
+                schemas = lists_utils:shuffle(CorrectSchemaSet),
+                % @TODO VFS-8948 Implement chart specs record - currently, this is only a pass-through field
+                chart_specs = []
             })
     end, SchemasTestCases).
 

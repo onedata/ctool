@@ -6,12 +6,12 @@
 %%% @end
 %%%-------------------------------------------------------------------
 %%% @doc
-%%% Record expressing time series measurements specification used in automation machinery.
+%%% Record expressing time series measurement specification used in automation machinery.
 %%%
-%%% This record is used as value constraints of the @see atm_time_series_measurements_type.
+%%% This record is used as value constraints of the @see atm_time_series_measurement_type.
 %%% @end
 %%%-------------------------------------------------------------------
--module(atm_time_series_measurements_spec).
+-module(atm_time_series_measurement_spec).
 -author("Lukasz Opiola").
 
 -behaviour(jsonable_record).
@@ -26,7 +26,7 @@
 %% persistent_record callbacks
 -export([version/0, db_encode/2, db_decode/2]).
 
--type record() :: #atm_time_series_measurements_spec{}.
+-type record() :: #atm_time_series_measurement_spec{}.
 -export_type([record/0]).
 
 %%%===================================================================
@@ -69,13 +69,13 @@ db_decode(RecordJson, _NestedRecordDecoder) ->
 encode(Record) ->
     #{
         <<"nameMatcherType">> => atm_time_series_names:measurement_ts_name_matcher_type_to_json(
-            Record#atm_time_series_measurements_spec.name_matcher_type
+            Record#atm_time_series_measurement_spec.name_matcher_type
         ),
         <<"nameMatcher">> => atm_time_series_names:measurement_ts_name_matcher_to_json(
-            Record#atm_time_series_measurements_spec.name_matcher
+            Record#atm_time_series_measurement_spec.name_matcher
         ),
         <<"unit">> => time_series:unit_to_json(
-            Record#atm_time_series_measurements_spec.unit
+            Record#atm_time_series_measurement_spec.unit
         )
     }.
 
@@ -83,7 +83,7 @@ encode(Record) ->
 %% @private
 -spec decode(json_utils:json_term()) -> record().
 decode(RecordJson) ->
-    #atm_time_series_measurements_spec{
+    #atm_time_series_measurement_spec{
         name_matcher_type = atm_time_series_names:measurement_ts_name_matcher_type_from_json(
             maps:get(<<"nameMatcherType">>, RecordJson)
         ),
