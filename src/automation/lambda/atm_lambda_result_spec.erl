@@ -58,7 +58,7 @@ to_json(Record) ->
 
 -spec from_json(json_utils:json_term()) -> record().
 from_json(RecordJson) ->
-    decode_with(RecordJson, fun jsonable_record:from_json/2).
+    decode_with(validate, RecordJson, fun jsonable_record:from_json/2).
 
 %%%===================================================================
 %%% persistent_record callbacks
@@ -76,7 +76,7 @@ db_encode(Record, NestedRecordEncoder) ->
 
 -spec db_decode(json_utils:json_term(), persistent_record:nested_record_decoder()) -> record().
 db_decode(RecordJson, NestedRecordDecoder) ->
-    decode_with(RecordJson, NestedRecordDecoder).
+    decode_with(skip_validation, RecordJson, NestedRecordDecoder).
 
 %%%===================================================================
 %%% Internal functions
@@ -94,14 +94,18 @@ encode_with(Record, NestedRecordEncoder) ->
 
 
 %% @private
--spec decode_with(json_utils:json_term(), persistent_record:nested_record_decoder()) ->
+-spec decode_with(automation:validation_strategy(), json_utils:json_term(), persistent_record:nested_record_decoder()) ->
     record().
-decode_with(RecordJson, NestedRecordDecoder) ->
+decode_with(skip_validation, RecordJson, NestedRecordDecoder) ->
     #atm_lambda_result_spec{
         name = maps:get(<<"name">>, RecordJson),
         data_spec = NestedRecordDecoder(maps:get(<<"dataSpec">>, RecordJson), atm_data_spec),
         relay_method = relay_method_from_json(maps:get(<<"relayMethod">>, RecordJson, <<"returnValue">>))
-    }.
+    };
+decode_with(validate, RecordJson, NestedRecordDecoder) ->
+    #atm_lambda_result_spec{name = Name} = ResultSpec = decode_with(skip_validation, RecordJson, NestedRecordDecoder),
+    str_utils:validate_name(Name) orelse throw(?ERROR_BAD_VALUE_NAME(<<"resultSpec.name">>)),
+    ResultSpec.
 
 
 %% @private

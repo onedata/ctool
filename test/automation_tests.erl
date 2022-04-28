@@ -87,11 +87,23 @@ encode_decode_docker_execution_options_test() ->
 
 
 encode_decode_lambda_argument_spec_test() ->
-    encode_decode_test_base(atm_test_utils:example_argument_specs()).
+    [Example | _ ] = ExampleArgumentSpecs = atm_test_utils:example_argument_specs(),
+    encode_decode_test_base(ExampleArgumentSpecs),
+
+    check_error_during_decode_from_json(
+        ?ERROR_BAD_VALUE_NAME(<<"argumentSpec.name">>),
+        Example#atm_lambda_argument_spec{name = <<"*@#$^!R!*!^$@!@(">>}
+    ).
 
 
 encode_decode_lambda_result_spec_test() ->
-    encode_decode_test_base(atm_test_utils:example_result_specs()).
+    [Example | _ ] = ExampleResultSpecs = atm_test_utils:example_result_specs(),
+    encode_decode_test_base(ExampleResultSpecs),
+
+    check_error_during_decode_from_json(
+        ?ERROR_BAD_VALUE_NAME(<<"resultSpec.name">>),
+        Example#atm_lambda_result_spec{name = <<"><<>:.,{:<.',.;,'.;">>}
+    ).
 
 
 encode_decode_store_schema_test() ->
@@ -204,17 +216,7 @@ encode_decode_store_iterator_spec_test() ->
 
 
 encode_decode_store_content_update_options_test() ->
-    encode_decode_test_base(atm_test_utils:example_store_content_update_options_records()),
-
-    ExampleDispatchRules = atm_test_utils:example_time_series_dispatch_rules(),
-
-    ExpError = ?ERROR_BAD_DATA(
-        <<"dispatchRules">>,
-        <<"There cannot be two dispatch rules with the same name matcher">>
-    ),
-    check_error_during_decode_from_json(ExpError, #atm_time_series_store_content_update_options{
-        dispatch_rules = [hd(ExampleDispatchRules) | ExampleDispatchRules]
-    }).
+    encode_decode_test_base(atm_test_utils:example_store_content_update_options_records()).
 
 
 encode_decode_time_series_dispatch_rule_test() ->
@@ -264,8 +266,8 @@ encode_decode_workflow_schema_revision_registry_test() ->
     encode_decode_test_base(atm_test_utils:example_workflow_schema_revision_registries()).
 
 
-encode_decode_time_series_measurements_spec_test() ->
-    encode_decode_test_base(atm_test_utils:example_time_series_measurements_specs()).
+encode_decode_time_series_measurement_spec_test() ->
+    encode_decode_test_base(atm_test_utils:example_time_series_measurement_specs()).
 
 
 encode_decode_time_series_metric_spec_test() ->

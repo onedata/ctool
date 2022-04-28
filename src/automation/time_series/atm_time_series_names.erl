@@ -43,11 +43,14 @@
 %%% `{"tsName": "file_mp3"}` is processed.
 %%%
 %%%   1.  The list of dispatch rules in `atm_time_series_content_update_options` is
-%%%       analyzed top-down to find a matching rule.
+%%%       analyzed top-down to find matching rules - there can be more than one matching
+%%%       rule, in such case the measurement will be effectively duplicated and inserted
+%%%       into multiple target time series.
 %%%   2a. If no such rule is found, the measurement is discarded (the task creator
 %%%       may freely choose which measurements should be taken into account).
-%%%   2b. The first matching rule is taken. In this example, assume that the following
-%%%       dispatch rule has been found:
+%%%   2b. All matching rules are applied one by one for the processed measurement
+%%%       (steps 3 to 5 are repeated for each rule).
+%%%   3.  In this example, assume that the following dispatch rule is being applied:
 %%%           #atm_time_series_dispatch_rule{
 %%%               measurement_time_series_name_matcher_type = has_prefix,
 %%%               measurement_time_series_name_matcher = <<"file_">>,
@@ -64,7 +67,7 @@
 %%%       context. In both scenarios, the `target_time_series_name_generator` field must
 %%%       reference `atm_time_series_schema` that exists in the store schema, by specifying
 %%%       the field `name_generator` with the same value.
-%%%   3.  The `atm_time_series_schema` that specifies `<<"file_count_">>` `name_generator` from
+%%%   4.  The `atm_time_series_schema` that specifies `<<"file_count_">>` `name_generator` from
 %%%       the target time series store is taken. In this example, assume that the following
 %%%       schema has been used:
 %%%           #atm_time_series_schema{
@@ -72,7 +75,7 @@
 %%%               name_generator = <<"file_count_">>,
 %%%               ...
 %%%           }
-%%%   4.  Now, the two records from above examples are considered so as to determine the final
+%%%   5.  Now, the two records from above examples are considered so as to determine the final
 %%%       time series name that will receive the measurement:
 %%%           * `atm_time_series_dispatch_rule`
 %%%           * `atm_time_series_schema`
@@ -120,8 +123,8 @@
 -export([target_ts_name_generator_to_json/1, target_ts_name_generator_from_json/1]).
 -export([prefix_combiner_to_json/1, prefix_combiner_from_json/1]).
 
--export([find_matching_measurements_spec/2]).
--export([find_matching_dispatch_rule/2]).
+-export([find_matching_measurement_spec/2]).
+-export([find_matching_dispatch_rules/2]).
 -export([select_referenced_time_series_schema/2]).
 -export([resolve_target_ts_name/3]).
 
@@ -225,21 +228,21 @@ prefix_combiner_from_json(<<"converge">>) -> converge;
 prefix_combiner_from_json(<<"overwrite">>) -> overwrite.
 
 
--spec find_matching_measurements_spec(measurement_ts_name(), [atm_time_series_measurement_spec:record()]) ->
+-spec find_matching_measurement_spec(measurement_ts_name(), [atm_time_series_measurement_spec:record()]) ->
     {ok, atm_time_series_measurement_spec:record()} | error.
-find_matching_measurements_spec(MeasurementTSName, TimeSeriesMeasurementsSpecs) ->
+find_matching_measurement_spec(MeasurementTSName, TimeSeriesMeasurementSpecs) ->
     lists_utils:find(fun(#atm_time_series_measurement_spec{
         name_matcher_type = NameMatcherType,
         name_matcher = NameMatcher
     }) ->
         ts_name_matches(MeasurementTSName, NameMatcherType, NameMatcher)
-    end, TimeSeriesMeasurementsSpecs).
+    end, TimeSeriesMeasurementSpecs).
 
 
--spec find_matching_dispatch_rule(measurement_ts_name(), [atm_time_series_dispatch_rule:record()]) ->
-    {ok, atm_time_series_dispatch_rule:record()} | error.
-find_matching_dispatch_rule(MeasurementTSName, DispatchRules) ->
-    lists_utils:find(fun(#atm_time_series_dispatch_rule{
+-spec find_matching_dispatch_rules(measurement_ts_name(), [atm_time_series_dispatch_rule:record()]) ->
+    [atm_time_series_dispatch_rule:record()].
+find_matching_dispatch_rules(MeasurementTSName, DispatchRules) ->
+    lists:filter(fun(#atm_time_series_dispatch_rule{
         measurement_ts_name_matcher_type = NameMatcherType,
         measurement_ts_name_matcher = NameMatcher
     }) ->

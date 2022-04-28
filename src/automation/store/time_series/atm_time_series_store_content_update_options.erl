@@ -44,7 +44,7 @@ to_json(Record) ->
 
 -spec from_json(json_utils:json_term()) -> record().
 from_json(RecordJson) ->
-    decode_with(validate, RecordJson, fun jsonable_record:from_json/2).
+    decode_with(RecordJson, fun jsonable_record:from_json/2).
 
 %%%===================================================================
 %%% persistent_record callbacks
@@ -62,7 +62,7 @@ db_encode(Record, NestedRecordEncoder) ->
 
 -spec db_decode(json_utils:json_term(), persistent_record:nested_record_decoder()) -> record().
 db_decode(RecordJson, NestedRecordDecoder) ->
-    decode_with(skip_validation, RecordJson, NestedRecordDecoder).
+    decode_with(RecordJson, NestedRecordDecoder).
 
 %%%===================================================================
 %%% Internal functions
@@ -79,21 +79,10 @@ encode_with(Record, NestedRecordEncoder) ->
 
 
 %% @private
--spec decode_with(automation:validation_strategy(), json_utils:json_term(), persistent_record:nested_record_decoder()) ->
+-spec decode_with(json_utils:json_term(), persistent_record:nested_record_decoder()) ->
     record().
-decode_with(skip_validation, RecordJson, NestedRecordDecoder) ->
+decode_with(RecordJson, NestedRecordDecoder) ->
     EncodedDispatchRules = maps:get(<<"dispatchRules">>, RecordJson),
     #atm_time_series_store_content_update_options{
         dispatch_rules = [NestedRecordDecoder(R, atm_time_series_dispatch_rule) || R <- EncodedDispatchRules]
-    };
-decode_with(validate, RecordJson, NestedRecordDecoder) ->
-    Spec = decode_with(skip_validation, RecordJson, NestedRecordDecoder),
-    % name matchers in different rules must be unique (there can be at most one rule for each name matcher)
-    lists:foldl(fun(DispatchRule, AlreadyUsedNameMatchers) ->
-        #atm_time_series_dispatch_rule{measurement_ts_name_matcher = NameMatcher} = DispatchRule,
-        ordsets:is_element(NameMatcher, AlreadyUsedNameMatchers) andalso throw(
-            ?ERROR_BAD_DATA(<<"dispatchRules">>, <<"There cannot be two dispatch rules with the same name matcher">>)
-        ),
-        ordsets:add_element(NameMatcher, AlreadyUsedNameMatchers)
-    end, ordsets:new(), Spec#atm_time_series_store_content_update_options.dispatch_rules),
-    Spec.
+    }.
