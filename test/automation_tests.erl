@@ -87,11 +87,23 @@ encode_decode_docker_execution_options_test() ->
 
 
 encode_decode_lambda_argument_spec_test() ->
-    encode_decode_test_base(atm_test_utils:example_argument_specs()).
+    [Example | _ ] = ExampleArgumentSpecs = atm_test_utils:example_argument_specs(),
+    encode_decode_test_base(ExampleArgumentSpecs),
+
+    check_error_during_decode_from_json(
+        ?ERROR_BAD_VALUE_NAME(<<"argumentSpec.name">>),
+        Example#atm_lambda_argument_spec{name = <<"*@#$^!R!*!^$@!@(">>}
+    ).
 
 
 encode_decode_lambda_result_spec_test() ->
-    encode_decode_test_base(atm_test_utils:example_result_specs()).
+    [Example | _ ] = ExampleResultSpecs = atm_test_utils:example_result_specs(),
+    encode_decode_test_base(ExampleResultSpecs),
+
+    check_error_during_decode_from_json(
+        ?ERROR_BAD_VALUE_NAME(<<"resultSpec.name">>),
+        Example#atm_lambda_result_spec{name = <<"><<>:.,{:<.',.;,'.;">>}
+    ).
 
 
 encode_decode_store_schema_test() ->
