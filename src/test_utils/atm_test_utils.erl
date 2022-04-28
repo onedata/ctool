@@ -42,7 +42,7 @@
 -export([example_lambda_revision_registry/0, example_lambda_revision_registry/1, example_lambda_revision_registries/0]).
 -export([example_workflow_schema_revisions/0]).
 -export([example_workflow_schema_revision_registries/0]).
--export([example_time_series_measurements_specs/0]).
+-export([example_time_series_measurement_specs/0]).
 -export([example_metric_configs/0]).
 -export([example_time_series_schema/0, example_time_series_schemas/0]).
 -export([example_time_series_units/0]).
@@ -233,7 +233,7 @@ example_data_spec_except(atm_array_type, DisallowedTypes) ->
 example_data_spec_except(atm_time_series_measurement_type, _) ->
     #atm_data_spec{
         type = atm_time_series_measurement_type,
-        value_constraints = #{specs => ?RAND_SUBLIST(example_time_series_measurements_specs())}
+        value_constraints = #{specs => ?RAND_SUBLIST(example_time_series_measurement_specs())}
     };
 example_data_spec_except(DataType, _) ->
     #atm_data_spec{
@@ -676,9 +676,9 @@ example_workflow_schema_revision_registries() ->
     end, 4).
 
 
--spec example_time_series_measurements_spec(atm_time_series_names:measurement_ts_name_matcher()) ->
+-spec example_time_series_measurement_spec(atm_time_series_names:measurement_ts_name_matcher()) ->
     atm_time_series_measurement_spec:record().
-example_time_series_measurements_spec(NameMatcher) ->
+example_time_series_measurement_spec(NameMatcher) ->
     #atm_time_series_measurement_spec{
         name_matcher_type = ?RAND_ELEMENT([exact, has_prefix]),
         name_matcher = NameMatcher,
@@ -686,10 +686,10 @@ example_time_series_measurements_spec(NameMatcher) ->
     }.
 
 
--spec example_time_series_measurements_specs() -> [atm_time_series_measurement_spec:record()].
-example_time_series_measurements_specs() ->
+-spec example_time_series_measurement_specs() -> [atm_time_series_measurement_spec:record()].
+example_time_series_measurement_specs() ->
     lists_utils:generate(fun(Ordinal) ->
-        example_time_series_measurements_spec(str_utils:format_bin("~B~s", [Ordinal, example_name()]))
+        example_time_series_measurement_spec(str_utils:format_bin("~B~s", [Ordinal, example_name()]))
     end, 5).
 
 

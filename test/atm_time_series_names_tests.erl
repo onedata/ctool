@@ -17,6 +17,9 @@
 -include_lib("eunit/include/eunit.hrl").
 -include("automation/automation.hrl").
 
+%%%===================================================================
+%%% find_matching_matcher_test
+%%%===================================================================
 
 find_matching_matcher_test() ->
     MeasurementTSName = <<"file_count_mp3">>,
@@ -58,48 +61,62 @@ find_matching_matcher_test() ->
 
 %% @private
 find_matching_matcher_test_base(MeasurementTSName, ExpectedResult, MatchersToCheck) ->
-    FindMeasurementsSpecExpectedResult = case ExpectedResult of
+    FindMeasurementSpecExpectedResult = case ExpectedResult of
         error ->
             error;
         {ok, Matcher1} ->
-            {ok, matcher_to_measurements_spec(Matcher1)}
+            {ok, matcher_to_measurement_spec(Matcher1)}
     end,
     ?assertEqual(
-        FindMeasurementsSpecExpectedResult,
-        atm_time_series_names:find_matching_measurements_spec(
+        FindMeasurementSpecExpectedResult,
+        atm_time_series_names:find_matching_measurement_spec(
             MeasurementTSName,
-            [matcher_to_measurements_spec(M) || M <- MatchersToCheck]
-        )
-    ),
-
-    FindDispatchRuleExpectedResult = case ExpectedResult of
-        error ->
-            error;
-        {ok, Matcher2} ->
-            {ok, matcher_to_dispatch_rule(Matcher2)}
-    end,
-    ?assertEqual(
-        FindDispatchRuleExpectedResult,
-        atm_time_series_names:find_matching_dispatch_rule(
-            MeasurementTSName,
-            [matcher_to_dispatch_rule(M) || M <- MatchersToCheck]
+            [matcher_to_measurement_spec(M) || M <- MatchersToCheck]
         )
     ).
 
 %% @private
-matcher_to_measurements_spec({NameMatcherType, NameMatcher}) ->
+matcher_to_measurement_spec({NameMatcherType, NameMatcher}) ->
     #atm_time_series_measurement_spec{
         name_matcher_type = NameMatcherType,
         name_matcher = NameMatcher
     }.
 
-%% @private
-matcher_to_dispatch_rule({NameMatcherType, NameMatcher}) ->
-    #atm_time_series_dispatch_rule{
-        measurement_ts_name_matcher_type = NameMatcherType,
-        measurement_ts_name_matcher = NameMatcher
-    }.
+%%%===================================================================
+%%% find_matching_dispatch_rules_test
+%%%===================================================================
 
+find_matching_dispatch_rules_test() ->
+    BadAlpha = #atm_time_series_dispatch_rule{
+        measurement_ts_name_matcher_type = exact,
+        measurement_ts_name_matcher = <<"file_count_avi">>
+    },
+    BadBeta = #atm_time_series_dispatch_rule{
+        measurement_ts_name_matcher_type = has_prefix,
+        measurement_ts_name_matcher = <<"count_">>
+    },
+    GoodGamma = #atm_time_series_dispatch_rule{
+        measurement_ts_name_matcher_type = has_prefix,
+        measurement_ts_name_matcher = <<"file_">>
+    },
+    GoodDelta = #atm_time_series_dispatch_rule{
+        measurement_ts_name_matcher_type = exact,
+        measurement_ts_name_matcher = <<"file_count_mp3">>
+    },
+    GoodKappa = #atm_time_series_dispatch_rule{
+        measurement_ts_name_matcher_type = has_prefix,
+        measurement_ts_name_matcher = <<"file_count_">>
+    },
+    ?assertEqual([], atm_time_series_names:find_matching_dispatch_rules(
+        <<"file_count_mp3">>, [BadAlpha, BadBeta]
+    )),
+    ?assertEqual([GoodKappa, GoodGamma, GoodDelta, GoodGamma], atm_time_series_names:find_matching_dispatch_rules(
+        <<"file_count_mp3">>, [BadBeta, GoodKappa, BadBeta, BadAlpha, GoodGamma, GoodDelta, GoodGamma, BadAlpha]
+    )).
+
+%%%===================================================================
+%%% resolve_target_ts_name_test
+%%%===================================================================
 
 -record(testcase, {
     measurement_ts_name :: atm_time_series_names:measurement_ts_name(),
@@ -195,7 +212,7 @@ resolve_target_ts_name_test() ->
         expected_final_ts_name = <<"count_mp3">>
     }).
 
-
+%% @private
 run_testcase(#testcase{
     measurement_ts_name = MeasurementTsName,
     measurement_ts_name_matcher = {MeasurementTsNameMatcherType, MeasurementTsNameMatcher},
