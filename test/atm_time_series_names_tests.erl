@@ -87,31 +87,43 @@ matcher_to_measurement_spec({NameMatcherType, NameMatcher}) ->
 %%%===================================================================
 
 find_matching_dispatch_rules_test() ->
-    BadAlpha = #atm_time_series_dispatch_rule{
+    NonmatchingAlpha = #atm_time_series_dispatch_rule{
         measurement_ts_name_matcher_type = exact,
         measurement_ts_name_matcher = <<"file_count_avi">>
     },
-    BadBeta = #atm_time_series_dispatch_rule{
+    NonmatchingBeta = #atm_time_series_dispatch_rule{
         measurement_ts_name_matcher_type = has_prefix,
         measurement_ts_name_matcher = <<"count_">>
     },
-    GoodGamma = #atm_time_series_dispatch_rule{
+    MatchingGamma = #atm_time_series_dispatch_rule{
         measurement_ts_name_matcher_type = has_prefix,
         measurement_ts_name_matcher = <<"file_">>
     },
-    GoodDelta = #atm_time_series_dispatch_rule{
+    MatchingDelta = #atm_time_series_dispatch_rule{
         measurement_ts_name_matcher_type = exact,
         measurement_ts_name_matcher = <<"file_count_mp3">>
     },
-    GoodKappa = #atm_time_series_dispatch_rule{
+    MatchingKappa = #atm_time_series_dispatch_rule{
         measurement_ts_name_matcher_type = has_prefix,
         measurement_ts_name_matcher = <<"file_count_">>
     },
     ?assertEqual([], atm_time_series_names:find_matching_dispatch_rules(
-        <<"file_count_mp3">>, [BadAlpha, BadBeta]
+        <<"file_count_mp3">>, [
+            NonmatchingAlpha,
+            NonmatchingBeta
+        ]
     )),
-    ?assertEqual([GoodKappa, GoodGamma, GoodDelta, GoodGamma], atm_time_series_names:find_matching_dispatch_rules(
-        <<"file_count_mp3">>, [BadBeta, GoodKappa, BadBeta, BadAlpha, GoodGamma, GoodDelta, GoodGamma, BadAlpha]
+    ?assertEqual([MatchingKappa, MatchingGamma, MatchingDelta, MatchingGamma], atm_time_series_names:find_matching_dispatch_rules(
+        <<"file_count_mp3">>, [
+            NonmatchingBeta,
+            MatchingKappa,
+            NonmatchingBeta,
+            NonmatchingAlpha,
+            MatchingGamma,
+            MatchingDelta,
+            MatchingGamma,
+            NonmatchingAlpha
+        ]
     )).
 
 %%%===================================================================
