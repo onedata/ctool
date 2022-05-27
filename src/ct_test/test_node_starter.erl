@@ -529,7 +529,11 @@ run_env_up_script(ProjectRoot, AppmockRoot, CmRoot, LogsDir, DescriptionFile) ->
             echo \"\\n---------------------------------------------\\n\"
             if [ \"$EXIT_CODE\" -eq 124 ]; then
                 echo \"ERROR: interrupted environment preparation due to timeout\\n\"
+                echo \"\\n---------------------------------------------\\n\"
             fi
+            echo \"STDERR:\\n\"
+            cat prepare_test_environment_error.log
+            echo \"\\n---------------------------------------------\\n\"
             echo \"Result of the docker ps command:\\n\"
             docker ps -a
             echo \"\"
