@@ -27,7 +27,8 @@
 -type unit() :: none
 | milliseconds | seconds
 | bits | bytes
-| hertz | counts_per_sec | bytes_per_sec | operations_per_sec | requests_per_sec
+| hertz | counts_per_sec | operations_per_sec | requests_per_sec
+| bits_per_sec | bytes_per_sec
 | reads_per_sec | writes_per_sec | io_operations_per_sec
 | percent | percent_normalized
 | boolean
@@ -54,9 +55,10 @@ unit_to_json(bits) -> <<"bits">>;
 unit_to_json(bytes) -> <<"bytes">>;
 unit_to_json(hertz) -> <<"hertz">>;
 unit_to_json(counts_per_sec) -> <<"countsPerSec">>;
-unit_to_json(bytes_per_sec) -> <<"bytesPerSec">>;
 unit_to_json(operations_per_sec) -> <<"operationsPerSec">>;
 unit_to_json(requests_per_sec) -> <<"requestsPerSec">>;
+unit_to_json(bytes_per_sec) -> <<"bytesPerSec">>;
+unit_to_json(bits_per_sec) -> <<"bitsPerSec">>;
 unit_to_json(reads_per_sec) -> <<"readsPerSec">>;
 unit_to_json(writes_per_sec) -> <<"writesPerSec">>;
 unit_to_json(io_operations_per_sec) -> <<"ioOperationsPerSec">>;
@@ -74,9 +76,10 @@ unit_from_json(<<"bits">>) -> bits;
 unit_from_json(<<"bytes">>) -> bytes;
 unit_from_json(<<"hertz">>) -> hertz;
 unit_from_json(<<"countsPerSec">>) -> counts_per_sec;
-unit_from_json(<<"bytesPerSec">>) -> bytes_per_sec;
 unit_from_json(<<"operationsPerSec">>) -> operations_per_sec;
 unit_from_json(<<"requestsPerSec">>) -> requests_per_sec;
+unit_from_json(<<"bytesPerSec">>) -> bytes_per_sec;
+unit_from_json(<<"bitsPerSec">>) -> bits_per_sec;
 unit_from_json(<<"readsPerSec">>) -> reads_per_sec;
 unit_from_json(<<"writesPerSec">>) -> writes_per_sec;
 unit_from_json(<<"ioOperationsPerSec">>) -> io_operations_per_sec;
