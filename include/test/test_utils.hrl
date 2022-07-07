@@ -68,6 +68,11 @@
 -define(RAND_BOOL(), ?RAND_ELEMENT([true, false])).
 -define(RAND_INT(To), ?RAND_INT(0, To)).
 -define(RAND_INT(From, To), From + rand:uniform(To - From + 1) - 1).
+-define(RAND_FLOAT(From, To), From + rand:uniform() * (To - From)).
+-define(RAND_JSON_TERM(), ?RAND_ELEMENT([
+    ?RAND_BOOL(), ?RAND_STR(), ?RAND_INT(-1000, 1000), -27.8, 17.75,
+    [1, 2, 3], #{<<"a">> => <<"B">>}, [#{<<"a">> => <<"B">>}, #{<<"c">> => <<"D">>}]
+])).
 
 
 -endif.

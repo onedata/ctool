@@ -69,7 +69,7 @@ db_decode(RecordJson, NestedRecordDecoder) ->
 encode_with(Record, NestedRecordEncoder) ->
     #{
         <<"schemas">> => [NestedRecordEncoder(S, atm_time_series_schema) || S <- Record#atm_time_series_store_config.schemas],
-        <<"chartSpecs">> => Record#atm_time_series_store_config.chart_specs
+        <<"dashboardSpec">> => NestedRecordEncoder(Record#atm_time_series_store_config.dashboard_spec, ts_dashboard_spec)
     }.
 
 
@@ -79,7 +79,7 @@ encode_with(Record, NestedRecordEncoder) ->
 decode_with(skip_validation, RecordJson, NestedRecordDecoder) ->
     #atm_time_series_store_config{
         schemas = [NestedRecordDecoder(S, atm_time_series_schema) || S <- maps:get(<<"schemas">>, RecordJson)],
-        chart_specs = maps:get(<<"chartSpecs">>, RecordJson, [])
+        dashboard_spec = NestedRecordDecoder(maps:get(<<"dashboardSpec">>, RecordJson, []), ts_dashboard_spec)
     };
 decode_with(validate, RecordJson, NestedRecordDecoder) ->
     Config = decode_with(skip_validation, RecordJson, NestedRecordDecoder),

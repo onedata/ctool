@@ -121,10 +121,11 @@
 -record(atm_range_store_config, {
 }).
 
+%% @TODO VFS-9346 Reuse time series store config in all time series related API
+% (it should be extracted on the time_series level, rather than related strictly to automation)
 -record(atm_time_series_store_config, {
     schemas :: [atm_time_series_schema:record()],
-    % @TODO VFS-8948 Implement chart specs record - currently, this is only a pass-through field
-    chart_specs :: list()
+    dashboard_spec :: ts_dashboard_spec:record()
 }).
 
 -record(atm_audit_log_store_config, {

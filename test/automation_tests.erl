@@ -145,8 +145,7 @@ encode_decode_store_config_test() ->
         ?ERROR_BAD_VALUE_EMPTY(<<"schemas">>),
         #atm_time_series_store_config{
             schemas = [],
-            % @TODO VFS-8948 Implement chart specs record - currently, this is only a pass-through field
-            chart_specs = []
+            dashboard_spec = time_series_test_utils:example_dashboard_spec()
         }
     ),
 
@@ -199,14 +198,12 @@ encode_decode_store_config_test() ->
         ({conflict, ConflictingSchemaSet}) ->
             check_error_during_decode_from_json(ExpTimeSeriesCfgError, #atm_time_series_store_config{
                 schemas = lists_utils:shuffle(ConflictingSchemaSet),
-                % @TODO VFS-8948 Implement chart specs record - currently, this is only a pass-through field
-                chart_specs = []
+                dashboard_spec = time_series_test_utils:example_dashboard_spec()
             });
         ({correct, CorrectSchemaSet}) ->
             encode_decode_test_base(#atm_time_series_store_config{
                 schemas = lists_utils:shuffle(CorrectSchemaSet),
-                % @TODO VFS-8948 Implement chart specs record - currently, this is only a pass-through field
-                chart_specs = []
+                dashboard_spec = time_series_test_utils:example_dashboard_spec()
             })
     end, SchemasTestCases).
 
