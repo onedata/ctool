@@ -28,7 +28,6 @@ encode_decode_ts_dashboard_spec_test() ->
     encode_decode_test_base(time_series_test_utils:example_dashboard_specs()).
 
 
-
 encode_decode_ts_dashboard_section_spec_test() ->
     encode_decode_test_base(time_series_test_utils:example_dashboard_section_specs()).
 
