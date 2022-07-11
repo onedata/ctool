@@ -125,7 +125,7 @@
 % (it should be extracted on the time_series level, rather than related strictly to automation)
 -record(atm_time_series_store_config, {
     schemas :: [atm_time_series_schema:record()],
-    dashboard_spec :: ts_dashboard_spec:record()
+    dashboard_spec :: undefined | ts_dashboard_spec:record()
 }).
 
 -record(atm_audit_log_store_config, {

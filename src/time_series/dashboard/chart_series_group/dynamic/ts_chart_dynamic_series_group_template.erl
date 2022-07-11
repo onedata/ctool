@@ -69,23 +69,31 @@ db_decode(RecordJson, NestedRecordDecoder) ->
 encode_with(Record, NestedEncoder) ->
     #{
         <<"idProvider">> => NestedEncoder(Record#ts_chart_dynamic_series_group_template.id_provider, ts_provider_function),
-        <<"nameProvider">> => case Record#ts_chart_dynamic_series_group_template.name_provider of
-            undefined -> null;
-            Value -> NestedEncoder(Value, ts_provider_function)
-        end,
-        <<"stackedProvider">> => case Record#ts_chart_dynamic_series_group_template.stacked_provider of
-            undefined -> null;
-            Value -> NestedEncoder(Value, ts_provider_function)
-        end,
-        <<"showSumProvider">> => case Record#ts_chart_dynamic_series_group_template.show_sum_provider of
-            undefined -> null;
-            Value -> NestedEncoder(Value, ts_provider_function)
-        end,
-        <<"subgroups_provider">> => case Record#ts_chart_dynamic_series_group_template.subgroups_provider of
-            undefined -> null;
-            Value -> NestedEncoder(Value, ts_provider_function)
-        end
+        <<"nameProvider">> => encode_nullable_provider_function(
+            Record#ts_chart_dynamic_series_group_template.name_provider, NestedEncoder
+        ),
+        <<"stackedProvider">> => encode_nullable_provider_function(
+            Record#ts_chart_dynamic_series_group_template.stacked_provider, NestedEncoder
+        ),
+        <<"showSumProvider">> => encode_nullable_provider_function(
+            Record#ts_chart_dynamic_series_group_template.show_sum_provider, NestedEncoder
+        ),
+        <<"subgroupsProvider">> => encode_nullable_provider_function(
+            Record#ts_chart_dynamic_series_group_template.subgroups_provider, NestedEncoder
+        )
     }.
+
+
+%% @private
+-spec encode_nullable_provider_function(
+    undefined | ts_provider_function:record(),
+    persistent_record:nested_record_encoder()
+) ->
+    json_utils:json_term().
+encode_nullable_provider_function(undefined, _NestedEncoder) ->
+    null;
+encode_nullable_provider_function(Value, NestedEncoder) ->
+    NestedEncoder(Value, ts_provider_function).
 
 
 %% @private
@@ -94,20 +102,28 @@ encode_with(Record, NestedEncoder) ->
 decode_with(RecordJson, NestedDecoder) ->
     #ts_chart_dynamic_series_group_template{
         id_provider = NestedDecoder(maps:get(<<"idProvider">>, RecordJson), ts_provider_function),
-        name_provider = case maps:get(<<"nameProvider">>, RecordJson, null) of
-            null -> undefined;
-            Value -> NestedDecoder(Value, ts_provider_function)
-        end,
-        stacked_provider = case maps:get(<<"stackedProvider">>, RecordJson, null) of
-            null -> undefined;
-            Value -> NestedDecoder(Value, ts_provider_function)
-        end,
-        show_sum_provider = case maps:get(<<"showSumProvider">>, RecordJson, null) of
-            null -> undefined;
-            Value -> NestedDecoder(Value, ts_provider_function)
-        end,
-        subgroups_provider = case maps:get(<<"subgroups_provider">>, RecordJson, null) of
-            null -> undefined;
-            Value -> NestedDecoder(Value, ts_provider_function)
-        end
+        name_provider = decode_nullable_provider_function(
+            maps:get(<<"nameProvider">>, RecordJson, null), NestedDecoder
+        ),
+        stacked_provider = decode_nullable_provider_function(
+            maps:get(<<"stackedProvider">>, RecordJson, null), NestedDecoder
+        ),
+        show_sum_provider = decode_nullable_provider_function(
+            maps:get(<<"showSumProvider">>, RecordJson, null), NestedDecoder
+        ),
+        subgroups_provider = decode_nullable_provider_function(
+            maps:get(<<"subgroupsProvider">>, RecordJson, null), NestedDecoder
+        )
     }.
+
+
+%% @private
+-spec decode_nullable_provider_function(
+    undefined | ts_provider_function:record(),
+    persistent_record:nested_record_decoder()
+) ->
+    json_utils:json_term().
+decode_nullable_provider_function(null, _NestedDecoder) ->
+    undefined;
+decode_nullable_provider_function(Value, NestedDecoder) ->
+    NestedDecoder(Value, ts_provider_function).

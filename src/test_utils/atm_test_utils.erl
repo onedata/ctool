@@ -332,7 +332,10 @@ example_store_config(range) ->
 example_store_config(time_series) ->
     #atm_time_series_store_config{
         schemas = ?RAND_SUBLIST(example_time_series_schemas(), 1, all),
-        dashboard_spec = time_series_test_utils:example_dashboard_spec()
+        % dashboard specs are not included because they are very complicated and
+        % their generation can cause horrendous slowdown of the automation example generators
+        % (which are intensively used during tests)
+        dashboard_spec = undefined
     };
 example_store_config(audit_log) ->
     #atm_audit_log_store_config{log_content_data_spec = example_data_spec()}.

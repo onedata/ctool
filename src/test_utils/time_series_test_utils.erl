@@ -65,10 +65,11 @@ example_dashboard_section_spec(NestingLevel) ->
         is_expanded_by_default = ?RAND_BOOL(),
         chart_navigation = ?RAND_ELEMENT([independent, shared_within_section]),
         charts = ?RAND_SUBLIST(example_chart_specs()),
-        sections = case NestingLevel of
-            2 ->
+        % maximum nesting is chosen empirically and used to avoid to large records and too long testing time
+        sections = case NestingLevel >= 2 of
+            true ->
                 [];
-            _ ->
+            false ->
                 lists_utils:generate(fun() ->
                     example_dashboard_section_spec(NestingLevel + 1)
                 end, ?RAND_INT(0, 2))
@@ -115,11 +116,11 @@ example_chart_y_axis_spec() ->
         unit_name = ?RAND_STR(),
         unit_options = ?RAND_ELEMENT([
             undefined,
-            #{
+            ?RAND_SUBMAP(#{
                 custom_name => ?RAND_STR(),
                 use_metric_suffix => ?RAND_BOOL(),
                 format => ?RAND_ELEMENT([si, iec])
-            }
+            })
         ]),
         value_provider = example_provider_function()
     }.
@@ -179,10 +180,11 @@ example_chart_static_series_group_template(NestingLevel) ->
         name = ?RAND_STR(),
         stacked = ?RAND_BOOL(),
         show_sum = ?RAND_BOOL(),
-        subgroups = case NestingLevel of
-            2 ->
+        % maximum nesting is chosen empirically and used to avoid to large records and too long testing time
+        subgroups = case NestingLevel >= 2 of
+            true ->
                 [];
-            _ ->
+            false ->
                 lists_utils:generate(fun() ->
                     example_chart_static_series_group_template(NestingLevel + 1)
                 end, ?RAND_INT(0, 2))
@@ -348,7 +350,7 @@ example_provider_function() ->
     example_provider_function(1).
 
 -spec example_provider_function(pos_integer()) -> ts_provider_function:record().
-example_provider_function(4) ->
+example_provider_function(NestingLevel) when NestingLevel >= 4 ->
     % controlled nesting level makes sure that the example generator does
     % not go into an infinite loop (function providers can be arbitrarily nested)
     #ts_data_generator_literal{data = ?RAND_JSON_TERM()};
