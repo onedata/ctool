@@ -59,19 +59,19 @@ example_dashboard_section_spec() ->
     example_dashboard_section_spec(2).
 
 -spec example_dashboard_section_spec(pos_integer()) -> ts_dashboard_section_spec:record().
-example_dashboard_section_spec(NestingLevel) ->
+example_dashboard_section_spec(MaxNestingLevel) ->
     #ts_dashboard_section_spec{
         title = ?RAND_ELEMENT([undefined, example_title()]),
         description = ?RAND_STR(),
         is_expanded_by_default = ?RAND_BOOL(),
         chart_navigation = ?RAND_ELEMENT([independent, shared_within_section]),
         charts = ?RAND_SUBLIST(example_chart_specs()),
-        sections = case NestingLevel =< 0 of
+        sections = case MaxNestingLevel =< 0 of
             true ->
                 [];
             false ->
                 lists_utils:generate(fun() ->
-                    example_dashboard_section_spec(NestingLevel - 1)
+                    example_dashboard_section_spec(MaxNestingLevel - 1)
                 end, ?RAND_INT(0, 2))
         end
     }.
@@ -175,18 +175,18 @@ example_chart_static_series_group_template() ->
     example_chart_static_series_group_template(2).
 
 -spec example_chart_static_series_group_template(pos_integer()) -> ts_chart_static_series_group_template:record().
-example_chart_static_series_group_template(NestingLevel) ->
+example_chart_static_series_group_template(MaxNestingLevel) ->
     #ts_chart_static_series_group_template{
         id = ?RAND_STR(),
         name = ?RAND_STR(),
         stacked = ?RAND_BOOL(),
         show_sum = ?RAND_BOOL(),
-        subgroups = case NestingLevel =< 0 of
+        subgroups = case MaxNestingLevel =< 0 of
             true ->
                 [];
             false ->
                 lists_utils:generate(fun() ->
-                    example_chart_static_series_group_template(NestingLevel - 1)
+                    example_chart_static_series_group_template(MaxNestingLevel - 1)
                 end, ?RAND_INT(0, 2))
         end
     }.
@@ -350,11 +350,11 @@ example_provider_function() ->
     example_provider_function(3).
 
 -spec example_provider_function(pos_integer()) -> ts_provider_function:record().
-example_provider_function(NestingLevel) when NestingLevel =< 0 ->
+example_provider_function(MaxNestingLevel) when MaxNestingLevel =< 0 ->
     % controlled nesting level makes sure that the example generator does
     % not go into an infinite loop (function providers can be arbitrarily nested)
     #ts_data_generator_literal{data = ?RAND_JSON_TERM()};
-example_provider_function(NestingLevel) ->
+example_provider_function(MaxNestingLevel) ->
     case rand:uniform(8) of
         1 ->
             #ts_data_generator_literal{data = ?RAND_JSON_TERM()};
@@ -367,22 +367,22 @@ example_provider_function(NestingLevel) ->
         5 ->
             #ts_data_generator_load_series{
                 source_type = external,
-                source_spec_provider = example_provider_function(NestingLevel - 1),
-                replace_empty_parameters_provider = ?RAND_ELEMENT([undefined, example_provider_function(NestingLevel - 1)])
+                source_spec_provider = example_provider_function(MaxNestingLevel - 1),
+                replace_empty_parameters_provider = ?RAND_ELEMENT([undefined, example_provider_function(MaxNestingLevel - 1)])
             };
         6 ->
-            #ts_transformer_abs{input_data_provider = example_provider_function(NestingLevel - 1)};
+            #ts_transformer_abs{input_data_provider = example_provider_function(MaxNestingLevel - 1)};
         7 ->
             #ts_transformer_multiply{
                 operand_providers = lists_utils:generate(fun() ->
-                    example_provider_function(NestingLevel - 1)
+                    example_provider_function(MaxNestingLevel - 1)
                 end, ?RAND_INT(1, 3))
             };
         8 ->
             #ts_transformer_replace_empty{
-                input_data_provider = example_provider_function(NestingLevel - 1),
-                fallback_value_provider = example_provider_function(NestingLevel - 1),
-                strategy_provider = ?RAND_ELEMENT([undefined, example_provider_function(NestingLevel - 1)])
+                input_data_provider = example_provider_function(MaxNestingLevel - 1),
+                fallback_value_provider = example_provider_function(MaxNestingLevel - 1),
+                strategy_provider = ?RAND_ELEMENT([undefined, example_provider_function(MaxNestingLevel - 1)])
             }
     end.
 

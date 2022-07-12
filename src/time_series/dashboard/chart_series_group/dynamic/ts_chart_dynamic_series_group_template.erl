@@ -89,6 +89,7 @@ encode_with(#ts_chart_dynamic_series_group_template{
 ) ->
     json_utils:json_term().
 encode_nullable_provider_function(undefined, _NestedEncoder) ->
+    % @TODO VFS-9147 add a concept of nullable fields when jsonable_record validators are implemented
     null;
 encode_nullable_provider_function(Value, NestedEncoder) ->
     NestedEncoder(Value, ts_provider_function).
@@ -114,6 +115,7 @@ decode_with(RecordJson, NestedDecoder) ->
 ) ->
     json_utils:json_term().
 decode_nullable_provider_function(null, _NestedDecoder) ->
+    % @TODO VFS-9147 add a concept of nullable fields when jsonable_record validators are implemented
     undefined;
 decode_nullable_provider_function(Value, NestedDecoder) ->
     NestedDecoder(Value, ts_provider_function).
