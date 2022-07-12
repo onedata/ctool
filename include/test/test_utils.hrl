@@ -61,13 +61,19 @@
 
 
 -define(RAND_ELEMENT(List), lists_utils:random_element(List)).
--define(RAND_SUBLIST(List), lists_utils:random_sublist(List)).
--define(RAND_SUBLIST(List, MinLength, MaxLength), lists_utils:random_sublist(List, MinLength, MaxLength)).
 -define(RAND_STR(), ?RAND_STR(16)).
 -define(RAND_STR(Size), string:slice(str_utils:rand_hex(Size), 0, Size)).
 -define(RAND_BOOL(), ?RAND_ELEMENT([true, false])).
 -define(RAND_INT(To), ?RAND_INT(0, To)).
 -define(RAND_INT(From, To), From + rand:uniform(To - From + 1) - 1).
+-define(RAND_FLOAT(From, To), From + rand:uniform() * (To - From)).
+-define(RAND_JSON_TERM(), ?RAND_ELEMENT([
+    ?RAND_BOOL(), ?RAND_STR(), ?RAND_INT(-1000, 1000), -27.8, 17.75,
+    [1, 2, 3], #{<<"a">> => <<"B">>}, [#{<<"a">> => <<"B">>}, #{<<"c">> => <<"D">>}]
+])).
+-define(RAND_SUBLIST(List), lists_utils:random_sublist(List)).
+-define(RAND_SUBLIST(List, MinLength, MaxLength), lists_utils:random_sublist(List, MinLength, MaxLength)).
+-define(RAND_SUBMAP(Map), maps:with(lists_utils:random_sublist(maps:keys(Map)), Map)).
 
 
 -endif.

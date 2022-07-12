@@ -330,8 +330,13 @@ example_store_config(tree_forest) ->
 example_store_config(range) ->
     #atm_range_store_config{};
 example_store_config(time_series) ->
-    % @TODO VFS-8948 Implement chart specs record - currently, this is only a pass-through field
-    #atm_time_series_store_config{schemas = ?RAND_SUBLIST(example_time_series_schemas(), 1, all), chart_specs = []};
+    #atm_time_series_store_config{
+        schemas = ?RAND_SUBLIST(example_time_series_schemas(), 1, all),
+        % dashboard specs are not included because they are very complicated and
+        % their generation can cause horrendous slowdown of the automation example generators
+        % (which are intensively used during tests)
+        dashboard_spec = undefined
+    };
 example_store_config(audit_log) ->
     #atm_audit_log_store_config{log_content_data_spec = example_data_spec()}.
 

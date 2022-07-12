@@ -15,6 +15,7 @@
 -ifdef(TEST).
 
 -include_lib("eunit/include/eunit.hrl").
+-include("test/test_utils.hrl").
 -include("automation/automation.hrl").
 -include("errors.hrl").
 -include("logging.hrl").
@@ -126,8 +127,10 @@ encode_decode_store_schema_test() ->
 
 
 encode_decode_store_config_test() ->
-    encode_decode_test_base(atm_test_utils:example_store_configs()),
+    encode_decode_test_base(atm_test_utils:example_store_configs()).
 
+
+encode_decode_tree_forest_store_config_test() ->
     % tree forest store limits available data types to those compatible with tree models
     AllowedDataTypes = [atm_file_type, atm_dataset_type],
     ExpTreeForestCfgError = ?ERROR_BAD_VALUE_NOT_ALLOWED(
@@ -138,22 +141,23 @@ encode_decode_store_config_test() ->
         check_error_during_decode_from_json(ExpTreeForestCfgError, #atm_tree_forest_store_config{
             item_data_spec = atm_test_utils:example_data_spec(DisallowedDataType)
         })
-    end, atm_data_type:all_data_types() -- AllowedDataTypes),
+    end, atm_data_type:all_data_types() -- AllowedDataTypes).
 
+
+encode_decode_time_series_store_config_test() ->
     % time series store must have at least one schema defined
     check_error_during_decode_from_json(
         ?ERROR_BAD_VALUE_EMPTY(<<"schemas">>),
         #atm_time_series_store_config{
             schemas = [],
-            % @TODO VFS-8948 Implement chart specs record - currently, this is only a pass-through field
-            chart_specs = []
+            dashboard_spec = time_series_test_utils:example_dashboard_spec()
         }
     ),
 
     % time series store cannot have conflicting name generators
     MakeSchema = fun(NameGeneratorType, NameGenerator) ->
-        ExampleSchema = atm_test_utils:example_time_series_schema(),
-        ExampleSchema#atm_time_series_schema{
+        ExampleTimeSeriesSchema = atm_test_utils:example_time_series_schema(),
+        ExampleTimeSeriesSchema#atm_time_series_schema{
             name_generator_type = NameGeneratorType,
             name_generator = NameGenerator
         }
@@ -199,16 +203,24 @@ encode_decode_store_config_test() ->
         ({conflict, ConflictingSchemaSet}) ->
             check_error_during_decode_from_json(ExpTimeSeriesCfgError, #atm_time_series_store_config{
                 schemas = lists_utils:shuffle(ConflictingSchemaSet),
-                % @TODO VFS-8948 Implement chart specs record - currently, this is only a pass-through field
-                chart_specs = []
+                dashboard_spec = undefined
             });
         ({correct, CorrectSchemaSet}) ->
             encode_decode_test_base(#atm_time_series_store_config{
                 schemas = lists_utils:shuffle(CorrectSchemaSet),
-                % @TODO VFS-8948 Implement chart specs record - currently, this is only a pass-through field
-                chart_specs = []
+                dashboard_spec = undefined
             })
     end, SchemasTestCases).
+
+
+% dashboard specs are skipped during example generation
+% (hence effectively never checked during the other tests),
+% make sure they are properly encoded/decoded when used within a time series store
+encode_decode_time_series_store_config_with_dashboard_spec_test() ->
+    encode_decode_test_base(#atm_time_series_store_config{
+        schemas = ?RAND_SUBLIST(atm_test_utils:example_time_series_schemas(), 1, all),
+        dashboard_spec = time_series_test_utils:example_dashboard_spec()
+    }).
 
 
 encode_decode_store_iterator_spec_test() ->
