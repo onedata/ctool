@@ -55,7 +55,8 @@ example_dashboard_specs() ->
 
 -spec example_dashboard_section_spec() -> ts_dashboard_section_spec:record().
 example_dashboard_section_spec() ->
-    example_dashboard_section_spec(1).
+    % maximum nesting is chosen empirically and used to avoid to large records and too long testing time
+    example_dashboard_section_spec(2).
 
 -spec example_dashboard_section_spec(pos_integer()) -> ts_dashboard_section_spec:record().
 example_dashboard_section_spec(NestingLevel) ->
@@ -65,13 +66,12 @@ example_dashboard_section_spec(NestingLevel) ->
         is_expanded_by_default = ?RAND_BOOL(),
         chart_navigation = ?RAND_ELEMENT([independent, shared_within_section]),
         charts = ?RAND_SUBLIST(example_chart_specs()),
-        % maximum nesting is chosen empirically and used to avoid to large records and too long testing time
-        sections = case NestingLevel >= 2 of
+        sections = case NestingLevel =< 0 of
             true ->
                 [];
             false ->
                 lists_utils:generate(fun() ->
-                    example_dashboard_section_spec(NestingLevel + 1)
+                    example_dashboard_section_spec(NestingLevel - 1)
                 end, ?RAND_INT(0, 2))
         end
     }.
@@ -171,7 +171,8 @@ example_chart_dynamic_series_group_builder_recipes() ->
 
 -spec example_chart_static_series_group_template() -> ts_chart_static_series_group_template:record().
 example_chart_static_series_group_template() ->
-    example_chart_static_series_group_template(1).
+    % maximum nesting is chosen empirically and used to avoid to large records and too long testing time
+    example_chart_static_series_group_template(2).
 
 -spec example_chart_static_series_group_template(pos_integer()) -> ts_chart_static_series_group_template:record().
 example_chart_static_series_group_template(NestingLevel) ->
@@ -180,13 +181,12 @@ example_chart_static_series_group_template(NestingLevel) ->
         name = ?RAND_STR(),
         stacked = ?RAND_BOOL(),
         show_sum = ?RAND_BOOL(),
-        % maximum nesting is chosen empirically and used to avoid to large records and too long testing time
-        subgroups = case NestingLevel >= 2 of
+        subgroups = case NestingLevel =< 0 of
             true ->
                 [];
             false ->
                 lists_utils:generate(fun() ->
-                    example_chart_static_series_group_template(NestingLevel + 1)
+                    example_chart_static_series_group_template(NestingLevel - 1)
                 end, ?RAND_INT(0, 2))
         end
     }.
@@ -347,42 +347,46 @@ example_chart_dynamic_series_templates() ->
 
 -spec example_provider_function() -> ts_provider_function:record().
 example_provider_function() ->
-    example_provider_function(1).
+    example_provider_function(3).
 
 -spec example_provider_function(pos_integer()) -> ts_provider_function:record().
-example_provider_function(NestingLevel) when NestingLevel >= 4 ->
+example_provider_function(NestingLevel) when NestingLevel =< 0 ->
     % controlled nesting level makes sure that the example generator does
     % not go into an infinite loop (function providers can be arbitrarily nested)
     #ts_data_generator_literal{data = ?RAND_JSON_TERM()};
 example_provider_function(NestingLevel) ->
-    ?RAND_ELEMENT(example_provider_functions(NestingLevel)).
+    case rand:uniform(8) of
+        1 ->
+            #ts_data_generator_literal{data = ?RAND_JSON_TERM()};
+        2 ->
+            #ts_data_generator_current_value{};
+        3 ->
+            #ts_data_generator_get_dynamic_series_config{property_name = ?RAND_STR()};
+        4 ->
+            #ts_data_generator_get_dynamic_series_group_config{property_name = ?RAND_STR()};
+        5 ->
+            #ts_data_generator_load_series{
+                source_type = external,
+                source_spec_provider = example_provider_function(NestingLevel - 1),
+                replace_empty_parameters_provider = ?RAND_ELEMENT([undefined, example_provider_function(NestingLevel - 1)])
+            };
+        6 ->
+            #ts_transformer_abs{input_data_provider = example_provider_function(NestingLevel - 1)};
+        7 ->
+            #ts_transformer_multiply{
+                operand_providers = lists_utils:generate(fun() ->
+                    example_provider_function(NestingLevel - 1)
+                end, ?RAND_INT(1, 3))
+            };
+        8 ->
+            #ts_transformer_replace_empty{
+                input_data_provider = example_provider_function(NestingLevel - 1),
+                fallback_value_provider = example_provider_function(NestingLevel - 1),
+                strategy_provider = ?RAND_ELEMENT([undefined, example_provider_function(NestingLevel - 1)])
+            }
+    end.
 
 
 -spec example_provider_functions() -> [ts_provider_function:record()].
 example_provider_functions() ->
-    example_provider_functions(1).
-
--spec example_provider_functions(pos_integer()) -> [ts_provider_function:record()].
-example_provider_functions(NestingLevel) ->
-    [
-        #ts_data_generator_literal{data = ?RAND_JSON_TERM()},
-        #ts_data_generator_current_value{},
-        #ts_data_generator_get_dynamic_series_config{property_name = ?RAND_STR()},
-        #ts_data_generator_get_dynamic_series_group_config{property_name = ?RAND_STR()},
-        #ts_data_generator_load_series{
-            source_type = external,
-            source_spec_provider = example_provider_function(NestingLevel + 1),
-            replace_empty_parameters_provider = ?RAND_ELEMENT([undefined, example_provider_function(NestingLevel + 1)])
-        },
-
-        #ts_transformer_abs{input_data_provider = example_provider_function(NestingLevel + 1)},
-        #ts_transformer_multiply{
-            operand_providers = lists_utils:generate(fun() ->
-                example_provider_function(NestingLevel + 1)
-            end, ?RAND_INT(1, 3))},
-        #ts_transformer_replace_empty{
-            input_data_provider = example_provider_function(NestingLevel + 1),
-            fallback_value_provider = example_provider_function(NestingLevel + 1),
-            strategy_provider = ?RAND_ELEMENT([undefined, example_provider_function(NestingLevel + 1)])
-        }
-    ].
+    lists_utils:generate(fun example_provider_function/0, 20).

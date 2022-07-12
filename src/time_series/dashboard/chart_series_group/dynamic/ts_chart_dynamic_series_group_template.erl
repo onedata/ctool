@@ -66,21 +66,19 @@ db_decode(RecordJson, NestedRecordDecoder) ->
 %% @private
 -spec encode_with(record(), persistent_record:nested_record_encoder()) ->
     json_utils:json_term().
-encode_with(Record, NestedEncoder) ->
+encode_with(#ts_chart_dynamic_series_group_template{
+    id_provider = IdProvider,
+    name_provider = NameProvider,
+    stacked_provider = StackedProvider,
+    show_sum_provider = ShowSumProvider,
+    subgroups_provider = SubgroupsProvider
+}, NestedEncoder) ->
     #{
-        <<"idProvider">> => NestedEncoder(Record#ts_chart_dynamic_series_group_template.id_provider, ts_provider_function),
-        <<"nameProvider">> => encode_nullable_provider_function(
-            Record#ts_chart_dynamic_series_group_template.name_provider, NestedEncoder
-        ),
-        <<"stackedProvider">> => encode_nullable_provider_function(
-            Record#ts_chart_dynamic_series_group_template.stacked_provider, NestedEncoder
-        ),
-        <<"showSumProvider">> => encode_nullable_provider_function(
-            Record#ts_chart_dynamic_series_group_template.show_sum_provider, NestedEncoder
-        ),
-        <<"subgroupsProvider">> => encode_nullable_provider_function(
-            Record#ts_chart_dynamic_series_group_template.subgroups_provider, NestedEncoder
-        )
+        <<"idProvider">> => NestedEncoder(IdProvider, ts_provider_function),
+        <<"nameProvider">> => encode_nullable_provider_function(NameProvider, NestedEncoder),
+        <<"stackedProvider">> => encode_nullable_provider_function(StackedProvider, NestedEncoder),
+        <<"showSumProvider">> => encode_nullable_provider_function(ShowSumProvider, NestedEncoder),
+        <<"subgroupsProvider">> => encode_nullable_provider_function(SubgroupsProvider, NestedEncoder)
     }.
 
 
@@ -102,18 +100,10 @@ encode_nullable_provider_function(Value, NestedEncoder) ->
 decode_with(RecordJson, NestedDecoder) ->
     #ts_chart_dynamic_series_group_template{
         id_provider = NestedDecoder(maps:get(<<"idProvider">>, RecordJson), ts_provider_function),
-        name_provider = decode_nullable_provider_function(
-            maps:get(<<"nameProvider">>, RecordJson, null), NestedDecoder
-        ),
-        stacked_provider = decode_nullable_provider_function(
-            maps:get(<<"stackedProvider">>, RecordJson, null), NestedDecoder
-        ),
-        show_sum_provider = decode_nullable_provider_function(
-            maps:get(<<"showSumProvider">>, RecordJson, null), NestedDecoder
-        ),
-        subgroups_provider = decode_nullable_provider_function(
-            maps:get(<<"subgroupsProvider">>, RecordJson, null), NestedDecoder
-        )
+        name_provider = decode_nullable_provider_function(maps:get(<<"nameProvider">>, RecordJson, null), NestedDecoder),
+        stacked_provider = decode_nullable_provider_function(maps:get(<<"stackedProvider">>, RecordJson, null), NestedDecoder),
+        show_sum_provider = decode_nullable_provider_function(maps:get(<<"showSumProvider">>, RecordJson, null), NestedDecoder),
+        subgroups_provider = decode_nullable_provider_function(maps:get(<<"subgroupsProvider">>, RecordJson, null), NestedDecoder)
     }.
 
 
