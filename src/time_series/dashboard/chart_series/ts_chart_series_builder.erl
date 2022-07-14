@@ -71,8 +71,8 @@ db_decode(RecordJson, NestedRecordDecoder) ->
     json_utils:json_term().
 encode_with(Record, NestedEncoder) ->
     #{
-        <<"type">> => type_to_json(Record#ts_chart_series_builder.type),
-        <<"recipe">> => NestedEncoder(
+        <<"builderType">> => type_to_json(Record#ts_chart_series_builder.type),
+        <<"builderRecipe">> => NestedEncoder(
             Record#ts_chart_series_builder.recipe,
             type_to_recipe_type(Record#ts_chart_series_builder.type)
         )
@@ -83,11 +83,11 @@ encode_with(Record, NestedEncoder) ->
 -spec decode_with(json_utils:json_term(), persistent_record:nested_record_decoder()) ->
     record().
 decode_with(RecordJson, NestedDecoder) ->
-    Type = type_from_json(maps:get(<<"type">>, RecordJson)),
+    Type = type_from_json(maps:get(<<"builderType">>, RecordJson)),
     #ts_chart_series_builder{
         type = Type,
         recipe = NestedDecoder(
-            maps:get(<<"recipe">>, RecordJson),
+            maps:get(<<"builderRecipe">>, RecordJson),
             type_to_recipe_type(Type)
         )
     }.

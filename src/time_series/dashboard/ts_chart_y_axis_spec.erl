@@ -97,7 +97,7 @@ decode_with(RecordJson, NestedDecoder) ->
         id = maps:get(<<"id">>, RecordJson),
         name = maps:get(<<"name">>, RecordJson),
         min_interval = utils:null_to_undefined(maps:get(<<"minInterval">>, RecordJson)),
-        unit_name = maps:get(<<"unitName">>, RecordJson),
+        unit_name = maps:get(<<"unitName">>, RecordJson, <<"none">>),
         unit_options = case maps:get(<<"unitOptions">>, RecordJson, null) of
             null -> undefined;
             UnitOptionsJson -> unit_options_from_json(UnitOptionsJson)
