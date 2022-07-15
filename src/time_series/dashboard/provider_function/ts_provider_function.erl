@@ -107,7 +107,7 @@ encode_with(Record, NestedRecordEncoder) ->
     record().
 decode_with(RecordJson, NestedRecordDecoder) ->
     FunctionName = maps:get(<<"functionName">>, RecordJson),
-    FunctionArgs = maps:get(<<"functionArguments">>, RecordJson),
+    FunctionArgs = maps:get(<<"functionArguments">>, RecordJson, #{}),
     RecordType = function_name_to_record_type(FunctionName),
     NestedRecordDecoder(FunctionArgs, RecordType).
 
