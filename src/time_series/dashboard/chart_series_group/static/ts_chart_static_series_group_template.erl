@@ -86,5 +86,5 @@ decode_with(RecordJson, NestedDecoder) ->
         name = maps:get(<<"name">>, RecordJson, <<"">>),
         stacked = utils:null_to_undefined(maps:get(<<"stacked">>, RecordJson, false)),
         show_sum = maps:get(<<"showSum">>, RecordJson, false),
-        subgroups = [NestedDecoder(R, ?MODULE) || R <- maps:get(<<"subgroups">>, RecordJson)]
+        subgroups = [NestedDecoder(R, ?MODULE) || R <- maps:get(<<"subgroups">>, RecordJson, [])]
     }.

@@ -36,14 +36,14 @@
 -spec to_json(record()) -> json_utils:json_term().
 to_json(Record) ->
     #{
-        <<"propertyName">> => Record#ts_data_generator_get_dynamic_series_config.property_name
+        <<"propertyName">> => utils:undefined_to_null(Record#ts_data_generator_get_dynamic_series_config.property_name)
     }.
 
 
 -spec from_json(json_utils:json_term()) -> record().
 from_json(RecordJson) ->
     #ts_data_generator_get_dynamic_series_config{
-        property_name = maps:get(<<"propertyName">>, RecordJson)
+        property_name = utils:null_to_undefined(maps:get(<<"propertyName">>, RecordJson, null))
     }.
 
 %%%===================================================================
