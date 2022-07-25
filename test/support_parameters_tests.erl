@@ -20,16 +20,6 @@
 -include("errors.hrl").
 
 
--define(SPARAMS(AccountingEnabled, DirStatsServiceEnabled, DirStatsServiceStatus), #support_parameters{
-    accounting_enabled = AccountingEnabled,
-    dir_stats_service_enabled = DirStatsServiceEnabled,
-    dir_stats_service_status = DirStatsServiceStatus
-}).
--define(DSS_MUST_BE_ENABLED_ERROR, ?ERROR_BAD_DATA(
-    <<"dirStatsServiceEnabled">>,
-    <<"Dir stats service must be enabled if accounting is enabled">>
-)).
-
 %%%===================================================================
 %%% Tests
 %%%===================================================================
@@ -48,9 +38,8 @@ update_support_parameters_test() ->
         ?assertEqual(ExpectedResult, support_parameters:update(RecordToUpdate, OverlayRecord)),
 
         DummyProviderId = ?RAND_STR(),
-        DummyRegistry = ExampleRegistry#support_parameters_registry{
-            registry = maps:put(DummyProviderId, RecordToUpdate, ExampleRegistry#support_parameters_registry.registry)
-        },
+        DummyRegistry = insert_parameters_into_registry(DummyProviderId, RecordToUpdate, ExampleRegistry),
+
         case ExpectedResult of
             {error, _} ->
                 ?assertEqual(
@@ -59,9 +48,7 @@ update_support_parameters_test() ->
                 );
             {ok, UpdatedParameters} ->
                 ?assertEqual(
-                    {ok, DummyRegistry#support_parameters_registry{
-                        registry = maps:put(DummyProviderId, UpdatedParameters, DummyRegistry#support_parameters_registry.registry)
-                    }},
+                    {ok, insert_parameters_into_registry(DummyProviderId, UpdatedParameters, DummyRegistry)},
                     support_parameters_registry:update_entry(DummyProviderId, OverlayRecord, DummyRegistry)
                 )
         end
@@ -90,6 +77,13 @@ example_support_parameters_registry() ->
 
 
 %% @private
+insert_parameters_into_registry(ProviderId, SupportParameters, SupportParametersRegistry) ->
+    SupportParametersRegistry#support_parameters_registry{
+        registry = maps:put(ProviderId, SupportParameters, SupportParametersRegistry#support_parameters_registry.registry)
+    }.
+
+
+%% @private
 encode_decode_test_base(Record) when not is_list(Record) ->
     encode_decode_test_base([Record]);
 encode_decode_test_base(Records) ->
@@ -99,18 +93,31 @@ encode_decode_test_base(Records) ->
     end, Records).
 
 
-update_support_parameters_test_cases() -> [
-    {?SPARAMS(false, false, disabled), ?SPARAMS(true, true, enabled), {ok, ?SPARAMS(true, true, enabled)}},
-    {?SPARAMS(false, true, disabled), ?SPARAMS(true, undefined, initializing), {ok, ?SPARAMS(true, true, initializing)}},
-    {?SPARAMS(false, false, stopping), ?SPARAMS(undefined, undefined, disabled), {ok, ?SPARAMS(false, false, disabled)}},
-    {?SPARAMS(false, true, enabled), ?SPARAMS(undefined, undefined, undefined), {ok, ?SPARAMS(false, true, enabled)}},
-    {?SPARAMS(true, true, enabled), ?SPARAMS(false, undefined, stopping), {ok, ?SPARAMS(false, true, stopping)}},
-    {?SPARAMS(true, true, enabled), ?SPARAMS(undefined, false, undefined), ?DSS_MUST_BE_ENABLED_ERROR},
-    {?SPARAMS(true, true, enabled), ?SPARAMS(true, false, stopping), ?DSS_MUST_BE_ENABLED_ERROR},
-    {?SPARAMS(false, false, disabled), ?SPARAMS(true, false, undefined), ?DSS_MUST_BE_ENABLED_ERROR},
-    {?SPARAMS(false, false, disabled), ?SPARAMS(true, false, initializing), ?DSS_MUST_BE_ENABLED_ERROR},
-    {?SPARAMS(false, true, disabled), ?SPARAMS(true, false, initializing), ?DSS_MUST_BE_ENABLED_ERROR}
-].
+%% @private
+update_support_parameters_test_cases() ->
+    MkParams = fun(AccountingEnabled, DirStatsServiceEnabled, DirStatsServiceStatus) ->
+        #support_parameters{
+            accounting_enabled = AccountingEnabled,
+            dir_stats_service_enabled = DirStatsServiceEnabled,
+            dir_stats_service_status = DirStatsServiceStatus
+        }
+    end,
+    ExpectedSettingsConflictError = ?ERROR_BAD_DATA(
+        <<"dirStatsServiceEnabled">>,
+        <<"Dir stats service must be enabled if accounting is enabled">>
+    ),
+    [
+        {MkParams(false, false, disabled), MkParams(true, true, enabled), {ok, MkParams(true, true, enabled)}},
+        {MkParams(false, true, disabled), MkParams(true, undefined, initializing), {ok, MkParams(true, true, initializing)}},
+        {MkParams(false, false, stopping), MkParams(undefined, undefined, disabled), {ok, MkParams(false, false, disabled)}},
+        {MkParams(false, true, enabled), MkParams(undefined, undefined, undefined), {ok, MkParams(false, true, enabled)}},
+        {MkParams(true, true, enabled), MkParams(false, undefined, stopping), {ok, MkParams(false, true, stopping)}},
+        {MkParams(true, true, enabled), MkParams(undefined, false, undefined), ExpectedSettingsConflictError},
+        {MkParams(true, true, enabled), MkParams(true, false, stopping), ExpectedSettingsConflictError},
+        {MkParams(false, false, disabled), MkParams(true, false, undefined), ExpectedSettingsConflictError},
+        {MkParams(false, false, disabled), MkParams(true, false, initializing), ExpectedSettingsConflictError},
+        {MkParams(false, true, disabled), MkParams(true, false, initializing), ExpectedSettingsConflictError}
+    ].
 
 
 -endif.

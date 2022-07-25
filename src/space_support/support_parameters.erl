@@ -50,7 +50,7 @@ all_dir_stats_service_statuses() ->
 %%--------------------------------------------------------------------
 %% @doc
 %% Updates support parameters with new values by applying an overlay record,
-%% but only the fields that are defined the overlay record are changed.
+%% but only the fields that are defined in the overlay record are changed.
 %% @end
 %%--------------------------------------------------------------------
 -spec update(record(), record()) -> {ok, record()} | errors:error().
