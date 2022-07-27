@@ -19,7 +19,7 @@
 
 
 %% API
--export([update_entry/3, remove_entry/2]).
+-export([update_entry/3, get_entry/2, remove_entry/2]).
 
 %% jsonable_record callbacks
 -export([to_json/1, from_json/1]).
@@ -59,6 +59,11 @@ update_entry(ProviderId, ParametersOverlay, Record = #support_parameters_registr
                 }
             }}
     end.
+
+
+-spec get_entry(onedata:provider_id(), record()) -> support_parameters:record().
+get_entry(ProviderId, #support_parameters_registry{registry = Registry}) ->
+    maps:get(ProviderId, Registry).
 
 
 -spec remove_entry(onedata:provider_id(), record()) -> record().
