@@ -111,7 +111,13 @@ update_support_parameters_test_cases() ->
         {MkParams(false, true, disabled), MkParams(true, undefined, initializing), {ok, MkParams(true, true, initializing)}},
         {MkParams(false, false, stopping), MkParams(undefined, undefined, disabled), {ok, MkParams(false, false, disabled)}},
         {MkParams(false, true, enabled), MkParams(undefined, undefined, undefined), {ok, MkParams(false, true, enabled)}},
-        {MkParams(true, true, enabled), MkParams(false, undefined, stopping), {ok, MkParams(false, true, stopping)}},
+        % cases when the status is tweaked in advance so that it is not confusing
+        {MkParams(true, true, enabled), MkParams(false, undefined, stopping), {ok, MkParams(false, true, initializing)}},
+        {MkParams(true, false, disabled), MkParams(undefined, true, undefined), {ok, MkParams(true, true, initializing)}},
+        {MkParams(true, false, stopping), MkParams(true, true, undefined), {ok, MkParams(true, true, initializing)}},
+        {MkParams(false, true, initializing), MkParams(false, false, undefined), {ok, MkParams(false, false, stopping)}},
+        {MkParams(false, true, enabled), MkParams(undefined, false, undefined), {ok, MkParams(false, false, stopping)}},
+        % illegal settings combinations
         {MkParams(true, true, enabled), MkParams(undefined, false, undefined), ExpectedSettingsConflictError},
         {MkParams(true, true, enabled), MkParams(true, false, stopping), ExpectedSettingsConflictError},
         {MkParams(false, false, disabled), MkParams(true, false, undefined), ExpectedSettingsConflictError},

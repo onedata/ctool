@@ -76,7 +76,7 @@ update(RecordToUpdate, OverlayRecord) ->
                 <<"Dir stats service must be enabled if accounting is enabled">>
             );
         _ ->
-            {ok, NewRecord}
+            {ok, ensure_dir_stats_service_status_adequate(NewRecord)}
     end.
 
 %%%===================================================================
@@ -142,3 +142,37 @@ dir_stats_service_status_from_json(<<"initializing">>) -> initializing;
 dir_stats_service_status_from_json(<<"enabled">>) -> enabled;
 dir_stats_service_status_from_json(<<"stopping">>) -> stopping;
 dir_stats_service_status_from_json(<<"disabled">>) -> disabled.
+
+
+%%--------------------------------------------------------------------
+%% @private
+%% @doc
+%% When dir_stats_service_enabled flag is toggled and before the change is
+%% acknowledged by a provider, the service status may be conflicting with the
+%% settings. This function tweaks the status in advance so that it is not confusing,
+%% assuming that the provider will sooner or later converge to this status.
+%% @end
+%%--------------------------------------------------------------------
+-spec ensure_dir_stats_service_status_adequate(record()) -> record().
+ensure_dir_stats_service_status_adequate(SP = #support_parameters{
+    dir_stats_service_enabled = true, dir_stats_service_status = disabled
+}) ->
+    SP#support_parameters{dir_stats_service_status = initializing};
+
+ensure_dir_stats_service_status_adequate(SP = #support_parameters{
+    dir_stats_service_enabled = true, dir_stats_service_status = stopping
+}) ->
+    SP#support_parameters{dir_stats_service_status = initializing};
+
+ensure_dir_stats_service_status_adequate(SP = #support_parameters{
+    dir_stats_service_enabled = false, dir_stats_service_status = enabled
+}) ->
+    SP#support_parameters{dir_stats_service_status = stopping};
+
+ensure_dir_stats_service_status_adequate(SP = #support_parameters{
+    dir_stats_service_enabled = false, dir_stats_service_status = initializing
+}) ->
+    SP#support_parameters{dir_stats_service_status = stopping};
+
+ensure_dir_stats_service_status_adequate(SP) ->
+    SP.
