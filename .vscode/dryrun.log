@@ -1,0 +1,5 @@
+make --dry-run --always-make --keep-going --print-directory
+make: Entering directory '/home/rwidzisz/ctool'
+./rebar3 compile
+make: Leaving directory '/home/rwidzisz/ctool'
+ 

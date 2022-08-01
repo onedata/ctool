@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<testsuite tests="2" failures="0" errors="0" skipped="0" time="0.009" name="module 'api_samples_tests'">
+  <testcase time="0.003" name="api_samples_tests:0 encode_decode_rest_api_samples_test">
+    <system-out>
+    </system-out>
+  </testcase>
+  <testcase time="0.000" name="api_samples_tests:0 encode_decode_rest_api_request_sample_test">
+    <system-out>
+    </system-out>
+  </testcase>
+</testsuite>
