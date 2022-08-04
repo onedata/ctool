@@ -1,0 +1,5 @@
+<testsuite tests="1" failures="0" errors="0" time="30" name="dialyzer">
+  <testcase time="30" name="dialyzer">
+    <systemout> </systemout>
+  </testcase>
+</testsuite>

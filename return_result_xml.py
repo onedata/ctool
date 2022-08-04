@@ -44,4 +44,4 @@ else:
         
 
 string_file = etree.ElementTree(xml_doc)
-string_file.write('TEST-dialyzer.xml',pretty_print=True)       
+string_file.write('test/dialyzer_results/TEST-dialyzer.xml',pretty_print=True)       
