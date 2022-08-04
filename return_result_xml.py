@@ -19,6 +19,11 @@ parser.add_argument("name")
 parser.add_argument("result")
 args = parser.parse_args()
 
+log_file = open('test.log', 'r')
+time_results = log_file.readlines()
+execution_time=int(time_results[1])-int(time_results[0])
+time=str(execution_time)
+
 maker = ElementMaker()
 TESTSUITE = maker.testsuite
 TESTCASE = maker.testcase
@@ -28,14 +33,14 @@ if(args.result=='failed'):
     xml_doc = TESTSUITE(
         TESTCASE(
             SYSTEMOUT(" "), 
-            time="0.02", name="api"),
-            tests="1",failures="1",errors="1",time="0.0",name=args.name)
+            time=time, name=args.name),
+            tests="1",failures="1",errors="1",time=time,name=args.name)
 else:
     xml_doc = TESTSUITE(
         TESTCASE(
             SYSTEMOUT(" "), 
-            time="0.03", name="api"),
-            tests="1",failures="0",errors="0",time="0.0",name=args.name)                
+            time=time, name=args.name),
+            tests="1",failures="0",errors="0",time=time,name=args.name)                
         
 
 string_file = etree.ElementTree(xml_doc)
