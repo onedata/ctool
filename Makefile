@@ -36,15 +36,15 @@ submodules:
 # Dialyzes the project.
 dialyzer:
 	pip3 install lxml
-	echo `date +%s` > test.log
+	echo `date +%s` > time.log
 	@./rebar3 dialyzer
-	echo `date +%s` >> test.log
+	echo `date +%s` >> time.log
 	if [ $$? -eq 0 ]; then \
-		python3 return_result_xml.py dialyzer passed ;\
+		python3 return_result_xml.py Dialyze passed ;\
 	else \
-		python3 return_result_xml.py dialyzer failed ;\
+		python3 return_result_xml.py Dialyze failed ;\
 	fi
-	rm test.log
+	rm time.log
 
 
 ##

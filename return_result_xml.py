@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python
+#!/usr/bin/env python
 
 # coding=utf-8
 """Author: Rafał Widziszewski
@@ -19,28 +19,29 @@ parser.add_argument("name")
 parser.add_argument("result")
 args = parser.parse_args()
 
-log_file = open('test.log', 'r')
-time_results = log_file.readlines()
-execution_time=int(time_results[1])-int(time_results[0])
-time=str(execution_time)
+log_file = open('time.log', 'r')
+log_file_content = log_file.readlines()
+times_usbstracted=int(log_file_content[1])-int(log_file_content[0])
+execution_time=str(times_usbstracted)
 
 maker = ElementMaker()
 TESTSUITE = maker.testsuite
 TESTCASE = maker.testcase
 SYSTEMOUT = maker.systemout
 
+
 if(args.result=='failed'):    
     xml_doc = TESTSUITE(
         TESTCASE(
             SYSTEMOUT(" "), 
-            time=time, name=args.name),
-            tests="1",failures="1",errors="1",time=time,name=args.name)
+            time=execution_time, name=args.name),
+            tests="1",failures="1",errors="1",time=execution_time,name=args.name)
 else:
     xml_doc = TESTSUITE(
         TESTCASE(
             SYSTEMOUT(" "), 
-            time=time, name=args.name),
-            tests="1",failures="0",errors="0",time=time,name=args.name)                
+            time=execution_time, name=args.name),
+            tests="1",failures="0",errors="0",time=execution_time,name=args.name)                
         
 
 string_file = etree.ElementTree(xml_doc)
