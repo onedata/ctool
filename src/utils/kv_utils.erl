@@ -33,7 +33,7 @@
 
 %% API
 -export([get/2, get/3, find/2, is_key/2, put/3, update_with/3, update_with/4, remove/2, 
-    rename_entry/3, rename_entry_unchecked/3]).
+    rename_entry/3, rename_existing_entry/3]).
 -export([copy_all/3, copy_found/2, copy_found/3]).
 
 
@@ -203,9 +203,9 @@ rename_entry(OldPath, NewPath, Nested) ->
 %% Returns unchanged Nested if the value was not found.
 %% @end
 %%--------------------------------------------------------------------
--spec rename_entry_unchecked(OldPath :: path(K), NewPath :: path(K), nested(K, V)) ->
+-spec rename_existing_entry(OldPath :: path(K), NewPath :: path(K), nested(K, V)) ->
     nested(K, V).
-rename_entry_unchecked(OldPath, NewPath, Nested) ->
+rename_existing_entry(OldPath, NewPath, Nested) ->
     case find(OldPath, Nested) of
         {ok, Found} -> put(NewPath, Found, remove(OldPath, Nested));
         error -> Nested
