@@ -22,6 +22,7 @@
 -export([generate/2, generate_from_list/2]).
 -export([random_submap/1, random_submap/3]).
 -export([fold_while/3]).
+-export([all/2]).
 
 %%%===================================================================
 %%% API functions
@@ -110,11 +111,15 @@ generate(Generator, Count) ->
     end, lists:seq(1, Count)).
 
 
--spec generate_from_list(fun((Element) -> {Key, Value}), [Element]) -> #{Key => Value}.
+-spec generate_from_list(fun((Element) -> Value | {Key, Value}), [Element]) -> #{Element | Key => Value}.
 generate_from_list(Generator, Elements) ->
     lists:foldl(fun(Element, Acc) ->
-        {Key, Value} = Generator(Element),
-        Acc#{Key => Value}
+        case Generator(Element) of
+            {Key, Value} ->
+                Acc#{Key => Value};
+            Value ->
+                Acc#{Element => Value}
+        end
     end, #{}, Elements).
 
 
@@ -151,3 +156,13 @@ do_fold_while(Fun, {cont, Acc}, Iterator) ->
         {Key, Value, NewIterator} ->
             do_fold_while(Fun, Fun(Key, Value, Acc), NewIterator)
     end.
+
+
+-spec all(fun((K, V) -> boolean()), #{K => V}) -> boolean().
+all(Predicate, Map) ->
+    fold_while(fun(Key, Value, _) ->
+        case Predicate(Key, Value) of
+            true -> {cont, true};
+            false -> {halt, false}
+        end
+    end, true, Map).

@@ -75,5 +75,9 @@
 -define(RAND_SUBLIST(List, MinLength, MaxLength), lists_utils:random_sublist(List, MinLength, MaxLength)).
 -define(RAND_SUBMAP(Map), maps:with(lists_utils:random_sublist(maps:keys(Map)), Map)).
 
+-define(TOO_LONG_NAME, <<
+    "very_very_very_long_name_with_at_least_128_characters_yes_indeed_more_"
+    "than_one_hundred_twenty_eight_characters_that_should_not_be_allowed"
+>>).
 
 -endif.

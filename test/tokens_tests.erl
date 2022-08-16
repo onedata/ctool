@@ -227,37 +227,16 @@ sanitize_type_test() ->
         <<"inviteType">> => <<"groupJoinSpace">>, <<"spaceId">> => <<"id">>
     }})),
 
-    ?assertEqual(false, S(?INVITE_TOKEN(?SUPPORT_SPACE, <<"id">>, undefined))),
+    ?assertEqual({true, ?INVITE_TOKEN(?SUPPORT_SPACE, <<"id">>)}, S(?INVITE_TOKEN(?SUPPORT_SPACE, <<"id">>, undefined))),
     ?assertEqual(
-        {true, ?INVITE_TOKEN(?SUPPORT_SPACE, <<"id">>, support_parameters:build(none, eager))},
-        S(?INVITE_TOKEN(?SUPPORT_SPACE, <<"id">>, support_parameters:build(none, eager)))
-    ),
-    ?assertEqual(
-        {true, ?INVITE_TOKEN(?SUPPORT_SPACE, <<"id">>, support_parameters:build(global, eager))},
+        {true, ?INVITE_TOKEN(?SUPPORT_SPACE, <<"id">>)},
         S(#{<<"inviteToken">> => #{<<"inviteType">> => <<"supportSpace">>, <<"spaceId">> => <<"id">>}})
     ),
     ?assertEqual(
-        {true, ?INVITE_TOKEN(?SUPPORT_SPACE, <<"id">>, support_parameters:build(global, eager))},
+        {true, ?INVITE_TOKEN(?SUPPORT_SPACE, <<"id">>)},
         S(#{<<"inviteToken">> => #{
             <<"inviteType">> => <<"supportSpace">>,
-            <<"spaceId">> => <<"id">>,
-            <<"parameters">> => #{<<"dataWrite">> => <<"global">>, <<"metadataReplication">> => <<"eager">>}
-        }})
-    ),
-    ?assertEqual(
-        {true, ?INVITE_TOKEN(?SUPPORT_SPACE, <<"id">>, support_parameters:build(none, lazy))},
-        S(#{<<"inviteToken">> => #{
-            <<"inviteType">> => <<"supportSpace">>,
-            <<"spaceId">> => <<"id">>,
-            <<"parameters">> => #{<<"dataWrite">> => <<"none">>, <<"metadataReplication">> => <<"lazy">>}
-        }})
-    ),
-    ?assertEqual(
-        {true, ?INVITE_TOKEN(?SUPPORT_SPACE, <<"id">>, support_parameters:build(global, none))},
-        S(#{<<"inviteToken">> => #{
-            <<"inviteType">> => <<"supportSpace">>,
-            <<"spaceId">> => <<"id">>,
-            <<"parameters">> => #{<<"dataWrite">> => <<"global">>, <<"metadataReplication">> => <<"none">>}
+            <<"spaceId">> => <<"id">>
         }})
     ),
 
@@ -1369,9 +1348,7 @@ random_invite_token() ->
         02 -> ?INVITE_TOKEN(?GROUP_JOIN_GROUP, ?RAND_STR);
         03 -> ?INVITE_TOKEN(?USER_JOIN_SPACE, ?RAND_STR);
         04 -> ?INVITE_TOKEN(?GROUP_JOIN_SPACE, ?RAND_STR);
-        05 -> ?INVITE_TOKEN(?SUPPORT_SPACE, ?RAND_STR, support_parameters:build(
-            lists_utils:random_element([global, none]), lists_utils:random_element([eager, lazy, none])
-        ));
+        05 -> ?INVITE_TOKEN(?SUPPORT_SPACE, ?RAND_STR);
         06 -> ?INVITE_TOKEN(?HARVESTER_JOIN_SPACE, ?RAND_STR);
         07 -> ?INVITE_TOKEN(?REGISTER_ONEPROVIDER, ?RAND_STR);
         08 -> ?INVITE_TOKEN(?USER_JOIN_CLUSTER, ?RAND_STR);
