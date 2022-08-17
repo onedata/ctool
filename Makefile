@@ -36,15 +36,7 @@ submodules:
 # Dialyzes the project.
 dialyzer:
 	pip3 install lxml
-	echo `date +%s` > time.log
-	@./rebar3 dialyzer
-	echo `date +%s` >> time.log
-	if [ $$? -eq 0 ]; then \
-		python3 return_result_xml.py Dialyze passed ;\
-	else \
-		python3 return_result_xml.py Dialyze failed ;\
-	fi
-	rm time.log
+	python3 run-with-surefire-report.py --test-name dialyzer --report-path test/dialyzer_results/TEST-dialyzer.xml ./rebar3 dialyzer
 
 
 ##
