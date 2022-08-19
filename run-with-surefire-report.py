@@ -10,6 +10,7 @@ This software is released under the MIT license cited in 'LICENSE.txt'
 import argparse
 import subprocess
 import time
+import unicodedata
 import os
 
 parser = argparse.ArgumentParser()
@@ -32,20 +33,25 @@ if result.returncode == 0:
     failure_format_xml=''
 else:
     failures=1
+
+    result.stdout = result.stdout.replace(">","&gt;")
+    result.stdout = result.stdout.replace("<","&lt;")
+    filtered_stdout = ''.join(c for c in result.stdout if not unicodedata.category(c).startswith('C'))
+
     failure_format_xml='''<failure>
 {error}
     </failure>'''.format(
-     error=result.stdout    
+     error=filtered_stdout    
 )    
 
 xml_content = '''<?xml version="1.0" encoding="UTF-8" ?>
-    <testsuite tests="1" failures="{failures}" errors="0" skipped="0" time="{time}" name="{name}">
+<testsuite tests="1" failures="{failures}" errors="0" skipped="0" time="{time}" name="{name}">
     <testcase time="{time}" name="{name}">
-    {failure_text}
+        {failure_text}
         <system-out>
         </system-out>
     </testcase>
-    </testsuite>
+</testsuite>
     '''.format(
         failures=failures,
         time=execution_time,
