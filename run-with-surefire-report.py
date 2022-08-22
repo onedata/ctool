@@ -13,6 +13,16 @@ import time
 import unicodedata
 import os
 
+def should_include_char_in_output(c):
+    if c == '\n' or c =='\r' or c=='\t':
+        return True
+    else:    
+        if not (unicodedata.category(c).startswith('C')):
+            return True
+        else:
+            return False
+
+
 parser = argparse.ArgumentParser()
 parser.add_argument("--test-name")
 parser.add_argument("--report-path")
@@ -36,7 +46,7 @@ else:
 
     result.stdout = result.stdout.replace(">","&gt;")
     result.stdout = result.stdout.replace("<","&lt;")
-    filtered_stdout = ''.join(c for c in result.stdout if not unicodedata.category(c).startswith('C'))
+    filtered_stdout = ''.join(c for c in result.stdout if should_include_char_in_output(c))
 
     failure_format_xml='''<failure>
 {error}
