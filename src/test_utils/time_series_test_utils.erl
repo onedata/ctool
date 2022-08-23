@@ -12,8 +12,14 @@
 -module(time_series_test_utils).
 -author("Lukasz Opiola").
 
+-include("time_series/common.hrl").
 -include("time_series/dashboard.hrl").
 -include("test/test_utils.hrl").
+
+-export([example_time_series_collection_schema/0, example_time_series_collection_schemas/0]).
+-export([example_time_series_schema/0, example_time_series_schemas/0]).
+-export([example_metric_configs/0]).
+-export([example_time_series_units/0]).
 
 -export([example_dashboard_spec/0, example_dashboard_specs/0]).
 -export([example_dashboard_section_spec/0, example_dashboard_section_specs/0]).
@@ -41,6 +47,66 @@
 %%%===================================================================
 %%% API
 %%%===================================================================
+
+-spec example_time_series_collection_schema() -> time_series_collection_schema:record().
+example_time_series_collection_schema() ->
+    #time_series_collection_schema{
+        time_series_schemas = ?RAND_SUBLIST(example_time_series_schemas(), 1, all)
+    }.
+
+-spec example_time_series_collection_schemas() -> [time_series_collection_schema:record()].
+example_time_series_collection_schemas() ->
+    lists_utils:generate(fun example_time_series_collection_schema/0, 2).
+
+
+-spec example_time_series_schema() -> time_series_schema:record().
+example_time_series_schema() ->
+    example_time_series_schema(example_name()).
+
+-spec example_time_series_schema(time_series_schema:name_generator()) ->
+    time_series_schema:record().
+example_time_series_schema(NameGenerator) ->
+    #time_series_schema{
+        name_generator_type = ?RAND_ELEMENT([exact, add_prefix]),
+        name_generator = NameGenerator,
+        unit = ?RAND_ELEMENT(time_series_test_utils:example_time_series_units()),
+        metrics = maps_utils:generate_from_list(fun(MetricConfig) ->
+            {example_name(), MetricConfig}
+        end, ?RAND_SUBLIST(example_metric_configs(), 1, all))
+    }.
+
+
+-spec example_time_series_schemas() -> [time_series_schema:record()].
+example_time_series_schemas() ->
+    lists_utils:generate(fun(Ordinal) ->
+        example_time_series_schema(str_utils:format_bin("~B~s", [Ordinal, example_name()]))
+    end, 5).
+
+
+-spec example_metric_configs() -> [metric_config:record()].
+example_metric_configs() ->
+    lists:map(fun(Resolution) ->
+        #metric_config{
+            resolution = Resolution,
+            retention = ?RAND_INT(1, 1000),
+            aggregator = ?RAND_ELEMENT(?ALLOWED_METRIC_AGGREGATORS)
+        }
+    end, ?ALLOWED_METRIC_RESOLUTIONS).
+
+
+-spec example_time_series_units() -> [time_series:unit()].
+example_time_series_units() -> [
+    none,
+    milliseconds, seconds,
+    bits, bytes,
+    hertz, counts_per_sec, operations_per_sec, requests_per_sec,
+    bits_per_sec, bytes_per_sec,
+    reads_per_sec, writes_per_sec, io_operations_per_sec,
+    percent, percent_normalized,
+    boolean,
+    {custom, example_name()}
+].
+
 
 -spec example_dashboard_spec() -> ts_dashboard_spec:record().
 example_dashboard_spec() ->
@@ -318,6 +384,7 @@ example_chart_external_series_configs_source_specs() ->
     ts_chart_external_series_configs_source_parameters:record().
 example_chart_external_series_configs_source_parameters() ->
     #ts_chart_external_series_configs_source_parameters{
+        collection_ref = ?RAND_ELEMENT([undefined, ?RAND_STR()]),
         time_series_name_generator = ?RAND_STR(),
         metric_names = ?RAND_SUBLIST([?RAND_STR(), ?RAND_STR(), ?RAND_STR(), ?RAND_STR(), ?RAND_STR(), ?RAND_STR()])
     }.
@@ -390,3 +457,12 @@ example_provider_function(MaxNestingLevel) ->
 -spec example_provider_functions() -> [ts_provider_function:record()].
 example_provider_functions() ->
     lists_utils:generate(fun example_provider_function/0, 20).
+
+%%%===================================================================
+%%% Internal functions
+%%%===================================================================
+
+%% @private
+-spec example_name() -> binary().
+example_name() ->
+    ?RAND_STR(rand:uniform(10) + 10).

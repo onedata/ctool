@@ -33,7 +33,7 @@
               | reads_per_sec | writes_per_sec | io_operations_per_sec
               | percent | percent_normalized
               | boolean
-              | {custom, automation:name()}.
+              | {custom, binary()}.
 -export_type([unit/0]).
 %% @formatter:on
 
