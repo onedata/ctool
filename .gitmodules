@@ -1,4 +1,3 @@
 [submodule "bamboos"]
 	path = bamboos
 	url = ../bamboos.git
-	branch = feature/codetracker_and_dialyzer_script

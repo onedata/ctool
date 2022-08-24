@@ -92,7 +92,7 @@
 %   * The 'root' subject is authorized to do everything and must be used with caution.
 %   * The 'group' subject is used in cv_consumer caveats to allow token consumption
 %     for any member of specified group
--type subject_type() :: pos_integer().
+-type subject_type() :: nobody | root | user | group | ?ONEPROVIDER.
 % Applicable only in case of ?ONEPROVIDER type to differentiate between
 % ?OP_WORKER and ?OP_PANEL services, that both use the same access token
 -type subject_subtype() :: undefined | ?OP_WORKER | ?OP_PANEL.
