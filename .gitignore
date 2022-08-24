@@ -10,6 +10,8 @@ ebin
 .rebar3
 
 test/eunit_results
+test/dialyzer_results
+test/codetag_tracker_results
 _build
 /priv
 compile_commands.json
