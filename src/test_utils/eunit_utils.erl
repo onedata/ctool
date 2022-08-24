@@ -78,7 +78,7 @@ is_equal_after_db_encode_and_decode(Record, RecordType) ->
 
 
 % validation is done during decoding from json, so it is possible to encode an invalid record
-% to json, but the get an error when decoding it back from json
+% to json, but get an error when decoding it back from json
 -spec throws_error_during_decode_from_json(errors:error(), tuple() | [tuple()]) -> boolean().
 throws_error_during_decode_from_json(ExpError, Records) when is_list(Records) ->
     throws_error_during_decode_from_json(ExpError, utils:record_type(hd(Records)), Records);
