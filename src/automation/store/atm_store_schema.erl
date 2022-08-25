@@ -81,7 +81,7 @@ encode_with(Schema, NestedRecordEncoder) ->
 
 
 %% @private
--spec decode_with(automation:validation_strategy(), json_utils:json_term(), persistent_record:nested_record_decoder()) ->
+-spec decode_with(jsonable_record:validation_strategy(), json_utils:json_term(), persistent_record:nested_record_decoder()) ->
     record().
 decode_with(skip_validation, SchemaJson, NestedRecordDecoder) ->
     Type = automation:store_type_from_json(maps:get(<<"type">>, SchemaJson)),

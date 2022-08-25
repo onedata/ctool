@@ -40,7 +40,7 @@ encode_value_constraints(Constraints, _NestedRecordEncoder) ->
 
 
 -spec decode_value_constraints(
-    automation:validation_strategy(),
+    jsonable_record:validation_strategy(),
     json_utils:json_term(),
     persistent_record:nested_record_decoder()
 ) ->

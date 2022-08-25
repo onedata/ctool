@@ -76,7 +76,7 @@ encode(Record) ->
 
 
 %% @private
--spec decode(automation:validation_strategy(), json_utils:json_term()) -> record().
+-spec decode(jsonable_record:validation_strategy(), json_utils:json_term()) -> record().
 decode(skip_validation, RecordJson) ->
     #atm_resource_spec{
         cpu_requested = utils:null_to_undefined(maps:get(<<"cpuRequested">>, RecordJson)),

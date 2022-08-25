@@ -24,6 +24,13 @@
 %% persistent_record callbacks
 -export([version/0, db_encode/2, db_decode/2]).
 
+% Indicates the source time series collection from which data points will be fetched.
+% Used only when the collection is not clearly known from the context (i.e. there is
+% more than one possible source collection). Expressed as a string known to the dashboard
+% spec recipient, which is opaque to the backend.
+-type collection_ref() :: undefined | binary().
+-export_type([collection_ref/0]).
+
 -type record() :: #ts_chart_external_series_configs_source_parameters{}.
 -export_type([record/0]).
 
@@ -35,6 +42,7 @@
 -spec to_json(record()) -> json_utils:json_term().
 to_json(Record) ->
     #{
+        <<"collectionRef">> => utils:undefined_to_null(Record#ts_chart_external_series_configs_source_parameters.collection_ref),
         <<"timeSeriesNameGenerator">> => Record#ts_chart_external_series_configs_source_parameters.time_series_name_generator,
         <<"metricNames">> => Record#ts_chart_external_series_configs_source_parameters.metric_names
     }.
@@ -43,6 +51,7 @@ to_json(Record) ->
 -spec from_json(json_utils:json_term()) -> record().
 from_json(RecordJson) ->
     #ts_chart_external_series_configs_source_parameters{
+        collection_ref = utils:null_to_undefined(maps:get(<<"collectionRef">>, RecordJson, null)),
         time_series_name_generator = maps:get(<<"timeSeriesNameGenerator">>, RecordJson),
         metric_names = maps:get(<<"metricNames">>, RecordJson)
     }.

@@ -43,9 +43,6 @@
 -export([example_workflow_schema_revisions/0]).
 -export([example_workflow_schema_revision_registries/0]).
 -export([example_time_series_measurement_specs/0]).
--export([example_metric_configs/0]).
--export([example_time_series_schema/0, example_time_series_schemas/0]).
--export([example_time_series_units/0]).
 
 -type lambda_registries() :: #{AtmLambdaId :: automation:id() => atm_lambda_revision_registry:record()}.
 -export_type([lambda_registries/0]).
@@ -57,6 +54,7 @@
 -spec example_id() -> automation:id().
 example_id() ->
     ?RAND_STR(16).
+
 
 -spec example_name() -> automation:name().
 example_name() ->
@@ -331,7 +329,9 @@ example_store_config(range) ->
     #atm_range_store_config{};
 example_store_config(time_series) ->
     #atm_time_series_store_config{
-        schemas = ?RAND_SUBLIST(example_time_series_schemas(), 1, all),
+        time_series_collection_schema = #time_series_collection_schema{
+            time_series_schemas = ?RAND_SUBLIST(time_series_test_utils:example_time_series_schemas(), 1, all)
+        },
         % dashboard specs are not included because they are very complicated and
         % their generation can cause horrendous slowdown of the automation example generators
         % (which are intensively used during tests)
@@ -687,7 +687,7 @@ example_time_series_measurement_spec(NameMatcher) ->
     #atm_time_series_measurement_spec{
         name_matcher_type = ?RAND_ELEMENT([exact, has_prefix]),
         name_matcher = NameMatcher,
-        unit = ?RAND_ELEMENT(example_time_series_units())
+        unit = ?RAND_ELEMENT(time_series_test_utils:example_time_series_units())
     }.
 
 
@@ -696,52 +696,3 @@ example_time_series_measurement_specs() ->
     lists_utils:generate(fun(Ordinal) ->
         example_time_series_measurement_spec(str_utils:format_bin("~B~s", [Ordinal, example_name()]))
     end, 5).
-
-
--spec example_metric_configs() -> [metric_config:record()].
-example_metric_configs() ->
-    lists:map(fun(Resolution) ->
-        #metric_config{
-            resolution = Resolution,
-            retention = ?RAND_INT(1, 1000),
-            aggregator = ?RAND_ELEMENT(?ALLOWED_METRIC_AGGREGATORS)
-        }
-    end, ?ALLOWED_METRIC_RESOLUTIONS).
-
-
--spec example_time_series_schema() -> atm_time_series_schema:record().
-example_time_series_schema() ->
-    example_time_series_schema(example_name()).
-
--spec example_time_series_schema(atm_time_series_names:target_ts_name_generator()) ->
-    atm_time_series_schema:record().
-example_time_series_schema(NameGenerator) ->
-    #atm_time_series_schema{
-        name_generator_type = ?RAND_ELEMENT([exact, add_prefix]),
-        name_generator = NameGenerator,
-        unit = ?RAND_ELEMENT(example_time_series_units()),
-        metrics = maps_utils:generate_from_list(fun(MetricConfig) ->
-            {example_name(), MetricConfig}
-        end, ?RAND_SUBLIST(example_metric_configs(), 1, all))
-    }.
-
-
--spec example_time_series_schemas() -> [atm_time_series_schema:record()].
-example_time_series_schemas() ->
-    lists_utils:generate(fun(Ordinal) ->
-        example_time_series_schema(str_utils:format_bin("~B~s", [Ordinal, example_name()]))
-    end, 5).
-
-
--spec example_time_series_units() -> [time_series:unit()].
-example_time_series_units() -> [
-    none,
-    milliseconds, seconds,
-    bits, bytes,
-    hertz, counts_per_sec, operations_per_sec, requests_per_sec,
-    bits_per_sec, bytes_per_sec,
-    reads_per_sec, writes_per_sec, io_operations_per_sec,
-    percent, percent_normalized,
-    boolean,
-    {custom, example_name()}
-].

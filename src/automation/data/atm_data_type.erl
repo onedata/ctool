@@ -61,7 +61,7 @@
 %% @end
 %%--------------------------------------------------------------------
 -callback decode_value_constraints(
-    automation:validation_strategy(),
+    jsonable_record:validation_strategy(),
     json_utils:json_term(),
     persistent_record:nested_record_decoder()
 ) ->
@@ -132,7 +132,7 @@ encode_value_constraints(TypeName, Constraints, NestedRecordEncoder) ->
 
 -spec decode_value_constraints(
     type(),
-    automation:validation_strategy(),
+    jsonable_record:validation_strategy(),
     json_utils:json_term(),
     persistent_record:nested_record_decoder()
 ) ->

@@ -15,7 +15,6 @@
 
 
 -include("../time_series/common.hrl").
--include("../errors.hrl").
 
 
 -define(DEFAULT_SUMMARY, <<"Missing summary">>).
@@ -121,10 +120,8 @@
 -record(atm_range_store_config, {
 }).
 
-%% @TODO VFS-9346 Reuse time series store config in all time series related API
-% (it should be extracted on the time_series level, rather than related strictly to automation)
 -record(atm_time_series_store_config, {
-    schemas :: [atm_time_series_schema:record()],
+    time_series_collection_schema :: #time_series_collection_schema{},
     dashboard_spec :: undefined | ts_dashboard_spec:record()
 }).
 
@@ -178,7 +175,7 @@
 -record(atm_time_series_dispatch_rule, {
     measurement_ts_name_matcher_type :: atm_time_series_names:measurement_ts_name_matcher_type(),
     measurement_ts_name_matcher :: atm_time_series_names:measurement_ts_name_matcher(),
-    target_ts_name_generator :: atm_time_series_names:target_ts_name_generator(),
+    target_ts_name_generator :: time_series_schema:name_generator(),
     prefix_combiner :: atm_time_series_names:prefix_combiner()
 }).
 
@@ -241,13 +238,6 @@
     name_matcher_type :: atm_time_series_names:measurement_ts_name_matcher_type(),
     name_matcher :: atm_time_series_names:measurement_ts_name_matcher(),
     unit :: time_series:unit()
-}).
-
--record(atm_time_series_schema, {
-    name_generator_type :: atm_time_series_names:target_ts_name_generator_type(),
-    name_generator :: atm_time_series_names:target_ts_name_generator(),
-    unit :: time_series:unit(),
-    metrics :: time_series:metric_composition()
 }).
 
 

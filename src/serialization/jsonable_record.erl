@@ -27,6 +27,11 @@
 -type record_type() :: module().
 -export_type([record/0, record_type/0]).
 
+% Indicates if record validation should be performed.
+-type validation_strategy() :: validate | skip_validation.
+-export_type([validation_strategy/0]).
+
+
 %%%===================================================================
 %%% jsonable_record behaviour
 %%%===================================================================
