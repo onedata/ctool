@@ -33,7 +33,7 @@
 
 %% API
 -export([get/2, get/3, find/2, is_key/2, put/3, update_with/3, update_with/4, remove/2, 
-    rename_entry/3, rename_existing_entry/3]).
+    move/3, move_found/3]).
 -export([copy_all/3, copy_found/2, copy_found/3]).
 
 
@@ -189,9 +189,9 @@ remove(Path, Nested) ->
 %% Returns error if the value was not found.
 %% @end
 %%--------------------------------------------------------------------
--spec rename_entry(OldPath :: path(K), NewPath :: path(K), nested(K, V)) ->
+-spec move(OldPath :: path(K), NewPath :: path(K), nested(K, V)) ->
     {ok, nested(K, V)} | error.
-rename_entry(OldPath, NewPath, Nested) ->
+move(OldPath, NewPath, Nested) ->
     case find(OldPath, Nested) of
         {ok, Found} -> {ok, put(NewPath, Found, remove(OldPath, Nested))};
         error -> error
@@ -203,9 +203,9 @@ rename_entry(OldPath, NewPath, Nested) ->
 %% Returns unchanged Nested if the value was not found.
 %% @end
 %%--------------------------------------------------------------------
--spec rename_existing_entry(OldPath :: path(K), NewPath :: path(K), nested(K, V)) ->
+-spec move_found(OldPath :: path(K), NewPath :: path(K), nested(K, V)) ->
     nested(K, V).
-rename_existing_entry(OldPath, NewPath, Nested) ->
+move_found(OldPath, NewPath, Nested) ->
     case find(OldPath, Nested) of
         {ok, Found} -> put(NewPath, Found, remove(OldPath, Nested));
         error -> Nested

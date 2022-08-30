@@ -219,15 +219,15 @@ remove_test_() -> [
 
 rename_test_() -> [
     ?_assertEqual({ok, #{new_key => value}},
-        kv_utils:rename_entry(old_key, new_key, #{old_key => value})),
+        kv_utils:move(old_key, new_key, #{old_key => value})),
     ?_assertEqual(error,
-        kv_utils:rename_entry(old_key, new_key, #{other_key => value})),
+        kv_utils:move(old_key, new_key, #{other_key => value})),
     ?_assertEqual({ok, #{key1 => #{key2 => #{key3 => value}}}},
-        kv_utils:rename_entry(old_key, [key1, key2, key3], #{old_key => value})),
+        kv_utils:move(old_key, [key1, key2, key3], #{old_key => value})),
     ?_assertEqual({ok, #{stays => stayed, new_key => value}},
-        kv_utils:rename_entry(old_key, new_key, #{stays => stayed, old_key => value})),
+        kv_utils:move(old_key, new_key, #{stays => stayed, old_key => value})),
     ?_assertEqual({ok, [{new_key, value}, {stays, stayed}]},
-        kv_utils:rename_entry(old_key, new_key, [{stays, stayed}, {old_key, value}]))
+        kv_utils:move(old_key, new_key, [{stays, stayed}, {old_key, value}]))
 ].
 
 
