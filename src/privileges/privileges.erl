@@ -73,7 +73,7 @@
 
 ?SPACE_VIEW_ATM_WORKFLOW_EXECUTIONS |
 ?SPACE_SCHEDULE_ATM_WORKFLOW_EXECUTIONS |
-?SPACE_CANCEL_ATM_WORKFLOW_EXECUTIONS.
+?SPACE_MANAGE_ATM_WORKFLOW_EXECUTIONS.
 
 %% User privileges with regards to handle service.
 -type handle_service_privilege() ::
@@ -335,7 +335,7 @@ space_admin() ->
         ?SPACE_MANAGE_QOS,
         ?SPACE_REMOVE_ARCHIVES,
         ?SPACE_RECALL_ARCHIVES,
-        ?SPACE_CANCEL_ATM_WORKFLOW_EXECUTIONS
+        ?SPACE_MANAGE_ATM_WORKFLOW_EXECUTIONS
     ]).
 
 %%--------------------------------------------------------------------

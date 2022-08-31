@@ -6,7 +6,7 @@
 %%% @end
 %%%-------------------------------------------------------------------
 %%% @doc
-%%% Eunit tests of atm_time_series_name modules.
+%%% Eunit tests of the atm_time_series_names module.
 %%% @end
 %%%-------------------------------------------------------------------
 -module(atm_time_series_names_tests).
@@ -133,7 +133,7 @@ find_matching_dispatch_rules_test() ->
 -record(testcase, {
     measurement_ts_name :: atm_time_series_names:measurement_ts_name(),
     measurement_ts_name_matcher :: {atm_time_series_names:measurement_ts_name_matcher_type(), atm_time_series_names:measurement_ts_name_matcher()},
-    target_ts_name_generator :: {atm_time_series_names:target_ts_name_generator_type(), atm_time_series_names:target_ts_name_generator()},
+    target_ts_name_generator :: {time_series_schema:name_generator_type(), time_series_schema:name_generator()},
     prefix_combiner_variants :: [atm_time_series_names:prefix_combiner()],
     expected_final_ts_name :: binary()
 }).
@@ -233,7 +233,7 @@ run_testcase(#testcase{
     expected_final_ts_name = ExpectedFinalTsName
 }) ->
     lists:foreach(fun(PrefixCombiner) ->
-        TimeSeriesSchema = #atm_time_series_schema{
+        TimeSeriesSchema = #time_series_schema{
             name_generator_type = TargetTsNameMatcherType,
             name_generator = TargetTsNameMatcher
         },
@@ -251,7 +251,7 @@ run_testcase(#testcase{
             TimeSeriesDispatchRule, []
         )),
         ?assertThrow(?ERROR_BAD_DATA(_, _), atm_time_series_names:select_referenced_time_series_schema(
-            TimeSeriesDispatchRule, atm_test_utils:example_time_series_schemas()
+            TimeSeriesDispatchRule, time_series_test_utils:example_time_series_schemas()
         )),
 
         ?assertEqual(ExpectedFinalTsName, atm_time_series_names:resolve_target_ts_name(

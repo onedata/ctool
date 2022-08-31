@@ -76,7 +76,7 @@ encode(Record) ->
         <<"measurementTimeSeriesNameMatcher">> => atm_time_series_names:measurement_ts_name_matcher_to_json(
             Record#atm_time_series_dispatch_rule.measurement_ts_name_matcher
         ),
-        <<"targetTimeSeriesNameGenerator">> => atm_time_series_names:target_ts_name_generator_to_json(
+        <<"targetTimeSeriesNameGenerator">> => time_series_schema:name_generator_to_json(
             Record#atm_time_series_dispatch_rule.target_ts_name_generator
         ),
         <<"prefixCombiner">> => atm_time_series_names:prefix_combiner_to_json(
@@ -95,7 +95,7 @@ decode(RecordJson) ->
         measurement_ts_name_matcher = atm_time_series_names:measurement_ts_name_matcher_from_json(
             maps:get(<<"measurementTimeSeriesNameMatcher">>, RecordJson)
         ),
-        target_ts_name_generator = atm_time_series_names:measurement_ts_name_matcher_from_json(
+        target_ts_name_generator = time_series_schema:name_generator_from_json(
             maps:get(<<"targetTimeSeriesNameGenerator">>, RecordJson)
         ),
         prefix_combiner = atm_time_series_names:prefix_combiner_from_json(

@@ -19,12 +19,18 @@
 -author("Lukasz Opiola").
 
 %% API
--export([to_json/2, from_json/2]).
+-export([to_json/1, to_json/2]).
+-export([from_json/2]).
 -export([list_to_json/2, list_from_json/2]).
 
 -type record() :: tuple().
 -type record_type() :: module().
 -export_type([record/0, record_type/0]).
+
+% Indicates if record validation should be performed.
+-type validation_strategy() :: validate | skip_validation.
+-export_type([validation_strategy/0]).
+
 
 %%%===================================================================
 %%% jsonable_record behaviour
@@ -48,6 +54,10 @@
 %%%===================================================================
 %%% API functions
 %%%===================================================================
+
+-spec to_json(record()) -> json_utils:json_term().
+to_json(JsonableRecord) ->
+    to_json(JsonableRecord, utils:record_type(JsonableRecord)).
 
 -spec to_json(record(), record_type()) -> json_utils:json_term().
 to_json(JsonableRecord, RecordType) ->

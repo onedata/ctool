@@ -106,7 +106,7 @@ encode(Record) ->
 
 
 %% @private
--spec decode(automation:validation_strategy(), json_utils:json_term()) -> record().
+-spec decode(jsonable_record:validation_strategy(), json_utils:json_term()) -> record().
 decode(skip_validation, RecordJson) ->
     #metric_config{
         resolution = maps:get(<<"resolution">>, RecordJson),

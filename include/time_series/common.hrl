@@ -14,11 +14,28 @@
 -define(TIME_SERIES_COMMON_HRL, 1).
 
 
-% Record expressing configuration of a single metric in a time series
+-include("../errors.hrl").
+
+
+% Record expressing configuration of a single metric in a time series.
 -record(metric_config, {
     resolution :: metric_config:resolution(),
     retention :: metric_config:retention(),
     aggregator :: metric_config:aggregator()
+}).
+
+% Record expressing time series collection schema, which specifies what time
+% series can appear in the collection and how to display them using a dashboard.
+-record(time_series_collection_schema, {
+    time_series_schemas :: [time_series_schema:record()]
+}).
+
+% Record expressing a template from which a time series instance is created.
+-record(time_series_schema, {
+    name_generator_type :: time_series_schema:name_generator_type(),
+    name_generator :: time_series_schema:name_generator(),
+    unit :: time_series:unit(),
+    metrics :: time_series:metric_composition()
 }).
 
 

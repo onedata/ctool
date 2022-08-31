@@ -122,8 +122,8 @@
 }).
 
 -record(ts_chart_external_series_configs_source_parameters, {
-    %% @TODO VFS-9346 reuse name generator type when it is a time series concept rather than automation related concept
-    time_series_name_generator :: binary(),
+    collection_ref :: ts_chart_external_series_configs_source_parameters:collection_ref(),
+    time_series_name_generator :: time_series_schema:name_generator(),
     metric_names :: [time_series:metric_name()]
 }).
 
