@@ -203,7 +203,8 @@
     parallel_boxes :: [atm_parallel_box_schema:record()],
     store_iterator_spec :: atm_store_iterator_spec:record(),
     % if the lane fails, it will be automatically retried (at most) this many times
-    max_retries :: non_neg_integer()
+    max_retries :: non_neg_integer(),
+    dashboard_spec :: undefined | ts_dashboard_spec:record()
 }).
 
 -record(atm_lambda_revision, {
@@ -225,9 +226,10 @@
 
 -record(atm_workflow_schema_revision, {
     description = <<>> :: automation:description(),
+    state = draft :: automation:lifecycle_state(),
     stores = [] :: [atm_store_schema:record()],
     lanes = [] :: [atm_lane_schema:record()],
-    state = draft :: automation:lifecycle_state()
+    dashboard_spec :: undefined | ts_dashboard_spec:record()
 }).
 
 -record(atm_workflow_schema_revision_registry, {
