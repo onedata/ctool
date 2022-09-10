@@ -26,9 +26,7 @@
 
 
 -type record() :: #atm_task_argument_value_builder{}.
--type type() ::
-    iterated_item | const | object | store_credentials | single_value_store_content |
-    onedatafs_credentials.
+-type type() :: iterated_item | const | object | store_credentials | single_value_store_content.
 %% @formatter:off
 %% Information required for given value builder type to build a value:
 %%  * iterated_item: a recipe, expressed as an array, specifying how to extract a value from
@@ -58,10 +56,6 @@
 %%
 %%  * single_value_store_content: the id of a specific single value store schema - the value will be
 %%    replaced during execution by content of specified single value store
-%%
-%%  * onedatafs_credentials: always undefined - the recipe is ignored as there is no parametrization,
-%%    the value will be expanded to credentials required to mount a OnedataFS client
-%%    during actual workflow execution.
 %%
 %% @formatter:on
 -type recipe() :: undefined | json_utils:json_term().
@@ -93,8 +87,7 @@ type_to_json(iterated_item) -> <<"iteratedItem">>;
 type_to_json(const) -> <<"const">>;
 type_to_json(object) -> <<"object">>;
 type_to_json(store_credentials) -> <<"storeCredentials">>;
-type_to_json(single_value_store_content) -> <<"singleValueStoreContent">>;
-type_to_json(onedatafs_credentials) -> <<"onedatafsCredentials">>.
+type_to_json(single_value_store_content) -> <<"singleValueStoreContent">>.
 
 
 -spec type_from_json(json_utils:json_term()) -> type().
@@ -102,8 +95,7 @@ type_from_json(<<"iteratedItem">>) -> iterated_item;
 type_from_json(<<"const">>) -> const;
 type_from_json(<<"object">>) -> object;
 type_from_json(<<"storeCredentials">>) -> store_credentials;
-type_from_json(<<"singleValueStoreContent">>) -> single_value_store_content;
-type_from_json(<<"onedatafsCredentials">>) -> onedatafs_credentials.
+type_from_json(<<"singleValueStoreContent">>) -> single_value_store_content.
 
 %%%===================================================================
 %%% persistent_record callbacks
@@ -146,10 +138,7 @@ recipe_to_json(store_credentials, StoreSchemaId) when is_binary(StoreSchemaId) -
     StoreSchemaId;
 
 recipe_to_json(single_value_store_content, StoreSchemaId) when is_binary(StoreSchemaId) ->
-    StoreSchemaId;
-
-recipe_to_json(onedatafs_credentials, _) ->
-    null.
+    StoreSchemaId.
 
 
 %% @private
@@ -171,7 +160,4 @@ recipe_from_json(store_credentials, StoreSchemaId) when is_binary(StoreSchemaId)
     StoreSchemaId;
 
 recipe_from_json(single_value_store_content, StoreSchemaId) when is_binary(StoreSchemaId) ->
-    StoreSchemaId;
-
-recipe_from_json(onedatafs_credentials, _) ->
-    undefined.
+    StoreSchemaId.
