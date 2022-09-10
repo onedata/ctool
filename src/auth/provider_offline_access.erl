@@ -9,7 +9,7 @@
 %%% This module encapsulates concepts related to offline access mechanisms
 %%% for Oneproviders. Oneproviders offer operations that are long-lasting and
 %%% need to progress even if the ordering client no longer has a session
-%%% there – e.g. data transfers or trash cleaning. They must be performed in the
+%%% there – e.g. data transfers or trash cleaning. They must be performed in the
 %%% user's context, hence the Oneprovider must be able to obtain user's
 %%% authorization for such long-lasting operations.
 %%%
@@ -29,7 +29,7 @@
 %%%     the original access token, but replace the other caveats with:
 %%%       * a time caveat, with TTL as stated above
 %%%       * a service caveat, limiting the service when the token can be used only to the specific Oneprovider
-%%%       * a consumer caveat, limiting consuming party only to the specific Oneprovider
+%%%       * a consumer caveat, limiting consuming party only to the specific Oneprovider
 %%%       * an API caveat that allows only reading basic user data (original API caveats are retained!)
 %%%   * Note that IP - related caveats are dropped as they are no longer relevant
 %%%     (the obtained token will be used only internally in Oneprovider)
@@ -78,9 +78,9 @@ build_token_caveats(OriginalCaveats, ProviderId, Ttl) ->
 -spec offline_access_api_caveat() -> caveats:caveat().
 offline_access_api_caveat() ->
     #cv_api{whitelist = [
-        {?OP_WORKER, all, ?GRI_PATTERN('*', '*', '*', '*')},
-        {?OZ_WORKER, get, ?GRI_PATTERN(od_user, '*', '*', '*')},
-        {?OZ_WORKER, create, ?GRI_PATTERN(od_user, '*', {idp_access_token, '*'}, '*')},
-        {?OZ_WORKER, get, ?GRI_PATTERN(od_space, '*', '*', '*')},
-        {?OZ_WORKER, get, ?GRI_PATTERN(od_provider, '*', '*', '*')}
+        {?OP_WORKER, all, ?GRI_PATTERN('*', <<"*">>, <<"*">>, '*')},
+        {?OZ_WORKER, get, ?GRI_PATTERN(od_user, <<"*">>, <<"*">>, '*')},
+        {?OZ_WORKER, create, ?GRI_PATTERN(od_user, <<"*">>, {<<"idp_access_token">>, <<"*">>}, '*')},
+        {?OZ_WORKER, get, ?GRI_PATTERN(od_space, <<"*">>, <<"*">>, '*')},
+        {?OZ_WORKER, get, ?GRI_PATTERN(od_provider, <<"*">>, <<"*">>, '*')}
     ]}.

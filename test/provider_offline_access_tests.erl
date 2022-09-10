@@ -30,11 +30,11 @@
 )).
 
 -define(ALLOWED_OFFLINE_ACCESS_API, [
-    {?OP_WORKER, all, ?GRI_PATTERN('*', '*', '*', '*')},
-    {?OZ_WORKER, get, ?GRI_PATTERN(od_user, '*', '*', '*')},
-    {?OZ_WORKER, create, ?GRI_PATTERN(od_user, '*', {idp_access_token, '*'}, '*')},
-    {?OZ_WORKER, get, ?GRI_PATTERN(od_space, '*', '*', '*')},
-    {?OZ_WORKER, get, ?GRI_PATTERN(od_provider, '*', '*', '*')}
+    {?OP_WORKER, all, ?GRI_PATTERN('*', <<"*">>, <<"*">>, '*')},
+    {?OZ_WORKER, get, ?GRI_PATTERN(od_user, <<"*">>, <<"*">>, '*')},
+    {?OZ_WORKER, create, ?GRI_PATTERN(od_user, <<"*">>, {<<"idp_access_token">>, <<"*">>}, '*')},
+    {?OZ_WORKER, get, ?GRI_PATTERN(od_space, <<"*">>, <<"*">>, '*')},
+    {?OZ_WORKER, get, ?GRI_PATTERN(od_provider, <<"*">>, <<"*">>, '*')}
 ]).
 
 build_token_caveats_test_() ->
@@ -92,10 +92,10 @@ build_token_caveats_3() ->
         #cv_time{valid_until = 57261902434237},
         #cv_interface{interface = oneclient},
         #cv_api{whitelist = [
-            {?OP_WORKER, all, ?GRI_PATTERN('*', '*', '*', '*')},
-            {?OP_PANEL, all, ?GRI_PATTERN('*', '*', '*', '*')},
-            {?OZ_PANEL, all, ?GRI_PATTERN('*', '*', '*', '*')},
-            {?OZ_WORKER, create, ?GRI_PATTERN(od_user, <<"123">>, instance, private)}
+            {?OP_WORKER, all, ?GRI_PATTERN('*', <<"*">>, <<"*">>, '*')},
+            {?OP_PANEL, all, ?GRI_PATTERN('*', <<"*">>, <<"*">>, '*')},
+            {?OZ_PANEL, all, ?GRI_PATTERN('*', <<"*">>, <<"*">>, '*')},
+            {?OZ_WORKER, create, ?GRI_PATTERN(od_user, <<"123">>, <<"instance">>, private)}
         ]}
     ], [
         #cv_time{valid_until = clock_freezer_mock:current_time_seconds() + ?TTL},
@@ -104,10 +104,10 @@ build_token_caveats_3() ->
         #cv_api{whitelist = ?ALLOWED_OFFLINE_ACCESS_API},
         #cv_interface{interface = oneclient},
         #cv_api{whitelist = [
-            {?OP_WORKER, all, ?GRI_PATTERN('*', '*', '*', '*')},
-            {?OP_PANEL, all, ?GRI_PATTERN('*', '*', '*', '*')},
-            {?OZ_PANEL, all, ?GRI_PATTERN('*', '*', '*', '*')},
-            {?OZ_WORKER, create, ?GRI_PATTERN(od_user, <<"123">>, instance, private)}
+            {?OP_WORKER, all, ?GRI_PATTERN('*', <<"*">>, <<"*">>, '*')},
+            {?OP_PANEL, all, ?GRI_PATTERN('*', <<"*">>, <<"*">>, '*')},
+            {?OZ_PANEL, all, ?GRI_PATTERN('*', <<"*">>, <<"*">>, '*')},
+            {?OZ_WORKER, create, ?GRI_PATTERN(od_user, <<"123">>, <<"instance">>, private)}
         ]}
     ]).
 
@@ -145,10 +145,10 @@ build_token_caveats_5() ->
         #cv_interface{interface = oneclient},
         ObjectIdCaveat,
         #cv_api{whitelist = [
-            {?OP_WORKER, all, ?GRI_PATTERN('*', '*', '*', '*')},
-            {?OP_PANEL, all, ?GRI_PATTERN('*', '*', '*', '*')},
-            {?OZ_PANEL, all, ?GRI_PATTERN('*', '*', '*', '*')},
-            {?OZ_WORKER, create, ?GRI_PATTERN(od_user, <<"123">>, instance, private)}
+            {?OP_WORKER, all, ?GRI_PATTERN('*', <<"*">>, <<"*">>, '*')},
+            {?OP_PANEL, all, ?GRI_PATTERN('*', <<"*">>, <<"*">>, '*')},
+            {?OZ_PANEL, all, ?GRI_PATTERN('*', <<"*">>, <<"*">>, '*')},
+            {?OZ_WORKER, create, ?GRI_PATTERN(od_user, <<"123">>, <<"instance">>, private)}
         ]}
     ], [
         #cv_time{valid_until = clock_freezer_mock:current_time_seconds() + ?TTL},
@@ -159,10 +159,10 @@ build_token_caveats_5() ->
         #cv_interface{interface = oneclient},
         ObjectIdCaveat,
         #cv_api{whitelist = [
-            {?OP_WORKER, all, ?GRI_PATTERN('*', '*', '*', '*')},
-            {?OP_PANEL, all, ?GRI_PATTERN('*', '*', '*', '*')},
-            {?OZ_PANEL, all, ?GRI_PATTERN('*', '*', '*', '*')},
-            {?OZ_WORKER, create, ?GRI_PATTERN(od_user, <<"123">>, instance, private)}
+            {?OP_WORKER, all, ?GRI_PATTERN('*', <<"*">>, <<"*">>, '*')},
+            {?OP_PANEL, all, ?GRI_PATTERN('*', <<"*">>, <<"*">>, '*')},
+            {?OZ_PANEL, all, ?GRI_PATTERN('*', <<"*">>, <<"*">>, '*')},
+            {?OZ_WORKER, create, ?GRI_PATTERN(od_user, <<"123">>, <<"instance">>, private)}
         ]}
     ]).
 

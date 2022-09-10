@@ -62,31 +62,31 @@ allowed_service_types(#cv_service{whitelist = Whitelist}) ->
 %% @private
 -spec allowed_api_by_service_type(onedata:service()) -> [cv_api:matchspec()].
 allowed_api_by_service_type(?OZ_WORKER) -> [
-    {?OZ_WORKER, all, ?GRI_PATTERN('*', '*', '*', '*')}
+    {?OZ_WORKER, all, ?GRI_PATTERN('*', <<"*">>, <<"*">>, '*')}
 ];
 allowed_api_by_service_type(?OZ_PANEL) -> [
-    {?OZ_PANEL, all, ?GRI_PATTERN('*', '*', '*', '*')},
-    {?OZ_WORKER, get, ?GRI_PATTERN(od_user, '*', '*', '*')},
-    {?OZ_WORKER, get, ?GRI_PATTERN(od_cluster, '*', '*', '*')},
-    {?OZ_WORKER, get, ?GRI_PATTERN(od_provider, '*', '*', '*')}
+    {?OZ_PANEL, all, ?GRI_PATTERN('*', <<"*">>, <<"*">>, '*')},
+    {?OZ_WORKER, get, ?GRI_PATTERN(od_user, <<"*">>, <<"*">>, '*')},
+    {?OZ_WORKER, get, ?GRI_PATTERN(od_cluster, <<"*">>, <<"*">>, '*')},
+    {?OZ_WORKER, get, ?GRI_PATTERN(od_provider, <<"*">>, <<"*">>, '*')}
 ];
 allowed_api_by_service_type(?OP_WORKER) -> [
-    {?OP_WORKER, all, ?GRI_PATTERN('*', '*', '*', '*')},
-    {?OZ_WORKER, get, ?GRI_PATTERN(od_user, '*', '*', '*')},
-    {?OZ_WORKER, create, ?GRI_PATTERN(od_user, '*', {idp_access_token, '*'}, '*')},
-    {?OZ_WORKER, get, ?GRI_PATTERN(od_group, '*', '*', '*')},
-    {?OZ_WORKER, get, ?GRI_PATTERN(od_space, '*', '*', '*')},
-    {?OZ_WORKER, all, ?GRI_PATTERN(od_share, '*', '*', '*')},
-    {?OZ_WORKER, get, ?GRI_PATTERN(od_provider, '*', '*', '*')},
-    {?OZ_WORKER, all, ?GRI_PATTERN(od_handle, '*', '*', '*')},
-    {?OZ_WORKER, get, ?GRI_PATTERN(od_handle_service, '*', '*', '*')},
-    {?OZ_WORKER, get, ?GRI_PATTERN(od_atm_inventory, '*', '*', '*')},
-    {?OZ_WORKER, get, ?GRI_PATTERN(od_atm_lambda, '*', '*', '*')},
-    {?OZ_WORKER, get, ?GRI_PATTERN(od_atm_workflow_schema, '*', '*', '*')}
+    {?OP_WORKER, all, ?GRI_PATTERN('*', <<"*">>, <<"*">>, '*')},
+    {?OZ_WORKER, get, ?GRI_PATTERN(od_user, <<"*">>, <<"*">>, '*')},
+    {?OZ_WORKER, create, ?GRI_PATTERN(od_user, <<"*">>, {<<"idp_access_token">>, <<"*">>}, '*')},
+    {?OZ_WORKER, get, ?GRI_PATTERN(od_group, <<"*">>, <<"*">>, '*')},
+    {?OZ_WORKER, get, ?GRI_PATTERN(od_space, <<"*">>, <<"*">>, '*')},
+    {?OZ_WORKER, all, ?GRI_PATTERN(od_share, <<"*">>, <<"*">>, '*')},
+    {?OZ_WORKER, get, ?GRI_PATTERN(od_provider, <<"*">>, <<"*">>, '*')},
+    {?OZ_WORKER, all, ?GRI_PATTERN(od_handle, <<"*">>, <<"*">>, '*')},
+    {?OZ_WORKER, get, ?GRI_PATTERN(od_handle_service, <<"*">>, <<"*">>, '*')},
+    {?OZ_WORKER, get, ?GRI_PATTERN(od_atm_inventory, <<"*">>, <<"*">>, '*')},
+    {?OZ_WORKER, get, ?GRI_PATTERN(od_atm_lambda, <<"*">>, <<"*">>, '*')},
+    {?OZ_WORKER, get, ?GRI_PATTERN(od_atm_workflow_schema, <<"*">>, <<"*">>, '*')}
 ];
 allowed_api_by_service_type(?OP_PANEL) -> [
-    {?OP_PANEL, all, ?GRI_PATTERN('*', '*', '*', '*')},
-    {?OZ_WORKER, get, ?GRI_PATTERN(od_user, '*', '*', '*')},
-    {?OZ_WORKER, get, ?GRI_PATTERN(od_cluster, '*', '*', '*')},
-    {?OZ_WORKER, get, ?GRI_PATTERN(od_provider, '*', '*', '*')}
+    {?OP_PANEL, all, ?GRI_PATTERN('*', <<"*">>, <<"*">>, '*')},
+    {?OZ_WORKER, get, ?GRI_PATTERN(od_user, <<"*">>, <<"*">>, '*')},
+    {?OZ_WORKER, get, ?GRI_PATTERN(od_cluster, <<"*">>, <<"*">>, '*')},
+    {?OZ_WORKER, get, ?GRI_PATTERN(od_provider, <<"*">>, <<"*">>, '*')}
 ].
