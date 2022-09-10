@@ -119,17 +119,17 @@ to_allowed_api(?OP_PANEL, _) ->
 
 to_allowed_api(?OP_WORKER, _) ->
     #cv_api{whitelist = [
-        {?OP_WORKER, all, ?GRI_PATTERN(op_file, '*', '*', '*')}
+        {?OP_WORKER, all, ?GRI_PATTERN(op_file, <<"*">>, <<"*">>, '*')}
     ]};
 
 to_allowed_api(?OZ_WORKER, #cv_interface{interface = oneclient}) ->
     % Oneclient interface caveat does not confine access to specific spaces
-    AllowedSpaces = ['*'],
+    AllowedSpaces = [<<"*">>],
     oz_worker_allowed_api(AllowedSpaces);
 
 to_allowed_api(?OZ_WORKER, #cv_data_readonly{}) ->
     % Data readonly caveat does not confine access to specific spaces
-    AllowedSpaces = ['*'],
+    AllowedSpaces = [<<"*">>],
     oz_worker_allowed_api(AllowedSpaces);
 
 to_allowed_api(?OZ_WORKER, #cv_data_path{whitelist = PathsWhitelist}) ->
@@ -161,6 +161,6 @@ to_allowed_api(?OZ_WORKER, #cv_data_objectid{whitelist = ObjectidsWhitelist}) ->
 -spec oz_worker_allowed_api(['*' | file_id:space_id()]) -> cv_api:cv_api().
 oz_worker_allowed_api(AllowedSpaces) ->
     #cv_api{whitelist = lists:flatten([
-        {?OZ_WORKER, get, ?GRI_PATTERN(od_user, '*', instance, '*')},
-        [{?OZ_WORKER, get, ?GRI_PATTERN(od_space, S, instance, '*')} || S <- AllowedSpaces]
+        {?OZ_WORKER, get, ?GRI_PATTERN(od_user, <<"*">>, <<"instance">>, '*')},
+        [{?OZ_WORKER, get, ?GRI_PATTERN(od_space, S, <<"instance">>, '*')} || S <- AllowedSpaces]
     ])}.
