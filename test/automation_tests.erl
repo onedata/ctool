@@ -185,7 +185,14 @@ encode_decode_parallel_box_schema_test() ->
 
 
 encode_decode_lane_schema_test() ->
-    encode_decode_test_base(atm_test_utils:example_lane_schemas()).
+    [FirstExample | OtherExamples] = atm_test_utils:example_lane_schemas(),
+    encode_decode_test_base(OtherExamples),
+    % dashboard specs are skipped during example generation
+    % (hence effectively never checked during the other tests),
+    % make sure they are properly encoded/decoded when used within a lane schema
+    encode_decode_test_base(FirstExample#atm_lane_schema{
+        dashboard_spec = time_series_test_utils:example_dashboard_spec()
+    }).
 
 
 encode_decode_lambda_revision_test() ->
@@ -201,10 +208,17 @@ encode_decode_lambda_revision_registry_test() ->
 
 
 encode_decode_workflow_schema_revision_test() ->
-    [Example | _] = ExampleWorkflowSchemaRevisions = atm_test_utils:example_workflow_schema_revisions(),
-    encode_decode_test_base(ExampleWorkflowSchemaRevisions),
+    [FirstExample | OtherExamples] = atm_test_utils:example_workflow_schema_revisions(),
+    encode_decode_test_base(OtherExamples),
 
-    check_binary_sanitization(atm_workflow_schema_revision, Example, <<"description">>, ?DESCRIPTION_SIZE_LIMIT).
+    % dashboard specs are skipped during example generation
+    % (hence effectively never checked during the other tests),
+    % make sure they are properly encoded/decoded when used within a workflow schema
+    encode_decode_test_base(FirstExample#atm_workflow_schema_revision{
+        dashboard_spec = time_series_test_utils:example_dashboard_spec()
+    }),
+
+    check_binary_sanitization(atm_workflow_schema_revision, FirstExample, <<"description">>, ?DESCRIPTION_SIZE_LIMIT).
 
 
 encode_decode_workflow_schema_revision_registry_test() ->

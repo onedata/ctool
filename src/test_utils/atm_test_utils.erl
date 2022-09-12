@@ -332,10 +332,7 @@ example_store_config(time_series) ->
         time_series_collection_schema = #time_series_collection_schema{
             time_series_schemas = ?RAND_SUBLIST(time_series_test_utils:example_time_series_schemas(), 1, all)
         },
-        % dashboard specs are not included because they are very complicated and
-        % their generation can cause horrendous slowdown of the automation example generators
-        % (which are intensively used during tests)
-        dashboard_spec = undefined
+        dashboard_spec = example_dashboard_spec()
     };
 example_store_config(audit_log) ->
     #atm_audit_log_store_config{log_content_data_spec = example_data_spec()}.
@@ -598,7 +595,8 @@ example_lane_schema_with_parallel_boxes(ExampleParallelBoxSchemas, StoreSchemaId
         name = example_name(),
         parallel_boxes = ExampleParallelBoxSchemas,
         store_iterator_spec = example_store_iterator_spec(StoreSchemaIds),
-        max_retries = ?RAND_INT(0, 10)
+        max_retries = ?RAND_INT(0, 10),
+        dashboard_spec = example_dashboard_spec()
     }.
 
 -spec example_lane_schemas() -> [atm_lane_schema:record()].
@@ -661,9 +659,10 @@ example_workflow_schema_revisions() ->
     lists_utils:generate(fun() ->
         #atm_workflow_schema_revision{
             description = example_description(),
+            state = example_lifecycle_state(),
             stores = ?RAND_SUBLIST(ExampleStoreSchemas),
             lanes = ?RAND_SUBLIST(ExampleLaneSchemas),
-            state = example_lifecycle_state()
+            dashboard_spec = example_dashboard_spec()
         }
     end, 4).
 
@@ -696,3 +695,17 @@ example_time_series_measurement_specs() ->
     lists_utils:generate(fun(Ordinal) ->
         example_time_series_measurement_spec(str_utils:format_bin("~B~s", [Ordinal, example_name()]))
     end, 5).
+
+%%%===================================================================
+%%% Internal functions
+%%%===================================================================
+
+%% @private
+-spec example_dashboard_spec() -> undefined.
+example_dashboard_spec() ->
+    % dashboard specs are not included in examples because they are very complicated and
+    % their generation can cause horrendous slowdown of the automation example generators
+    % (which are intensively used during tests)
+    undefined.
+
+
