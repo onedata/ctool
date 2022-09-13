@@ -274,7 +274,7 @@ serialize_errors_testcases(regular) -> [
     #gri{type = '*', id = <<"123">>, aspect = instance, scope = private},
     #gri{type = badtype, id = <<"123">>, aspect = instance, scope = private},
     #gri{type = '', id = <<"123">>, aspect = instance, scope = private},
-    #gri{type = od_user, id = '*', aspect = instance, scope = private},
+    #gri{type = od_user, id = <<"*">>, aspect = instance, scope = private},
     #gri{type = od_user, id = <<"123">>, aspect = '*', scope = private},
     #gri{type = od_user, id = <<"123">>, aspect = {'*', <<"bin">>}, scope = private},
     #gri{type = od_user, id = <<"123">>, aspect = {'*', '*'}, scope = private},
