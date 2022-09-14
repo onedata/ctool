@@ -470,7 +470,7 @@ find_caveats_test() ->
             #cv_asn{whitelist = [322]},
             #cv_service{whitelist = [?SERVICE(?OZ_WORKER, ?ONEZONE_CLUSTER_ID)]},
             #cv_country{type = whitelist, list = [<<"PL">>, <<"FR">>]},
-            #cv_api{whitelist = [{all, all, ?GRI_PATTERN('*', '*', '*', '*')}]}
+            #cv_api{whitelist = [{all, all, ?GRI_PATTERN('*', <<"*">>, <<"*">>, '*')}]}
         ])
     ),
     ?assertEqual(
@@ -486,7 +486,7 @@ find_caveats_test() ->
             #cv_time{valid_until = 456},
             #cv_country{type = whitelist, list = [<<"PL">>, <<"FR">>]},
             #cv_time{valid_until = 789},
-            #cv_api{whitelist = [{all, all, ?GRI_PATTERN('*', '*', '*', '*')}]}
+            #cv_api{whitelist = [{all, all, ?GRI_PATTERN('*', <<"*">>, <<"*">>, '*')}]}
         ])
     ).
 
@@ -503,7 +503,7 @@ filter_caveats_test() ->
             #cv_asn{whitelist = [322]},
             #cv_consumer{whitelist = [?SUB(user, <<"567">>)]},
             #cv_country{type = whitelist, list = [<<"PL">>, <<"FR">>]},
-            #cv_api{whitelist = [{all, all, ?GRI_PATTERN('*', '*', '*', '*')}]}
+            #cv_api{whitelist = [{all, all, ?GRI_PATTERN('*', <<"*">>, <<"*">>, '*')}]}
         ])
     ),
     ?assertEqual(
@@ -516,7 +516,7 @@ filter_caveats_test() ->
             #cv_asn{whitelist = [322]},
             #cv_time{valid_until = 456},
             #cv_time{valid_until = 789},
-            #cv_api{whitelist = [{all, all, ?GRI_PATTERN('*', '*', '*', '*')}]}
+            #cv_api{whitelist = [{all, all, ?GRI_PATTERN('*', <<"*">>, <<"*">>, '*')}]}
         ],
         F([cv_asn, cv_api, cv_time], [
             #cv_time{valid_until = 123},
@@ -525,7 +525,7 @@ filter_caveats_test() ->
             #cv_time{valid_until = 456},
             #cv_country{type = whitelist, list = [<<"PL">>, <<"FR">>]},
             #cv_time{valid_until = 789},
-            #cv_api{whitelist = [{all, all, ?GRI_PATTERN('*', '*', '*', '*')}]}
+            #cv_api{whitelist = [{all, all, ?GRI_PATTERN('*', <<"*">>, <<"*">>, '*')}]}
         ])
     ).
 
@@ -550,7 +550,7 @@ infer_ttl_and_expiration_timestamp_test_() ->
                 #cv_asn{whitelist = [322]},
                 #cv_consumer{whitelist = [?SUB(user, <<"567">>)]},
                 #cv_country{type = whitelist, list = [<<"PL">>, <<"FR">>]},
-                #cv_api{whitelist = [{all, all, ?GRI_PATTERN('*', '*', '*', '*')}]}
+                #cv_api{whitelist = [{all, all, ?GRI_PATTERN('*', <<"*">>, <<"*">>, '*')}]}
             ],
             ?assertEqual(undefined, caveats:infer_ttl(Caveats1)),
             ?assertEqual(undefined, caveats:infer_expiration_time(Caveats1)),
@@ -566,7 +566,7 @@ infer_ttl_and_expiration_timestamp_test_() ->
             ValidUntil3 = CurrTime + 100,
             Caveats3 = [
                 #cv_country{type = whitelist, list = [<<"PL">>, <<"FR">>]},
-                #cv_api{whitelist = [{all, all, ?GRI_PATTERN('*', '*', '*', '*')}]},
+                #cv_api{whitelist = [{all, all, ?GRI_PATTERN('*', <<"*">>, <<"*">>, '*')}]},
                 #cv_time{valid_until = CurrTime + 99999},
                 #cv_time{valid_until = ValidUntil3}
             ],
@@ -712,9 +712,9 @@ sanitize_caveats_test() ->
     ?BAD(S(#{<<"type">> => <<"interface">>, <<"interface">> => 123})),
     ?BAD(S(#{<<"type">> => <<"interface">>, <<"interface">> => #{<<"abcd">> => <<"ghij">>}})),
 
-    ?OK(#cv_api{whitelist = [{?OZ_WORKER, all, ?GRI_PATTERN(od_user, '*', '*', auto)}]},
-        S(#cv_api{whitelist = [{?OZ_WORKER, all, ?GRI_PATTERN(od_user, '*', '*', auto)}]})),
-    ?OK(#cv_api{whitelist = [{?OZ_WORKER, all, ?GRI_PATTERN(od_user, '*', '*', auto)}]},
+    ?OK(#cv_api{whitelist = [{?OZ_WORKER, all, ?GRI_PATTERN(od_user, <<"*">>, <<"*">>, auto)}]},
+        S(#cv_api{whitelist = [{?OZ_WORKER, all, ?GRI_PATTERN(od_user, <<"*">>, <<"*">>, auto)}]})),
+    ?OK(#cv_api{whitelist = [{?OZ_WORKER, all, ?GRI_PATTERN(od_user, <<"*">>, <<"*">>, auto)}]},
         S(#{<<"type">> => <<"api">>, <<"whitelist">> => [<<"ozw/all/user.*.*:auto">>]})),
     ?BAD(S(#cv_api{whitelist = []})),
     ?BAD(S(#cv_api{whitelist = [<<"avbb">>, 343]})),
@@ -1196,12 +1196,12 @@ caveats_examples(cv_interface, #auth_ctx{interface = Interface}) -> [
 % the resulting aai:auth() object is used to perform an operation.
 caveats_examples(cv_api, _AuthCtx) -> [
     {#cv_api{whitelist = lists_utils:random_sublist([
-        {all, create, ?GRI_PATTERN(od_space, '*', '*', private)},
-        {?OZ_WORKER, get, ?GRI_PATTERN(od_user, ?RAND_STR, instance, '*')},
-        {?OP_WORKER, all, ?GRI_PATTERN(od_user, ?RAND_STR, {group, ?RAND_STR}, private)},
-        {?OP_PANEL, update, ?GRI_PATTERN(od_group, '*', {'*', '*'})},
-        {?OZ_PANEL, delete, ?GRI_PATTERN('*', '*', users, '*')},
-        {all, all, ?GRI_PATTERN(od_handle, '*', '*', '*')}
+        {all, create, ?GRI_PATTERN(od_space, <<"*">>, <<"*">>, private)},
+        {?OZ_WORKER, get, ?GRI_PATTERN(od_user, ?RAND_STR, <<"instance">>, '*')},
+        {?OP_WORKER, all, ?GRI_PATTERN(od_user, ?RAND_STR, {<<"group">>, ?RAND_STR}, private)},
+        {?OP_PANEL, update, ?GRI_PATTERN(od_group, <<"*">>, {<<"*">>, <<"*">>})},
+        {?OZ_PANEL, delete, ?GRI_PATTERN('*', <<"*">>, <<"users">>, '*')},
+        {all, all, ?GRI_PATTERN(od_handle, <<"*">>, <<"*">>, '*')}
     ], 1, all)}, success}
 ];
 

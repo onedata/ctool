@@ -19,14 +19,11 @@
 -define(GRI_TO_PATTERN(GRI), #gri_pattern{
     type = GRI#gri.type,
     id = GRI#gri.id,
-    aspect = GRI#gri.aspect,
+    aspect = case GRI#gri.aspect of
+        {__Asp, __AspB} -> {str_utils:to_binary(__Asp), str_utils:to_binary(__AspB)};
+        __Asp -> str_utils:to_binary(__Asp)
+    end,
     scope = GRI#gri.scope
-}).
--define(PATTERN_TO_GRI(Pattern), #gri{
-    type = Pattern#gri_pattern.type,
-    id = Pattern#gri_pattern.id,
-    aspect = Pattern#gri_pattern.aspect,
-    scope = Pattern#gri_pattern.scope
 }).
 
 
@@ -144,62 +141,62 @@ serialize_deserialize_pattern_test() ->
 serialize_deserialize_pattern_testcases() -> [
     {
         <<"user.*.instance">>,
-        #gri_pattern{type = od_user, id = '*', aspect = instance, scope = private},
+        #gri_pattern{type = od_user, id = <<"*">>, aspect = <<"instance">>, scope = private},
         <<"user.*.instance:private">>
     },
     {
         <<"*.gr-abc.user,u123:protected">>,
-        #gri_pattern{type = '*', id = <<"gr-abc">>, aspect = {user, <<"u123">>}, scope = protected}
+        #gri_pattern{type = '*', id = <<"gr-abc">>, aspect = {<<"user">>, <<"u123">>}, scope = protected}
     },
     {
         <<"space.null.*:shared">>,
-        #gri_pattern{type = od_space, aspect = '*', scope = shared}
+        #gri_pattern{type = od_space, aspect = <<"*">>, scope = shared}
     },
     {
         <<"share.sh13.instance:*">>,
-        #gri_pattern{type = od_share, id = <<"sh13">>, aspect = instance, scope = '*'}
+        #gri_pattern{type = od_share, id = <<"sh13">>, aspect = <<"instance">>, scope = '*'}
     },
     {
         <<"provider.self.spaces:auto">>,
-        #gri_pattern{type = od_provider, id = ?SELF, aspect = spaces, scope = auto}
+        #gri_pattern{type = od_provider, id = ?SELF, aspect = <<"spaces">>, scope = auto}
     },
     {
         <<"handleService.null.*,gr123:protected">>,
-        #gri_pattern{type = od_handle_service, id = undefined, aspect = {'*', <<"gr123">>}, scope = protected}
+        #gri_pattern{type = od_handle_service, id = undefined, aspect = {<<"*">>, <<"gr123">>}, scope = protected}
     },
     {
         <<"handle.hdle34.*,*:auto">>,
-        #gri_pattern{type = od_handle, id = <<"hdle34">>, aspect = {'*', '*'}, scope = auto}
+        #gri_pattern{type = od_handle, id = <<"hdle34">>, aspect = {<<"*">>, <<"*">>}, scope = auto}
     },
     {
         <<"cluster.null.user,*">>,
-        #gri_pattern{type = od_cluster, aspect = {user, '*'}},
+        #gri_pattern{type = od_cluster, aspect = {<<"user">>, <<"*">>}},
         <<"cluster.null.user,*:private">>
     },
     {
         <<"*.*.harvest_metadata:private">>,
-        #gri_pattern{type = '*', id = '*', aspect = harvest_metadata, scope = private}
+        #gri_pattern{type = '*', id = <<"*">>, aspect = <<"harvest_metadata">>, scope = private}
     },
     {
         <<"file.891234718246113331.*:*">>,
-        #gri_pattern{type = op_file, id = <<"891234718246113331">>, aspect = '*', scope = '*'}
+        #gri_pattern{type = op_file, id = <<"891234718246113331">>, aspect = <<"*">>, scope = '*'}
     },
     {
         <<"*.null.*,*:shared">>,
-        #gri_pattern{type = '*', id = undefined, aspect = {'*', '*'}, scope = shared}
+        #gri_pattern{type = '*', id = undefined, aspect = {<<"*">>, <<"*">>}, scope = shared}
     },
     {
         <<"*.*.*">>,
-        #gri_pattern{type = '*', id = '*', aspect = '*', scope = private},
+        #gri_pattern{type = '*', id = <<"*">>, aspect = <<"*">>, scope = private},
         <<"*.*.*:private">>
     },
     {
         <<"*.*.*:*">>,
-        #gri_pattern{type = '*', id = '*', aspect = '*', scope = '*'}
+        #gri_pattern{type = '*', id = <<"*">>, aspect = <<"*">>, scope = '*'}
     },
     {
         <<"*.*.*,*:*">>,
-        #gri_pattern{type = '*', id = '*', aspect = {'*', '*'}, scope = '*'}
+        #gri_pattern{type = '*', id = <<"*">>, aspect = {<<"*">>, <<"*">>}, scope = '*'}
     }
 ].
 
@@ -212,20 +209,22 @@ deserialize_pattern_errors_test() ->
     [?assertThrow(?ERROR_BAD_GRI, gri:deserialize_pattern(S)) || S <- deserialize_errors_testcases(pattern)].
 
 
-serialize_errors_testcases(regular) -> [?PATTERN_TO_GRI(P) || P <- serialize_errors_testcases(pattern)] ++ [
+serialize_errors_testcases(regular) -> [
     #gri{type = '*', id = <<"123">>, aspect = instance, scope = private},
-    #gri{type = od_user, id = '*', aspect = instance, scope = private},
+    #gri{type = badtype, id = <<"123">>, aspect = instance, scope = private},
+    #gri{type = '', id = <<"123">>, aspect = instance, scope = private},
+    #gri{type = od_user, id = <<"*">>, aspect = instance, scope = private},
     #gri{type = od_user, id = <<"123">>, aspect = '*', scope = private},
     #gri{type = od_user, id = <<"123">>, aspect = {'*', <<"bin">>}, scope = private},
     #gri{type = od_user, id = <<"123">>, aspect = {'*', '*'}, scope = private},
     #gri{type = od_user, id = <<"123">>, aspect = {aspect, '*'}, scope = private},
+    #gri{type = od_user, id = <<"123">>, aspect = 123, scope = '*'},
     #gri{type = od_user, id = <<"123">>, aspect = instance, scope = '*'}
 ];
 serialize_errors_testcases(pattern) -> [
-    #gri_pattern{type = badtype, id = <<"123">>, aspect = instance, scope = private},
-    #gri_pattern{type = '', id = <<"123">>, aspect = instance, scope = private},
+    #gri_pattern{type = badtype, id = <<"123">>, aspect = <<"instance">>, scope = private},
+    #gri_pattern{type = '', id = <<"123">>, aspect = <<"instance">>, scope = private},
 
-    #gri_pattern{type = od_user, id = <<"123">>, aspect = <<"bad-aspect">>, scope = private},
     #gri_pattern{type = od_user, id = <<"123">>, aspect = {<<"bad-aspect">>, 123}, scope = public},
     #gri_pattern{type = od_user, id = <<"123">>, aspect = {aspect, <<"bin">>, <<"bin">>}, scope = shared},
     #gri_pattern{type = od_user, id = <<"123">>, aspect = {aspect, bad_subaspect}, scope = protected},
@@ -267,211 +266,211 @@ gri_matching_testcases() -> [
     {
         ?GRI(od_user, ?SELF, instance, private),
         true,
-        ?GRI_PATTERN(od_user, ?SELF, instance, private)
+        ?GRI_PATTERN(od_user, ?SELF, <<"instance">>, private)
     },
     {
         ?GRI(od_user, ?SELF, instance, private),
         false,
-        ?GRI_PATTERN(od_group, ?SELF, instance, private)
+        ?GRI_PATTERN(od_group, ?SELF, <<"instance">>, private)
     },
     {
         ?GRI(od_user, ?SELF, instance, private),
         false,
-        ?GRI_PATTERN(od_user, undefined, instance, private)
+        ?GRI_PATTERN(od_user, undefined, <<"instance">>, private)
     },
     {
         ?GRI(od_user, ?SELF, instance, private),
         false,
-        ?GRI_PATTERN(od_user, ?SELF, spaces, private)
+        ?GRI_PATTERN(od_user, ?SELF, <<"spaces">>, private)
     },
     {
         ?GRI(od_user, ?SELF, instance, private),
         false,
-        ?GRI_PATTERN(od_user, ?SELF, instance, auto)
+        ?GRI_PATTERN(od_user, ?SELF, <<"instance">>, auto)
     },
 
     {
         ?GRI(od_user, <<"userid">>, {space, <<"123">>}, private),
         true,
-        ?GRI_PATTERN('*', <<"userid">>, {space, <<"123">>}, private)
+        ?GRI_PATTERN('*', <<"userid">>, {<<"space">>, <<"123">>}, private)
     },
     {
         ?GRI(od_user, <<"userid">>, {space, <<"123">>}, private),
         true,
-        ?GRI_PATTERN(od_user, '*', {space, <<"123">>}, private)
+        ?GRI_PATTERN(od_user, <<"*">>, {<<"space">>, <<"123">>}, private)
     },
     {
         ?GRI(od_user, <<"userid">>, {space, <<"123">>}, private),
         true,
-        ?GRI_PATTERN(od_user, <<"userid">>, '*', private)
+        ?GRI_PATTERN(od_user, <<"userid">>, <<"*">>, private)
     },
     {
         ?GRI(od_user, <<"userid">>, {space, <<"123">>}, private),
         true,
-        ?GRI_PATTERN(od_user, <<"userid">>, {space, <<"123">>}, '*')
+        ?GRI_PATTERN(od_user, <<"userid">>, {<<"space">>, <<"123">>}, '*')
     },
 
     {
         ?GRI(od_user, <<"userid">>, groups, private),
         false,
-        ?GRI_PATTERN('*', <<"userid">>, {space, <<"123">>}, private)
+        ?GRI_PATTERN('*', <<"userid">>, {<<"space">>, <<"123">>}, private)
     },
     {
         ?GRI(od_group, <<"userid">>, {space, <<"123">>}, private),
         false,
-        ?GRI_PATTERN(od_user, '*', {space, <<"123">>}, private)
+        ?GRI_PATTERN(od_user, '*', {<<"space">>, <<"123">>}, private)
     },
     {
         ?GRI(od_user, <<"userid">>, {space, <<"123">>}, auto),
         false,
-        ?GRI_PATTERN(od_user, <<"userid">>, '*', private)
+        ?GRI_PATTERN(od_user, <<"userid">>, <<"*">>, private)
     },
     {
         ?GRI(od_user, undefined, {space, <<"123">>}, private),
         false,
-        ?GRI_PATTERN(od_user, <<"userid">>, {space, <<"123">>}, '*')
+        ?GRI_PATTERN(od_user, <<"userid">>, {<<"space">>, <<"123">>}, '*')
     },
 
 
     {
         ?GRI(od_user, ?SELF, groups, protected),
         true,
-        ?GRI_PATTERN('*', '*', groups, protected)
+        ?GRI_PATTERN('*', <<"*">>, <<"groups">>, protected)
     },
     {
         ?GRI(od_user, ?SELF, groups, protected),
         true,
-        ?GRI_PATTERN('*', ?SELF, '*', protected)
+        ?GRI_PATTERN('*', ?SELF, <<"*">>, protected)
     },
     {
         ?GRI(od_user, ?SELF, groups, protected),
         true,
-        ?GRI_PATTERN('*', ?SELF, groups, '*')
+        ?GRI_PATTERN('*', ?SELF, <<"groups">>, '*')
     },
     {
         ?GRI(od_user, ?SELF, groups, protected),
         true,
-        ?GRI_PATTERN(od_user, '*', '*', protected)
+        ?GRI_PATTERN(od_user, <<"*">>, <<"*">>, protected)
     },
     {
         ?GRI(od_user, ?SELF, groups, protected),
         true,
-        ?GRI_PATTERN(od_user, '*', groups, '*')
+        ?GRI_PATTERN(od_user, <<"*">>, <<"groups">>, '*')
     },
     {
         ?GRI(od_user, ?SELF, groups, protected),
         true,
-        ?GRI_PATTERN(od_user, ?SELF, '*', '*')
+        ?GRI_PATTERN(od_user, ?SELF, <<"*">>, '*')
     },
 
     {
         ?GRI(od_user, ?SELF, groups, protected),
         false,
-        ?GRI_PATTERN('*', '*', spaces, protected)
+        ?GRI_PATTERN('*', <<"*">>, <<"spaces">>, protected)
     },
     {
         ?GRI(od_user, ?SELF, groups, protected),
         false,
-        ?GRI_PATTERN('*', <<"123">>, '*', protected)
+        ?GRI_PATTERN('*', <<"123">>, <<"*">>, protected)
     },
     {
         ?GRI(od_user, ?SELF, groups, protected),
         false,
-        ?GRI_PATTERN('*', undefined, groups, '*')
+        ?GRI_PATTERN('*', undefined, <<"groups">>, '*')
     },
     {
         ?GRI(od_user, ?SELF, groups, protected),
         false,
-        ?GRI_PATTERN(od_user, '*', '*', auto)
+        ?GRI_PATTERN(od_user, <<"*">>, <<"*">>, auto)
     },
     {
         ?GRI(od_user, ?SELF, groups, protected),
         false,
-        ?GRI_PATTERN(od_user, '*', {group, <<"123">>}, '*')
+        ?GRI_PATTERN(od_user, <<"*">>, {<<"group">>, <<"123">>}, '*')
     },
     {
         ?GRI(od_user, ?SELF, groups, protected),
         false,
-        ?GRI_PATTERN(od_space, ?SELF, '*', '*')
+        ?GRI_PATTERN(od_space, ?SELF, <<"*">>, '*')
     },
 
 
     {
         ?GRI(od_space, <<"space-id">>, instance, auto),
         true,
-        ?GRI_PATTERN('*', '*', '*', auto)
+        ?GRI_PATTERN('*', <<"*">>, <<"*">>, auto)
     },
     {
         ?GRI(od_space, <<"space-id">>, instance, auto),
         true,
-        ?GRI_PATTERN('*', <<"space-id">>, '*', '*')
+        ?GRI_PATTERN('*', <<"space-id">>, <<"*">>, '*')
     },
     {
         ?GRI(od_space, <<"space-id">>, instance, auto),
         true,
-        ?GRI_PATTERN('*', '*', instance, '*')
+        ?GRI_PATTERN('*', <<"*">>, <<"instance">>, '*')
     },
     {
         ?GRI(od_space, <<"space-id">>, instance, auto),
         true,
-        ?GRI_PATTERN(od_space, '*', '*', '*')
+        ?GRI_PATTERN(od_space, <<"*">>, <<"*">>, '*')
     },
 
     {
         ?GRI(od_space, <<"space-id">>, instance, auto),
         false,
-        ?GRI_PATTERN('*', '*', '*', shared)
+        ?GRI_PATTERN('*', <<"*">>, <<"*">>, shared)
     },
     {
         ?GRI(od_space, <<"space-id">>, instance, auto),
         false,
-        ?GRI_PATTERN('*', <<"123">>, '*', '*')
+        ?GRI_PATTERN('*', <<"123">>, <<"*">>, '*')
     },
     {
         ?GRI(od_space, <<"space-id">>, instance, auto),
         false,
-        ?GRI_PATTERN('*', '*', spaces, '*')
+        ?GRI_PATTERN('*', <<"*">>, <<"spaces">>, '*')
     },
     {
         ?GRI(od_space, <<"space-id">>, instance, auto),
         false,
-        ?GRI_PATTERN(od_group, '*', '*', '*')
+        ?GRI_PATTERN(od_group, <<"*">>, <<"*">>, '*')
     },
 
 
     {
         ?GRI(od_user, undefined, instance, shared),
         true,
-        ?GRI_PATTERN('*', '*', '*', '*')
+        ?GRI_PATTERN('*', <<"*">>, <<"*">>, '*')
     },
     {
         ?GRI(od_user, undefined, instance, shared),
         false,
-        ?GRI_PATTERN('*', '*', {'*', '*'}, '*')
+        ?GRI_PATTERN('*', <<"*">>, {<<"*">>, <<"*">>}, '*')
     },
     {
         ?GRI(od_user, undefined, {space, <<"123">>}, shared),
         true,
-        ?GRI_PATTERN('*', '*', {'*', '*'}, '*')
+        ?GRI_PATTERN('*', <<"*">>, {<<"*">>, <<"*">>}, '*')
     },
     {
         ?GRI(od_user, undefined, {space, <<"123">>}, shared),
         true,
-        ?GRI_PATTERN('*', '*', {space, '*'}, '*')
+        ?GRI_PATTERN('*', <<"*">>, {<<"space">>, <<"*">>}, '*')
     },
     {
         ?GRI(od_user, undefined, {space, <<"123">>}, shared),
         true,
-        ?GRI_PATTERN('*', '*', {'*', <<"123">>}, '*')
+        ?GRI_PATTERN('*', <<"*">>, {<<"*">>, <<"123">>}, '*')
     },
     {
         ?GRI(od_user, undefined, {space, <<"123">>}, shared),
         false,
-        ?GRI_PATTERN('*', '*', {'*', <<"345">>}, '*')
+        ?GRI_PATTERN('*', <<"*">>, {<<"*">>, <<"345">>}, '*')
     },
     {
         ?GRI(od_user, undefined, {space, <<"123">>}, shared),
         false,
-        ?GRI_PATTERN('*', '*', {'user', <<"123">>}, '*')
+        ?GRI_PATTERN('*', <<"*">>, {<<"user">>, <<"123">>}, '*')
     }
 ].
