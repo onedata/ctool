@@ -761,7 +761,7 @@ backward_compatibility_test() ->
         #cv_service{whitelist = [?SERVICE(?OZ_WORKER, ?ONEZONE_CLUSTER_ID)]},
         #cv_consumer{whitelist = [?SUB(user, <<"user-id">>), ?SUB(group, <<"group-id">>)]},
         #cv_interface{interface = graphsync},
-        #cv_api{whitelist = [{all, all, ?GRI_PATTERN('*', '*', '*', '*')}]},
+        #cv_api{whitelist = [{all, all, ?GRI_PATTERN('*', <<"*">>, <<"*">>, '*')}]},
         #cv_data_readonly{},
         #cv_data_path{whitelist = [<<"/space1/file1.txt">>, <<"/space2/dir/file2.txt">>]},
         #cv_data_objectid{whitelist = [element(2, {ok, _} = file_id:guid_to_objectid(file_id:pack_guid(<<"123">>, <<"abc">>)))]}

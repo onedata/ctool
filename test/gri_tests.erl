@@ -191,52 +191,52 @@ serialize_deserialize_pattern_testcases() -> [
     },
     {
         <<"atm_inventory.*.workflows:protected">>,
-        #gri_pattern{type = od_atm_inventory, id = '*', aspect = workflows, scope = protected}
+        #gri_pattern{type = od_atm_inventory, id = <<"*">>, aspect = <<"workflows">>, scope = protected}
     },
     {
         <<"atm_lambda.lAmBdAiD.*">>,
-        #gri_pattern{type = od_atm_lambda, id = <<"lAmBdAiD">>, aspect = '*', scope = private},
+        #gri_pattern{type = od_atm_lambda, id = <<"lAmBdAiD">>, aspect = <<"*">>, scope = private},
         <<"atm_lambda.lAmBdAiD.*:private">>
     },
     {
         <<"atm_workflow_schema.*.instance:*">>,
-        #gri_pattern{type = od_atm_workflow_schema, id = '*', aspect = instance, scope = '*'}
+        #gri_pattern{type = od_atm_workflow_schema, id = <<"*">>, aspect = <<"instance">>, scope = '*'}
     },
     {
         <<"op_atm_inventory.*.atm_workflow_schemas:*">>,
-        #gri_pattern{type = op_atm_inventory, id = '*', aspect = atm_workflow_schemas, scope = '*'}
+        #gri_pattern{type = op_atm_inventory, id = <<"*">>, aspect = <<"atm_workflow_schemas">>, scope = '*'}
     },
     {
         <<"op_atm_lambda_snapshot.123234345456.instance:*">>,
-        #gri_pattern{type = op_atm_lambda_snapshot, id = <<"123234345456">>, aspect = instance, scope = '*'}
+        #gri_pattern{type = op_atm_lambda_snapshot, id = <<"123234345456">>, aspect = <<"instance">>, scope = '*'}
     },
     {
         <<"op_atm_store.*.iterator:*">>,
-        #gri_pattern{type = op_atm_store, id = '*', aspect = iterator, scope = '*'}
+        #gri_pattern{type = op_atm_store, id = <<"*">>, aspect = <<"iterator">>, scope = '*'}
     },
     {
         <<"op_atm_task_execution.*.instance:private">>,
-        #gri_pattern{type = op_atm_task_execution, id = '*', aspect = instance, scope = private}
+        #gri_pattern{type = op_atm_task_execution, id = <<"*">>, aspect = <<"instance">>, scope = private}
     },
     {
         <<"op_atm_workflow_execution.*.instance:*">>,
-        #gri_pattern{type = op_atm_workflow_execution, id = '*', aspect = instance, scope = '*'}
+        #gri_pattern{type = op_atm_workflow_execution, id = <<"*">>, aspect = <<"instance">>, scope = '*'}
     },
     {
         <<"op_atm_workflow_schema.98776455341.instance:private">>,
-        #gri_pattern{type = op_atm_workflow_schema, id = <<"98776455341">>, aspect = instance, scope = private}
+        #gri_pattern{type = op_atm_workflow_schema, id = <<"98776455341">>, aspect = <<"instance">>, scope = private}
     },
     {
         <<"op_atm_workflow_schema_snapshot.98776455341.instance:*">>,
-        #gri_pattern{type = op_atm_workflow_schema_snapshot, id = <<"98776455341">>, aspect = instance, scope = '*'}
+        #gri_pattern{type = op_atm_workflow_schema_snapshot, id = <<"98776455341">>, aspect = <<"instance">>, scope = '*'}
     },
     {
         <<"op_dataset.qwertyuiop.*:private">>,
-        #gri_pattern{type = op_dataset, id = <<"qwertyuiop">>, aspect = '*', scope = private}
+        #gri_pattern{type = op_dataset, id = <<"qwertyuiop">>, aspect = <<"*">>, scope = private}
     },
     {
         <<"op_dataset.123345456789890.*:private">>,
-        #gri_pattern{type = op_dataset, id = <<"123345456789890">>, aspect = '*', scope = private}
+        #gri_pattern{type = op_dataset, id = <<"123345456789890">>, aspect = <<"*">>, scope = private}
     },
     {
         <<"file.891234718246113331.*:*">>,
