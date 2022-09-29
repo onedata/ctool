@@ -54,5 +54,3 @@ codetag-tracker:
 		--test-name CodetagTracker \
 		--report-path test/codetag_tracker_results/TEST-codetag_tracker.xml \
 		./bamboos/scripts/codetag-tracker.sh --branch=${BRANCH}
-
-
