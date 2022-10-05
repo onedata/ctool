@@ -36,6 +36,7 @@
     % fields (path, headers, data), e.g.
     % `#{<<"$USER_ID">> => <<"Id of the user relevant for the operation">>}`
     placeholders = #{} :: #{binary() => binary()},
+    optional_parameters = [] :: [binary()],
     swagger_operation_id :: binary()
 }).
 
