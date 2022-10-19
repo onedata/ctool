@@ -1211,7 +1211,7 @@ to_json(?ERROR_ATM_WORKFLOW_EMPTY) -> #{
 
 to_json(?ERROR_ATM_WORKFLOW_EXECUTION_STOPPING) -> #{
     <<"id">> => <<"atmWorkflowExecutionStopping">>,
-    <<"description">> => <<"Specified automation workflow execution is stopping.">>
+    <<"description">> => <<"Specified automation workflow execution is already stopping.">>
 };
 
 to_json(?ERROR_ATM_WORKFLOW_EXECUTION_STOPPED) -> #{
@@ -1231,7 +1231,7 @@ to_json(?ERROR_ATM_WORKFLOW_EXECUTION_NOT_ENDED) -> #{
 
 to_json(?ERROR_ATM_WORKFLOW_EXECUTION_NOT_RESUMABLE) -> #{
     <<"id">> => <<"atmWorkflowExecutionNotResumable">>,
-    <<"description">> => <<"Specified automation workflow execution can not be resumed.">>
+    <<"description">> => <<"Specified automation workflow execution cannot be resumed.">>
 };
 
 to_json(?ERROR_ATM_LANE_EMPTY(AtmLaneSchemaId)) -> #{
@@ -2612,12 +2612,12 @@ to_http_code(?ERROR_ATM_TASK_RESULT_MAPPING_FAILED(_, _)) -> ?HTTP_400_BAD_REQUE
 to_http_code(?ERROR_ATM_TASK_RESULT_DISPATCH_FAILED(_, _)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_ATM_TASK_EXECUTION_STOPPED) -> ?HTTP_400_BAD_REQUEST;
 
-to_http_code(?ERROR_ATM_JOB_BATCH_WITHDRAWN(_)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_ATM_JOB_BATCH_CRASHED(_)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_ATM_JOB_BATCH_WITHDRAWN(_)) -> ?HTTP_404_NOT_FOUND;
+to_http_code(?ERROR_ATM_JOB_BATCH_CRASHED(_)) -> ?HTTP_500_INTERNAL_SERVER_ERROR;
 
 to_http_code(?ERROR_ATM_OPENFAAS_NOT_CONFIGURED) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_ATM_OPENFAAS_UNREACHABLE) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_ATM_OPENFAAS_UNHEALTHY) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_ATM_OPENFAAS_UNHEALTHY) -> ?HTTP_503_SERVICE_UNAVAILABLE;
 to_http_code(?ERROR_ATM_OPENFAAS_QUERY_FAILED) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_ATM_OPENFAAS_QUERY_FAILED(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_ATM_OPENFAAS_FUNCTION_REGISTRATION_FAILED) -> ?HTTP_400_BAD_REQUEST;
