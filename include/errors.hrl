@@ -231,9 +231,11 @@
 ).
 
 -define(ERROR_ATM_WORKFLOW_EMPTY, {error, atm_workflow_empty}).
--define(ERROR_ATM_WORKFLOW_EXECUTION_ABORTING, {error, atm_workflow_execution_aborting}).
+-define(ERROR_ATM_WORKFLOW_EXECUTION_STOPPING, {error, atm_workflow_execution_aborting}).
+-define(ERROR_ATM_WORKFLOW_EXECUTION_STOPPED, {error, atm_workflow_execution_stopped}).
 -define(ERROR_ATM_WORKFLOW_EXECUTION_ENDED, {error, atm_workflow_execution_ended}).
 -define(ERROR_ATM_WORKFLOW_EXECUTION_NOT_ENDED, {error, atm_workflow_execution_not_ended}).
+-define(ERROR_ATM_WORKFLOW_EXECUTION_NOT_RESUMABLE, {error, atm_workflow_execution_not_resumable}).
 
 -define(ERROR_ATM_LANE_EMPTY(AtmLaneSchemaId),
     {error, {atm_lane_empty, AtmLaneSchemaId}}
@@ -291,10 +293,14 @@
     {error, {atm_task_result_mapping_failed, ResultName, SpecificError}}
 ).
 
--define(ERROR_ATM_TASK_EXECUTION_ENDED, {error, atm_task_execution_ended}).
+-define(ERROR_ATM_TASK_EXECUTION_STOPPED, {error, atm_task_execution_stopped}).
+
+-define(ERROR_ATM_JOB_BATCH_WITHDRAWN(Reason), {error, {atm_job_batch_withdrawn, Reason}}).
+-define(ERROR_ATM_JOB_BATCH_CRASHED(Reason), {error, {atm_job_batch_crashed, Reason}}).
 
 -define(ERROR_ATM_OPENFAAS_NOT_CONFIGURED, {error, atm_openfaas_not_configured}).
 -define(ERROR_ATM_OPENFAAS_UNREACHABLE, {error, atm_openfaas_unreachable}).
+-define(ERROR_ATM_OPENFAAS_UNHEALTHY, {error, atm_openfaas_unhealthy}).
 -define(ERROR_ATM_OPENFAAS_QUERY_FAILED, {error, atm_openfaas_query_failed}).
 -define(ERROR_ATM_OPENFAAS_QUERY_FAILED(Reason),
     {error, {atm_openfaas_query_failed, Reason}}
