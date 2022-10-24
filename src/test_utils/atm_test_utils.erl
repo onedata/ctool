@@ -271,8 +271,6 @@ example_predefined_value(#atm_data_spec{type = atm_integer_type}) ->
     ?RAND_INT(0, 1000);
 example_predefined_value(#atm_data_spec{type = atm_object_type}) ->
     ?RAND_ELEMENT([#{}, #{<<"key">> => 984.222}, #{<<"key">> => #{<<"nested">> => 984.222}}]);
-example_predefined_value(#atm_data_spec{type = atm_onedatafs_credentials_type}) ->
-    undefined;
 example_predefined_value(#atm_data_spec{type = atm_range_type}) ->
     #{<<"start">> => ?RAND_INT(0, 10), <<"end">> => ?RAND_INT(10, 20), <<"step">> => ?RAND_INT(0, 5)};
 example_predefined_value(#atm_data_spec{type = atm_string_type}) ->
@@ -498,8 +496,7 @@ example_argument_value_builder(StoreSchemaIds, Depth) ->
         case StoreSchemaIds of
             [] -> [];
             _ -> [store_credentials, single_value_store_content]
-        end,
-        onedatafs_credentials
+        end
     ]),
 
     case ?RAND_ELEMENT(AvailableBuilders) of
@@ -524,10 +521,7 @@ example_argument_value_builder(StoreSchemaIds, Depth) ->
         single_value_store_content ->
             #atm_task_argument_value_builder{
                 type = single_value_store_content, recipe = ?RAND_ELEMENT(StoreSchemaIds)
-            };
-        onedatafs_credentials -> #atm_task_argument_value_builder{
-            type = onedatafs_credentials, recipe = undefined
-        }
+            }
     end.
 
 

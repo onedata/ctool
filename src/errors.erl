@@ -137,9 +137,11 @@
 | {atm_store_content_not_set, AtmStoreSchemaId :: binary()}
 | {atm_store_not_found, AtmStoreSchemaId :: binary()}
 | atm_workflow_empty
-| atm_workflow_execution_aborting
+| atm_workflow_execution_stopping
+| atm_workflow_execution_stopped
 | atm_workflow_execution_ended
 | atm_workflow_execution_not_ended
+| atm_workflow_execution_not_resumable
 | {atm_lane_empty, AtmLaneSchemaId :: binary()}
 | {atm_lane_execution_creation_failed, AtmLaneSchemaId :: binary(), SpecificError :: error()}
 | {atm_lane_execution_initiation_failed, AtmLaneSchemaId :: binary(), SpecificError :: error()}
@@ -162,9 +164,12 @@
 | {atm_task_result_missing, ResultName :: binary()}
 | {atm_task_result_dispatch_failed, AtmStoreSchemaId :: binary(), SpecificError :: error()}
 | {atm_task_result_mapping_failed, ResultName :: binary(), SpecificError :: error()}
-| atm_task_execution_ended
+| atm_task_execution_stopped
+| {atm_job_batch_withdrawn, json_utils:json_term()}
+| {atm_job_batch_crashed, json_utils:json_term()}
 | atm_openfaas_not_configured
 | atm_openfaas_unreachable
+| atm_openfaas_unhealthy
 | atm_openfaas_query_failed
 | {atm_openfaas_query_failed, Reason :: binary()}
 | atm_openfaas_function_registration_failed
@@ -1204,9 +1209,14 @@ to_json(?ERROR_ATM_WORKFLOW_EMPTY) -> #{
     <<"description">> => <<"Bad automation workflow: no lanes defined.">>
 };
 
-to_json(?ERROR_ATM_WORKFLOW_EXECUTION_ABORTING) -> #{
-    <<"id">> => <<"atmWorkflowExecutionAborting">>,
-    <<"description">> => <<"Specified automation workflow execution is aborting.">>
+to_json(?ERROR_ATM_WORKFLOW_EXECUTION_STOPPING) -> #{
+    <<"id">> => <<"atmWorkflowExecutionStopping">>,
+    <<"description">> => <<"Specified automation workflow execution is already stopping.">>
+};
+
+to_json(?ERROR_ATM_WORKFLOW_EXECUTION_STOPPED) -> #{
+    <<"id">> => <<"atmWorkflowExecutionStopped">>,
+    <<"description">> => <<"Specified automation workflow execution has already stopped.">>
 };
 
 to_json(?ERROR_ATM_WORKFLOW_EXECUTION_ENDED) -> #{
@@ -1217,6 +1227,11 @@ to_json(?ERROR_ATM_WORKFLOW_EXECUTION_ENDED) -> #{
 to_json(?ERROR_ATM_WORKFLOW_EXECUTION_NOT_ENDED) -> #{
     <<"id">> => <<"atmWorkflowExecutionNotEnded">>,
     <<"description">> => <<"Specified automation workflow execution has not ended yet.">>
+};
+
+to_json(?ERROR_ATM_WORKFLOW_EXECUTION_NOT_RESUMABLE) -> #{
+    <<"id">> => <<"atmWorkflowExecutionNotResumable">>,
+    <<"description">> => <<"Specified automation workflow execution cannot be resumed.">>
 };
 
 to_json(?ERROR_ATM_LANE_EMPTY(AtmLaneSchemaId)) -> #{
@@ -1410,9 +1425,24 @@ to_json(?ERROR_ATM_TASK_RESULT_DISPATCH_FAILED(AtmStoreSchemaId, {error, _} = Sp
         [AtmStoreSchemaId]
     )
 };
-to_json(?ERROR_ATM_TASK_EXECUTION_ENDED) -> #{
+to_json(?ERROR_ATM_TASK_EXECUTION_STOPPED) -> #{
     <<"id">> => <<"atmTaskExecutionEnded">>,
-    <<"description">> => <<"Specified automation task execution has already ended.">>
+    <<"description">> => <<"Specified automation task execution has already stopped.">>
+};
+
+to_json(?ERROR_ATM_JOB_BATCH_WITHDRAWN(Reason)) -> #{
+    <<"id">> => <<"atmJobBatchWithdrawn">>,
+    <<"details">> => #{
+        <<"reason">> => Reason
+    },
+    <<"description">> => <<"Previosuly scheduled job batch has been withdrawn.">>
+};
+to_json(?ERROR_ATM_JOB_BATCH_CRASHED(Reason)) -> #{
+    <<"id">> => <<"atmJobBatchCrashed">>,
+    <<"details">> => #{
+        <<"reason">> => Reason
+    },
+    <<"description">> => <<"Job batch execution has crashed.">>
 };
 
 to_json(?ERROR_ATM_OPENFAAS_NOT_CONFIGURED) -> #{
@@ -1422,6 +1452,10 @@ to_json(?ERROR_ATM_OPENFAAS_NOT_CONFIGURED) -> #{
 to_json(?ERROR_ATM_OPENFAAS_UNREACHABLE) -> #{
     <<"id">> => <<"atmOpenfaasUnreachable">>,
     <<"description">> => <<"Cannot connect to OpenFaaS service.">>
+};
+to_json(?ERROR_ATM_OPENFAAS_UNHEALTHY) -> #{
+    <<"id">> => <<"atmOpenfaasUnhealthy">>,
+    <<"description">> => <<"OpenFaaS service is unhealthy.">>
 };
 to_json(?ERROR_ATM_OPENFAAS_QUERY_FAILED) -> #{
     <<"id">> => <<"atmOpenfaasQueryFailed">>,
@@ -2102,14 +2136,20 @@ from_json(#{
 from_json(#{<<"id">> := <<"atmWorkflowEmpty">>}) ->
     ?ERROR_ATM_WORKFLOW_EMPTY;
 
-from_json(#{<<"id">> := <<"atmWorkflowExecutionAborting">>}) ->
-    ?ERROR_ATM_WORKFLOW_EXECUTION_ABORTING;
+from_json(#{<<"id">> := <<"atmWorkflowExecutionStopping">>}) ->
+    ?ERROR_ATM_WORKFLOW_EXECUTION_STOPPING;
+
+from_json(#{<<"id">> := <<"atmWorkflowExecutionStopped">>}) ->
+    ?ERROR_ATM_WORKFLOW_EXECUTION_STOPPED;
 
 from_json(#{<<"id">> := <<"atmWorkflowExecutionEnded">>}) ->
     ?ERROR_ATM_WORKFLOW_EXECUTION_ENDED;
 
 from_json(#{<<"id">> := <<"atmWorkflowExecutionNotEnded">>}) ->
     ?ERROR_ATM_WORKFLOW_EXECUTION_NOT_ENDED;
+
+from_json(#{<<"id">> := <<"atmWorkflowExecutionNotResumable">>}) ->
+    ?ERROR_ATM_WORKFLOW_EXECUTION_NOT_RESUMABLE;
 
 from_json(#{
     <<"id">> := <<"atmLaneEmpty">>,
@@ -2266,13 +2306,27 @@ from_json(#{
     ?ERROR_ATM_TASK_RESULT_DISPATCH_FAILED(AtmStoreSchemaId, from_json(SpecificErrorJson));
 
 from_json(#{<<"id">> := <<"atmTaskExecutionEnded">>}) ->
-    ?ERROR_ATM_TASK_EXECUTION_ENDED;
+    ?ERROR_ATM_TASK_EXECUTION_STOPPED;
+
+from_json(#{
+    <<"id">> := <<"atmJobBatchWithdrawn">>,
+    <<"details">> := #{<<"reason">> := Reason}
+}) ->
+    ?ERROR_ATM_JOB_BATCH_WITHDRAWN(Reason);
+from_json(#{
+    <<"id">> := <<"atmJobBatchCrashed">>,
+    <<"details">> := #{<<"reason">> := Reason}
+}) ->
+    ?ERROR_ATM_JOB_BATCH_CRASHED(Reason);
 
 from_json(#{<<"id">> := <<"atmOpenfaasNotConfigured">>}) ->
     ?ERROR_ATM_OPENFAAS_NOT_CONFIGURED;
 
 from_json(#{<<"id">> := <<"atmOpenfaasUnreachable">>}) ->
     ?ERROR_ATM_OPENFAAS_UNREACHABLE;
+
+from_json(#{<<"id">> := <<"atmOpenfaasUnhealthy">>}) ->
+    ?ERROR_ATM_OPENFAAS_UNHEALTHY;
 
 from_json(#{
     <<"id">> := <<"atmOpenfaasQueryFailed">>,
@@ -2530,9 +2584,11 @@ to_http_code(?ERROR_ATM_STORE_CONTENT_NOT_SET(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_ATM_STORE_NOT_FOUND(_)) -> ?HTTP_400_BAD_REQUEST;
 
 to_http_code(?ERROR_ATM_WORKFLOW_EMPTY) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_ATM_WORKFLOW_EXECUTION_ABORTING) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_ATM_WORKFLOW_EXECUTION_STOPPING) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_ATM_WORKFLOW_EXECUTION_STOPPED) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_ATM_WORKFLOW_EXECUTION_ENDED) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_ATM_WORKFLOW_EXECUTION_NOT_ENDED) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_ATM_WORKFLOW_EXECUTION_NOT_RESUMABLE) -> ?HTTP_400_BAD_REQUEST;
 
 to_http_code(?ERROR_ATM_LANE_EMPTY(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_ATM_LANE_EXECUTION_CREATION_FAILED(_, _)) -> ?HTTP_400_BAD_REQUEST;
@@ -2554,10 +2610,14 @@ to_http_code(?ERROR_ATM_TASK_ARG_MAPPER_ITERATED_ITEM_QUERY_FAILED(_, _)) -> ?HT
 to_http_code(?ERROR_ATM_TASK_RESULT_MISSING(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_ATM_TASK_RESULT_MAPPING_FAILED(_, _)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_ATM_TASK_RESULT_DISPATCH_FAILED(_, _)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_ATM_TASK_EXECUTION_ENDED) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_ATM_TASK_EXECUTION_STOPPED) -> ?HTTP_400_BAD_REQUEST;
+
+to_http_code(?ERROR_ATM_JOB_BATCH_WITHDRAWN(_)) -> ?HTTP_404_NOT_FOUND;
+to_http_code(?ERROR_ATM_JOB_BATCH_CRASHED(_)) -> ?HTTP_500_INTERNAL_SERVER_ERROR;
 
 to_http_code(?ERROR_ATM_OPENFAAS_NOT_CONFIGURED) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_ATM_OPENFAAS_UNREACHABLE) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_ATM_OPENFAAS_UNHEALTHY) -> ?HTTP_503_SERVICE_UNAVAILABLE;
 to_http_code(?ERROR_ATM_OPENFAAS_QUERY_FAILED) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_ATM_OPENFAAS_QUERY_FAILED(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_ATM_OPENFAAS_FUNCTION_REGISTRATION_FAILED) -> ?HTTP_400_BAD_REQUEST;
