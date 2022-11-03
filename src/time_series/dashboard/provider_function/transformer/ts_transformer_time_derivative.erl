@@ -70,7 +70,10 @@ db_decode(RecordJson, NestedRecordDecoder) ->
 encode_with(Record, NestedRecordEncoder) ->
     #{
         <<"inputDataProvider">> => NestedRecordEncoder(Record#ts_transformer_time_derivative.input_data_provider, ts_provider_function),
-        <<"timeSpanProvider">> => NestedRecordEncoder(Record#ts_transformer_time_derivative.time_span_provider, ts_provider_function)
+        <<"timeSpanProvider">> => case Record#ts_transformer_time_derivative.time_span_provider of
+            undefined -> null;
+            Value -> NestedRecordEncoder(Value, ts_provider_function)
+        end
     }.
 
 
@@ -80,5 +83,8 @@ encode_with(Record, NestedRecordEncoder) ->
 decode_with(RecordJson, NestedRecordDecoder) ->
     #ts_transformer_time_derivative{
         input_data_provider = NestedRecordDecoder(maps:get(<<"inputDataProvider">>, RecordJson), ts_provider_function),
-        time_span_provider = NestedRecordDecoder(maps:get(<<"timeSpanProvider">>, RecordJson), ts_provider_function)
+        time_span_provider = case maps:get(<<"timeSpanProvider">>, RecordJson, null) of
+            null -> undefined;
+            Value -> NestedRecordDecoder(Value, ts_provider_function)
+        end
     }.

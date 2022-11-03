@@ -448,12 +448,12 @@ example_provider_function(MaxNestingLevel) ->
         8 ->
             #ts_transformer_rate{
                 input_data_provider = example_provider_function(MaxNestingLevel - 1),
-                time_span_provider = example_provider_function(MaxNestingLevel - 1)
+                time_span_provider = ?RAND_ELEMENT([undefined, example_provider_function(MaxNestingLevel - 1)])
             };
         9 ->
             #ts_transformer_time_derivative{
                 input_data_provider = example_provider_function(MaxNestingLevel - 1),
-                time_span_provider = example_provider_function(MaxNestingLevel - 1)
+                time_span_provider = ?RAND_ELEMENT([undefined, example_provider_function(MaxNestingLevel - 1)])
             };
         10 ->
             #ts_transformer_replace_empty{
