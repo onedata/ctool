@@ -422,7 +422,7 @@ example_provider_function(MaxNestingLevel) when MaxNestingLevel =< 0 ->
     % not go into an infinite loop (function providers can be arbitrarily nested)
     #ts_data_generator_literal{data = ?RAND_JSON_TERM()};
 example_provider_function(MaxNestingLevel) ->
-    case rand:uniform(8) of
+    case rand:uniform(10) of
         1 ->
             #ts_data_generator_literal{data = ?RAND_JSON_TERM()};
         2 ->
@@ -446,6 +446,16 @@ example_provider_function(MaxNestingLevel) ->
                 end, ?RAND_INT(1, 3))
             };
         8 ->
+            #ts_transformer_rate{
+                input_data_provider = example_provider_function(MaxNestingLevel - 1),
+                time_span_provider = ?RAND_ELEMENT([undefined, example_provider_function(MaxNestingLevel - 1)])
+            };
+        9 ->
+            #ts_transformer_time_derivative{
+                input_data_provider = example_provider_function(MaxNestingLevel - 1),
+                time_span_provider = ?RAND_ELEMENT([undefined, example_provider_function(MaxNestingLevel - 1)])
+            };
+        10 ->
             #ts_transformer_replace_empty{
                 input_data_provider = example_provider_function(MaxNestingLevel - 1),
                 fallback_value_provider = example_provider_function(MaxNestingLevel - 1),

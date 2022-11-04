@@ -168,6 +168,16 @@
     operand_providers :: [ts_provider_function:record()]
 }).
 
+-record(ts_transformer_rate, {
+    input_data_provider :: ts_provider_function:record(),
+    time_span_provider :: undefined | ts_provider_function:record()
+}).
+
+-record(ts_transformer_time_derivative, {
+    input_data_provider :: ts_provider_function:record(),
+    time_span_provider :: undefined | ts_provider_function:record()
+}).
+
 -record(ts_transformer_replace_empty, {
     input_data_provider :: ts_provider_function:record(),
     fallback_value_provider :: ts_provider_function:record(),

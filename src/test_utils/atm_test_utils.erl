@@ -218,11 +218,6 @@ example_data_spec_except(atm_file_type, _) ->
         type = atm_file_type,
         value_constraints = #{file_type => ?RAND_ELEMENT(['REG', 'DIR', 'ANY'])}
     };
-example_data_spec_except(atm_store_credentials_type, _) ->
-    #atm_data_spec{
-        type = atm_store_credentials_type,
-        value_constraints = #{store_type => example_store_type()}
-    };
 example_data_spec_except(atm_array_type, DisallowedTypes) ->
     #atm_data_spec{
         type = atm_array_type,
@@ -252,8 +247,6 @@ example_data_specs_except(DisallowedTypes) ->
 
 %% @TODO VFS-7687 Implement all automation data types and validators
 -spec example_predefined_value(atm_data_spec:record()) -> json_utils:json_term().
-example_predefined_value(#atm_data_spec{type = atm_archive_type}) ->
-    #{<<"atm_archive_type">> => <<"value">>};
 example_predefined_value(#atm_data_spec{type = atm_array_type, value_constraints = #{
     item_data_spec := ItemDataSpec
 }}) ->
@@ -275,8 +268,6 @@ example_predefined_value(#atm_data_spec{type = atm_range_type}) ->
     #{<<"start">> => ?RAND_INT(0, 10), <<"end">> => ?RAND_INT(10, 20), <<"step">> => ?RAND_INT(0, 5)};
 example_predefined_value(#atm_data_spec{type = atm_string_type}) ->
     ?RAND_STR(?RAND_INT(1, 25));
-example_predefined_value(#atm_data_spec{type = atm_store_credentials_type}) ->
-    undefined;
 example_predefined_value(#atm_data_spec{type = atm_time_series_measurement_type}) ->
     undefined.
 

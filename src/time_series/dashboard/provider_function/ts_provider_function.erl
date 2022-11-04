@@ -121,6 +121,8 @@ record_type_to_function_name(ts_data_generator_load_series) -> <<"loadSeries">>;
 
 record_type_to_function_name(ts_transformer_abs) -> <<"abs">>;
 record_type_to_function_name(ts_transformer_multiply) -> <<"multiply">>;
+record_type_to_function_name(ts_transformer_rate) -> <<"rate">>;
+record_type_to_function_name(ts_transformer_time_derivative) -> <<"timeDerivative">>;
 record_type_to_function_name(ts_transformer_replace_empty) -> <<"replaceEmpty">>.
 
 
@@ -133,4 +135,6 @@ function_name_to_record_type(<<"loadSeries">>) -> ts_data_generator_load_series;
 
 function_name_to_record_type(<<"abs">>) -> ts_transformer_abs;
 function_name_to_record_type(<<"multiply">>) -> ts_transformer_multiply;
+function_name_to_record_type(<<"rate">>) -> ts_transformer_rate;
+function_name_to_record_type(<<"timeDerivative">>) -> ts_transformer_time_derivative;
 function_name_to_record_type(<<"replaceEmpty">>) -> ts_transformer_replace_empty.
