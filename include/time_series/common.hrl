@@ -66,7 +66,7 @@
 -define(MAX_METRIC_RETENTION, 1000000).
 
 -define(ALLOWED_METRIC_AGGREGATORS, [
-    sum, max, min, first, last
+    sum, max, min, first, last, avg
 ]).
 
 % Special placeholders that can be used when requesting operations

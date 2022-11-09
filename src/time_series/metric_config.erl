@@ -31,7 +31,7 @@
 % number of windows to store in the metric (older windows are pruned)
 -type retention() :: pos_integer().
 % aggregator function applied when a new measurement is inserted into a time window
--type aggregator() :: sum | max | min | last | first. % | {gather, Max}. % TODO VFS-8164 - extend functions list
+-type aggregator() :: sum | max | min | last | first | avg. % | {gather, Max}. % TODO VFS-8164 - extend functions list
 -export_type([resolution/0, retention/0, aggregator/0]).
 
 -type record() :: #metric_config{}.
@@ -80,7 +80,8 @@ aggregator_to_json(sum) -> <<"sum">>;
 aggregator_to_json(max) -> <<"max">>;
 aggregator_to_json(min) -> <<"min">>;
 aggregator_to_json(first) -> <<"first">>;
-aggregator_to_json(last) -> <<"last">>.
+aggregator_to_json(last) -> <<"last">>;
+aggregator_to_json(avg) -> <<"avg">>.
 
 
 %% @private
@@ -89,7 +90,8 @@ aggregator_from_json(<<"sum">>) -> sum;
 aggregator_from_json(<<"max">>) -> max;
 aggregator_from_json(<<"min">>) -> min;
 aggregator_from_json(<<"first">>) -> first;
-aggregator_from_json(<<"last">>) -> last.
+aggregator_from_json(<<"last">>) -> last;
+aggregator_from_json(<<"avg">>) -> avg.
 
 %%%===================================================================
 %%% Internal functions
