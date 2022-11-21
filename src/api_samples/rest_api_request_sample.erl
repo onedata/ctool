@@ -22,8 +22,10 @@
 -include("api_samples/common.hrl").
 
 
+-type name() :: binary().
+-type swagger_operation_id() :: binary().
 -type method() :: 'POST' | 'PUT' | 'GET' | 'PATCH' | 'DELETE'.
--export_type([method/0]).
+-export_type([name/0, swagger_operation_id/0, method/0]).
 
 -type record() :: #rest_api_request_sample{}.
 -export_type([record/0]).

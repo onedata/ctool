@@ -23,7 +23,7 @@
 % @see rest_api_request_sample
 -record(rest_api_request_sample, {
     % human readable name and description of the operation
-    name :: binary(),
+    name :: rest_api_request_sample:name(),
     description :: binary(),
     method :: rest_api_request_sample:method(),
     % relative to the api_root from enclosing #rest_api_samples{} record
@@ -37,7 +37,7 @@
     % `#{<<"$USER_ID">> => <<"Id of the user relevant for the operation">>}`
     placeholders = #{} :: #{binary() => binary()},
     optional_parameters = [] :: [binary()],
-    swagger_operation_id :: binary()
+    swagger_operation_id :: rest_api_request_sample:swagger_operation_id()
 }).
 
 
