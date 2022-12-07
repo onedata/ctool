@@ -26,8 +26,8 @@
 % set by default if no specific parameters are requested
 -define(DEFAULT_SUPPORT_PARAMETERS, #support_parameters{
     accounting_enabled = false,
-    dir_stats_service_enabled = false,
-    dir_stats_service_status = disabled
+    dir_stats_service_enabled = true,
+    dir_stats_service_status = initializing
 }).
 
 -endif.
