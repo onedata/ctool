@@ -27,7 +27,7 @@
 -define(DEFAULT_SUPPORT_PARAMETERS, #support_parameters{
     accounting_enabled = false,
     dir_stats_service_enabled = true,
-    dir_stats_service_status = initializing
+    dir_stats_service_status = disabled
 }).
 
 -endif.
