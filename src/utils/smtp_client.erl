@@ -1,6 +1,6 @@
 %%%-------------------------------------------------------------------
 %%% @author Lukasz Opiola
-%%% @copyright (C) 2016 ACK CYFRONET AGH
+%%% @copyright (C) 2022 ACK CYFRONET AGH
 %%% This software is released under the MIT license
 %%% cited in 'LICENSE.txt'.
 %%% @end
@@ -11,61 +11,62 @@
 %%%-------------------------------------------------------------------
 -module(smtp_client).
 
--include("logging.hrl").
+-include("smtp_client.hrl").
+
 
 %% API
--export([send_email/7]).
+-export([send_email/1]).
+
+
+-type email_address() :: binary().  % e.g. <<"example@gmail.com">>
+-type email_spec() :: #email_spec{}.
+-export_type([email_address/0, email_spec/0]).
+
+
 
 %%%===================================================================
 %%% API
 %%%===================================================================
 
-%%--------------------------------------------------------------------
-%% @doc
-%% Sends an email using a relay email service.
-%% Exemplary Options:
-%% #{
-%%    relay => "smtp.gmail.com",
-%%    username => "username@gmail.com",
-%%    password => "password",
-%%      Protocol is optional, by default TLS (port 587) is used, SMTP (25) and
-%%      SSL (465) are also allowed, though TLS is most commonly supported.
-%%    protocol => tls | ssl | smtp
-%% }
-%% @end
-%%--------------------------------------------------------------------
--spec send_email(FromEmail :: binary(), FromName :: binary(), To :: [binary()],
-    BCC :: [binary()], Subject :: binary(), Body :: binary(),
-    Options :: map()) -> ok | {error, term()}.
-send_email(FromEmail, FromName, To, BCC, Subject, Body, Options) ->
-    % Resolve options for gen_smtp_client
-    Relay = [{relay, maps:get(relay, Options)}],
-    UserName = [{username, maps:get(username, Options)}],
-    Password = [{password, maps:get(password, Options)}],
-    ProtocolOpts = case maps:get(protocol, Options, tls) of
-        smtp ->
-            [{port, 25}];
-        ssl ->
-            [{port, 465}, {ssl, true}, {auth, always}];
-        tls ->
-            [{port, 587}, {tls, always}, {auth, always}]
-    end,
-    ResolvedOpts = lists:append([Relay, UserName, Password, ProtocolOpts]),
-    ToWithBrackets = [<<"<", Addr/binary, ">">> || Addr <- To],
-    ToString = str_utils:join_binary(ToWithBrackets, <<",">>),
+-spec send_email(email_spec()) -> {ok, binary()} | {error, {Type :: atom(), Details :: term()}}.
+send_email(#email_spec{
+    sender_address = SenderAddress,
+    sender_name = SenderName,
+    recipient_addresses = RecipientAddresses,
+    subject = Subject,
+    body = Body
+} = EmailSpec) ->
+    ToWithBrackets = str_utils:join_binary([<<"<", A/binary, ">">> || A <- RecipientAddresses], <<", ">>),
     Data = <<
         "Subject: ", Subject/binary, "\r\n",
-        "From: ", FromName/binary, " <", FromEmail/binary, ">\r\n",
-        "To: ", ToString/binary, "\r\n\r\n",
+        "From: ", SenderName/binary, " <", SenderAddress/binary, ">\r\n",
+        "To: ", ToWithBrackets/binary, "\r\n\r\n",
         Body/binary
     >>,
-    AllRecipients = lists:usort(To ++ BCC),
-    Res = gen_smtp_client:send_blocking(
-        {FromEmail, AllRecipients, Data}, ResolvedOpts
-    ),
-    case Res of
-        Bin when is_binary(Bin) ->
-            ok;
-        Error ->
-            Error
+    case gen_smtp_client:send_blocking({SenderAddress, RecipientAddresses, Data}, build_opts(EmailSpec)) of
+        ServerReply when is_binary(ServerReply) ->
+            {ok, ServerReply};
+        {error, ValidateOptionsError} ->
+            {error, {bad_options, ValidateOptionsError}};
+        {error, Type, Details} ->
+            {error, {Type, Details}}
     end.
+
+%%%===================================================================
+%%% Helpers
+%%%===================================================================
+
+%% @private
+-spec build_opts(email_spec()) -> gen_smtp_client:options().
+build_opts(#email_spec{
+    relay = Relay,
+    username = Username,
+    password = Password,
+    options = Options
+}) ->
+    [
+        {relay, Relay},
+        {username, Username},
+        {password, Password} |
+        Options
+    ].
