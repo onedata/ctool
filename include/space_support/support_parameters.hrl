@@ -23,7 +23,8 @@
     registry = #{} :: support_parameters_registry:registry()
 }).
 
-% set by default if no specific parameters are requested
+% Set by default if no specific parameters are requested.
+% Currently, all new space supports have dir stats service enabled.
 -define(DEFAULT_SUPPORT_PARAMETERS, #support_parameters{
     accounting_enabled = false,
     dir_stats_service_enabled = true,
@@ -31,6 +32,15 @@
     % (@see support_parameters:ensure_dir_stats_service_status_adequate/1)
     % so the final status will be consistent with the dir_stats_service_enabled flag
     % (also @see support_parameters_tests.erl)
+    dir_stats_service_status = disabled
+}).
+
+% Set for spaces that have been created before the dir stats service was introduced.
+% Currently, such spaces have dir stats disabled by default, they must be manually
+% enabled after upgrading the software to a version supporting them.
+-define(POST_SPACE_UPGRADE_SUPPORT_PARAMETERS, #support_parameters{
+    accounting_enabled = false,
+    dir_stats_service_enabled = false,
     dir_stats_service_status = disabled
 }).
 
