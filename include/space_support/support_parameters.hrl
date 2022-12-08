@@ -27,6 +27,10 @@
 -define(DEFAULT_SUPPORT_PARAMETERS, #support_parameters{
     accounting_enabled = false,
     dir_stats_service_enabled = true,
+    % the default parameters are still subject to tweaking;
+    % (@see support_parameters:ensure_dir_stats_service_status_adequate/1)
+    % so the final status will be consistent with the dir_stats_service_enabled flag
+    % (also @see support_parameters_tests.erl)
     dir_stats_service_status = disabled
 }).
 
