@@ -24,7 +24,7 @@
 }).
 
 % Set by default if no specific parameters are requested.
-% Currently, all new space supports have dir stats service enabled.
+% Currently, all new space supports have dir stats service enabled by default.
 -define(DEFAULT_SUPPORT_PARAMETERS, #support_parameters{
     accounting_enabled = false,
     dir_stats_service_enabled = true,
@@ -35,8 +35,8 @@
     dir_stats_service_status = disabled
 }).
 
-% Set for spaces that have been created before the dir stats service was introduced.
-% Currently, such spaces have dir stats disabled by default, they must be manually
+% Set for space supports that have been created before the dir stats service was introduced.
+% Currently, such space supports have dir stats disabled by default, they must be manually
 % enabled after upgrading the software to a version supporting them.
 -define(POST_SPACE_UPGRADE_SUPPORT_PARAMETERS, #support_parameters{
     accounting_enabled = false,
