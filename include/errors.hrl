@@ -339,11 +339,12 @@
 %%--------------------------------------------------------------------
 %% Unknown / unexpected error
 %%--------------------------------------------------------------------
-% Reported when decoding an external error and its format is not known to the
-% current software version (for example, a newer server responds with an error
-% to an older client, which does not know the error signature). The original
-% JSON representing the error is retained and returned to the caller.
--define(ERROR_UNKNOWN_ERROR(ErrorAsJson), {error, {unknown_error, ErrorAsJson}}).
+% Used to carry errors that have the proper JSON error format, but do not match
+% any error specified in this software version. This can happen if a newer
+% server responds with an error to an older client, which does not know the
+% error Id. The original JSON representing the error is retained and returned
+% upon encoding.
+-define(ERROR_UNRECOGNIZED_ERROR(ErrorAsJson), {error, {unrecognized_error, ErrorAsJson}}).
 
 -endif.
 

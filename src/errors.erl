@@ -208,10 +208,10 @@
 % #{<<"type">> := <<"errorId">>, <<"detail">> => <<"error description">>, _ => _}
 -type problem_document() :: json_utils:json_map().
 
--type unknown() :: {unknown_error, as_json()}.
+-type unrecognized() :: {unrecognized_error, as_json()}.
 
 -type reason() :: general() | auth() | graph_sync() | data_validation()
-| oz_worker() | posix() | op_worker() | onepanel() | unknown().
+| oz_worker() | posix() | op_worker() | onepanel() | unrecognized().
 -type error() :: {error, reason()}.
 
 -type as_json() :: json_utils:json_map().
@@ -257,17 +257,16 @@ to_json(?ERROR_UNREGISTERED_ONEPROVIDER) -> #{
     <<"id">> => <<"unregisteredOneprovider">>,
     <<"description">> => <<"This Oneprovider is not registered.">>
 };
-to_json(?ERROR_INTERNAL_SERVER_ERROR(ErrorRef)) ->
-    #{
-        <<"id">> => <<"internalServerError">>,
-        <<"details">> => #{
-            <<"reference">> => ErrorRef
-        },
-        <<"description">> => ?FMT(
-            "The server has encountered an error while processing this request. "
-            "When reporting this error, cite the following reference: ~s.", [ErrorRef]
-        )
-    };
+to_json(?ERROR_INTERNAL_SERVER_ERROR(ErrorRef)) -> #{
+    <<"id">> => <<"internalServerError">>,
+    <<"details">> => #{
+        <<"reference">> => ErrorRef
+    },
+    <<"description">> => ?FMT(
+        "The server has encountered an error while processing this request. "
+        "When reporting this error, cite the following reference: ~s.", [ErrorRef]
+    )
+};
 to_json(?ERROR_INTERNAL_SERVER_ERROR) -> #{
     <<"id">> => <<"internalServerError">>,
     <<"description">> => <<"The server has encountered an error while processing this request.">>
@@ -774,7 +773,7 @@ to_json(?ERROR_BAD_VALUE_USERNAME) -> #{
 };
 to_json(?ERROR_BAD_VALUE_PASSWORD) -> #{
     <<"id">> => <<"badValuePassword">>,
-    <<"description">> =><<"Bad value: ", (?PASSWORD_REQUIREMENTS_DESCRIPTION)/binary>>
+    <<"description">> => <<"Bad value: ", (?PASSWORD_REQUIREMENTS_DESCRIPTION)/binary>>
 };
 to_json(?ERROR_BAD_VALUE_EMAIL) -> #{
     <<"id">> => <<"badValueEmail">>,
@@ -828,19 +827,20 @@ to_json(?ERROR_TSC_TOO_MANY_METRICS(Limit)) -> #{
     },
     <<"description">> => ?FMT("The time series collection cannot have more than ~B metrics.", [Limit])
 };
-to_json(?ERROR_BAD_VALUE_TSC_CONFLICTING_METRIC_CONFIG(TSName, MetricName, ExistingMetricConfig, ConflictingMetricConfig)) -> #{
-    <<"id">> => <<"badValueTimeSeriesCollectionConflictingMetricConfig">>,
-    <<"details">> => #{
-        <<"timeSeriesName">> => TSName,
-        <<"metricName">> => MetricName,
-        <<"existingMetricConfig">> => jsonable_record:to_json(ExistingMetricConfig, metric_config),
-        <<"conflictingMetricConfig">> => jsonable_record:to_json(ConflictingMetricConfig, metric_config)
-    },
-    <<"description">> => ?FMT(
-        "Provided metric config for 'time series' ~s and metric '~s' conflicts with existing metric config (see details).", [
-            TSName, MetricName
-        ])
-};
+to_json(?ERROR_BAD_VALUE_TSC_CONFLICTING_METRIC_CONFIG(TSName, MetricName, ExistingMetricConfig, ConflictingMetricConfig)) ->
+    #{
+        <<"id">> => <<"badValueTimeSeriesCollectionConflictingMetricConfig">>,
+        <<"details">> => #{
+            <<"timeSeriesName">> => TSName,
+            <<"metricName">> => MetricName,
+            <<"existingMetricConfig">> => jsonable_record:to_json(ExistingMetricConfig, metric_config),
+            <<"conflictingMetricConfig">> => jsonable_record:to_json(ConflictingMetricConfig, metric_config)
+        },
+        <<"description">> => ?FMT(
+            "Provided metric config for 'time series' ~s and metric '~s' conflicts with existing metric config (see details).", [
+                TSName, MetricName
+            ])
+    };
 to_json(?ERROR_BAD_GUI_PACKAGE) -> #{
     <<"id">> => <<"badGuiPackage">>,
     <<"description">> => <<"Provider GUI package could not be understood by the server.">>
@@ -972,15 +972,14 @@ to_json(?ERROR_RELATION_ALREADY_EXISTS(ChType, ChId, ParType, ParId)) ->
             gri:serialize_type(ParType), ParId
         ])
     };
-to_json(?ERROR_SPACE_ALREADY_SUPPORTED_WITH_IMPORTED_STORAGE(SpaceId, StorageId)) ->
-    #{
-        <<"id">> => <<"spaceAlreadySupportedWithImportedStorage">>,
-        <<"details">> => #{
-            <<"spaceId">> => SpaceId,
-            <<"storageId">> => StorageId
-        },
-        <<"description">> => ?FMT("Space ~s is already supported with an imported storage ~s.", [SpaceId, StorageId])
-    };
+to_json(?ERROR_SPACE_ALREADY_SUPPORTED_WITH_IMPORTED_STORAGE(SpaceId, StorageId)) -> #{
+    <<"id">> => <<"spaceAlreadySupportedWithImportedStorage">>,
+    <<"details">> => #{
+        <<"spaceId">> => SpaceId,
+        <<"storageId">> => StorageId
+    },
+    <<"description">> => ?FMT("Space ~s is already supported with an imported storage ~s.", [SpaceId, StorageId])
+};
 
 %%--------------------------------------------------------------------
 %% op_worker errors
@@ -1582,7 +1581,8 @@ to_json(?ERROR_USER_NOT_IN_CLUSTER) -> #{
 %%--------------------------------------------------------------------
 %% Unknown error
 %%--------------------------------------------------------------------
-to_json(?ERROR_UNKNOWN_ERROR(ErrorAsJson)) ->
+to_json(?ERROR_UNRECOGNIZED_ERROR(ErrorAsJson)) ->
+    % Carries errors that have not been recognized upon decoding.
     case maps:is_key(<<"description">>, ErrorAsJson) of
         true ->
             ErrorAsJson;
@@ -1590,10 +1590,10 @@ to_json(?ERROR_UNKNOWN_ERROR(ErrorAsJson)) ->
             ErrorAsJson#{<<"description">> => <<"No description (unknown error).">>}
     end;
 to_json(OtherError) ->
-    % Wildcard to catch all errors that might be returned by the application logic,
-    % but are not recognized by this module. Inability to translate is treated as an exception
-    % (an ?ERROR_INTERNAL_SERVER_ERROR(ErrorRef) is returned).
-    ReturnedError = ?catch_exceptions_as_errors(error({cannot_translate_error, OtherError})),
+    % Wildcard to catch all errors that might be returned by the application logic, but does
+    % not match any error defined in this module. Inability to translate is treated as an
+    % unexpected exception (an ?ERROR_INTERNAL_SERVER_ERROR(ErrorRef) is returned).
+    ReturnedError = ?catch_exceptions(error({cannot_translate_error, OtherError})),
     to_json(ReturnedError).
 
 
@@ -2413,7 +2413,7 @@ from_json(#{<<"id">> := <<"userNotInCluster">>}) ->
 %% Unknown error
 %%--------------------------------------------------------------------
 from_json(ErrorAsJson) when is_map(ErrorAsJson) ->
-    ?ERROR_UNKNOWN_ERROR(ErrorAsJson).
+    ?ERROR_UNRECOGNIZED_ERROR(ErrorAsJson).
 
 
 -spec to_http_code(error()) ->
@@ -2647,7 +2647,7 @@ to_http_code(?ERROR_USER_NOT_IN_CLUSTER) -> ?HTTP_403_FORBIDDEN;
 %% -----------------------------------------------------------------------------
 %% Unknown error
 %% -----------------------------------------------------------------------------
-to_http_code(?ERROR_UNKNOWN_ERROR(_)) -> ?HTTP_500_INTERNAL_SERVER_ERROR;
+to_http_code(?ERROR_UNRECOGNIZED_ERROR(_)) -> ?HTTP_500_INTERNAL_SERVER_ERROR;
 to_http_code(_) -> ?HTTP_500_INTERNAL_SERVER_ERROR.
 
 %%%===================================================================

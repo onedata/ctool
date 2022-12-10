@@ -52,27 +52,29 @@ http_code_test_() ->
         end} end, testcases()).
 
 
-unknown_errors_test() ->
+cannot_translate_error_test() ->
     % in case of an error that is not specified in the errors module,
     % a proper error log is logged and an internal server error should be returned
-    UnknownErrorTerm = {error, {some_error, that_we_dont_understand, 1653}},
+    BadErrorTerm = {error, {some_error, that_we_dont_understand, 1653}},
     ?assertMatch(
         ?ERROR_INTERNAL_SERVER_ERROR(_),
-        errors:from_json(errors:to_json(UnknownErrorTerm))
-    ),
+        errors:from_json(errors:to_json(BadErrorTerm))
+    ).
 
-    UnknownErrorJson = #{
+
+unrecognized_error_test() ->
+    UnrecognizedErrorJson = #{
         <<"id">> => <<"someErrorThatWasNotSpecifiedInThisSoftwareVersion">>,
         <<"details">> => #{<<"key">> => <<"value">>},
         <<"description">> => <<"Human readable error description.">>
     },
     ?assertEqual(
-        ?ERROR_UNKNOWN_ERROR(UnknownErrorJson),
-        errors:from_json(UnknownErrorJson)
+        ?ERROR_UNRECOGNIZED_ERROR(UnrecognizedErrorJson),
+        errors:from_json(UnrecognizedErrorJson)
     ),
     ?assertEqual(
-       UnknownErrorJson#{<<"description">> => <<"No description (unknown error).">>},
-        errors:to_json(errors:from_json(maps:without([<<"description">>], UnknownErrorJson)))
+       UnrecognizedErrorJson#{<<"description">> => <<"No description (unknown error).">>},
+        errors:to_json(errors:from_json(maps:without([<<"description">>], UnrecognizedErrorJson)))
     ).
 
 
@@ -339,7 +341,7 @@ testcases() -> [
     %% -----------------------------------------------------------------------------
     %% Unknown error
     %% -----------------------------------------------------------------------------
-    ?ERROR_UNKNOWN_ERROR(#{
+    ?ERROR_UNRECOGNIZED_ERROR(#{
         <<"id">> => <<"someErrorThatWasNotSpecifiedInThisSoftwareVersion">>,
         <<"details">> => #{<<"key">> => <<"value">>},
         <<"description">> => <<"Human readable error description.">>
