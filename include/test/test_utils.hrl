@@ -17,6 +17,10 @@
 -include("cth_common.hrl").
 -include("../logging.hrl").
 
+
+-define(ct_dump(Arg), ct:print("~s: ~p", [??Arg, Arg])).
+
+
 %% temporary directory for test files
 -define(TEMP_DIR, "/tmp").
 
