@@ -35,8 +35,8 @@
 
 -type general() :: {bad_message, json_utils:json_term()} | no_connection_to_oz
 | no_connection_to_peer_provider | no_connection_to_cluster_node
-| unregistered_provider | internal_server_error | not_implemented
-| not_supported | service_unavailable |  timeout
+| unregistered_provider | internal_server_error | {internal_server_error, ErrorRef :: binary()}
+| not_implemented | not_supported | service_unavailable |  timeout
 | temporary_failure | {external_service_operation_failed, ServiceName :: binary()}
 | unauthorized() | forbidden | not_found | already_exists
 | {file_access, Path :: file:name_all(), errno()}.
@@ -209,11 +209,10 @@
 % #{<<"type">> := <<"errorId">>, <<"detail">> => <<"error description">>, _ => _}
 -type problem_document() :: json_utils:json_map().
 
--type unexpected() :: {unexpected_error, ErrorRef :: binary()}.
--type unknown() :: {unknown_error, as_json()}.
+-type unrecognized() :: {unrecognized_error, as_json()}.
 
 -type reason() :: general() | auth() | graph_sync() | data_validation()
-| oz_worker() | posix() | op_worker() | onepanel() | unexpected() | unknown().
+| oz_worker() | posix() | op_worker() | onepanel() | unrecognized().
 -type error() :: {error, reason()}.
 
 -type as_json() :: json_utils:json_map().
@@ -258,6 +257,16 @@ to_json(?ERROR_NO_CONNECTION_TO_CLUSTER_NODE) -> #{
 to_json(?ERROR_UNREGISTERED_ONEPROVIDER) -> #{
     <<"id">> => <<"unregisteredOneprovider">>,
     <<"description">> => <<"This Oneprovider is not registered.">>
+};
+to_json(?ERROR_INTERNAL_SERVER_ERROR(ErrorRef)) -> #{
+    <<"id">> => <<"internalServerError">>,
+    <<"details">> => #{
+        <<"reference">> => ErrorRef
+    },
+    <<"description">> => ?FMT(
+        "The server has encountered an error while processing this request. "
+        "When reporting this error, cite the following reference: ~s.", [ErrorRef]
+    )
 };
 to_json(?ERROR_INTERNAL_SERVER_ERROR) -> #{
     <<"id">> => <<"internalServerError">>,
@@ -765,7 +774,7 @@ to_json(?ERROR_BAD_VALUE_USERNAME) -> #{
 };
 to_json(?ERROR_BAD_VALUE_PASSWORD) -> #{
     <<"id">> => <<"badValuePassword">>,
-    <<"description">> =><<"Bad value: ", (?PASSWORD_REQUIREMENTS_DESCRIPTION)/binary>>
+    <<"description">> => <<"Bad value: ", (?PASSWORD_REQUIREMENTS_DESCRIPTION)/binary>>
 };
 to_json(?ERROR_BAD_VALUE_EMAIL) -> #{
     <<"id">> => <<"badValueEmail">>,
@@ -819,13 +828,13 @@ to_json(?ERROR_TSC_TOO_MANY_METRICS(Limit)) -> #{
     },
     <<"description">> => ?FMT("The time series collection cannot have more than ~B metrics.", [Limit])
 };
-to_json(?ERROR_BAD_VALUE_TSC_CONFLICTING_METRIC_CONFIG(TSName, MetricName, ExistingMetricConfig, ConflictingMetricConfig)) -> #{
+to_json(?ERROR_BAD_VALUE_TSC_CONFLICTING_METRIC_CONFIG(TSName, MetricName, ExistingMConfig, ConflictingMConfig)) -> #{
     <<"id">> => <<"badValueTimeSeriesCollectionConflictingMetricConfig">>,
     <<"details">> => #{
         <<"timeSeriesName">> => TSName,
         <<"metricName">> => MetricName,
-        <<"existingMetricConfig">> => jsonable_record:to_json(ExistingMetricConfig, metric_config),
-        <<"conflictingMetricConfig">> => jsonable_record:to_json(ConflictingMetricConfig, metric_config)
+        <<"existingMetricConfig">> => jsonable_record:to_json(ExistingMConfig, metric_config),
+        <<"conflictingMetricConfig">> => jsonable_record:to_json(ConflictingMConfig, metric_config)
     },
     <<"description">> => ?FMT(
         "Provided metric config for 'time series' ~s and metric '~s' conflicts with existing metric config (see details).", [
@@ -963,15 +972,14 @@ to_json(?ERROR_RELATION_ALREADY_EXISTS(ChType, ChId, ParType, ParId)) ->
             gri:serialize_type(ParType), ParId
         ])
     };
-to_json(?ERROR_SPACE_ALREADY_SUPPORTED_WITH_IMPORTED_STORAGE(SpaceId, StorageId)) ->
-    #{
-        <<"id">> => <<"spaceAlreadySupportedWithImportedStorage">>,
-        <<"details">> => #{
-            <<"spaceId">> => SpaceId,
-            <<"storageId">> => StorageId
-        },
-        <<"description">> => ?FMT("Space ~s is already supported with an imported storage ~s.", [SpaceId, StorageId])
-    };
+to_json(?ERROR_SPACE_ALREADY_SUPPORTED_WITH_IMPORTED_STORAGE(SpaceId, StorageId)) -> #{
+    <<"id">> => <<"spaceAlreadySupportedWithImportedStorage">>,
+    <<"details">> => #{
+        <<"spaceId">> => SpaceId,
+        <<"storageId">> => StorageId
+    },
+    <<"description">> => ?FMT("Space ~s is already supported with an imported storage ~s.", [SpaceId, StorageId])
+};
 
 %%--------------------------------------------------------------------
 %% op_worker errors
@@ -1576,29 +1584,22 @@ to_json(?ERROR_USER_NOT_IN_CLUSTER) -> #{
     <<"description">> => <<"Authenticated user is not a member of this cluster.">>};
 
 %%--------------------------------------------------------------------
-%% Unknown / unexpected error
+%% Unknown error
 %%--------------------------------------------------------------------
-to_json(?ERROR_UNKNOWN_ERROR(ErrorAsJson)) ->
+to_json(?ERROR_UNRECOGNIZED_ERROR(ErrorAsJson)) ->
+    % Carries errors that have not been recognized upon decoding.
     case maps:is_key(<<"description">>, ErrorAsJson) of
         true ->
             ErrorAsJson;
         false ->
             ErrorAsJson#{<<"description">> => <<"No description (unknown error).">>}
     end;
-to_json(?ERROR_UNEXPECTED_ERROR(ErrorRef)) ->
-    #{
-        <<"id">> => <<"unexpectedError">>,
-        <<"details">> => #{
-            <<"reference">> => ErrorRef
-        },
-        <<"description">> => ?FMT("Unexpected error, reference: ~s.", [ErrorRef])
-    };
-to_json(UnexpectedError) ->
-    % Wildcard to catch all errors that might be returned by the logic, in such
-    % case log a debug with random error ref.
-    ErrorRef = str_utils:rand_hex(5),
-    ?warning("Cannot translate error (ref. ~s): ~tp", [ErrorRef, UnexpectedError]),
-    to_json(?ERROR_UNEXPECTED_ERROR(ErrorRef)).
+to_json(OtherError) ->
+    % Wildcard to catch all errors that might be returned by the application logic, but does
+    % not match any error defined in this module. Inability to translate is treated as an
+    % unexpected exception (an ?ERROR_INTERNAL_SERVER_ERROR(ErrorRef) is returned).
+    ReturnedError = ?catch_exceptions(error({cannot_translate_error, OtherError})),
+    to_json(ReturnedError).
 
 
 -spec from_json(as_json()) -> undefined | error().
@@ -1622,6 +1623,9 @@ from_json(#{<<"id">> := <<"noConnectionToClusterNode">>}) ->
 
 from_json(#{<<"id">> := <<"unregisteredOneprovider">>}) ->
     ?ERROR_UNREGISTERED_ONEPROVIDER;
+
+from_json(#{<<"id">> := <<"internalServerError">>, <<"details">> := #{<<"reference">> := ErrorRef}}) ->
+    ?ERROR_INTERNAL_SERVER_ERROR(ErrorRef);
 
 from_json(#{<<"id">> := <<"internalServerError">>}) ->
     ?ERROR_INTERNAL_SERVER_ERROR;
@@ -2414,13 +2418,10 @@ from_json(#{<<"id">> := <<"userNotInCluster">>}) ->
     ?ERROR_USER_NOT_IN_CLUSTER;
 
 %%--------------------------------------------------------------------
-%% Unknown / unexpected error
+%% Unknown error
 %%--------------------------------------------------------------------
-from_json(#{<<"id">> := <<"unexpectedError">>, <<"details">> := #{<<"reference">> := ErrorRef}}) ->
-    ?ERROR_UNEXPECTED_ERROR(ErrorRef);
-
 from_json(ErrorAsJson) when is_map(ErrorAsJson) ->
-    ?ERROR_UNKNOWN_ERROR(ErrorAsJson).
+    ?ERROR_UNRECOGNIZED_ERROR(ErrorAsJson).
 
 
 -spec to_http_code(error()) ->
@@ -2434,6 +2435,7 @@ to_http_code(?ERROR_NO_CONNECTION_TO_PEER_ONEPROVIDER) -> ?HTTP_503_SERVICE_UNAV
 to_http_code(?ERROR_NO_CONNECTION_TO_CLUSTER_NODE) -> ?HTTP_503_SERVICE_UNAVAILABLE;
 to_http_code(?ERROR_UNREGISTERED_ONEPROVIDER) -> ?HTTP_503_SERVICE_UNAVAILABLE;
 to_http_code(?ERROR_INTERNAL_SERVER_ERROR) -> ?HTTP_500_INTERNAL_SERVER_ERROR;
+to_http_code(?ERROR_INTERNAL_SERVER_ERROR(_)) -> ?HTTP_500_INTERNAL_SERVER_ERROR;
 to_http_code(?ERROR_NOT_IMPLEMENTED) -> ?HTTP_501_NOT_IMPLEMENTED;
 to_http_code(?ERROR_NOT_SUPPORTED) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_SERVICE_UNAVAILABLE) -> ?HTTP_503_SERVICE_UNAVAILABLE;
@@ -2652,10 +2654,9 @@ to_http_code(?ERROR_NO_SERVICE_NODES(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_USER_NOT_IN_CLUSTER) -> ?HTTP_403_FORBIDDEN;
 
 %% -----------------------------------------------------------------------------
-%% Unknown / unexpected error
+%% Unknown error
 %% -----------------------------------------------------------------------------
-to_http_code(?ERROR_UNKNOWN_ERROR(_)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_UNEXPECTED_ERROR(_)) -> ?HTTP_500_INTERNAL_SERVER_ERROR;
+to_http_code(?ERROR_UNRECOGNIZED_ERROR(_)) -> ?HTTP_500_INTERNAL_SERVER_ERROR;
 to_http_code(_) -> ?HTTP_500_INTERNAL_SERVER_ERROR.
 
 %%%===================================================================

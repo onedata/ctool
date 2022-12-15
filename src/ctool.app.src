@@ -22,8 +22,7 @@
         hackney,
         kernel,
         stdlib,
-        lager,
-        gen_smtp
+        lager
     ]},
 
     {env, [
