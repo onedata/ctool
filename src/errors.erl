@@ -139,6 +139,7 @@
 | atm_workflow_empty
 | atm_workflow_execution_stopping
 | atm_workflow_execution_stopped
+| atm_workflow_execution_not_stopped
 | atm_workflow_execution_ended
 | atm_workflow_execution_not_ended
 | atm_workflow_execution_not_resumable
@@ -1227,6 +1228,11 @@ to_json(?ERROR_ATM_WORKFLOW_EXECUTION_STOPPED) -> #{
     <<"description">> => <<"Specified automation workflow execution has already stopped.">>
 };
 
+to_json(?ERROR_ATM_WORKFLOW_EXECUTION_NOT_STOPPED) -> #{
+    <<"id">> => <<"atmWorkflowExecutionNotStopped">>,
+    <<"description">> => <<"Specified automation workflow execution has not stopped yet.">>
+};
+
 to_json(?ERROR_ATM_WORKFLOW_EXECUTION_ENDED) -> #{
     <<"id">> => <<"atmWorkflowExecutionEnded">>,
     <<"description">> => <<"Specified automation workflow execution has already ended.">>
@@ -2146,6 +2152,9 @@ from_json(#{<<"id">> := <<"atmWorkflowExecutionStopping">>}) ->
 from_json(#{<<"id">> := <<"atmWorkflowExecutionStopped">>}) ->
     ?ERROR_ATM_WORKFLOW_EXECUTION_STOPPED;
 
+from_json(#{<<"id">> := <<"atmWorkflowExecutionNotStopped">>}) ->
+    ?ERROR_ATM_WORKFLOW_EXECUTION_NOT_STOPPED;
+
 from_json(#{<<"id">> := <<"atmWorkflowExecutionEnded">>}) ->
     ?ERROR_ATM_WORKFLOW_EXECUTION_ENDED;
 
@@ -2588,6 +2597,7 @@ to_http_code(?ERROR_ATM_STORE_NOT_FOUND(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_ATM_WORKFLOW_EMPTY) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_ATM_WORKFLOW_EXECUTION_STOPPING) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_ATM_WORKFLOW_EXECUTION_STOPPED) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_ATM_WORKFLOW_EXECUTION_NOT_STOPPED) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_ATM_WORKFLOW_EXECUTION_ENDED) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_ATM_WORKFLOW_EXECUTION_NOT_ENDED) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_ATM_WORKFLOW_EXECUTION_NOT_RESUMABLE) -> ?HTTP_400_BAD_REQUEST;

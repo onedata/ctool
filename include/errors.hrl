@@ -236,6 +236,7 @@
 -define(ERROR_ATM_WORKFLOW_EMPTY, {error, atm_workflow_empty}).
 -define(ERROR_ATM_WORKFLOW_EXECUTION_STOPPING, {error, atm_workflow_execution_aborting}).
 -define(ERROR_ATM_WORKFLOW_EXECUTION_STOPPED, {error, atm_workflow_execution_stopped}).
+-define(ERROR_ATM_WORKFLOW_EXECUTION_NOT_STOPPED, {error, atm_workflow_execution_not_stopped}).
 -define(ERROR_ATM_WORKFLOW_EXECUTION_ENDED, {error, atm_workflow_execution_ended}).
 -define(ERROR_ATM_WORKFLOW_EXECUTION_NOT_ENDED, {error, atm_workflow_execution_not_ended}).
 -define(ERROR_ATM_WORKFLOW_EXECUTION_NOT_RESUMABLE, {error, atm_workflow_execution_not_resumable}).
