@@ -827,20 +827,19 @@ to_json(?ERROR_TSC_TOO_MANY_METRICS(Limit)) -> #{
     },
     <<"description">> => ?FMT("The time series collection cannot have more than ~B metrics.", [Limit])
 };
-to_json(?ERROR_BAD_VALUE_TSC_CONFLICTING_METRIC_CONFIG(TSName, MetricName, ExistingMetricConfig, ConflictingMetricConfig)) ->
-    #{
-        <<"id">> => <<"badValueTimeSeriesCollectionConflictingMetricConfig">>,
-        <<"details">> => #{
-            <<"timeSeriesName">> => TSName,
-            <<"metricName">> => MetricName,
-            <<"existingMetricConfig">> => jsonable_record:to_json(ExistingMetricConfig, metric_config),
-            <<"conflictingMetricConfig">> => jsonable_record:to_json(ConflictingMetricConfig, metric_config)
-        },
-        <<"description">> => ?FMT(
-            "Provided metric config for 'time series' ~s and metric '~s' conflicts with existing metric config (see details).", [
-                TSName, MetricName
-            ])
-    };
+to_json(?ERROR_BAD_VALUE_TSC_CONFLICTING_METRIC_CONFIG(TSName, MetricName, ExistingMConfig, ConflictingMConfig)) -> #{
+    <<"id">> => <<"badValueTimeSeriesCollectionConflictingMetricConfig">>,
+    <<"details">> => #{
+        <<"timeSeriesName">> => TSName,
+        <<"metricName">> => MetricName,
+        <<"existingMetricConfig">> => jsonable_record:to_json(ExistingMConfig, metric_config),
+        <<"conflictingMetricConfig">> => jsonable_record:to_json(ConflictingMConfig, metric_config)
+    },
+    <<"description">> => ?FMT(
+        "Provided metric config for 'time series' ~s and metric '~s' conflicts with existing metric config (see details).", [
+            TSName, MetricName
+        ])
+};
 to_json(?ERROR_BAD_GUI_PACKAGE) -> #{
     <<"id">> => <<"badGuiPackage">>,
     <<"description">> => <<"Provider GUI package could not be understood by the server.">>
