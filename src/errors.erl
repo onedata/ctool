@@ -176,7 +176,10 @@
 | atm_openfaas_function_registration_failed
 | {atm_invalid_status_transition, PrevStatus :: atom(), NewStatus :: atom()}
 | dir_stats_disabled_for_space
-| dir_stats_not_ready.
+| dir_stats_not_ready
+| {archive_in_wrong_state, AllowedStates :: [atom()]}
+| {deleting_nested_archive, ParentArchiveId :: binary()}
+| recall_target_in_ongoing_recall.
 
 -type onepanel() :: {error_on_nodes, error(), Hostnames :: [binary()]}
 | {dns_servers_unreachable, [ip_utils:ip() | default]}
@@ -1506,6 +1509,29 @@ to_json(?ERROR_DIR_STATS_NOT_READY) -> #{
     <<"description">> => <<"Requested directory statistics are not ready yet - calculation is in progress.">>
 };
 
+to_json(?ERROR_ARCHIVE_IN_DISALLOWED_STATE(AllowedStates)) -> #{
+    <<"id">> => <<"archiveInDisallowedState">>,
+    <<"description">> => <<"Archive is in a disallowed state.">>,
+    <<"details">> => #{
+        <<"allowedStates">> => json_utils:encode(AllowedStates)
+    }
+};
+
+to_json(?ERROR_DELETING_NESTED_ARCHIVE(ParentArchiveId)) -> #{
+    <<"id">> =>
+        <<"deletingNestedArchive">>,
+    <<"description">> =>
+        <<"Archive is nested in another archive - it cannot be deleted as it would destroy parent archive.">>,
+    <<"details">> => #{
+        <<"parentArchiveId">> => ParentArchiveId
+    }
+};
+
+to_json(?ERROR_RECALL_TARGET_IN_ONGOING_RECALL) -> #{
+    <<"id">> => <<"recallTargetInOngoingRecall">>,
+    <<"description">> => <<"Given archive recall target is a part another, still ongoing recall.">>
+};
+
 %%--------------------------------------------------------------------
 %% onepanel errors
 %%--------------------------------------------------------------------
@@ -2373,6 +2399,21 @@ from_json(#{<<"id">> := <<"dirStatsDisabledForSpace">>}) ->
 from_json(#{<<"id">> := <<"dirStatsNotReady">>}) ->
     ?ERROR_DIR_STATS_NOT_READY;
 
+from_json(#{
+    <<"id">> := <<"archiveInDisallowedState">>,
+    <<"details">> := #{<<"allowedStates">> := AllowedStates}
+}) ->
+    ?ERROR_ARCHIVE_IN_DISALLOWED_STATE([binary_to_atom(StateBin) || StateBin <- json_utils:decode(AllowedStates)]);
+
+from_json(#{
+    <<"id">> := <<"deletingNestedArchive">>,
+    <<"details">> := #{<<"parentArchiveId">> := ParentArchiveId}
+}) ->
+    ?ERROR_DELETING_NESTED_ARCHIVE(ParentArchiveId);
+
+from_json(#{<<"id">> := <<"recallTargetInOngoingRecall">>}) ->
+    ?ERROR_RECALL_TARGET_IN_ONGOING_RECALL;
+
 %%--------------------------------------------------------------------
 %% onepanel errors
 %%--------------------------------------------------------------------
@@ -2638,6 +2679,10 @@ to_http_code(?ERROR_ATM_INVALID_STATUS_TRANSITION(_, _)) -> ?HTTP_400_BAD_REQUES
 
 to_http_code(?ERROR_DIR_STATS_DISABLED_FOR_SPACE) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_DIR_STATS_NOT_READY) -> ?HTTP_400_BAD_REQUEST;
+
+to_http_code(?ERROR_ARCHIVE_IN_DISALLOWED_STATE(_)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_DELETING_NESTED_ARCHIVE(_)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_RECALL_TARGET_IN_ONGOING_RECALL) -> ?HTTP_400_BAD_REQUEST;
 
 %%--------------------------------------------------------------------
 %% onepanel errors

@@ -258,6 +258,11 @@ testcases() -> [
     {different, ?ERROR_DNS_SERVERS_UNREACHABLE([<<"1.1.1.1">>, <<"8.8.8.8">>]),
         ?ERROR_DNS_SERVERS_UNREACHABLE([{1, 1, 1, 1}, {8, 8, 8, 8}])},
     ?ERROR_QUOTA_EXCEEDED,
+    ?ERROR_DIR_STATS_DISABLED_FOR_SPACE,
+    ?ERROR_DIR_STATS_NOT_READY,
+    ?ERROR_ARCHIVE_IN_DISALLOWED_STATE([preserved, cancelled]),
+    ?ERROR_DELETING_NESTED_ARCHIVE(<<"archiveId">>),
+    ?ERROR_RECALL_TARGET_IN_ONGOING_RECALL,
 
     %%--------------------------------------------------------------------
     %% op_worker atm errors
@@ -316,9 +321,6 @@ testcases() -> [
     ?ERROR_ATM_OPENFAAS_FUNCTION_REGISTRATION_FAILED,
 
     ?ERROR_ATM_INVALID_STATUS_TRANSITION(active, scheduled),
-
-    ?ERROR_DIR_STATS_DISABLED_FOR_SPACE,
-    ?ERROR_DIR_STATS_NOT_READY,
 
     %%--------------------------------------------------------------------
     %% onepanel errors

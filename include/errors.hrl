@@ -320,6 +320,10 @@
 -define(ERROR_DIR_STATS_DISABLED_FOR_SPACE, {error, dir_stats_disabled_for_space}).
 -define(ERROR_DIR_STATS_NOT_READY, {error, dir_stats_not_ready}).
 
+-define(ERROR_ARCHIVE_IN_DISALLOWED_STATE(AllowedStates), {error, {archive_in_disallowed_state, AllowedStates}}).
+-define(ERROR_DELETING_NESTED_ARCHIVE(ParentArchiveId), {error, {deleting_nested_archive, ParentArchiveId}}).
+-define(ERROR_RECALL_TARGET_IN_ONGOING_RECALL, {error, recall_target_in_ongoing_recall}).
+
 
 %%--------------------------------------------------------------------
 %% onepanel errors
