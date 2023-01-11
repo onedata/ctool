@@ -14,8 +14,8 @@
 
 -ifdef(TEST).
 -include_lib("eunit/include/eunit.hrl").
+-include("test/test_utils.hrl").
 
--define(TOO_LONG_NAME, <<"very_very_very_looong_name_with_at_least_50_characters">>).
 
 ensure_suffix_test_() ->
     [{Name,

@@ -13,6 +13,7 @@
 
 -ifdef(TEST).
 -include_lib("eunit/include/eunit.hrl").
+-include("test/test_utils.hrl").
 -include("time_series/common.hrl").
 -include("graph_sync/gri.hrl").
 -include("errors.hrl").
@@ -51,11 +52,29 @@ http_code_test_() ->
         end} end, testcases()).
 
 
-unexpected_error_test() ->
-    UnexpectedError = {error, {some_error, that_we_dont_understand, 1653}},
+cannot_translate_error_test() ->
+    % in case of an error that is not specified in the errors module,
+    % a proper error log is logged and an internal server error should be returned
+    BadErrorTerm = {error, {some_error, that_we_dont_understand, 1653}},
     ?assertMatch(
-        ?ERROR_UNEXPECTED_ERROR(_),
-        errors:from_json(errors:to_json(UnexpectedError))
+        ?ERROR_INTERNAL_SERVER_ERROR(_),
+        errors:from_json(errors:to_json(BadErrorTerm))
+    ).
+
+
+unrecognized_error_test() ->
+    UnrecognizedErrorJson = #{
+        <<"id">> => <<"someErrorThatWasNotSpecifiedInThisSoftwareVersion">>,
+        <<"details">> => #{<<"key">> => <<"value">>},
+        <<"description">> => <<"Human readable error description.">>
+    },
+    ?assertEqual(
+        ?ERROR_UNRECOGNIZED_ERROR(UnrecognizedErrorJson),
+        errors:from_json(UnrecognizedErrorJson)
+    ),
+    ?assertEqual(
+       UnrecognizedErrorJson#{<<"description">> => <<"No description (unknown error).">>},
+        errors:to_json(errors:from_json(maps:without([<<"description">>], UnrecognizedErrorJson)))
     ).
 
 
@@ -70,6 +89,7 @@ testcases() -> [
     ?ERROR_NO_CONNECTION_TO_PEER_ONEPROVIDER,
     ?ERROR_UNREGISTERED_ONEPROVIDER,
     ?ERROR_INTERNAL_SERVER_ERROR,
+    ?ERROR_INTERNAL_SERVER_ERROR(?RAND_STR()),
     ?ERROR_NOT_IMPLEMENTED,
     ?ERROR_NOT_SUPPORTED,
     ?ERROR_SERVICE_UNAVAILABLE,
@@ -254,9 +274,12 @@ testcases() -> [
     ?ERROR_ATM_STORE_NOT_FOUND(<<"id">>),
 
     ?ERROR_ATM_WORKFLOW_EMPTY,
-    ?ERROR_ATM_WORKFLOW_EXECUTION_ABORTING,
+    ?ERROR_ATM_WORKFLOW_EXECUTION_STOPPING,
+    ?ERROR_ATM_WORKFLOW_EXECUTION_STOPPED,
+    ?ERROR_ATM_WORKFLOW_EXECUTION_NOT_STOPPED,
     ?ERROR_ATM_WORKFLOW_EXECUTION_ENDED,
     ?ERROR_ATM_WORKFLOW_EXECUTION_NOT_ENDED,
+    ?ERROR_ATM_WORKFLOW_EXECUTION_NOT_RESUMABLE,
 
     ?ERROR_ATM_LANE_EMPTY(<<"id">>),
     ?ERROR_ATM_LANE_EXECUTION_CREATION_FAILED(<<"id">>, ?ERROR_INTERNAL_SERVER_ERROR),
@@ -280,10 +303,14 @@ testcases() -> [
     ?ERROR_ATM_TASK_RESULT_DISPATCH_FAILED(<<"id">>, ?ERROR_INTERNAL_SERVER_ERROR),
     ?ERROR_ATM_TASK_RESULT_MAPPING_FAILED(<<"result">>, ?ERROR_INTERNAL_SERVER_ERROR),
 
-    ?ERROR_ATM_TASK_EXECUTION_ENDED,
+    ?ERROR_ATM_TASK_EXECUTION_STOPPED,
+
+    ?ERROR_ATM_JOB_BATCH_WITHDRAWN(<<"happy">>),
+    ?ERROR_ATM_JOB_BATCH_CRASHED(<<"sad">>),
 
     ?ERROR_ATM_OPENFAAS_NOT_CONFIGURED,
     ?ERROR_ATM_OPENFAAS_UNREACHABLE,
+    ?ERROR_ATM_OPENFAAS_UNHEALTHY,
     ?ERROR_ATM_OPENFAAS_QUERY_FAILED,
     ?ERROR_ATM_OPENFAAS_QUERY_FAILED(<<"dns resolution error...">>),
     ?ERROR_ATM_OPENFAAS_FUNCTION_REGISTRATION_FAILED,
@@ -315,8 +342,7 @@ testcases() -> [
     %% -----------------------------------------------------------------------------
     %% Unknown error
     %% -----------------------------------------------------------------------------
-    ?ERROR_UNEXPECTED_ERROR(<<"deb7a8aaf82">>),
-    ?ERROR_UNKNOWN_ERROR(#{
+    ?ERROR_UNRECOGNIZED_ERROR(#{
         <<"id">> => <<"someErrorThatWasNotSpecifiedInThisSoftwareVersion">>,
         <<"details">> => #{<<"key">> => <<"value">>},
         <<"description">> => <<"Human readable error description.">>

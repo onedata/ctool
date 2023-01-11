@@ -15,7 +15,6 @@
 
 
 -include("../time_series/common.hrl").
--include("../errors.hrl").
 
 
 -define(DEFAULT_SUMMARY, <<"Missing summary">>).
@@ -122,9 +121,8 @@
 }).
 
 -record(atm_time_series_store_config, {
-    schemas :: [atm_time_series_schema:record()],
-    % @TODO VFS-8948 Implement chart specs record - currently, this is only a pass-through field
-    chart_specs :: list()
+    time_series_collection_schema :: #time_series_collection_schema{},
+    dashboard_spec :: undefined | ts_dashboard_spec:record()
 }).
 
 -record(atm_audit_log_store_config, {
@@ -177,7 +175,7 @@
 -record(atm_time_series_dispatch_rule, {
     measurement_ts_name_matcher_type :: atm_time_series_names:measurement_ts_name_matcher_type(),
     measurement_ts_name_matcher :: atm_time_series_names:measurement_ts_name_matcher(),
-    target_ts_name_generator :: atm_time_series_names:target_ts_name_generator(),
+    target_ts_name_generator :: time_series_schema:name_generator(),
     prefix_combiner :: atm_time_series_names:prefix_combiner()
 }).
 
@@ -205,7 +203,8 @@
     parallel_boxes :: [atm_parallel_box_schema:record()],
     store_iterator_spec :: atm_store_iterator_spec:record(),
     % if the lane fails, it will be automatically retried (at most) this many times
-    max_retries :: non_neg_integer()
+    max_retries :: non_neg_integer(),
+    dashboard_spec :: undefined | ts_dashboard_spec:record()
 }).
 
 -record(atm_lambda_revision, {
@@ -227,9 +226,10 @@
 
 -record(atm_workflow_schema_revision, {
     description = <<>> :: automation:description(),
+    state = draft :: automation:lifecycle_state(),
     stores = [] :: [atm_store_schema:record()],
     lanes = [] :: [atm_lane_schema:record()],
-    state = draft :: automation:lifecycle_state()
+    dashboard_spec :: undefined | ts_dashboard_spec:record()
 }).
 
 -record(atm_workflow_schema_revision_registry, {
@@ -240,13 +240,6 @@
     name_matcher_type :: atm_time_series_names:measurement_ts_name_matcher_type(),
     name_matcher :: atm_time_series_names:measurement_ts_name_matcher(),
     unit :: time_series:unit()
-}).
-
--record(atm_time_series_schema, {
-    name_generator_type :: atm_time_series_names:target_ts_name_generator_type(),
-    name_generator :: atm_time_series_names:target_ts_name_generator(),
-    unit :: time_series:unit(),
-    metrics :: time_series:metric_composition()
 }).
 
 

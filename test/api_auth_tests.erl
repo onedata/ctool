@@ -111,16 +111,16 @@ testcases() -> [
             #caveat_example{
                 should_verify = true,
                 caveat = #cv_api{whitelist = [
-                    {all, get, ?GRI_PATTERN(od_user, '*', '*', private)}
+                    {all, get, ?GRI_PATTERN(od_user, <<"*">>, <<"*">>, private)}
                 ]}
             },
             #caveat_example{
                 should_verify = false,
                 caveat = #cv_api{whitelist = [
-                    {?OP_WORKER, all, ?GRI_PATTERN('*', '*', '*', '*')},
-                    {?OP_PANEL, all, ?GRI_PATTERN('*', '*', '*', '*')},
-                    {?OZ_PANEL, all, ?GRI_PATTERN('*', '*', '*', '*')},
-                    {?OZ_WORKER, create, ?GRI_PATTERN(od_user, <<"123">>, instance, private)}
+                    {?OP_WORKER, all, ?GRI_PATTERN('*', <<"*">>, <<"*">>, '*')},
+                    {?OP_PANEL, all, ?GRI_PATTERN('*', <<"*">>, <<"*">>, '*')},
+                    {?OZ_PANEL, all, ?GRI_PATTERN('*', <<"*">>, <<"*">>, '*')},
+                    {?OZ_WORKER, create, ?GRI_PATTERN(od_user, <<"123">>, <<"instance">>, private)}
                 ]}
             },
             gen_data_access_caveat_examples(true),
@@ -136,7 +136,7 @@ testcases() -> [
             #caveat_example{
                 should_verify = true,
                 caveat = #cv_api{whitelist = [
-                    {all, delete, ?GRI_PATTERN(od_user, '*', '*', private)}
+                    {all, delete, ?GRI_PATTERN(od_user, <<"*">>, <<"*">>, private)}
                 ]}
             },
             gen_data_access_caveat_examples(false),
@@ -153,7 +153,7 @@ testcases() -> [
             #caveat_example{
                 should_verify = false,
                 caveat = #cv_api{whitelist = [
-                    {?OP_WORKER, all, ?GRI_PATTERN('*', '*', '*', '*')}
+                    {?OP_WORKER, all, ?GRI_PATTERN('*', <<"*">>, <<"*">>, '*')}
                 ]}
             },
             gen_data_access_caveat_examples(false),
@@ -170,10 +170,10 @@ testcases() -> [
             #caveat_example{
                 should_verify = false,
                 caveat = #cv_api{whitelist = [
-                    {?OP_WORKER, all, ?GRI_PATTERN('*', '*', '*', '*')},
-                    {?OP_PANEL, all, ?GRI_PATTERN('*', '*', '*', '*')},
-                    {?OZ_PANEL, all, ?GRI_PATTERN('*', '*', '*', '*')},
-                    {?OZ_WORKER, get, ?GRI_PATTERN(od_user, <<"123">>, instance, private)}
+                    {?OP_WORKER, all, ?GRI_PATTERN('*', <<"*">>, <<"*">>, '*')},
+                    {?OP_PANEL, all, ?GRI_PATTERN('*', <<"*">>, <<"*">>, '*')},
+                    {?OZ_PANEL, all, ?GRI_PATTERN('*', <<"*">>, <<"*">>, '*')},
+                    {?OZ_WORKER, get, ?GRI_PATTERN(od_user, <<"123">>, <<"instance">>, private)}
                 ]}
             },
             #caveat_example{
@@ -278,25 +278,25 @@ testcases() -> [
             #caveat_example{
                 should_verify = true,
                 caveat = #cv_api{whitelist = [
-                    {all, all, ?GRI_PATTERN('*', '*', '*', '*')}
+                    {all, all, ?GRI_PATTERN('*', <<"*">>, <<"*">>, '*')}
                 ]}
             },
             #caveat_example{
                 should_verify = false,
                 caveat = #cv_api{whitelist = [
-                    {?OP_WORKER, all, ?GRI_PATTERN('*', '*', '*', '*')},
-                    {?OP_PANEL, all, ?GRI_PATTERN('*', '*', '*', '*')},
-                    {?OZ_PANEL, all, ?GRI_PATTERN('*', '*', '*', '*')},
-                    {?OZ_WORKER, create, ?GRI_PATTERN(od_group, undefined, instance, shared)}
+                    {?OP_WORKER, all, ?GRI_PATTERN('*', <<"*">>, <<"*">>, '*')},
+                    {?OP_PANEL, all, ?GRI_PATTERN('*', <<"*">>, <<"*">>, '*')},
+                    {?OZ_PANEL, all, ?GRI_PATTERN('*', <<"*">>, <<"*">>, '*')},
+                    {?OZ_WORKER, create, ?GRI_PATTERN(od_group, undefined, <<"instance">>, shared)}
                 ]}
             },
             #caveat_example{
                 should_verify = true,
                 caveat = #cv_api{whitelist = [
-                    {?OP_WORKER, all, ?GRI_PATTERN('*', '*', '*', '*')},
-                    {?OP_PANEL, all, ?GRI_PATTERN('*', '*', '*', '*')},
-                    {?OZ_PANEL, all, ?GRI_PATTERN('*', '*', '*', '*')},
-                    {?OZ_WORKER, create, ?GRI_PATTERN(od_user, '*', instance, shared)}
+                    {?OP_WORKER, all, ?GRI_PATTERN('*', <<"*">>, <<"*">>, '*')},
+                    {?OP_PANEL, all, ?GRI_PATTERN('*', <<"*">>, <<"*">>, '*')},
+                    {?OZ_PANEL, all, ?GRI_PATTERN('*', <<"*">>, <<"*">>, '*')},
+                    {?OZ_WORKER, create, ?GRI_PATTERN(od_user, <<"*">>, <<"instance">>, shared)}
                 ]}
             },
             gen_data_access_caveat_examples(false),
@@ -313,24 +313,24 @@ testcases() -> [
             #caveat_example{
                 should_verify = false,
                 caveat = #cv_api{whitelist = [
-                    {?OP_WORKER, update, ?GRI_PATTERN('*', '*', '*', '*')},
-                    {?OP_WORKER, delete, ?GRI_PATTERN('*', '*', '*', '*')},
-                    {?OP_WORKER, all, ?GRI_PATTERN(od_user, '*', '*', '*')},
-                    {all, all, ?GRI_PATTERN(op_file, <<"fileid">>, {'*', '*'}, '*')},
-                    {?OP_WORKER, get, ?GRI_PATTERN('*', <<"badid">>, '*', protected)},
-                    {?OP_WORKER, get, ?GRI_PATTERN(op_file, <<"spaceid">>, groups, protected)},
-                    {?OP_WORKER, create, ?GRI_PATTERN(op_file, <<"other">>, '*', '*')}
+                    {?OP_WORKER, update, ?GRI_PATTERN('*', <<"*">>, <<"*">>, '*')},
+                    {?OP_WORKER, delete, ?GRI_PATTERN('*', <<"*">>, <<"*">>, '*')},
+                    {?OP_WORKER, all, ?GRI_PATTERN(od_user, <<"*">>, <<"*">>, '*')},
+                    {all, all, ?GRI_PATTERN(op_file, <<"fileid">>, {<<"*">>, <<"*">>}, '*')},
+                    {?OP_WORKER, get, ?GRI_PATTERN('*', <<"badid">>, <<"*">>, protected)},
+                    {?OP_WORKER, get, ?GRI_PATTERN(op_file, <<"spaceid">>, <<"groups">>, protected)},
+                    {?OP_WORKER, create, ?GRI_PATTERN(op_file, <<"other">>, <<"*">>, '*')}
                 ]}
             },
             #caveat_example{
                 should_verify = true,
                 caveat = #cv_api{whitelist = [
-                    {?OP_WORKER, update, ?GRI_PATTERN('*', '*', '*', '*')},
-                    {?OP_WORKER, delete, ?GRI_PATTERN('*', '*', '*', '*')},
-                    {all, create, ?GRI_PATTERN(op_file, <<"fileid">>, '*', '*')},
-                    {?OP_WORKER, all, ?GRI_PATTERN(od_user, '*', '*', '*')},
-                    {all, all, ?GRI_PATTERN(op_file, <<"fileid">>, {'*', '*'}, '*')},
-                    {?OP_WORKER, get, ?GRI_PATTERN('*', <<"badid">>, '*', protected)}
+                    {?OP_WORKER, update, ?GRI_PATTERN('*', <<"*">>, <<"*">>, '*')},
+                    {?OP_WORKER, delete, ?GRI_PATTERN('*', <<"*">>, <<"*">>, '*')},
+                    {all, create, ?GRI_PATTERN(op_file, <<"fileid">>, <<"*">>, '*')},
+                    {?OP_WORKER, all, ?GRI_PATTERN(od_user, <<"*">>, <<"*">>, '*')},
+                    {all, all, ?GRI_PATTERN(op_file, <<"fileid">>, {<<"*">>, <<"*">>}, '*')},
+                    {?OP_WORKER, get, ?GRI_PATTERN('*', <<"badid">>, <<"*">>, protected)}
                 ]}
             },
             gen_data_access_caveat_examples(true),
@@ -347,17 +347,17 @@ testcases() -> [
             #caveat_example{
                 should_verify = false,
                 caveat = #cv_api{whitelist = [
-                    {?OP_WORKER, create, ?GRI_PATTERN('*', '*', '*', '*')},
-                    {?OP_PANEL, update, ?GRI_PATTERN('*', '*', '*', '*')},
-                    {?OP_WORKER, create, ?GRI_PATTERN(op_replica, <<"replicaid">>, '*', '*')}
+                    {?OP_WORKER, create, ?GRI_PATTERN('*', <<"*">>, <<"*">>, '*')},
+                    {?OP_PANEL, update, ?GRI_PATTERN('*', <<"*">>, <<"*">>, '*')},
+                    {?OP_WORKER, create, ?GRI_PATTERN(op_replica, <<"replicaid">>, <<"*">>, '*')}
                 ]}
             },
             #caveat_example{
                 should_verify = true,
                 caveat = #cv_api{whitelist = [
-                    {?OP_WORKER, get, ?GRI_PATTERN('*', '*', instance, private)},
-                    {?OP_PANEL, update, ?GRI_PATTERN('*', '*', '*', '*')},
-                    {?OP_WORKER, delete, ?GRI_PATTERN('*', '*', '*', '*')}
+                    {?OP_WORKER, get, ?GRI_PATTERN('*', <<"*">>, <<"instance">>, private)},
+                    {?OP_PANEL, update, ?GRI_PATTERN('*', <<"*">>, <<"*">>, '*')},
+                    {?OP_WORKER, delete, ?GRI_PATTERN('*', <<"*">>, <<"*">>, '*')}
                 ]}
             },
             gen_data_access_caveat_examples(false),
@@ -374,19 +374,19 @@ testcases() -> [
             #caveat_example{
                 should_verify = false,
                 caveat = #cv_api{whitelist = [
-                    {?OZ_PANEL, delete, ?GRI_PATTERN('*', <<"987">>, {'*', '*'}, private)},
-                    {?OZ_PANEL, all, ?GRI_PATTERN(od_space, '*', '*', '*')},
-                    {all, delete, ?GRI_PATTERN('*', '*', '*', protected)},
-                    {?OZ_PANEL, delete, ?GRI_PATTERN('*', '*', {'*', <<"456">>}, '*')}
+                    {?OZ_PANEL, delete, ?GRI_PATTERN('*', <<"987">>, {<<"*">>, <<"*">>}, private)},
+                    {?OZ_PANEL, all, ?GRI_PATTERN(od_space, <<"*">>, <<"*">>, '*')},
+                    {all, delete, ?GRI_PATTERN('*', <<"*">>, <<"*">>, protected)},
+                    {?OZ_PANEL, delete, ?GRI_PATTERN('*', <<"*">>, {<<"*">>, <<"456">>}, '*')}
                 ]}
             },
             #caveat_example{
                 should_verify = true,
                 caveat = #cv_api{whitelist = [
-                    {?OZ_PANEL, all, ?GRI_PATTERN(od_space, '*', '*', '*')},
-                    {all, delete, ?GRI_PATTERN('*', '*', instance, private)},
-                    {?OZ_PANEL, delete, ?GRI_PATTERN('*', '*', {'*', <<"456">>}, '*')},
-                    {all, all, ?GRI_PATTERN(od_space, <<"123">>, instance, private)}
+                    {?OZ_PANEL, all, ?GRI_PATTERN(od_space, <<"*">>, <<"*">>, '*')},
+                    {all, delete, ?GRI_PATTERN('*', <<"*">>, <<"instance">>, private)},
+                    {?OZ_PANEL, delete, ?GRI_PATTERN('*', <<"*">>, {<<"*">>, <<"456">>}, '*')},
+                    {all, all, ?GRI_PATTERN(od_space, <<"123">>, <<"instance">>, private)}
                 ]}
             },
             gen_data_access_caveat_examples(false),
@@ -403,23 +403,23 @@ testcases() -> [
             #caveat_example{
                 should_verify = false,
                 caveat = #cv_api{whitelist = [
-                    {?OZ_PANEL, update, ?GRI_PATTERN('*', '*', '*', '*')},
-                    {?OP_PANEL, delete, ?GRI_PATTERN('*', '*', '*', '*')},
-                    {?OP_PANEL, all, ?GRI_PATTERN('*', '*', '*', private)},
-                    {?OP_PANEL, update, ?GRI_PATTERN(od_space, '*', '*', '*')},
-                    {all, update, ?GRI_PATTERN('*', <<"123">>, '*', '*')},
-                    {?OP_PANEL, all, ?GRI_PATTERN(onp_ceph, undefined, {pool, <<"default">>}, public)}
+                    {?OZ_PANEL, update, ?GRI_PATTERN('*', <<"*">>, <<"*">>, '*')},
+                    {?OP_PANEL, delete, ?GRI_PATTERN('*', <<"*">>, <<"*">>, '*')},
+                    {?OP_PANEL, all, ?GRI_PATTERN('*', <<"*">>, <<"*">>, private)},
+                    {?OP_PANEL, update, ?GRI_PATTERN(od_space, <<"*">>, <<"*">>, '*')},
+                    {all, update, ?GRI_PATTERN('*', <<"123">>, <<"*">>, '*')},
+                    {?OP_PANEL, all, ?GRI_PATTERN(onp_ceph, undefined, {<<"pool">>, <<"default">>}, public)}
                 ]}
             },
             #caveat_example{
                 should_verify = true,
                 caveat = #cv_api{whitelist = [
-                    {?OZ_PANEL, update, ?GRI_PATTERN('*', '*', '*', '*')},
-                    {?OP_PANEL, delete, ?GRI_PATTERN('*', '*', '*', '*')},
-                    {?OP_PANEL, all, ?GRI_PATTERN('*', '*', '*', private)},
-                    {?OP_PANEL, all, ?GRI_PATTERN('*', '*', '*', auto)},
-                    {?OP_PANEL, update, ?GRI_PATTERN(od_space, '*', '*', '*')},
-                    {all, update, ?GRI_PATTERN('*', <<"123">>, '*', '*')}
+                    {?OZ_PANEL, update, ?GRI_PATTERN('*', <<"*">>, <<"*">>, '*')},
+                    {?OP_PANEL, delete, ?GRI_PATTERN('*', <<"*">>, <<"*">>, '*')},
+                    {?OP_PANEL, all, ?GRI_PATTERN('*', <<"*">>, <<"*">>, private)},
+                    {?OP_PANEL, all, ?GRI_PATTERN('*', <<"*">>, <<"*">>, auto)},
+                    {?OP_PANEL, update, ?GRI_PATTERN(od_space, <<"*">>, <<"*">>, '*')},
+                    {all, update, ?GRI_PATTERN('*', <<"123">>, <<"*">>, '*')}
                 ]}
             },
             gen_data_access_caveat_examples(false),

@@ -24,9 +24,9 @@
 | ?REGISTER_ONEPROVIDER
 | ?USER_JOIN_HARVESTER | ?GROUP_JOIN_HARVESTER | ?SPACE_JOIN_HARVESTER
 | ?USER_JOIN_ATM_INVENTORY | ?GROUP_JOIN_ATM_INVENTORY.
-% Parameters specific for given invite type - currently only ?SUPPORT_SPACE
-% tokens allow parameters
--type invite_parameters() :: undefined | support_parameters:parameters().
+% TODO VFS-9587 Parameters specific for given invite type - this field will be used in the
+% future versions when data write and metadata replication levels are supported
+-type invite_parameters() :: undefined.
 
 -export_type([type/0, invite_type/0, invite_parameters/0]).
 
@@ -207,10 +207,8 @@ to_printable(?INVITE_TOKEN(?USER_JOIN_SPACE, SpaceId)) ->
     str_utils:format("invite token for a user to join space \"~s\"", [SpaceId]);
 to_printable(?INVITE_TOKEN(?GROUP_JOIN_SPACE, SpaceId)) ->
     str_utils:format("invite token for a group to join space \"~s\"", [SpaceId]);
-to_printable(?INVITE_TOKEN(?SUPPORT_SPACE, SpaceId, Params)) ->
-    str_utils:format("invite token to grant support for space \"~s\" (dataWrite: ~s, metadataReplication: ~s)", [
-        SpaceId, support_parameters:get_data_write(Params), support_parameters:get_metadata_replication(Params)
-    ]);
+to_printable(?INVITE_TOKEN(?SUPPORT_SPACE, SpaceId)) ->
+    str_utils:format("invite token to grant support for space \"~s\"", [SpaceId]);
 to_printable(?INVITE_TOKEN(?HARVESTER_JOIN_SPACE, SpaceId)) ->
     str_utils:format("invite token for a harvester to become a metadata sink for space \"~s\"", [SpaceId]);
 to_printable(?INVITE_TOKEN(?REGISTER_ONEPROVIDER, AdminUserId)) ->
@@ -292,32 +290,24 @@ deserialize_invite_type(<<"gji">>) -> ?GROUP_JOIN_ATM_INVENTORY.
 
 %% @private
 -spec serialize_invite_parameters(invite_type(), invite_parameters()) -> binary().
-serialize_invite_parameters(?SUPPORT_SPACE, Parameters) ->
-    support_parameters:serialize(Parameters);
 serialize_invite_parameters(_, undefined) ->
     <<"">>.
 
 
 %% @private
 -spec deserialize_invite_parameters(invite_type(), binary()) -> invite_parameters().
-deserialize_invite_parameters(?SUPPORT_SPACE, SerializedParameters) ->
-    support_parameters:deserialize(SerializedParameters);
 deserialize_invite_parameters(_, _) ->
     undefined.
 
 
 %% @private
 -spec invite_parameters_to_json(invite_type(), invite_parameters()) -> json_utils:json_map().
-invite_parameters_to_json(?SUPPORT_SPACE, Parameters) ->
-    support_parameters:to_json(Parameters);
 invite_parameters_to_json(_, undefined) ->
     #{}.
 
 
 %% @private
 -spec invite_parameters_from_json(invite_type(), json_utils:json_map()) -> invite_parameters().
-invite_parameters_from_json(?SUPPORT_SPACE, JsonParameters) ->
-    support_parameters:from_json(JsonParameters);
 invite_parameters_from_json(_, _) ->
     undefined.
 

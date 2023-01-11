@@ -6,138 +6,173 @@
 %%% @end
 %%%-------------------------------------------------------------------
 %%% @doc
-%%% This module encapsulates concepts related to space parameters - defining
-%%% the rights of a provider to write data in the space and its policy
-%%% concerning metadata synchronization.
+%%% Record expressing the parameters (configuration) of a space support
+%%% in the context of a specific supporting provider.
 %%% @end
 %%%-------------------------------------------------------------------
 -module(support_parameters).
 -author("Lukasz Opiola").
 
-% Parameters of space support, inscribed in ?SUPPORT_SPACE tokens and assigned
-% to the provider when supporting a space
--record(space_support_parameters, {
-    data_write = global :: data_write(),
-    metadata_replication = eager :: metadata_replication()
-}).
--type parameters() :: #space_support_parameters{}.
--type data_write() :: global | none.
--type metadata_replication() :: eager | lazy | none.
--export_type([parameters/0, data_write/0, metadata_replication/0]).
+-behaviour(jsonable_record).
+-behaviour(persistent_record).
 
--type provider_id() :: onedata:service_id().
--type per_provider() :: #{provider_id() => parameters()}.
--export_type([per_provider/0]).
+-include("space_support/support_parameters.hrl").
+-include("errors.hrl").
 
--export([build/2]).
--export([lookup_by_provider/2]).
--export([update_for_provider/3]).
--export([remove_for_provider/2]).
--export([get_data_write/1, get_metadata_replication/1]).
--export([serialize/1, deserialize/1]).
+
+%% API
+-export([all_dir_stats_service_statuses/0]).
+-export([update/2]).
+
+%% jsonable_record callbacks
 -export([to_json/1, from_json/1]).
--export([per_provider_to_json/1, per_provider_from_json/1]).
+
+%% persistent_record callbacks
+-export([version/0, db_encode/2, db_decode/2]).
+
+
+-type dir_stats_service_status() :: initializing | enabled | stopping | disabled.
+-export_type([dir_stats_service_status/0]).
+
+-type record() :: #support_parameters{}.
+-export_type([record/0]).
+
 
 %%%===================================================================
 %%% API
 %%%===================================================================
 
--spec build(data_write(), metadata_replication()) -> parameters().
-build(DataWrite, MetadataReplication) ->
-    #space_support_parameters{data_write = DataWrite, metadata_replication = MetadataReplication}.
+-spec all_dir_stats_service_statuses() -> [dir_stats_service_status()].
+all_dir_stats_service_statuses() ->
+    [initializing, enabled, stopping, disabled].
 
 
--spec lookup_by_provider(per_provider(), provider_id()) ->
-    {ok, parameters()} | error.
-lookup_by_provider(ParametersPerProvider, ProviderId) ->
-    maps:find(ProviderId, ParametersPerProvider).
+%%--------------------------------------------------------------------
+%% @doc
+%% Updates support parameters with new values by applying an overlay record,
+%% but only the fields that are defined in the overlay record are changed.
+%% @end
+%%--------------------------------------------------------------------
+-spec update(record(), record()) -> {ok, record()} | errors:error().
+update(RecordToUpdate, OverlayRecord) ->
+    NewRecord = RecordToUpdate#support_parameters{
+        accounting_enabled = utils:ensure_defined(
+            OverlayRecord#support_parameters.accounting_enabled,
+            RecordToUpdate#support_parameters.accounting_enabled
+        ),
+        dir_stats_service_enabled = utils:ensure_defined(
+            OverlayRecord#support_parameters.dir_stats_service_enabled,
+            RecordToUpdate#support_parameters.dir_stats_service_enabled
+        ),
+        dir_stats_service_status = utils:ensure_defined(
+            OverlayRecord#support_parameters.dir_stats_service_status,
+            RecordToUpdate#support_parameters.dir_stats_service_status
+        )
+    },
+    case NewRecord of
+        #support_parameters{accounting_enabled = true, dir_stats_service_enabled = false} ->
+            ?ERROR_BAD_DATA(
+                <<"dirStatsServiceEnabled">>,
+                <<"Dir stats service must be enabled if accounting is enabled">>
+            );
+        _ ->
+            {ok, ensure_dir_stats_service_status_adequate(NewRecord)}
+    end.
+
+%%%===================================================================
+%%% jsonable_record callbacks
+%%%===================================================================
+
+-spec to_json(record()) -> json_utils:json_term().
+to_json(Record) ->
+    #{
+        <<"accountingEnabled">> => utils:undefined_to_null(Record#support_parameters.accounting_enabled),
+        <<"dirStatsServiceEnabled">> => utils:undefined_to_null(Record#support_parameters.dir_stats_service_enabled),
+        <<"dirStatsServiceStatus">> => case Record#support_parameters.dir_stats_service_status of
+            undefined -> null;
+            Status -> dir_stats_service_status_to_json(Status)
+        end
+    }.
 
 
--spec update_for_provider(per_provider(), provider_id(), parameters()) ->
-    per_provider().
-update_for_provider(ParametersPerProvider, ProviderId, Parameters) ->
-    ParametersPerProvider#{ProviderId => Parameters}.
+-spec from_json(json_utils:json_term()) -> record().
+from_json(RecordJson) ->
+    #support_parameters{
+        accounting_enabled = utils:null_to_undefined(maps:get(<<"accountingEnabled">>, RecordJson, null)),
+        dir_stats_service_enabled = utils:null_to_undefined(maps:get(<<"dirStatsServiceEnabled">>, RecordJson, null)),
+        dir_stats_service_status = case maps:get(<<"dirStatsServiceStatus">>, RecordJson, null) of
+            null -> undefined;
+            StatusJson -> dir_stats_service_status_from_json(StatusJson)
+        end
+    }.
+
+%%%===================================================================
+%%% persistent_record callbacks
+%%%===================================================================
+
+-spec version() -> persistent_record:record_version().
+version() ->
+    1.
 
 
--spec remove_for_provider(per_provider(), provider_id()) ->
-    per_provider().
-remove_for_provider(ParametersPerProvider, ProviderId) ->
-    maps:remove(ProviderId, ParametersPerProvider).
+-spec db_encode(record(), persistent_record:nested_record_encoder()) -> json_utils:json_term().
+db_encode(Record, _NestedRecordEncoder) ->
+    to_json(Record).
 
 
--spec get_data_write(parameters()) -> data_write().
-get_data_write(#space_support_parameters{data_write = DW}) -> DW.
+-spec db_decode(json_utils:json_term(), persistent_record:nested_record_decoder()) -> record().
+db_decode(RecordJson, _NestedRecordDecoder) ->
+    from_json(RecordJson).
+
+%%%===================================================================
+%%% Internal functions
+%%%===================================================================
+
+%% @private
+-spec dir_stats_service_status_to_json(dir_stats_service_status()) -> json_utils:json_term().
+dir_stats_service_status_to_json(initializing) -> <<"initializing">>;
+dir_stats_service_status_to_json(enabled) -> <<"enabled">>;
+dir_stats_service_status_to_json(stopping) -> <<"stopping">>;
+dir_stats_service_status_to_json(disabled) -> <<"disabled">>.
 
 
--spec get_metadata_replication(parameters()) -> metadata_replication().
-get_metadata_replication(#space_support_parameters{metadata_replication = MR}) -> MR.
+%% @private
+-spec dir_stats_service_status_from_json(json_utils:json_term()) -> dir_stats_service_status().
+dir_stats_service_status_from_json(<<"initializing">>) -> initializing;
+dir_stats_service_status_from_json(<<"enabled">>) -> enabled;
+dir_stats_service_status_from_json(<<"stopping">>) -> stopping;
+dir_stats_service_status_from_json(<<"disabled">>) -> disabled.
 
 
--spec serialize(parameters()) -> <<_:16>>.
-serialize(#space_support_parameters{data_write = DW, metadata_replication = MR}) ->
-    SerializedDW = case DW of
-        global -> <<"g">>;
-        none -> <<"n">>
-    end,
-    SerializedMR = case MR of
-        eager -> <<"e">>;
-        lazy -> <<"l">>;
-        none -> <<"n">>
-    end,
-    <<SerializedDW/binary, SerializedMR/binary>>.
+%%--------------------------------------------------------------------
+%% @private
+%% @doc
+%% When dir_stats_service_enabled flag is toggled and before the change is
+%% acknowledged by a provider, the service status may be conflicting with the
+%% settings. This function tweaks the status in advance so that it is not confusing,
+%% assuming that the provider will sooner or later converge to this status.
+%% @end
+%%--------------------------------------------------------------------
+-spec ensure_dir_stats_service_status_adequate(record()) -> record().
+ensure_dir_stats_service_status_adequate(SP = #support_parameters{
+    dir_stats_service_enabled = true, dir_stats_service_status = disabled
+}) ->
+    SP#support_parameters{dir_stats_service_status = initializing};
 
+ensure_dir_stats_service_status_adequate(SP = #support_parameters{
+    dir_stats_service_enabled = true, dir_stats_service_status = stopping
+}) ->
+    SP#support_parameters{dir_stats_service_status = initializing};
 
--spec deserialize(<<_:16>>) -> parameters().
-deserialize(<<SerializedDW:1/binary, SerializedMR/binary>>) ->
-    DW = case SerializedDW of
-        <<"g">> -> global;
-        <<"n">> -> none
-    end,
-    MR = case SerializedMR of
-        <<"e">> -> eager;
-        <<"l">> -> lazy;
-        <<"n">> -> none
-    end,
-    #space_support_parameters{data_write = DW, metadata_replication = MR}.
+ensure_dir_stats_service_status_adequate(SP = #support_parameters{
+    dir_stats_service_enabled = false, dir_stats_service_status = enabled
+}) ->
+    SP#support_parameters{dir_stats_service_status = stopping};
 
+ensure_dir_stats_service_status_adequate(SP = #support_parameters{
+    dir_stats_service_enabled = false, dir_stats_service_status = initializing
+}) ->
+    SP#support_parameters{dir_stats_service_status = stopping};
 
--spec to_json(parameters()) -> json_utils:json_map().
-to_json(#space_support_parameters{data_write = DW, metadata_replication = MR}) ->
-    DWStr = case DW of
-        global -> <<"global">>;
-        none -> <<"none">>
-    end,
-    MRStr = case MR of
-        eager -> <<"eager">>;
-        lazy -> <<"lazy">>;
-        none -> <<"none">>
-    end,
-    #{<<"dataWrite">> => DWStr, <<"metadataReplication">> => MRStr}.
-
-
--spec from_json(json_utils:json_map()) -> parameters().
-from_json(Parameters) ->
-    DW = case maps:get(<<"dataWrite">>, Parameters, <<"global">>) of
-        <<"global">> -> global;
-        <<"none">> -> none
-    end,
-    MR = case maps:get(<<"metadataReplication">>, Parameters, <<"eager">>) of
-        <<"eager">> -> eager;
-        <<"lazy">> -> lazy;
-        <<"none">> -> none
-    end,
-    #space_support_parameters{data_write = DW, metadata_replication = MR}.
-
-
--spec per_provider_to_json(per_provider()) -> json_utils:json_map().
-per_provider_to_json(ParametersPerProvider) ->
-    maps:map(fun(_ProviderId, Parameters) ->
-        to_json(Parameters)
-    end, ParametersPerProvider).
-
-
--spec per_provider_from_json(json_utils:json_map()) -> per_provider().
-per_provider_from_json(JsonParametersPerProvider) ->
-    maps:map(fun(_ProviderId, Parameters) ->
-        from_json(Parameters)
-    end, JsonParametersPerProvider).
+ensure_dir_stats_service_status_adequate(SP) ->
+    SP.

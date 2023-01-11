@@ -43,9 +43,6 @@
 -export([example_workflow_schema_revisions/0]).
 -export([example_workflow_schema_revision_registries/0]).
 -export([example_time_series_measurement_specs/0]).
--export([example_metric_configs/0]).
--export([example_time_series_schema/0, example_time_series_schemas/0]).
--export([example_time_series_units/0]).
 
 -type lambda_registries() :: #{AtmLambdaId :: automation:id() => atm_lambda_revision_registry:record()}.
 -export_type([lambda_registries/0]).
@@ -57,6 +54,7 @@
 -spec example_id() -> automation:id().
 example_id() ->
     ?RAND_STR(16).
+
 
 -spec example_name() -> automation:name().
 example_name() ->
@@ -196,7 +194,7 @@ example_resource_spec() ->
 
 -spec example_resource_specs() -> [atm_resource_spec:record()].
 example_resource_specs() ->
-    lists_utils:generate(fun example_resource_spec/0, 7).
+    lists_utils:generate(fun example_resource_spec/0, 4).
 
 
 -spec example_data_spec() -> atm_data_spec:record().
@@ -219,11 +217,6 @@ example_data_spec_except(atm_file_type, _) ->
     #atm_data_spec{
         type = atm_file_type,
         value_constraints = #{file_type => ?RAND_ELEMENT(['REG', 'DIR', 'ANY'])}
-    };
-example_data_spec_except(atm_store_credentials_type, _) ->
-    #atm_data_spec{
-        type = atm_store_credentials_type,
-        value_constraints = #{store_type => example_store_type()}
     };
 example_data_spec_except(atm_array_type, DisallowedTypes) ->
     #atm_data_spec{
@@ -254,8 +247,6 @@ example_data_specs_except(DisallowedTypes) ->
 
 %% @TODO VFS-7687 Implement all automation data types and validators
 -spec example_predefined_value(atm_data_spec:record()) -> json_utils:json_term().
-example_predefined_value(#atm_data_spec{type = atm_archive_type}) ->
-    #{<<"atm_archive_type">> => <<"value">>};
 example_predefined_value(#atm_data_spec{type = atm_array_type, value_constraints = #{
     item_data_spec := ItemDataSpec
 }}) ->
@@ -273,14 +264,10 @@ example_predefined_value(#atm_data_spec{type = atm_integer_type}) ->
     ?RAND_INT(0, 1000);
 example_predefined_value(#atm_data_spec{type = atm_object_type}) ->
     ?RAND_ELEMENT([#{}, #{<<"key">> => 984.222}, #{<<"key">> => #{<<"nested">> => 984.222}}]);
-example_predefined_value(#atm_data_spec{type = atm_onedatafs_credentials_type}) ->
-    undefined;
 example_predefined_value(#atm_data_spec{type = atm_range_type}) ->
     #{<<"start">> => ?RAND_INT(0, 10), <<"end">> => ?RAND_INT(10, 20), <<"step">> => ?RAND_INT(0, 5)};
 example_predefined_value(#atm_data_spec{type = atm_string_type}) ->
     ?RAND_STR(?RAND_INT(1, 25));
-example_predefined_value(#atm_data_spec{type = atm_store_credentials_type}) ->
-    undefined;
 example_predefined_value(#atm_data_spec{type = atm_time_series_measurement_type}) ->
     undefined.
 
@@ -330,8 +317,12 @@ example_store_config(tree_forest) ->
 example_store_config(range) ->
     #atm_range_store_config{};
 example_store_config(time_series) ->
-    % @TODO VFS-8948 Implement chart specs record - currently, this is only a pass-through field
-    #atm_time_series_store_config{schemas = ?RAND_SUBLIST(example_time_series_schemas(), 1, all), chart_specs = []};
+    #atm_time_series_store_config{
+        time_series_collection_schema = #time_series_collection_schema{
+            time_series_schemas = ?RAND_SUBLIST(time_series_test_utils:example_time_series_schemas(), 1, all)
+        },
+        dashboard_spec = example_dashboard_spec()
+    };
 example_store_config(audit_log) ->
     #atm_audit_log_store_config{log_content_data_spec = example_data_spec()}.
 
@@ -375,14 +366,14 @@ example_store_iterator_spec(StoreSchemaIds) ->
 
 -spec example_store_iterator_specs() -> [atm_store_iterator_spec:record()].
 example_store_iterator_specs() ->
-    StoreSchemaIds = lists_utils:generate(fun example_id/0, 4),
-    lists_utils:generate(fun() -> example_store_iterator_spec(StoreSchemaIds) end, 4).
+    StoreSchemaIds = lists_utils:generate(fun example_id/0, 3),
+    lists_utils:generate(fun() -> example_store_iterator_spec(StoreSchemaIds) end, 3).
 
 
 -spec example_argument_mappers() -> [atm_task_schema_argument_mapper:record()].
 example_argument_mappers() ->
     AtmLambdaRevision = example_lambda_revision(),
-    StoreSchemaIds = lists_utils:generate(fun example_id/0, 4),
+    StoreSchemaIds = lists_utils:generate(fun example_id/0, 3),
     example_argument_mappers(AtmLambdaRevision, StoreSchemaIds).
 
 -spec example_argument_mappers(atm_lambda_revision:record(), [automation:id()]) ->
@@ -414,7 +405,7 @@ example_argument_mappers_for_specs(ArgumentSpecs, StoreSchemaIds) ->
 -spec example_result_mappers() -> [atm_task_schema_result_mapper:record()].
 example_result_mappers() ->
     AtmLambdaRevision = example_lambda_revision(),
-    StoreSchemaIds = lists_utils:generate(fun example_id/0, 4),
+    StoreSchemaIds = lists_utils:generate(fun example_id/0, 3),
     example_result_mappers(AtmLambdaRevision, StoreSchemaIds).
 
 -spec example_result_mappers(atm_lambda_revision:record(), [automation:id()]) ->
@@ -428,7 +419,7 @@ example_result_mappers(#atm_lambda_revision{result_specs = ResultSpecs}, StoreSc
         _ ->
             ReferencedResultSpecs = lists_utils:generate(fun() ->
                 ?RAND_ELEMENT(ResultSpecs)
-            end, ?RAND_INT(0, 5)),
+            end, ?RAND_INT(0, 4)),
             example_result_mappers_for_specs(ReferencedResultSpecs, StoreSchemaIds)
     end.
 
@@ -455,7 +446,7 @@ example_store_content_update_options_records() -> [
     #atm_tree_forest_store_content_update_options{function = ?RAND_ELEMENT([append, extend])},
     #atm_range_store_content_update_options{},
     #atm_time_series_store_content_update_options{
-        dispatch_rules = ?RAND_SUBLIST(example_time_series_dispatch_rules())
+        dispatch_rules = ?RAND_SUBLIST(example_time_series_dispatch_rules(), 1, 3)
     },
     #atm_audit_log_store_content_update_options{function = ?RAND_ELEMENT([append, extend])}
 ].
@@ -475,7 +466,7 @@ example_time_series_dispatch_rules() ->
 
 -spec example_argument_value_builder() -> atm_task_argument_value_builder:record().
 example_argument_value_builder() ->
-    StoreSchemaIds = lists_utils:generate(fun example_id/0, 4),
+    StoreSchemaIds = lists_utils:generate(fun example_id/0, 3),
     example_argument_value_builder(StoreSchemaIds).
 
 -spec example_argument_value_builder([automation:id()]) -> atm_task_argument_value_builder:record().
@@ -496,8 +487,7 @@ example_argument_value_builder(StoreSchemaIds, Depth) ->
         case StoreSchemaIds of
             [] -> [];
             _ -> [store_credentials, single_value_store_content]
-        end,
-        onedatafs_credentials
+        end
     ]),
 
     case ?RAND_ELEMENT(AvailableBuilders) of
@@ -522,10 +512,7 @@ example_argument_value_builder(StoreSchemaIds, Depth) ->
         single_value_store_content ->
             #atm_task_argument_value_builder{
                 type = single_value_store_content, recipe = ?RAND_ELEMENT(StoreSchemaIds)
-            };
-        onedatafs_credentials -> #atm_task_argument_value_builder{
-            type = onedatafs_credentials, recipe = undefined
-        }
+            }
     end.
 
 
@@ -556,7 +543,7 @@ example_task_schemas() ->
     AvailableLambdasWithRegistries = maps_utils:generate(fun() ->
         {example_id(), example_lambda_revision_registry()}
     end, 5),
-    StoreSchemaIds = lists_utils:generate(fun example_id/0, 5),
+    StoreSchemaIds = lists_utils:generate(fun example_id/0, 4),
     example_task_schemas(AvailableLambdasWithRegistries, StoreSchemaIds).
 
 -spec example_task_schemas(lambda_registries(), [automation:id()]) -> [atm_task_schema:record()].
@@ -566,7 +553,7 @@ example_task_schemas(AvailableLambdasWithRegistries, StoreSchemaIds) ->
             maps_utils:random_submap(AvailableLambdasWithRegistries, 1, all),
             ?RAND_SUBLIST(StoreSchemaIds)
         )
-    end, 5).
+    end, 4).
 
 
 -spec example_parallel_box_schema_with_tasks([atm_task_schema:record()]) -> atm_parallel_box_schema:record().
@@ -582,7 +569,7 @@ example_parallel_box_schemas() ->
     ExampleTaskSchemas = example_task_schemas(),
     lists_utils:generate(fun() ->
         example_parallel_box_schema_with_tasks(?RAND_SUBLIST(ExampleTaskSchemas))
-    end, 5).
+    end, 4).
 
 
 -spec example_lane_schema_with_parallel_boxes([atm_parallel_box_schema:record()], [automation:id()]) ->
@@ -593,7 +580,8 @@ example_lane_schema_with_parallel_boxes(ExampleParallelBoxSchemas, StoreSchemaId
         name = example_name(),
         parallel_boxes = ExampleParallelBoxSchemas,
         store_iterator_spec = example_store_iterator_spec(StoreSchemaIds),
-        max_retries = ?RAND_INT(0, 10)
+        max_retries = ?RAND_INT(0, 10),
+        dashboard_spec = example_dashboard_spec()
     }.
 
 -spec example_lane_schemas() -> [atm_lane_schema:record()].
@@ -605,7 +593,7 @@ example_lane_schemas() ->
             ?RAND_SUBLIST(ExampleParallelBoxSchemas),
             ?RAND_SUBLIST(StoreSchemaIds, 1, all)
         )
-    end, 5).
+    end, 4).
 
 
 -spec example_lambda_revision() -> atm_lambda_revision:record().
@@ -615,8 +603,8 @@ example_lambda_revision() ->
         summary = example_summary(),
         description = example_description(),
         operation_spec = example_operation_spec(),
-        argument_specs = ?RAND_SUBLIST(example_argument_specs()),
-        result_specs = ?RAND_SUBLIST(example_result_specs()),
+        argument_specs = ?RAND_SUBLIST(example_argument_specs(), 1, 4),
+        result_specs = ?RAND_SUBLIST(example_result_specs(), 1, 4),
         preferred_batch_size = ?RAND_INT(1, 1000),
         resource_spec = example_resource_spec(),
         checksum = <<>>,
@@ -628,7 +616,7 @@ example_lambda_revision() ->
 
 -spec example_lambda_revisions() -> [atm_lambda_revision:record()].
 example_lambda_revisions() ->
-    lists_utils:generate(fun example_lambda_revision/0, 4).
+    lists_utils:generate(fun example_lambda_revision/0, 3).
 
 
 -spec example_lambda_revision_registry() -> atm_lambda_revision_registry:record().
@@ -646,7 +634,7 @@ example_lambda_revision_registry(LambdaRevisions) ->
 -spec example_lambda_revision_registries() -> [atm_lambda_revision_registry:record()].
 example_lambda_revision_registries() ->
     ExampleLambdaRevisions = example_lambda_revisions(),
-    lists_utils:generate(fun() -> example_lambda_revision_registry(ExampleLambdaRevisions) end, 4).
+    lists_utils:generate(fun() -> example_lambda_revision_registry(ExampleLambdaRevisions) end, 3).
 
 
 -spec example_workflow_schema_revisions() -> [atm_workflow_schema_revision:record()].
@@ -656,11 +644,12 @@ example_workflow_schema_revisions() ->
     lists_utils:generate(fun() ->
         #atm_workflow_schema_revision{
             description = example_description(),
+            state = example_lifecycle_state(),
             stores = ?RAND_SUBLIST(ExampleStoreSchemas),
             lanes = ?RAND_SUBLIST(ExampleLaneSchemas),
-            state = example_lifecycle_state()
+            dashboard_spec = example_dashboard_spec()
         }
-    end, 4).
+    end, ?RAND_INT(1, 3)).
 
 
 -spec example_workflow_schema_revision_registries() -> [atm_workflow_schema_revision_registry:record()].
@@ -682,7 +671,7 @@ example_time_series_measurement_spec(NameMatcher) ->
     #atm_time_series_measurement_spec{
         name_matcher_type = ?RAND_ELEMENT([exact, has_prefix]),
         name_matcher = NameMatcher,
-        unit = ?RAND_ELEMENT(example_time_series_units())
+        unit = ?RAND_ELEMENT(time_series_test_utils:example_time_series_units())
     }.
 
 
@@ -690,53 +679,18 @@ example_time_series_measurement_spec(NameMatcher) ->
 example_time_series_measurement_specs() ->
     lists_utils:generate(fun(Ordinal) ->
         example_time_series_measurement_spec(str_utils:format_bin("~B~s", [Ordinal, example_name()]))
-    end, 5).
+    end, 4).
+
+%%%===================================================================
+%%% Internal functions
+%%%===================================================================
+
+%% @private
+-spec example_dashboard_spec() -> undefined.
+example_dashboard_spec() ->
+    % dashboard specs are not included in examples because they are very complicated and
+    % their generation can cause horrendous slowdown of the automation example generators
+    % (which are intensively used during tests)
+    undefined.
 
 
--spec example_metric_configs() -> [metric_config:record()].
-example_metric_configs() ->
-    lists:map(fun(Resolution) ->
-        #metric_config{
-            resolution = Resolution,
-            retention = ?RAND_INT(1, 1000),
-            aggregator = ?RAND_ELEMENT(?ALLOWED_METRIC_AGGREGATORS)
-        }
-    end, ?ALLOWED_METRIC_RESOLUTIONS).
-
-
--spec example_time_series_schema() -> atm_time_series_schema:record().
-example_time_series_schema() ->
-    example_time_series_schema(example_name()).
-
--spec example_time_series_schema(atm_time_series_names:target_ts_name_generator()) ->
-    atm_time_series_schema:record().
-example_time_series_schema(NameGenerator) ->
-    #atm_time_series_schema{
-        name_generator_type = ?RAND_ELEMENT([exact, add_prefix]),
-        name_generator = NameGenerator,
-        unit = ?RAND_ELEMENT(example_time_series_units()),
-        metrics = maps_utils:generate_from_list(fun(MetricConfig) ->
-            {example_name(), MetricConfig}
-        end, ?RAND_SUBLIST(example_metric_configs(), 1, all))
-    }.
-
-
--spec example_time_series_schemas() -> [atm_time_series_schema:record()].
-example_time_series_schemas() ->
-    lists_utils:generate(fun(Ordinal) ->
-        example_time_series_schema(str_utils:format_bin("~B~s", [Ordinal, example_name()]))
-    end, 5).
-
-
--spec example_time_series_units() -> [time_series:unit()].
-example_time_series_units() -> [
-    none,
-    milliseconds, seconds,
-    bits, bytes,
-    hertz, counts_per_sec, operations_per_sec, requests_per_sec,
-    bits_per_sec, bytes_per_sec,
-    reads_per_sec, writes_per_sec, io_operations_per_sec,
-    percent, percent_normalized,
-    boolean,
-    {custom, example_name()}
-].

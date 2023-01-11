@@ -15,6 +15,7 @@
 -ifdef(TEST).
 
 -include_lib("eunit/include/eunit.hrl").
+-include("test/test_utils.hrl").
 -include("automation/automation.hrl").
 -include("errors.hrl").
 -include("logging.hrl").
@@ -38,14 +39,14 @@ encode_decode_atm_resource_spec_test() ->
     ?assertEqual(ExampleWithRoundCpuResources, atm_resource_spec:from_json(ExampleJsonWithIntegerCpuResources)),
 
     % test validation of values
-    check_error_during_decode_from_json(?ERROR_BAD_DATA(<<"atmResourceSpec">>), [
+    ?assert(eunit_utils:throws_error_during_decode_from_json(?ERROR_BAD_DATA(<<"atmResourceSpec">>), [
         Example#atm_resource_spec{cpu_requested = undefined},
         Example#atm_resource_spec{cpu_limit = <<"text">>},
         Example#atm_resource_spec{memory_requested = 17.8},
         Example#atm_resource_spec{memory_limit = #{<<"map">> => <<"val">>}},
         Example#atm_resource_spec{ephemeral_storage_requested = -4},
         Example#atm_resource_spec{ephemeral_storage_limit = 0}
-    ]).
+    ])).
 
 
 encode_decode_atm_data_spec_test() ->
@@ -55,14 +56,14 @@ encode_decode_atm_data_spec_test() ->
         <<"valueConstraints.specs">>,
         <<"There cannot be two measurement specs with the same name matcher">>
     ),
-    check_error_during_decode_from_json(ExpDuplicateNameMatchersError, atm_data_spec, #atm_data_spec{
+    ?assert(eunit_utils:throws_error_during_decode_from_json(ExpDuplicateNameMatchersError, atm_data_spec, #atm_data_spec{
         type = atm_time_series_measurement_type,
         value_constraints = #{specs => [
             #atm_time_series_measurement_spec{name_matcher_type = exact, name_matcher = <<"latency">>, unit = milliseconds},
             #atm_time_series_measurement_spec{name_matcher_type = exact, name_matcher = <<"throughput">>, unit = bytes_per_sec},
             #atm_time_series_measurement_spec{name_matcher_type = has_prefix, name_matcher = <<"latency">>, unit = milliseconds}
         ]}
-    }).
+    })).
 
 
 encode_decode_operation_spec_test() ->
@@ -75,11 +76,11 @@ encode_decode_operation_spec_test() ->
             atm_lambda_operation_spec:allowed_engines_for_custom_lambdas()
         )
     ),
-    check_error_during_decode_from_json(ExpDisallowedOperationSpecError, atm_lambda_operation_spec, [
+    ?assert(eunit_utils:throws_error_during_decode_from_json(ExpDisallowedOperationSpecError, atm_lambda_operation_spec, [
         #atm_onedata_function_operation_spec{function_id = atm_test_utils:example_name()},
         #atm_workflow_operation_spec{atm_workflow_id = atm_test_utils:example_id()},
         #atm_user_form_operation_spec{user_form_id = atm_test_utils:example_id()}
-    ]).
+    ])).
 
 
 encode_decode_docker_execution_options_test() ->
@@ -87,23 +88,23 @@ encode_decode_docker_execution_options_test() ->
 
 
 encode_decode_lambda_argument_spec_test() ->
-    [Example | _ ] = ExampleArgumentSpecs = atm_test_utils:example_argument_specs(),
+    [Example | _] = ExampleArgumentSpecs = atm_test_utils:example_argument_specs(),
     encode_decode_test_base(ExampleArgumentSpecs),
 
-    check_error_during_decode_from_json(
+    ?assert(eunit_utils:throws_error_during_decode_from_json(
         ?ERROR_BAD_VALUE_NAME(<<"argumentSpec.name">>),
         Example#atm_lambda_argument_spec{name = <<"*@#$^!R!*!^$@!@(">>}
-    ).
+    )).
 
 
 encode_decode_lambda_result_spec_test() ->
-    [Example | _ ] = ExampleResultSpecs = atm_test_utils:example_result_specs(),
+    [Example | _] = ExampleResultSpecs = atm_test_utils:example_result_specs(),
     encode_decode_test_base(ExampleResultSpecs),
 
-    check_error_during_decode_from_json(
+    ?assert(eunit_utils:throws_error_during_decode_from_json(
         ?ERROR_BAD_VALUE_NAME(<<"resultSpec.name">>),
         Example#atm_lambda_result_spec{name = <<"><<>:.,{:<.',.;,'.;">>}
-    ).
+    )).
 
 
 encode_decode_store_schema_test() ->
@@ -126,8 +127,10 @@ encode_decode_store_schema_test() ->
 
 
 encode_decode_store_config_test() ->
-    encode_decode_test_base(atm_test_utils:example_store_configs()),
+    encode_decode_test_base(atm_test_utils:example_store_configs()).
 
+
+encode_decode_tree_forest_store_config_test() ->
     % tree forest store limits available data types to those compatible with tree models
     AllowedDataTypes = [atm_file_type, atm_dataset_type],
     ExpTreeForestCfgError = ?ERROR_BAD_VALUE_NOT_ALLOWED(
@@ -135,80 +138,22 @@ encode_decode_store_config_test() ->
         [atm_data_type:type_to_json(T) || T <- AllowedDataTypes]
     ),
     lists:foreach(fun(DisallowedDataType) ->
-        check_error_during_decode_from_json(ExpTreeForestCfgError, #atm_tree_forest_store_config{
+        ?assert(eunit_utils:throws_error_during_decode_from_json(ExpTreeForestCfgError, #atm_tree_forest_store_config{
             item_data_spec = atm_test_utils:example_data_spec(DisallowedDataType)
-        })
-    end, atm_data_type:all_data_types() -- AllowedDataTypes),
+        }))
+    end, atm_data_type:all_data_types() -- AllowedDataTypes).
 
-    % time series store must have at least one schema defined
-    check_error_during_decode_from_json(
-        ?ERROR_BAD_VALUE_EMPTY(<<"schemas">>),
-        #atm_time_series_store_config{
-            schemas = [],
-            % @TODO VFS-8948 Implement chart specs record - currently, this is only a pass-through field
-            chart_specs = []
-        }
-    ),
 
-    % time series store cannot have conflicting name generators
-    MakeSchema = fun(NameGeneratorType, NameGenerator) ->
-        ExampleSchema = atm_test_utils:example_time_series_schema(),
-        ExampleSchema#atm_time_series_schema{
-            name_generator_type = NameGeneratorType,
-            name_generator = NameGenerator
-        }
-    end,
-    SchemasTestCases = [
-        {conflict, [
-            MakeSchema(exact, <<"throughput">>),
-            MakeSchema(add_prefix, <<"count_">>),
-            MakeSchema(exact, <<"throughput">>)
-        ]},
-        {correct, [
-            MakeSchema(exact, <<"throughput">>),
-            MakeSchema(add_prefix, <<"files_">>),
-            MakeSchema(exact, <<"count_mp3">>)
-        ]},
-        {conflict, [
-            MakeSchema(exact, <<"throughput">>),
-            MakeSchema(exact, <<"count_mp3">>),
-            MakeSchema(add_prefix, <<"count_">>)
-        ]},
-        {correct, [
-            MakeSchema(exact, <<"throughput">>),
-            MakeSchema(exact, <<"count/mp3">>),
-            MakeSchema(add_prefix, <<"count_">>)
-        ]},
-        {conflict, [
-            MakeSchema(exact, <<"throughput">>),
-            MakeSchema(add_prefix, <<"files_">>),
-            MakeSchema(add_prefix, <<"files_count_">>)
-        ]},
-        {correct, [
-            MakeSchema(exact, <<"throughput">>),
-            MakeSchema(add_prefix, <<"files_">>),
-            MakeSchema(add_prefix, <<"file_count_">>)
-        ]}
-    ],
-    ExpTimeSeriesCfgError = ?ERROR_BAD_DATA(<<"schemas">>, <<
-        "Provided time series schemas have conflicting name generators; the generators "
-        "cannot have the same values and no 'add_prefix' generator can be a prefix "
-        "of any other generator."
-    >>),
-    lists:foreach(fun
-        ({conflict, ConflictingSchemaSet}) ->
-            check_error_during_decode_from_json(ExpTimeSeriesCfgError, #atm_time_series_store_config{
-                schemas = lists_utils:shuffle(ConflictingSchemaSet),
-                % @TODO VFS-8948 Implement chart specs record - currently, this is only a pass-through field
-                chart_specs = []
-            });
-        ({correct, CorrectSchemaSet}) ->
-            encode_decode_test_base(#atm_time_series_store_config{
-                schemas = lists_utils:shuffle(CorrectSchemaSet),
-                % @TODO VFS-8948 Implement chart specs record - currently, this is only a pass-through field
-                chart_specs = []
-            })
-    end, SchemasTestCases).
+% dashboard specs are skipped during example generation
+% (hence effectively never checked during the other tests),
+% make sure they are properly encoded/decoded when used within a time series store
+encode_decode_time_series_store_config_with_dashboard_spec_test() ->
+    encode_decode_test_base(#atm_time_series_store_config{
+        time_series_collection_schema = #time_series_collection_schema{
+            time_series_schemas = ?RAND_SUBLIST(time_series_test_utils:example_time_series_schemas(), 1, all)
+        },
+        dashboard_spec = time_series_test_utils:example_dashboard_spec()
+    }).
 
 
 encode_decode_store_iterator_spec_test() ->
@@ -240,7 +185,14 @@ encode_decode_parallel_box_schema_test() ->
 
 
 encode_decode_lane_schema_test() ->
-    encode_decode_test_base(atm_test_utils:example_lane_schemas()).
+    [FirstExample | OtherExamples] = atm_test_utils:example_lane_schemas(),
+    encode_decode_test_base(OtherExamples),
+    % dashboard specs are skipped during example generation
+    % (hence effectively never checked during the other tests),
+    % make sure they are properly encoded/decoded when used within a lane schema
+    encode_decode_test_base(FirstExample#atm_lane_schema{
+        dashboard_spec = time_series_test_utils:example_dashboard_spec()
+    }).
 
 
 encode_decode_lambda_revision_test() ->
@@ -256,10 +208,17 @@ encode_decode_lambda_revision_registry_test() ->
 
 
 encode_decode_workflow_schema_revision_test() ->
-    [Example | _] = ExampleWorkflowSchemaRevisions = atm_test_utils:example_workflow_schema_revisions(),
-    encode_decode_test_base(ExampleWorkflowSchemaRevisions),
+    [FirstExample | OtherExamples] = atm_test_utils:example_workflow_schema_revisions(),
+    encode_decode_test_base(OtherExamples),
 
-    check_binary_sanitization(atm_workflow_schema_revision, Example, <<"description">>, ?DESCRIPTION_SIZE_LIMIT).
+    % dashboard specs are skipped during example generation
+    % (hence effectively never checked during the other tests),
+    % make sure they are properly encoded/decoded when used within a workflow schema
+    encode_decode_test_base(FirstExample#atm_workflow_schema_revision{
+        dashboard_spec = time_series_test_utils:example_dashboard_spec()
+    }),
+
+    check_binary_sanitization(atm_workflow_schema_revision, FirstExample, <<"description">>, ?DESCRIPTION_SIZE_LIMIT).
 
 
 encode_decode_workflow_schema_revision_registry_test() ->
@@ -268,34 +227,6 @@ encode_decode_workflow_schema_revision_registry_test() ->
 
 encode_decode_time_series_measurement_spec_test() ->
     encode_decode_test_base(atm_test_utils:example_time_series_measurement_specs()).
-
-
-encode_decode_time_series_metric_spec_test() ->
-    [Example | _] = ExampleTimeSeriesMetricSpecs = atm_test_utils:example_metric_configs(),
-    encode_decode_test_base(ExampleTimeSeriesMetricSpecs),
-
-    check_error_during_decode_from_json(
-        ?ERROR_BAD_VALUE_NOT_ALLOWED(<<"resolution">>, ?ALLOWED_METRIC_RESOLUTIONS),
-        Example#metric_config{resolution = 1337}
-    ).
-
-
-encode_decode_time_series_schema_test() ->
-    [Example | _] = ExampleTimeSeriesSpecs = atm_test_utils:example_time_series_schemas(),
-    encode_decode_test_base(ExampleTimeSeriesSpecs),
-
-    check_error_during_decode_from_json(
-        ?ERROR_BAD_VALUE_EMPTY(<<"metrics">>),
-        Example#atm_time_series_schema{metrics = #{}}
-    ),
-
-    check_error_during_decode_from_json(
-        ?ERROR_BAD_DATA(<<"metrics">>, <<"There cannot be two metrics with the same resolution and aggregator">>),
-        Example#atm_time_series_schema{metrics = #{
-            <<"metric1">> => #metric_config{resolution = 3600, retention = 12, aggregator = sum},
-            <<"metric2">> => #metric_config{resolution = 3600, retention = 13, aggregator = sum}
-        }}
-    ).
 
 %%%===================================================================
 %%% Helpers
@@ -313,26 +244,6 @@ check_binary_sanitization(RecordType, Record, DataKey, SizeLimit) ->
     ?assertThrow(?ERROR_BAD_VALUE_BINARY(DataKey), jsonable_record:from_json(ExampleJson#{
         DataKey => lists_utils:random_element([12345, atom, #{<<"a">> => <<"b">>}, [1, 2, 3]])
     }, RecordType)).
-
-
-% validation is done during decoding from json, so it is possible to encode an invalid record
-% to json, but the get an error when decoding it back from json
-%% @private
-check_error_during_decode_from_json(ExpError, Records) when is_list(Records) ->
-    check_error_during_decode_from_json(ExpError, utils:record_type(hd(Records)), Records);
-check_error_during_decode_from_json(ExpError, Record) ->
-    check_error_during_decode_from_json(ExpError, utils:record_type(Record), Record).
-
-check_error_during_decode_from_json(ExpError, RecordType, Records) when is_list(Records) ->
-    lists:foreach(fun(Record) ->
-        check_error_during_decode_from_json(ExpError, RecordType, Record)
-    end, Records);
-check_error_during_decode_from_json(ExpError, RecordType, Record) ->
-    RecordJson = jsonable_record:to_json(Record, RecordType),
-    ?assertThrow(ExpError, jsonable_record:from_json(RecordJson, RecordType)),
-    % validation should be done only when decoding from json (not during db decoding)
-    RecordDbEncoded = persistent_record:encode(Record, RecordType),
-    ?assertEqual(Record, persistent_record:decode(RecordDbEncoded, RecordType)).
 
 
 %% @private

@@ -64,6 +64,7 @@ example_rest_api_request_sample_records() ->
             placeholders = maps_utils:generate(fun() ->
                 {?RAND_STR(), ?RAND_STR()}
             end, ?RAND_INT(0, 3)),
+            optional_parameters = [?RAND_STR(), ?RAND_STR()],
             swagger_operation_id = ?RAND_STR()
         }
     end, 10).

@@ -35,7 +35,10 @@ submodules:
 
 # Dialyzes the project.
 dialyzer:
-	@./rebar3 dialyzer
+	@./bamboos/scripts/run-with-surefire-report.py \
+		--test-name Dialyze \
+		--report-path test/dialyzer_results/TEST-dialyzer.xml \
+		./rebar3 dialyzer
 
 ##
 ## Testing
@@ -47,5 +50,7 @@ eunit:
 	@for tout in `find test -name "TEST-*.xml"`; do awk '/testcase/{gsub("_[0-9]+\"", "_" ++i "\"")}1' $$tout > $$tout.tmp; mv $$tout.tmp $$tout; done
 
 codetag-tracker:
-	./bamboos/scripts/codetag-tracker.sh --branch=${BRANCH}
-
+	@./bamboos/scripts/run-with-surefire-report.py \
+		--test-name CodetagTracker \
+		--report-path test/codetag_tracker_results/TEST-codetag_tracker.xml \
+		./bamboos/scripts/codetag-tracker.sh --branch=${BRANCH}

@@ -35,8 +35,8 @@
 
 -type general() :: {bad_message, json_utils:json_term()} | no_connection_to_oz
 | no_connection_to_peer_provider | no_connection_to_cluster_node
-| unregistered_provider | internal_server_error | not_implemented
-| not_supported | service_unavailable |  timeout
+| unregistered_provider | internal_server_error | {internal_server_error, ErrorRef :: binary()}
+| not_implemented | not_supported | service_unavailable |  timeout
 | temporary_failure | {external_service_operation_failed, ServiceName :: binary()}
 | unauthorized() | forbidden | not_found | already_exists
 | {file_access, Path :: file:name_all(), errno()}.
@@ -137,9 +137,12 @@
 | {atm_store_content_not_set, AtmStoreSchemaId :: binary()}
 | {atm_store_not_found, AtmStoreSchemaId :: binary()}
 | atm_workflow_empty
-| atm_workflow_execution_aborting
+| atm_workflow_execution_stopping
+| atm_workflow_execution_stopped
+| atm_workflow_execution_not_stopped
 | atm_workflow_execution_ended
 | atm_workflow_execution_not_ended
+| atm_workflow_execution_not_resumable
 | {atm_lane_empty, AtmLaneSchemaId :: binary()}
 | {atm_lane_execution_creation_failed, AtmLaneSchemaId :: binary(), SpecificError :: error()}
 | {atm_lane_execution_initiation_failed, AtmLaneSchemaId :: binary(), SpecificError :: error()}
@@ -162,9 +165,12 @@
 | {atm_task_result_missing, ResultName :: binary()}
 | {atm_task_result_dispatch_failed, AtmStoreSchemaId :: binary(), SpecificError :: error()}
 | {atm_task_result_mapping_failed, ResultName :: binary(), SpecificError :: error()}
-| atm_task_execution_ended
+| atm_task_execution_stopped
+| {atm_job_batch_withdrawn, json_utils:json_term()}
+| {atm_job_batch_crashed, json_utils:json_term()}
 | atm_openfaas_not_configured
 | atm_openfaas_unreachable
+| atm_openfaas_unhealthy
 | atm_openfaas_query_failed
 | {atm_openfaas_query_failed, Reason :: binary()}
 | atm_openfaas_function_registration_failed
@@ -203,11 +209,10 @@
 % #{<<"type">> := <<"errorId">>, <<"detail">> => <<"error description">>, _ => _}
 -type problem_document() :: json_utils:json_map().
 
--type unexpected() :: {unexpected_error, ErrorRef :: binary()}.
--type unknown() :: {unknown_error, as_json()}.
+-type unrecognized() :: {unrecognized_error, as_json()}.
 
 -type reason() :: general() | auth() | graph_sync() | data_validation()
-| oz_worker() | posix() | op_worker() | onepanel() | unexpected() | unknown().
+| oz_worker() | posix() | op_worker() | onepanel() | unrecognized().
 -type error() :: {error, reason()}.
 
 -type as_json() :: json_utils:json_map().
@@ -252,6 +257,16 @@ to_json(?ERROR_NO_CONNECTION_TO_CLUSTER_NODE) -> #{
 to_json(?ERROR_UNREGISTERED_ONEPROVIDER) -> #{
     <<"id">> => <<"unregisteredOneprovider">>,
     <<"description">> => <<"This Oneprovider is not registered.">>
+};
+to_json(?ERROR_INTERNAL_SERVER_ERROR(ErrorRef)) -> #{
+    <<"id">> => <<"internalServerError">>,
+    <<"details">> => #{
+        <<"reference">> => ErrorRef
+    },
+    <<"description">> => ?FMT(
+        "The server has encountered an error while processing this request. "
+        "When reporting this error, cite the following reference: ~s.", [ErrorRef]
+    )
 };
 to_json(?ERROR_INTERNAL_SERVER_ERROR) -> #{
     <<"id">> => <<"internalServerError">>,
@@ -759,7 +774,7 @@ to_json(?ERROR_BAD_VALUE_USERNAME) -> #{
 };
 to_json(?ERROR_BAD_VALUE_PASSWORD) -> #{
     <<"id">> => <<"badValuePassword">>,
-    <<"description">> =><<"Bad value: ", (?PASSWORD_REQUIREMENTS_DESCRIPTION)/binary>>
+    <<"description">> => <<"Bad value: ", (?PASSWORD_REQUIREMENTS_DESCRIPTION)/binary>>
 };
 to_json(?ERROR_BAD_VALUE_EMAIL) -> #{
     <<"id">> => <<"badValueEmail">>,
@@ -813,13 +828,13 @@ to_json(?ERROR_TSC_TOO_MANY_METRICS(Limit)) -> #{
     },
     <<"description">> => ?FMT("The time series collection cannot have more than ~B metrics.", [Limit])
 };
-to_json(?ERROR_BAD_VALUE_TSC_CONFLICTING_METRIC_CONFIG(TSName, MetricName, ExistingMetricConfig, ConflictingMetricConfig)) -> #{
+to_json(?ERROR_BAD_VALUE_TSC_CONFLICTING_METRIC_CONFIG(TSName, MetricName, ExistingMConfig, ConflictingMConfig)) -> #{
     <<"id">> => <<"badValueTimeSeriesCollectionConflictingMetricConfig">>,
     <<"details">> => #{
         <<"timeSeriesName">> => TSName,
         <<"metricName">> => MetricName,
-        <<"existingMetricConfig">> => jsonable_record:to_json(ExistingMetricConfig, metric_config),
-        <<"conflictingMetricConfig">> => jsonable_record:to_json(ConflictingMetricConfig, metric_config)
+        <<"existingMetricConfig">> => jsonable_record:to_json(ExistingMConfig, metric_config),
+        <<"conflictingMetricConfig">> => jsonable_record:to_json(ConflictingMConfig, metric_config)
     },
     <<"description">> => ?FMT(
         "Provided metric config for 'time series' ~s and metric '~s' conflicts with existing metric config (see details).", [
@@ -957,15 +972,14 @@ to_json(?ERROR_RELATION_ALREADY_EXISTS(ChType, ChId, ParType, ParId)) ->
             gri:serialize_type(ParType), ParId
         ])
     };
-to_json(?ERROR_SPACE_ALREADY_SUPPORTED_WITH_IMPORTED_STORAGE(SpaceId, StorageId)) ->
-    #{
-        <<"id">> => <<"spaceAlreadySupportedWithImportedStorage">>,
-        <<"details">> => #{
-            <<"spaceId">> => SpaceId,
-            <<"storageId">> => StorageId
-        },
-        <<"description">> => ?FMT("Space ~s is already supported with an imported storage ~s.", [SpaceId, StorageId])
-    };
+to_json(?ERROR_SPACE_ALREADY_SUPPORTED_WITH_IMPORTED_STORAGE(SpaceId, StorageId)) -> #{
+    <<"id">> => <<"spaceAlreadySupportedWithImportedStorage">>,
+    <<"details">> => #{
+        <<"spaceId">> => SpaceId,
+        <<"storageId">> => StorageId
+    },
+    <<"description">> => ?FMT("Space ~s is already supported with an imported storage ~s.", [SpaceId, StorageId])
+};
 
 %%--------------------------------------------------------------------
 %% op_worker errors
@@ -1204,9 +1218,19 @@ to_json(?ERROR_ATM_WORKFLOW_EMPTY) -> #{
     <<"description">> => <<"Bad automation workflow: no lanes defined.">>
 };
 
-to_json(?ERROR_ATM_WORKFLOW_EXECUTION_ABORTING) -> #{
-    <<"id">> => <<"atmWorkflowExecutionAborting">>,
-    <<"description">> => <<"Specified automation workflow execution is aborting.">>
+to_json(?ERROR_ATM_WORKFLOW_EXECUTION_STOPPING) -> #{
+    <<"id">> => <<"atmWorkflowExecutionStopping">>,
+    <<"description">> => <<"Specified automation workflow execution is already stopping.">>
+};
+
+to_json(?ERROR_ATM_WORKFLOW_EXECUTION_STOPPED) -> #{
+    <<"id">> => <<"atmWorkflowExecutionStopped">>,
+    <<"description">> => <<"Specified automation workflow execution has already stopped.">>
+};
+
+to_json(?ERROR_ATM_WORKFLOW_EXECUTION_NOT_STOPPED) -> #{
+    <<"id">> => <<"atmWorkflowExecutionNotStopped">>,
+    <<"description">> => <<"Specified automation workflow execution has not stopped yet.">>
 };
 
 to_json(?ERROR_ATM_WORKFLOW_EXECUTION_ENDED) -> #{
@@ -1217,6 +1241,11 @@ to_json(?ERROR_ATM_WORKFLOW_EXECUTION_ENDED) -> #{
 to_json(?ERROR_ATM_WORKFLOW_EXECUTION_NOT_ENDED) -> #{
     <<"id">> => <<"atmWorkflowExecutionNotEnded">>,
     <<"description">> => <<"Specified automation workflow execution has not ended yet.">>
+};
+
+to_json(?ERROR_ATM_WORKFLOW_EXECUTION_NOT_RESUMABLE) -> #{
+    <<"id">> => <<"atmWorkflowExecutionNotResumable">>,
+    <<"description">> => <<"Specified automation workflow execution cannot be resumed.">>
 };
 
 to_json(?ERROR_ATM_LANE_EMPTY(AtmLaneSchemaId)) -> #{
@@ -1410,9 +1439,24 @@ to_json(?ERROR_ATM_TASK_RESULT_DISPATCH_FAILED(AtmStoreSchemaId, {error, _} = Sp
         [AtmStoreSchemaId]
     )
 };
-to_json(?ERROR_ATM_TASK_EXECUTION_ENDED) -> #{
+to_json(?ERROR_ATM_TASK_EXECUTION_STOPPED) -> #{
     <<"id">> => <<"atmTaskExecutionEnded">>,
-    <<"description">> => <<"Specified automation task execution has already ended.">>
+    <<"description">> => <<"Specified automation task execution has already stopped.">>
+};
+
+to_json(?ERROR_ATM_JOB_BATCH_WITHDRAWN(Reason)) -> #{
+    <<"id">> => <<"atmJobBatchWithdrawn">>,
+    <<"details">> => #{
+        <<"reason">> => Reason
+    },
+    <<"description">> => <<"Previosuly scheduled job batch has been withdrawn.">>
+};
+to_json(?ERROR_ATM_JOB_BATCH_CRASHED(Reason)) -> #{
+    <<"id">> => <<"atmJobBatchCrashed">>,
+    <<"details">> => #{
+        <<"reason">> => Reason
+    },
+    <<"description">> => <<"Job batch execution has crashed.">>
 };
 
 to_json(?ERROR_ATM_OPENFAAS_NOT_CONFIGURED) -> #{
@@ -1422,6 +1466,10 @@ to_json(?ERROR_ATM_OPENFAAS_NOT_CONFIGURED) -> #{
 to_json(?ERROR_ATM_OPENFAAS_UNREACHABLE) -> #{
     <<"id">> => <<"atmOpenfaasUnreachable">>,
     <<"description">> => <<"Cannot connect to OpenFaaS service.">>
+};
+to_json(?ERROR_ATM_OPENFAAS_UNHEALTHY) -> #{
+    <<"id">> => <<"atmOpenfaasUnhealthy">>,
+    <<"description">> => <<"OpenFaaS service is unhealthy.">>
 };
 to_json(?ERROR_ATM_OPENFAAS_QUERY_FAILED) -> #{
     <<"id">> => <<"atmOpenfaasQueryFailed">>,
@@ -1536,29 +1584,22 @@ to_json(?ERROR_USER_NOT_IN_CLUSTER) -> #{
     <<"description">> => <<"Authenticated user is not a member of this cluster.">>};
 
 %%--------------------------------------------------------------------
-%% Unknown / unexpected error
+%% Unknown error
 %%--------------------------------------------------------------------
-to_json(?ERROR_UNKNOWN_ERROR(ErrorAsJson)) ->
+to_json(?ERROR_UNRECOGNIZED_ERROR(ErrorAsJson)) ->
+    % Carries errors that have not been recognized upon decoding.
     case maps:is_key(<<"description">>, ErrorAsJson) of
         true ->
             ErrorAsJson;
         false ->
             ErrorAsJson#{<<"description">> => <<"No description (unknown error).">>}
     end;
-to_json(?ERROR_UNEXPECTED_ERROR(ErrorRef)) ->
-    #{
-        <<"id">> => <<"unexpectedError">>,
-        <<"details">> => #{
-            <<"reference">> => ErrorRef
-        },
-        <<"description">> => ?FMT("Unexpected error, reference: ~s.", [ErrorRef])
-    };
-to_json(UnexpectedError) ->
-    % Wildcard to catch all errors that might be returned by the logic, in such
-    % case log a debug with random error ref.
-    ErrorRef = str_utils:rand_hex(5),
-    ?warning("Cannot translate error (ref. ~s): ~tp", [ErrorRef, UnexpectedError]),
-    to_json(?ERROR_UNEXPECTED_ERROR(ErrorRef)).
+to_json(OtherError) ->
+    % Wildcard to catch all errors that might be returned by the application logic, but does
+    % not match any error defined in this module. Inability to translate is treated as an
+    % unexpected exception (an ?ERROR_INTERNAL_SERVER_ERROR(ErrorRef) is returned).
+    ReturnedError = ?catch_exceptions(error({cannot_translate_error, OtherError})),
+    to_json(ReturnedError).
 
 
 -spec from_json(as_json()) -> undefined | error().
@@ -1582,6 +1623,9 @@ from_json(#{<<"id">> := <<"noConnectionToClusterNode">>}) ->
 
 from_json(#{<<"id">> := <<"unregisteredOneprovider">>}) ->
     ?ERROR_UNREGISTERED_ONEPROVIDER;
+
+from_json(#{<<"id">> := <<"internalServerError">>, <<"details">> := #{<<"reference">> := ErrorRef}}) ->
+    ?ERROR_INTERNAL_SERVER_ERROR(ErrorRef);
 
 from_json(#{<<"id">> := <<"internalServerError">>}) ->
     ?ERROR_INTERNAL_SERVER_ERROR;
@@ -2102,14 +2146,23 @@ from_json(#{
 from_json(#{<<"id">> := <<"atmWorkflowEmpty">>}) ->
     ?ERROR_ATM_WORKFLOW_EMPTY;
 
-from_json(#{<<"id">> := <<"atmWorkflowExecutionAborting">>}) ->
-    ?ERROR_ATM_WORKFLOW_EXECUTION_ABORTING;
+from_json(#{<<"id">> := <<"atmWorkflowExecutionStopping">>}) ->
+    ?ERROR_ATM_WORKFLOW_EXECUTION_STOPPING;
+
+from_json(#{<<"id">> := <<"atmWorkflowExecutionStopped">>}) ->
+    ?ERROR_ATM_WORKFLOW_EXECUTION_STOPPED;
+
+from_json(#{<<"id">> := <<"atmWorkflowExecutionNotStopped">>}) ->
+    ?ERROR_ATM_WORKFLOW_EXECUTION_NOT_STOPPED;
 
 from_json(#{<<"id">> := <<"atmWorkflowExecutionEnded">>}) ->
     ?ERROR_ATM_WORKFLOW_EXECUTION_ENDED;
 
 from_json(#{<<"id">> := <<"atmWorkflowExecutionNotEnded">>}) ->
     ?ERROR_ATM_WORKFLOW_EXECUTION_NOT_ENDED;
+
+from_json(#{<<"id">> := <<"atmWorkflowExecutionNotResumable">>}) ->
+    ?ERROR_ATM_WORKFLOW_EXECUTION_NOT_RESUMABLE;
 
 from_json(#{
     <<"id">> := <<"atmLaneEmpty">>,
@@ -2266,13 +2319,27 @@ from_json(#{
     ?ERROR_ATM_TASK_RESULT_DISPATCH_FAILED(AtmStoreSchemaId, from_json(SpecificErrorJson));
 
 from_json(#{<<"id">> := <<"atmTaskExecutionEnded">>}) ->
-    ?ERROR_ATM_TASK_EXECUTION_ENDED;
+    ?ERROR_ATM_TASK_EXECUTION_STOPPED;
+
+from_json(#{
+    <<"id">> := <<"atmJobBatchWithdrawn">>,
+    <<"details">> := #{<<"reason">> := Reason}
+}) ->
+    ?ERROR_ATM_JOB_BATCH_WITHDRAWN(Reason);
+from_json(#{
+    <<"id">> := <<"atmJobBatchCrashed">>,
+    <<"details">> := #{<<"reason">> := Reason}
+}) ->
+    ?ERROR_ATM_JOB_BATCH_CRASHED(Reason);
 
 from_json(#{<<"id">> := <<"atmOpenfaasNotConfigured">>}) ->
     ?ERROR_ATM_OPENFAAS_NOT_CONFIGURED;
 
 from_json(#{<<"id">> := <<"atmOpenfaasUnreachable">>}) ->
     ?ERROR_ATM_OPENFAAS_UNREACHABLE;
+
+from_json(#{<<"id">> := <<"atmOpenfaasUnhealthy">>}) ->
+    ?ERROR_ATM_OPENFAAS_UNHEALTHY;
 
 from_json(#{
     <<"id">> := <<"atmOpenfaasQueryFailed">>,
@@ -2351,13 +2418,10 @@ from_json(#{<<"id">> := <<"userNotInCluster">>}) ->
     ?ERROR_USER_NOT_IN_CLUSTER;
 
 %%--------------------------------------------------------------------
-%% Unknown / unexpected error
+%% Unknown error
 %%--------------------------------------------------------------------
-from_json(#{<<"id">> := <<"unexpectedError">>, <<"details">> := #{<<"reference">> := ErrorRef}}) ->
-    ?ERROR_UNEXPECTED_ERROR(ErrorRef);
-
 from_json(ErrorAsJson) when is_map(ErrorAsJson) ->
-    ?ERROR_UNKNOWN_ERROR(ErrorAsJson).
+    ?ERROR_UNRECOGNIZED_ERROR(ErrorAsJson).
 
 
 -spec to_http_code(error()) ->
@@ -2371,6 +2435,7 @@ to_http_code(?ERROR_NO_CONNECTION_TO_PEER_ONEPROVIDER) -> ?HTTP_503_SERVICE_UNAV
 to_http_code(?ERROR_NO_CONNECTION_TO_CLUSTER_NODE) -> ?HTTP_503_SERVICE_UNAVAILABLE;
 to_http_code(?ERROR_UNREGISTERED_ONEPROVIDER) -> ?HTTP_503_SERVICE_UNAVAILABLE;
 to_http_code(?ERROR_INTERNAL_SERVER_ERROR) -> ?HTTP_500_INTERNAL_SERVER_ERROR;
+to_http_code(?ERROR_INTERNAL_SERVER_ERROR(_)) -> ?HTTP_500_INTERNAL_SERVER_ERROR;
 to_http_code(?ERROR_NOT_IMPLEMENTED) -> ?HTTP_501_NOT_IMPLEMENTED;
 to_http_code(?ERROR_NOT_SUPPORTED) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_SERVICE_UNAVAILABLE) -> ?HTTP_503_SERVICE_UNAVAILABLE;
@@ -2530,9 +2595,12 @@ to_http_code(?ERROR_ATM_STORE_CONTENT_NOT_SET(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_ATM_STORE_NOT_FOUND(_)) -> ?HTTP_400_BAD_REQUEST;
 
 to_http_code(?ERROR_ATM_WORKFLOW_EMPTY) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_ATM_WORKFLOW_EXECUTION_ABORTING) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_ATM_WORKFLOW_EXECUTION_STOPPING) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_ATM_WORKFLOW_EXECUTION_STOPPED) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_ATM_WORKFLOW_EXECUTION_NOT_STOPPED) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_ATM_WORKFLOW_EXECUTION_ENDED) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_ATM_WORKFLOW_EXECUTION_NOT_ENDED) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_ATM_WORKFLOW_EXECUTION_NOT_RESUMABLE) -> ?HTTP_400_BAD_REQUEST;
 
 to_http_code(?ERROR_ATM_LANE_EMPTY(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_ATM_LANE_EXECUTION_CREATION_FAILED(_, _)) -> ?HTTP_400_BAD_REQUEST;
@@ -2554,10 +2622,14 @@ to_http_code(?ERROR_ATM_TASK_ARG_MAPPER_ITERATED_ITEM_QUERY_FAILED(_, _)) -> ?HT
 to_http_code(?ERROR_ATM_TASK_RESULT_MISSING(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_ATM_TASK_RESULT_MAPPING_FAILED(_, _)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_ATM_TASK_RESULT_DISPATCH_FAILED(_, _)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_ATM_TASK_EXECUTION_ENDED) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_ATM_TASK_EXECUTION_STOPPED) -> ?HTTP_400_BAD_REQUEST;
+
+to_http_code(?ERROR_ATM_JOB_BATCH_WITHDRAWN(_)) -> ?HTTP_404_NOT_FOUND;
+to_http_code(?ERROR_ATM_JOB_BATCH_CRASHED(_)) -> ?HTTP_500_INTERNAL_SERVER_ERROR;
 
 to_http_code(?ERROR_ATM_OPENFAAS_NOT_CONFIGURED) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_ATM_OPENFAAS_UNREACHABLE) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_ATM_OPENFAAS_UNHEALTHY) -> ?HTTP_503_SERVICE_UNAVAILABLE;
 to_http_code(?ERROR_ATM_OPENFAAS_QUERY_FAILED) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_ATM_OPENFAAS_QUERY_FAILED(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_ATM_OPENFAAS_FUNCTION_REGISTRATION_FAILED) -> ?HTTP_400_BAD_REQUEST;
@@ -2582,10 +2654,9 @@ to_http_code(?ERROR_NO_SERVICE_NODES(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_USER_NOT_IN_CLUSTER) -> ?HTTP_403_FORBIDDEN;
 
 %% -----------------------------------------------------------------------------
-%% Unknown / unexpected error
+%% Unknown error
 %% -----------------------------------------------------------------------------
-to_http_code(?ERROR_UNKNOWN_ERROR(_)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_UNEXPECTED_ERROR(_)) -> ?HTTP_500_INTERNAL_SERVER_ERROR;
+to_http_code(?ERROR_UNRECOGNIZED_ERROR(_)) -> ?HTTP_500_INTERNAL_SERVER_ERROR;
 to_http_code(_) -> ?HTTP_500_INTERNAL_SERVER_ERROR.
 
 %%%===================================================================

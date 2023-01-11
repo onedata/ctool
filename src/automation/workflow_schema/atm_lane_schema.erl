@@ -71,7 +71,11 @@ encode_with(Record, NestedRecordEncoder) ->
         <<"name">> => Record#atm_lane_schema.name,
         <<"parallelBoxes">> => [NestedRecordEncoder(M, atm_parallel_box_schema) || M <- Record#atm_lane_schema.parallel_boxes],
         <<"storeIteratorSpec">> => NestedRecordEncoder(Record#atm_lane_schema.store_iterator_spec, atm_store_iterator_spec),
-        <<"maxRetries">> => Record#atm_lane_schema.max_retries
+        <<"maxRetries">> => Record#atm_lane_schema.max_retries,
+        <<"dashboardSpec">> => case Record#atm_lane_schema.dashboard_spec of
+            undefined -> null;
+            DashboardSpec -> NestedRecordEncoder(DashboardSpec, ts_dashboard_spec)
+        end
     }.
 
 
@@ -84,5 +88,9 @@ decode_with(RecordJson, NestedRecordDecoder) ->
         name = maps:get(<<"name">>, RecordJson),
         parallel_boxes = [NestedRecordDecoder(M, atm_parallel_box_schema) || M <- maps:get(<<"parallelBoxes">>, RecordJson)],
         store_iterator_spec = NestedRecordDecoder(maps:get(<<"storeIteratorSpec">>, RecordJson), atm_store_iterator_spec),
-        max_retries = maps:get(<<"maxRetries">>, RecordJson)
+        max_retries = maps:get(<<"maxRetries">>, RecordJson),
+        dashboard_spec = case maps:get(<<"dashboardSpec">>, RecordJson, null) of
+            null -> undefined;
+            DashboardSpecJson -> NestedRecordDecoder(DashboardSpecJson, ts_dashboard_spec)
+        end
     }.

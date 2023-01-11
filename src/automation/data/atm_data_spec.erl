@@ -93,7 +93,7 @@ encode_with(#atm_data_spec{type = Type, value_constraints = ValueConstraints}, N
 
 
 %% @private
--spec decode_with(automation:validation_strategy(), json_utils:json_map(), persistent_record:nested_record_decoder()) ->
+-spec decode_with(jsonable_record:validation_strategy(), json_utils:json_map(), persistent_record:nested_record_decoder()) ->
     record().
 decode_with(ValidationStrategy, RecordJson, NestedRecordDecoder) ->
     Type = atm_data_type:type_from_json(maps:get(<<"type">>, RecordJson)),

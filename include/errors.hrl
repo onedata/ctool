@@ -23,7 +23,10 @@
 -define(ERROR_NO_CONNECTION_TO_PEER_ONEPROVIDER, {error, no_connection_to_peer_oneprovider}).
 -define(ERROR_NO_CONNECTION_TO_CLUSTER_NODE, {error, no_connection_to_cluster_node}).
 -define(ERROR_UNREGISTERED_ONEPROVIDER, {error, unregistered_oneprovider}).
+% deprecated version; use ERROR_INTERNAL_SERVER_ERROR(ErrorRef) in new code
 -define(ERROR_INTERNAL_SERVER_ERROR, {error, internal_server_error}).
+% carries an identifier that can be logged and then cited by the client that received the error
+-define(ERROR_INTERNAL_SERVER_ERROR(ErrorRef), {error, {internal_server_error, ErrorRef}}).
 % feature not implemented yet, to be expected in the future
 -define(ERROR_NOT_IMPLEMENTED, {error, not_implemented}).
 % feature does not exist
@@ -231,9 +234,12 @@
 ).
 
 -define(ERROR_ATM_WORKFLOW_EMPTY, {error, atm_workflow_empty}).
--define(ERROR_ATM_WORKFLOW_EXECUTION_ABORTING, {error, atm_workflow_execution_aborting}).
+-define(ERROR_ATM_WORKFLOW_EXECUTION_STOPPING, {error, atm_workflow_execution_aborting}).
+-define(ERROR_ATM_WORKFLOW_EXECUTION_STOPPED, {error, atm_workflow_execution_stopped}).
+-define(ERROR_ATM_WORKFLOW_EXECUTION_NOT_STOPPED, {error, atm_workflow_execution_not_stopped}).
 -define(ERROR_ATM_WORKFLOW_EXECUTION_ENDED, {error, atm_workflow_execution_ended}).
 -define(ERROR_ATM_WORKFLOW_EXECUTION_NOT_ENDED, {error, atm_workflow_execution_not_ended}).
+-define(ERROR_ATM_WORKFLOW_EXECUTION_NOT_RESUMABLE, {error, atm_workflow_execution_not_resumable}).
 
 -define(ERROR_ATM_LANE_EMPTY(AtmLaneSchemaId),
     {error, {atm_lane_empty, AtmLaneSchemaId}}
@@ -291,10 +297,14 @@
     {error, {atm_task_result_mapping_failed, ResultName, SpecificError}}
 ).
 
--define(ERROR_ATM_TASK_EXECUTION_ENDED, {error, atm_task_execution_ended}).
+-define(ERROR_ATM_TASK_EXECUTION_STOPPED, {error, atm_task_execution_stopped}).
+
+-define(ERROR_ATM_JOB_BATCH_WITHDRAWN(Reason), {error, {atm_job_batch_withdrawn, Reason}}).
+-define(ERROR_ATM_JOB_BATCH_CRASHED(Reason), {error, {atm_job_batch_crashed, Reason}}).
 
 -define(ERROR_ATM_OPENFAAS_NOT_CONFIGURED, {error, atm_openfaas_not_configured}).
 -define(ERROR_ATM_OPENFAAS_UNREACHABLE, {error, atm_openfaas_unreachable}).
+-define(ERROR_ATM_OPENFAAS_UNHEALTHY, {error, atm_openfaas_unhealthy}).
 -define(ERROR_ATM_OPENFAAS_QUERY_FAILED, {error, atm_openfaas_query_failed}).
 -define(ERROR_ATM_OPENFAAS_QUERY_FAILED(Reason),
     {error, {atm_openfaas_query_failed, Reason}}
@@ -330,17 +340,12 @@
 %%--------------------------------------------------------------------
 %% Unknown / unexpected error
 %%--------------------------------------------------------------------
-% Reported when the system logic returns an internal error that is not recognized
-% among the definitions in this module. In such case, a random ErrorRef will be
-% generated and included in an automatic debug log. This way, the caller can
-% examine the logs and find what error exactly has appeared.
--define(ERROR_UNEXPECTED_ERROR(ErrorRef), {error, {unexpected_error, ErrorRef}}).
-
-% Reported when decoding an external error and its format is not known to the
-% current software version (for example, a newer server responds with an error
-% to an older client, which does not know the error signature). The original
-% JSON representing the error is retained and returned to the caller.
--define(ERROR_UNKNOWN_ERROR(ErrorAsJson), {error, {unknown_error, ErrorAsJson}}).
+% Used to carry errors that have the proper JSON error format, but do not match
+% any error specified in this software version. This can happen if a newer
+% server responds with an error to an older client, which does not know the
+% error Id. The original JSON representing the error is retained and returned
+% upon encoding.
+-define(ERROR_UNRECOGNIZED_ERROR(ErrorAsJson), {error, {unrecognized_error, ErrorAsJson}}).
 
 -endif.
 

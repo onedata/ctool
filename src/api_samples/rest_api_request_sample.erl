@@ -22,8 +22,10 @@
 -include("api_samples/common.hrl").
 
 
+-type name() :: binary().
+-type swagger_operation_id() :: binary().
 -type method() :: 'POST' | 'PUT' | 'GET' | 'PATCH' | 'DELETE'.
--export_type([method/0]).
+-export_type([name/0, swagger_operation_id/0, method/0]).
 
 -type record() :: #rest_api_request_sample{}.
 -export_type([record/0]).
@@ -50,6 +52,7 @@ to_json(Record) ->
         <<"requiresAuthorization">> => Record#rest_api_request_sample.requires_authorization,
         <<"followRedirects">> => Record#rest_api_request_sample.follow_redirects,
         <<"placeholders">> => Record#rest_api_request_sample.placeholders,
+        <<"optionalParameters">> => Record#rest_api_request_sample.optional_parameters,
         <<"swaggerOperationId">> => Record#rest_api_request_sample.swagger_operation_id
     }.
 
@@ -66,6 +69,7 @@ from_json(RecordJson) ->
         requires_authorization = maps:get(<<"requiresAuthorization">>, RecordJson),
         follow_redirects = maps:get(<<"followRedirects">>, RecordJson),
         placeholders = maps:get(<<"placeholders">>, RecordJson),
+        optional_parameters = maps:get(<<"optionalParameters">>, RecordJson),
         swagger_operation_id = maps:get(<<"swaggerOperationId">>, RecordJson)
     }.
 

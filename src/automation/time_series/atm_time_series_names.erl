@@ -6,8 +6,9 @@
 %%% @end
 %%%-------------------------------------------------------------------
 %%% @doc
-%%% Helper module encapsulating the logic of time series naming, especially
-%%% mapping of names specified in measurements to names in time series stores.
+%%% Helper module encapsulating the logic of time series naming in the context
+%%% of automation, especially mapping of names specified in measurements to
+%%% names in time series stores.
 %%%
 %%% Time series measurements are expressed using `atm_time_series_measurement_type`,
 %%% which carries a single measurement that looks like the following:
@@ -36,7 +37,7 @@
 %%% The `atm_time_series_content_update_options` record includes dispatch rules that
 %%% capture a matching measurement and specify the name of time series in the target time
 %%% series store where the measurement will be inserted, referencing a concrete
-%%% `atm_time_series_schema`.
+%%% `time_series_schema`.
 %%%
 %%% Below is an example of time series name mapping process applied when a
 %%% measurement is inserted into a store. In the example, a measurement with
@@ -65,12 +66,12 @@
 %%%       time series name produced by a lambda. When using the store update API, the name matcher
 %%%       in the dispatch rules can be arbitrary, as there is no input data contract in this
 %%%       context. In both scenarios, the `target_time_series_name_generator` field must
-%%%       reference `atm_time_series_schema` that exists in the store schema, by specifying
+%%%       reference `time_series_schema` that exists in the store schema, by specifying
 %%%       the field `name_generator` with the same value.
-%%%   4.  The `atm_time_series_schema` that specifies `<<"file_count_">>` `name_generator` from
+%%%   4.  The `time_series_schema` that specifies `<<"file_count_">>` `name_generator` from
 %%%       the target time series store is taken. In this example, assume that the following
 %%%       schema has been used:
-%%%           #atm_time_series_schema{
+%%%           #time_series_schema{
 %%%               name_generator_type = add_prefix,
 %%%               name_generator = <<"file_count_">>,
 %%%               ...
@@ -78,11 +79,22 @@
 %%%   5.  Now, the two records from above examples are considered so as to determine the final
 %%%       time series name that will receive the measurement:
 %%%           * `atm_time_series_dispatch_rule`
-%%%           * `atm_time_series_schema`
+%%%           * `time_series_schema`
 %%%       The dispatch rule's `prefix_combiner` defines how the prefixes will be processed.
 %%%       In this example, both the matcher and generator use prefixes and they are converged
 %%%       to finally yield `<<"file_count_mp3">>` target time series name in the target store.
 %%%
+%%% The name generator, found in a time series schema and referenced by a dispatch rule (as
+%%% described above), defines what time series names can be instantiated from the schema, e.g.:
+%%%   * If `name_generator_type` is `exact` and `name_generator` is `<<"latency">>`, the
+%%%     generated time series name will be exactly `<<"latency">>` - all measurements
+%%%     captured by a dispatch rule that defines this name generator will be inserted into
+%%%     the time series with name `<<"latency">>`.
+%%%
+%%%   * If `name_generator_type` is `add_prefix` and `name_generator` is `<<"file_count_">>`, the
+%%%     generated time series name will depend on the measurement name matcher and
+%%%     optionally the prefix combiner from the dispatch rule (if both name matcher and
+%%%     generator use prefixes).
 %%%
 %%% Below table shows some possible combinations of the name mapping.
 %%%
@@ -119,8 +131,6 @@
 %% API
 -export([measurement_ts_name_matcher_type_to_json/1, measurement_ts_name_matcher_type_from_json/1]).
 -export([measurement_ts_name_matcher_to_json/1, measurement_ts_name_matcher_from_json/1]).
--export([target_ts_name_generator_type_to_json/1, target_ts_name_generator_type_from_json/1]).
--export([target_ts_name_generator_to_json/1, target_ts_name_generator_from_json/1]).
 -export([prefix_combiner_to_json/1, prefix_combiner_from_json/1]).
 
 -export([find_matching_measurement_spec/2]).
@@ -145,21 +155,6 @@
 -type measurement_ts_name_matcher_type() :: exact | has_prefix.
 -type measurement_ts_name_matcher() :: binary().
 -export_type([measurement_ts_name_matcher_type/0, measurement_ts_name_matcher/0]).
-
-% This pair defines a generator of time series names that will be applied during
-% workflow execution, when measurements are inserted into a time series store, e.g.
-%   * If `name_generator_type` is `exact` and `name_generator` is `<<"latency">>`, the
-%     generated time series name will be exactly `<<"latency">>` - all measurements
-%     captured by a dispatch rule that define this name generator will be inserted into
-%     the time series with name `<<"latency">>`.
-%
-%   * If `name_generator_type` is `add_prefix` and `name_generator` is `<<"file_count_">>`, the
-%     generated time series name will depend on the measurement name matcher and
-%     optionally the prefix combiner from the dispatch rule (if both name matcher and
-%     generator use prefixes).
--type target_ts_name_generator_type() :: exact | add_prefix.
--type target_ts_name_generator() :: binary().
--export_type([target_ts_name_generator_type/0, target_ts_name_generator/0]).
 
 % Prefix combiner is employed only when a dispatch rule specifies a name matcher of type
 % `has_prefix` and name generator of type `add_prefix`. It indicates how the prefixes
@@ -201,22 +196,6 @@ measurement_ts_name_matcher_to_json(NameMatcher) when is_binary(NameMatcher) -> 
 measurement_ts_name_matcher_from_json(NameMatcher) when is_binary(NameMatcher) -> NameMatcher.
 
 
--spec target_ts_name_generator_type_to_json(target_ts_name_generator_type()) -> json_utils:json_term().
-target_ts_name_generator_type_to_json(exact) -> <<"exact">>;
-target_ts_name_generator_type_to_json(add_prefix) -> <<"addPrefix">>.
-
--spec target_ts_name_generator_type_from_json(json_utils:json_term()) -> target_ts_name_generator_type().
-target_ts_name_generator_type_from_json(<<"exact">>) -> exact;
-target_ts_name_generator_type_from_json(<<"addPrefix">>) -> add_prefix.
-
-
--spec target_ts_name_generator_to_json(target_ts_name_generator()) -> json_utils:json_term().
-target_ts_name_generator_to_json(NameMatcher) when is_binary(NameMatcher) -> NameMatcher.
-
--spec target_ts_name_generator_from_json(json_utils:json_term()) -> target_ts_name_generator().
-target_ts_name_generator_from_json(NameMatcher) when is_binary(NameMatcher) -> NameMatcher.
-
-
 -spec prefix_combiner_to_json(prefix_combiner()) -> json_utils:json_term().
 prefix_combiner_to_json(concatenate) -> <<"concatenate">>;
 prefix_combiner_to_json(converge) -> <<"converge">>;
@@ -250,12 +229,12 @@ find_matching_dispatch_rules(MeasurementTSName, DispatchRules) ->
     end, DispatchRules).
 
 
--spec select_referenced_time_series_schema(atm_time_series_dispatch_rule:record(), [atm_time_series_schema:record()]) ->
-    atm_time_series_schema:record() | no_return().
+-spec select_referenced_time_series_schema(atm_time_series_dispatch_rule:record(), [time_series_schema:record()]) ->
+    time_series_schema:record() | no_return().
 select_referenced_time_series_schema(#atm_time_series_dispatch_rule{
     target_ts_name_generator = TargetTsNameGenerator
 }, TimeSeriesSchemas) ->
-    FindResult = lists_utils:find(fun(#atm_time_series_schema{name_generator = NameGenerator}) ->
+    FindResult = lists_utils:find(fun(#time_series_schema{name_generator = NameGenerator}) ->
         TargetTsNameGenerator =:= NameGenerator
     end, TimeSeriesSchemas),
     case FindResult of
@@ -272,19 +251,19 @@ select_referenced_time_series_schema(#atm_time_series_dispatch_rule{
 
 -spec resolve_target_ts_name(
     measurement_ts_name(),
-    atm_time_series_schema:record(),
+    time_series_schema:record(),
     atm_time_series_dispatch_rule:record()
 ) ->
     target_ts_name().
 resolve_target_ts_name(
     _MeasurementTSName,
-    #atm_time_series_schema{name_generator_type = exact, name_generator = NameGenerator},
+    #time_series_schema{name_generator_type = exact, name_generator = NameGenerator},
     _TimeSeriesDispatchRule
 ) ->
     NameGenerator;
 resolve_target_ts_name(
     MeasurementTSName,
-    #atm_time_series_schema{name_generator_type = add_prefix, name_generator = NameGenerator},
+    #time_series_schema{name_generator_type = add_prefix, name_generator = NameGenerator},
     #atm_time_series_dispatch_rule{
         measurement_ts_name_matcher_type = exact
     }
@@ -292,7 +271,7 @@ resolve_target_ts_name(
     <<NameGenerator/binary, MeasurementTSName/binary>>;
 resolve_target_ts_name(
     MeasurementTSName,
-    #atm_time_series_schema{name_generator_type = add_prefix, name_generator = NameGenerator},
+    #time_series_schema{name_generator_type = add_prefix, name_generator = NameGenerator},
     #atm_time_series_dispatch_rule{
         measurement_ts_name_matcher_type = has_prefix,
         prefix_combiner = concatenate
@@ -301,7 +280,7 @@ resolve_target_ts_name(
     <<NameGenerator/binary, MeasurementTSName/binary>>;
 resolve_target_ts_name(
     MeasurementTSName,
-    #atm_time_series_schema{name_generator_type = add_prefix, name_generator = NameGenerator} = TSSchema,
+    #time_series_schema{name_generator_type = add_prefix, name_generator = NameGenerator} = TSSchema,
     #atm_time_series_dispatch_rule{
         measurement_ts_name_matcher_type = has_prefix,
         measurement_ts_name_matcher = NameMatcher,
@@ -318,7 +297,7 @@ resolve_target_ts_name(
     end;
 resolve_target_ts_name(
     MeasurementTSName,
-    #atm_time_series_schema{name_generator_type = add_prefix, name_generator = NameGenerator},
+    #time_series_schema{name_generator_type = add_prefix, name_generator = NameGenerator},
     #atm_time_series_dispatch_rule{
         measurement_ts_name_matcher_type = has_prefix,
         measurement_ts_name_matcher = NameMatcher,

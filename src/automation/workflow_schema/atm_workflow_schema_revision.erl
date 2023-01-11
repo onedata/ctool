@@ -128,14 +128,18 @@ db_decode(RecordJson, NestedRecordDecoder) ->
 encode_with(Record, NestedRecordEncoder) ->
     #{
         <<"description">> => Record#atm_workflow_schema_revision.description,
+        <<"state">> => automation:lifecycle_state_to_json(Record#atm_workflow_schema_revision.state),
         <<"stores">> => [NestedRecordEncoder(S, atm_store_schema) || S <- Record#atm_workflow_schema_revision.stores],
         <<"lanes">> => [NestedRecordEncoder(S, atm_lane_schema) || S <- Record#atm_workflow_schema_revision.lanes],
-        <<"state">> => automation:lifecycle_state_to_json(Record#atm_workflow_schema_revision.state)
+        <<"dashboardSpec">> => case Record#atm_workflow_schema_revision.dashboard_spec of
+            undefined -> null;
+            DashboardSpec -> NestedRecordEncoder(DashboardSpec, ts_dashboard_spec)
+        end
     }.
 
 
 %% @private
--spec decode_with(automation:validation_strategy(), json_utils:json_term(), persistent_record:nested_record_decoder()) ->
+-spec decode_with(jsonable_record:validation_strategy(), json_utils:json_term(), persistent_record:nested_record_decoder()) ->
     record().
 decode_with(ValidationStrategy, RecordJson, NestedRecordDecoder) ->
     %% @TODO VFS-8507 Rework along with new data sanitizers for all atm models (data_spec callback?)
@@ -146,7 +150,11 @@ decode_with(ValidationStrategy, RecordJson, NestedRecordDecoder) ->
     end,
     #atm_workflow_schema_revision{
         description = Description,
+        state = automation:lifecycle_state_from_json(maps:get(<<"state">>, RecordJson)),
         stores = [NestedRecordDecoder(S, atm_store_schema) || S <- maps:get(<<"stores">>, RecordJson)],
         lanes = [NestedRecordDecoder(S, atm_lane_schema) || S <- maps:get(<<"lanes">>, RecordJson)],
-        state = automation:lifecycle_state_from_json(maps:get(<<"state">>, RecordJson))
+        dashboard_spec = case maps:get(<<"dashboardSpec">>, RecordJson, null) of
+            null -> undefined;
+            DashboardSpecJson -> NestedRecordDecoder(DashboardSpecJson, ts_dashboard_spec)
+        end
     }.

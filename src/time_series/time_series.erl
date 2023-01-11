@@ -17,6 +17,7 @@
 
 %% API
 -export([unit_to_json/1, unit_from_json/1]).
+-export([dynamic_source_type_to_json/1, dynamic_source_type_from_json/1]).
 
 
 % expresses time (either a timestamp, or a time interval) in unit common across time series implementation
@@ -25,22 +26,32 @@
 
 %% @formatter:off
 -type unit() :: none
-| milliseconds | seconds
-| bits | bytes
-| hertz | counts_per_sec | operations_per_sec | requests_per_sec
-| bits_per_sec | bytes_per_sec
-| reads_per_sec | writes_per_sec | io_operations_per_sec
-| percent | percent_normalized
-| boolean
-| {custom, automation:name()}.
+              | milliseconds | seconds
+              | bits | bytes
+              | hertz | counts_per_sec | operations_per_sec | requests_per_sec
+              | bits_per_sec | bytes_per_sec
+              | reads_per_sec | writes_per_sec | io_operations_per_sec
+              | percent | percent_normalized
+              | boolean
+              | {custom, binary()}.
 -export_type([unit/0]).
 %% @formatter:on
 
+
+% Types of sources for dynamic chart series data/config loading.
+% Currently, only one source type is supported.
+-type dynamic_source_type() :: external.
+-export_type([dynamic_source_type/0]).
+
+% a human readable name assigned to a time series
+-type name() :: binary().
+% a human readable name that uniquely identifies a metric within a time series
+-type metric_name() :: binary().
 % A set of metrics along with their configs, where each metric is identified by name;
 % an integral part of time series configuration (each time series has a set of metrics,
 % identified by unique names within the time series).
--type metric_composition() :: #{Name :: binary() => metric_config:record()}.
--export_type([metric_composition/0]).
+-type metric_composition() :: #{metric_name() => metric_config:record()}.
+-export_type([name/0, metric_name/0, metric_composition/0]).
 
 
 %%%===================================================================
@@ -87,3 +98,11 @@ unit_from_json(<<"percent">>) -> percent;
 unit_from_json(<<"percentNormalized">>) -> percent_normalized;
 unit_from_json(<<"boolean">>) -> boolean;
 unit_from_json(<<"custom:", UnitName/binary>>) -> {custom, UnitName}.
+
+
+-spec dynamic_source_type_to_json(dynamic_source_type()) -> json_utils:json_term().
+dynamic_source_type_to_json(external) -> <<"external">>.
+
+
+-spec dynamic_source_type_from_json(json_utils:json_term()) -> dynamic_source_type().
+dynamic_source_type_from_json(<<"external">>) -> external.
