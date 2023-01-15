@@ -73,6 +73,10 @@
 -define(emergency_stacktrace(Format, Args, Stacktrace), ?do_log(7, Format, Args, Stacktrace)).
 
 
+% Macro used for execution flow control; extracts the result when the term indicates
+% success (ok, {ok, Result}) or throws upon error.
+-define(check(Expr), utils:check_result(Expr)).
+
 % Macro intended as a UNIVERSAL way of handling exceptions, which can be classified in two ways:
 %   1) All thrown error-like terms are treated as a control flow mechanism and simply returned.
 %
