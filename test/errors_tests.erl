@@ -262,8 +262,8 @@ testcases() -> [
     %%--------------------------------------------------------------------
     %% op_worker atm errors
     %%--------------------------------------------------------------------
-    ?ERROR_ATM_UNSUPPORTED_DATA_TYPE(atm_string_type, [atm_integer_type]),
-    ?ERROR_ATM_DATA_TYPE_UNVERIFIED(<<"NaN">>, atm_integer_type),
+    ?ERROR_ATM_UNSUPPORTED_DATA_TYPE(atm_string_type, [atm_number_type]),
+    ?ERROR_ATM_DATA_TYPE_UNVERIFIED(<<"NaN">>, atm_number_type),
     ?ERROR_ATM_DATA_VALUE_CONSTRAINT_UNVERIFIED(#{<<"fileId">> => <<"REG">>}, atm_file_type, #{<<"hasAccess">> => true}),
 
     ?ERROR_ATM_STORE_MISSING_REQUIRED_INITIAL_CONTENT,

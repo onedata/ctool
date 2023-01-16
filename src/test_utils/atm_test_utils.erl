@@ -213,15 +213,20 @@ example_data_spec(DataType) ->
     example_data_spec_except(DataType, []).
 
 -spec example_data_spec_except(atm_data_type:type(), [atm_data_type:type()]) -> atm_data_spec:record().
+example_data_spec_except(atm_array_type, DisallowedTypes) ->
+    #atm_data_spec{
+        type = atm_array_type,
+        value_constraints = #{item_data_spec => example_data_spec_except(DisallowedTypes)}
+    };
 example_data_spec_except(atm_file_type, _) ->
     #atm_data_spec{
         type = atm_file_type,
         value_constraints = #{file_type => ?RAND_ELEMENT(['REG', 'DIR', 'ANY'])}
     };
-example_data_spec_except(atm_array_type, DisallowedTypes) ->
+example_data_spec_except(atm_number_type, _) ->
     #atm_data_spec{
-        type = atm_array_type,
-        value_constraints = #{item_data_spec => example_data_spec_except(DisallowedTypes)}
+        type = atm_number_type,
+        value_constraints = #{type => ?RAND_ELEMENT([integer, float, any])}
     };
 example_data_spec_except(atm_time_series_measurement_type, _) ->
     #atm_data_spec{
@@ -256,14 +261,16 @@ example_predefined_value(#atm_data_spec{type = atm_array_type, value_constraints
         Value ->
             lists:duplicate(?RAND_INT(0, 20), Value)
     end;
+example_predefined_value(#atm_data_spec{type = atm_boolean_type}) ->
+    ?RAND_BOOL();
 example_predefined_value(#atm_data_spec{type = atm_dataset_type}) ->
     #{<<"datasetId">> => ?RAND_STR()};
 example_predefined_value(#atm_data_spec{type = atm_file_type}) ->
     #{<<"file_id">> => ?RAND_STR()};
-example_predefined_value(#atm_data_spec{type = atm_integer_type}) ->
-    ?RAND_INT(0, 1000);
 example_predefined_value(#atm_data_spec{type = atm_object_type}) ->
     ?RAND_ELEMENT([#{}, #{<<"key">> => 984.222}, #{<<"key">> => #{<<"nested">> => 984.222}}]);
+example_predefined_value(#atm_data_spec{type = atm_number_type}) ->
+    ?RAND_ELEMENT([?RAND_INT(0, 1000), rand:uniform() * ?RAND_INT(0, 1000)]);
 example_predefined_value(#atm_data_spec{type = atm_range_type}) ->
     #{<<"start">> => ?RAND_INT(0, 10), <<"end">> => ?RAND_INT(10, 20), <<"step">> => ?RAND_INT(0, 5)};
 example_predefined_value(#atm_data_spec{type = atm_string_type}) ->
