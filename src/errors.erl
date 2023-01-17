@@ -177,8 +177,8 @@
 | {atm_invalid_status_transition, PrevStatus :: atom(), NewStatus :: atom()}
 | dir_stats_disabled_for_space
 | dir_stats_not_ready
-| {archive_in_wrong_state, AllowedStates :: [atom()]}
-| {deleting_nested_archive, ParentArchiveId :: binary()}
+| {archive_in_disallowed_state, AllowedStates :: [atom()]}
+| {nested_archive_deletion_forbidden, ParentArchiveId :: binary()}
 | recall_target_in_ongoing_recall.
 
 -type onepanel() :: {error_on_nodes, error(), Hostnames :: [binary()]}
@@ -1517,11 +1517,11 @@ to_json(?ERROR_ARCHIVE_IN_DISALLOWED_STATE(AllowedStates)) -> #{
     }
 };
 
-to_json(?ERROR_DELETING_NESTED_ARCHIVE(ParentArchiveId)) -> #{
+to_json(?ERROR_NESTED_ARCHIVE_DELETION_FORBIDDEN(ParentArchiveId)) -> #{
     <<"id">> =>
         <<"deletingNestedArchive">>,
     <<"description">> =>
-        <<"Archive is nested in another archive - it cannot be deleted as it would destroy parent archive.">>,
+        <<"This archive cannot be deleted since it is nested in another archive.">>,
     <<"details">> => #{
         <<"parentArchiveId">> => ParentArchiveId
     }
@@ -2403,13 +2403,13 @@ from_json(#{
     <<"id">> := <<"archiveInDisallowedState">>,
     <<"details">> := #{<<"allowedStates">> := AllowedStates}
 }) ->
-    ?ERROR_ARCHIVE_IN_DISALLOWED_STATE([binary_to_atom(StateBin) || StateBin <- json_utils:decode(AllowedStates)]);
+    ?ERROR_ARCHIVE_IN_DISALLOWED_STATE([binary_to_existing_atom(StateBin) || StateBin <- json_utils:decode(AllowedStates)]);
 
 from_json(#{
     <<"id">> := <<"deletingNestedArchive">>,
     <<"details">> := #{<<"parentArchiveId">> := ParentArchiveId}
 }) ->
-    ?ERROR_DELETING_NESTED_ARCHIVE(ParentArchiveId);
+    ?ERROR_NESTED_ARCHIVE_DELETION_FORBIDDEN(ParentArchiveId);
 
 from_json(#{<<"id">> := <<"recallTargetInOngoingRecall">>}) ->
     ?ERROR_RECALL_TARGET_IN_ONGOING_RECALL;
@@ -2681,7 +2681,7 @@ to_http_code(?ERROR_DIR_STATS_DISABLED_FOR_SPACE) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_DIR_STATS_NOT_READY) -> ?HTTP_400_BAD_REQUEST;
 
 to_http_code(?ERROR_ARCHIVE_IN_DISALLOWED_STATE(_)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_DELETING_NESTED_ARCHIVE(_)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_NESTED_ARCHIVE_DELETION_FORBIDDEN(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_RECALL_TARGET_IN_ONGOING_RECALL) -> ?HTTP_400_BAD_REQUEST;
 
 %%--------------------------------------------------------------------
