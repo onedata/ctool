@@ -1511,8 +1511,10 @@ to_json(?ERROR_DIR_STATS_NOT_READY) -> #{
 
 to_json(?ERROR_FORBIDDEN_FOR_CURRENT_ARCHIVE_STATE(CurrentState, AllowedStates)) -> #{
     <<"id">> => <<"forbiddenForCurrentArchiveState">>,
-    <<"description">> => str_utils:format_bin(
-        <<"This operation is forbidden while the archive state is ~p. Allowed states are: ~p.">>, [CurrentState, AllowedStates]),
+    <<"description">> => ?FMT(
+        <<"This operation is forbidden while the archive state is ~s. Allowed states are: ~s.">>,
+        [CurrentState, join_values_with_commas(AllowedStates)]
+    ),
     <<"details">> => #{
         <<"allowedStates">> => json_utils:encode(AllowedStates),
         <<"currentState">> => json_utils:encode(CurrentState)
