@@ -177,9 +177,9 @@
 | {atm_invalid_status_transition, PrevStatus :: atom(), NewStatus :: atom()}
 | dir_stats_disabled_for_space
 | dir_stats_not_ready
-| {archive_in_disallowed_state, AllowedStates :: [atom()]}
+| {forbidden_for_current_archive_state, CurrentState :: atom(), AllowedStates :: [atom()]}
 | {nested_archive_deletion_forbidden, ParentArchiveId :: binary()}
-| recall_target_in_ongoing_recall.
+| recall_target_conflict.
 
 -type onepanel() :: {error_on_nodes, error(), Hostnames :: [binary()]}
 | {dns_servers_unreachable, [ip_utils:ip() | default]}
@@ -1509,17 +1509,19 @@ to_json(?ERROR_DIR_STATS_NOT_READY) -> #{
     <<"description">> => <<"Requested directory statistics are not ready yet - calculation is in progress.">>
 };
 
-to_json(?ERROR_ARCHIVE_IN_DISALLOWED_STATE(AllowedStates)) -> #{
-    <<"id">> => <<"archiveInDisallowedState">>,
-    <<"description">> => <<"Archive is in a disallowed state.">>,
+to_json(?ERROR_FORBIDDEN_FOR_CURRENT_ARCHIVE_STATE(CurrentState, AllowedStates)) -> #{
+    <<"id">> => <<"forbiddenForCurrentArchiveState">>,
+    <<"description">> => str_utils:format_bin(
+        <<"This operation is forbidden while the archive state is ~p. Allowed states are: ~p.">>, [CurrentState, AllowedStates]),
     <<"details">> => #{
-        <<"allowedStates">> => json_utils:encode(AllowedStates)
+        <<"allowedStates">> => json_utils:encode(AllowedStates),
+        <<"currentState">> => json_utils:encode(CurrentState)
     }
 };
 
 to_json(?ERROR_NESTED_ARCHIVE_DELETION_FORBIDDEN(ParentArchiveId)) -> #{
     <<"id">> =>
-        <<"deletingNestedArchive">>,
+        <<"nestedArchiveDeletionForbidden">>,
     <<"description">> =>
         <<"This archive cannot be deleted since it is nested in another archive.">>,
     <<"details">> => #{
@@ -1527,9 +1529,9 @@ to_json(?ERROR_NESTED_ARCHIVE_DELETION_FORBIDDEN(ParentArchiveId)) -> #{
     }
 };
 
-to_json(?ERROR_RECALL_TARGET_IN_ONGOING_RECALL) -> #{
-    <<"id">> => <<"recallTargetInOngoingRecall">>,
-    <<"description">> => <<"Given archive recall target is a part another, still ongoing recall.">>
+to_json(?ERROR_RECALL_TARGET_CONFLICT) -> #{
+    <<"id">> => <<"recallTargetConflict">>,
+    <<"description">> => <<"Conflict - recall target cannot be within a directory that is being recalled.">>
 };
 
 %%--------------------------------------------------------------------
@@ -2400,19 +2402,25 @@ from_json(#{<<"id">> := <<"dirStatsNotReady">>}) ->
     ?ERROR_DIR_STATS_NOT_READY;
 
 from_json(#{
-    <<"id">> := <<"archiveInDisallowedState">>,
-    <<"details">> := #{<<"allowedStates">> := AllowedStates}
+    <<"id">> := <<"forbiddenForCurrentArchiveState">>,
+    <<"details">> := #{
+        <<"allowedStates">> := AllowedStates,
+        <<"currentState">> := CurrentState
+    }
 }) ->
-    ?ERROR_ARCHIVE_IN_DISALLOWED_STATE([binary_to_existing_atom(StateBin) || StateBin <- json_utils:decode(AllowedStates)]);
+    ?ERROR_FORBIDDEN_FOR_CURRENT_ARCHIVE_STATE(
+        binary_to_existing_atom(json_utils:decode(CurrentState)),
+        [binary_to_existing_atom(StateBin) || StateBin <- json_utils:decode(AllowedStates)]
+    );
 
 from_json(#{
-    <<"id">> := <<"deletingNestedArchive">>,
+    <<"id">> := <<"nestedArchiveDeletionForbidden">>,
     <<"details">> := #{<<"parentArchiveId">> := ParentArchiveId}
 }) ->
     ?ERROR_NESTED_ARCHIVE_DELETION_FORBIDDEN(ParentArchiveId);
 
-from_json(#{<<"id">> := <<"recallTargetInOngoingRecall">>}) ->
-    ?ERROR_RECALL_TARGET_IN_ONGOING_RECALL;
+from_json(#{<<"id">> := <<"recallTargetConflict">>}) ->
+    ?ERROR_RECALL_TARGET_CONFLICT;
 
 %%--------------------------------------------------------------------
 %% onepanel errors
@@ -2680,9 +2688,9 @@ to_http_code(?ERROR_ATM_INVALID_STATUS_TRANSITION(_, _)) -> ?HTTP_400_BAD_REQUES
 to_http_code(?ERROR_DIR_STATS_DISABLED_FOR_SPACE) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_DIR_STATS_NOT_READY) -> ?HTTP_400_BAD_REQUEST;
 
-to_http_code(?ERROR_ARCHIVE_IN_DISALLOWED_STATE(_)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_FORBIDDEN_FOR_CURRENT_ARCHIVE_STATE(_, _)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_NESTED_ARCHIVE_DELETION_FORBIDDEN(_)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_RECALL_TARGET_IN_ONGOING_RECALL) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_RECALL_TARGET_CONFLICT) -> ?HTTP_400_BAD_REQUEST;
 
 %%--------------------------------------------------------------------
 %% onepanel errors

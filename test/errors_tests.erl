@@ -260,9 +260,9 @@ testcases() -> [
     ?ERROR_QUOTA_EXCEEDED,
     ?ERROR_DIR_STATS_DISABLED_FOR_SPACE,
     ?ERROR_DIR_STATS_NOT_READY,
-    ?ERROR_ARCHIVE_IN_DISALLOWED_STATE([preserved, cancelled]),
+    ?ERROR_FORBIDDEN_FOR_CURRENT_ARCHIVE_STATE(ongoing, [preserved, cancelled]),
     ?ERROR_NESTED_ARCHIVE_DELETION_FORBIDDEN(<<"archiveId">>),
-    ?ERROR_RECALL_TARGET_IN_ONGOING_RECALL,
+    ?ERROR_RECALL_TARGET_CONFLICT,
 
     %%--------------------------------------------------------------------
     %% op_worker atm errors
