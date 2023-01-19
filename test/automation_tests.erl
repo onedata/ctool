@@ -113,12 +113,12 @@ encode_decode_docker_execution_options_test() ->
     encode_decode_test_base(atm_test_utils:example_docker_execution_options()).
 
 
-encode_decode_lambda_argument_spec_test() ->
-    [Example | _] = ExampleArgumentSpecs = atm_test_utils:example_argument_specs(),
-    encode_decode_test_base(ExampleArgumentSpecs),
+encode_decode_parameter_spec_test() ->
+    [Example | _] = ExampleParameterSpecs = atm_test_utils:example_parameter_specs(),
+    encode_decode_test_base(ExampleParameterSpecs),
 
     ?assert(eunit_utils:throws_error_during_decode_from_json(
-        ?ERROR_BAD_VALUE_NAME(<<"argumentSpec.name">>),
+        ?ERROR_BAD_VALUE_NAME(<<"parameterSpec.name">>),
         Example#atm_parameter_spec{name = <<"*@#$^!R!*!^$@!@(">>}
     )).
 

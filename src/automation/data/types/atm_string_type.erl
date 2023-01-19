@@ -43,7 +43,7 @@ encode_value_constraints(Constraints, _Encoder) ->
     persistent_record:nested_record_decoder()
 ) ->
     atm_data_type:value_constraints().
-decode_value_constraints(skip_validation, ConstraintsJson, _Decoder) -> %@fixme eunit
+decode_value_constraints(skip_validation, ConstraintsJson, _Decoder) ->
     #{
         allowed_values => utils:null_to_undefined(maps:get(<<"allowedValues">>, ConstraintsJson, null))
     };

@@ -88,6 +88,6 @@ decode_with(skip_validation, RecordJson, NestedRecordDecoder) ->
         default_value = utils:null_to_undefined(maps:get(<<"defaultValue">>, RecordJson, null))
     };
 decode_with(validate, RecordJson, NestedRecordDecoder) ->
-    #atm_parameter_spec{name = Name} = ArgumentSpec = decode_with(skip_validation, RecordJson, NestedRecordDecoder),
-    str_utils:validate_name(Name) orelse throw(?ERROR_BAD_VALUE_NAME(<<"argumentSpec.name">>)),
-    ArgumentSpec.
+    #atm_parameter_spec{name = Name} = ParameterSpec = decode_with(skip_validation, RecordJson, NestedRecordDecoder),
+    str_utils:validate_name(Name) orelse throw(?ERROR_BAD_VALUE_NAME(<<"parameterSpec.name">>)),
+    ParameterSpec.

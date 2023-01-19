@@ -53,6 +53,7 @@ calculate_checksum(AtmLambdaRevision) ->
     str_utils:md5_digest([
         AtmLambdaRevision#atm_lambda_revision.name,
         AtmLambdaRevision#atm_lambda_revision.operation_spec,
+        AtmLambdaRevision#atm_lambda_revision.config_spec,
         AtmLambdaRevision#atm_lambda_revision.argument_specs,
         AtmLambdaRevision#atm_lambda_revision.result_specs
     ]).
