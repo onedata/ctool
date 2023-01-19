@@ -93,7 +93,7 @@ encode_decode_lambda_argument_spec_test() ->
 
     ?assert(eunit_utils:throws_error_during_decode_from_json(
         ?ERROR_BAD_VALUE_NAME(<<"argumentSpec.name">>),
-        Example#atm_lambda_argument_spec{name = <<"*@#$^!R!*!^$@!@(">>}
+        Example#atm_parameter_spec{name = <<"*@#$^!R!*!^$@!@(">>}
     )).
 
 

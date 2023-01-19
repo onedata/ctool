@@ -139,25 +139,25 @@ example_docker_execution_options() ->
     ].
 
 
--spec example_argument_spec() -> atm_lambda_argument_spec:record().
+-spec example_argument_spec() -> atm_parameter_spec:record().
 example_argument_spec() ->
     example_argument_spec(example_data_spec_except([atm_time_series_measurement_type])).
 
--spec example_argument_spec(atm_data_spec:record()) -> atm_lambda_argument_spec:record().
+-spec example_argument_spec(atm_data_spec:record()) -> atm_parameter_spec:record().
 example_argument_spec(DataSpec) ->
     DefaultValue = ?RAND_ELEMENT([undefined, example_predefined_value(DataSpec)]),
     example_argument_spec(DataSpec, DefaultValue).
 
--spec example_argument_spec(atm_data_spec:record(), term()) -> atm_lambda_argument_spec:record().
+-spec example_argument_spec(atm_data_spec:record(), term()) -> atm_parameter_spec:record().
 example_argument_spec(DataSpec, DefaultValue) ->
-    #atm_lambda_argument_spec{
+    #atm_parameter_spec{
         name = ?RAND_STR(),
         data_spec = DataSpec,
         is_optional = ?RAND_BOOL(),
         default_value = DefaultValue
     }.
 
--spec example_argument_specs() -> [atm_lambda_argument_spec:record()].
+-spec example_argument_specs() -> [atm_parameter_spec:record()].
 example_argument_specs() ->
     lists:map(fun example_argument_spec/1, example_data_specs_except([atm_time_series_measurement_type])).
 
@@ -391,19 +391,19 @@ example_argument_mappers(#atm_lambda_revision{argument_specs = ArgumentSpecs}, S
             [];
         _ ->
             {OptionalArgumentSpecs, RequiredArgumentSpecs} = lists:partition(fun(ArgumentSpec) ->
-                ArgumentSpec#atm_lambda_argument_spec.is_optional
+                ArgumentSpec#atm_parameter_spec.is_optional
             end, ArgumentSpecs),
             % randomly select what arguments are mapped, but ensuring that all required arguments are
             ReferencedArgumentSpecs = RequiredArgumentSpecs ++ ?RAND_SUBLIST(OptionalArgumentSpecs),
             example_argument_mappers_for_specs(ReferencedArgumentSpecs, StoreSchemaIds)
     end.
 
--spec example_argument_mappers_for_specs([atm_lambda_argument_spec:record()], [automation:id()]) ->
+-spec example_argument_mappers_for_specs([atm_parameter_spec:record()], [automation:id()]) ->
     [atm_task_schema_argument_mapper:record()].
 example_argument_mappers_for_specs(ArgumentSpecs, StoreSchemaIds) ->
     lists:map(fun(ArgumentSpec) ->
         #atm_task_schema_argument_mapper{
-            argument_name = ArgumentSpec#atm_lambda_argument_spec.name,
+            argument_name = ArgumentSpec#atm_parameter_spec.name,
             value_builder = example_argument_value_builder(StoreSchemaIds)
         }
     end, lists_utils:shuffle(ArgumentSpecs)).
@@ -539,6 +539,13 @@ example_task_schema(AvailableLambdasWithRegistries, StoreSchemaIds) ->
         name = example_name(),
         lambda_id = AtmLambdaId,
         lambda_revision_number = RevisionNumber,
+        lambda_config = maps_utils:generate(fun() ->
+            ExampleValue = example_predefined_value(example_data_spec()),
+            {example_name(), case is_map(ExampleValue) of
+                true -> maps_utils:undefined_to_null(ExampleValue);
+                _ -> utils:undefined_to_null(ExampleValue)
+            end}
+        end, ?RAND_INT(0, 5)),
         argument_mappings = example_argument_mappers(AtmLambdaRevision, StoreSchemaIds),
         result_mappings = example_result_mappers(AtmLambdaRevision, StoreSchemaIds),
         resource_spec_override = ?RAND_ELEMENT([undefined, example_resource_spec()]),
@@ -605,12 +612,14 @@ example_lane_schemas() ->
 
 -spec example_lambda_revision() -> atm_lambda_revision:record().
 example_lambda_revision() ->
+    ExampleArgumentSpecs = example_argument_specs(), %@fixme nazwa
     RevisionWithoutChecksum = #atm_lambda_revision{
         name = example_name(),
         summary = example_summary(),
         description = example_description(),
         operation_spec = example_operation_spec(),
-        argument_specs = ?RAND_SUBLIST(example_argument_specs(), 1, 4),
+        config_spec = ?RAND_SUBLIST(ExampleArgumentSpecs, 0, 3),
+        argument_specs = ?RAND_SUBLIST(ExampleArgumentSpecs, 1, 4),
         result_specs = ?RAND_SUBLIST(example_result_specs(), 1, 4),
         preferred_batch_size = ?RAND_INT(1, 1000),
         resource_spec = example_resource_spec(),

@@ -76,10 +76,10 @@
     user_form_id :: binary()
 }).
 
-% Specification of a single input argument a lambda function.
-% Each function has a list of argument specs.
--record(atm_lambda_argument_spec, {
-    name :: automation:name(),
+% Specification of a single input parameter, reused for example for specifying the
+% names and format of lambda arguments or fields in a config object.
+-record(atm_parameter_spec, {
+    name :: atm_parameter_spec:name(),
     data_spec :: atm_data_spec:record(),
     % the is_optional flag is ignored if the default_value is specified
     % (default_value guarantees that a value for the argument will be given)
@@ -184,6 +184,7 @@
     name :: automation:name(),
     lambda_id :: automation:id(),
     lambda_revision_number :: atm_lambda_revision:revision_number(),
+    lambda_config :: #{atm_parameter_spec:name() => json_utils:json_term()},
     argument_mappings :: [atm_task_schema_argument_mapper:record()],
     result_mappings :: [atm_task_schema_result_mapper:record()],
     resource_spec_override :: undefined | atm_resource_spec:record(),
@@ -212,7 +213,8 @@
     summary :: automation:summary(),
     description :: automation:description(),
     operation_spec :: atm_lambda_operation_spec:record(),
-    argument_specs :: [atm_lambda_argument_spec:record()],
+    config_spec :: [atm_parameter_spec:record()],
+    argument_specs :: [atm_parameter_spec:record()],
     result_specs :: [atm_lambda_result_spec:record()],
     preferred_batch_size :: pos_integer(),
     resource_spec :: atm_resource_spec:record(),
