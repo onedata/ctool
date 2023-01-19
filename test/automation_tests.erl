@@ -63,6 +63,32 @@ encode_decode_atm_data_spec_test() ->
             #atm_time_series_measurement_spec{name_matcher_type = exact, name_matcher = <<"throughput">>, unit = bytes_per_sec},
             #atm_time_series_measurement_spec{name_matcher_type = has_prefix, name_matcher = <<"latency">>, unit = milliseconds}
         ]}
+    })),
+
+    ExpBadNumberConstraintsError = ?ERROR_BAD_DATA(
+        <<"valueConstraints">>,
+        <<"You must provide a list of numbers">>
+    ),
+    ?assert(eunit_utils:throws_error_during_decode_from_json(ExpBadNumberConstraintsError, atm_data_spec, #atm_data_spec{
+        type = atm_number_type,
+        value_constraints = #{type => any, allowed_values => <<"string">>}
+    })),
+    ?assert(eunit_utils:throws_error_during_decode_from_json(ExpBadNumberConstraintsError, atm_data_spec, #atm_data_spec{
+        type = atm_number_type,
+        value_constraints = #{type => float, allowed_values => [<<"list">>, <<"of">>, <<"strings">>]}
+    })),
+
+    ExpBadStringConstraintsError = ?ERROR_BAD_DATA(
+        <<"valueConstraints">>,
+        <<"You must provide a list of strings">>
+    ),
+    ?assert(eunit_utils:throws_error_during_decode_from_json(ExpBadStringConstraintsError, atm_data_spec, #atm_data_spec{
+        type = atm_string_type,
+        value_constraints = #{allowed_values => 234.7}
+    })),
+    ?assert(eunit_utils:throws_error_during_decode_from_json(ExpBadStringConstraintsError, atm_data_spec, #atm_data_spec{
+        type = atm_string_type,
+        value_constraints = #{allowed_values => #{<<"key">> => <<"value">>}}
     })).
 
 

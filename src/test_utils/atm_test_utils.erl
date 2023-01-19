@@ -226,12 +226,22 @@ example_data_spec_except(atm_file_type, _) ->
 example_data_spec_except(atm_number_type, _) ->
     #atm_data_spec{
         type = atm_number_type,
-        value_constraints = #{type => ?RAND_ELEMENT([integer, float, any])}
+        value_constraints = #{
+            type => ?RAND_ELEMENT([integer, float, any]),
+            allowed_values => ?RAND_ELEMENT([undefined, ?RAND_SUBLIST([1, -17.8, 82734, 90.665])])
+        }
     };
 example_data_spec_except(atm_time_series_measurement_type, _) ->
     #atm_data_spec{
         type = atm_time_series_measurement_type,
         value_constraints = #{specs => ?RAND_SUBLIST(example_time_series_measurement_specs())}
+    };
+example_data_spec_except(atm_string_type, _) ->
+    #atm_data_spec{
+        type = atm_string_type,
+        value_constraints = #{
+            allowed_values => ?RAND_ELEMENT([undefined, ?RAND_SUBLIST([<<"a">>, <<"b">>, ?RAND_STR()])])
+        }
     };
 example_data_spec_except(DataType, _) ->
     #atm_data_spec{
