@@ -227,7 +227,7 @@ example_data_spec_except(atm_number_type, _) ->
     #atm_data_spec{
         type = atm_number_type,
         value_constraints = #{
-            type => ?RAND_ELEMENT([integer, float, any]),
+            integers_only => ?RAND_BOOL(),
             allowed_values => ?RAND_ELEMENT([undefined, ?RAND_SUBLIST([1, -17.8, 82734, 90.665])])
         }
     };
@@ -397,7 +397,7 @@ example_lambda_config(#atm_lambda_revision{config_spec = ParameterSpecs}) ->
             {OptionalParameterSpecs, RequiredParameterSpecs} = lists:partition(fun(ParameterSpec) ->
                 ParameterSpec#atm_parameter_spec.is_optional
             end, ParameterSpecs),
-            % randomly select what arguments are mapped, but ensuring that all required arguments are
+            % randomly select what parameters are mapped, but ensuring that all required parameters are
             ReferencedParameterSpecs = lists_utils:shuffle(RequiredParameterSpecs ++ ?RAND_SUBLIST(OptionalParameterSpecs)),
             maps_utils:generate_from_list(fun(#atm_parameter_spec{name = Name, data_spec = DataSpec}) ->
                 ExampleValue = example_predefined_value(DataSpec),

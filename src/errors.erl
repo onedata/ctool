@@ -153,6 +153,7 @@
 | {atm_parallel_box_execution_initiation_failed, AtmParallelBoxSchemaId :: binary(), SpecificError :: error()}
 | {atm_task_execution_creation_failed, AtmTaskSchemaId :: binary(), SpecificError :: error()}
 | {atm_task_execution_initiation_failed, AtmTaskSchemaId :: binary(), SpecificError :: error()}
+| {atm_lambda_config_bad_value, ParameterName :: binary(), SpecificError :: error()}
 | {atm_task_arg_mapper_for_required_lambda_arg_missing, ArgName :: binary()}
 | {atm_task_arg_mapper_for_nonexistent_lambda_arg, ArgName :: binary()}
 | {atm_task_arg_mapper_unsupported_value_builder,
@@ -1356,6 +1357,17 @@ to_json(?ERROR_ATM_TASK_EXECUTION_INITIATION_FAILED(AtmTaskSchemaId, {error, _} 
         [AtmTaskSchemaId]
     )
 };
+to_json(?ERROR_ATM_LAMBDA_CONFIG_BAD_VALUE(ParameterName, {error, _} = SpecificError)) -> #{
+    <<"id">> => <<"atmLambdaConfigBadValue">>,
+    <<"details">> => #{
+        <<"parameterName">> => ParameterName,
+        <<"specificError">> => to_json(SpecificError)
+    },
+    <<"description">> => ?FMT(
+        "Bad value provided for parameter \"~s\" of lambda config (see details).",
+        [ParameterName]
+    )
+};
 to_json(?ERROR_ATM_TASK_ARG_MAPPER_FOR_REQUIRED_LAMBDA_ARG_MISSING(ArgName)) -> #{
     <<"id">> => <<"atmTaskArgMapperForRequiredLambdaArgMissing">>,
     <<"details">> => #{
@@ -2247,6 +2259,15 @@ from_json(#{
     ?ERROR_ATM_TASK_EXECUTION_INITIATION_FAILED(AtmTaskSchemaId, from_json(SpecificErrorJson));
 
 from_json(#{
+    <<"id">> := <<"atmLambdaConfigBadValue">>,
+    <<"details">> := #{
+        <<"parameterName">> := ParameterName,
+        <<"specificError">> := SpecificErrorJson
+    }
+}) ->
+    ?ERROR_ATM_LAMBDA_CONFIG_BAD_VALUE(ParameterName, from_json(SpecificErrorJson));
+
+from_json(#{
     <<"id">> := <<"atmTaskArgMapperForRequiredLambdaArgMissing">>,
     <<"details">> := #{
         <<"argument">> := ArgName
@@ -2614,6 +2635,7 @@ to_http_code(?ERROR_ATM_PARALLEL_BOX_EXECUTION_INITIATION_FAILED(_, _)) -> ?HTTP
 
 to_http_code(?ERROR_ATM_TASK_EXECUTION_CREATION_FAILED(_, _)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_ATM_TASK_EXECUTION_INITIATION_FAILED(_, _)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_ATM_LAMBDA_CONFIG_BAD_VALUE(_, _)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_ATM_TASK_ARG_MAPPER_FOR_REQUIRED_LAMBDA_ARG_MISSING(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_ATM_TASK_ARG_MAPPER_FOR_NONEXISTENT_LAMBDA_ARG(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_ATM_TASK_ARG_MAPPING_FAILED(_, _)) -> ?HTTP_400_BAD_REQUEST;

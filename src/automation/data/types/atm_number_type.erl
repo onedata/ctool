@@ -20,8 +20,6 @@
 -export([is_instance/1]).
 -export([encode_value_constraints/2, decode_value_constraints/3]).
 
--type type() :: integer | float | any.
-
 %%%===================================================================
 %%% atm_data_type callbacks
 %%%===================================================================
@@ -35,7 +33,7 @@ is_instance(_Value) -> false.
     json_utils:json_term().
 encode_value_constraints(Constraints, _Encoder) ->
     #{
-        <<"type">> => type_to_json(maps:get(type, Constraints, any)),
+        <<"integersOnly">> => maps:get(integers_only, Constraints, false),
         <<"allowedValues">> => utils:undefined_to_null(maps:get(allowed_values, Constraints, undefined))
     }.
 
@@ -48,7 +46,7 @@ encode_value_constraints(Constraints, _Encoder) ->
     atm_data_type:value_constraints().
 decode_value_constraints(skip_validation, ConstraintsJson, _Decoder) ->
     #{
-        type => type_from_json(maps:get(<<"type">>, ConstraintsJson, <<"any">>)),
+        integers_only => maps:get(<<"integersOnly">>, ConstraintsJson, false),
         allowed_values => utils:null_to_undefined(maps:get(<<"allowedValues">>, ConstraintsJson, null))
     };
 decode_value_constraints(validate, ConstraintsJson, _Decoder) ->
@@ -61,15 +59,3 @@ decode_value_constraints(validate, ConstraintsJson, _Decoder) ->
     end,
     IsValid orelse throw(?ERROR_BAD_DATA(<<"valueConstraints">>, <<"You must provide a list of numbers">>)),
     Constraints.
-
-
--spec type_to_json(type()) -> json_utils:json_term().
-type_to_json(integer) -> <<"integer">>;
-type_to_json(float) -> <<"float">>;
-type_to_json(any) -> <<"any">>.
-
-
--spec type_from_json(json_utils:json_term()) -> type().
-type_from_json(<<"integer">>) -> integer;
-type_from_json(<<"float">>) -> float;
-type_from_json(<<"any">>) -> any.

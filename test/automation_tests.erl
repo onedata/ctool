@@ -71,11 +71,11 @@ encode_decode_atm_data_spec_test() ->
     ),
     ?assert(eunit_utils:throws_error_during_decode_from_json(ExpBadNumberConstraintsError, atm_data_spec, #atm_data_spec{
         type = atm_number_type,
-        value_constraints = #{type => any, allowed_values => <<"string">>}
+        value_constraints = #{integers_only => ?RAND_BOOL(), allowed_values => <<"string">>}
     })),
     ?assert(eunit_utils:throws_error_during_decode_from_json(ExpBadNumberConstraintsError, atm_data_spec, #atm_data_spec{
         type = atm_number_type,
-        value_constraints = #{type => float, allowed_values => [<<"list">>, <<"of">>, <<"strings">>]}
+        value_constraints = #{integers_only => ?RAND_BOOL(), allowed_values => [<<"list">>, <<"of">>, <<"strings">>]}
     })),
 
     ExpBadStringConstraintsError = ?ERROR_BAD_DATA(
