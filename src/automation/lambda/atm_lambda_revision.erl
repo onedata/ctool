@@ -53,7 +53,7 @@ calculate_checksum(AtmLambdaRevision) ->
     str_utils:md5_digest([
         AtmLambdaRevision#atm_lambda_revision.name,
         AtmLambdaRevision#atm_lambda_revision.operation_spec,
-        AtmLambdaRevision#atm_lambda_revision.config_spec,
+        AtmLambdaRevision#atm_lambda_revision.config_parameter_specs,
         AtmLambdaRevision#atm_lambda_revision.argument_specs,
         AtmLambdaRevision#atm_lambda_revision.result_specs
     ]).
@@ -102,7 +102,7 @@ encode_with(Record, NestedRecordEncoder) ->
         <<"summary">> => Record#atm_lambda_revision.summary,
         <<"description">> => Record#atm_lambda_revision.description,
         <<"operationSpec">> => NestedRecordEncoder(Record#atm_lambda_revision.operation_spec, atm_lambda_operation_spec),
-        <<"configSpec">> => [NestedRecordEncoder(S, atm_parameter_spec) || S <- Record#atm_lambda_revision.config_spec],
+        <<"configParameterSpecs">> => [NestedRecordEncoder(S, atm_parameter_spec) || S <- Record#atm_lambda_revision.config_parameter_specs],
         <<"argumentSpecs">> => [NestedRecordEncoder(S, atm_parameter_spec) || S <- Record#atm_lambda_revision.argument_specs],
         <<"resultSpecs">> => [NestedRecordEncoder(S, atm_lambda_result_spec) || S <- Record#atm_lambda_revision.result_specs],
         <<"preferredBatchSize">> => Record#atm_lambda_revision.preferred_batch_size,
@@ -135,7 +135,7 @@ decode_with(ValidationStrategy, RecordJson, NestedRecordDecoder) ->
         summary = Summary,
         description = Description,
         operation_spec = NestedRecordDecoder(maps:get(<<"operationSpec">>, RecordJson), atm_lambda_operation_spec),
-        config_spec = [NestedRecordDecoder(S, atm_parameter_spec) || S <- maps:get(<<"configSpec">>, RecordJson)],
+        config_parameter_specs = [NestedRecordDecoder(S, atm_parameter_spec) || S <- maps:get(<<"configParameterSpecs">>, RecordJson)],
         argument_specs = [NestedRecordDecoder(S, atm_parameter_spec) || S <- maps:get(<<"argumentSpecs">>, RecordJson)],
         result_specs = [NestedRecordDecoder(S, atm_lambda_result_spec) || S <- maps:get(<<"resultSpecs">>, RecordJson)],
         preferred_batch_size = maps:get(<<"preferredBatchSize">>, RecordJson),

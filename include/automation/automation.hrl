@@ -213,7 +213,7 @@
     summary :: automation:summary(),
     description :: automation:description(),
     operation_spec :: atm_lambda_operation_spec:record(),
-    config_spec :: [atm_parameter_spec:record()],
+    config_parameter_specs :: [atm_parameter_spec:record()],
     argument_specs :: [atm_parameter_spec:record()],
     result_specs :: [atm_lambda_result_spec:record()],
     preferred_batch_size :: pos_integer(),

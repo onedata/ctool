@@ -389,7 +389,7 @@ example_store_iterator_specs() ->
 
 -spec example_lambda_config(atm_lambda_revision:record()) ->
     #{atm_parameter_spec:name() => json_utils:json_term()}.
-example_lambda_config(#atm_lambda_revision{config_spec = ParameterSpecs}) ->
+example_lambda_config(#atm_lambda_revision{config_parameter_specs = ParameterSpecs}) ->
     case ParameterSpecs of
         [] ->
             #{};
@@ -644,7 +644,7 @@ example_lambda_revision() ->
         summary = example_summary(),
         description = example_description(),
         operation_spec = example_operation_spec(),
-        config_spec = ?RAND_SUBLIST(ExampleParameterSpecs, 0, 3),
+        config_parameter_specs = ?RAND_SUBLIST(ExampleParameterSpecs, 0, 3),
         argument_specs = ?RAND_SUBLIST(ExampleParameterSpecs, 1, 4),
         result_specs = ?RAND_SUBLIST(example_result_specs(), 1, 4),
         preferred_batch_size = ?RAND_INT(1, 1000),
