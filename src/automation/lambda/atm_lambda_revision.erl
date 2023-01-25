@@ -135,7 +135,7 @@ decode_with(ValidationStrategy, RecordJson, NestedRecordDecoder) ->
         summary = Summary,
         description = Description,
         operation_spec = NestedRecordDecoder(maps:get(<<"operationSpec">>, RecordJson), atm_lambda_operation_spec),
-        config_parameter_specs = [NestedRecordDecoder(S, atm_parameter_spec) || S <- maps:get(<<"configParameterSpecs">>, RecordJson)],
+        config_parameter_specs = [NestedRecordDecoder(S, atm_parameter_spec) || S <- maps:get(<<"configParameterSpecs">>, RecordJson, [])],
         argument_specs = [NestedRecordDecoder(S, atm_parameter_spec) || S <- maps:get(<<"argumentSpecs">>, RecordJson)],
         result_specs = [NestedRecordDecoder(S, atm_lambda_result_spec) || S <- maps:get(<<"resultSpecs">>, RecordJson)],
         preferred_batch_size = maps:get(<<"preferredBatchSize">>, RecordJson),
