@@ -19,6 +19,23 @@
 
 
 -define(ct_dump(Arg), ct:print("~s: ~p", [??Arg, Arg])).
+-define(eunit_dump(Arg), eunit_utils:dump(??Arg, Arg)).
+
+-define(ct_catch_exceptions(Expr), begin
+    ((fun() ->
+        try
+            Expr
+        catch
+            Class:Reason:Stacktrace ->
+                ct:pal("Test crash in ~s:~B~n~w:~p~nStacktrace: ~s", [
+                    ?MODULE, ?LINE,
+                    Class, Reason,
+                    lager:pr_stacktrace(Stacktrace)
+                ]),
+                error(test_crashed)
+        end
+    end)())
+end).
 
 
 %% temporary directory for test files

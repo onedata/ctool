@@ -31,6 +31,7 @@
 -export([rpc_multicall/4, rpc_multicall/5]).
 -export([wait_until/1, wait_until/2, wait_until/3]).
 -export([repeat/2]).
+-export([check_result/1]).
 
 -type time_unit() :: us | ms | s | min | h.
 
@@ -494,6 +495,15 @@ repeat(Count, _Fun) when Count =< 0 ->
 repeat(Count, Fun) ->
     Fun(),
     repeat(Count - 1, Fun).
+
+
+-spec check_result
+    (ok) -> ok;
+    ({ok, Value}) -> Value;
+    (errors:error()) -> no_return().
+check_result(ok) -> ok;
+check_result({ok, Value}) -> Value;
+check_result({error, _} = Error) -> throw(Error).
 
 %%%===================================================================
 %%% Internal functions
