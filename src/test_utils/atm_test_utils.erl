@@ -23,7 +23,7 @@
 -export([example_store_type/0]).
 -export([example_operation_spec/0, example_operation_specs/0]).
 -export([example_docker_execution_options/0]).
--export([example_argument_spec/0, example_argument_spec/1, example_argument_spec/2, example_argument_specs/0]).
+-export([example_parameter_spec/0, example_parameter_spec/1, example_parameter_spec/2, example_parameter_specs/0]).
 -export([example_result_spec/0, example_result_spec/1, example_result_specs/0]).
 -export([example_resource_specs/0]).
 -export([example_data_spec/0, example_data_spec/1, example_data_specs/0]).
@@ -139,27 +139,27 @@ example_docker_execution_options() ->
     ].
 
 
--spec example_argument_spec() -> atm_lambda_argument_spec:record().
-example_argument_spec() ->
-    example_argument_spec(example_data_spec_except([atm_time_series_measurement_type])).
+-spec example_parameter_spec() -> atm_parameter_spec:record().
+example_parameter_spec() ->
+    example_parameter_spec(example_data_spec_except([atm_time_series_measurement_type])).
 
--spec example_argument_spec(atm_data_spec:record()) -> atm_lambda_argument_spec:record().
-example_argument_spec(DataSpec) ->
+-spec example_parameter_spec(atm_data_spec:record()) -> atm_parameter_spec:record().
+example_parameter_spec(DataSpec) ->
     DefaultValue = ?RAND_ELEMENT([undefined, example_predefined_value(DataSpec)]),
-    example_argument_spec(DataSpec, DefaultValue).
+    example_parameter_spec(DataSpec, DefaultValue).
 
--spec example_argument_spec(atm_data_spec:record(), term()) -> atm_lambda_argument_spec:record().
-example_argument_spec(DataSpec, DefaultValue) ->
-    #atm_lambda_argument_spec{
+-spec example_parameter_spec(atm_data_spec:record(), term()) -> atm_parameter_spec:record().
+example_parameter_spec(DataSpec, DefaultValue) ->
+    #atm_parameter_spec{
         name = ?RAND_STR(),
         data_spec = DataSpec,
         is_optional = ?RAND_BOOL(),
         default_value = DefaultValue
     }.
 
--spec example_argument_specs() -> [atm_lambda_argument_spec:record()].
-example_argument_specs() ->
-    lists:map(fun example_argument_spec/1, example_data_specs_except([atm_time_series_measurement_type])).
+-spec example_parameter_specs() -> [atm_parameter_spec:record()].
+example_parameter_specs() ->
+    lists:map(fun example_parameter_spec/1, example_data_specs_except([atm_time_series_measurement_type])).
 
 
 -spec example_result_spec() -> atm_lambda_result_spec:record().
@@ -213,20 +213,35 @@ example_data_spec(DataType) ->
     example_data_spec_except(DataType, []).
 
 -spec example_data_spec_except(atm_data_type:type(), [atm_data_type:type()]) -> atm_data_spec:record().
-example_data_spec_except(atm_file_type, _) ->
-    #atm_data_spec{
-        type = atm_file_type,
-        value_constraints = #{file_type => ?RAND_ELEMENT(['REG', 'DIR', 'ANY'])}
-    };
 example_data_spec_except(atm_array_type, DisallowedTypes) ->
     #atm_data_spec{
         type = atm_array_type,
         value_constraints = #{item_data_spec => example_data_spec_except(DisallowedTypes)}
     };
+example_data_spec_except(atm_file_type, _) ->
+    #atm_data_spec{
+        type = atm_file_type,
+        value_constraints = #{file_type => ?RAND_ELEMENT(['REG', 'DIR', 'ANY'])}
+    };
+example_data_spec_except(atm_number_type, _) ->
+    #atm_data_spec{
+        type = atm_number_type,
+        value_constraints = #{
+            integers_only => ?RAND_BOOL(),
+            allowed_values => ?RAND_ELEMENT([undefined, ?RAND_SUBLIST([1, -17.8, 82734, 90.665])])
+        }
+    };
 example_data_spec_except(atm_time_series_measurement_type, _) ->
     #atm_data_spec{
         type = atm_time_series_measurement_type,
         value_constraints = #{specs => ?RAND_SUBLIST(example_time_series_measurement_specs())}
+    };
+example_data_spec_except(atm_string_type, _) ->
+    #atm_data_spec{
+        type = atm_string_type,
+        value_constraints = #{
+            allowed_values => ?RAND_ELEMENT([undefined, ?RAND_SUBLIST([<<"a">>, <<"b">>, ?RAND_STR()])])
+        }
     };
 example_data_spec_except(DataType, _) ->
     #atm_data_spec{
@@ -256,14 +271,16 @@ example_predefined_value(#atm_data_spec{type = atm_array_type, value_constraints
         Value ->
             lists:duplicate(?RAND_INT(0, 20), Value)
     end;
+example_predefined_value(#atm_data_spec{type = atm_boolean_type}) ->
+    ?RAND_BOOL();
 example_predefined_value(#atm_data_spec{type = atm_dataset_type}) ->
     #{<<"datasetId">> => ?RAND_STR()};
 example_predefined_value(#atm_data_spec{type = atm_file_type}) ->
     #{<<"file_id">> => ?RAND_STR()};
-example_predefined_value(#atm_data_spec{type = atm_integer_type}) ->
-    ?RAND_INT(0, 1000);
 example_predefined_value(#atm_data_spec{type = atm_object_type}) ->
     ?RAND_ELEMENT([#{}, #{<<"key">> => 984.222}, #{<<"key">> => #{<<"nested">> => 984.222}}]);
+example_predefined_value(#atm_data_spec{type = atm_number_type}) ->
+    ?RAND_ELEMENT([?RAND_INT(0, 1000), rand:uniform() * ?RAND_INT(0, 1000)]);
 example_predefined_value(#atm_data_spec{type = atm_range_type}) ->
     #{<<"start">> => ?RAND_INT(0, 10), <<"end">> => ?RAND_INT(10, 20), <<"step">> => ?RAND_INT(0, 5)};
 example_predefined_value(#atm_data_spec{type = atm_string_type}) ->
@@ -370,6 +387,28 @@ example_store_iterator_specs() ->
     lists_utils:generate(fun() -> example_store_iterator_spec(StoreSchemaIds) end, 3).
 
 
+-spec example_lambda_config(atm_lambda_revision:record()) ->
+    #{atm_parameter_spec:name() => json_utils:json_term()}.
+example_lambda_config(#atm_lambda_revision{config_parameter_specs = ParameterSpecs}) ->
+    case ParameterSpecs of
+        [] ->
+            #{};
+        _ ->
+            {OptionalParameterSpecs, RequiredParameterSpecs} = lists:partition(fun(ParameterSpec) ->
+                ParameterSpec#atm_parameter_spec.is_optional
+            end, ParameterSpecs),
+            % randomly select what parameters are mapped, but ensuring that all required parameters are
+            ReferencedParameterSpecs = lists_utils:shuffle(RequiredParameterSpecs ++ ?RAND_SUBLIST(OptionalParameterSpecs)),
+            maps_utils:generate_from_list(fun(#atm_parameter_spec{name = Name, data_spec = DataSpec}) ->
+                ExampleValue = example_predefined_value(DataSpec),
+                {Name, case is_map(ExampleValue) of
+                    true -> maps_utils:undefined_to_null(ExampleValue);
+                    _ -> utils:undefined_to_null(ExampleValue)
+                end}
+            end, ReferencedParameterSpecs)
+    end.
+
+
 -spec example_argument_mappers() -> [atm_task_schema_argument_mapper:record()].
 example_argument_mappers() ->
     AtmLambdaRevision = example_lambda_revision(),
@@ -384,19 +423,19 @@ example_argument_mappers(#atm_lambda_revision{argument_specs = ArgumentSpecs}, S
             [];
         _ ->
             {OptionalArgumentSpecs, RequiredArgumentSpecs} = lists:partition(fun(ArgumentSpec) ->
-                ArgumentSpec#atm_lambda_argument_spec.is_optional
+                ArgumentSpec#atm_parameter_spec.is_optional
             end, ArgumentSpecs),
             % randomly select what arguments are mapped, but ensuring that all required arguments are
             ReferencedArgumentSpecs = RequiredArgumentSpecs ++ ?RAND_SUBLIST(OptionalArgumentSpecs),
             example_argument_mappers_for_specs(ReferencedArgumentSpecs, StoreSchemaIds)
     end.
 
--spec example_argument_mappers_for_specs([atm_lambda_argument_spec:record()], [automation:id()]) ->
+-spec example_argument_mappers_for_specs([atm_parameter_spec:record()], [automation:id()]) ->
     [atm_task_schema_argument_mapper:record()].
 example_argument_mappers_for_specs(ArgumentSpecs, StoreSchemaIds) ->
     lists:map(fun(ArgumentSpec) ->
         #atm_task_schema_argument_mapper{
-            argument_name = ArgumentSpec#atm_lambda_argument_spec.name,
+            argument_name = ArgumentSpec#atm_parameter_spec.name,
             value_builder = example_argument_value_builder(StoreSchemaIds)
         }
     end, lists_utils:shuffle(ArgumentSpecs)).
@@ -532,6 +571,7 @@ example_task_schema(AvailableLambdasWithRegistries, StoreSchemaIds) ->
         name = example_name(),
         lambda_id = AtmLambdaId,
         lambda_revision_number = RevisionNumber,
+        lambda_config = example_lambda_config(AtmLambdaRevision),
         argument_mappings = example_argument_mappers(AtmLambdaRevision, StoreSchemaIds),
         result_mappings = example_result_mappers(AtmLambdaRevision, StoreSchemaIds),
         resource_spec_override = ?RAND_ELEMENT([undefined, example_resource_spec()]),
@@ -598,12 +638,14 @@ example_lane_schemas() ->
 
 -spec example_lambda_revision() -> atm_lambda_revision:record().
 example_lambda_revision() ->
+    ExampleParameterSpecs = example_parameter_specs(),
     RevisionWithoutChecksum = #atm_lambda_revision{
         name = example_name(),
         summary = example_summary(),
         description = example_description(),
         operation_spec = example_operation_spec(),
-        argument_specs = ?RAND_SUBLIST(example_argument_specs(), 1, 4),
+        config_parameter_specs = ?RAND_SUBLIST(ExampleParameterSpecs, 0, 3),
+        argument_specs = ?RAND_SUBLIST(ExampleParameterSpecs, 1, 4),
         result_specs = ?RAND_SUBLIST(example_result_specs(), 1, 4),
         preferred_batch_size = ?RAND_INT(1, 1000),
         resource_spec = example_resource_spec(),

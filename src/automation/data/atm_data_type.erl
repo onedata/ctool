@@ -20,10 +20,11 @@
 
 %% @formatter:off
 -type type() :: atm_array_type
+              | atm_boolean_type
               | atm_dataset_type
-              | atm_integer_type
               | atm_file_type
               | atm_object_type
+              | atm_number_type
               | atm_range_type
               | atm_string_type
               | atm_time_series_measurement_type.
@@ -71,10 +72,11 @@
 -spec all_data_types() -> [type()].
 all_data_types() -> [
     atm_array_type,
+    atm_boolean_type,
     atm_dataset_type,
-    atm_integer_type,
     atm_file_type,
     atm_object_type,
+    atm_number_type,
     atm_range_type,
     atm_string_type,
     atm_time_series_measurement_type
@@ -88,10 +90,11 @@ is_instance(TypeName, Value) ->
 
 -spec type_to_json(type()) -> json_utils:json_term().
 type_to_json(atm_array_type) -> <<"array">>;
+type_to_json(atm_boolean_type) -> <<"boolean">>;
 type_to_json(atm_dataset_type) -> <<"dataset">>;
-type_to_json(atm_integer_type) -> <<"integer">>;
 type_to_json(atm_file_type) -> <<"file">>;
 type_to_json(atm_object_type) -> <<"object">>;
+type_to_json(atm_number_type) -> <<"number">>;
 type_to_json(atm_range_type) -> <<"range">>;
 type_to_json(atm_string_type) -> <<"string">>;
 type_to_json(atm_time_series_measurement_type) -> <<"timeSeriesMeasurement">>.
@@ -99,10 +102,11 @@ type_to_json(atm_time_series_measurement_type) -> <<"timeSeriesMeasurement">>.
 
 -spec type_from_json(json_utils:json_term()) -> type().
 type_from_json(<<"array">>) -> atm_array_type;
+type_from_json(<<"boolean">>) -> atm_boolean_type;
 type_from_json(<<"dataset">>) -> atm_dataset_type;
-type_from_json(<<"integer">>) -> atm_integer_type;
 type_from_json(<<"file">>) -> atm_file_type;
 type_from_json(<<"object">>) -> atm_object_type;
+type_from_json(<<"number">>) -> atm_number_type;
 type_from_json(<<"range">>) -> atm_range_type;
 type_from_json(<<"string">>) -> atm_string_type;
 type_from_json(<<"timeSeriesMeasurement">>) -> atm_time_series_measurement_type.
