@@ -26,8 +26,12 @@
 -export([to_binary/1]).
 -export([save_file_on_hosts/3, save_file/2]).
 -export([ensure_list/1]).
+-export([wait_until/1, wait_until/2, wait_until/3]).
 
 -type time_unit() :: us | ms | s | min | h.
+
+-define(DEFAULT_WAIT_UNTIL_INTERVAL, 250).
+-define(DEFAULT_WAIT_UNTIL_ATTEMPTS, 240).
 
 %%%===================================================================
 %%% API
@@ -408,3 +412,24 @@ next_time_unit(ms) -> {s, 1000};
 next_time_unit(s) -> {min, 60};
 next_time_unit(min) -> {h, 60};
 next_time_unit(h) -> {undefined, undefiend}.
+
+
+-spec wait_until(fun(() -> boolean())) -> ok | no_return().
+wait_until(Condition) ->
+    wait_until(Condition, ?DEFAULT_WAIT_UNTIL_INTERVAL).
+
+-spec wait_until(fun(() -> boolean()), time:millis()) -> ok | no_return().
+wait_until(Condition, Interval) ->
+    wait_until(Condition, Interval, ?DEFAULT_WAIT_UNTIL_ATTEMPTS).
+
+-spec wait_until(fun(() -> boolean()), time:millis(), non_neg_integer()) -> ok | no_return().
+wait_until(_Condition, _Interval, Attempts) when Attempts =< 0 ->
+    error(timeout);
+wait_until(Condition, Interval, Attempts) ->
+    case Condition() of
+        true ->
+            ok;
+        false ->
+            timer:sleep(Interval),
+            wait_until(Condition, Interval, Attempts - 1)
+    end.
