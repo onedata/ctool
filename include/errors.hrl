@@ -271,6 +271,10 @@
     {error, {atm_task_execution_initiation_failed, AtmTaskSchemaId, SpecificError}}
 ).
 
+-define(ERROR_ATM_LAMBDA_CONFIG_BAD_VALUE(ParameterName, SpecificError),
+    {error, {atm_lambda_config_bad_value, ParameterName, SpecificError}}
+).
+
 -define(ERROR_ATM_TASK_ARG_MAPPER_FOR_REQUIRED_LAMBDA_ARG_MISSING(ArgName),
     {error, {atm_task_arg_mapper_for_required_lambda_arg_missing, ArgName}}
 ).
