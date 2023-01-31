@@ -1524,7 +1524,7 @@ to_json(?ERROR_DIR_STATS_NOT_READY) -> #{
 to_json(?ERROR_FORBIDDEN_FOR_CURRENT_ARCHIVE_STATE(CurrentState, AllowedStates)) -> #{
     <<"id">> => <<"forbiddenForCurrentArchiveState">>,
     <<"description">> => ?FMT(
-        <<"This operation is forbidden while the archive state is ~s. Allowed states are: ~s.">>,
+        "This operation is forbidden while the archive state is ~s. Allowed states are: ~s.",
         [CurrentState, join_values_with_commas(AllowedStates)]
     ),
     <<"details">> => #{
