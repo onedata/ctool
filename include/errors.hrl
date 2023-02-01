@@ -324,6 +324,10 @@
 -define(ERROR_DIR_STATS_DISABLED_FOR_SPACE, {error, dir_stats_disabled_for_space}).
 -define(ERROR_DIR_STATS_NOT_READY, {error, dir_stats_not_ready}).
 
+-define(ERROR_FORBIDDEN_FOR_CURRENT_ARCHIVE_STATE(CurrentState, AllowedStates), {error, {forbidden_for_current_archive_state, CurrentState, AllowedStates}}).
+-define(ERROR_NESTED_ARCHIVE_DELETION_FORBIDDEN(ParentArchiveId), {error, {nested_archive_deletion_forbidden, ParentArchiveId}}).
+-define(ERROR_RECALL_TARGET_CONFLICT, {error, recall_target_conflict}).
+
 
 %%--------------------------------------------------------------------
 %% onepanel errors

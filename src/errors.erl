@@ -177,7 +177,10 @@
 | atm_openfaas_function_registration_failed
 | {atm_invalid_status_transition, PrevStatus :: atom(), NewStatus :: atom()}
 | dir_stats_disabled_for_space
-| dir_stats_not_ready.
+| dir_stats_not_ready
+| {forbidden_for_current_archive_state, CurrentState :: atom(), AllowedStates :: [atom()]}
+| {nested_archive_deletion_forbidden, ParentArchiveId :: binary()}
+| recall_target_conflict.
 
 -type onepanel() :: {error_on_nodes, error(), Hostnames :: [binary()]}
 | {dns_servers_unreachable, [ip_utils:ip() | default]}
@@ -1518,6 +1521,33 @@ to_json(?ERROR_DIR_STATS_NOT_READY) -> #{
     <<"description">> => <<"Requested directory statistics are not ready yet - calculation is in progress.">>
 };
 
+to_json(?ERROR_FORBIDDEN_FOR_CURRENT_ARCHIVE_STATE(CurrentState, AllowedStates)) -> #{
+    <<"id">> => <<"forbiddenForCurrentArchiveState">>,
+    <<"description">> => ?FMT(
+        "This operation is forbidden while the archive state is ~s. Allowed states are: ~s.",
+        [CurrentState, join_values_with_commas(AllowedStates)]
+    ),
+    <<"details">> => #{
+        <<"allowedStates">> => json_utils:encode(AllowedStates),
+        <<"currentState">> => json_utils:encode(CurrentState)
+    }
+};
+
+to_json(?ERROR_NESTED_ARCHIVE_DELETION_FORBIDDEN(ParentArchiveId)) -> #{
+    <<"id">> =>
+        <<"nestedArchiveDeletionForbidden">>,
+    <<"description">> =>
+        <<"This archive cannot be deleted since it is nested in another archive.">>,
+    <<"details">> => #{
+        <<"parentArchiveId">> => ParentArchiveId
+    }
+};
+
+to_json(?ERROR_RECALL_TARGET_CONFLICT) -> #{
+    <<"id">> => <<"recallTargetConflict">>,
+    <<"description">> => <<"Conflict - recall target cannot be within a directory that is being recalled.">>
+};
+
 %%--------------------------------------------------------------------
 %% onepanel errors
 %%--------------------------------------------------------------------
@@ -2394,6 +2424,27 @@ from_json(#{<<"id">> := <<"dirStatsDisabledForSpace">>}) ->
 from_json(#{<<"id">> := <<"dirStatsNotReady">>}) ->
     ?ERROR_DIR_STATS_NOT_READY;
 
+from_json(#{
+    <<"id">> := <<"forbiddenForCurrentArchiveState">>,
+    <<"details">> := #{
+        <<"allowedStates">> := AllowedStates,
+        <<"currentState">> := CurrentState
+    }
+}) ->
+    ?ERROR_FORBIDDEN_FOR_CURRENT_ARCHIVE_STATE(
+        binary_to_existing_atom(json_utils:decode(CurrentState)),
+        [binary_to_existing_atom(StateBin) || StateBin <- json_utils:decode(AllowedStates)]
+    );
+
+from_json(#{
+    <<"id">> := <<"nestedArchiveDeletionForbidden">>,
+    <<"details">> := #{<<"parentArchiveId">> := ParentArchiveId}
+}) ->
+    ?ERROR_NESTED_ARCHIVE_DELETION_FORBIDDEN(ParentArchiveId);
+
+from_json(#{<<"id">> := <<"recallTargetConflict">>}) ->
+    ?ERROR_RECALL_TARGET_CONFLICT;
+
 %%--------------------------------------------------------------------
 %% onepanel errors
 %%--------------------------------------------------------------------
@@ -2660,6 +2711,10 @@ to_http_code(?ERROR_ATM_INVALID_STATUS_TRANSITION(_, _)) -> ?HTTP_400_BAD_REQUES
 
 to_http_code(?ERROR_DIR_STATS_DISABLED_FOR_SPACE) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_DIR_STATS_NOT_READY) -> ?HTTP_400_BAD_REQUEST;
+
+to_http_code(?ERROR_FORBIDDEN_FOR_CURRENT_ARCHIVE_STATE(_, _)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_NESTED_ARCHIVE_DELETION_FORBIDDEN(_)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_RECALL_TARGET_CONFLICT) -> ?HTTP_400_BAD_REQUEST;
 
 %%--------------------------------------------------------------------
 %% onepanel errors
