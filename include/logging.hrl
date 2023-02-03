@@ -33,44 +33,76 @@
 -ifndef(skip_debug).
 -define(debug(Message), ?do_log(0, Message, undefined)).
 -define(debug(Format, Args), ?do_log(0, Format, Args, undefined)).
+-define(debug(Message, Class, Reason), ?do_log(0, Message, Class, Reason, undefined)).
+-define(debug(Format, Args, Class, Reason), ?do_log(0, Format, Args, Class, Reason, undefined)).
 -define(debug_stacktrace(Message, Stacktrace), ?do_log(0, Message, Stacktrace)).
 -define(debug_stacktrace(Format, Args, Stacktrace), ?do_log(0, Format, Args, Stacktrace)).
+-define(debug_stacktrace(Message, Class, Reason, Stacktrace), ?do_log(0, Message, Class, Reason, Stacktrace)).
+-define(debug_stacktrace(Format, Args, Class, Reason, Stacktrace), ?do_log(0, Format, Args, Class, Reason, Stacktrace)).
 -endif.
 
 -define(info(Message), ?do_log(1, Message, undefined)).
 -define(info(Format, Args), ?do_log(1, Format, Args, undefined)).
+-define(info(Message, Class, Reason), ?do_log(1, Message, Class, Reason, undefined)).
+-define(info(Format, Args, Class, Reason), ?do_log(1, Format, Args, Class, Reason, undefined)).
 -define(info_stacktrace(Message, Stacktrace), ?do_log(1, Message, Stacktrace)).
 -define(info_stacktrace(Format, Args, Stacktrace), ?do_log(1, Format, Args, Stacktrace)).
+-define(info_stacktrace(Message, Class, Reason, Stacktrace), ?do_log(1, Message, Class, Reason, Stacktrace)).
+-define(info_stacktrace(Format, Args, Class, Reason, Stacktrace), ?do_log(1, Format, Args, Class, Reason, Stacktrace)).
 
 -define(notice(Message), ?do_log(2, Message, undefined)).
 -define(notice(Format, Args), ?do_log(2, Format, Args, undefined)).
+-define(notice(Message, Class, Reason), ?do_log(2, Message, Class, Reason, undefined)).
+-define(notice(Format, Args, Class, Reason), ?do_log(2, Format, Args, Class, Reason, undefined)).
 -define(notice_stacktrace(Message, Stacktrace), ?do_log(2, Message, Stacktrace)).
 -define(notice_stacktrace(Format, Args, Stacktrace), ?do_log(2, Format, Args, Stacktrace)).
+-define(notice_stacktrace(Message, Class, Reason, Stacktrace), ?do_log(2, Message, Class, Reason, Stacktrace)).
+-define(notice_stacktrace(Format, Args, Class, Reason, Stacktrace), ?do_log(2, Format, Args, Class, Reason, Stacktrace)).
 
 -define(warning(Message), ?do_log(3, Message, undefined)).
 -define(warning(Format, Args), ?do_log(3, Format, Args, undefined)).
+-define(warning(Message, Class, Reason), ?do_log(3, Message, Class, Reason, undefined)).
+-define(warning(Format, Args, Class, Reason), ?do_log(3, Format, Args, Class, Reason, undefined)).
 -define(warning_stacktrace(Message, Stacktrace), ?do_log(3, Message, Stacktrace)).
 -define(warning_stacktrace(Format, Args, Stacktrace), ?do_log(3, Format, Args, Stacktrace)).
+-define(warning_stacktrace(Message, Class, Reason, Stacktrace), ?do_log(3, Message, Class, Reason, Stacktrace)).
+-define(warning_stacktrace(Format, Args, Class, Reason, Stacktrace), ?do_log(3, Format, Args, Class, Reason, Stacktrace)).
 
 -define(error(Message), ?do_log(4, Message, undefined)).
 -define(error(Format, Args), ?do_log(4, Format, Args, undefined)).
+-define(error(Message, Class, Reason), ?do_log(4, Message, Class, Reason, undefined)).
+-define(error(Format, Args, Class, Reason), ?do_log(4, Format, Args, Class, Reason, undefined)).
 -define(error_stacktrace(Message, Stacktrace), ?do_log(4, Message, Stacktrace)).
 -define(error_stacktrace(Format, Args, Stacktrace), ?do_log(4, Format, Args, Stacktrace)).
+-define(error_stacktrace(Message, Class, Reason, Stacktrace), ?do_log(4, Message, Class, Reason, Stacktrace)).
+-define(error_stacktrace(Format, Args, Class, Reason, Stacktrace), ?do_log(4, Format, Args, Class, Reason, Stacktrace)).
 
 -define(critical(Message), ?do_log(5, Message, undefined)).
 -define(critical(Format, Args), ?do_log(5, Format, Args, undefined)).
+-define(critical(Message, Class, Reason), ?do_log(5, Message, Class, Reason, undefined)).
+-define(critical(Format, Args, Class, Reason), ?do_log(5, Format, Args, Class, Reason, undefined)).
 -define(critical_stacktrace(Message, Stacktrace), ?do_log(5, Message, Stacktrace)).
 -define(critical_stacktrace(Format, Args, Stacktrace), ?do_log(5, Format, Args, Stacktrace)).
+-define(critical_stacktrace(Message, Class, Reason, Stacktrace), ?do_log(5, Message, Class, Reason, Stacktrace)).
+-define(critical_stacktrace(Format, Args, Class, Reason, Stacktrace), ?do_log(5, Format, Args, Class, Reason, Stacktrace)).
 
 -define(alert(Message), ?do_log(6, Message, undefined)).
 -define(alert(Format, Args), ?do_log(6, Format, Args, undefined)).
+-define(alert(Message, Class, Reason), ?do_log(6, Message, Class, Reason, undefined)).
+-define(alert(Format, Args, Class, Reason), ?do_log(6, Format, Args, Class, Reason, undefined)).
 -define(alert_stacktrace(Message, Stacktrace), ?do_log(6, Message, Stacktrace)).
 -define(alert_stacktrace(Format, Args, Stacktrace), ?do_log(6, Format, Args, Stacktrace)).
+-define(alert_stacktrace(Message, Class, Reason, Stacktrace), ?do_log(6, Message, Class, Reason, Stacktrace)).
+-define(alert_stacktrace(Format, Args, Class, Reason, Stacktrace), ?do_log(6, Format, Args, Class, Reason, Stacktrace)).
 
 -define(emergency(Message), ?do_log(7, Message, undefined)).
 -define(emergency(Format, Args), ?do_log(7, Format, Args, undefined)).
+-define(emergency(Message, Class, Reason), ?do_log(7, Message, Class, Reason, undefined)).
+-define(emergency(Format, Args, Class, Reason), ?do_log(7, Format, Args, Class, Reason, undefined)).
 -define(emergency_stacktrace(Message, Stacktrace), ?do_log(7, Message, Stacktrace)).
 -define(emergency_stacktrace(Format, Args, Stacktrace), ?do_log(7, Format, Args, Stacktrace)).
+-define(emergency_stacktrace(Message, Class, Reason, Stacktrace), ?do_log(7, Message, Class, Reason, Stacktrace)).
+-define(emergency_stacktrace(Format, Args, Class, Reason, Stacktrace), ?do_log(7, Format, Args, Class, Reason, Stacktrace)).
 
 
 % Macro used for execution flow control; extracts the result when the term indicates
@@ -193,6 +225,14 @@ end, lists:zip(string:tokens(??ListOfVariables, "[] ,"), ListOfVariables))).
         true ->
             onedata_logger:dispatch_log(LoglevelAsInt, ?gather_metadata, Format, Args, Stacktrace)
     end
+).
+
+-define(do_log(LoglevelAsInt, Message, Class, Reason, Stacktrace),
+    ?do_log(LoglevelAsInt, Message, [], Class, Reason, Stacktrace)
+).
+
+-define(do_log(LoglevelAsInt, Format, Args, Class, Reason, Stacktrace),
+    ?do_log(LoglevelAsInt, Format ++ "~nCaught: ~w:~p", Args ++ [Class, Reason], Stacktrace)
 ).
 
 % Resolves current process's state and returns it as metadata proplist
