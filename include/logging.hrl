@@ -18,7 +18,12 @@
 
 
 % Macros that should be used in code for logging.
-% xxx_stacktrace macros will automatically include the stack trace in the log,
+% Developers are encouraged to use the variants that accept
+% exception class and reason and format it in a standard way, unless
+% a custom log format is required. In such a case, they must avoid
+% using the `~p` formatter at the end of the line to avoid large indents.
+
+% xxx_stacktrace logs will automatically include stack trace,
 % provided the env variable 'include_stacktrace' is set to true.
 
 % Compilation with skip_debug flag will remove all debug messages from code.
@@ -109,6 +114,22 @@
 % success (ok, {ok, Result}) or throws upon error.
 -define(check(Expr), utils:check_result(Expr)).
 
+
+% Macro intended as a UNIVERSAL way of logging unexpected exceptions
+-define(log_exception(Class, Reason, Stacktrace),
+    ?log_exception(
+        "An unexpected exception ocurred in ~w:~w/~B, line ~B",
+        [?MODULE, ?FUNCTION_NAME, ?FUNCTION_ARITY, ?LINE],
+        Class, Reason, Stacktrace
+    )
+).
+-define(log_exception(Message, Class, Reason, Stacktrace),
+    ?log_exception(Message, [], Class, Reason, Stacktrace)
+).
+-define(log_exception(Format, Args, Class, Reason, Stacktrace),
+    ?error_stacktrace(Format, Args, Class, Reason, Stacktrace)
+).
+
 % Macro intended as a UNIVERSAL way of handling exceptions, which can be classified in two ways:
 %   1) All thrown error-like terms are treated as a control flow mechanism and simply returned.
 %
@@ -136,23 +157,20 @@
             {throw, {error, _}} ->
                 Reason;
             _ ->
-                ?error_stacktrace(
-                    "An unexpected exception (ref: ~s) ocurred in ~w:~w/~B, line ~B~n"
-                    "~s"
-                    "Caught: ~w:~p", [
+                ?log_exception(
+                    "An unexpected exception (ref: ~s) ocurred in ~w:~w/~B, line ~B~s", [
                         ErrorRef, ?MODULE, ?FUNCTION_NAME, ?FUNCTION_ARITY, ?LINE,
                         case ExtraInfoFmt of
                             "" ->
                                 "";
                             _ ->
                                 str_utils:format(
-                                    "----------------~n" ++ ExtraInfoFmt ++ "~n----------------~n",
+                                    "~n----------------~n" ++ ExtraInfoFmt ++ "~n----------------~n",
                                     ExtraInfoArgs
                                 )
-                        end,
-                        Class, Reason
+                        end
                     ],
-                    Stacktrace
+                    Class, Reason, Stacktrace
                 ),
                 ?ERROR_INTERNAL_SERVER_ERROR(ErrorRef)
         end
