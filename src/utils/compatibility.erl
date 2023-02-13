@@ -441,7 +441,7 @@ take_default_registry_if_newer(Resolver) ->
 %% @private
 -spec take_registry_from_mirror_if_newer(resolver(), registry(), mirror()) -> boolean().
 take_registry_from_mirror_if_newer(Resolver, Registry = #registry{revision = CandidateRevision}, Mirror) ->
-     case get_registry(Resolver, local) of
+    case get_registry(Resolver, local) of
         {ok, #registry{revision = LocalRevision}} when LocalRevision >= CandidateRevision ->
             ?debug("Ignoring compatibility registry fetched from mirror ~s - revision (~B) not newer than local (~B)", [
                 Mirror, CandidateRevision, LocalRevision
@@ -538,10 +538,8 @@ parse_registry(RawRegistry) ->
             }
         }}
     catch
-        Type:Reason:Stacktrace ->
-            ?debug_stacktrace("Cannot parse compatibility registry due to ~p:~p", [
-                Type, Reason
-            ], Stacktrace),
+        Class:Reason:Stacktrace ->
+            ?debug_exception("Cannot parse compatibility registry", Class, Reason, Stacktrace),
             {error, cannot_parse_registry}
     end.
 

@@ -38,8 +38,7 @@ run({Module, Function, Arity}, RequestBody) ->
             ErrorDetails = get_error_details(Reason),
             ?warning("Error in function ~p:~p/~p: ~p",
                 [Module, Function, Arity, ErrorDetails]),
-            ?debug_stacktrace("Error in function ~p:~p/~p: ~p",
-                [Module, Function, Arity, ErrorDetails], Stacktrace),
+            ?debug_exception(error, ErrorDetails, Stacktrace),
             {error, ErrorDetails};
         error:{case_clause, Reason}:Stacktrace ->
             %% Case clause assertion - something went seriously wrong
@@ -57,8 +56,7 @@ run({Module, Function, Arity}, RequestBody) ->
         _:Reason:Stacktrace ->
             %% Manually thrown error, normal interrupt case.
             ErrorDetails = get_error_details(Reason),
-            ?debug_stacktrace("Error in function ~p:~p/~p: ~p",
-                [Module, Function, Arity, ErrorDetails], Stacktrace),
+            ?debug_exception(error, ErrorDetails, Stacktrace),
             {error, ErrorDetails}
     end.
 

@@ -72,7 +72,7 @@ lager_interfacing_test_() ->
     {setup,
         fun() ->
             ctool:set_env(current_loglevel, 0),
-            meck:new(lager)
+            meck:new(lager, [passthrough])
         end,
         fun(_) ->
             ok = meck:unload(lager)
@@ -83,26 +83,25 @@ lager_interfacing_test_() ->
                     meck:expect(lager, log,
                         fun(debug, _, _, ["debug message"]) -> ok;
                             (info, _, _, ["info message"]) -> ok;
-                            (warning, _, _, ["warning message" ++ _Stacktrace]) ->
-                                ok;
+                            (warning, _, _, ["warning message"]) -> ok;
+                            (warning, _, _, ["An unexpected exception" ++ _]) -> ok;
+                            (critical, _, _, ["An unexpected exception" ++ _]) -> ok;
                             (error, _, _, ["error message"]) -> ok;
                             (emergency, _, _, ["emergency message"]) -> ok
                         end),
 
-                    onedata_logger:set_include_stacktrace(false),
-                    onedata_logger:dispatch_log(0, [], "debug ~s", ["message"], false),
-                    onedata_logger:dispatch_log(1, [], "info message", [], false),
-                    onedata_logger:dispatch_log(3, [], "warning message", [], false),
-                    onedata_logger:dispatch_log(4, [], "error ~s", ["message"], false),
-                    onedata_logger:set_include_stacktrace(false),
-                    onedata_logger:dispatch_log(7, [], "emergency ~s", ["message"], false),
+                    onedata_logger:dispatch_log(0, [], "debug ~s", ["message"]),
+                    onedata_logger:dispatch_log(1, [], "info message", []),
+                    onedata_logger:dispatch_log(3, [], "warning message", []),
+                    onedata_logger:dispatch_log(4, [], "error ~s", ["message"]),
+                    onedata_logger:dispatch_log(7, [], "emergency ~s", ["message"]),
                     ?debug("debug message"),
                     ?debug("debug ~s", ["message"]),
                     ?info("info message"),
-                    ?warning_stacktrace(
-                        "warning message",
-                        try throw(test) catch _:_:Stacktrace -> Stacktrace end
-                    ),
+                    try throw(test) catch Class:Reason:Stacktrace ->
+                        ?warning_exception("warning message", Class, Reason, Stacktrace),
+                        ?critical_exception("critical message ~p", [?MODULE], Class, Reason, Stacktrace)
+                    end,
                     ?error("error message"),
                     ?emergency("emergency message"),
                     ?assert(meck:validate(lager))

@@ -11,9 +11,9 @@
 
 -module(onedata_logger).
 
--export([should_log/1, dispatch_log/5, parse_process_info/1, log_with_rotation/4]).
--export([set_loglevel/1, set_console_loglevel/1, set_include_stacktrace/1]).
--export([get_current_loglevel/0, get_default_loglevel/0, get_console_loglevel/0, get_include_stacktrace/0]).
+-export([should_log/1, dispatch_log/4, parse_process_info/1, log_with_rotation/4]).
+-export([set_loglevel/1, set_console_loglevel/1]).
+-export([get_current_loglevel/0, get_default_loglevel/0, get_console_loglevel/0]).
 -export([loglevel_int_to_atom/1, loglevel_atom_to_int/1]).
 
 %%--------------------------------------------------------------------
@@ -31,13 +31,12 @@ should_log(LevelAsInt) ->
 %% @doc Logs the log locally (it will be intercepted by central_logging_backend and sent to central sink)
 %% @end
 %%--------------------------------------------------------------------
--spec dispatch_log(LoglevelAsInt :: integer(), Metadata :: [tuple()], Format :: string(),
-    Args :: [term()], Stacktrace :: list() | undefined) -> ok | {error, lager_not_running}.
-dispatch_log(LoglevelAsInt, Metadata, Format, Args, Stacktrace) ->
+-spec dispatch_log(LoglevelAsInt :: integer(), Metadata :: [tuple()], Format :: string(), Args :: [term()]) ->
+    ok | {error, lager_not_running}.
+dispatch_log(LoglevelAsInt, Metadata, Format, Args) ->
     Severity = loglevel_int_to_atom(LoglevelAsInt),
-    lager:log(Severity, Metadata, "~ts", [
-        compute_message(Format, Args, Stacktrace)
-    ]).
+    % the reformatting with 't' modifier ensures that special characters are properly handled
+    lager:log(Severity, Metadata, "~ts", [str_utils:format(Format, Args)]).
 
 %%--------------------------------------------------------------------
 %% @doc Changes current global loglevel to desired. Argument can be loglevel as int or atom
@@ -91,17 +90,6 @@ set_console_loglevel(_) ->
     {error, badarg}.
 
 %%--------------------------------------------------------------------
-%% @doc Changes include_stacktrace env to true or false
-%% @end
-%%--------------------------------------------------------------------
--spec set_include_stacktrace(boolean()) -> ok | {error, badarg}.
-set_include_stacktrace(Flag) when is_boolean(Flag) ->
-    ctool:set_env(include_stacktrace, Flag);
-
-set_include_stacktrace(_) ->
-    {error, badarg}.
-
-%%--------------------------------------------------------------------
 %% @doc Returns current loglevel as set in application's env
 %% @end
 %%--------------------------------------------------------------------
@@ -127,14 +115,6 @@ get_console_loglevel() ->
     % lager_util:mask_to_levels(Mask) returns list of allowed log level, first of
     % which is the lowest loglevel
     loglevel_atom_to_int(lists:nth(1, lager_util:mask_to_levels(Mask))).
-
-%%--------------------------------------------------------------------
-%% @doc Returns get_include_stacktrace env value
-%% @end
-%%--------------------------------------------------------------------
--spec get_include_stacktrace() -> boolean().
-get_include_stacktrace() ->
-    ctool:get_env(include_stacktrace, true).
 
 %%--------------------------------------------------------------------
 %% @doc Returns loglevel name associated with loglevel number
@@ -197,24 +177,3 @@ log_with_rotation(LogFile, Format, Args, MaxSize) ->
     file:write_file(LogFile,
         io_lib:format("~n~s, ~s: " ++ Format, [Date, Time | Args]), [append]),
     ok.
-
-%%--------------------------------------------------------------------
-%% Internal functions
-%%--------------------------------------------------------------------
-
-%%--------------------------------------------------------------------
-%% @private @doc Computes a log message string, possibly including stacktrace.
-%% @end
-%%--------------------------------------------------------------------
--spec compute_message(string(), list(), list() | undefined) -> string().
-compute_message(Format, Args, Stacktrace) ->
-    {Format2, Args2} = case (get_include_stacktrace() andalso Stacktrace =/= undefined) of
-        false ->
-            {Format, Args};
-        true ->
-            {
-                    Format ++ "~nStacktrace:~s",
-                    Args ++ [iolist_to_binary(lager:pr_stacktrace(Stacktrace))]
-            }
-    end,
-    lists:flatten(io_lib:format(Format2, Args2)).
