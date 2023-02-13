@@ -24,7 +24,9 @@
 %   Basic macros are intended for general purpose, manually formatted logs not related to exceptions.
 %
 %   Exception macros are intended as a THE ONLY RIGHT way of logging unexpected exceptions.
-%       Use 'autoformat' atom as DetailsFormat for a generic log with automatic formatting of DetailsArgs.
+%
+% Use ?autoformat([TermA, TermB, ...]) for an auto-formatted string that dumps the values
+% of all Terms (by variable names).
 %
 % NOTE: always avoid using the `~p` formatter at the end of the line to avoid large indents.
 
@@ -88,27 +90,32 @@
 -define(emergency_exception(DetailsFormat, DetailsArgs, Class, Reason, Stacktrace), ?log_exception(7, DetailsFormat, DetailsArgs, undefined, Class, Reason, Stacktrace)).
 
 
+-define(autoformat(Terms),
+    str_utils:format(
+        lists:flatten(lists:map(fun(TermName) ->
+            "~n    " ++ TermName ++ " = ~p"
+        end, string:tokens(??Terms, "[] ,"))),
+        Terms
+    )
+).
+
+
 % DEPRECATED - use ?error_exception instead
 % to be removed when occurrences of ?error_stacktrace are pruned from code
 -define(error_stacktrace(DetailsMessage, Stacktrace), ?error_stacktrace(DetailsMessage, [], Stacktrace)).
 -define(error_stacktrace(DetailsFormat, DetailsArgs, Stacktrace),
-    ?wrap_in_loglevel_check(4, onedata_logger:dispatch_log(
-        4,
-        ?gather_metadata,
-        "An unexpected exception occurred in ~w:~w/~B line ~B~n"
-        "> Stacktrace:~s"
-        "~s",
-        [
-            ?MODULE, ?FUNCTION_NAME, ?FUNCTION_ARITY, ?LINE,
-            lager:pr_stacktrace(Stacktrace),
-            ?print_details_log_suffix(DetailsFormat, DetailsArgs)
-        ]
-    ))
+    ?wrap_in_loglevel_check(4,
+        onedata_logger:log(4, ?gather_metadata, onedata_logger:format_deprecated_exception_log(
+            ?MODULE, ?FUNCTION_NAME, ?FUNCTION_ARITY, ?LINE, DetailsFormat, DetailsArgs, Stacktrace
+        ))
+    )
 ).
 
 
 -define(log(LoglevelInt, Format, Args),
-    ?wrap_in_loglevel_check(LoglevelInt, onedata_logger:dispatch_log(LoglevelInt, ?gather_metadata, Format, Args))
+    ?wrap_in_loglevel_check(LoglevelInt, onedata_logger:log(
+        LoglevelInt, ?gather_metadata, onedata_logger:format_generic_log(Format, Args)
+    ))
 ).
 
 % by default, all exceptions are logged on 'error' level
@@ -118,24 +125,11 @@
 % A Ref (string) can optionally be passed for easier log navigation - as long
 % as the Ref is then somehow identifiable, e.g. as in ?ERROR_INTERNAL_SERVER_ERROR(Ref).
 -define(log_exception(LoglevelInt, DetailsFormat, DetailsArgs, Ref, Class, Reason, Stacktrace),
-    ?wrap_in_loglevel_check(LoglevelInt, onedata_logger:dispatch_log(
-        LoglevelInt,
-        ?gather_metadata,
-        "An unexpected exception~s occurred in ~w:~w/~B line ~B~n"
-        "> Caught: ~s:~p~n"
-        "> Stacktrace:~s"
-        "~s",
-        [
-            case Ref of
-                undefined -> "";
-                _ -> str_utils:format(" (ref: ~s)", [Ref])
-            end,
-            ?MODULE, ?FUNCTION_NAME, ?FUNCTION_ARITY, ?LINE,
-            Class, Reason,
-            lager:pr_stacktrace(Stacktrace),
-            ?print_details_log_suffix(DetailsFormat, DetailsArgs)
-        ]
-    ))
+    ?wrap_in_loglevel_check(LoglevelInt,
+        onedata_logger:log(LoglevelInt, ?gather_metadata, onedata_logger:format_exception_log(
+            ?MODULE, ?FUNCTION_NAME, ?FUNCTION_ARITY, ?LINE, DetailsFormat, DetailsArgs, Ref, Class, Reason, Stacktrace
+        ))
+    )
 ).
 
 
@@ -143,16 +137,11 @@
 % an exception, but are a result of handling anticipated errors (those that are not
 % desired and should be reported as a problem and reflected in the application logs).
 -define(report_internal_server_error(Message), ?report_internal_server_error(Message, [])).
--define(report_internal_server_error(DetailsFmt, DetailsArgs), begin
+-define(report_internal_server_error(DetailsFormat, DetailsArgs), begin
     ((fun(ErrorRef) ->
-        ?error(
-            "An error (ref: ~s) occurred in ~w:~w/~B line ~B"
-            "~s",
-            [
-                ErrorRef, ?MODULE, ?FUNCTION_NAME, ?FUNCTION_ARITY, ?LINE,
-                ?print_details_log_suffix(DetailsFmt, DetailsArgs)
-            ]
-        ),
+        ?error(onedata_logger:format_error_report(
+            ?MODULE, ?FUNCTION_NAME, ?FUNCTION_ARITY, ?LINE, DetailsFormat, DetailsArgs, ErrorRef
+        )),
         ?ERROR_INTERNAL_SERVER_ERROR(ErrorRef)
     end)(str_utils:rand_hex(5)))
 end).
@@ -171,7 +160,7 @@ end).
 %      a stacktrace and includes an error reference (for easier correlation of logs and errors
 %      reported by clients), finally returning the ?ERROR_INTERNAL_SERVER_ERROR(ErrorRef) error.
 %
-% The DetailsMessage or DetailsFmt+DetailsArgs arguments can be optionally
+% The DetailsMessage or DetailsFormat+DetailsArgs arguments can be optionally
 % passed to extend the log with some additional information.
 -define(examine_exception(Class, Reason, Stacktrace),
     ?examine_exception("", Class, Reason, Stacktrace)
@@ -179,14 +168,13 @@ end).
 -define(examine_exception(DetailsMessage, Class, Reason, Stacktrace),
     ?examine_exception(DetailsMessage, [], Class, Reason, Stacktrace)
 ).
-% use 'autoformat' atom as DetailsFmt for automatic formatting of DetailsArgs
--define(examine_exception(DetailsFmt, DetailsArgs, Class, Reason, Stacktrace), begin
+-define(examine_exception(DetailsFormat, DetailsArgs, Class, Reason, Stacktrace), begin
     ((fun(ErrorRef) ->
         case {Class, Reason} of
             {throw, {error, _}} ->
                 Reason;
             _ ->
-                ?log_exception(DetailsFmt, DetailsArgs, ErrorRef, Class, Reason, Stacktrace),
+                ?log_exception(DetailsFormat, DetailsArgs, ErrorRef, Class, Reason, Stacktrace),
                 ?ERROR_INTERNAL_SERVER_ERROR(ErrorRef)
         end
     end)(str_utils:rand_hex(5)))
@@ -231,24 +219,10 @@ end).
 -define(dump(Term), io:format(user, "[DUMP] ~s: ~p~n~n", [??Term, Term])).
 
 % Prints a list of terms
--define(dump_all(Terms), io:format(user, "[DUMP ALL]~n" ++ ?make_autoformat_string(Terms) ++ "~n~n", Terms)).
+-define(dump_all(Terms), io:format(user, "[DUMP ALL]" ++ ?autoformat(Terms) ++ "~n~n", [])).
 
 
 %% Macros used internally
-
--define(make_autoformat_string(Terms),
-    lists:flatten(lists:join("~n", lists:map(fun(TermName) ->
-        "    " ++ TermName ++ " = ~p"
-    end, string:tokens(??Terms, "[] ,"))))
-).
-
--define(print_details_log_suffix(Format, Args),
-    case Format of
-        "" -> "";
-        autoformat -> str_utils:format("~n> Details:~n" ++ ?make_autoformat_string(Args), Args);
-        _ -> str_utils:format("~n> Details: " ++ Format, Args)
-    end
-).
 
 -define(wrap_in_loglevel_check(LoglevelInt, Term),
     case onedata_logger:should_log(LoglevelInt) of

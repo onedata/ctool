@@ -78,7 +78,7 @@ lager_interfacing_test_() ->
             ok = meck:unload(lager)
         end,
         [
-            {"dispatch_log, set/get_include_stacktrace, compute_message, logging macros",
+            {"log, set/get_include_stacktrace, compute_message, logging macros",
                 fun() ->
                     meck:expect(lager, log,
                         fun(debug, _, _, ["debug message"]) -> ok;
@@ -90,11 +90,11 @@ lager_interfacing_test_() ->
                             (emergency, _, _, ["emergency message"]) -> ok
                         end),
 
-                    onedata_logger:dispatch_log(0, [], "debug ~s", ["message"]),
-                    onedata_logger:dispatch_log(1, [], "info message", []),
-                    onedata_logger:dispatch_log(3, [], "warning message", []),
-                    onedata_logger:dispatch_log(4, [], "error ~s", ["message"]),
-                    onedata_logger:dispatch_log(7, [], "emergency ~s", ["message"]),
+                    onedata_logger:log(0, [], "debug message"),
+                    onedata_logger:log(1, [], "info message"),
+                    onedata_logger:log(3, [], "warning message"),
+                    onedata_logger:log(4, [], "error message"),
+                    onedata_logger:log(7, [], "emergency message"),
                     ?debug("debug message"),
                     ?debug("debug ~s", ["message"]),
                     ?info("info message"),
