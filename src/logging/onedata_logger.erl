@@ -32,7 +32,7 @@ format_generic_log(Format, Args) ->
 
 -spec format_exception_log(
     module(), atom(), non_neg_integer(), non_neg_integer(),
-    string(), list(), binary(),
+    string(), list(), undefined | string() | binary(),
     atom(), term(), list()
 ) -> string().
 format_exception_log(
@@ -86,7 +86,7 @@ format_deprecated_exception_log(
 
 -spec format_error_report(
     module(), atom(), non_neg_integer(), non_neg_integer(),
-    string(), list(), binary()
+    string(), list(), undefined | string() | binary()
 ) -> string().
 format_error_report(
     Module, Function, Arity, Line,
