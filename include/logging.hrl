@@ -29,7 +29,7 @@
 
 % Macros that should be used in code for logging.
 
-% % Compilation with skip_debug flag will remove all debug messages from code.
+% Compilation with skip_debug flag will remove all debug messages from code.
 -ifdef(skip_debug).
 -define(debug(Message), ok).
 -define(debug(Format, Args), ok).
