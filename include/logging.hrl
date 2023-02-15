@@ -6,8 +6,16 @@
 %%% @end
 %%%-------------------------------------------------------------------
 %%% @doc
-%%% This file contains unified logging macros for all Onedata components.
-%%% The lager application must be started for them to work.
+%%% Unified logging macros for all Onedata components, using lager behind the scenes.
+%%%
+%%%   Basic macros are intended for general purpose, manually formatted logs not related to exceptions.
+%%%
+%%%   Exception macros are intended as THE ONLY RIGHT way of logging unexpected exceptions.
+%%%
+%%% Use ?autoformat([TermA, TermB, ...]) for an auto-formatted string with the values
+%%% of all Terms (by variable names).
+%%%
+%%% NOTE: always avoid using the `~p` formatter at the end of the line to avoid large indents.
 %%%
 %%% NOTE: see the LOGGING.md file for usage examples.
 %%% @end
@@ -20,17 +28,8 @@
 
 
 % Macros that should be used in code for logging.
-%
-%   Basic macros are intended for general purpose, manually formatted logs not related to exceptions.
-%
-%   Exception macros are intended as a THE ONLY RIGHT way of logging unexpected exceptions.
-%
-% Use ?autoformat([TermA, TermB, ...]) for an auto-formatted string that dumps the values
-% of all Terms (by variable names).
-%
-% NOTE: always avoid using the `~p` formatter at the end of the line to avoid large indents.
 
-% Compilation with skip_debug flag will remove all debug messages from code.
+% % Compilation with skip_debug flag will remove all debug messages from code.
 -ifdef(skip_debug).
 -define(debug(Message), ok).
 -define(debug(Format, Args), ok).
@@ -90,6 +89,8 @@
 -define(emergency_exception(DetailsFormat, DetailsArgs, Class, Reason, Stacktrace), ?log_exception(7, DetailsFormat, DetailsArgs, undefined, Class, Reason, Stacktrace)).
 
 
+% produces an auto-formatted string with the values of all Terms (by variable names)
+% NOTE: the string begins with a newline
 -define(autoformat(Terms),
     str_utils:format(
         lists:flatten(lists:map(fun(TermName) ->
@@ -216,7 +217,7 @@ end).
 % Convenience macros for debug
 
 % Prints a single term by the name of the variable
--define(dump(Term), io:format(user, "[DUMP] ~s: ~p~n~n", [??Term, Term])).
+-define(dump(Term), io:format(user, "[DUMP] ~s = ~p~n~n", [??Term, Term])).
 
 % Prints a list of terms
 -define(dump_all(Terms), io:format(user, "[DUMP ALL]" ++ ?autoformat(Terms) ++ "~n~n", [])).
@@ -224,12 +225,12 @@ end).
 
 %% Macros used internally
 
--define(wrap_in_loglevel_check(LoglevelInt, Term),
+-define(wrap_in_loglevel_check(LoglevelInt, Expression),
     case onedata_logger:should_log(LoglevelInt) of
         false ->
             ok;
         true ->
-            Term
+            Expression
     end
 ).
 

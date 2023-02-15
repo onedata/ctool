@@ -53,10 +53,7 @@ format_exception_log(
             Module, Function, Arity, Line,
             Class, Reason,
             lager:pr_stacktrace(Stacktrace),
-            case DetailsFormat of
-                "" -> "";
-                _ -> str_utils:format("~n> Details: " ++ DetailsFormat, DetailsArgs)
-            end
+            format_details_suffix(DetailsFormat, DetailsArgs)
         ]
     ).
 
@@ -76,10 +73,7 @@ format_deprecated_exception_log(
         [
             Module, Function, Arity, Line,
             lager:pr_stacktrace(Stacktrace),
-            case DetailsFormat of
-                "" -> "";
-                _ -> str_utils:format("~n> Details: " ++ DetailsFormat, DetailsArgs)
-            end
+            format_details_suffix(DetailsFormat, DetailsArgs)
         ]
     ).
 
@@ -97,10 +91,7 @@ format_error_report(
         "~s",
         [
             Ref, Module, Function, Arity, Line,
-            case DetailsFormat of
-                "" -> "";
-                _ -> str_utils:format("~n> Details: " ++ DetailsFormat, DetailsArgs)
-            end
+            format_details_suffix(DetailsFormat, DetailsArgs)
         ]
     ).
 
@@ -261,3 +252,14 @@ log_with_rotation(LogFile, Format, Args, MaxSize) ->
     file:write_file(LogFile,
         io_lib:format("~n~s, ~s: " ++ Format, [Date, Time | Args]), [append]),
     ok.
+
+%%%===================================================================
+%%% API
+%%%===================================================================
+
+%% @private
+-spec format_details_suffix(string(), list()) -> string().
+format_details_suffix("", _) ->
+    "";
+format_details_suffix(DetailsFormat, DetailsArgs) ->
+    str_utils:format("~n> Details: " ++ DetailsFormat, DetailsArgs).
