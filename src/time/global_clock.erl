@@ -347,7 +347,7 @@ recover_bias_from_disk() ->
                     false -> stale
                 end
             catch Class:Reason:Stacktrace ->
-                ?debug_stacktrace("Cannot parse the time synchronization backup file - ~w:~p", [Class, Reason], Stacktrace),
+                ?debug_exception("Cannot parse the time synchronization backup file", Class, Reason, Stacktrace),
                 not_found
             end;
         Other ->

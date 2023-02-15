@@ -1,8 +1,6 @@
 # ctool
-*ctool* is library application that contains utlity functions for logging, monitoring and testing.
-
-# User Guide
-*ctool* provies various functionality in a form of erlang modules. It is usually added to other projects as *rebar* dependency. It may be also build and used separetely - to build it first initialize submodules: `make submodules` and then use `make.py` script. 
+*ctool* is a library application that contains utility functions for logging, 
+monitoring and testing. It is used across Onedata components as a rebar dependency.
 
 Most important elements of *ctool* are:
 
@@ -13,25 +11,6 @@ Most important elements of *ctool* are:
 * `test_node_starter.erl` - functions for environment setting/teardown.
  tests.
 * `tracer.erl` - utility functions for debugging.
-
-# APIs
-Following logging macros are defined:
-
- * `debug`
- * `info`
- * `notice`
- * `warning`
- * `error`
- * `critical`
- * `alert`
- * `emergency`
-
-Each may be used in following ways (example with debug macro):
-
- * `?debug(_Message)`
- * `?debug(_Format, _Args)`
- * `?debug_stacktrace(_Message)`
- * `?debug_stacktrace(_Format, _Args)`
 
 There are 2 performance macros:
 
