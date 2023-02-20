@@ -125,10 +125,8 @@ build_verifier(AuthCtx, SupportedCaveats) ->
         end,
         try
             lists:member(type(Caveat), SupportedCaveats) andalso verify(Caveat, AuthCtx)
-        catch Type:Reason:Stacktrace ->
-            ?debug_stacktrace("Cannot verify caveat ~s due to ~p:~p", [
-                SerializedCaveat, Type, Reason
-            ], Stacktrace),
+        catch Class:Reason:Stacktrace ->
+            ?debug_exception("Cannot verify caveat ~s", [SerializedCaveat], Class, Reason, Stacktrace),
             false
         end
     end).

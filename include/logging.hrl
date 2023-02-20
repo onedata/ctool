@@ -1,13 +1,23 @@
 %%%-------------------------------------------------------------------
 %%% @author Lukasz Opiola
-%%% @copyright (C) 2013-2022 ACK CYFRONET AGH
+%%% @copyright (C) 2013-2023 ACK CYFRONET AGH
 %%% This software is released under the MIT license 
 %%% cited in 'LICENSE.txt'.
 %%% @end
 %%%-------------------------------------------------------------------
 %%% @doc
-%%% This file contains convenient logging macros.
-%%% The lager application must be started for them to work.
+%%% Unified logging macros for all Onedata components, using lager behind the scenes.
+%%%
+%%%   Basic macros are intended for general purpose, manually formatted logs not related to exceptions.
+%%%
+%%%   Exception macros are intended as THE ONLY RIGHT way of logging unexpected exceptions.
+%%%
+%%% Use ?autoformat([TermA, TermB, ...]) for an auto-formatted string with the values
+%%% of all Terms (by variable names).
+%%%
+%%% NOTE: always avoid using the `~p` formatter at the end of the line to avoid large indents.
+%%%
+%%% NOTE: see the LOGGING.md file for usage examples.
 %%% @end
 %%%-------------------------------------------------------------------
 
@@ -18,59 +28,129 @@
 
 
 % Macros that should be used in code for logging.
-% xxx_stacktrace macros will automatically include the stack trace in the log,
-% provided the env variable 'include_stacktrace' is set to true.
 
 % Compilation with skip_debug flag will remove all debug messages from code.
-
 -ifdef(skip_debug).
 -define(debug(Message), ok).
 -define(debug(Format, Args), ok).
--define(debug_stacktrace(Message), ok).
--define(debug_stacktrace(Format, Args), ok).
+-define(debug_exception(Class, Reason, Stacktrace), ok).
+-define(debug_exception(DetailsMessage, Class, Reason, Stacktrace), ok).
+-define(debug_exception(DetailsFormat, DetailsArgs, Class, Reason, Stacktrace), ok).
 -endif.
 
 -ifndef(skip_debug).
--define(debug(Message), ?do_log(0, Message, undefined)).
--define(debug(Format, Args), ?do_log(0, Format, Args, undefined)).
--define(debug_stacktrace(Message, Stacktrace), ?do_log(0, Message, Stacktrace)).
--define(debug_stacktrace(Format, Args, Stacktrace), ?do_log(0, Format, Args, Stacktrace)).
+-define(debug(Message), ?log(0, Message, [])).
+-define(debug(Format, Args), ?log(0, Format, Args)).
+-define(debug_exception(Class, Reason, Stacktrace), ?log_exception(0, "", [], undefined, Class, Reason, Stacktrace)).
+-define(debug_exception(DetailsMessage, Class, Reason, Stacktrace), ?log_exception(0, DetailsMessage, [], undefined, Class, Reason, Stacktrace)).
+-define(debug_exception(DetailsFormat, DetailsArgs, Class, Reason, Stacktrace), ?log_exception(0, DetailsFormat, DetailsArgs, undefined, Class, Reason, Stacktrace)).
 -endif.
 
--define(info(Message), ?do_log(1, Message, undefined)).
--define(info(Format, Args), ?do_log(1, Format, Args, undefined)).
--define(info_stacktrace(Message, Stacktrace), ?do_log(1, Message, Stacktrace)).
--define(info_stacktrace(Format, Args, Stacktrace), ?do_log(1, Format, Args, Stacktrace)).
+-define(info(Message), ?log(1, Message, [])).
+-define(info(Format, Args), ?log(1, Format, Args)).
+-define(info_exception(Class, Reason, Stacktrace), ?log_exception(1, "", [], undefined, Class, Reason, Stacktrace)).
+-define(info_exception(DetailsMessage, Class, Reason, Stacktrace), ?log_exception(1, DetailsMessage, [], undefined, Class, Reason, Stacktrace)).
+-define(info_exception(DetailsFormat, DetailsArgs, Class, Reason, Stacktrace), ?log_exception(1, DetailsFormat, DetailsArgs, undefined, Class, Reason, Stacktrace)).
 
--define(notice(Message), ?do_log(2, Message, undefined)).
--define(notice(Format, Args), ?do_log(2, Format, Args, undefined)).
--define(notice_stacktrace(Message, Stacktrace), ?do_log(2, Message, Stacktrace)).
--define(notice_stacktrace(Format, Args, Stacktrace), ?do_log(2, Format, Args, Stacktrace)).
+-define(notice(Message), ?log(2, Message, [])).
+-define(notice(Format, Args), ?log(2, Format, Args)).
+-define(notice_exception(Class, Reason, Stacktrace), ?log_exception(2, "", [], undefined, Class, Reason, Stacktrace)).
+-define(notice_exception(DetailsMessage, Class, Reason, Stacktrace), ?log_exception(2, DetailsMessage, [], undefined, Class, Reason, Stacktrace)).
+-define(notice_exception(DetailsFormat, DetailsArgs, Class, Reason, Stacktrace), ?log_exception(2, DetailsFormat, DetailsArgs, undefined, Class, Reason, Stacktrace)).
 
--define(warning(Message), ?do_log(3, Message, undefined)).
--define(warning(Format, Args), ?do_log(3, Format, Args, undefined)).
--define(warning_stacktrace(Message, Stacktrace), ?do_log(3, Message, Stacktrace)).
--define(warning_stacktrace(Format, Args, Stacktrace), ?do_log(3, Format, Args, Stacktrace)).
+-define(warning(Message), ?log(3, Message, [])).
+-define(warning(Format, Args), ?log(3, Format, Args)).
+-define(warning_exception(Class, Reason, Stacktrace), ?log_exception(3, "", [], undefined, Class, Reason, Stacktrace)).
+-define(warning_exception(DetailsMessage, Class, Reason, Stacktrace), ?log_exception(3, DetailsMessage, [], undefined, Class, Reason, Stacktrace)).
+-define(warning_exception(DetailsFormat, DetailsArgs, Class, Reason, Stacktrace), ?log_exception(3, DetailsFormat, DetailsArgs, undefined, Class, Reason, Stacktrace)).
 
--define(error(Message), ?do_log(4, Message, undefined)).
--define(error(Format, Args), ?do_log(4, Format, Args, undefined)).
--define(error_stacktrace(Message, Stacktrace), ?do_log(4, Message, Stacktrace)).
--define(error_stacktrace(Format, Args, Stacktrace), ?do_log(4, Format, Args, Stacktrace)).
+-define(error(Message), ?log(4, Message, [])).
+-define(error(Format, Args), ?log(4, Format, Args)).
+-define(error_exception(Class, Reason, Stacktrace), ?log_exception(4, "", [], undefined, Class, Reason, Stacktrace)).
+-define(error_exception(DetailsMessage, Class, Reason, Stacktrace), ?log_exception(4, DetailsMessage, [], undefined, Class, Reason, Stacktrace)).
+-define(error_exception(DetailsFormat, DetailsArgs, Class, Reason, Stacktrace), ?log_exception(4, DetailsFormat, DetailsArgs, undefined, Class, Reason, Stacktrace)).
 
--define(critical(Message), ?do_log(5, Message, undefined)).
--define(critical(Format, Args), ?do_log(5, Format, Args, undefined)).
--define(critical_stacktrace(Message, Stacktrace), ?do_log(5, Message, Stacktrace)).
--define(critical_stacktrace(Format, Args, Stacktrace), ?do_log(5, Format, Args, Stacktrace)).
+-define(critical(Message), ?log(5, Message, [])).
+-define(critical(Format, Args), ?log(5, Format, Args)).
+-define(critical_exception(Class, Reason, Stacktrace), ?log_exception(5, "", [], undefined, Class, Reason, Stacktrace)).
+-define(critical_exception(DetailsMessage, Class, Reason, Stacktrace), ?log_exception(5, DetailsMessage, [], undefined, Class, Reason, Stacktrace)).
+-define(critical_exception(DetailsFormat, DetailsArgs, Class, Reason, Stacktrace), ?log_exception(5, DetailsFormat, DetailsArgs, undefined, Class, Reason, Stacktrace)).
 
--define(alert(Message), ?do_log(6, Message, undefined)).
--define(alert(Format, Args), ?do_log(6, Format, Args, undefined)).
--define(alert_stacktrace(Message, Stacktrace), ?do_log(6, Message, Stacktrace)).
--define(alert_stacktrace(Format, Args, Stacktrace), ?do_log(6, Format, Args, Stacktrace)).
+-define(alert(Message), ?log(6, Message, [])).
+-define(alert(Format, Args), ?log(6, Format, Args)).
+-define(alert_exception(Class, Reason, Stacktrace), ?log_exception(6, "", [], undefined, Class, Reason, Stacktrace)).
+-define(alert_exception(DetailsMessage, Class, Reason, Stacktrace), ?log_exception(6, DetailsMessage, [], undefined, Class, Reason, Stacktrace)).
+-define(alert_exception(DetailsFormat, DetailsArgs, Class, Reason, Stacktrace), ?log_exception(6, DetailsFormat, DetailsArgs, undefined, Class, Reason, Stacktrace)).
 
--define(emergency(Message), ?do_log(7, Message, undefined)).
--define(emergency(Format, Args), ?do_log(7, Format, Args, undefined)).
--define(emergency_stacktrace(Message, Stacktrace), ?do_log(7, Message, Stacktrace)).
--define(emergency_stacktrace(Format, Args, Stacktrace), ?do_log(7, Format, Args, Stacktrace)).
+-define(emergency(Message), ?log(7, Message, [])).
+-define(emergency(Format, Args), ?log(7, Format, Args)).
+-define(emergency_exception(Class, Reason, Stacktrace), ?log_exception(7, "", [], undefined, Class, Reason, Stacktrace)).
+-define(emergency_exception(DetailsMessage, Class, Reason, Stacktrace), ?log_exception(7, DetailsMessage, [], undefined, Class, Reason, Stacktrace)).
+-define(emergency_exception(DetailsFormat, DetailsArgs, Class, Reason, Stacktrace), ?log_exception(7, DetailsFormat, DetailsArgs, undefined, Class, Reason, Stacktrace)).
+
+
+% produces an auto-formatted string with the values of all Terms (by variable names)
+% NOTE: the string begins with a newline
+-define(autoformat(Terms),
+    str_utils:format(
+        lists:flatten(lists:map(fun(TermName) ->
+            "~n    " ++ TermName ++ " = ~p"
+        end, string:tokens(??Terms, "[] ,"))),
+        Terms
+    )
+).
+
+
+% DEPRECATED - use ?error_exception instead
+% to be removed when occurrences of ?error_stacktrace are pruned from code
+-define(error_stacktrace(DetailsMessage, Stacktrace), ?error_stacktrace(DetailsMessage, [], Stacktrace)).
+-define(error_stacktrace(DetailsFormat, DetailsArgs, Stacktrace),
+    ?wrap_in_loglevel_check(4,
+        onedata_logger:log(4, ?gather_metadata, onedata_logger:format_deprecated_exception_log(
+            ?MODULE, ?FUNCTION_NAME, ?FUNCTION_ARITY, ?LINE, DetailsFormat, DetailsArgs, Stacktrace
+        ))
+    )
+).
+
+
+-define(log(LoglevelInt, Format, Args),
+    ?wrap_in_loglevel_check(LoglevelInt, onedata_logger:log(
+        LoglevelInt, ?gather_metadata, onedata_logger:format_generic_log(Format, Args)
+    ))
+).
+
+% by default, all exceptions are logged on 'error' level
+-define(log_exception(DetailsFormat, DetailsArgs, Ref, Class, Reason, Stacktrace),
+    ?log_exception(4, DetailsFormat, DetailsArgs, Ref, Class, Reason, Stacktrace)
+).
+% A Ref (string) can optionally be passed for easier log navigation - as long
+% as the Ref is then somehow identifiable, e.g. as in ?ERROR_INTERNAL_SERVER_ERROR(Ref).
+-define(log_exception(LoglevelInt, DetailsFormat, DetailsArgs, Ref, Class, Reason, Stacktrace),
+    ?wrap_in_loglevel_check(LoglevelInt,
+        onedata_logger:log(LoglevelInt, ?gather_metadata, onedata_logger:format_exception_log(
+            ?MODULE, ?FUNCTION_NAME, ?FUNCTION_ARITY, ?LINE, DetailsFormat, DetailsArgs, Ref, Class, Reason, Stacktrace
+        ))
+    )
+).
+
+
+% Macro intended as a UNIVERSAL way to report internal server errors that are not caused by
+% an exception, but are a result of handling anticipated errors (those that are not
+% desired and should be reported as a problem and reflected in the application logs).
+-define(report_internal_server_error(Message), ?report_internal_server_error(Message, [])).
+-define(report_internal_server_error(DetailsFormat, DetailsArgs), begin
+    ((fun(ErrorRef) ->
+        ?error(onedata_logger:format_error_report(
+            ?MODULE, ?FUNCTION_NAME, ?FUNCTION_ARITY, ?LINE, DetailsFormat, DetailsArgs, ErrorRef
+        )),
+        ?ERROR_INTERNAL_SERVER_ERROR(ErrorRef)
+    end)(str_utils:rand_hex(5)))
+end).
+
+
+% Macro used for execution flow control; extracts the result when the term indicates
+% success (ok, {ok, Result}) or throws upon error.
+-define(check(Expr), utils:check_result(Expr)).
 
 
 % Macro intended as a UNIVERSAL way of handling exceptions, which can be classified in two ways:
@@ -81,47 +161,26 @@
 %      a stacktrace and includes an error reference (for easier correlation of logs and errors
 %      reported by clients), finally returning the ?ERROR_INTERNAL_SERVER_ERROR(ErrorRef) error.
 %
-% The ExtraInfoFmt, ExtraInfoArgs arguments can be optionally passed to
-% extend the log with arbitrary additional information.
+% The DetailsMessage or DetailsFormat+DetailsArgs arguments can be optionally
+% passed to extend the log with some additional information.
 -define(examine_exception(Class, Reason, Stacktrace),
-    ?examine_exception(Class, Reason, Stacktrace, [])
+    ?examine_exception("", Class, Reason, Stacktrace)
 ).
--define(examine_exception(Class, Reason, Stacktrace, ExtraTermsToPrint),
-    ?examine_exception(Class, Reason, Stacktrace,
-        lists:flatten(lists:join("~n", lists:map(fun(TermName) ->
-            "> " ++ TermName ++ ": ~p"
-        end, string:tokens(??ExtraTermsToPrint, "[] ,")))),
-        ExtraTermsToPrint
-    )
+-define(examine_exception(DetailsMessage, Class, Reason, Stacktrace),
+    ?examine_exception(DetailsMessage, [], Class, Reason, Stacktrace)
 ).
--define(examine_exception(Class, Reason, Stacktrace, ExtraInfoFmt, ExtraInfoArgs), begin
+-define(examine_exception(DetailsFormat, DetailsArgs, Class, Reason, Stacktrace), begin
     ((fun(ErrorRef) ->
         case {Class, Reason} of
             {throw, {error, _}} ->
                 Reason;
             _ ->
-                ?error_stacktrace(
-                    "An unexpected exception (ref: ~s) ocurred in ~w:~w/~B, line ~B~n"
-                    "~s"
-                    "Caught: ~w:~p", [
-                        ErrorRef, ?MODULE, ?FUNCTION_NAME, ?FUNCTION_ARITY, ?LINE,
-                        case ExtraInfoFmt of
-                            "" ->
-                                "";
-                            _ ->
-                                str_utils:format(
-                                    "----------------~n" ++ ExtraInfoFmt ++ "~n----------------~n",
-                                    ExtraInfoArgs
-                                )
-                        end,
-                        Class, Reason
-                    ],
-                    Stacktrace
-                ),
+                ?log_exception(DetailsFormat, DetailsArgs, ErrorRef, Class, Reason, Stacktrace),
                 ?ERROR_INTERNAL_SERVER_ERROR(ErrorRef)
         end
     end)(str_utils:rand_hex(5)))
 end).
+
 
 % Macro intended as a UNIVERSAL way to wrap a piece of code with handling of exceptions.
 % If the code finishes successfully or throws an error-like term, the return value
@@ -137,26 +196,12 @@ end).
     end)())
 end).
 
-% Macro intended as a UNIVERSAL way to report internal server errors that are not caused by
-% an exception, but are a result of handling anticipated errors (those that are not
-% desired and should be reported as a problem and reflected in the application logs).
--define(report_internal_server_error(Format, Args), begin
-    ((fun(ErrorRef) ->
-        ?error(
-            "An unexpected error (ref: ~s) ocurred in ~w:~w/~B, line ~B~nDetailed log: " ++ Format,
-            [ErrorRef, ?MODULE, ?FUNCTION_NAME, ?FUNCTION_ARITY, ?LINE | Args]
-        ),
-        ?ERROR_INTERNAL_SERVER_ERROR(ErrorRef)
-    end)(str_utils:rand_hex(5)))
-end).
-
-
-% Convenience macros for development purposes
 
 % Prints bad request warning (frequently used in gen_servers)
 -define(log_bad_request(Request),
-    ?do_log(3, "~p:~p - bad request ~p", [?MODULE, ?LINE, Request], undefined)
+    ?warning("~w:~B - bad request ~p", [?MODULE, ?LINE, Request])
 ).
+
 
 % Prints abnormal termination warning
 -define(log_terminate(Reason, State),
@@ -164,30 +209,28 @@ end).
         normal -> ok;
         shutdown -> ok;
         {shutdown, _} -> ok;
-        _ ->
-            ?do_log(3, "~p terminated in state ~p due to: ~p", [?MODULE, State, Reason], undefined)
+        _ -> ?warning("~w terminated in state ~p~nReason: ~p", [?MODULE, State, Reason])
     end
 ).
 
-% Prints a single variable
--define(dump(Arg), io:format(user, "[DUMP] ~s: ~p~n~n", [??Arg, Arg])).
 
-% Prints a list of variables
--define(dump_all(ListOfVariables), lists:foreach(fun({_Name, _Value}) ->
-    io:format(user, "[DUMP] ~s: ~p~n~n", [_Name, _Value])
-end, lists:zip(string:tokens(??ListOfVariables, "[] ,"), ListOfVariables))).
+% Convenience macros for debug
+
+% Prints a single term by the name of the variable
+-define(dump(Term), io:format(user, "[DUMP] ~s = ~p~n~n", [??Term, Term])).
+
+% Prints a list of terms
+-define(dump_all(Terms), io:format(user, "[DUMP ALL]" ++ ?autoformat(Terms) ++ "~n~n", [])).
+
 
 %% Macros used internally
 
--define(do_log(LoglevelAsInt, Message, Stacktrace),
-    ?do_log(LoglevelAsInt, Message, [], Stacktrace)
-).
-
--define(do_log(LoglevelAsInt, Format, Args, Stacktrace),
-    case onedata_logger:should_log(LoglevelAsInt) of
-        false -> ok;
+-define(wrap_in_loglevel_check(LoglevelInt, Expression),
+    case onedata_logger:should_log(LoglevelInt) of
+        false ->
+            ok;
         true ->
-            onedata_logger:dispatch_log(LoglevelAsInt, ?gather_metadata, Format, Args, Stacktrace)
+            Expression
     end
 ).
 

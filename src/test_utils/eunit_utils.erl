@@ -13,7 +13,7 @@
 -author("Lukasz Opiola").
 
 %% API
--export([debug_log/2, dump/1]).
+-export([debug_log/2, dump/1, dump/2]).
 -export([is_equal_after_json_encode_and_decode/1, is_equal_after_json_encode_and_decode/2]).
 -export([is_equal_after_db_encode_and_decode/1, is_equal_after_db_encode_and_decode/2]).
 -export([throws_error_during_decode_from_json/2, throws_error_during_decode_from_json/3]).
@@ -40,7 +40,12 @@ debug_log(Format, Args) ->
 
 -spec dump(term()) -> ok.
 dump(Term) ->
-    debug_log("[DUMP] ~p", [Term]).
+    dump("DUMP", Term).
+
+
+-spec dump(string(), term()) -> ok.
+dump(Name, Term) ->
+    debug_log("~s: ~p", [Name, Term]).
 
 
 -spec is_equal_after_json_encode_and_decode(tuple()) -> boolean().

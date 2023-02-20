@@ -258,12 +258,17 @@ testcases() -> [
     {different, ?ERROR_DNS_SERVERS_UNREACHABLE([<<"1.1.1.1">>, <<"8.8.8.8">>]),
         ?ERROR_DNS_SERVERS_UNREACHABLE([{1, 1, 1, 1}, {8, 8, 8, 8}])},
     ?ERROR_QUOTA_EXCEEDED,
+    ?ERROR_DIR_STATS_DISABLED_FOR_SPACE,
+    ?ERROR_DIR_STATS_NOT_READY,
+    ?ERROR_FORBIDDEN_FOR_CURRENT_ARCHIVE_STATE(ongoing, [preserved, cancelled]),
+    ?ERROR_NESTED_ARCHIVE_DELETION_FORBIDDEN(<<"archiveId">>),
+    ?ERROR_RECALL_TARGET_CONFLICT,
 
     %%--------------------------------------------------------------------
     %% op_worker atm errors
     %%--------------------------------------------------------------------
-    ?ERROR_ATM_UNSUPPORTED_DATA_TYPE(atm_string_type, [atm_integer_type]),
-    ?ERROR_ATM_DATA_TYPE_UNVERIFIED(<<"NaN">>, atm_integer_type),
+    ?ERROR_ATM_UNSUPPORTED_DATA_TYPE(atm_string_type, [atm_number_type]),
+    ?ERROR_ATM_DATA_TYPE_UNVERIFIED(<<"NaN">>, atm_number_type),
     ?ERROR_ATM_DATA_VALUE_CONSTRAINT_UNVERIFIED(#{<<"fileId">> => <<"REG">>}, atm_file_type, #{<<"hasAccess">> => true}),
 
     ?ERROR_ATM_STORE_MISSING_REQUIRED_INITIAL_CONTENT,
@@ -293,6 +298,7 @@ testcases() -> [
 
     ?ERROR_ATM_TASK_EXECUTION_CREATION_FAILED(<<"id">>, ?ERROR_INTERNAL_SERVER_ERROR),
     ?ERROR_ATM_TASK_EXECUTION_INITIATION_FAILED(<<"id">>, ?ERROR_ATM_OPENFAAS_NOT_CONFIGURED),
+    ?ERROR_ATM_LAMBDA_CONFIG_BAD_VALUE(<<"repeats">>, ?ERROR_ATM_DATA_TYPE_UNVERIFIED(<<"NaN">>, atm_number_type)),
     ?ERROR_ATM_TASK_ARG_MAPPER_FOR_REQUIRED_LAMBDA_ARG_MISSING(<<"arg">>),
     ?ERROR_ATM_TASK_ARG_MAPPER_FOR_NONEXISTENT_LAMBDA_ARG(<<"arg">>),
     ?ERROR_ATM_TASK_ARG_MAPPER_UNSUPPORTED_VALUE_BUILDER(store_credentials, [iterated_item]),
@@ -316,9 +322,6 @@ testcases() -> [
     ?ERROR_ATM_OPENFAAS_FUNCTION_REGISTRATION_FAILED,
 
     ?ERROR_ATM_INVALID_STATUS_TRANSITION(active, scheduled),
-
-    ?ERROR_DIR_STATS_DISABLED_FOR_SPACE,
-    ?ERROR_DIR_STATS_NOT_READY,
 
     %%--------------------------------------------------------------------
     %% onepanel errors

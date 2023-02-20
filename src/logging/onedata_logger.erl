@@ -1,24 +1,103 @@
 %%%-------------------------------------------------------------------
 %%% @author Lukasz Opiola
-%%% @copyright (C) 2013 ACK CYFRONET AGH
+%%% @copyright (C) 2013-2023 ACK CYFRONET AGH
 %%% This software is released under the MIT license 
 %%% cited in 'LICENSE.txt'
 %%% @end
 %%%-------------------------------------------------------------------
-%%% @doc This module handles log dispatching and management of loglevel.
+%%% @doc
+%%% This module covers logging utilities and management of loglevel.
 %%% @end
 %%%-------------------------------------------------------------------
 
 -module(onedata_logger).
 
--export([should_log/1, dispatch_log/5, parse_process_info/1, log_with_rotation/4]).
--export([set_loglevel/1, set_console_loglevel/1, set_include_stacktrace/1]).
--export([get_current_loglevel/0, get_default_loglevel/0, get_console_loglevel/0, get_include_stacktrace/0]).
+-include("logging.hrl").
+
+-export([format_generic_log/2, format_exception_log/10, format_deprecated_exception_log/7, format_error_report/7]).
+-export([should_log/1, log/3, parse_process_info/1, log_with_rotation/4]).
+-export([set_loglevel/1, set_console_loglevel/1]).
+-export([get_current_loglevel/0, get_default_loglevel/0, get_console_loglevel/0]).
 -export([loglevel_int_to_atom/1, loglevel_atom_to_int/1]).
+
+
+%%%===================================================================
+%%% API
+%%%===================================================================
+
+-spec format_generic_log(string(), list()) -> string().
+format_generic_log(Format, Args) ->
+    str_utils:format(Format, Args).
+
+
+-spec format_exception_log(
+    module(), atom(), non_neg_integer(), non_neg_integer(),
+    string(), list(), undefined | string() | binary(),
+    atom(), term(), list()
+) -> string().
+format_exception_log(
+    Module, Function, Arity, Line,
+    DetailsFormat, DetailsArgs, Ref,
+    Class, Reason, Stacktrace
+) ->
+    format_generic_log(
+        "An unexpected exception~s occurred in ~w:~w/~B line ~B~n"
+        "> Caught: ~s:~p~n"
+        "> Stacktrace:~s"
+        "~s",
+        [
+            case Ref of
+                undefined -> "";
+                _ -> str_utils:format(" (ref: ~s)", [Ref])
+            end,
+            Module, Function, Arity, Line,
+            Class, Reason,
+            lager:pr_stacktrace(Stacktrace),
+            format_details_suffix(DetailsFormat, DetailsArgs)
+        ]
+    ).
+
+
+-spec format_deprecated_exception_log(
+    module(), atom(), non_neg_integer(), non_neg_integer(),
+    string(), list(), list()
+) -> string().
+format_deprecated_exception_log(
+    Module, Function, Arity, Line,
+    DetailsFormat, DetailsArgs, Stacktrace
+) ->
+    format_generic_log(
+        "An unexpected exception occurred in ~w:~w/~B line ~B~n"
+        "> Stacktrace:~s"
+        "~s",
+        [
+            Module, Function, Arity, Line,
+            lager:pr_stacktrace(Stacktrace),
+            format_details_suffix(DetailsFormat, DetailsArgs)
+        ]
+    ).
+
+
+-spec format_error_report(
+    module(), atom(), non_neg_integer(), non_neg_integer(),
+    string(), list(), undefined | string() | binary()
+) -> string().
+format_error_report(
+    Module, Function, Arity, Line,
+    DetailsFormat, DetailsArgs, Ref
+) ->
+    format_generic_log(
+        "An error (ref: ~s) occurred in ~w:~w/~B line ~B"
+        "~s",
+        [
+            Ref, Module, Function, Arity, Line,
+            format_details_suffix(DetailsFormat, DetailsArgs)
+        ]
+    ).
+
 
 %%--------------------------------------------------------------------
 %% @doc Determines if logs with provided loglevel should be logged or discarded.
-%% @end
 %%--------------------------------------------------------------------
 -spec should_log(LoglevelAsInt :: integer()) -> boolean().
 should_log(LevelAsInt) ->
@@ -27,17 +106,12 @@ should_log(LevelAsInt) ->
         _ -> false
     end.
 
-%%--------------------------------------------------------------------
-%% @doc Logs the log locally (it will be intercepted by central_logging_backend and sent to central sink)
-%% @end
-%%--------------------------------------------------------------------
--spec dispatch_log(LoglevelAsInt :: integer(), Metadata :: [tuple()], Format :: string(),
-    Args :: [term()], Stacktrace :: list() | undefined) -> ok | {error, lager_not_running}.
-dispatch_log(LoglevelAsInt, Metadata, Format, Args, Stacktrace) ->
+-spec log(LoglevelAsInt :: integer(), Metadata :: [tuple()], FormattedLog :: string()) ->
+    ok | {error, lager_not_running}.
+log(LoglevelAsInt, Metadata, FormattedLog) ->
     Severity = loglevel_int_to_atom(LoglevelAsInt),
-    lager:log(Severity, Metadata, "~ts", [
-        compute_message(Format, Args, Stacktrace)
-    ]).
+    % the reformatting with 't' modifier ensures that special characters are properly handled
+    lager:log(Severity, Metadata, "~ts", [FormattedLog]).
 
 %%--------------------------------------------------------------------
 %% @doc Changes current global loglevel to desired. Argument can be loglevel as int or atom
@@ -91,17 +165,6 @@ set_console_loglevel(_) ->
     {error, badarg}.
 
 %%--------------------------------------------------------------------
-%% @doc Changes include_stacktrace env to true or false
-%% @end
-%%--------------------------------------------------------------------
--spec set_include_stacktrace(boolean()) -> ok | {error, badarg}.
-set_include_stacktrace(Flag) when is_boolean(Flag) ->
-    ctool:set_env(include_stacktrace, Flag);
-
-set_include_stacktrace(_) ->
-    {error, badarg}.
-
-%%--------------------------------------------------------------------
 %% @doc Returns current loglevel as set in application's env
 %% @end
 %%--------------------------------------------------------------------
@@ -127,14 +190,6 @@ get_console_loglevel() ->
     % lager_util:mask_to_levels(Mask) returns list of allowed log level, first of
     % which is the lowest loglevel
     loglevel_atom_to_int(lists:nth(1, lager_util:mask_to_levels(Mask))).
-
-%%--------------------------------------------------------------------
-%% @doc Returns get_include_stacktrace env value
-%% @end
-%%--------------------------------------------------------------------
--spec get_include_stacktrace() -> boolean().
-get_include_stacktrace() ->
-    ctool:get_env(include_stacktrace, true).
 
 %%--------------------------------------------------------------------
 %% @doc Returns loglevel name associated with loglevel number
@@ -198,23 +253,13 @@ log_with_rotation(LogFile, Format, Args, MaxSize) ->
         io_lib:format("~n~s, ~s: " ++ Format, [Date, Time | Args]), [append]),
     ok.
 
-%%--------------------------------------------------------------------
-%% Internal functions
-%%--------------------------------------------------------------------
+%%%===================================================================
+%%% API
+%%%===================================================================
 
-%%--------------------------------------------------------------------
-%% @private @doc Computes a log message string, possibly including stacktrace.
-%% @end
-%%--------------------------------------------------------------------
--spec compute_message(string(), list(), list() | undefined) -> string().
-compute_message(Format, Args, Stacktrace) ->
-    {Format2, Args2} = case (get_include_stacktrace() andalso Stacktrace =/= undefined) of
-        false ->
-            {Format, Args};
-        true ->
-            {
-                    Format ++ "~nStacktrace:~s",
-                    Args ++ [iolist_to_binary(lager:pr_stacktrace(Stacktrace))]
-            }
-    end,
-    lists:flatten(io_lib:format(Format2, Args2)).
+%% @private
+-spec format_details_suffix(string(), list()) -> string().
+format_details_suffix("", _) ->
+    "";
+format_details_suffix(DetailsFormat, DetailsArgs) ->
+    str_utils:format("~n> Details: " ++ DetailsFormat, DetailsArgs).

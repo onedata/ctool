@@ -6,10 +6,10 @@
 %%% @end
 %%%-------------------------------------------------------------------
 %%% @doc
-%%% Record expressing lambda argument specification used in automation machinery.
+%%% Record expressing parameter specification used in automation machinery.
 %%% @end
 %%%-------------------------------------------------------------------
--module(atm_lambda_argument_spec).
+-module(atm_parameter_spec).
 -author("Lukasz Opiola").
 
 -behaviour(jsonable_record).
@@ -25,8 +25,10 @@
 -export([version/0, db_encode/2, db_decode/2]).
 
 
--type record() :: #atm_lambda_argument_spec{}.
--export_type([record/0]).
+-type name() :: automation:name().
+
+-type record() :: #atm_parameter_spec{}.
+-export_type([name/0, record/0]).
 
 %%%===================================================================
 %%% jsonable_record callbacks
@@ -68,10 +70,10 @@ db_decode(RecordJson, NestedRecordDecoder) ->
     json_utils:json_term().
 encode_with(Record, NestedRecordEncoder) ->
     #{
-        <<"name">> => Record#atm_lambda_argument_spec.name,
-        <<"dataSpec">> => NestedRecordEncoder(Record#atm_lambda_argument_spec.data_spec, atm_data_spec),
-        <<"isOptional">> => Record#atm_lambda_argument_spec.is_optional,
-        <<"defaultValue">> => utils:undefined_to_null(Record#atm_lambda_argument_spec.default_value)
+        <<"name">> => Record#atm_parameter_spec.name,
+        <<"dataSpec">> => NestedRecordEncoder(Record#atm_parameter_spec.data_spec, atm_data_spec),
+        <<"isOptional">> => Record#atm_parameter_spec.is_optional,
+        <<"defaultValue">> => utils:undefined_to_null(Record#atm_parameter_spec.default_value)
     }.
 
 
@@ -79,13 +81,13 @@ encode_with(Record, NestedRecordEncoder) ->
 -spec decode_with(jsonable_record:validation_strategy(), json_utils:json_term(), persistent_record:nested_record_decoder()) ->
     record().
 decode_with(skip_validation, RecordJson, NestedRecordDecoder) ->
-    #atm_lambda_argument_spec{
+    #atm_parameter_spec{
         name = maps:get(<<"name">>, RecordJson),
         data_spec = NestedRecordDecoder(maps:get(<<"dataSpec">>, RecordJson), atm_data_spec),
         is_optional = maps:get(<<"isOptional">>, RecordJson),
         default_value = utils:null_to_undefined(maps:get(<<"defaultValue">>, RecordJson, null))
     };
 decode_with(validate, RecordJson, NestedRecordDecoder) ->
-    #atm_lambda_argument_spec{name = Name} = ArgumentSpec = decode_with(skip_validation, RecordJson, NestedRecordDecoder),
-    str_utils:validate_name(Name) orelse throw(?ERROR_BAD_VALUE_NAME(<<"argumentSpec.name">>)),
-    ArgumentSpec.
+    #atm_parameter_spec{name = Name} = ParameterSpec = decode_with(skip_validation, RecordJson, NestedRecordDecoder),
+    str_utils:validate_name(Name) orelse throw(?ERROR_BAD_VALUE_NAME(<<"parameterSpec.name">>)),
+    ParameterSpec.

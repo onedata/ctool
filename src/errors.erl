@@ -153,6 +153,7 @@
 | {atm_parallel_box_execution_initiation_failed, AtmParallelBoxSchemaId :: binary(), SpecificError :: error()}
 | {atm_task_execution_creation_failed, AtmTaskSchemaId :: binary(), SpecificError :: error()}
 | {atm_task_execution_initiation_failed, AtmTaskSchemaId :: binary(), SpecificError :: error()}
+| {atm_lambda_config_bad_value, ParameterName :: binary(), SpecificError :: error()}
 | {atm_task_arg_mapper_for_required_lambda_arg_missing, ArgName :: binary()}
 | {atm_task_arg_mapper_for_nonexistent_lambda_arg, ArgName :: binary()}
 | {atm_task_arg_mapper_unsupported_value_builder,
@@ -176,7 +177,10 @@
 | atm_openfaas_function_registration_failed
 | {atm_invalid_status_transition, PrevStatus :: atom(), NewStatus :: atom()}
 | dir_stats_disabled_for_space
-| dir_stats_not_ready.
+| dir_stats_not_ready
+| {forbidden_for_current_archive_state, CurrentState :: atom(), AllowedStates :: [atom()]}
+| {nested_archive_deletion_forbidden, ParentArchiveId :: binary()}
+| recall_target_conflict.
 
 -type onepanel() :: {error_on_nodes, error(), Hostnames :: [binary()]}
 | {dns_servers_unreachable, [ip_utils:ip() | default]}
@@ -1356,6 +1360,17 @@ to_json(?ERROR_ATM_TASK_EXECUTION_INITIATION_FAILED(AtmTaskSchemaId, {error, _} 
         [AtmTaskSchemaId]
     )
 };
+to_json(?ERROR_ATM_LAMBDA_CONFIG_BAD_VALUE(ParameterName, {error, _} = SpecificError)) -> #{
+    <<"id">> => <<"atmLambdaConfigBadValue">>,
+    <<"details">> => #{
+        <<"parameterName">> => ParameterName,
+        <<"specificError">> => to_json(SpecificError)
+    },
+    <<"description">> => ?FMT(
+        "Bad value provided for parameter \"~s\" of lambda config (see details).",
+        [ParameterName]
+    )
+};
 to_json(?ERROR_ATM_TASK_ARG_MAPPER_FOR_REQUIRED_LAMBDA_ARG_MISSING(ArgName)) -> #{
     <<"id">> => <<"atmTaskArgMapperForRequiredLambdaArgMissing">>,
     <<"details">> => #{
@@ -1504,6 +1519,33 @@ to_json(?ERROR_DIR_STATS_DISABLED_FOR_SPACE) -> #{
 to_json(?ERROR_DIR_STATS_NOT_READY) -> #{
     <<"id">> => <<"dirStatsNotReady">>,
     <<"description">> => <<"Requested directory statistics are not ready yet - calculation is in progress.">>
+};
+
+to_json(?ERROR_FORBIDDEN_FOR_CURRENT_ARCHIVE_STATE(CurrentState, AllowedStates)) -> #{
+    <<"id">> => <<"forbiddenForCurrentArchiveState">>,
+    <<"description">> => ?FMT(
+        "This operation is forbidden while the archive state is ~s. Allowed states are: ~s.",
+        [CurrentState, join_values_with_commas(AllowedStates)]
+    ),
+    <<"details">> => #{
+        <<"allowedStates">> => json_utils:encode(AllowedStates),
+        <<"currentState">> => json_utils:encode(CurrentState)
+    }
+};
+
+to_json(?ERROR_NESTED_ARCHIVE_DELETION_FORBIDDEN(ParentArchiveId)) -> #{
+    <<"id">> =>
+        <<"nestedArchiveDeletionForbidden">>,
+    <<"description">> =>
+        <<"This archive cannot be deleted since it is nested in another archive.">>,
+    <<"details">> => #{
+        <<"parentArchiveId">> => ParentArchiveId
+    }
+};
+
+to_json(?ERROR_RECALL_TARGET_CONFLICT) -> #{
+    <<"id">> => <<"recallTargetConflict">>,
+    <<"description">> => <<"Conflict - recall target cannot be within a directory that is being recalled.">>
 };
 
 %%--------------------------------------------------------------------
@@ -2247,6 +2289,15 @@ from_json(#{
     ?ERROR_ATM_TASK_EXECUTION_INITIATION_FAILED(AtmTaskSchemaId, from_json(SpecificErrorJson));
 
 from_json(#{
+    <<"id">> := <<"atmLambdaConfigBadValue">>,
+    <<"details">> := #{
+        <<"parameterName">> := ParameterName,
+        <<"specificError">> := SpecificErrorJson
+    }
+}) ->
+    ?ERROR_ATM_LAMBDA_CONFIG_BAD_VALUE(ParameterName, from_json(SpecificErrorJson));
+
+from_json(#{
     <<"id">> := <<"atmTaskArgMapperForRequiredLambdaArgMissing">>,
     <<"details">> := #{
         <<"argument">> := ArgName
@@ -2372,6 +2423,27 @@ from_json(#{<<"id">> := <<"dirStatsDisabledForSpace">>}) ->
 
 from_json(#{<<"id">> := <<"dirStatsNotReady">>}) ->
     ?ERROR_DIR_STATS_NOT_READY;
+
+from_json(#{
+    <<"id">> := <<"forbiddenForCurrentArchiveState">>,
+    <<"details">> := #{
+        <<"allowedStates">> := AllowedStates,
+        <<"currentState">> := CurrentState
+    }
+}) ->
+    ?ERROR_FORBIDDEN_FOR_CURRENT_ARCHIVE_STATE(
+        binary_to_existing_atom(json_utils:decode(CurrentState)),
+        [binary_to_existing_atom(StateBin) || StateBin <- json_utils:decode(AllowedStates)]
+    );
+
+from_json(#{
+    <<"id">> := <<"nestedArchiveDeletionForbidden">>,
+    <<"details">> := #{<<"parentArchiveId">> := ParentArchiveId}
+}) ->
+    ?ERROR_NESTED_ARCHIVE_DELETION_FORBIDDEN(ParentArchiveId);
+
+from_json(#{<<"id">> := <<"recallTargetConflict">>}) ->
+    ?ERROR_RECALL_TARGET_CONFLICT;
 
 %%--------------------------------------------------------------------
 %% onepanel errors
@@ -2614,6 +2686,7 @@ to_http_code(?ERROR_ATM_PARALLEL_BOX_EXECUTION_INITIATION_FAILED(_, _)) -> ?HTTP
 
 to_http_code(?ERROR_ATM_TASK_EXECUTION_CREATION_FAILED(_, _)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_ATM_TASK_EXECUTION_INITIATION_FAILED(_, _)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_ATM_LAMBDA_CONFIG_BAD_VALUE(_, _)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_ATM_TASK_ARG_MAPPER_FOR_REQUIRED_LAMBDA_ARG_MISSING(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_ATM_TASK_ARG_MAPPER_FOR_NONEXISTENT_LAMBDA_ARG(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_ATM_TASK_ARG_MAPPING_FAILED(_, _)) -> ?HTTP_400_BAD_REQUEST;
@@ -2638,6 +2711,10 @@ to_http_code(?ERROR_ATM_INVALID_STATUS_TRANSITION(_, _)) -> ?HTTP_400_BAD_REQUES
 
 to_http_code(?ERROR_DIR_STATS_DISABLED_FOR_SPACE) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_DIR_STATS_NOT_READY) -> ?HTTP_400_BAD_REQUEST;
+
+to_http_code(?ERROR_FORBIDDEN_FOR_CURRENT_ARCHIVE_STATE(_, _)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_NESTED_ARCHIVE_DELETION_FORBIDDEN(_)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_RECALL_TARGET_CONFLICT) -> ?HTTP_400_BAD_REQUEST;
 
 %%--------------------------------------------------------------------
 %% onepanel errors

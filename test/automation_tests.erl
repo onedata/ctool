@@ -63,6 +63,32 @@ encode_decode_atm_data_spec_test() ->
             #atm_time_series_measurement_spec{name_matcher_type = exact, name_matcher = <<"throughput">>, unit = bytes_per_sec},
             #atm_time_series_measurement_spec{name_matcher_type = has_prefix, name_matcher = <<"latency">>, unit = milliseconds}
         ]}
+    })),
+
+    ExpBadNumberConstraintsError = ?ERROR_BAD_DATA(
+        <<"valueConstraints">>,
+        <<"You must provide a list of numbers">>
+    ),
+    ?assert(eunit_utils:throws_error_during_decode_from_json(ExpBadNumberConstraintsError, atm_data_spec, #atm_data_spec{
+        type = atm_number_type,
+        value_constraints = #{integers_only => ?RAND_BOOL(), allowed_values => <<"string">>}
+    })),
+    ?assert(eunit_utils:throws_error_during_decode_from_json(ExpBadNumberConstraintsError, atm_data_spec, #atm_data_spec{
+        type = atm_number_type,
+        value_constraints = #{integers_only => ?RAND_BOOL(), allowed_values => [<<"list">>, <<"of">>, <<"strings">>]}
+    })),
+
+    ExpBadStringConstraintsError = ?ERROR_BAD_DATA(
+        <<"valueConstraints">>,
+        <<"You must provide a list of strings">>
+    ),
+    ?assert(eunit_utils:throws_error_during_decode_from_json(ExpBadStringConstraintsError, atm_data_spec, #atm_data_spec{
+        type = atm_string_type,
+        value_constraints = #{allowed_values => 234.7}
+    })),
+    ?assert(eunit_utils:throws_error_during_decode_from_json(ExpBadStringConstraintsError, atm_data_spec, #atm_data_spec{
+        type = atm_string_type,
+        value_constraints = #{allowed_values => #{<<"key">> => <<"value">>}}
     })).
 
 
@@ -87,13 +113,13 @@ encode_decode_docker_execution_options_test() ->
     encode_decode_test_base(atm_test_utils:example_docker_execution_options()).
 
 
-encode_decode_lambda_argument_spec_test() ->
-    [Example | _] = ExampleArgumentSpecs = atm_test_utils:example_argument_specs(),
-    encode_decode_test_base(ExampleArgumentSpecs),
+encode_decode_parameter_spec_test() ->
+    [Example | _] = ExampleParameterSpecs = atm_test_utils:example_parameter_specs(),
+    encode_decode_test_base(ExampleParameterSpecs),
 
     ?assert(eunit_utils:throws_error_during_decode_from_json(
-        ?ERROR_BAD_VALUE_NAME(<<"argumentSpec.name">>),
-        Example#atm_lambda_argument_spec{name = <<"*@#$^!R!*!^$@!@(">>}
+        ?ERROR_BAD_VALUE_NAME(<<"parameterSpec.name">>),
+        Example#atm_parameter_spec{name = <<"*@#$^!R!*!^$@!@(">>}
     )).
 
 
