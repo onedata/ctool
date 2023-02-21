@@ -38,8 +38,8 @@
 | unregistered_provider | internal_server_error | {internal_server_error, ErrorRef :: binary()}
 | not_implemented | not_supported | service_unavailable |  timeout
 | temporary_failure | {external_service_operation_failed, ServiceName :: binary()}
-| unauthorized() | forbidden | not_found | already_exists
-| {file_access, Path :: file:name_all(), errno()}.
+| unauthorized() | forbidden | {forbidden, HumanReadableHint :: binary()} | not_found | already_exists
+| {file_access, Path :: file:name_all(), errno()} | {error, {limit_reached, number(), binary()}}.
 
 -type auth() :: user_blocked | bad_basic_credentials | {bad_idp_access_token, IdsP :: atom()}
 | bad_token | {bad_service_token, auth()} | {bad_consumer_token, auth()}
@@ -318,6 +318,15 @@ to_json(?ERROR_UNAUTHORIZED) -> #{
     <<"id">> => <<"unauthorized">>,
     <<"description">> => <<"You must authenticate yourself to perform this operation.">>
 };
+to_json(?ERROR_FORBIDDEN(HumanReadableHint)) -> #{
+    <<"id">> => <<"forbidden">>,
+    <<"details">> => #{
+        <<"hint">> => HumanReadableHint
+    },
+    <<"description">> => ?FMT("You are not authorized to perform this operation: ~s", [
+        str_utils:ensure_suffix(HumanReadableHint, <<".">>)
+    ])
+};
 to_json(?ERROR_FORBIDDEN) -> #{
     <<"id">> => <<"forbidden">>,
     <<"description">> => <<"You are not authorized to perform this operation.">>
@@ -336,6 +345,15 @@ to_json(?ERROR_FILE_ACCESS(Path, Errno)) ->
         <<"id">> => <<"fileAccess">>,
         <<"details">> => #{<<"path">> => PathBin, <<"errno">> => Errno},
         <<"description">> => ?FMT("Cannot access file \"~ts\": ~p.", [PathBin, Errno])
+    };
+to_json(?ERROR_LIMIT_REACHED(Limit, ResourceDescription)) ->
+    #{
+        <<"id">> => <<"limitReached">>,
+        <<"details">> => #{
+            <<"limit">> => Limit,
+            <<"resourceDescription">> => ResourceDescription
+        },
+        <<"description">> => ?FMT("The limit for ~s has been reached: ~p.", [ResourceDescription, Limit])
     };
 
 %% -----------------------------------------------------------------------------
@@ -1696,6 +1714,9 @@ from_json(#{<<"id">> := <<"unauthorized">>, <<"details">> := #{<<"authError">> :
 from_json(#{<<"id">> := <<"unauthorized">>}) ->
     ?ERROR_UNAUTHORIZED;
 
+from_json(#{<<"id">> := <<"forbidden">>, <<"details">> := #{<<"hint">> := HumanReadableHint}}) ->
+    ?ERROR_FORBIDDEN(HumanReadableHint);
+
 from_json(#{<<"id">> := <<"forbidden">>}) ->
     ?ERROR_FORBIDDEN;
 
@@ -1707,6 +1728,11 @@ from_json(#{<<"id">> := <<"alreadyExists">>}) ->
 
 from_json(#{<<"id">> := <<"fileAccess">>, <<"details">> := #{<<"path">> := Path, <<"errno">> := Errno}}) ->
     ?ERROR_FILE_ACCESS(Path, binary_to_existing_atom(Errno, utf8));
+
+from_json(#{<<"id">> := <<"limitReached">>, <<"details">> := #{
+    <<"limit">> := Limit, <<"resourceDescription">> := ResourceDescription
+}}) ->
+    ?ERROR_LIMIT_REACHED(Limit, ResourceDescription);
 
 %% -----------------------------------------------------------------------------
 %% POSIX errors
@@ -2516,10 +2542,12 @@ to_http_code(?ERROR_TEMPORARY_FAILURE) -> ?HTTP_503_SERVICE_UNAVAILABLE;
 to_http_code(?ERROR_EXTERNAL_SERVICE_OPERATION_FAILED(_)) -> ?HTTP_503_SERVICE_UNAVAILABLE;
 to_http_code(?ERROR_UNAUTHORIZED(_)) -> ?HTTP_401_UNAUTHORIZED;
 to_http_code(?ERROR_UNAUTHORIZED) -> ?HTTP_401_UNAUTHORIZED;
+to_http_code(?ERROR_FORBIDDEN(_)) -> ?HTTP_403_FORBIDDEN;
 to_http_code(?ERROR_FORBIDDEN) -> ?HTTP_403_FORBIDDEN;
 to_http_code(?ERROR_NOT_FOUND) -> ?HTTP_404_NOT_FOUND;
 to_http_code(?ERROR_ALREADY_EXISTS) -> ?HTTP_409_CONFLICT;
 to_http_code(?ERROR_FILE_ACCESS(_, _)) -> ?HTTP_500_INTERNAL_SERVER_ERROR;
+to_http_code(?ERROR_LIMIT_REACHED(_, _)) -> ?HTTP_400_BAD_REQUEST;
 
 %% -----------------------------------------------------------------------------
 %% POSIX errors
@@ -2740,6 +2768,7 @@ to_http_code(_) -> ?HTTP_500_INTERNAL_SERVER_ERROR.
 %%% Internal functions
 %%%===================================================================
 
+%% @private
 -spec join_values_with_commas([term()]) -> binary().
 join_values_with_commas(Values) ->
     str_utils:join_as_binaries(Values, <<", ">>).

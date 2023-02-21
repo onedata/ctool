@@ -38,10 +38,11 @@
 -define(ERROR_UNAUTHORIZED(AuthError), {error, {unauthorized, AuthError}}).
 -define(ERROR_UNAUTHORIZED, {error, unauthorized}).
 -define(ERROR_FORBIDDEN, {error, forbidden}).
+-define(ERROR_FORBIDDEN(HumanReadableHint), {error, {forbidden, HumanReadableHint}}).
 -define(ERROR_NOT_FOUND, {error, not_found}).
 -define(ERROR_ALREADY_EXISTS, {error, already_exists}).
 -define(ERROR_FILE_ACCESS(Path, Errno), {error, {file_access, Path, Errno}}).
-
+-define(ERROR_LIMIT_REACHED(Limit, ResourceDescription), {error, {limit_reached, Limit, ResourceDescription}}).
 
 %%--------------------------------------------------------------------
 %% POSIX errors
