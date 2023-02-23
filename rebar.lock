@@ -37,7 +37,7 @@
   0},
  {<<"macaroons">>,
   {git,"ssh://git@git.onedata.org:7999/vfs/macaroons.git",
-       {ref,"fd8ef880cb356db483f3bb3174ab1b823c54a87a"}},
+       {ref,"297e4ce862e3c56ffa427582c62274cf5350e8d7"}},
   0},
  {<<"meck">>,
   {git,"https://github.com/eproxus/meck.git",
