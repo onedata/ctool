@@ -221,21 +221,24 @@ pmap(Fun, Elements) ->
 
     Gather = fun
         % PidsOrResults is initially the list of pids, gradually replaced by corresponding results
-        F(PendingPids = [_ | _], PidsOrResults) ->
+        F(PendingPids = [_ | _], PidsOrResults, RetryIfPidIsDead) ->
             receive
                 {Ref, Pid, Result} ->
                     NewPidsOrResults = lists_utils:replace(Pid, Result, PidsOrResults),
-                    F(lists:delete(Pid, PendingPids), NewPidsOrResults)
+                    F(lists:delete(Pid, PendingPids), NewPidsOrResults, true)
             after 5000 ->
-                case lists:any(fun erlang:is_process_alive/1, PendingPids) of
-                    true ->
-                        F(PendingPids, PidsOrResults);
-                    false ->
+                case {lists:any(fun erlang:is_process_alive/1, PendingPids), RetryIfPidIsDead} of
+                    {true, _} ->
+                        F(PendingPids, PidsOrResults, true);
+                    {false, true} ->
+                        % retry one more time prevent race between answer sending / process terminating
+                        F(PendingPids, PidsOrResults, false);
+                    {false, false} ->
                         error({parallel_call_failed, {processes_dead, Pids}})
                 end
             end;
         % wait for all pids to report back and then look for errors
-        F([], AllResults) ->
+        F([], AllResults, _RetryIfPidIsDead) ->
             Errors = lists:filtermap(fun
                 ({'$pmap_error', Pid, Type, Reason, Stacktrace}) ->
                     {true, {Pid, Type, Reason, Stacktrace}};
@@ -249,7 +252,7 @@ pmap(Fun, Elements) ->
                     error({parallel_call_failed, {failed_processes, Errors}})
             end
     end,
-    Gather(Pids, Pids).
+    Gather(Pids, Pids, true).
 
 
 %%--------------------------------------------------------------------
