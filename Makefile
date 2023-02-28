@@ -9,7 +9,7 @@ export ONEDATA_GIT_URL
 all: compile
 
 upgrade:
-	@./rebar3 upgrade
+	@./rebar3 upgrade --all
 
 compile:
 	@./rebar3 compile
