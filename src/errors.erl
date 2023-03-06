@@ -269,7 +269,7 @@ to_json(?ERROR_INTERNAL_SERVER_ERROR(ErrorRef)) -> #{
     },
     <<"description">> => ?FMT(
         "The server has encountered an error while processing this request. "
-        "When reporting this error, cite the following reference: ~s.", [ErrorRef]
+        "If the problem persists, please contact the site's administrators, citing the following reference: ~s.", [ErrorRef]
     )
 };
 to_json(?ERROR_INTERNAL_SERVER_ERROR) -> #{

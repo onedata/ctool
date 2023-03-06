@@ -11,11 +11,12 @@
 -ifndef(TEST_UTILS_HRL).
 -define(TEST_UTILS_HRL, 1).
 
--include_lib("assertions.hrl").
--include_lib("common_test/include/ct.hrl").
--include_lib("eunit/include/eunit.hrl").
+-include("assertions.hrl").
+-include("performance.hrl").
 -include("cth_common.hrl").
 -include("../logging.hrl").
+-include_lib("common_test/include/ct.hrl").
+-include_lib("eunit/include/eunit.hrl").
 
 
 -define(ct_dump(Arg), ct:print("~s: ~p", [??Arg, Arg])).
