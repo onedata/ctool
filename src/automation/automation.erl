@@ -16,7 +16,7 @@
 -include("automation/automation.hrl").
 
 %% API
--export([sanitize_binary/3]).
+-export([sanitize_binary_text/3]).
 -export([store_type_to_json/1, store_type_from_json/1]).
 -export([all_store_types/0]).
 -export([lifecycle_state_to_json/1, lifecycle_state_from_json/1]).
@@ -60,12 +60,14 @@
 %%%===================================================================
 
 %% @TODO VFS-8507 Implement data sanitizers for all fields in automation models
--spec sanitize_binary(binary(), term(), pos_integer()) -> binary() | no_return().
-sanitize_binary(_Key, Value, SizeLimit) when is_binary(Value) andalso byte_size(Value) =< SizeLimit ->
-    Value;
-sanitize_binary(Key, Value, SizeLimit) when is_binary(Value) ->
-    throw(?ERROR_BAD_VALUE_BINARY_TOO_LARGE(Key, SizeLimit));
-sanitize_binary(Key, _Value, _SizeLimit) ->
+-spec sanitize_binary_text(binary(), term(), pos_integer()) -> binary() | no_return().
+sanitize_binary_text(Key, Value, SizeLimit) when is_binary(Value) ->
+    % string:length/1 counts characters rather than bytes (one unicode character can be a couple of bytes long)
+    case string:length(Value) =< SizeLimit of
+        true -> Value;
+        false -> throw(?ERROR_BAD_VALUE_STRING_TOO_LARGE(Key, SizeLimit))
+    end;
+sanitize_binary_text(Key, _Value, _SizeLimit) ->
     throw(?ERROR_BAD_VALUE_BINARY(Key)).
 
 

@@ -225,8 +225,8 @@ encode_decode_lambda_revision_test() ->
     [Example | _] = ExampleLambdaRevisions = atm_test_utils:example_lambda_revisions(),
     encode_decode_test_base(ExampleLambdaRevisions),
 
-    check_binary_sanitization(atm_lambda_revision, Example, <<"summary">>, ?SUMMARY_SIZE_LIMIT),
-    check_binary_sanitization(atm_lambda_revision, Example, <<"description">>, ?DESCRIPTION_SIZE_LIMIT).
+    check_binary_text_sanitization(atm_lambda_revision, Example, <<"summary">>, ?SUMMARY_SIZE_LIMIT),
+    check_binary_text_sanitization(atm_lambda_revision, Example, <<"description">>, ?DESCRIPTION_SIZE_LIMIT).
 
 
 encode_decode_lambda_revision_registry_test() ->
@@ -244,7 +244,7 @@ encode_decode_workflow_schema_revision_test() ->
         dashboard_spec = time_series_test_utils:example_dashboard_spec()
     }),
 
-    check_binary_sanitization(atm_workflow_schema_revision, FirstExample, <<"description">>, ?DESCRIPTION_SIZE_LIMIT).
+    check_binary_text_sanitization(atm_workflow_schema_revision, FirstExample, <<"description">>, ?DESCRIPTION_SIZE_LIMIT).
 
 
 encode_decode_workflow_schema_revision_registry_test() ->
@@ -259,13 +259,13 @@ encode_decode_time_series_measurement_spec_test() ->
 %%%===================================================================
 
 %% @private
-check_binary_sanitization(RecordType, Record, DataKey, SizeLimit) ->
+check_binary_text_sanitization(RecordType, Record, DataKey, SizeLimit) ->
     ExampleJson = jsonable_record:to_json(Record, RecordType),
     ?assert(is_record(jsonable_record:from_json(ExampleJson#{
-        DataKey => str_utils:rand_hex(SizeLimit div 2)
+        DataKey => ?RAND_UNICODE_STR(SizeLimit)
     }, RecordType), RecordType)),
-    ?assertThrow(?ERROR_BAD_VALUE_BINARY_TOO_LARGE(DataKey, SizeLimit), jsonable_record:from_json(ExampleJson#{
-        DataKey => str_utils:rand_hex(SizeLimit div 2 + 1)
+    ?assertThrow(?ERROR_BAD_VALUE_STRING_TOO_LARGE(DataKey, SizeLimit), jsonable_record:from_json(ExampleJson#{
+        DataKey => ?RAND_UNICODE_STR(SizeLimit + 1)
     }, RecordType)),
     ?assertThrow(?ERROR_BAD_VALUE_BINARY(DataKey), jsonable_record:from_json(ExampleJson#{
         DataKey => lists_utils:random_element([12345, atom, #{<<"a">> => <<"b">>}, [1, 2, 3]])

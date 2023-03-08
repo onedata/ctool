@@ -145,7 +145,7 @@ decode_with(ValidationStrategy, RecordJson, NestedRecordDecoder) ->
     %% @TODO VFS-8507 Rework along with new data sanitizers for all atm models (data_spec callback?)
     InputDescription = maps:get(<<"description">>, RecordJson, ?DEFAULT_DESCRIPTION),
     Description = case ValidationStrategy of
-        validate -> automation:sanitize_binary(<<"description">>, InputDescription, ?DESCRIPTION_SIZE_LIMIT);
+        validate -> automation:sanitize_binary_text(<<"description">>, InputDescription, ?DESCRIPTION_SIZE_LIMIT);
         skip_validation -> InputDescription
     end,
     #atm_workflow_schema_revision{

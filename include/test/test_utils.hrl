@@ -82,10 +82,17 @@ end).
 %% Types used in tests
 -type mock_opt() :: passthrough | non_strict | unstick | no_link | no_history.
 
+-define(EXAMPLE_UNICODE_CHARS,
+    "1234567890qwertyuiop[]asdfghjkl;'\\<zxcvbnm,./əłżź.ćńµóπœę©ß←↓→óþł…ə’ŋæðśążźć„”ńµ"
+    "_πœę ßþą_śðæπœęßパル-µńćźżąśð日本を- 旅す. d'ŋ-ジ(ャパル)パスで 日本を- 旅す.る()"
+).
 
 -define(RAND_ELEMENT(List), lists_utils:random_element(List)).
 -define(RAND_STR(), ?RAND_STR(16)).
 -define(RAND_STR(Size), string:slice(str_utils:rand_hex(Size), 0, Size)).
+-define(RAND_UNICODE_STR(Size), str_utils:unicode_list_to_binary(string:slice(lists:flatten(
+    lists:duplicate(ceil(Size / string:length(?EXAMPLE_UNICODE_CHARS)), lists_utils:shuffle(?EXAMPLE_UNICODE_CHARS))
+), 0, Size))).
 -define(RAND_BOOL(), ?RAND_ELEMENT([true, false])).
 -define(RAND_INT(To), ?RAND_INT(0, To)).
 -define(RAND_INT(From, To), From + rand:uniform(To - From + 1) - 1).
