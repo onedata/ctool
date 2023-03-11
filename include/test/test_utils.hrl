@@ -104,6 +104,8 @@ end).
 -define(RAND_SUBLIST(List), lists_utils:random_sublist(List)).
 -define(RAND_SUBLIST(List, MinLength, MaxLength), lists_utils:random_sublist(List, MinLength, MaxLength)).
 -define(RAND_SUBMAP(Map), maps:with(lists_utils:random_sublist(maps:keys(Map)), Map)).
+-define(RAND_EMAIL_ADDRESS(), str_utils:format_bin("~s@example.com", [?RAND_STR(10)])).
+
 
 -define(TOO_LONG_NAME, <<
     "very_very_very_long_name_with_at_least_128_characters_yes_indeed_more_"
