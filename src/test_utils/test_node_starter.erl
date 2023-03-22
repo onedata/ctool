@@ -38,6 +38,9 @@
 -define(FORMAT_STRING_LIST(Strings), string:join(Strings, ", ")).
 -define(FORMAT_ATOM_LIST(Atoms), string:join(lists:map(fun atom_to_list/1, Atoms), ", ")).
 
+-define(PREVIOUS_ENV_UP_START_LOG, "/tmp/onedata/previous-env-up-start.log").
+
+
 %%%===================================================================
 %%% Starting and stoping nodes
 %%%===================================================================
@@ -80,8 +83,25 @@ prepare_test_environment(Config, TestModule, Apps) ->
         utils:cmd(["echo", "'" ++ DescriptionFile ++ ":'", ">> prepare_test_environment.log"]),
         utils:cmd(["echo", "'" ++ DescriptionFile ++ ":'", ">> prepare_test_environment_error.log"]),
 
-        StartLog = retry_running_env_up_script_until(ProjectRoot, AppmockRoot,
-            CmRoot, LogsDir, DescriptionFile, ?ENV_UP_RETRIES_NUMBER),
+        CleanEnv = os:getenv("clean_env") == "true",
+
+        StartLog = case CleanEnv of
+            true ->
+                retry_running_env_up_script_until(
+                    ProjectRoot, AppmockRoot, CmRoot, LogsDir, DescriptionFile, ?ENV_UP_RETRIES_NUMBER
+                );
+            false ->
+                case try_reusing_previous_env() of
+                    {true, PreviousStartLog} ->
+                        PreviousStartLog;
+                    false ->
+                        retry_running_env_up_script_until(
+                            ProjectRoot, AppmockRoot, CmRoot, LogsDir, DescriptionFile, ?ENV_UP_RETRIES_NUMBER
+                        )
+                end
+        end,
+
+        save_as_previous_env(StartLog),
 
         % Save start log to file
         utils:cmd(["echo", binary_to_list(<<"'", StartLog/binary, "'">>), ">> prepare_test_environment.log"]),
@@ -105,26 +125,71 @@ prepare_test_environment(Config, TestModule, Apps) ->
             load_modules(AllNodes, [TestModule, test_utils | LoadModules]),
 
             lists:append([
-                ConfigWithPaths,
+                [{clean_env, CleanEnv} | ConfigWithPaths],
                 proplists:delete(dns, EnvDesc),
                 rebar_git_plugin:get_git_metadata()
             ])
         catch
-            E11:E12:Stk11 ->
-                ct:pal("Preparation of environment failed ~p:~p~n" ++
-                    "For details, check:~n" ++
-                    "    prepare_test_environment_error.log~n" ++
-                    "    prepare_test_environment.log~n" ++
-                    "Stacktrace: ~p", [E11, E12, Stk11]),
+            Class1:Reason1:Stacktrace1 ->
+                ?ct_pal_exception(
+                    "Preparation of environment failed. For details, check:~n"
+                    "    prepare_test_environment_error.log~n"
+                    "    prepare_test_environment.log",
+                    Class1, Reason1, Stacktrace1
+                ),
                 clean_environment(EnvDesc),
-                {fail, {init_failed, E11, E12}}
+                {fail, {init_failed, Class1, Reason1}}
         end
 
     catch
-        E21:E22:Stk21 ->
-            ct:pal("Prepare of environment failed ~p:~p~n~p",
-                [E21, E22, Stk21]),
-            {fail, {init_failed, E21, E22}}
+        Class2:Reason2:Stacktrace2 ->
+            ?ct_pal_exception("Preparation of environment failed", Class2, Reason2, Stacktrace2),
+            {fail, {init_failed, Class2, Reason2}}
+    end.
+
+
+%% @private
+-spec save_as_previous_env(binary()) -> ok.
+save_as_previous_env(StartLog) ->
+    file:write_file(?PREVIOUS_ENV_UP_START_LOG, StartLog).
+
+
+%% @private
+-spec try_reusing_previous_env() -> {true, binary()} | false.
+try_reusing_previous_env() ->
+    case file:read_file(?PREVIOUS_ENV_UP_START_LOG) of
+        {error, _} ->
+            false;
+        {ok, PreviousStartLog} ->
+            try
+                EnvDesc = json_parser:parse_json_binary_to_atom_proplist(PreviousStartLog),
+                DockerIds = ?config(docker_ids, EnvDesc),
+                DockerHostnames = lists:map(fun(DockerId) ->
+                    DockerIp = try
+                        test_utils:get_docker_ip(DockerId)
+                    catch _:_ ->
+                        error({cannot_resolve_node_ip, DockerId})
+                    end,
+                    0 == shell_utils:get_return_code(["ping", "-q", "-c", "1", binary_to_list(DockerIp)]) orelse error(
+                        {node_not_responding_to_pings, DockerIp, DockerId}
+                    ),
+                    test_utils:get_docker_hostname(DockerId)
+                end, DockerIds),
+                ct:pal(binary_to_list(
+                    str_utils:join_binary([<<"Reusing the previous environment:">> | DockerHostnames], <<"~n  * ">>)
+                )),
+                {true, PreviousStartLog}
+            catch Class:Reason:Stacktrace ->
+                ct:pal(
+                    "Unable to reuse the previous environment:~n"
+                    "> Caught: ~w:~p~n"
+                    "> Stacktrace: ~s~n"
+                    "~n"
+                    "Starting a new environment...",
+                    [Class, Reason, lager:pr_stacktrace(Stacktrace)]
+                ),
+                false
+            end
     end.
 
 %%--------------------------------------------------------------------
@@ -147,28 +212,32 @@ clean_environment(Config) ->
 -spec clean_environment(Config :: list() | test_config:config(),
     Apps :: [{AppName :: atom(), ConfigName :: atom()}]) -> ok.
 clean_environment(Config, Apps) ->
-    StopStatus = try
-        finalize(Config, Apps)
-    catch
-        E1:E2:Stacktrace ->
-            ct:pal("Environment cleanup failed - ~p:~p~n" ++
-            "Stacktrace: ~p", [E1, E2, Stacktrace]),
-            E2
-    end,
-
-    Dockers = proplists:get_value(docker_ids, Config, []),
-    DockersStr = lists:map(fun atom_to_list/1, Dockers),
-    ProjectRoot = ?config(project_root, Config),
-    ct:pal("Removing dockers: ~s", [?FORMAT_STRING_LIST(
-        lists:map(fun(DockerIdStr) -> string:slice(DockerIdStr, 0, 7) end, DockersStr)
-    )]),
-    remove_dockers(ProjectRoot, DockersStr),
-
-    case StopStatus of
-        ok ->
+    case test_config:get_custom(Config, clean_env, true) of
+        false ->
+            ct:pal("Environment cleaning skipped (requested with --no-clean)"),
             ok;
-        _ ->
-            throw(StopStatus)
+        true ->
+            StopStatus = try
+                finalize(Config, Apps)
+            catch
+                Class:Reason:Stacktrace ->
+                    ?ct_pal_exception("Environment cleanup failed", Class, Reason, Stacktrace),
+                    Reason
+            end,
+            Dockers = proplists:get_value(docker_ids, Config, []),
+            DockersStr = lists:map(fun atom_to_list/1, Dockers),
+            ProjectRoot = ?config(project_root, Config),
+            ct:pal("Removing dockers: ~s", [?FORMAT_STRING_LIST(
+                lists:map(fun(DockerIdStr) -> string:slice(DockerIdStr, 0, 7) end, DockersStr)
+            )]),
+            remove_dockers(ProjectRoot, DockersStr),
+
+            case StopStatus of
+                ok ->
+                    ok;
+                _ ->
+                    throw(StopStatus)
+            end
     end.
 
 
@@ -177,7 +246,7 @@ finalize(Config) ->
     finalize(Config, ?ALL_POSSIBLE_APPS).
 
 
--spec finalize(Config :: list() | test_config:config(), 
+-spec finalize(Config :: list() | test_config:config(),
     Apps :: [{AppName :: atom(), ConfigName :: atom()}]) -> ok.
 finalize(Config, Apps) ->
     NodesWithCover = get_nodes_with_cover(Config, Apps),
@@ -185,7 +254,7 @@ finalize(Config, Apps) ->
     gather_cover(NodesWithCover).
 
 
--spec get_nodes_with_cover(Config :: list() | test_config:config(), 
+-spec get_nodes_with_cover(Config :: list() | test_config:config(),
     Apps :: [{AppName :: atom(), ConfigName :: atom()}]) -> [node()].
 get_nodes_with_cover(Config, Apps) ->
     lists:flatmap(fun({AppName, ConfigName}) ->
@@ -330,8 +399,8 @@ stop_applications(Config, Apps) ->
                     Type:Reason:Stacktrace ->
                         ct:pal(
                             "WARNING: Stopping application ~p on node ~p failed - ~p:~p~n"
-                            "Stacktrace: ~p", [
-                                AppName, Node, Type, Reason, Stacktrace
+                            "Stacktrace: ~s", [
+                                AppName, Node, Type, Reason, lager:pr_stacktrace(Stacktrace)
                             ])
                 end
             end, Nodes)
