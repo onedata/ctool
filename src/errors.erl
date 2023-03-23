@@ -1008,7 +1008,10 @@ to_json(?ERROR_SPACE_ALREADY_SUPPORTED_WITH_IMPORTED_STORAGE(SpaceId, StorageId)
 %%--------------------------------------------------------------------
 to_json(?ERROR_USER_NOT_SUPPORTED) -> #{
     <<"id">> => <<"userNotSupported">>,
-    <<"description">> => <<"Authenticated user is not supported by this Oneprovider.">>
+    <<"description">> => <<
+        "Authenticated user is not supported by this Oneprovider "
+        "(none of the user's spaces is supported by the Oneprovider)."
+    >>
 };
 to_json(?ERROR_AUTO_CLEANING_DISABLED) -> #{
     <<"id">> => <<"autoCleaningDisabled">>,
@@ -1553,9 +1556,9 @@ to_json(?ERROR_FORBIDDEN_FOR_CURRENT_ARCHIVE_STATE(CurrentState, AllowedStates))
 
 to_json(?ERROR_NESTED_ARCHIVE_DELETION_FORBIDDEN(ParentArchiveId)) -> #{
     <<"id">> =>
-        <<"nestedArchiveDeletionForbidden">>,
+    <<"nestedArchiveDeletionForbidden">>,
     <<"description">> =>
-        <<"This archive cannot be deleted since it is nested in another archive.">>,
+    <<"This archive cannot be deleted since it is nested in another archive.">>,
     <<"details">> => #{
         <<"parentArchiveId">> => ParentArchiveId
     }
