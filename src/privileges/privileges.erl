@@ -329,6 +329,7 @@ space_admin() ->
     union(space_manager(), [
         ?SPACE_UPDATE, ?SPACE_DELETE,
         ?SPACE_SET_PRIVILEGES,
+        ?SPACE_MANAGE_MARKETPLACE,
         ?SPACE_ADD_SUPPORT, ?SPACE_REMOVE_SUPPORT,
         ?SPACE_MANAGE_VIEWS,
         ?SPACE_CANCEL_REPLICATION,
