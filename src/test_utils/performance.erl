@@ -484,7 +484,7 @@ exec_perf_config(SuiteName, CaseName, CaseArgs, CaseDescr, Config, DefaultReps,
     #{<<"performance">> := PerfResults} =
         case file:read_file(?PERFORMANCE_RESULT_FILE) of
             {ok, Json} ->
-                jiffy:decode(Json, [return_maps]);
+                json_utils:decode(Json);
             _ ->
                 #{
                     <<"performance">> => #{
