@@ -65,7 +65,7 @@ sanitize_binary_text(Key, Value, SizeLimit) when is_binary(Value) ->
     % string:length/1 counts characters rather than bytes (one unicode character can be a couple of bytes long)
     case string:length(Value) =< SizeLimit of
         true -> Value;
-        false -> throw(?ERROR_BAD_VALUE_STRING_TOO_LARGE(Key, SizeLimit))
+        false -> throw(?ERROR_BAD_VALUE_TEXT_TOO_LARGE(Key, SizeLimit))
     end;
 sanitize_binary_text(Key, _Value, _SizeLimit) ->
     throw(?ERROR_BAD_VALUE_BINARY(Key)).

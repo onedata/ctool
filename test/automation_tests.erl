@@ -264,7 +264,7 @@ check_binary_text_sanitization(RecordType, Record, DataKey, SizeLimit) ->
     ?assert(is_record(jsonable_record:from_json(ExampleJson#{
         DataKey => ?RAND_UNICODE_STR(SizeLimit)
     }, RecordType), RecordType)),
-    ?assertThrow(?ERROR_BAD_VALUE_STRING_TOO_LARGE(DataKey, SizeLimit), jsonable_record:from_json(ExampleJson#{
+    ?assertThrow(?ERROR_BAD_VALUE_TEXT_TOO_LARGE(DataKey, SizeLimit), jsonable_record:from_json(ExampleJson#{
         DataKey => ?RAND_UNICODE_STR(SizeLimit + 1)
     }, RecordType)),
     ?assertThrow(?ERROR_BAD_VALUE_BINARY(DataKey), jsonable_record:from_json(ExampleJson#{

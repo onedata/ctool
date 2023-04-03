@@ -63,7 +63,7 @@
 | {bad_data, key(), SpecificErrorOrHumanReadableHint :: error() | binary()}
 | {empty_value, key()} | {bad_value_atom, key()}
 | {bad_value_list_of_atoms, key()} | {bad_value_boolean, key()}
-| {bad_value_binary, key()} | {bad_value_string_too_large, key(), {max, integer()}}
+| {bad_value_binary, key()} | {bad_value_text_too_large, key(), {max, integer()}}
 | {bad_value_list_of_binaries, key()}
 | {bad_value_integer, key()} | {bad_value_float, key()}
 | {bad_value_json, key()}
@@ -630,7 +630,7 @@ to_json(?ERROR_BAD_VALUE_BINARY(Key)) -> #{
     },
     <<"description">> => ?FMT("Bad value: provided \"~s\" must be a string.", [Key])
 };
-to_json(?ERROR_BAD_VALUE_STRING_TOO_LARGE(Key, SizeLimit)) -> #{
+to_json(?ERROR_BAD_VALUE_TEXT_TOO_LARGE(Key, SizeLimit)) -> #{
     <<"id">> => <<"badValueStringTooLarge">>,
     <<"details">> => #{
         <<"key">> => Key,
@@ -1870,7 +1870,7 @@ from_json(#{<<"id">> := <<"badValueString">>, <<"details">> := #{<<"key">> := Ke
     ?ERROR_BAD_VALUE_BINARY(Key);
 
 from_json(#{<<"id">> := <<"badValueStringTooLarge">>, <<"details">> := #{<<"key">> := Key, <<"limit">> := SizeLimit}}) ->
-    ?ERROR_BAD_VALUE_STRING_TOO_LARGE(Key, SizeLimit);
+    ?ERROR_BAD_VALUE_TEXT_TOO_LARGE(Key, SizeLimit);
 
 from_json(#{<<"id">> := <<"badValueListOfStrings">>, <<"details">> := #{<<"key">> := Key}}) ->
     ?ERROR_BAD_VALUE_LIST_OF_BINARIES(Key);
@@ -2606,7 +2606,7 @@ to_http_code(?ERROR_BAD_VALUE_BOOLEAN(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_BAD_VALUE_ATOM(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_BAD_VALUE_LIST_OF_ATOMS(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_BAD_VALUE_BINARY(_)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_BAD_VALUE_STRING_TOO_LARGE(_, _)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_BAD_VALUE_TEXT_TOO_LARGE(_, _)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_BAD_VALUE_LIST_OF_BINARIES(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_BAD_VALUE_INTEGER(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_BAD_VALUE_FLOAT(_)) -> ?HTTP_400_BAD_REQUEST;

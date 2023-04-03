@@ -108,7 +108,7 @@
 -define(ERROR_BAD_VALUE_ATOM(Key), {error, {bad_value_atom, Key}}).
 -define(ERROR_BAD_VALUE_LIST_OF_ATOMS(Key), {error, {bad_value_list_of_atoms, Key}}).
 -define(ERROR_BAD_VALUE_BINARY(Key), {error, {bad_value_binary, Key}}).
--define(ERROR_BAD_VALUE_STRING_TOO_LARGE(Key, SizeLimit), {error, {bad_value_string_too_large, Key, {max, SizeLimit}}}).
+-define(ERROR_BAD_VALUE_TEXT_TOO_LARGE(Key, SizeLimit), {error, {bad_value_text_too_large, Key, {max, SizeLimit}}}).
 -define(ERROR_BAD_VALUE_LIST_OF_BINARIES(Key), {error, {bad_value_list_of_binaries, Key}}).
 -define(ERROR_BAD_VALUE_INTEGER(Key), {error, {bad_value_integer, Key}}).
 -define(ERROR_BAD_VALUE_FLOAT(Key), {error, {bad_value_float, Key}}).
