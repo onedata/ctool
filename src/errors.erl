@@ -631,12 +631,14 @@ to_json(?ERROR_BAD_VALUE_BINARY(Key)) -> #{
     <<"description">> => ?FMT("Bad value: provided \"~s\" must be a string.", [Key])
 };
 to_json(?ERROR_BAD_VALUE_TEXT_TOO_LARGE(Key, SizeLimit)) -> #{
-    <<"id">> => <<"badValueStringTooLarge">>,
+    <<"id">> => <<"badValueTextTooLarge">>,
     <<"details">> => #{
         <<"key">> => Key,
         <<"limit">> => SizeLimit
     },
-    <<"description">> => ?FMT("Bad value: provided \"~s\" cannot be larger than ~B characters.", [Key, SizeLimit])
+    <<"description">> => ?FMT("Bad value: the text provided in \"~s\" cannot be larger than ~B characters.", [
+        Key, SizeLimit
+    ])
 };
 to_json(?ERROR_BAD_VALUE_LIST_OF_BINARIES(Key)) -> #{
     <<"id">> => <<"badValueListOfStrings">>,
@@ -1869,7 +1871,7 @@ from_json(#{<<"id">> := <<"badValueBoolean">>, <<"details">> := #{<<"key">> := K
 from_json(#{<<"id">> := <<"badValueString">>, <<"details">> := #{<<"key">> := Key}}) ->
     ?ERROR_BAD_VALUE_BINARY(Key);
 
-from_json(#{<<"id">> := <<"badValueStringTooLarge">>, <<"details">> := #{<<"key">> := Key, <<"limit">> := SizeLimit}}) ->
+from_json(#{<<"id">> := <<"badValueTextTooLarge">>, <<"details">> := #{<<"key">> := Key, <<"limit">> := SizeLimit}}) ->
     ?ERROR_BAD_VALUE_TEXT_TOO_LARGE(Key, SizeLimit);
 
 from_json(#{<<"id">> := <<"badValueListOfStrings">>, <<"details">> := #{<<"key">> := Key}}) ->

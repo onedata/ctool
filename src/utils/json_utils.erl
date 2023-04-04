@@ -84,7 +84,7 @@ decode(JSON) ->
 decode(<<"">>, _) -> maps:new();
 decode(JSON, JiffyOpts) ->
     try
-        jiffy:decode(JSON, [return_maps | JiffyOpts])
+        jiffy:decode(JSON, [return_maps, copy_strings | JiffyOpts])
     catch Class:Reason ->
         ?debug("Failed to decode invalid json (~w:~p), payload:~n~p", [Class, Reason, JSON]),
         error(invalid_json)
@@ -113,7 +113,7 @@ encode_deprecated(Term) ->
 -spec decode_deprecated(binary()) -> proplists:proplist().
 decode_deprecated(<<"">>) -> [];
 decode_deprecated(JSON) ->
-    try map_to_list(jiffy:decode(JSON, [return_maps])) 
+    try map_to_list(jiffy:decode(JSON, [return_maps, copy_strings]))
     catch _:_ -> error(invalid_json) end.
 
 
