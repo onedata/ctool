@@ -25,7 +25,7 @@
     mock_assert_num_calls/6, mock_assert_num_calls_sum/5
 ]).
 -export([get_env/3, set_env/4]).
--export([get_docker_ip/1]).
+-export([get_docker_ip/1, get_docker_hostname/1]).
 
 -define(TIMEOUT, timer:seconds(60)).
 -define(ATTEMPTS, 10).
@@ -269,7 +269,17 @@ get_docker_ip(Node) ->
         "--format '{{ .NetworkSettings.IPAddress }}'",
         utils:get_host(Node)
     ],
-    re:replace(utils:cmd(CMD), "\\s+", "", [global, {return, binary}]).
+    re:replace(shell_utils:get_success_output(CMD), "\\s+", "", [global, {return, binary}]).
+
+
+-spec get_docker_hostname(atom()) -> binary().
+get_docker_hostname(Node) ->
+    CMD = [
+        "docker inspect",
+        "--format '{{ .Config.Hostname }}'",
+        utils:get_host(Node)
+    ],
+    re:replace(shell_utils:get_success_output(CMD), "\\s+", "", [global, {return, binary}]).
 
 
 %%%===================================================================

@@ -99,10 +99,13 @@ testcases() -> [
     ?ERROR_UNAUTHORIZED(?ERROR_NOT_AN_ACCESS_TOKEN(?IDENTITY_TOKEN)),
     ?ERROR_UNAUTHORIZED,
     ?ERROR_FORBIDDEN,
+    ?ERROR_FORBIDDEN(<<"Sausage not for the dog">>),
+    ?ERROR_FORBIDDEN(<<"Honey not for the piglets.">>),
     ?ERROR_NOT_FOUND,
     ?ERROR_ALREADY_EXISTS,
     ?ERROR_FILE_ACCESS(<<"/etc/cert/web_key.pem">>, ?EROFS),
     {different, ?ERROR_FILE_ACCESS(['./', ["name"]], ?EROFS), ?ERROR_FILE_ACCESS(<<"./name">>, ?EROFS)},
+    ?ERROR_LIMIT_REACHED(1000, <<"number of requests">>),
 
     %% -----------------------------------------------------------------------------
     %% POSIX errors
@@ -165,7 +168,7 @@ testcases() -> [
     {different, ?ERROR_BAD_VALUE_ATOM(<<"spaceId">>), ?ERROR_BAD_VALUE_BINARY(<<"spaceId">>)},
     {different, ?ERROR_BAD_VALUE_LIST_OF_ATOMS(<<"privileges">>), ?ERROR_BAD_VALUE_LIST_OF_BINARIES(<<"privileges">>)},
     ?ERROR_BAD_VALUE_BINARY(<<"spaceId">>),
-    ?ERROR_BAD_VALUE_BINARY_TOO_LARGE(<<"description">>, 1000),
+    ?ERROR_BAD_VALUE_TEXT_TOO_LARGE(<<"description">>, 1000),
     ?ERROR_BAD_VALUE_LIST_OF_BINARIES(<<"urls">>),
     ?ERROR_BAD_VALUE_INTEGER(<<"size">>),
     ?ERROR_BAD_VALUE_FLOAT(<<"latitude">>),

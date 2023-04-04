@@ -38,10 +38,11 @@
 -define(ERROR_UNAUTHORIZED(AuthError), {error, {unauthorized, AuthError}}).
 -define(ERROR_UNAUTHORIZED, {error, unauthorized}).
 -define(ERROR_FORBIDDEN, {error, forbidden}).
+-define(ERROR_FORBIDDEN(HumanReadableHint), {error, {forbidden, HumanReadableHint}}).
 -define(ERROR_NOT_FOUND, {error, not_found}).
 -define(ERROR_ALREADY_EXISTS, {error, already_exists}).
 -define(ERROR_FILE_ACCESS(Path, Errno), {error, {file_access, Path, Errno}}).
-
+-define(ERROR_LIMIT_REACHED(Limit, ResourceDescription), {error, {limit_reached, Limit, ResourceDescription}}).
 
 %%--------------------------------------------------------------------
 %% POSIX errors
@@ -107,7 +108,7 @@
 -define(ERROR_BAD_VALUE_ATOM(Key), {error, {bad_value_atom, Key}}).
 -define(ERROR_BAD_VALUE_LIST_OF_ATOMS(Key), {error, {bad_value_list_of_atoms, Key}}).
 -define(ERROR_BAD_VALUE_BINARY(Key), {error, {bad_value_binary, Key}}).
--define(ERROR_BAD_VALUE_BINARY_TOO_LARGE(Key, SizeLimit), {error, {bad_value_binary_too_large, Key, {max, SizeLimit}}}).
+-define(ERROR_BAD_VALUE_TEXT_TOO_LARGE(Key, SizeLimit), {error, {bad_value_text_too_large, Key, {max, SizeLimit}}}).
 -define(ERROR_BAD_VALUE_LIST_OF_BINARIES(Key), {error, {bad_value_list_of_binaries, Key}}).
 -define(ERROR_BAD_VALUE_INTEGER(Key), {error, {bad_value_integer, Key}}).
 -define(ERROR_BAD_VALUE_FLOAT(Key), {error, {bad_value_float, Key}}).

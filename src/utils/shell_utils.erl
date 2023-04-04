@@ -15,8 +15,8 @@
 -include("logging.hrl").
 
 %% API
--export([execute/1, ensure_success/1, get_success_output/1]).
--export([execute/2, ensure_success/2, get_success_output/2]).
+-export([execute/1, ensure_success/1, get_success_output/1, get_return_code/1]).
+-export([execute/2, ensure_success/2, get_success_output/2, get_return_code/2]).
 -export([sed/3, mktemp/0, process_exists/1, pkill/2]).
 -export([quote/1]).
 
@@ -113,6 +113,16 @@ get_success_output(Tokens, TokensToLog) ->
             ?error("~ts", [FormattedResults]),
             error({shell_command_failure, FormattedResults})
     end.
+
+
+-spec get_return_code(Tokens :: [token()]) -> exit_code() | no_return().
+get_return_code(Tokens) ->
+    get_return_code(Tokens, Tokens).
+
+-spec get_return_code(Tokens :: [token()], TokensToLog :: [token()]) -> exit_code().
+get_return_code(Tokens, TokensToLog) ->
+    {ExitCode, _, _} = execute(Tokens, TokensToLog),
+    ExitCode.
 
 %%--------------------------------------------------------------------
 %% @doc Wrapper for shell sed program.

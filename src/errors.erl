@@ -38,8 +38,8 @@
 | unregistered_provider | internal_server_error | {internal_server_error, ErrorRef :: binary()}
 | not_implemented | not_supported | service_unavailable |  timeout
 | temporary_failure | {external_service_operation_failed, ServiceName :: binary()}
-| unauthorized() | forbidden | not_found | already_exists
-| {file_access, Path :: file:name_all(), errno()}.
+| unauthorized() | forbidden | {forbidden, HumanReadableHint :: binary()} | not_found | already_exists
+| {file_access, Path :: file:name_all(), errno()} | {error, {limit_reached, number(), binary()}}.
 
 -type auth() :: user_blocked | bad_basic_credentials | {bad_idp_access_token, IdsP :: atom()}
 | bad_token | {bad_service_token, auth()} | {bad_consumer_token, auth()}
@@ -63,7 +63,7 @@
 | {bad_data, key(), SpecificErrorOrHumanReadableHint :: error() | binary()}
 | {empty_value, key()} | {bad_value_atom, key()}
 | {bad_value_list_of_atoms, key()} | {bad_value_boolean, key()}
-| {bad_value_binary, key()} | {bad_value_binary_too_long, key(), {max, integer()}}
+| {bad_value_binary, key()} | {bad_value_text_too_large, key(), {max, integer()}}
 | {bad_value_list_of_binaries, key()}
 | {bad_value_integer, key()} | {bad_value_float, key()}
 | {bad_value_json, key()}
@@ -269,7 +269,7 @@ to_json(?ERROR_INTERNAL_SERVER_ERROR(ErrorRef)) -> #{
     },
     <<"description">> => ?FMT(
         "The server has encountered an error while processing this request. "
-        "When reporting this error, cite the following reference: ~s.", [ErrorRef]
+        "If the problem persists, please contact the site's administrators, citing the following reference: ~s.", [ErrorRef]
     )
 };
 to_json(?ERROR_INTERNAL_SERVER_ERROR) -> #{
@@ -318,6 +318,15 @@ to_json(?ERROR_UNAUTHORIZED) -> #{
     <<"id">> => <<"unauthorized">>,
     <<"description">> => <<"You must authenticate yourself to perform this operation.">>
 };
+to_json(?ERROR_FORBIDDEN(HumanReadableHint)) -> #{
+    <<"id">> => <<"forbidden">>,
+    <<"details">> => #{
+        <<"hint">> => HumanReadableHint
+    },
+    <<"description">> => ?FMT("You are not authorized to perform this operation: ~s", [
+        str_utils:ensure_suffix(HumanReadableHint, <<".">>)
+    ])
+};
 to_json(?ERROR_FORBIDDEN) -> #{
     <<"id">> => <<"forbidden">>,
     <<"description">> => <<"You are not authorized to perform this operation.">>
@@ -336,6 +345,15 @@ to_json(?ERROR_FILE_ACCESS(Path, Errno)) ->
         <<"id">> => <<"fileAccess">>,
         <<"details">> => #{<<"path">> => PathBin, <<"errno">> => Errno},
         <<"description">> => ?FMT("Cannot access file \"~ts\": ~p.", [PathBin, Errno])
+    };
+to_json(?ERROR_LIMIT_REACHED(Limit, ResourceDescription)) ->
+    #{
+        <<"id">> => <<"limitReached">>,
+        <<"details">> => #{
+            <<"limit">> => Limit,
+            <<"resourceDescription">> => ResourceDescription
+        },
+        <<"description">> => ?FMT("The limit for ~s has been reached: ~p.", [ResourceDescription, Limit])
     };
 
 %% -----------------------------------------------------------------------------
@@ -612,13 +630,15 @@ to_json(?ERROR_BAD_VALUE_BINARY(Key)) -> #{
     },
     <<"description">> => ?FMT("Bad value: provided \"~s\" must be a string.", [Key])
 };
-to_json(?ERROR_BAD_VALUE_BINARY_TOO_LARGE(Key, SizeLimit)) -> #{
-    <<"id">> => <<"badValueStringTooLarge">>,
+to_json(?ERROR_BAD_VALUE_TEXT_TOO_LARGE(Key, SizeLimit)) -> #{
+    <<"id">> => <<"badValueTextTooLarge">>,
     <<"details">> => #{
         <<"key">> => Key,
         <<"limit">> => SizeLimit
     },
-    <<"description">> => ?FMT("Bad value: provided \"~s\" cannot be larger than ~B characters.", [Key, SizeLimit])
+    <<"description">> => ?FMT("Bad value: the text provided in \"~s\" cannot be larger than ~B characters.", [
+        Key, SizeLimit
+    ])
 };
 to_json(?ERROR_BAD_VALUE_LIST_OF_BINARIES(Key)) -> #{
     <<"id">> => <<"badValueListOfStrings">>,
@@ -990,7 +1010,10 @@ to_json(?ERROR_SPACE_ALREADY_SUPPORTED_WITH_IMPORTED_STORAGE(SpaceId, StorageId)
 %%--------------------------------------------------------------------
 to_json(?ERROR_USER_NOT_SUPPORTED) -> #{
     <<"id">> => <<"userNotSupported">>,
-    <<"description">> => <<"Authenticated user is not supported by this Oneprovider.">>
+    <<"description">> => <<
+        "Authenticated user is not supported by this Oneprovider "
+        "(none of the user's spaces is supported by the Oneprovider)."
+    >>
 };
 to_json(?ERROR_AUTO_CLEANING_DISABLED) -> #{
     <<"id">> => <<"autoCleaningDisabled">>,
@@ -1535,9 +1558,9 @@ to_json(?ERROR_FORBIDDEN_FOR_CURRENT_ARCHIVE_STATE(CurrentState, AllowedStates))
 
 to_json(?ERROR_NESTED_ARCHIVE_DELETION_FORBIDDEN(ParentArchiveId)) -> #{
     <<"id">> =>
-        <<"nestedArchiveDeletionForbidden">>,
+    <<"nestedArchiveDeletionForbidden">>,
     <<"description">> =>
-        <<"This archive cannot be deleted since it is nested in another archive.">>,
+    <<"This archive cannot be deleted since it is nested in another archive.">>,
     <<"details">> => #{
         <<"parentArchiveId">> => ParentArchiveId
     }
@@ -1696,6 +1719,9 @@ from_json(#{<<"id">> := <<"unauthorized">>, <<"details">> := #{<<"authError">> :
 from_json(#{<<"id">> := <<"unauthorized">>}) ->
     ?ERROR_UNAUTHORIZED;
 
+from_json(#{<<"id">> := <<"forbidden">>, <<"details">> := #{<<"hint">> := HumanReadableHint}}) ->
+    ?ERROR_FORBIDDEN(HumanReadableHint);
+
 from_json(#{<<"id">> := <<"forbidden">>}) ->
     ?ERROR_FORBIDDEN;
 
@@ -1707,6 +1733,11 @@ from_json(#{<<"id">> := <<"alreadyExists">>}) ->
 
 from_json(#{<<"id">> := <<"fileAccess">>, <<"details">> := #{<<"path">> := Path, <<"errno">> := Errno}}) ->
     ?ERROR_FILE_ACCESS(Path, binary_to_existing_atom(Errno, utf8));
+
+from_json(#{<<"id">> := <<"limitReached">>, <<"details">> := #{
+    <<"limit">> := Limit, <<"resourceDescription">> := ResourceDescription
+}}) ->
+    ?ERROR_LIMIT_REACHED(Limit, ResourceDescription);
 
 %% -----------------------------------------------------------------------------
 %% POSIX errors
@@ -1840,8 +1871,8 @@ from_json(#{<<"id">> := <<"badValueBoolean">>, <<"details">> := #{<<"key">> := K
 from_json(#{<<"id">> := <<"badValueString">>, <<"details">> := #{<<"key">> := Key}}) ->
     ?ERROR_BAD_VALUE_BINARY(Key);
 
-from_json(#{<<"id">> := <<"badValueStringTooLarge">>, <<"details">> := #{<<"key">> := Key, <<"limit">> := SizeLimit}}) ->
-    ?ERROR_BAD_VALUE_BINARY_TOO_LARGE(Key, SizeLimit);
+from_json(#{<<"id">> := <<"badValueTextTooLarge">>, <<"details">> := #{<<"key">> := Key, <<"limit">> := SizeLimit}}) ->
+    ?ERROR_BAD_VALUE_TEXT_TOO_LARGE(Key, SizeLimit);
 
 from_json(#{<<"id">> := <<"badValueListOfStrings">>, <<"details">> := #{<<"key">> := Key}}) ->
     ?ERROR_BAD_VALUE_LIST_OF_BINARIES(Key);
@@ -2516,10 +2547,12 @@ to_http_code(?ERROR_TEMPORARY_FAILURE) -> ?HTTP_503_SERVICE_UNAVAILABLE;
 to_http_code(?ERROR_EXTERNAL_SERVICE_OPERATION_FAILED(_)) -> ?HTTP_503_SERVICE_UNAVAILABLE;
 to_http_code(?ERROR_UNAUTHORIZED(_)) -> ?HTTP_401_UNAUTHORIZED;
 to_http_code(?ERROR_UNAUTHORIZED) -> ?HTTP_401_UNAUTHORIZED;
+to_http_code(?ERROR_FORBIDDEN(_)) -> ?HTTP_403_FORBIDDEN;
 to_http_code(?ERROR_FORBIDDEN) -> ?HTTP_403_FORBIDDEN;
 to_http_code(?ERROR_NOT_FOUND) -> ?HTTP_404_NOT_FOUND;
 to_http_code(?ERROR_ALREADY_EXISTS) -> ?HTTP_409_CONFLICT;
 to_http_code(?ERROR_FILE_ACCESS(_, _)) -> ?HTTP_500_INTERNAL_SERVER_ERROR;
+to_http_code(?ERROR_LIMIT_REACHED(_, _)) -> ?HTTP_400_BAD_REQUEST;
 
 %% -----------------------------------------------------------------------------
 %% POSIX errors
@@ -2575,7 +2608,7 @@ to_http_code(?ERROR_BAD_VALUE_BOOLEAN(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_BAD_VALUE_ATOM(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_BAD_VALUE_LIST_OF_ATOMS(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_BAD_VALUE_BINARY(_)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_BAD_VALUE_BINARY_TOO_LARGE(_, _)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_BAD_VALUE_TEXT_TOO_LARGE(_, _)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_BAD_VALUE_LIST_OF_BINARIES(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_BAD_VALUE_INTEGER(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_BAD_VALUE_FLOAT(_)) -> ?HTTP_400_BAD_REQUEST;
@@ -2740,6 +2773,7 @@ to_http_code(_) -> ?HTTP_500_INTERNAL_SERVER_ERROR.
 %%% Internal functions
 %%%===================================================================
 
+%% @private
 -spec join_values_with_commas([term()]) -> binary().
 join_values_with_commas(Values) ->
     str_utils:join_as_binaries(Values, <<", ">>).

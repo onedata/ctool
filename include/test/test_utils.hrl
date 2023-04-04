@@ -11,15 +11,27 @@
 -ifndef(TEST_UTILS_HRL).
 -define(TEST_UTILS_HRL, 1).
 
--include_lib("assertions.hrl").
--include_lib("common_test/include/ct.hrl").
--include_lib("eunit/include/eunit.hrl").
+-include("assertions.hrl").
+-include("performance.hrl").
 -include("cth_common.hrl").
 -include("../logging.hrl").
+-include_lib("common_test/include/ct.hrl").
+-include_lib("eunit/include/eunit.hrl").
 
 
--define(ct_dump(Arg), ct:print("~s: ~p", [??Arg, Arg])).
 -define(eunit_dump(Arg), eunit_utils:dump(??Arg, Arg)).
+-define(ct_dump(Arg), ct:print("~s = ~p", [??Arg, Arg])).
+
+-define(ct_pal_exception(DetailsStr, Class, Reason, Stacktrace),
+    ?ct_pal_exception(DetailsStr, "", Class, Reason, Stacktrace)
+).
+-define(ct_pal_exception(DetailsFormat, DetailsArgs, Class, Reason, Stacktrace),
+    ct:pal(onedata_logger:format_exception_log(
+        ?MODULE, ?FUNCTION_NAME, ?FUNCTION_ARITY, ?LINE,
+        DetailsFormat, DetailsArgs, undefined,
+        Class, Reason, Stacktrace
+    ))
+).
 
 -define(ct_catch_exceptions(Expr), begin
     ((fun() ->
@@ -27,11 +39,10 @@
             Expr
         catch
             Class:Reason:Stacktrace ->
-                ct:pal("Test crash in ~s:~B~n~w:~p~nStacktrace: ~s", [
-                    ?MODULE, ?LINE,
-                    Class, Reason,
-                    lager:pr_stacktrace(Stacktrace)
-                ]),
+                ?ct_pal_exception(
+                    "Test crashed!",
+                    Class, Reason, Stacktrace
+                ),
                 error(test_crashed)
         end
     end)())
@@ -81,10 +92,18 @@ end).
 %% Types used in tests
 -type mock_opt() :: passthrough | non_strict | unstick | no_link | no_history.
 
+-define(EXAMPLE_UNICODE_CHARS,
+    "1234567890qwertyuiop[]asdfghjkl;'\\<zxcvbnm,./əłżź.ćńµóπœę©ß←↓→óþł…ə’ŋæðśążźć„”ńµ"
+    "_πœę ßþą_śðæπœęßパル-µńćźżąśð日本を- 旅す. d'ŋ-ジ(ャパル)パスで 日本を- 旅す.る()"
+).
 
 -define(RAND_ELEMENT(List), lists_utils:random_element(List)).
 -define(RAND_STR(), ?RAND_STR(16)).
 -define(RAND_STR(Size), string:slice(str_utils:rand_hex(Size), 0, Size)).
+-define(RAND_UNICODE_STR(), ?RAND_UNICODE_STR(30)).
+-define(RAND_UNICODE_STR(Size), str_utils:unicode_list_to_binary(string:slice(lists:flatten(
+    lists:duplicate(ceil(Size / string:length(?EXAMPLE_UNICODE_CHARS)), ?SHUFFLED(?EXAMPLE_UNICODE_CHARS))
+), 0, Size))).
 -define(RAND_BOOL(), ?RAND_ELEMENT([true, false])).
 -define(RAND_INT(To), ?RAND_INT(0, To)).
 -define(RAND_INT(From, To), From + rand:uniform(To - From + 1) - 1).
@@ -94,8 +113,12 @@ end).
     [1, 2, 3], #{<<"a">> => <<"B">>}, [#{<<"a">> => <<"B">>}, #{<<"c">> => <<"D">>}]
 ])).
 -define(RAND_SUBLIST(List), lists_utils:random_sublist(List)).
+-define(RAND_SUBLIST(List, Length), ?RAND_SUBLIST(List, Length, Length)).
 -define(RAND_SUBLIST(List, MinLength, MaxLength), lists_utils:random_sublist(List, MinLength, MaxLength)).
+-define(SHUFFLED(List), lists_utils:shuffle(List)).
 -define(RAND_SUBMAP(Map), maps:with(lists_utils:random_sublist(maps:keys(Map)), Map)).
+-define(RAND_EMAIL_ADDRESS(), str_utils:format_bin("~s@example.com", [?RAND_STR(20)])).
+
 
 -define(TOO_LONG_NAME, <<
     "very_very_very_long_name_with_at_least_128_characters_yes_indeed_more_"

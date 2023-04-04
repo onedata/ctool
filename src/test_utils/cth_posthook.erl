@@ -53,9 +53,8 @@ post_init_per_suite(_Suite, _Config, Return, State) ->
                 NewConfig = Posthook(Return),
                 {NewConfig, State}
             catch
-                Type:Error:Stacktrace ->
-                    ct:pal("CTH posthook failed due to~n~p:~p~n~p",
-                        [Type, Error, Stacktrace]),
-                    erlang:Type(Error)
+                Class:Reason:Stacktrace ->
+                    ?ct_pal_exception("CTH posthook failed", Class, Reason, Stacktrace),
+                    erlang:Class(Reason)
             end
     end.

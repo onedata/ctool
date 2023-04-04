@@ -45,7 +45,7 @@ dump(Term) ->
 
 -spec dump(string(), term()) -> ok.
 dump(Name, Term) ->
-    debug_log("~s: ~p", [Name, Term]).
+    debug_log("~s = ~p", [Name, Term]).
 
 
 -spec is_equal_after_json_encode_and_decode(tuple()) -> boolean().
