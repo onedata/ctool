@@ -12,7 +12,7 @@
 %%%
 %%% Operation atomicity is achieved using critical sections,
 %%% hence poor performance should be expected. This applies to
-%%% update/2,3 and acquire/2 (but if there is no cached value).
+%%% update/2,3 (always) and acquire/2 (only if there is no cached value).
 %%% @end
 %%%-------------------------------------------------------------------
 -module(node_cache).
