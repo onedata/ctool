@@ -22,6 +22,7 @@
 
 %% API
 -export([all_dir_stats_service_statuses/0]).
+-export([all_defined/1, sanitize/1]).
 -export([update/2]).
 
 %% jsonable_record callbacks
@@ -47,6 +48,27 @@ all_dir_stats_service_statuses() ->
     [initializing, enabled, stopping, disabled].
 
 
+-spec all_defined(record()) -> boolean().
+all_defined(#support_parameters{accounting_enabled = undefined}) -> false;
+all_defined(#support_parameters{dir_stats_service_enabled = undefined}) -> false;
+all_defined(#support_parameters{dir_stats_service_status = undefined}) -> false;
+all_defined(#support_parameters{}) -> true.
+
+
+-spec sanitize(record()) -> {ok, record()} | errors:error().
+sanitize(#support_parameters{
+    accounting_enabled = true,
+    dir_stats_service_enabled = false
+}) ->
+    ?ERROR_BAD_DATA(
+        <<"dirStatsServiceEnabled">>,
+        <<"Dir stats service must be enabled if accounting is enabled">>
+    );
+
+sanitize(Record) ->
+    {ok, ensure_dir_stats_service_status_adequate(Record)}.
+
+
 %%--------------------------------------------------------------------
 %% @doc
 %% Updates support parameters with new values by applying an overlay record,
@@ -55,7 +77,7 @@ all_dir_stats_service_statuses() ->
 %%--------------------------------------------------------------------
 -spec update(record(), record()) -> {ok, record()} | errors:error().
 update(RecordToUpdate, OverlayRecord) ->
-    NewRecord = RecordToUpdate#support_parameters{
+    sanitize(RecordToUpdate#support_parameters{
         accounting_enabled = utils:ensure_defined(
             OverlayRecord#support_parameters.accounting_enabled,
             RecordToUpdate#support_parameters.accounting_enabled
@@ -68,16 +90,7 @@ update(RecordToUpdate, OverlayRecord) ->
             OverlayRecord#support_parameters.dir_stats_service_status,
             RecordToUpdate#support_parameters.dir_stats_service_status
         )
-    },
-    case NewRecord of
-        #support_parameters{accounting_enabled = true, dir_stats_service_enabled = false} ->
-            ?ERROR_BAD_DATA(
-                <<"dirStatsServiceEnabled">>,
-                <<"Dir stats service must be enabled if accounting is enabled">>
-            );
-        _ ->
-            {ok, ensure_dir_stats_service_status_adequate(NewRecord)}
-    end.
+    }).
 
 %%%===================================================================
 %%% jsonable_record callbacks
