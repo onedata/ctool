@@ -40,11 +40,14 @@
     {"get_expired_default", fun get_expired_default/1},
     {"get_non_existing", fun get_non_existing/1},
     {"get_default", fun get_default/1},
-    {"clear", fun clear/1},
+    {"update_not_existing", fun update_not_existing/1},
+    {"update", fun update/1},
+    {"update_default", fun update_default/1},
     {"acquire_with_put_ttl", fun acquire_with_put_ttl/1},
     {"acquire_after_ttl", fun acquire_after_ttl/1},
     {"acquire_with_put_infinity", fun acquire_with_put_infinity/1},
-    {"acquire_with_error", fun acquire_with_error/1}
+    {"acquire_with_error", fun acquire_with_error/1},
+    {"clear", fun clear/1}
 ]).
 
 node_cache_test_() ->
@@ -97,16 +100,47 @@ get_default(Key) ->
     ok = node_cache:put(Key, ?VALUE, ?TTL),
     ?assertEqual(?VALUE, node_cache:get(Key, default)).
 
-clear(Key) ->
-    node_cache:put(Key, ?VALUE),
-    node_cache:clear(Key),
-    ?assertError({badkey, Key}, node_cache:get(Key)).
-    
+update_not_existing(Key) ->
+    ?assertError({badkey, Key}, node_cache:update(Key, fun(V) -> {ok, V, infinity} end)),
+    ?assertEqual({ok, 1}, node_cache:update(Key, fun(V) -> {ok, V + 1, infinity} end, 0)).
+
+update(Key) ->
+    node_cache:put(Key, 0),
+    lists_utils:pforeach(fun(_) ->
+        node_cache:update(Key, fun(V) -> {ok, V + 1, ?TTL} end)
+    end, lists:seq(1, 50)),
+    ?assertEqual(50, node_cache:get(Key)),
+    clock_freezer_mock:simulate_seconds_passing(?TTL),
+    ?assertError({badkey, Key}, node_cache:get(Key)),
+
+    node_cache:put(Key, 0),
+    lists_utils:pforeach(fun(_) ->
+        node_cache:update(Key, fun(V) -> {ok, V + 1, infinity} end)
+    end, lists:seq(1, 49)),
+    ?assertEqual(49, node_cache:get(Key)),
+    clock_freezer_mock:simulate_seconds_passing(?TTL),
+    ?assertEqual(49, node_cache:get(Key)).
+
+update_default(Key) ->
+    lists_utils:pforeach(fun(_) ->
+        node_cache:update(Key, fun(V) -> {ok, V + 1, ?TTL} end, 0)
+    end, lists:seq(1, 50)),
+    ?assertEqual(50, node_cache:get(Key)),
+    clock_freezer_mock:simulate_seconds_passing(?TTL),
+    ?assertError({badkey, Key}, node_cache:get(Key)),
+
+    lists_utils:pforeach(fun(_) ->
+        node_cache:update(Key, fun(V) -> {ok, V + 1, infinity} end, 0)
+    end, lists:seq(1, 49)),
+    ?assertEqual(49, node_cache:get(Key)),
+    clock_freezer_mock:simulate_seconds_passing(?TTL),
+    ?assertEqual(49, node_cache:get(Key)).
+
 acquire_with_put_ttl(Key) ->
-    ?assertEqual({ok, ?VALUE}, node_cache:acquire(Key, ?ACQUIRE_CALLBACK_OK(?TTL))), 
+    ?assertEqual({ok, ?VALUE}, node_cache:acquire(Key, ?ACQUIRE_CALLBACK_OK(?TTL))),
     ?assertEqual(?VALUE, node_cache:get(Key)),
-    ?assertEqual({ok, ?VALUE}, node_cache:acquire(Key, ?ACQUIRE_CALLBACK_OK(?TTL))), 
-    
+    ?assertEqual({ok, ?VALUE}, node_cache:acquire(Key, ?ACQUIRE_CALLBACK_OK(?TTL))),
+
     clock_freezer_mock:simulate_seconds_passing(?TTL - 1),
     ?assertEqual(?VALUE, node_cache:get(Key)),
     clock_freezer_mock:simulate_seconds_passing(1),
@@ -127,6 +161,11 @@ acquire_with_put_infinity(Key) ->
 
 acquire_with_error(Key) ->
     ?assertEqual(?ERROR, node_cache:acquire(Key, ?ACQUIRE_CALLBACK_ERROR())),
+    ?assertError({badkey, Key}, node_cache:get(Key)).
+
+clear(Key) ->
+    node_cache:put(Key, ?VALUE),
+    node_cache:clear(Key),
     ?assertError({badkey, Key}, node_cache:get(Key)).
 
 
