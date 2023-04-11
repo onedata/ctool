@@ -53,7 +53,7 @@
 -define(SPACE_DELETE, space_delete).
 -define(SPACE_VIEW_PRIVILEGES, space_view_privileges).
 -define(SPACE_SET_PRIVILEGES, space_set_privileges).
--define(SPACE_MANAGE_MARKETPLACE, space_manage_marketplace).
+-define(SPACE_MANAGE_IN_MARKETPLACE, space_manage_in_marketplace).
 
 -define(SPACE_READ_DATA, space_read_data).
 -define(SPACE_WRITE_DATA, space_write_data).
