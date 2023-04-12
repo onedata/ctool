@@ -9,6 +9,10 @@
 %%% This module implements a node-wide cache based on ets. 
 %%% Entries can be cached infinitely or with desired TTL.
 %%% Before use cache must be initialized, see {@link init/0}.
+%%%
+%%% Operation atomicity is achieved using critical sections,
+%%% hence poor performance should be expected. This applies to
+%%% update/2,3 (always) and acquire/2 (only if there is no cached value).
 %%% @end
 %%%-------------------------------------------------------------------
 -module(node_cache).
@@ -18,16 +22,28 @@
 
 %% API
 -export([init/0, destroy/0]).
--export([get/1, get/2, acquire/2, put/2, put/3, clear/1]).
+-export([put/2, put/3]).
+-export([get/1, get/2]).
+-export([update/2, update/3]).
+-export([acquire/2]).
+-export([clear/1]).
 
 -type key() :: term().
 -type value() :: term().
 -type ttl() :: time:seconds() | time:infinity().
 
+-type update_callback() :: fun((value()) ->
+    {ok, value(), ttl()} |
+    {error, Reason :: term()}).
+
 %% function called by acquire/2 when there is no valid value in cache
 -type acquire_callback() :: fun(() ->
-        {ok, value(), ttl()} |
-        {error, Reason :: term()}).
+    {ok, value(), ttl()} |
+    {error, Reason :: term()}).
+
+-export_type([update_callback/0, acquire_callback/0]).
+
+-define(critical_section(Key, Fun), global:trans({{?MODULE, ?FUNCTION_NAME, Key}, self()}, Fun, [node()])).
 
 -compile([{no_auto_import, [get/1]}]).
 
@@ -45,7 +61,7 @@
 -spec init() -> ok.
 init() ->
     ?MODULE = ets:new(
-        ?MODULE, 
+        ?MODULE,
         [set, public, named_table, {read_concurrency, true}]
     ),
     ok.
@@ -55,6 +71,15 @@ init() ->
 destroy() ->
     true = ets:delete(?MODULE),
     ok.
+
+
+-spec put(key(), value()) -> ok.
+put(Key, Value) ->
+    put(Key, Value, infinity).
+
+-spec put(key(), value(), ttl()) -> ok.
+put(Key, Value, TTL) ->
+    insert_into_cache(Key, Value, TTL).
 
 
 -spec get(key()) -> value() | no_return().
@@ -73,40 +98,44 @@ get(Key, Default) ->
     end.
 
 
+-spec update(key(), update_callback()) -> {ok, value()} | {error, term()}.
+update(Key, UpdateCallback) ->
+    update_internal(Key, fun() -> get(Key) end, UpdateCallback).
+
+-spec update(key(), update_callback(), value()) -> {ok, value()} | {error, term()}.
+update(Key, UpdateCallback, DefaultInitialValue) ->
+    update_internal(Key, fun() -> get(Key, DefaultInitialValue) end, UpdateCallback).
+
+
 %%--------------------------------------------------------------------
 %% @doc
 %% If there is a still valid, cached value for given key, it is 
 %% returned. Otherwise AcquireCallback is executed and returned
 %% value is cached for provided time (unless error was returned).
-%% 
-%% NOTE: This function is NOT atomic so calling it in parallel 
-%% might result in multiple AcquireCallback executions.
-%% In that case only one value will be stored in cache.
 %% @end
 %%--------------------------------------------------------------------
 -spec acquire(key(), acquire_callback()) -> {ok, value()} | {error, term()}.
 acquire(Key, AcquireCallback) when is_function(AcquireCallback, 0) ->
     case lookup_in_cache(Key) of
-        false ->
-            case AcquireCallback() of
-                {ok, Value, TTL} ->
-                    put(Key, Value, TTL),
-                    {ok, Value};
-                {error, _} = Error ->
-                    Error
-            end;
         {true, Value} ->
-            {ok, Value}
+            {ok, Value};
+        false ->
+            ?critical_section(Key, fun() ->
+                % avoid unnecessary overwrites in case of parallel executions
+                case lookup_in_cache(Key) of
+                    {true, Value} ->
+                        {ok, Value};
+                    false ->
+                        case AcquireCallback() of
+                            {ok, Value, TTL} ->
+                                put(Key, Value, TTL),
+                                {ok, Value};
+                            {error, _} = Error ->
+                                Error
+                        end
+                end
+            end)
     end.
-
-
--spec put(key(), value()) -> ok.
-put(Key, Value) ->
-    put(Key, Value, infinity).
-
--spec put(key(), value(), ttl()) -> ok.
-put(Key, Value, TTL) ->
-    insert_into_cache(Key, Value, TTL).
 
 
 -spec clear(key()) -> ok.
@@ -143,3 +172,18 @@ lookup_in_cache(Key) ->
         [] ->
             false
     end.
+
+
+%% @private
+-spec update_internal(key(), fun(() -> value()), update_callback()) -> {ok, value()} | {error, term()}.
+update_internal(Key, GetCallback, UpdateCallback) ->
+    ?critical_section(Key, fun() ->
+        CurrentValue = GetCallback(),
+        case UpdateCallback(CurrentValue) of
+            {ok, UpdatedValue, TTL} ->
+                put(Key, UpdatedValue, TTL),
+                {ok, UpdatedValue};
+            {error, _} = Error ->
+                Error
+        end
+    end).
