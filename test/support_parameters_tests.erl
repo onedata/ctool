@@ -19,6 +19,17 @@
 -include("space_support/support_parameters.hrl").
 -include("errors.hrl").
 
+-define(SP(__ACCOUNTING_ENABLED, __DIR_STATS_SERVICE_ENABLED, __DIR_STATS_SERVICE_STATUS),
+    #support_parameters{
+    accounting_enabled = __ACCOUNTING_ENABLED,
+    dir_stats_service_enabled = __DIR_STATS_SERVICE_ENABLED,
+    dir_stats_service_status = __DIR_STATS_SERVICE_STATUS
+}).
+
+-define(EXP_SETTING_CONFLICT_ERROR, ?ERROR_BAD_DATA(
+    <<"dirStatsServiceEnabled">>,
+    <<"Dir stats service must be enabled if accounting is enabled">>
+)).
 
 %%%===================================================================
 %%% Tests
@@ -30,6 +41,70 @@ encode_decode_support_parameters_test() ->
 
 encode_decode_support_parameters_registry_test() ->
     encode_decode_test_base(lists_utils:generate(fun example_support_parameters_registry/0, 20)).
+
+
+sanitize_support_parameters_test() ->
+    lists:foreach(fun({RecordToSanitize, ExpectedResult}) ->
+        ?assertEqual(ExpectedResult, support_parameters:sanitize(RecordToSanitize))
+    end, [
+        {?SP(undefined, undefined, undefined), {ok, ?SP(undefined, undefined, undefined)}},
+        {?SP(true, undefined, undefined), {ok, ?SP(true, undefined, undefined)}},
+        {?SP(undefined, true, undefined), {ok, ?SP(undefined, true, undefined)}},
+
+        {?SP(false, false, disabled), {ok, ?SP(false, false, disabled)}},
+        {?SP(false, false, initializing), {ok, ?SP(false, false, stopping)}},
+        {?SP(false, false, enabled), {ok, ?SP(false, false, stopping)}},
+        {?SP(false, false, stopping), {ok, ?SP(false, false, stopping)}},
+
+        {?SP(false, true, disabled), {ok, ?SP(false, true, initializing)}},
+        {?SP(false, true, initializing), {ok, ?SP(false, true, initializing)}},
+        {?SP(false, true, enabled), {ok, ?SP(false, true, enabled)}},
+        {?SP(false, true, stopping), {ok, ?SP(false, true, initializing)}},
+
+        {?SP(true, false, disabled), ?EXP_SETTING_CONFLICT_ERROR},
+        {?SP(true, false, initializing), ?EXP_SETTING_CONFLICT_ERROR},
+        {?SP(true, false, enabled), ?EXP_SETTING_CONFLICT_ERROR},
+        {?SP(true, false, stopping), ?EXP_SETTING_CONFLICT_ERROR},
+
+        {?SP(true, true, disabled), {ok, ?SP(true, true, initializing)}},
+        {?SP(true, true, initializing), {ok, ?SP(true, true, initializing)}},
+        {?SP(true, true, enabled), {ok, ?SP(true, true, enabled)}},
+        {?SP(true, true, stopping), {ok, ?SP(true, true, initializing)}}
+    ]).
+
+
+insert_support_parameters_test() ->
+    BuildExpErrorFun = fun(Field) ->
+        ?ERROR_MISSING_REQUIRED_VALUE(<<"supportParameters.", Field/binary>>)
+    end,
+
+    DummyProviderId = ?RAND_STR(),
+    ExampleRegistry = example_support_parameters_registry(),
+
+    BuildSuccessfulTestCaseFun = fun(SupportParameters) ->
+        {SupportParameters, {ok, insert_parameters_into_registry(
+            DummyProviderId, SupportParameters, ExampleRegistry
+        )}}
+    end,
+
+    lists:foreach(fun({Record, ExpectedResult}) ->
+        ?assertEqual(
+            ExpectedResult,
+            support_parameters_registry:insert_entry(DummyProviderId, Record, ExampleRegistry)
+        )
+    end, [
+        {?SP(undefined, undefined, undefined), BuildExpErrorFun(<<"accountingEnabled">>)},
+        {?SP(true, undefined, undefined), BuildExpErrorFun(<<"dirStatsEnabled">>)},
+        {?SP(undefined, true, undefined), BuildExpErrorFun(<<"accountingEnabled">>)},
+        {?SP(undefined, undefined, disabled), BuildExpErrorFun(<<"accountingEnabled">>)},
+        {?SP(false, undefined, disabled), BuildExpErrorFun(<<"dirStatsEnabled">>)},
+        {?SP(undefined, false, disabled), BuildExpErrorFun(<<"accountingEnabled">>)},
+        {?SP(false, false, undefined), BuildExpErrorFun(<<"dirStatsStatus">>)},
+
+        BuildSuccessfulTestCaseFun(?SP(false, false, disabled)),
+        BuildSuccessfulTestCaseFun(?SP(false, true, enabled)),
+        BuildSuccessfulTestCaseFun(?SP(true, true, initializing))
+    ]).
 
 
 update_support_parameters_test() ->
@@ -52,7 +127,38 @@ update_support_parameters_test() ->
                     support_parameters_registry:update_entry(DummyProviderId, OverlayRecord, DummyRegistry)
                 )
         end
-    end, update_support_parameters_test_cases()).
+    end, [
+        {?SP(false, false, disabled), ?SP(true, true, enabled), {ok, ?SP(true, true, enabled)}},
+        {?SP(false, true, disabled), ?SP(true, undefined, initializing), {ok, ?SP(true, true, initializing)}},
+        {?SP(false, false, stopping), ?SP(undefined, undefined, disabled), {ok, ?SP(false, false, disabled)}},
+        {?SP(false, true, enabled), ?SP(undefined, undefined, undefined), {ok, ?SP(false, true, enabled)}},
+
+        % cases when the status is tweaked in advance so that it is not confusing
+        {?SP(true, true, enabled), ?SP(false, undefined, stopping), {ok, ?SP(false, true, initializing)}},
+        {?SP(true, false, disabled), ?SP(undefined, true, undefined), {ok, ?SP(true, true, initializing)}},
+        {?SP(true, false, stopping), ?SP(true, true, undefined), {ok, ?SP(true, true, initializing)}},
+        {?SP(false, true, initializing), ?SP(false, false, undefined), {ok, ?SP(false, false, stopping)}},
+        {?SP(false, true, enabled), ?SP(undefined, false, undefined), {ok, ?SP(false, false, stopping)}},
+
+        % updates starting from the default settings for legacy providers (false, true, disabled)
+        {?DEFAULT_SUPPORT_PARAMETERS_FOR_LEGACY_PROVIDERS, ?SP(undefined, undefined, undefined), {ok, ?SP(false, false, disabled)}},
+        {?DEFAULT_SUPPORT_PARAMETERS_FOR_LEGACY_PROVIDERS, ?SP(undefined, true, initializing), {ok, ?SP(false, true, initializing)}},
+        {?DEFAULT_SUPPORT_PARAMETERS_FOR_LEGACY_PROVIDERS, ?SP(undefined, true, enabled), {ok, ?SP(false, true, enabled)}},
+        {?DEFAULT_SUPPORT_PARAMETERS_FOR_LEGACY_PROVIDERS, ?SP(undefined, false, undefined), {ok, ?SP(false, false, disabled)}},
+        {?DEFAULT_SUPPORT_PARAMETERS_FOR_LEGACY_PROVIDERS, ?SP(true, true, undefined), {ok, ?SP(true, true, initializing)}},
+        {?DEFAULT_SUPPORT_PARAMETERS_FOR_LEGACY_PROVIDERS, ?SP(false, false, undefined), {ok, ?SP(false, false, disabled)}},
+        {?DEFAULT_SUPPORT_PARAMETERS_FOR_LEGACY_PROVIDERS, ?SP(false, false, disabled), {ok, ?SP(false, false, disabled)}},
+        {?DEFAULT_SUPPORT_PARAMETERS_FOR_LEGACY_PROVIDERS, ?SP(false, true, undefined), {ok, ?SP(false, true, initializing)}},
+        {?DEFAULT_SUPPORT_PARAMETERS_FOR_LEGACY_PROVIDERS, ?SP(false, true, initializing), {ok, ?SP(false, true, initializing)}},
+        {?DEFAULT_SUPPORT_PARAMETERS_FOR_LEGACY_PROVIDERS, ?SP(false, true, enabled), {ok, ?SP(false, true, enabled)}},
+
+        % illegal settings combinations
+        {?SP(true, true, enabled), ?SP(undefined, false, undefined), ?EXP_SETTING_CONFLICT_ERROR},
+        {?SP(true, true, enabled), ?SP(true, false, stopping), ?EXP_SETTING_CONFLICT_ERROR},
+        {?SP(false, false, disabled), ?SP(true, false, undefined), ?EXP_SETTING_CONFLICT_ERROR},
+        {?SP(false, false, disabled), ?SP(true, false, initializing), ?EXP_SETTING_CONFLICT_ERROR},
+        {?SP(false, true, disabled), ?SP(true, false, initializing), ?EXP_SETTING_CONFLICT_ERROR}
+    ]).
 
 %%%===================================================================
 %%% Helpers
@@ -91,54 +197,6 @@ encode_decode_test_base(Records) ->
         ?assert(eunit_utils:is_equal_after_json_encode_and_decode(Record)),
         ?assert(eunit_utils:is_equal_after_db_encode_and_decode(Record))
     end, Records).
-
-
-%% @private
-update_support_parameters_test_cases() ->
-    MkParams = fun(AccountingEnabled, DirStatsServiceEnabled, DirStatsServiceStatus) ->
-        #support_parameters{
-            accounting_enabled = AccountingEnabled,
-            dir_stats_service_enabled = DirStatsServiceEnabled,
-            dir_stats_service_status = DirStatsServiceStatus
-        }
-    end,
-    ExpectedSettingsConflictError = ?ERROR_BAD_DATA(
-        <<"dirStatsServiceEnabled">>,
-        <<"Dir stats service must be enabled if accounting is enabled">>
-    ),
-    [
-        {MkParams(false, false, disabled), MkParams(true, true, enabled), {ok, MkParams(true, true, enabled)}},
-        {MkParams(false, true, disabled), MkParams(true, undefined, initializing), {ok, MkParams(true, true, initializing)}},
-        {MkParams(false, false, stopping), MkParams(undefined, undefined, disabled), {ok, MkParams(false, false, disabled)}},
-        {MkParams(false, true, enabled), MkParams(undefined, undefined, undefined), {ok, MkParams(false, true, enabled)}},
-
-        % cases when the status is tweaked in advance so that it is not confusing
-        {MkParams(true, true, enabled), MkParams(false, undefined, stopping), {ok, MkParams(false, true, initializing)}},
-        {MkParams(true, false, disabled), MkParams(undefined, true, undefined), {ok, MkParams(true, true, initializing)}},
-        {MkParams(true, false, stopping), MkParams(true, true, undefined), {ok, MkParams(true, true, initializing)}},
-        {MkParams(false, true, initializing), MkParams(false, false, undefined), {ok, MkParams(false, false, stopping)}},
-        {MkParams(false, true, enabled), MkParams(undefined, false, undefined), {ok, MkParams(false, false, stopping)}},
-
-        % updates starting from the default settings - currently (false, true, disabled)
-        % (if the macro changes, the tests need to be adjusted)
-        {?DEFAULT_SUPPORT_PARAMETERS, MkParams(undefined, undefined, undefined), {ok, MkParams(false, true, initializing)}},
-        {?DEFAULT_SUPPORT_PARAMETERS, MkParams(undefined, true, initializing), {ok, MkParams(false, true, initializing)}},
-        {?DEFAULT_SUPPORT_PARAMETERS, MkParams(undefined, true, enabled), {ok, MkParams(false, true, enabled)}},
-        {?DEFAULT_SUPPORT_PARAMETERS, MkParams(undefined, false, undefined), {ok, MkParams(false, false, disabled)}},
-        {?DEFAULT_SUPPORT_PARAMETERS, MkParams(true, true, undefined), {ok, MkParams(true, true, initializing)}},
-        {?DEFAULT_SUPPORT_PARAMETERS, MkParams(false, false, undefined), {ok, MkParams(false, false, disabled)}},
-        {?DEFAULT_SUPPORT_PARAMETERS, MkParams(false, false, disabled), {ok, MkParams(false, false, disabled)}},
-        {?DEFAULT_SUPPORT_PARAMETERS, MkParams(false, true, undefined), {ok, MkParams(false, true, initializing)}},
-        {?DEFAULT_SUPPORT_PARAMETERS, MkParams(false, true, initializing), {ok, MkParams(false, true, initializing)}},
-        {?DEFAULT_SUPPORT_PARAMETERS, MkParams(false, true, enabled), {ok, MkParams(false, true, enabled)}},
-
-        % illegal settings combinations
-        {MkParams(true, true, enabled), MkParams(undefined, false, undefined), ExpectedSettingsConflictError},
-        {MkParams(true, true, enabled), MkParams(true, false, stopping), ExpectedSettingsConflictError},
-        {MkParams(false, false, disabled), MkParams(true, false, undefined), ExpectedSettingsConflictError},
-        {MkParams(false, false, disabled), MkParams(true, false, initializing), ExpectedSettingsConflictError},
-        {MkParams(false, true, disabled), MkParams(true, false, initializing), ExpectedSettingsConflictError}
-    ].
 
 
 -endif.
