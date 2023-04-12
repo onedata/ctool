@@ -20,7 +20,7 @@
 
 
 %% API
--export([create_entry/3, update_entry/3, get_entry/2, remove_entry/2]).
+-export([insert_entry/3, update_entry/3, get_entry/2, remove_entry/2]).
 
 %% jsonable_record callbacks
 -export([to_json/1, from_json/1]).
@@ -41,15 +41,15 @@
 %%%===================================================================
 
 
--spec create_entry(onedata:provider_id(), support_parameters:record(), record()) ->
+-spec insert_entry(onedata:provider_id(), support_parameters:record(), record()) ->
     {ok, record()} | errors:error().
-create_entry(_ProviderId, #support_parameters{accounting_enabled = undefined}, _Record) ->
+insert_entry(_ProviderId, #support_parameters{accounting_enabled = undefined}, _Record) ->
     ?ERROR_MISSING_REQUIRED_VALUE(<<"supportParameters.accountingEnabled">>);
-create_entry(_ProviderId, #support_parameters{dir_stats_service_enabled = undefined}, _Record) ->
+insert_entry(_ProviderId, #support_parameters{dir_stats_service_enabled = undefined}, _Record) ->
     ?ERROR_MISSING_REQUIRED_VALUE(<<"supportParameters.dirStatsEnabled">>);
-create_entry(_ProviderId, #support_parameters{dir_stats_service_status = undefined}, _Record) ->
+insert_entry(_ProviderId, #support_parameters{dir_stats_service_status = undefined}, _Record) ->
     ?ERROR_MISSING_REQUIRED_VALUE(<<"supportParameters.dirStatsStatus">>);
-create_entry(ProviderId, Parameters, Record = #support_parameters_registry{registry = Registry}) ->
+insert_entry(ProviderId, Parameters, Record = #support_parameters_registry{registry = Registry}) ->
     {ok, Record#support_parameters_registry{registry = Registry#{ProviderId => Parameters}}}.
 
 

@@ -23,10 +23,13 @@
     registry = #{} :: support_parameters_registry:registry()
 }).
 
-% Set for space supports that have been created before the dir stats service was introduced.
-% Currently, such space supports have dir stats disabled by default, they must be manually
-% enabled after upgrading the software to a version supporting them.
--define(POST_SPACE_UPGRADE_SUPPORT_PARAMETERS, #support_parameters{
+% Set:
+% - for space supports that have been created before the dir stats service was
+%   introduced. Currently, such space supports have dir stats disabled by
+%   default, they must be manually enabled after upgrading the software
+%   to a version supporting them.
+% - in case of new supports granted by legacy providers (which don't support dir stats).
+-define(DEFAULT_SUPPORT_PARAMETERS_FOR_LEGACY_PROVIDERS, #support_parameters{
     accounting_enabled = false,
     dir_stats_service_enabled = false,
     dir_stats_service_status = disabled

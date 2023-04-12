@@ -26,18 +26,6 @@
     dir_stats_service_status = __DIR_STATS_SERVICE_STATUS
 }).
 
-% Set by default if no specific parameters are requested.
-% Currently, all new space supports have dir stats service enabled by default.
--define(DEFAULT_SUPPORT_PARAMETERS, #support_parameters{
-    accounting_enabled = false,
-    dir_stats_service_enabled = true,
-    % the default parameters are still subject to tweaking;
-    % (@see support_parameters:ensure_dir_stats_service_status_adequate/1)
-    % so the final status will be consistent with the dir_stats_service_enabled flag
-    % (also @see support_parameters_tests.erl)
-    dir_stats_service_status = disabled
-}).
-
 -define(EXP_SETTING_CONFLICT_ERROR, ?ERROR_BAD_DATA(
     <<"dirStatsServiceEnabled">>,
     <<"Dir stats service must be enabled if accounting is enabled">>
@@ -85,7 +73,7 @@ sanitize_support_parameters_test() ->
     ]).
 
 
-create_support_parameters_test() ->
+insert_support_parameters_test() ->
     BuildExpErrorFun = fun(Field) ->
         ?ERROR_MISSING_REQUIRED_VALUE(<<"supportParameters.", Field/binary>>)
     end,
@@ -102,7 +90,7 @@ create_support_parameters_test() ->
     lists:foreach(fun({Record, ExpectedResult}) ->
         ?assertEqual(
             ExpectedResult,
-            support_parameters_registry:create_entry(DummyProviderId, Record, ExampleRegistry)
+            support_parameters_registry:insert_entry(DummyProviderId, Record, ExampleRegistry)
         )
     end, [
         {?SP(undefined, undefined, undefined), BuildExpErrorFun(<<"accountingEnabled">>)},
@@ -152,18 +140,17 @@ update_support_parameters_test() ->
         {?SP(false, true, initializing), ?SP(false, false, undefined), {ok, ?SP(false, false, stopping)}},
         {?SP(false, true, enabled), ?SP(undefined, false, undefined), {ok, ?SP(false, false, stopping)}},
 
-        % updates starting from the default settings - currently (false, true, disabled)
-        % (if the macro changes, the tests need to be adjusted)
-        {?DEFAULT_SUPPORT_PARAMETERS, ?SP(undefined, undefined, undefined), {ok, ?SP(false, true, initializing)}},
-        {?DEFAULT_SUPPORT_PARAMETERS, ?SP(undefined, true, initializing), {ok, ?SP(false, true, initializing)}},
-        {?DEFAULT_SUPPORT_PARAMETERS, ?SP(undefined, true, enabled), {ok, ?SP(false, true, enabled)}},
-        {?DEFAULT_SUPPORT_PARAMETERS, ?SP(undefined, false, undefined), {ok, ?SP(false, false, disabled)}},
-        {?DEFAULT_SUPPORT_PARAMETERS, ?SP(true, true, undefined), {ok, ?SP(true, true, initializing)}},
-        {?DEFAULT_SUPPORT_PARAMETERS, ?SP(false, false, undefined), {ok, ?SP(false, false, disabled)}},
-        {?DEFAULT_SUPPORT_PARAMETERS, ?SP(false, false, disabled), {ok, ?SP(false, false, disabled)}},
-        {?DEFAULT_SUPPORT_PARAMETERS, ?SP(false, true, undefined), {ok, ?SP(false, true, initializing)}},
-        {?DEFAULT_SUPPORT_PARAMETERS, ?SP(false, true, initializing), {ok, ?SP(false, true, initializing)}},
-        {?DEFAULT_SUPPORT_PARAMETERS, ?SP(false, true, enabled), {ok, ?SP(false, true, enabled)}},
+        % updates starting from the default settings for legacy providers (false, true, disabled)
+        {?DEFAULT_SUPPORT_PARAMETERS_FOR_LEGACY_PROVIDERS, ?SP(undefined, undefined, undefined), {ok, ?SP(false, false, disabled)}},
+        {?DEFAULT_SUPPORT_PARAMETERS_FOR_LEGACY_PROVIDERS, ?SP(undefined, true, initializing), {ok, ?SP(false, true, initializing)}},
+        {?DEFAULT_SUPPORT_PARAMETERS_FOR_LEGACY_PROVIDERS, ?SP(undefined, true, enabled), {ok, ?SP(false, true, enabled)}},
+        {?DEFAULT_SUPPORT_PARAMETERS_FOR_LEGACY_PROVIDERS, ?SP(undefined, false, undefined), {ok, ?SP(false, false, disabled)}},
+        {?DEFAULT_SUPPORT_PARAMETERS_FOR_LEGACY_PROVIDERS, ?SP(true, true, undefined), {ok, ?SP(true, true, initializing)}},
+        {?DEFAULT_SUPPORT_PARAMETERS_FOR_LEGACY_PROVIDERS, ?SP(false, false, undefined), {ok, ?SP(false, false, disabled)}},
+        {?DEFAULT_SUPPORT_PARAMETERS_FOR_LEGACY_PROVIDERS, ?SP(false, false, disabled), {ok, ?SP(false, false, disabled)}},
+        {?DEFAULT_SUPPORT_PARAMETERS_FOR_LEGACY_PROVIDERS, ?SP(false, true, undefined), {ok, ?SP(false, true, initializing)}},
+        {?DEFAULT_SUPPORT_PARAMETERS_FOR_LEGACY_PROVIDERS, ?SP(false, true, initializing), {ok, ?SP(false, true, initializing)}},
+        {?DEFAULT_SUPPORT_PARAMETERS_FOR_LEGACY_PROVIDERS, ?SP(false, true, enabled), {ok, ?SP(false, true, enabled)}},
 
         % illegal settings combinations
         {?SP(true, true, enabled), ?SP(undefined, false, undefined), ?EXP_SETTING_CONFLICT_ERROR},

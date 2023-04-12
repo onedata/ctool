@@ -22,7 +22,7 @@
 
 %% API
 -export([all_dir_stats_service_statuses/0]).
--export([all_defined/1, sanitize/1]).
+-export([sanitize/1]).
 -export([update/2]).
 
 %% jsonable_record callbacks
@@ -46,13 +46,6 @@
 -spec all_dir_stats_service_statuses() -> [dir_stats_service_status()].
 all_dir_stats_service_statuses() ->
     [initializing, enabled, stopping, disabled].
-
-
--spec all_defined(record()) -> boolean().
-all_defined(#support_parameters{accounting_enabled = undefined}) -> false;
-all_defined(#support_parameters{dir_stats_service_enabled = undefined}) -> false;
-all_defined(#support_parameters{dir_stats_service_status = undefined}) -> false;
-all_defined(#support_parameters{}) -> true.
 
 
 -spec sanitize(record()) -> {ok, record()} | errors:error().
