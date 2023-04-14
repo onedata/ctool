@@ -90,7 +90,8 @@
 
 -type oz_worker() :: basic_auth_not_supported | basic_auth_disabled
 | subdomain_delegation_not_supported | subdomain_delegation_disabled
-| protected_group | {atm_lambda_in_use, AtmWorkflowIds :: [gri:entity_id()]}
+| space_marketplace_disabled | protected_group
+| {atm_lambda_in_use, AtmWorkflowIds :: [gri:entity_id()]}
 | {cannot_remove_last_owner, gri:entity_type(), gri:entity_id()}
 | {cannot_delete_entity, gri:entity_type(), gri:entity_id()}
 | cannot_add_relation_to_self
@@ -918,6 +919,10 @@ to_json(?ERROR_SUBDOMAIN_DELEGATION_NOT_SUPPORTED) -> #{
 to_json(?ERROR_SUBDOMAIN_DELEGATION_DISABLED) -> #{
     <<"id">> => <<"subdomainDelegationDisabled">>,
     <<"description">> => <<"Subdomain delegation is disabled for this Oneprovider.">>
+};
+to_json(?ERROR_SPACE_MARKETPLACE_DISABLED) -> #{
+    <<"id">> => <<"spaceMarketplaceDisabled">>,
+    <<"description">> => <<"Space marketplace is disabled for this Oneprovider.">>
 };
 to_json(?ERROR_PROTECTED_GROUP) -> #{
     <<"id">> => <<"protectedGroup">>,
@@ -2017,6 +2022,9 @@ from_json(#{<<"id">> := <<"subdomainDelegationNotSupported">>}) ->
 from_json(#{<<"id">> := <<"subdomainDelegationDisabled">>}) ->
     ?ERROR_SUBDOMAIN_DELEGATION_DISABLED;
 
+from_json(#{<<"id">> := <<"spaceMarketplaceDisabled">>}) ->
+    ?ERROR_SPACE_MARKETPLACE_DISABLED;
+
 from_json(#{<<"id">> := <<"protectedGroup">>}) ->
     ?ERROR_PROTECTED_GROUP;
 
@@ -2655,6 +2663,7 @@ to_http_code(?ERROR_BASIC_AUTH_NOT_SUPPORTED) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_BASIC_AUTH_DISABLED) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_SUBDOMAIN_DELEGATION_NOT_SUPPORTED) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_SUBDOMAIN_DELEGATION_DISABLED) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_SPACE_MARKETPLACE_DISABLED) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_PROTECTED_GROUP) -> ?HTTP_403_FORBIDDEN;
 to_http_code(?ERROR_ATM_LAMBDA_IN_USE(_)) -> ?HTTP_403_FORBIDDEN;
 to_http_code(?ERROR_CANNOT_REMOVE_LAST_OWNER(_, _)) -> ?HTTP_400_BAD_REQUEST;
