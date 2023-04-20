@@ -83,10 +83,14 @@ prepare_test_environment(Config, TestModule, Apps) ->
         utils:cmd(["echo", "'" ++ DescriptionFile ++ ":'", ">> prepare_test_environment.log"]),
         utils:cmd(["echo", "'" ++ DescriptionFile ++ ":'", ">> prepare_test_environment_error.log"]),
 
-        CleanEnv = os:getenv("clean_env") == "true",
+        CleanEnv = case os:getenv("clean_env") of
+            % for some reason, when atom true is returned under any key in final Config tests skip ¯\_(ツ)_/¯
+            "true" -> clean;
+            _ -> false
+        end,
 
         StartLog = case CleanEnv of
-            true ->
+            clean ->
                 retry_running_env_up_script_until(
                     ProjectRoot, AppmockRoot, CmRoot, LogsDir, DescriptionFile, ?ENV_UP_RETRIES_NUMBER
                 );
@@ -212,11 +216,11 @@ clean_environment(Config) ->
 -spec clean_environment(Config :: list() | test_config:config(),
     Apps :: [{AppName :: atom(), ConfigName :: atom()}]) -> ok.
 clean_environment(Config, Apps) ->
-    case test_config:get_custom(Config, clean_env, true) of
+    case test_config:get_custom(Config, clean_env, clean) of
         false ->
             ct:pal("Environment cleaning skipped (requested with --no-clean)"),
             ok;
-        true ->
+        clean ->
             StopStatus = try
                 finalize(Config, Apps)
             catch
