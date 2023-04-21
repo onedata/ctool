@@ -22,7 +22,7 @@
 -export([
     mock_new/2, mock_new/3, mock_expect/4, mock_validate/2, mock_unload/1,
     mock_unload/2, mock_validate_and_unload/2, mock_assert_num_calls/5,
-    mock_assert_num_calls/6, mock_assert_num_calls_sum/5
+    mock_assert_num_calls/6, mock_assert_num_calls_sum/5, mock_assert_num_calls_sum/6
 ]).
 -export([get_env/3, set_env/4]).
 -export([get_docker_ip/1, get_docker_hostname/1]).
@@ -219,6 +219,7 @@ mock_assert_num_calls(Nodes, Module, FunctionName, FunctionArgs, CallsNumber,
         ), Attempts)
     end, as_list(Nodes)).
 
+
 %%--------------------------------------------------------------------
 %% @doc
 %% Validates sum of function calls on all given nodes.
@@ -228,10 +229,22 @@ mock_assert_num_calls(Nodes, Module, FunctionName, FunctionArgs, CallsNumber,
     FunctionName :: atom(), FunctionArgs :: meck:args_spec(),
     CallsNumber :: non_neg_integer()) -> ok.
 mock_assert_num_calls_sum(Nodes, Module, FunctionName, FunctionArgs, CallsNumber) ->
-    Sum = lists:foldl(fun(Node, Acc) ->
+    mock_assert_num_calls_sum(Nodes, Module, FunctionName, FunctionArgs, CallsNumber, ?ATTEMPTS).
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Validates sum of function calls on all given nodes.
+%% @end
+%%--------------------------------------------------------------------
+-spec mock_assert_num_calls_sum(Nodes :: node() | [node()], Module :: module(),
+    FunctionName :: atom(), FunctionArgs :: meck:args_spec(),
+    CallsNumber :: non_neg_integer(), Attempts :: non_neg_integer()) -> ok.
+mock_assert_num_calls_sum(Nodes, Module, FunctionName, FunctionArgs, CallsNumber, Attempts) ->
+    SumFun = fun() -> lists:foldl(fun(Node, Acc) ->
         Acc + rpc:call(Node, meck, num_calls, [Module, FunctionName, FunctionArgs], ?TIMEOUT)
-    end, 0, as_list(Nodes)),
-    ?assertEqual(CallsNumber, Sum).
+    end, 0, as_list(Nodes)) end,
+    ?assertEqual(CallsNumber, SumFun(), Attempts).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -367,9 +380,9 @@ should_recompile_module(SrcFilePath) ->
     ModuleDirPath = filename:dirname(SrcFilePath),
     ModuleNameStr = filename:basename(SrcFilePath, ".erl"),
     BeamFilePath = filename:join(ModuleDirPath, ModuleNameStr ++ ".beam"),
-
+    
     {ok, SrcFileInfo} = file:read_file_info(SrcFilePath),
-
+    
     case file:read_file_info(BeamFilePath) of
         {ok, BeamFileInfo} ->
             SrcFileInfo#file_info.mtime >= BeamFileInfo#file_info.mtime;
