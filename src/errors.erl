@@ -922,7 +922,7 @@ to_json(?ERROR_SUBDOMAIN_DELEGATION_DISABLED) -> #{
 };
 to_json(?ERROR_SPACE_MARKETPLACE_DISABLED) -> #{
     <<"id">> => <<"spaceMarketplaceDisabled">>,
-    <<"description">> => <<"Space marketplace is disabled for this Oneprovider.">>
+    <<"description">> => <<"Space marketplace is disabled for this Onezone.">>
 };
 to_json(?ERROR_PROTECTED_GROUP) -> #{
     <<"id">> => <<"protectedGroup">>,

@@ -161,7 +161,7 @@
 -define(ERROR_SUBDOMAIN_DELEGATION_NOT_SUPPORTED, {error, subdomain_delegation_not_supported}).
 % Subdomain delegation is disabled for given Oneprovider
 -define(ERROR_SUBDOMAIN_DELEGATION_DISABLED, {error, subdomain_delegation_disabled}).
-% Space marketplace is disabled for given Oneprovider
+% Space marketplace is disabled for this Onezone
 -define(ERROR_SPACE_MARKETPLACE_DISABLED, {error, space_marketplace_disabled}).
 -define(ERROR_PROTECTED_GROUP, {error, protected_group}).
 -define(ERROR_ATM_LAMBDA_IN_USE(AtmWorkflowSchemas), {error, {atm_lambda_in_use, AtmWorkflowSchemas}}).
