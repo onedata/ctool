@@ -254,6 +254,7 @@ finalize(Config) ->
     Apps :: [{AppName :: atom(), ConfigName :: atom()}]) -> ok.
 finalize(Config, Apps) ->
     NodesWithCover = get_nodes_with_cover(Config, Apps),
+    erlang:register(?CLEANING_PROC_NAME, self()),
     stop_applications(Config, Apps),
     gather_cover(NodesWithCover).
 
@@ -277,8 +278,6 @@ get_nodes_with_cover(Config, Apps) ->
 gather_cover([]) ->
     ok;
 gather_cover(NodesWithCover) ->
-    erlang:register(?CLEANING_PROC_NAME, self()),
-
     ct:pal("Gathering cover from nodes: ~s", [?FORMAT_ATOM_LIST(NodesWithCover)]),
     lists:foreach(fun(Node) ->
         receive
