@@ -29,6 +29,7 @@
 -export([to_atom/1, to_boolean/1]).
 -export([encode_pid/1, decode_pid/1]).
 -export([rpc_multicall/4, rpc_multicall/5]).
+-export([erpc_multicall/2]).
 -export([wait_until/1, wait_until/2, wait_until/3]).
 -export([repeat/2]).
 -export([check_result/1]).
@@ -466,6 +467,24 @@ rpc_multicall(Nodes, Module, Function, Args, Timeout) ->
             error(badarg)
     end,
     rpcmulticallify(Nodes, ERpcRes, [], []).
+
+
+-spec erpc_multicall([node()], function()) -> term().
+erpc_multicall([], _) ->
+    [];
+erpc_multicall([ThisNode], Function) when ThisNode =:= node() ->
+    try
+        [{ok, erlang:apply(Function, [])}]
+    catch
+        throw:Reason ->
+            [{throw, Reason}];
+        exit:Reason ->
+            [{exit, {exception, Reason}}];
+        error:Reason:Stacktrace ->
+            [{error, {exception, Reason, Stacktrace}}]
+    end;
+erpc_multicall(Nodes, Function) ->
+    erpc:multicall(Nodes, Function). % @codetag-tracker-ignore
 
 
 -spec wait_until(fun(() -> boolean())) -> ok | no_return().
