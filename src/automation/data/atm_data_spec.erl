@@ -19,30 +19,49 @@
 
 
 %% API
--export([get_type/1, get_value_constraints/1]).
+-export([get_data_type/1]).
 
 %% Jsonable record callbacks
 -export([to_json/1, from_json/1]).
 
 %% persistent_record callbacks
--export([version/0, db_encode/2, db_decode/2]).
+-export([version/0, upgrade_encoded_record/2, db_encode/2, db_decode/2]).
 
 
--type record() :: #atm_data_spec{}.
+-type model() ::
+    atm_array_data_spec |
+    atm_boolean_data_spec |
+    atm_dataset_data_spec |
+    atm_file_data_spec |
+    atm_number_data_spec |
+    atm_object_data_spec |
+    atm_range_data_spec |
+    atm_string_data_spec |
+    atm_time_series_measurement_data_spec.
+
+-type record() ::
+    atm_array_data_spec:record() |
+    atm_boolean_data_spec:record() |
+    atm_dataset_data_spec:record() |
+    atm_file_data_spec:record() |
+    atm_number_data_spec:record() |
+    atm_object_data_spec:record() |
+    atm_range_data_spec:record() |
+    atm_string_data_spec:record() |
+    atm_time_series_measurement_data_spec:record().
+
 -export_type([record/0]).
+
 
 %%%===================================================================
 %%% API functions
 %%%===================================================================
 
--spec get_type(record()) -> atm_data_type:type().
-get_type(#atm_data_spec{type = Type}) ->
-    Type.
 
+-spec get_data_type(record()) -> atm_data_type:type().
+get_data_type(Record) ->
+    model_to_data_type(utils:record_type(Record)).
 
--spec get_value_constraints(record()) -> atm_data_type:value_constraints().
-get_value_constraints(#atm_data_spec{value_constraints = ValueConstraints}) ->
-    ValueConstraints.
 
 %%%===================================================================
 %%% jsonable_record callbacks
@@ -56,15 +75,24 @@ to_json(Record) ->
 
 -spec from_json(json_utils:json_term()) -> record().
 from_json(RecordJson) ->
-    decode_with(validate, RecordJson, fun jsonable_record:from_json/2).
+    decode_with(RecordJson, fun jsonable_record:from_json/2).
+
 
 %%%===================================================================
 %%% persistent_record callbacks
 %%%===================================================================
 
+
 -spec version() -> persistent_record:record_version().
 version() ->
-    1.
+    2.  %% TODO upgrade/test upgrade?
+
+
+-spec upgrade_encoded_record(persistent_record:record_version(), json_utils:json_term()) ->
+    {persistent_record:record_version(), json_utils:json_term()}.
+upgrade_encoded_record(1, RecordJson0) ->
+    {ValueConstraints, RecordJson1} = maps:take(<<"valueConstraints">>, RecordJson0),
+    {2, maps:merge(RecordJson1, ValueConstraints)}.
 
 
 -spec db_encode(record(), persistent_record:nested_record_encoder()) -> json_utils:json_term().
@@ -74,33 +102,59 @@ db_encode(Record, NestedRecordEncoder) ->
 
 -spec db_decode(json_utils:json_term(), persistent_record:nested_record_decoder()) -> record().
 db_decode(RecordJson, NestedRecordDecoder) ->
-    decode_with(skip_validation, RecordJson, NestedRecordDecoder).
+    decode_with(RecordJson, NestedRecordDecoder).
+
 
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
 
+
 %% @private
 -spec encode_with(record(), persistent_record:nested_record_encoder()) ->
     json_utils:json_map().
-encode_with(#atm_data_spec{type = Type, value_constraints = ValueConstraints}, NestedRecordEncoder) ->
-    #{
-        <<"type">> => atm_data_type:type_to_json(Type),
-        <<"valueConstraints">> => atm_data_type:encode_value_constraints(
-            Type, ValueConstraints, NestedRecordEncoder
-        )
-    }.
+encode_with(Record, NestedRecordEncoder) ->
+    Model = utils:record_type(Record),
+
+    maps:merge(
+        #{<<"type">> => atm_data_type:type_to_json(model_to_data_type(Model))},
+        NestedRecordEncoder(Record, Model)
+    ).
 
 
 %% @private
--spec decode_with(jsonable_record:validation_strategy(), json_utils:json_map(), persistent_record:nested_record_decoder()) ->
+-spec decode_with(json_utils:json_map(), persistent_record:nested_record_decoder()) ->
     record().
-decode_with(ValidationStrategy, RecordJson, NestedRecordDecoder) ->
-    Type = atm_data_type:type_from_json(maps:get(<<"type">>, RecordJson)),
-    ValueConstraints = maps:get(<<"valueConstraints">>, RecordJson, #{}),
-    #atm_data_spec{
-        type = Type,
-        value_constraints = atm_data_type:decode_value_constraints(
-            Type, ValidationStrategy, ValueConstraints, NestedRecordDecoder
-        )
-    }.
+decode_with(#{<<"type">> := TypeJson} = RecordJson, NestedRecordDecoder) ->
+    NestedRecordDecoder(RecordJson, data_type_to_model(atm_data_type:type_from_json(TypeJson))).
+
+
+%%%===================================================================
+%%% Internal functions
+%%%===================================================================
+
+
+%% @private
+-spec model_to_data_type(model()) -> atm_data_type:type().
+model_to_data_type(atm_array_data_spec) -> atm_array_type;
+model_to_data_type(atm_boolean_data_spec) -> atm_boolean_type;
+model_to_data_type(atm_dataset_data_spec) -> atm_dataset_type;
+model_to_data_type(atm_file_data_spec) -> atm_file_type;
+model_to_data_type(atm_number_data_spec) -> atm_number_type;
+model_to_data_type(atm_object_data_spec) -> atm_object_type;
+model_to_data_type(atm_range_data_spec) -> atm_range_type;
+model_to_data_type(atm_string_data_spec) -> atm_string_type;
+model_to_data_type(atm_time_series_measurement_data_spec) -> atm_time_series_measurement_type.
+
+
+%% @private
+-spec data_type_to_model(atm_data_type:type()) -> model().
+data_type_to_model(atm_array_type) -> atm_array_data_spec;
+data_type_to_model(atm_boolean_type) -> atm_boolean_data_spec;
+data_type_to_model(atm_dataset_type) -> atm_dataset_data_spec;
+data_type_to_model(atm_file_type) -> atm_file_data_spec;
+data_type_to_model(atm_number_type) -> atm_number_data_spec;
+data_type_to_model(atm_object_type) -> atm_object_data_spec;
+data_type_to_model(atm_range_type) -> atm_range_data_spec;
+data_type_to_model(atm_string_type) -> atm_string_data_spec;
+data_type_to_model(atm_time_series_measurement_type) -> atm_time_series_measurement_data_spec.

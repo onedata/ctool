@@ -16,7 +16,6 @@
 -export([all_data_types/0]).
 -export([is_instance/2]).
 -export([type_to_json/1, type_from_json/1]).
--export([encode_value_constraints/3, decode_value_constraints/4]).
 
 %% @formatter:off
 -type type() :: atm_array_type
@@ -44,27 +43,6 @@
 -callback is_instance(json_utils:json_term()) -> boolean().
 
 
-%%--------------------------------------------------------------------
-%% @doc
-%% Encodes the type constraints using given encoder.
-%% @end
-%%--------------------------------------------------------------------
--callback encode_value_constraints(value_constraints(), persistent_record:nested_record_encoder()) ->
-    json_utils:json_term().
-
-
-%%--------------------------------------------------------------------
-%% @doc
-%% Decodes the type constraints using given decoder and applying (optional) validation.
-%% @end
-%%--------------------------------------------------------------------
--callback decode_value_constraints(
-    jsonable_record:validation_strategy(),
-    json_utils:json_term(),
-    persistent_record:nested_record_decoder()
-) ->
-    value_constraints().
-
 %%%===================================================================
 %%% API functions
 %%%===================================================================
@@ -75,17 +53,41 @@ all_data_types() -> [
     atm_boolean_type,
     atm_dataset_type,
     atm_file_type,
-    atm_object_type,
     atm_number_type,
+    atm_object_type,
     atm_range_type,
     atm_string_type,
     atm_time_series_measurement_type
 ].
 
 
+%% @TODO VFS-7687 Implement all automation data types and validators
 -spec is_instance(type(), json_utils:json_term()) -> boolean().
-is_instance(TypeName, Value) ->
-    TypeName:is_instance(Value).
+is_instance(atm_array_type, Value) when is_list(Value) ->
+    true;
+is_instance(atm_boolean_type, Value) when is_boolean(Value) ->
+    true;
+is_instance(atm_dataset_type, #{<<"datasetId">> := DatasetId}) when is_binary(DatasetId) ->
+    true;
+is_instance(atm_file_type, #{<<"file_id">> := FileId}) when is_binary(FileId) ->
+    true;
+is_instance(atm_number_type, Value) when is_number(Value) ->
+    true;
+is_instance(atm_object_type, Value) when is_map(Value) ->
+    true;
+is_instance(atm_range_type, #{<<"end">> := End} = Range) when is_integer(End) ->
+    % the "end" parameter is required, others are optional
+    is_integer(maps:get(<<"start">>, Range, 0)) andalso is_integer(maps:get(<<"step">>, Range, 1));
+is_instance(atm_string_type, Value) when is_binary(Value) ->
+    true;
+is_instance(atm_time_series_measurement_type, #{
+    <<"tsName">> := TsName,
+    <<"timestamp">> := Timestamp,
+    <<"value">> := Value
+}) when is_binary(TsName), is_integer(Timestamp), Timestamp >= 0, is_number(Value) ->
+    true;
+is_instance(_, _) ->
+    false.
 
 
 -spec type_to_json(type()) -> json_utils:json_term().
@@ -110,24 +112,3 @@ type_from_json(<<"number">>) -> atm_number_type;
 type_from_json(<<"range">>) -> atm_range_type;
 type_from_json(<<"string">>) -> atm_string_type;
 type_from_json(<<"timeSeriesMeasurement">>) -> atm_time_series_measurement_type.
-
-
--spec encode_value_constraints(
-    type(),
-    value_constraints(),
-    persistent_record:nested_record_encoder()
-) ->
-    json_utils:json_term().
-encode_value_constraints(TypeName, Constraints, NestedRecordEncoder) ->
-    TypeName:encode_value_constraints(Constraints, NestedRecordEncoder).
-
-
--spec decode_value_constraints(
-    type(),
-    jsonable_record:validation_strategy(),
-    json_utils:json_term(),
-    persistent_record:nested_record_decoder()
-) ->
-    value_constraints().
-decode_value_constraints(TypeName, ValidationStrategy, ConstraintsJson, NestedRecordDecoder) ->
-    TypeName:decode_value_constraints(ValidationStrategy, ConstraintsJson, NestedRecordDecoder).

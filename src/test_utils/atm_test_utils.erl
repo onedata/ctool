@@ -214,39 +214,33 @@ example_data_spec(DataType) ->
 
 -spec example_data_spec_except(atm_data_type:type(), [atm_data_type:type()]) -> atm_data_spec:record().
 example_data_spec_except(atm_array_type, DisallowedTypes) ->
-    #atm_data_spec{
-        type = atm_array_type,
-        value_constraints = #{item_data_spec => example_data_spec_except(DisallowedTypes)}
+    #atm_array_data_spec{
+        item_data_spec = example_data_spec_except(DisallowedTypes)
     };
+example_data_spec_except(atm_boolean_type, _) ->
+    #atm_boolean_data_spec{};
+example_data_spec_except(atm_dataset_type, _) ->
+    #atm_dataset_data_spec{};
 example_data_spec_except(atm_file_type, _) ->
-    #atm_data_spec{
-        type = atm_file_type,
-        value_constraints = #{file_type => ?RAND_ELEMENT(['REG', 'DIR', 'ANY'])}
+    #atm_file_data_spec{
+        file_type = ?RAND_ELEMENT(['REG', 'DIR', 'ANY'])
     };
 example_data_spec_except(atm_number_type, _) ->
-    #atm_data_spec{
-        type = atm_number_type,
-        value_constraints = #{
-            integers_only => ?RAND_BOOL(),
-            allowed_values => ?RAND_ELEMENT([undefined, ?RAND_SUBLIST([1, -17.8, 82734, 90.665])])
-        }
+    #atm_number_data_spec{
+        integers_only = ?RAND_BOOL(),
+        allowed_values = ?RAND_ELEMENT([undefined, ?RAND_SUBLIST([1, -17.8, 82734, 90.665])])
+    };
+example_data_spec_except(atm_object_type, _) ->
+    #atm_object_data_spec{};
+example_data_spec_except(atm_range_type, _) ->
+    #atm_range_data_spec{};
+example_data_spec_except(atm_string_type, _) ->
+    #atm_string_data_spec{
+        allowed_values = ?RAND_ELEMENT([undefined, ?RAND_SUBLIST([<<"a">>, <<"b">>, ?RAND_STR()])])
     };
 example_data_spec_except(atm_time_series_measurement_type, _) ->
-    #atm_data_spec{
-        type = atm_time_series_measurement_type,
-        value_constraints = #{specs => ?RAND_SUBLIST(example_time_series_measurement_specs())}
-    };
-example_data_spec_except(atm_string_type, _) ->
-    #atm_data_spec{
-        type = atm_string_type,
-        value_constraints = #{
-            allowed_values => ?RAND_ELEMENT([undefined, ?RAND_SUBLIST([<<"a">>, <<"b">>, ?RAND_STR()])])
-        }
-    };
-example_data_spec_except(DataType, _) ->
-    #atm_data_spec{
-        type = DataType,
-        value_constraints = #{}
+    #atm_time_series_measurement_data_spec{
+        specs = ?RAND_SUBLIST(example_time_series_measurement_specs())
     }.
 
 -spec example_data_specs() -> [atm_data_spec:record()].
@@ -262,30 +256,28 @@ example_data_specs_except(DisallowedTypes) ->
 
 %% @TODO VFS-7687 Implement all automation data types and validators
 -spec example_predefined_value(atm_data_spec:record()) -> json_utils:json_term().
-example_predefined_value(#atm_data_spec{type = atm_array_type, value_constraints = #{
-    item_data_spec := ItemDataSpec
-}}) ->
+example_predefined_value(#atm_array_data_spec{item_data_spec = ItemDataSpec}) ->
     case example_predefined_value(ItemDataSpec) of
         undefined ->
             [];
         Value ->
             lists:duplicate(?RAND_INT(0, 20), Value)
     end;
-example_predefined_value(#atm_data_spec{type = atm_boolean_type}) ->
+example_predefined_value(#atm_boolean_data_spec{}) ->
     ?RAND_BOOL();
-example_predefined_value(#atm_data_spec{type = atm_dataset_type}) ->
+example_predefined_value(#atm_dataset_data_spec{}) ->
     #{<<"datasetId">> => ?RAND_STR()};
-example_predefined_value(#atm_data_spec{type = atm_file_type}) ->
+example_predefined_value(#atm_file_data_spec{}) ->
     #{<<"file_id">> => ?RAND_STR()};
-example_predefined_value(#atm_data_spec{type = atm_object_type}) ->
+example_predefined_value(#atm_object_data_spec{}) ->
     ?RAND_ELEMENT([#{}, #{<<"key">> => 984.222}, #{<<"key">> => #{<<"nested">> => 984.222}}]);
-example_predefined_value(#atm_data_spec{type = atm_number_type}) ->
+example_predefined_value(#atm_number_data_spec{}) ->
     ?RAND_ELEMENT([?RAND_INT(0, 1000), rand:uniform() * ?RAND_INT(0, 1000)]);
-example_predefined_value(#atm_data_spec{type = atm_range_type}) ->
+example_predefined_value(#atm_range_data_spec{}) ->
     #{<<"start">> => ?RAND_INT(0, 10), <<"end">> => ?RAND_INT(10, 20), <<"step">> => ?RAND_INT(0, 5)};
-example_predefined_value(#atm_data_spec{type = atm_string_type}) ->
+example_predefined_value(#atm_string_data_spec{}) ->
     ?RAND_STR(?RAND_INT(1, 25));
-example_predefined_value(#atm_data_spec{type = atm_time_series_measurement_type}) ->
+example_predefined_value(#atm_time_series_measurement_data_spec{}) ->
     undefined.
 
 
@@ -366,7 +358,7 @@ example_store_initial_content(list, #atm_list_store_config{item_data_spec = Data
 example_store_initial_content(tree_forest, #atm_tree_forest_store_config{item_data_spec = DataSpec}) ->
     example_store_initial_content(list, #atm_list_store_config{item_data_spec = DataSpec});
 example_store_initial_content(range, #atm_range_store_config{}) ->
-    example_predefined_value(#atm_data_spec{type = atm_range_type});
+    example_predefined_value(#atm_range_data_spec{});
 example_store_initial_content(time_series, #atm_time_series_store_config{}) ->
     undefined;
 example_store_initial_content(audit_log, #atm_audit_log_store_config{}) ->
