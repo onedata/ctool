@@ -85,14 +85,17 @@ from_json(RecordJson) ->
 
 -spec version() -> persistent_record:record_version().
 version() ->
-    2.  %% TODO upgrade/test upgrade?
+    2.
 
 
 -spec upgrade_encoded_record(persistent_record:record_version(), json_utils:json_term()) ->
     {persistent_record:record_version(), json_utils:json_term()}.
-upgrade_encoded_record(1, RecordJson0) ->
-    {ValueConstraints, RecordJson1} = maps:take(<<"valueConstraints">>, RecordJson0),
-    {2, maps:merge(RecordJson1, ValueConstraints)}.
+upgrade_encoded_record(1, #{
+    <<"type">> := TypeJson,
+    <<"valueConstraints">> := ValueConstraints
+}) ->
+    % New atm_<type>_data_spec records are just created so all have version number 1
+    {2, #{<<"type">> => TypeJson, <<"_version">> => 1, <<"_data">> => ValueConstraints}}.
 
 
 -spec db_encode(record(), persistent_record:nested_record_encoder()) -> json_utils:json_term().
