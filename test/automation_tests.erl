@@ -104,7 +104,7 @@ upgrade_encoded_data_spec_test_() ->
             D(<<"{\"_version\":1,\"_data\":{\"valueConstraints\":{},\"type\":\"dataset\"}}">>)
         ),
         ?_assertEqual(
-            #atm_file_data_spec{file_type = 'REG'},
+            #atm_file_data_spec{file_type = 'REG', attributes = [file_id]},
             D(<<"{\"_version\":1,\"_data\":{\"valueConstraints\":{\"fileType\":\"REG\"},\"type\":\"file\"}}">>)
         ),
         ?_assertEqual(

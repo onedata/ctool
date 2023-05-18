@@ -223,7 +223,12 @@ example_data_spec_except(atm_dataset_type, _) ->
     #atm_dataset_data_spec{};
 example_data_spec_except(atm_file_type, _) ->
     #atm_file_data_spec{
-        file_type = ?RAND_ELEMENT(['REG', 'DIR', 'ANY'])
+        file_type = ?RAND_ELEMENT(['REG', 'DIR', 'ANY']),
+        attributes = lists:usort(?RAND_SUBLIST([
+            name, type, mode, size, atime, mtime, ctime, owner_id, file_id,
+            parent_id, provider_id, storage_user_id, storage_group_id,
+            shares, hardlinks_count, index
+        ]))
     };
 example_data_spec_except(atm_number_type, _) ->
     #atm_number_data_spec{

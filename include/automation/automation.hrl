@@ -56,7 +56,8 @@
 -record(atm_dataset_data_spec, {}).
 
 -record(atm_file_data_spec, {
-    file_type :: atm_file_data_spec:file_type()
+    file_type :: atm_file_data_spec:file_type(),
+    attributes :: [atm_file_data_spec:attribute()]
 }).
 
 -record(atm_number_data_spec, {
