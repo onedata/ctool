@@ -294,8 +294,8 @@
     {error, {atm_task_arg_mapping_failed, ArgName, SpecificError}}
 ).
 
--define(ERROR_ATM_TASK_RESULT_MISSING(ResultName),
-    {error, {atm_task_result_missing, ResultName}}
+-define(ERROR_ATM_TASK_RESULT_MISSING(MissingResultName, ReceivedResultNames),
+    {error, {atm_task_result_missing, MissingResultName, ReceivedResultNames}}
 ).
 -define(ERROR_ATM_TASK_RESULT_DISPATCH_FAILED(AtmStoreSchemaId, SpecificError),
     {error, {atm_task_result_dispatch_failed, AtmStoreSchemaId, SpecificError}}

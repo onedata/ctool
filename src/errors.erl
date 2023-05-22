@@ -1453,12 +1453,16 @@ to_json(?ERROR_ATM_TASK_ARG_MAPPER_ITERATED_ITEM_QUERY_FAILED(Value, Query)) -> 
     },
     <<"description">> => <<"Failed to perform query on iterated item (see details).">>
 };
-to_json(?ERROR_ATM_TASK_RESULT_MISSING(ResultName)) -> #{
+to_json(?ERROR_ATM_TASK_RESULT_MISSING(MissingResultName, ReceivedResultNames)) -> #{
     <<"id">> => <<"atmTaskResultMissing">>,
     <<"details">> => #{
-        <<"result">> => ResultName
+        <<"missingResultName">> => MissingResultName,
+        <<"receivedResultNames">> => ReceivedResultNames
     },
-    <<"description">> => ?FMT("Missing required value for result: ~s.", [ResultName])
+    <<"description">> => ?FMT(
+        "Missing required value for result '~s' in the lambda output. Received values for result names: ~s.",
+        [MissingResultName, join_values_with_commas(ReceivedResultNames)]
+    )
 };
 to_json(?ERROR_ATM_TASK_RESULT_MAPPING_FAILED(ResultName, {error, _} = SpecificError)) -> #{
     <<"id">> => <<"atmTaskResultMappingFailed">>,
@@ -2385,10 +2389,11 @@ from_json(#{
 from_json(#{
     <<"id">> := <<"atmTaskResultMissing">>,
     <<"details">> := #{
-        <<"result">> := ResultName
+        <<"missingResultName">> := MissingResultName,
+        <<"receivedResultNames">> := ReceivedResultNames
     }
 }) ->
-    ?ERROR_ATM_TASK_RESULT_MISSING(ResultName);
+    ?ERROR_ATM_TASK_RESULT_MISSING(MissingResultName, ReceivedResultNames);
 
 from_json(#{
     <<"id">> := <<"atmTaskResultMappingFailed">>,
@@ -2734,7 +2739,7 @@ to_http_code(?ERROR_ATM_TASK_ARG_MAPPER_FOR_NONEXISTENT_LAMBDA_ARG(_)) -> ?HTTP_
 to_http_code(?ERROR_ATM_TASK_ARG_MAPPING_FAILED(_, _)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_ATM_TASK_ARG_MAPPER_UNSUPPORTED_VALUE_BUILDER(_, _)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_ATM_TASK_ARG_MAPPER_ITERATED_ITEM_QUERY_FAILED(_, _)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_ATM_TASK_RESULT_MISSING(_)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_ATM_TASK_RESULT_MISSING(_, _)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_ATM_TASK_RESULT_MAPPING_FAILED(_, _)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_ATM_TASK_RESULT_DISPATCH_FAILED(_, _)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_ATM_TASK_EXECUTION_STOPPED) -> ?HTTP_400_BAD_REQUEST;
