@@ -199,7 +199,8 @@ end).
 
 % Prints bad request warning (frequently used in gen_servers)
 -define(log_bad_request(Request),
-    ?warning("~w:~B - received a bad request:~s", [?MODULE, ?LINE, ?autoformat([Request])])
+    % cannot use ?autoformat here as Request may be a complex term
+    ?warning("~w:~B - received a bad request:~n    Request = ~p", [?MODULE, ?LINE, Request])
 ).
 
 
