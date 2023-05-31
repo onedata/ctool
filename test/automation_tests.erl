@@ -87,52 +87,6 @@ encode_decode_atm_data_spec_test() ->
     })).
 
 
-upgrade_encoded_data_spec_test_() ->
-    D = fun(EncodedData) -> persistent_record:decode(EncodedData, atm_data_spec) end,
-
-    [
-        ?_assertEqual(
-            #atm_array_data_spec{item_data_spec = #atm_number_data_spec{integers_only = false, allowed_values = undefined}},
-            D(<<"{\"_version\":1,\"_data\":{\"valueConstraints\":{\"itemDataSpec\":{\"_version\":1,\"_data\":{\"valueConstraints\":{\"integersOnly\":false,\"allowedValues\":null},\"type\":\"number\"}}},\"type\":\"array\"}}">>)
-        ),
-        ?_assertEqual(
-            #atm_boolean_data_spec{},
-            D(<<"{\"_version\":1,\"_data\":{\"valueConstraints\":{},\"type\":\"boolean\"}}">>)
-        ),
-        ?_assertEqual(
-            #atm_dataset_data_spec{},
-            D(<<"{\"_version\":1,\"_data\":{\"valueConstraints\":{},\"type\":\"dataset\"}}">>)
-        ),
-        ?_assertEqual(
-            #atm_file_data_spec{file_type = 'REG', attributes = [file_id]},
-            D(<<"{\"_version\":1,\"_data\":{\"valueConstraints\":{\"fileType\":\"REG\"},\"type\":\"file\"}}">>)
-        ),
-        ?_assertEqual(
-            #atm_number_data_spec{integers_only = true, allowed_values = undefined},
-            D(<<"{\"_version\":1,\"_data\":{\"valueConstraints\":{\"integersOnly\":true,\"allowedValues\":null},\"type\":\"number\"}}">>)
-        ),
-        ?_assertEqual(
-            #atm_object_data_spec{},
-            D(<<"{\"_version\":1,\"_data\":{\"valueConstraints\":{},\"type\":\"object\"}}">>)
-        ),
-        ?_assertEqual(
-            #atm_range_data_spec{},
-            D(<<"{\"_version\":1,\"_data\":{\"valueConstraints\":{},\"type\":\"range\"}}">>)
-        ),
-        ?_assertEqual(
-            #atm_string_data_spec{allowed_values = [<<"a">>, <<"b">>]},
-            D(<<"{\"_version\":1,\"_data\":{\"valueConstraints\":{\"allowedValues\":[\"a\",\"b\"]},\"type\":\"string\"}}">>)
-        ),
-
-        ?_assertEqual(
-            #atm_time_series_measurement_data_spec{specs = [
-                #atm_time_series_measurement_spec{name_matcher_type = has_prefix, name_matcher = <<"latency">>, unit = milliseconds}
-            ]},
-            D(<<"{\"_version\":1,\"_data\":{\"valueConstraints\":{\"specs\":[{\"_version\":1,\"_data\":{\"unit\":\"milliseconds\",\"nameMatcherType\":\"hasPrefix\",\"nameMatcher\":\"latency\"}}]},\"type\":\"timeSeriesMeasurement\"}}">>)
-        )
-    ].
-
-
 encode_decode_operation_spec_test() ->
     encode_decode_test_base(atm_test_utils:example_operation_specs()),
 

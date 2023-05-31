@@ -28,7 +28,7 @@
 -export([version/0, upgrade_encoded_record/2, db_encode/2, db_decode/2]).
 
 
--type model() ::
+-type record_type() ::
     atm_array_data_spec |
     atm_boolean_data_spec |
     atm_dataset_data_spec |
@@ -60,7 +60,7 @@
 
 -spec get_data_type(record()) -> atm_data_type:type().
 get_data_type(Record) ->
-    model_to_data_type(utils:record_type(Record)).
+    record_type_to_data_type(utils:record_type(Record)).
 
 
 %%%===================================================================
@@ -94,7 +94,8 @@ upgrade_encoded_record(1, #{
     <<"type">> := TypeJson,
     <<"valueConstraints">> := ValueConstraints
 }) ->
-    % New atm_<type>_data_spec records are just created so all have version number 1
+    % New atm_<type>_data_spec records have been just introduced along with this upgrader
+    % so they have version number 1
     {2, #{<<"type">> => TypeJson, <<"_version">> => 1, <<"_data">> => ValueConstraints}}.
 
 
@@ -120,7 +121,7 @@ encode_with(Record, NestedRecordEncoder) ->
     Model = utils:record_type(Record),
 
     maps:merge(
-        #{<<"type">> => atm_data_type:type_to_json(model_to_data_type(Model))},
+        #{<<"type">> => atm_data_type:type_to_json(record_type_to_data_type(Model))},
         NestedRecordEncoder(Record, Model)
     ).
 
@@ -129,7 +130,7 @@ encode_with(Record, NestedRecordEncoder) ->
 -spec decode_with(json_utils:json_map(), persistent_record:nested_record_decoder()) ->
     record().
 decode_with(#{<<"type">> := TypeJson} = RecordJson, NestedRecordDecoder) ->
-    NestedRecordDecoder(RecordJson, data_type_to_model(atm_data_type:type_from_json(TypeJson))).
+    NestedRecordDecoder(RecordJson, data_type_to_record_type(atm_data_type:type_from_json(TypeJson))).
 
 
 %%%===================================================================
@@ -138,26 +139,26 @@ decode_with(#{<<"type">> := TypeJson} = RecordJson, NestedRecordDecoder) ->
 
 
 %% @private
--spec model_to_data_type(model()) -> atm_data_type:type().
-model_to_data_type(atm_array_data_spec) -> atm_array_type;
-model_to_data_type(atm_boolean_data_spec) -> atm_boolean_type;
-model_to_data_type(atm_dataset_data_spec) -> atm_dataset_type;
-model_to_data_type(atm_file_data_spec) -> atm_file_type;
-model_to_data_type(atm_number_data_spec) -> atm_number_type;
-model_to_data_type(atm_object_data_spec) -> atm_object_type;
-model_to_data_type(atm_range_data_spec) -> atm_range_type;
-model_to_data_type(atm_string_data_spec) -> atm_string_type;
-model_to_data_type(atm_time_series_measurement_data_spec) -> atm_time_series_measurement_type.
+-spec record_type_to_data_type(record_type()) -> atm_data_type:type().
+record_type_to_data_type(atm_array_data_spec) -> atm_array_type;
+record_type_to_data_type(atm_boolean_data_spec) -> atm_boolean_type;
+record_type_to_data_type(atm_dataset_data_spec) -> atm_dataset_type;
+record_type_to_data_type(atm_file_data_spec) -> atm_file_type;
+record_type_to_data_type(atm_number_data_spec) -> atm_number_type;
+record_type_to_data_type(atm_object_data_spec) -> atm_object_type;
+record_type_to_data_type(atm_range_data_spec) -> atm_range_type;
+record_type_to_data_type(atm_string_data_spec) -> atm_string_type;
+record_type_to_data_type(atm_time_series_measurement_data_spec) -> atm_time_series_measurement_type.
 
 
 %% @private
--spec data_type_to_model(atm_data_type:type()) -> model().
-data_type_to_model(atm_array_type) -> atm_array_data_spec;
-data_type_to_model(atm_boolean_type) -> atm_boolean_data_spec;
-data_type_to_model(atm_dataset_type) -> atm_dataset_data_spec;
-data_type_to_model(atm_file_type) -> atm_file_data_spec;
-data_type_to_model(atm_number_type) -> atm_number_data_spec;
-data_type_to_model(atm_object_type) -> atm_object_data_spec;
-data_type_to_model(atm_range_type) -> atm_range_data_spec;
-data_type_to_model(atm_string_type) -> atm_string_data_spec;
-data_type_to_model(atm_time_series_measurement_type) -> atm_time_series_measurement_data_spec.
+-spec data_type_to_record_type(atm_data_type:type()) -> record_type().
+data_type_to_record_type(atm_array_type) -> atm_array_data_spec;
+data_type_to_record_type(atm_boolean_type) -> atm_boolean_data_spec;
+data_type_to_record_type(atm_dataset_type) -> atm_dataset_data_spec;
+data_type_to_record_type(atm_file_type) -> atm_file_data_spec;
+data_type_to_record_type(atm_number_type) -> atm_number_data_spec;
+data_type_to_record_type(atm_object_type) -> atm_object_data_spec;
+data_type_to_record_type(atm_range_type) -> atm_range_data_spec;
+data_type_to_record_type(atm_string_type) -> atm_string_data_spec;
+data_type_to_record_type(atm_time_series_measurement_type) -> atm_time_series_measurement_data_spec.
