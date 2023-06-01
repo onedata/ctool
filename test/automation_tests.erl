@@ -53,42 +53,37 @@ encode_decode_atm_data_spec_test() ->
     encode_decode_test_base(atm_test_utils:example_data_specs()),
 
     ExpDuplicateNameMatchersError = ?ERROR_BAD_DATA(
-        <<"valueConstraints.specs">>,
+        <<"specs">>,
         <<"There cannot be two measurement specs with the same name matcher">>
     ),
-    ?assert(eunit_utils:throws_error_during_decode_from_json(ExpDuplicateNameMatchersError, atm_data_spec, #atm_data_spec{
-        type = atm_time_series_measurement_type,
-        value_constraints = #{specs => [
+    ?assert(eunit_utils:throws_error_during_decode_from_json(ExpDuplicateNameMatchersError, atm_data_spec, #atm_time_series_measurement_data_spec{
+        specs = [
             #atm_time_series_measurement_spec{name_matcher_type = exact, name_matcher = <<"latency">>, unit = milliseconds},
             #atm_time_series_measurement_spec{name_matcher_type = exact, name_matcher = <<"throughput">>, unit = bytes_per_sec},
             #atm_time_series_measurement_spec{name_matcher_type = has_prefix, name_matcher = <<"latency">>, unit = milliseconds}
-        ]}
+        ]
     })),
 
     ExpBadNumberConstraintsError = ?ERROR_BAD_DATA(
-        <<"valueConstraints">>,
+        <<"allowedValues">>,
         <<"You must provide a list of numbers">>
     ),
-    ?assert(eunit_utils:throws_error_during_decode_from_json(ExpBadNumberConstraintsError, atm_data_spec, #atm_data_spec{
-        type = atm_number_type,
-        value_constraints = #{integers_only => ?RAND_BOOL(), allowed_values => <<"string">>}
+    ?assert(eunit_utils:throws_error_during_decode_from_json(ExpBadNumberConstraintsError, atm_data_spec, #atm_number_data_spec{
+        integers_only = ?RAND_BOOL(), allowed_values = <<"string">>
     })),
-    ?assert(eunit_utils:throws_error_during_decode_from_json(ExpBadNumberConstraintsError, atm_data_spec, #atm_data_spec{
-        type = atm_number_type,
-        value_constraints = #{integers_only => ?RAND_BOOL(), allowed_values => [<<"list">>, <<"of">>, <<"strings">>]}
+    ?assert(eunit_utils:throws_error_during_decode_from_json(ExpBadNumberConstraintsError, atm_data_spec, #atm_number_data_spec{
+        integers_only = ?RAND_BOOL(), allowed_values = [<<"list">>, <<"of">>, <<"strings">>]
     })),
 
     ExpBadStringConstraintsError = ?ERROR_BAD_DATA(
-        <<"valueConstraints">>,
+        <<"allowedValues">>,
         <<"You must provide a list of strings">>
     ),
-    ?assert(eunit_utils:throws_error_during_decode_from_json(ExpBadStringConstraintsError, atm_data_spec, #atm_data_spec{
-        type = atm_string_type,
-        value_constraints = #{allowed_values => 234.7}
+    ?assert(eunit_utils:throws_error_during_decode_from_json(ExpBadStringConstraintsError, atm_data_spec, #atm_string_data_spec{
+        allowed_values = 234.7
     })),
-    ?assert(eunit_utils:throws_error_during_decode_from_json(ExpBadStringConstraintsError, atm_data_spec, #atm_data_spec{
-        type = atm_string_type,
-        value_constraints = #{allowed_values => #{<<"key">> => <<"value">>}}
+    ?assert(eunit_utils:throws_error_during_decode_from_json(ExpBadStringConstraintsError, atm_data_spec, #atm_string_data_spec{
+        allowed_values = #{<<"key">> => <<"value">>}
     })).
 
 

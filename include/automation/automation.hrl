@@ -47,9 +47,34 @@
     ephemeral_storage_limit :: undefined | integer()
 }).
 
--record(atm_data_spec, {
-    type :: atm_data_type:type(),
-    value_constraints = #{} :: atm_data_type:value_constraints()
+-record(atm_array_data_spec, {
+    item_data_spec :: atm_data_spec:record()
+}).
+
+-record(atm_boolean_data_spec, {}).
+
+-record(atm_dataset_data_spec, {}).
+
+-record(atm_file_data_spec, {
+    file_type :: atm_file_data_spec:file_type(),
+    attributes :: undefined | [atm_file_data_spec:attribute()]
+}).
+
+-record(atm_number_data_spec, {
+    integers_only :: boolean(),
+    allowed_values :: undefined | [number()]
+}).
+
+-record(atm_object_data_spec, {}).
+
+-record(atm_range_data_spec, {}).
+
+-record(atm_string_data_spec, {
+    allowed_values :: undefined | [binary()]
+}).
+
+-record(atm_time_series_measurement_data_spec, {
+    specs :: [atm_time_series_measurement_spec:record()]
 }).
 
 -record(atm_docker_execution_options, {
