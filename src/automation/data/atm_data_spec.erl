@@ -74,8 +74,17 @@ to_json(Record) ->
 
 
 -spec from_json(json_utils:json_term()) -> record().
-from_json(RecordJson) ->
-    decode_with(RecordJson, fun jsonable_record:from_json/2).
+from_json(RecordJson0) ->
+    % In order to properly load workflow schema dumps made before 21.02.3 release
+    % json decoder needs to understand 2 versions of data spec with constraints
+    % defined:
+    % - under `valueConstraints` field
+    % - directly in object
+    RecordJson1 = case maps:take(<<"valueConstraints">>, RecordJson0) of
+        {Constraints, RecordJson01} -> maps:merge(Constraints, RecordJson01);
+        error -> RecordJson0
+    end,
+    decode_with(RecordJson1, fun jsonable_record:from_json/2).
 
 
 %%%===================================================================
