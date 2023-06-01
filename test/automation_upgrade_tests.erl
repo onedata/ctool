@@ -76,7 +76,7 @@ upgrade_data_spec_test_() ->
         ?_assertEqual(
             #atm_file_data_spec{
                 file_type = 'REG',
-                attributes = [file_id]
+                attributes = undefined
             },
             U(#{
                 <<"_data">> => #{

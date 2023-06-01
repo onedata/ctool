@@ -75,17 +75,21 @@ version() ->
 db_encode(Record = #atm_file_data_spec{file_type = FileType}, _NestedRecordEncoder) ->
     #{
         <<"fileType">> => file_type_to_json(FileType),
-        <<"attributes">> => lists:map(fun attribute_to_json/1, Record#atm_file_data_spec.attributes)
+        <<"attributes">> => case Record#atm_file_data_spec.attributes of
+            undefined -> null;
+            Attributes -> lists:map(fun attribute_to_json/1, Attributes)
+        end
     }.
 
 
 -spec db_decode(json_utils:json_term(), persistent_record:nested_record_decoder()) -> record().
 db_decode(RecordJson, _NestedRecordDecoder) ->
-    AttributesJson = maps:get(<<"attributes">>, RecordJson, [<<"file_id">>]),
-
     #atm_file_data_spec{
         file_type = file_type_from_json(maps:get(<<"fileType">>, RecordJson, <<"ANY">>)),
-        attributes = lists:usort(lists:map(fun attribute_from_json/1, AttributesJson))
+        attributes = case maps:get(<<"attributes">>, RecordJson, null) of
+            null -> undefined;
+            AttributesJson -> lists:usort(lists:map(fun attribute_from_json/1, AttributesJson))
+        end
     }.
 
 
