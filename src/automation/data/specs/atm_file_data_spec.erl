@@ -45,6 +45,13 @@
 
 -export_type([file_type/0, attribute/0, record/0]).
 
+-define(ALL_ATTRIBUTES, [
+    name, type, mode, size, atime, mtime, ctime,
+    owner_id, file_id, parent_id, provider_id,
+    storage_user_id, storage_group_id,
+    shares, hardlinks_count, index
+]).
+
 
 %%%===================================================================
 %%% jsonable_record callbacks
@@ -86,9 +93,15 @@ db_encode(Record = #atm_file_data_spec{file_type = FileType}, _NestedRecordEncod
 db_decode(RecordJson, _NestedRecordDecoder) ->
     #atm_file_data_spec{
         file_type = file_type_from_json(maps:get(<<"fileType">>, RecordJson, <<"ANY">>)),
-        attributes = case maps:get(<<"attributes">>, RecordJson, null) of
-            null -> undefined;
-            AttributesJson -> lists:usort(lists:map(fun attribute_from_json/1, AttributesJson))
+        attributes = case maps:find(<<"attributes">>, RecordJson) of
+            error ->
+                % Set all possible attributes when field is missing to previous
+                % version behaviour when all file attrs where always resolved
+                lists:usort(?ALL_ATTRIBUTES);
+            {ok, null} ->
+                undefined;
+            {ok, AttributesJson} ->
+                lists:usort(lists:map(fun attribute_from_json/1, AttributesJson))
         end
     }.
 
