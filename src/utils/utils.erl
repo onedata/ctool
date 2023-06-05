@@ -495,8 +495,8 @@ wait_until(Condition) ->
 wait_until(Condition, Interval) ->
     wait_until(Condition, Interval, ?DEFAULT_WAIT_UNTIL_ATTEMPTS).
 
--spec wait_until(fun(() -> boolean()), time:millis(), non_neg_integer()) -> ok | no_return().
-wait_until(_Condition, _Interval, Attempts) when Attempts =< 0 ->
+-spec wait_until(fun(() -> boolean()), time:millis(), non_neg_integer() | infinity) -> ok | no_return().
+wait_until(_Condition, _Interval, Attempts) when Attempts =< 0 -> % atom `infinity` compares as greater than 0
     error(timeout);
 wait_until(Condition, Interval, Attempts) ->
     case Condition() of
@@ -504,7 +504,11 @@ wait_until(Condition, Interval, Attempts) ->
             ok;
         false ->
             timer:sleep(Interval),
-            wait_until(Condition, Interval, Attempts - 1)
+            AttemptsLeft = case Attempts of
+                infinity -> infinity;
+                _ -> Attempts - 1
+            end,
+            wait_until(Condition, Interval, AttemptsLeft)
     end.
 
 
