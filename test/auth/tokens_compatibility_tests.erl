@@ -61,7 +61,7 @@ access_token_test() ->
         persistence = {temporary, 7},
         type = ?ACCESS_TOKEN(<<"sessId">>)
     },
-    ?assert(serialized_token_equals(Prototype, <<"verySecretSecret1">>, ?ACCESS_TOKEN_CAVEATS, <<
+    ?assert(verify_token_serialized_form(Prototype, <<"verySecretSecret1">>, ?ACCESS_TOKEN_CAVEATS, <<
         "MDAyMGxvY2F00aW9uIGRvbWFpbi5leGFtcGxlLmNvbQowMDRhaWRlbnRpZmllciAyL3RtcC003L3Vzci11aWQvYWN00OnNlc3NJZC8xMjM"
         "00NTY3ODkwZXhhbXBsZS1pZDEyMzQ1Njc4OTBhCjAwMWFjaWQgdGltZSA8IDgzNzQ4OTEyMzQKMDAxZGNpZCBpcCA9IDE3Mi45OC4xMS4y"
         "My8zMgowMDEyY2lkIGFzbiA9IDMyMgowMDFjY2lkIGdlby5jb3VudHJ5ID00gUEx8RlIKMDAxZGNpZCBnZW8ucmVnaW9uID00gQXNpYXxF"
@@ -81,7 +81,7 @@ access_token_with_session_test() ->
         persistence = named,
         type = ?ACCESS_TOKEN(<<"sessId">>)
     },
-    ?assert(serialized_token_equals(Prototype, <<"verySecretSecret2">>, lists:reverse(?ACCESS_TOKEN_CAVEATS), <<
+    ?assert(verify_token_serialized_form(Prototype, <<"verySecretSecret2">>, lists:reverse(?ACCESS_TOKEN_CAVEATS), <<
         "MDAyMGxvY2F00aW9uIGRvbWFpbi5leGFtcGxlLmNvbQowMDQ4aWRlbnRpZmllciAyL25tZC91c3ItdWlkL2FjdDpzZXNzSWQvMTIzNDU2N"
         "zg5MGV4YW1wbGUtaWQxMjM00NTY3ODkwYgowMDQxY2lkIGRhdGEub2JqZWN00aWQgPSAwMDAwMDAwMDAwMENEQkRBNjc3NTY5NjQyMzMxM"
         "zIzMzIzNjE2MjYzCjAwNGFjaWQgZGF00YS5wYXRoID00gTDNOd1lXTmxNUzltYVd4bE1TNTBlSFE9fEwzTndZV005sTWk5a2FYSXZabWxz"
@@ -110,7 +110,7 @@ identity_token_test() ->
         #cv_consumer{whitelist = [?SUB(user, <<"user-id">>), ?SUB(group, <<"group-id">>)]},
         #cv_ip{whitelist = [{{172, 98, 11, 23}, 32}]}
     ],
-    ?assert(serialized_token_equals(Prototype, <<"verySecretSecret3">>, Caveats, <<
+    ?assert(verify_token_serialized_form(Prototype, <<"verySecretSecret3">>, Caveats, <<
         "MDAyMGxvY2F00aW9uIGRvbWFpbi5leGFtcGxlLmNvbQowMDQxaWRlbnRpZmllciAyL25tZC9wcnYtcGlkL2lkbi8xMjM00NTY3ODkwZXhh"
         "bXBsZS1pZDEyMzQ1Njc4OTBjCjAwMWNjaWQgZ2VvLnJlZ2lvbiA9IEFmcmljYQowMDE5Y2lkIGludGVyZmFjZSA9IHJlc3QKMDAxYWNpZC"
         "B00aW1lIDwgODM3NDg5MTIzNAowMDFjY2lkIGdlby5jb3VudHJ5ID00gREV8UFQKMDAxMmNpZCBhc24gPSAzMjIKMDAyY2NpZCBjb25zdW"
@@ -135,7 +135,7 @@ invite_token_with_caveats_test() ->
         #cv_ip{whitelist = [{{11, 101, 11, 234}, 32}]},
         #cv_asn{whitelist = [112]}
     ],
-    ?assert(serialized_token_equals(Prototype, <<"verySecretSecret4">>, Caveats, <<
+    ?assert(verify_token_serialized_form(Prototype, <<"verySecretSecret4">>, Caveats, <<
         "MDAyMGxvY2F00aW9uIGRvbWFpbi5leGFtcGxlLmNvbQowMDRkaWRlbnRpZmllciAyL3RtcC0000OS91c3ItdWlkL3VqczpzcGFjZUlkOi8"
         "xMjM00NTY3ODkwZXhhbXBsZS1pZDEyMzQ1Njc4OTBkCjAwMWNjaWQgZ2VvLmNvdW500cnkgPSBERXxQVAowMDFjY2lkIGdlby5yZWdpb24"
         "gPSBBZnJpY2EKMDAyY2NpZCBjb25zdW1lciA9IGdycC1ncm91cC1pZHx1c3ItdXNlci1pZAowMDFhY2lkIHRpbWUgPCA4Mzc00ODkxMjM0"
@@ -227,7 +227,7 @@ invite_token_of_different_types_test_base({TokenType, ExpSerialized}) ->
         persistence = named,
         type = TokenType
     },
-    ?assert(serialized_token_equals(Prototype, <<"verySecretSecret5">>, [], ExpSerialized)).
+    ?assert(verify_token_serialized_form(Prototype, <<"verySecretSecret5">>, [], ExpSerialized)).
 
 
 %%%===================================================================
@@ -235,10 +235,12 @@ invite_token_of_different_types_test_base({TokenType, ExpSerialized}) ->
 %%%===================================================================
 
 %% @private
-serialized_token_equals(Prototype, Secret, Caveats, ExpSerialized) ->
-    case tokens:serialize(tokens:construct(Prototype, Secret, Caveats)) of
+verify_token_serialized_form(Prototype, Secret, Caveats, ExpSerialized) ->
+    Token = tokens:construct(Prototype, Secret, Caveats),
+    case tokens:serialize(Token) of
         {ok, ExpSerialized} ->
-            true;
+            % make sure all the original information is retained after deserialization
+            {ok, Token} == tokens:deserialize(ExpSerialized);
         {ok, DifferentSerialized} ->
             eunit_utils:debug_log(
                 "Serialized token different that expected.~n"
