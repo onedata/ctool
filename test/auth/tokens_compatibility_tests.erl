@@ -245,7 +245,8 @@ serialized_token_equals(Prototype, Secret, Caveats, ExpSerialized) ->
                 "Exp: ~s~n"
                 "Got: ~s~n",
                 [ExpSerialized, DifferentSerialized]
-            )
+            ),
+            false
     end.
 
 -endif.
