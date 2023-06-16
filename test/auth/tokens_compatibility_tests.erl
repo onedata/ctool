@@ -9,7 +9,13 @@
 %%% This module contains eunit tests that verify that the token
 %%% serialization / deserialization is deterministic and does not
 %%% change between system versions, despite changes in dependencies
-%%% and Erlang OTP upgrades
+%%% and Erlang OTP upgrades.
+%%%
+%%% NOTE:
+%%% The hardcoded tokens in this file were generated in version 20.02.20.
+%%% If any of the tests fails, it means that a change has been introduced
+%%% that may cause older software versions to be unable to decode a token.
+%%% Think three times before adjusting the expected serialized token form!
 %%% @end
 %%%-------------------------------------------------------------------
 -module(tokens_compatibility_tests).
