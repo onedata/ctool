@@ -290,6 +290,13 @@ deserialize_invite_type(<<"gji">>) -> ?GROUP_JOIN_ATM_INVENTORY.
 
 %% @private
 -spec serialize_invite_parameters(invite_type(), invite_parameters()) -> binary().
+serialize_invite_parameters(?SUPPORT_SPACE, _) ->
+    % NOTE: this ensures backward compatibility of tokens
+    %   * software version 20.02.* can decode such an invite token with
+    %     default support params (data_write = global, metadata_replication = eager)
+    %   * software version 21.02.* can decode such an invite token and
+    %     simply ignores the support parameters, which are no longer used
+    <<"ge">>;
 serialize_invite_parameters(_, undefined) ->
     <<"">>.
 
