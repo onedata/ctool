@@ -26,18 +26,8 @@
 -include_lib("eunit/include/eunit.hrl").
 
 -include("aai/aai.hrl").
--include("errors.hrl").
--include("onedata.hrl").
 -include("graph_sync/gri.hrl").
--include("http/headers.hrl").
-%@fixme co potrzebne tutaj
--define(OZ_DOMAIN, <<"onezone.example.com">>).
--define(MOCK_COWBOY_REQ(Headers), #{headers => Headers}).
-% Dummy timestamp, tokens API always depends on timestamps provided, so
-% any value can be used
--define(NOW(), 15000000000).
--define(RAND_STR, str_utils:rand_hex(16)).
--define(CUSTOM_MAX_TOKEN_SIZE, 4485764).
+
 
 -define(ACCESS_TOKEN_CAVEATS, [
     #cv_time{valid_until = 8374891234},
