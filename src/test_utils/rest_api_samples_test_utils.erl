@@ -98,7 +98,8 @@ test_sample(#rest_api_request_sample{
     headers = Headers,
     data = Data,
     placeholders = Placeholders,
-    requires_authorization = RequiresAuthorization
+    requires_authorization = RequiresAuthorization,
+    follow_redirects = FollowRedirects
 } = Sample, ApiRoot, Context, AccessToken, HttpClientOpts, #sample_test_spec{
     setup_fun = SetupFun,
     substitute_placeholder_fun = SubstitutePlaceholderFun,
@@ -129,7 +130,7 @@ test_sample(#rest_api_request_sample{
             FinalPath,
             maps:merge(AuthHeader, Headers),
             Body,
-            [{follow_redirect, true} | HttpClientOpts]
+            [{follow_redirect, FollowRedirects} | HttpClientOpts]
         )),
         case Code > 300 of
             true ->

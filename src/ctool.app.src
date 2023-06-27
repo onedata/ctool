@@ -30,7 +30,7 @@
         %% LOGGING
         %% ===================================================================
 
-        % Current loglevel in the application. Logs with lower importance will be completely discarded
+        % Current loglevel in the application. Logs with lower importance (higher loglevel) will be completely discarded
         % Available loglevels are 0-7, respectively: emergency, alert, critical, error, warning, notice, info, debug
         {current_loglevel, 6},
         % Used to reset loglevel to default.
