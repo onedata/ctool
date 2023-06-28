@@ -354,8 +354,8 @@ monotonic_timestamp_test_() ->
 
 monotonicity_and_warnings() ->
     CountAllWarningLogs = fun() ->
-        % logger is mocked in setup, warning is on loglevel = 3
-        meck:num_calls(onedata_logger, log, [3, '_', '_'])
+        % logger is mocked in setup, warning is on loglevel = 4
+        meck:num_calls(onedata_logger, log, [4, '_', '_'])
     end,
 
     lists:foreach(fun({TimeUnit, MonotonicTimestampFun}) ->

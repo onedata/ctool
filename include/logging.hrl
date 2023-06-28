@@ -39,54 +39,54 @@
 -endif.
 
 -ifndef(skip_debug).
--define(debug(Message), ?log(0, Message, [])).
--define(debug(Format, Args), ?log(0, Format, Args)).
--define(debug_exception(Class, Reason, Stacktrace), ?log_exception(0, "", [], undefined, Class, Reason, Stacktrace)).
--define(debug_exception(DetailsMessage, Class, Reason, Stacktrace), ?log_exception(0, DetailsMessage, [], undefined, Class, Reason, Stacktrace)).
--define(debug_exception(DetailsFormat, DetailsArgs, Class, Reason, Stacktrace), ?log_exception(0, DetailsFormat, DetailsArgs, undefined, Class, Reason, Stacktrace)).
+-define(debug(Message), ?log(7, Message, [])).
+-define(debug(Format, Args), ?log(7, Format, Args)).
+-define(debug_exception(Class, Reason, Stacktrace), ?log_exception(7, "", [], undefined, Class, Reason, Stacktrace)).
+-define(debug_exception(DetailsMessage, Class, Reason, Stacktrace), ?log_exception(7, DetailsMessage, [], undefined, Class, Reason, Stacktrace)).
+-define(debug_exception(DetailsFormat, DetailsArgs, Class, Reason, Stacktrace), ?log_exception(7, DetailsFormat, DetailsArgs, undefined, Class, Reason, Stacktrace)).
 -endif.
 
--define(info(Message), ?log(1, Message, [])).
--define(info(Format, Args), ?log(1, Format, Args)).
--define(info_exception(Class, Reason, Stacktrace), ?log_exception(1, "", [], undefined, Class, Reason, Stacktrace)).
--define(info_exception(DetailsMessage, Class, Reason, Stacktrace), ?log_exception(1, DetailsMessage, [], undefined, Class, Reason, Stacktrace)).
--define(info_exception(DetailsFormat, DetailsArgs, Class, Reason, Stacktrace), ?log_exception(1, DetailsFormat, DetailsArgs, undefined, Class, Reason, Stacktrace)).
+-define(info(Message), ?log(6, Message, [])).
+-define(info(Format, Args), ?log(6, Format, Args)).
+-define(info_exception(Class, Reason, Stacktrace), ?log_exception(6, "", [], undefined, Class, Reason, Stacktrace)).
+-define(info_exception(DetailsMessage, Class, Reason, Stacktrace), ?log_exception(6, DetailsMessage, [], undefined, Class, Reason, Stacktrace)).
+-define(info_exception(DetailsFormat, DetailsArgs, Class, Reason, Stacktrace), ?log_exception(6, DetailsFormat, DetailsArgs, undefined, Class, Reason, Stacktrace)).
 
--define(notice(Message), ?log(2, Message, [])).
--define(notice(Format, Args), ?log(2, Format, Args)).
--define(notice_exception(Class, Reason, Stacktrace), ?log_exception(2, "", [], undefined, Class, Reason, Stacktrace)).
--define(notice_exception(DetailsMessage, Class, Reason, Stacktrace), ?log_exception(2, DetailsMessage, [], undefined, Class, Reason, Stacktrace)).
--define(notice_exception(DetailsFormat, DetailsArgs, Class, Reason, Stacktrace), ?log_exception(2, DetailsFormat, DetailsArgs, undefined, Class, Reason, Stacktrace)).
+-define(notice(Message), ?log(5, Message, [])).
+-define(notice(Format, Args), ?log(5, Format, Args)).
+-define(notice_exception(Class, Reason, Stacktrace), ?log_exception(5, "", [], undefined, Class, Reason, Stacktrace)).
+-define(notice_exception(DetailsMessage, Class, Reason, Stacktrace), ?log_exception(5, DetailsMessage, [], undefined, Class, Reason, Stacktrace)).
+-define(notice_exception(DetailsFormat, DetailsArgs, Class, Reason, Stacktrace), ?log_exception(5, DetailsFormat, DetailsArgs, undefined, Class, Reason, Stacktrace)).
 
--define(warning(Message), ?log(3, Message, [])).
--define(warning(Format, Args), ?log(3, Format, Args)).
--define(warning_exception(Class, Reason, Stacktrace), ?log_exception(3, "", [], undefined, Class, Reason, Stacktrace)).
--define(warning_exception(DetailsMessage, Class, Reason, Stacktrace), ?log_exception(3, DetailsMessage, [], undefined, Class, Reason, Stacktrace)).
--define(warning_exception(DetailsFormat, DetailsArgs, Class, Reason, Stacktrace), ?log_exception(3, DetailsFormat, DetailsArgs, undefined, Class, Reason, Stacktrace)).
+-define(warning(Message), ?log(4, Message, [])).
+-define(warning(Format, Args), ?log(4, Format, Args)).
+-define(warning_exception(Class, Reason, Stacktrace), ?log_exception(4, "", [], undefined, Class, Reason, Stacktrace)).
+-define(warning_exception(DetailsMessage, Class, Reason, Stacktrace), ?log_exception(4, DetailsMessage, [], undefined, Class, Reason, Stacktrace)).
+-define(warning_exception(DetailsFormat, DetailsArgs, Class, Reason, Stacktrace), ?log_exception(4, DetailsFormat, DetailsArgs, undefined, Class, Reason, Stacktrace)).
 
--define(error(Message), ?log(4, Message, [])).
--define(error(Format, Args), ?log(4, Format, Args)).
--define(error_exception(Class, Reason, Stacktrace), ?log_exception(4, "", [], undefined, Class, Reason, Stacktrace)).
--define(error_exception(DetailsMessage, Class, Reason, Stacktrace), ?log_exception(4, DetailsMessage, [], undefined, Class, Reason, Stacktrace)).
--define(error_exception(DetailsFormat, DetailsArgs, Class, Reason, Stacktrace), ?log_exception(4, DetailsFormat, DetailsArgs, undefined, Class, Reason, Stacktrace)).
+-define(error(Message), ?log(3, Message, [])).
+-define(error(Format, Args), ?log(3, Format, Args)).
+-define(error_exception(Class, Reason, Stacktrace), ?log_exception(3, "", [], undefined, Class, Reason, Stacktrace)).
+-define(error_exception(DetailsMessage, Class, Reason, Stacktrace), ?log_exception(3, DetailsMessage, [], undefined, Class, Reason, Stacktrace)).
+-define(error_exception(DetailsFormat, DetailsArgs, Class, Reason, Stacktrace), ?log_exception(3, DetailsFormat, DetailsArgs, undefined, Class, Reason, Stacktrace)).
 
--define(critical(Message), ?log(5, Message, [])).
--define(critical(Format, Args), ?log(5, Format, Args)).
--define(critical_exception(Class, Reason, Stacktrace), ?log_exception(5, "", [], undefined, Class, Reason, Stacktrace)).
--define(critical_exception(DetailsMessage, Class, Reason, Stacktrace), ?log_exception(5, DetailsMessage, [], undefined, Class, Reason, Stacktrace)).
--define(critical_exception(DetailsFormat, DetailsArgs, Class, Reason, Stacktrace), ?log_exception(5, DetailsFormat, DetailsArgs, undefined, Class, Reason, Stacktrace)).
+-define(critical(Message), ?log(2, Message, [])).
+-define(critical(Format, Args), ?log(2, Format, Args)).
+-define(critical_exception(Class, Reason, Stacktrace), ?log_exception(2, "", [], undefined, Class, Reason, Stacktrace)).
+-define(critical_exception(DetailsMessage, Class, Reason, Stacktrace), ?log_exception(2, DetailsMessage, [], undefined, Class, Reason, Stacktrace)).
+-define(critical_exception(DetailsFormat, DetailsArgs, Class, Reason, Stacktrace), ?log_exception(2, DetailsFormat, DetailsArgs, undefined, Class, Reason, Stacktrace)).
 
--define(alert(Message), ?log(6, Message, [])).
--define(alert(Format, Args), ?log(6, Format, Args)).
--define(alert_exception(Class, Reason, Stacktrace), ?log_exception(6, "", [], undefined, Class, Reason, Stacktrace)).
--define(alert_exception(DetailsMessage, Class, Reason, Stacktrace), ?log_exception(6, DetailsMessage, [], undefined, Class, Reason, Stacktrace)).
--define(alert_exception(DetailsFormat, DetailsArgs, Class, Reason, Stacktrace), ?log_exception(6, DetailsFormat, DetailsArgs, undefined, Class, Reason, Stacktrace)).
+-define(alert(Message), ?log(1, Message, [])).
+-define(alert(Format, Args), ?log(1, Format, Args)).
+-define(alert_exception(Class, Reason, Stacktrace), ?log_exception(1, "", [], undefined, Class, Reason, Stacktrace)).
+-define(alert_exception(DetailsMessage, Class, Reason, Stacktrace), ?log_exception(1, DetailsMessage, [], undefined, Class, Reason, Stacktrace)).
+-define(alert_exception(DetailsFormat, DetailsArgs, Class, Reason, Stacktrace), ?log_exception(1, DetailsFormat, DetailsArgs, undefined, Class, Reason, Stacktrace)).
 
--define(emergency(Message), ?log(7, Message, [])).
--define(emergency(Format, Args), ?log(7, Format, Args)).
--define(emergency_exception(Class, Reason, Stacktrace), ?log_exception(7, "", [], undefined, Class, Reason, Stacktrace)).
--define(emergency_exception(DetailsMessage, Class, Reason, Stacktrace), ?log_exception(7, DetailsMessage, [], undefined, Class, Reason, Stacktrace)).
--define(emergency_exception(DetailsFormat, DetailsArgs, Class, Reason, Stacktrace), ?log_exception(7, DetailsFormat, DetailsArgs, undefined, Class, Reason, Stacktrace)).
+-define(emergency(Message), ?log(0, Message, [])).
+-define(emergency(Format, Args), ?log(0, Format, Args)).
+-define(emergency_exception(Class, Reason, Stacktrace), ?log_exception(0, "", [], undefined, Class, Reason, Stacktrace)).
+-define(emergency_exception(DetailsMessage, Class, Reason, Stacktrace), ?log_exception(0, DetailsMessage, [], undefined, Class, Reason, Stacktrace)).
+-define(emergency_exception(DetailsFormat, DetailsArgs, Class, Reason, Stacktrace), ?log_exception(0, DetailsFormat, DetailsArgs, undefined, Class, Reason, Stacktrace)).
 
 
 % produces an auto-formatted string with the values of all Terms (by variable names)
@@ -105,8 +105,8 @@
 % to be removed when occurrences of ?error_stacktrace are pruned from code
 -define(error_stacktrace(DetailsMessage, Stacktrace), ?error_stacktrace(DetailsMessage, [], Stacktrace)).
 -define(error_stacktrace(DetailsFormat, DetailsArgs, Stacktrace),
-    ?wrap_in_loglevel_check(4,
-        onedata_logger:log(4, ?gather_metadata, onedata_logger:format_deprecated_exception_log(
+    ?wrap_in_loglevel_check(3,
+        onedata_logger:log(3, ?gather_metadata, onedata_logger:format_deprecated_exception_log(
             ?MODULE, ?FUNCTION_NAME, ?FUNCTION_ARITY, ?LINE, DetailsFormat, DetailsArgs, Stacktrace
         ))
     )
@@ -121,7 +121,7 @@
 
 % by default, all exceptions are logged on 'error' level
 -define(log_exception(DetailsFormat, DetailsArgs, Ref, Class, Reason, Stacktrace),
-    ?log_exception(4, DetailsFormat, DetailsArgs, Ref, Class, Reason, Stacktrace)
+    ?log_exception(3, DetailsFormat, DetailsArgs, Ref, Class, Reason, Stacktrace)
 ).
 % A Ref (string) can optionally be passed for easier log navigation - as long
 % as the Ref is then somehow identifiable, e.g. as in ?ERROR_INTERNAL_SERVER_ERROR(Ref).

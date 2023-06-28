@@ -102,7 +102,7 @@ format_error_report(
 -spec should_log(LoglevelAsInt :: integer()) -> boolean().
 should_log(LevelAsInt) ->
     case get_current_loglevel() of
-        Int when LevelAsInt >= Int -> true;
+        Int when LevelAsInt =< Int -> true;
         _ -> false
     end.
 
@@ -170,7 +170,7 @@ set_console_loglevel(_) ->
 %%--------------------------------------------------------------------
 -spec get_current_loglevel() -> integer().
 get_current_loglevel() ->
-    ctool:get_env(current_loglevel, 1).
+    ctool:get_env(current_loglevel, 6).
 
 %%--------------------------------------------------------------------
 %% @doc Returns default loglevel as set in application's env
@@ -178,7 +178,7 @@ get_current_loglevel() ->
 %%--------------------------------------------------------------------
 -spec get_default_loglevel() -> integer().
 get_default_loglevel() ->
-    ctool:get_env(default_loglevel, 1).
+    ctool:get_env(default_loglevel, 6).
 
 %%--------------------------------------------------------------------
 %% @doc Returns current console loglevel
@@ -196,28 +196,28 @@ get_console_loglevel() ->
 %% @end
 %%--------------------------------------------------------------------
 -spec loglevel_int_to_atom(LoglevelAsInt :: integer()) -> atom().
-loglevel_int_to_atom(0) -> debug;
-loglevel_int_to_atom(1) -> info;
-loglevel_int_to_atom(2) -> notice;
-loglevel_int_to_atom(3) -> warning;
-loglevel_int_to_atom(4) -> error;
-loglevel_int_to_atom(5) -> critical;
-loglevel_int_to_atom(6) -> alert;
-loglevel_int_to_atom(7) -> emergency.
+loglevel_int_to_atom(7) -> debug;
+loglevel_int_to_atom(6) -> info;
+loglevel_int_to_atom(5) -> notice;
+loglevel_int_to_atom(4) -> warning;
+loglevel_int_to_atom(3) -> error;
+loglevel_int_to_atom(2) -> critical;
+loglevel_int_to_atom(1) -> alert;
+loglevel_int_to_atom(0) -> emergency.
 
 %%--------------------------------------------------------------------
 %% @doc Returns loglevel number associated with loglevel name
 %% @end
 %%--------------------------------------------------------------------
 -spec loglevel_atom_to_int(LoglevelAsAtom :: atom()) -> integer().
-loglevel_atom_to_int(debug) -> 0;
-loglevel_atom_to_int(info) -> 1;
-loglevel_atom_to_int(notice) -> 2;
-loglevel_atom_to_int(warning) -> 3;
-loglevel_atom_to_int(error) -> 4;
-loglevel_atom_to_int(critical) -> 5;
-loglevel_atom_to_int(alert) -> 6;
-loglevel_atom_to_int(emergency) -> 7.
+loglevel_atom_to_int(debug) -> 7;
+loglevel_atom_to_int(info) -> 6;
+loglevel_atom_to_int(notice) -> 5;
+loglevel_atom_to_int(warning) -> 4;
+loglevel_atom_to_int(error) -> 3;
+loglevel_atom_to_int(critical) -> 2;
+loglevel_atom_to_int(alert) -> 1;
+loglevel_atom_to_int(emergency) -> 0.
 
 %%--------------------------------------------------------------------
 %% @doc Changes standard 'process_info' tuple into metadata proplist

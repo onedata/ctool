@@ -17,8 +17,8 @@
 main_test_() ->
     {setup,
         fun() ->
-            ctool:set_env(current_loglevel, 2),
-            ctool:set_env(default_loglevel, 0)
+            ctool:set_env(current_loglevel, 5),
+            ctool:set_env(default_loglevel, 7)
         end,
         fun(_) ->
             ok
@@ -26,19 +26,20 @@ main_test_() ->
         [
             {"should_log, set/get_loglevel, set/get_default_loglevel",
                 fun() ->
-                    ?assertEqual(onedata_logger:get_current_loglevel(), 2),
-                    ?assert(not onedata_logger:should_log(1)),
-                    ?assert(not onedata_logger:should_log(0)),
-                    ?assert(onedata_logger:should_log(5)),
+                    ?assertEqual(onedata_logger:get_current_loglevel(), 5),
+                    ?assert(not onedata_logger:should_log(6)),
+                    ?assert(not onedata_logger:should_log(7)),
                     ?assert(onedata_logger:should_log(2)),
-                    ?assert(onedata_logger:should_log(7)),
+                    ?assert(onedata_logger:should_log(5)),
+                    ?assert(onedata_logger:should_log(0)),
                     onedata_logger:set_loglevel(error),
-                    ?assertEqual(onedata_logger:get_current_loglevel(), 4),
-                    ?assert(not onedata_logger:should_log(1)),
-                    ?assert(not onedata_logger:should_log(0)),
-                    ?assert(not onedata_logger:should_log(2)),
-                    ?assert(onedata_logger:should_log(6)),
-                    ?assert(onedata_logger:should_log(7)),
+                    ?assertEqual(onedata_logger:get_current_loglevel(), 3),
+                    ?assert(not onedata_logger:should_log(6)),
+                    ?assert(not onedata_logger:should_log(7)),
+                    ?assert(not onedata_logger:should_log(5)),
+                    ?assert(not onedata_logger:should_log(4)),
+                    ?assert(onedata_logger:should_log(1)),
+                    ?assert(onedata_logger:should_log(0)),
                     onedata_logger:set_loglevel(default),
                     ?assertEqual(onedata_logger:get_default_loglevel(), onedata_logger:get_current_loglevel()),
                     ?assert(onedata_logger:should_log(1)),
@@ -71,7 +72,7 @@ main_test_() ->
 lager_interfacing_test_() ->
     {setup,
         fun() ->
-            ctool:set_env(current_loglevel, 0),
+            ctool:set_env(current_loglevel, 7),
             meck:new(lager, [passthrough])
         end,
         fun(_) ->
@@ -90,11 +91,11 @@ lager_interfacing_test_() ->
                             (emergency, _, _, ["emergency message"]) -> ok
                         end),
 
-                    onedata_logger:log(0, [], "debug message"),
-                    onedata_logger:log(1, [], "info message"),
-                    onedata_logger:log(3, [], "warning message"),
-                    onedata_logger:log(4, [], "error message"),
-                    onedata_logger:log(7, [], "emergency message"),
+                    onedata_logger:log(7, [], "debug message"),
+                    onedata_logger:log(6, [], "info message"),
+                    onedata_logger:log(4, [], "warning message"),
+                    onedata_logger:log(3, [], "error message"),
+                    onedata_logger:log(0, [], "emergency message"),
                     ?debug("debug message"),
                     ?debug("debug ~s", ["message"]),
                     ?info("info message"),
