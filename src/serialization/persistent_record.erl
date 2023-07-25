@@ -18,7 +18,10 @@
 -include_lib("ctool/include/logging.hrl").
 
 %% API
--export([encode/2, decode/2]).
+-export([
+    to_string/2, from_string/2,
+    to_json/2, from_json/2
+]).
 
 -type record_version() :: non_neg_integer().
 -export_type([record_version/0]).
@@ -74,36 +77,42 @@
 %%% API functions
 %%%===================================================================
 
--spec encode(jsonable_record:record(), jsonable_record:record_type()) -> binary().
-encode(Record, RecordType) ->
-    json_utils:encode(db_encode_record(Record, RecordType)).
+
+-spec to_string(jsonable_record:record(), jsonable_record:record_type()) -> binary().
+to_string(Record, RecordType) ->
+    json_utils:encode(to_json(Record, RecordType)).
 
 
--spec decode(binary(), jsonable_record:record_type()) -> jsonable_record:record().
-decode(JsonEncodedRecord, RecordType) ->
-    db_decode_record(json_utils:decode(JsonEncodedRecord), RecordType).
+-spec from_string(binary(), jsonable_record:record_type()) -> jsonable_record:record().
+from_string(JsonEncodedRecord, RecordType) ->
+    from_json(json_utils:decode(JsonEncodedRecord), RecordType).
 
-%%%===================================================================
-%%% Internal functions
-%%%===================================================================
 
-%% @private
--spec db_encode_record(jsonable_record:record(), jsonable_record:record_type()) -> json_utils:json_term().
-db_encode_record(Record, RecordType) ->
+-spec to_json(jsonable_record:record(), jsonable_record:record_type()) ->
+    json_utils:json_term().
+to_json(Record, RecordType) ->
     #{
         <<"_version">> => RecordType:version(),
-        <<"_data">> => RecordType:db_encode(Record, fun db_encode_record/2)
+        <<"_data">> => RecordType:db_encode(Record, fun to_json/2)
     }.
 
 
-%% @private
--spec db_decode_record(json_utils:json_term(), jsonable_record:record_type()) -> jsonable_record:record().
-db_decode_record(#{<<"_version">> := CurrentRecordVersion, <<"_data">> := RecordJson}, RecordType) ->
+-spec from_json(json_utils:json_term(), jsonable_record:record_type()) ->
+    jsonable_record:record().
+from_json(
+    #{<<"_version">> := CurrentRecordVersion, <<"_data">> := RecordJson},
+    RecordType
+) ->
     TargetRecordVersion = RecordType:version(),
     UpgradedRecordData = upgrade_encoded_record(
         TargetRecordVersion, CurrentRecordVersion, RecordType, RecordJson
     ),
-    RecordType:db_decode(UpgradedRecordData, fun db_decode_record/2).
+    RecordType:db_decode(UpgradedRecordData, fun from_json/2).
+
+
+%%%===================================================================
+%%% Internal functions
+%%%===================================================================
 
 
 %% @private
