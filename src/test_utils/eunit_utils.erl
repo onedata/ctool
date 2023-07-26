@@ -71,7 +71,7 @@ is_equal_after_db_encode_and_decode(Record) ->
 
 -spec is_equal_after_db_encode_and_decode(tuple(), atom()) -> boolean().
 is_equal_after_db_encode_and_decode(Record, RecordType) ->
-    case persistent_record:decode(persistent_record:encode(Record, RecordType), RecordType) of
+    case persistent_record:from_string(persistent_record:to_string(Record, RecordType), RecordType) of
         Record ->
             true;
         Other ->

@@ -20,7 +20,7 @@
 
 upgrade_db_data_spec_test_() ->
     U = fun(JsonData) ->
-        persistent_record:decode(json_utils:encode(JsonData), atm_data_spec)
+        persistent_record:from_string(json_utils:encode(JsonData), atm_data_spec)
     end,
 
     AllFileAttrs = lists:usort([
