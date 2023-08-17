@@ -230,6 +230,9 @@
     store_iterator_spec :: atm_store_iterator_spec:record(),
     % if the lane fails, it will be automatically retried (at most) this many times
     max_retries :: non_neg_integer(),
+    % if the ratio of exceptions vs. total items taken for processing surpasses
+    % the threshold (for any task), the lane (and hence, the workflow) fails instantly
+    instant_failure_exception_threshold :: float(),  % between 0.0 .. 1.0
     dashboard_spec :: undefined | ts_dashboard_spec:record()
 }).
 

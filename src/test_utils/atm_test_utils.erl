@@ -618,6 +618,7 @@ example_lane_schema_with_parallel_boxes(ExampleParallelBoxSchemas, StoreSchemaId
         parallel_boxes = ExampleParallelBoxSchemas,
         store_iterator_spec = example_store_iterator_spec(StoreSchemaIds),
         max_retries = ?RAND_INT(0, 10),
+        instant_failure_exception_threshold = ?RAND_FLOAT(0.0, 1.0),
         dashboard_spec = example_dashboard_spec()
     }.
 
