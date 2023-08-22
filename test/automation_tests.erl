@@ -213,7 +213,24 @@ encode_decode_lane_schema_test() ->
     % make sure they are properly encoded/decoded when used within a lane schema
     encode_decode_test_base(FirstExample#atm_lane_schema{
         dashboard_spec = time_series_test_utils:example_dashboard_spec()
-    }).
+    }),
+    % lane schemas include the instant_failure_exception_threshold field that
+    % has been added; when taken from DB it should get a default value, but when
+    % the lane schema is expressed as JSON, it should be required
+    ?assertException(error, {badkey, <<"instantFailureExceptionThreshold">>}, jsonable_record:from_json(
+        maps:remove(
+            <<"instantFailureExceptionThreshold">>,
+            jsonable_record:to_json(FirstExample)
+        ),
+        atm_lane_schema
+    )),
+    ?assertMatch(#atm_lane_schema{instant_failure_exception_threshold = 1.0}, persistent_record:from_json(
+        kv_utils:remove(
+            [<<"_data">>, <<"instantFailureExceptionThreshold">>],
+            persistent_record:to_json(FirstExample)
+        ),
+        atm_lane_schema
+    )).
 
 
 encode_decode_lambda_revision_test() ->

@@ -20,7 +20,7 @@
 %% API
 -export([
     to_string/2, from_string/2,
-    to_json/2, from_json/2
+    to_json/1, to_json/2, from_json/2
 ]).
 
 -type record_version() :: non_neg_integer().
@@ -87,6 +87,11 @@ to_string(Record, RecordType) ->
 from_string(JsonEncodedRecord, RecordType) ->
     from_json(json_utils:decode(JsonEncodedRecord), RecordType).
 
+
+
+-spec to_json(jsonable_record:record()) -> json_utils:json_term().
+to_json(JsonableRecord) ->
+    to_json(JsonableRecord, utils:record_type(JsonableRecord)).
 
 -spec to_json(jsonable_record:record(), jsonable_record:record_type()) ->
     json_utils:json_term().
