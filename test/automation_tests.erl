@@ -215,16 +215,17 @@ encode_decode_lane_schema_test() ->
         dashboard_spec = time_series_test_utils:example_dashboard_spec()
     }),
     % lane schemas include the instant_failure_exception_threshold field that
-    % has been added; when taken from DB it should get a default value, but when
-    % the lane schema is expressed as JSON, it should be required
-    ?assertException(error, {badkey, <<"instantFailureExceptionThreshold">>}, jsonable_record:from_json(
+    % has been added; make sure a default value is set if it is not provided
+    % (or not present in a db encoded record that may have been saved in previous system versions)
+    ExpectedResult = FirstExample#atm_lane_schema{instant_failure_exception_threshold = 0.1},
+    ?assertEqual(ExpectedResult, jsonable_record:from_json(
         maps:remove(
             <<"instantFailureExceptionThreshold">>,
             jsonable_record:to_json(FirstExample)
         ),
         atm_lane_schema
     )),
-    ?assertMatch(#atm_lane_schema{instant_failure_exception_threshold = 1.0}, persistent_record:from_json(
+    ?assertEqual(ExpectedResult, persistent_record:from_json(
         kv_utils:remove(
             [<<"_data">>, <<"instantFailureExceptionThreshold">>],
             persistent_record:to_json(FirstExample)
