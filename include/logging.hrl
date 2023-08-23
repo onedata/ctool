@@ -94,7 +94,7 @@
 -define(autoformat(Terms),
     str_utils:format(
         lists:flatten(lists:map(fun(TermName) ->
-            "~n    " ++ TermName ++ " = ~p"
+            "~n    " ++ TermName ++ " = ~tp"
         end, string:tokens(??Terms, "[] ,"))),
         Terms
     )
