@@ -17,7 +17,7 @@
 -include_lib("kernel/include/file.hrl").
 
 %% API
--export([data_dir/1, project_root_dir/1, ct_tests_root_dir/1]).
+-export([data_dir/1, priv_dir/1, project_root_dir/1, ct_tests_root_dir/1]).
 -export([load_utility_modules/1]).
 -export([
     mock_new/2, mock_new/3, mock_expect/4, mock_validate/2, mock_unload/1,
@@ -39,11 +39,15 @@
 data_dir(Config) ->
     test_config:get_custom(Config, data_dir).
 
+-spec priv_dir(test_config:config()) -> file:filename().
+priv_dir(Config) ->
+    test_config:get_custom(Config, priv_dir).
+
 -spec project_root_dir(test_config:config()) -> file:filename().
 project_root_dir(Config) ->
     filename:join(lists:takewhile(fun(Token) ->
         Token /= "test_distributed"
-    end, filename:split(data_dir(Config)))).
+    end, filename:split(priv_dir(Config)))).
 
 -spec ct_tests_root_dir(test_config:config()) -> file:filename().
 ct_tests_root_dir(Config) ->
