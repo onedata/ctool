@@ -27,6 +27,10 @@
 -type record() :: #atm_lane_schema{}.
 -export_type([record/0]).
 
+% used as a sane default when no value is provided
+% or when an older schema without this field is loaded from DB
+-define(DEFAULT_INSTANT_FAILURE_EXCEPTION_THRESHOLD, 0.1).
+
 %%%===================================================================
 %%% jsonable_record callbacks
 %%%===================================================================
@@ -38,7 +42,7 @@ to_json(Record) ->
 
 -spec from_json(json_utils:json_term()) -> record().
 from_json(RecordJson) ->
-    decode_with(RecordJson, json, fun jsonable_record:from_json/2).
+    decode_with(RecordJson, fun jsonable_record:from_json/2).
 
 %%%===================================================================
 %%% persistent_record callbacks
@@ -56,7 +60,7 @@ db_encode(Record, NestedRecordEncoder) ->
 
 -spec db_decode(json_utils:json_term(), persistent_record:nested_record_decoder()) -> record().
 db_decode(RecordJson, NestedRecordDecoder) ->
-    decode_with(RecordJson, db, NestedRecordDecoder).
+    decode_with(RecordJson, NestedRecordDecoder).
 
 %%%===================================================================
 %%% Internal functions
@@ -81,24 +85,18 @@ encode_with(Record, NestedRecordEncoder) ->
 
 
 %% @private
--spec decode_with(json_utils:json_term(), json | db, persistent_record:nested_record_decoder()) ->
+-spec decode_with(json_utils:json_term(), persistent_record:nested_record_decoder()) ->
     record().
-decode_with(RecordJson, DecoderType, NestedRecordDecoder) ->
+decode_with(RecordJson,  NestedRecordDecoder) ->
     #atm_lane_schema{
         id = maps:get(<<"id">>, RecordJson),
         name = maps:get(<<"name">>, RecordJson),
         parallel_boxes = [NestedRecordDecoder(M, atm_parallel_box_schema) || M <- maps:get(<<"parallelBoxes">>, RecordJson)],
         store_iterator_spec = NestedRecordDecoder(maps:get(<<"storeIteratorSpec">>, RecordJson), atm_store_iterator_spec),
         max_retries = maps:get(<<"maxRetries">>, RecordJson),
-        instant_failure_exception_threshold = case DecoderType of
-            json ->
-                % the field is required
-                maps:get(<<"instantFailureExceptionThreshold">>, RecordJson);
-            db ->
-                % but it was not present in previous software version, so when taken from the DB, a default value
-                % adequate to the previous automation behaviour is used (this way no upgrader is required)
-                maps:get(<<"instantFailureExceptionThreshold">>, RecordJson, 1.0)
-        end,
+        instant_failure_exception_threshold = maps:get(
+            <<"instantFailureExceptionThreshold">>, RecordJson, ?DEFAULT_INSTANT_FAILURE_EXCEPTION_THRESHOLD
+        ),
         dashboard_spec = case maps:get(<<"dashboardSpec">>, RecordJson, null) of
             null -> undefined;
             DashboardSpecJson -> NestedRecordDecoder(DashboardSpecJson, ts_dashboard_spec)
