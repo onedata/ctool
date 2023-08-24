@@ -398,7 +398,7 @@ testcases() -> [
     #testcase{
         service = ?OP_PANEL,
         operation = update,
-        gri = ?GRI(onp_ceph, undefined, {pool, <<"default">>}, auto),
+        gri = ?GRI(onp_storage, <<"storageId">>, instance, auto),
         caveat_examples = lists:flatten([
             #caveat_example{
                 should_verify = false,
@@ -408,7 +408,7 @@ testcases() -> [
                     {?OP_PANEL, all, ?GRI_PATTERN('*', <<"*">>, <<"*">>, private)},
                     {?OP_PANEL, update, ?GRI_PATTERN(od_space, <<"*">>, <<"*">>, '*')},
                     {all, update, ?GRI_PATTERN('*', <<"123">>, <<"*">>, '*')},
-                    {?OP_PANEL, all, ?GRI_PATTERN(onp_ceph, undefined, {<<"pool">>, <<"default">>}, public)}
+                    {?OP_PANEL, all, ?GRI_PATTERN(onp_storage, <<"storageId">>, instance, public)}
                 ]}
             },
             #caveat_example{
