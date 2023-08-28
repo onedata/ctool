@@ -14,8 +14,8 @@
 
 % Conversion
 -export([to_list/1, to_binary/1]).
--export([join_as_binaries/2, join_binary/1, join_binary/2,
-    reverse_binary/1, ensure_suffix/2]).
+-export([join_as_binaries/2, join_binary/1, join_binary/2, reverse_binary/1]).
+-export([ensure_suffix/2, truncate_overflow/2]).
 -export([binary_starts_with/2, binary_ends_with/2]).
 
 % Conversion between unicode and binaries
@@ -133,6 +133,16 @@ ensure_suffix(String, Suffix)->
         false -> <<StringBin/binary, SuffixBin/binary>>
     end.
 
+
+-spec truncate_overflow(binary(), non_neg_integer()) -> binary().
+truncate_overflow(Binary, MaxSize) ->
+    case byte_size(Binary) > MaxSize of
+        true ->
+            Part = binary:part(Binary, 0, MaxSize),
+            <<Part/binary, "... [truncated]">>;
+        false ->
+            Binary
+    end.
 
 %%--------------------------------------------------------------------
 %% @doc Converts a unicode list to utf8 binary.
