@@ -99,6 +99,16 @@
         Terms
     )
 ).
+% wrappers for convenience (the original macro accepts a list, but it's not 100% intuitive)
+-define(autoformat(A, B), ?autoformat([A, B])).
+-define(autoformat(A, B, C), ?autoformat([A, B, C])).
+-define(autoformat(A, B, C, D), ?autoformat([A, B, C, D])).
+-define(autoformat(A, B, C, D, E), ?autoformat([A, B, C, D, E])).
+-define(autoformat(A, B, C, D, E, F), ?autoformat([A, B, C, D, E, F])).
+-define(autoformat(A, B, C, D, E, F, G), ?autoformat([A, B, C, D, E, F, G])).
+-define(autoformat(A, B, C, D, E, F, G, H), ?autoformat([A, B, C, D, E, F, G, H])).
+-define(autoformat(A, B, C, D, E, F, G, H, I), ?autoformat([A, B, C, D, E, F, G, H, I])).
+-define(autoformat(A, B, C, D, E, F, G, H, I, J), ?autoformat([A, B, C, D, E, F, G, H, I, J])).
 
 
 % DEPRECATED - use ?error_exception instead
