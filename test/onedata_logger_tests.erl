@@ -111,4 +111,26 @@ lager_interfacing_test_() ->
         ]
     }.
 
+
+% makes sure the ?autoformat macro works with different kinds of inputs;
+% checks if the code compiles and does not crash in runtime, the visual
+% examination of the formatted output must be done manually
+autoformatter_test() ->
+    Integer = 17,
+    Float = -13.75,
+    Atom = atom,
+    Bool = true,
+    List = [1,2,3],
+    String = "string",
+    Binary = <<"mul-\n\tti-\n\tline">>,
+    Map = #{<<"key">> => value},
+    Term = {tuple_with, {complex_terms, [<<"1">>, #{2 => [true, dont_know, false]}, lists:seq(1, 20)]}},
+    io:format(user, "~s~n", [?autoformat(Integer)]),
+    io:format(user, "~s~n", [?autoformat([Float])]),
+    io:format(user, "~s~n", [?autoformat([String, Binary])]),
+    io:format(user, "~s~n", [?autoformat(Map, Term, List)]),
+    io:format(user, "~s~n", [?autoformat([Atom, Bool, Bool])]),
+    io:format(user, "~s~n", [?autoformat(Integer, Float, Atom, Bool, List, String, Binary, Map, Term)]).
+
+
 -endif.

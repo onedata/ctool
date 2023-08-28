@@ -90,13 +90,17 @@
 
 
 % produces an auto-formatted string with the values of all Terms (by variable names)
-% NOTE: the string begins with a newline
--define(autoformat(Terms),
+% NOTE: the result string begins with a newline.
+% NOTE: does not handle multiline strings well (i.e. when one of the Terms is a multiline string);
+%       the "~p" formatter just prints an inline "\n". Thus, it's recommended to print such strings
+%       using different methods, or just use binaries, which are handled well using "~s".
+
+-define(autoformat(TermOrTerms),
     str_utils:format(
-        lists:flatten(lists:map(fun(TermName) ->
-            "~n    " ++ TermName ++ " = ~tp"
-        end, string:tokens(??Terms, "[] ,"))),
-        Terms
+        lists:flatten(lists:map(fun({Term, TermName}) ->
+            "~n    " ++ TermName ++ " = " ++ if is_binary(Term) -> "~ts"; true -> "~tp" end
+        end, lists:zip(utils:ensure_list(TermOrTerms), string:tokens(??TermOrTerms, "[] ,")))),
+        utils:ensure_list(TermOrTerms)
     )
 ).
 % wrappers for convenience (the original macro accepts a list, but it's not 100% intuitive)
