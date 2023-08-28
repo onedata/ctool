@@ -134,6 +134,10 @@
 ).
 
 
+% a random string used to correlate a log with an internal server error
+-define(make_error_ref(), str_utils:rand_hex(5)).
+
+
 % Macro intended as a UNIVERSAL way to report internal server errors that are not caused by
 % an exception, but are a result of handling anticipated errors (those that are not
 % desired and should be reported as a problem and reflected in the application logs).
@@ -144,7 +148,7 @@
             ?MODULE, ?FUNCTION_NAME, ?FUNCTION_ARITY, ?LINE, DetailsFormat, DetailsArgs, ErrorRef
         )),
         ?ERROR_INTERNAL_SERVER_ERROR(ErrorRef)
-    end)(str_utils:rand_hex(5)))
+    end)(?make_error_ref()))
 end).
 
 
@@ -178,7 +182,7 @@ end).
                 ?log_exception(DetailsFormat, DetailsArgs, ErrorRef, Class, Reason, Stacktrace),
                 ?ERROR_INTERNAL_SERVER_ERROR(ErrorRef)
         end
-    end)(str_utils:rand_hex(5)))
+    end)(?make_error_ref()))
 end).
 
 
