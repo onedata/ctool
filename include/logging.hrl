@@ -154,7 +154,7 @@ end).
 
 
 % Macro intended as a UNIVERSAL way of handling exceptions, which can be classified in two ways:
-%   1) All thrown error-like terms are treated as a control flow mechanism and simply returned.
+%   1) All thrown errors:error() terms are treated as a control flow mechanism and simply returned.
 %
 %   2) Other exceptions are treated as unexpected (not anticipated during normal execution and/or
 %      not part of the application logic). In such a case, the macro logs on error level with
@@ -171,8 +171,8 @@ end).
 ).
 -define(examine_exception(DetailsFormat, DetailsArgs, Class, Reason, Stacktrace), begin
     ((fun(ErrorRef) ->
-        case {Class, Reason} of
-            {throw, {error, _}} ->
+        case {Class, errors:is_known_error(Reason)} of
+            {throw, true} ->
                 Reason;
             _ ->
                 ?log_exception(DetailsFormat, DetailsArgs, ErrorRef, Class, Reason, Stacktrace),
@@ -183,7 +183,7 @@ end).
 
 
 % Macro intended as a UNIVERSAL way to wrap a piece of code with handling of exceptions.
-% If the code finishes successfully or throws an error-like term, the return value
+% If the code finishes successfully or throws an errors:error() term, the return value
 % is passed through, otherwise a standardized error (as per the 'errors' module) is returned.
 -define(catch_exceptions(Expr), begin
     ((fun() ->
