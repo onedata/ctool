@@ -2796,8 +2796,7 @@ to_http_code(?ERROR_USER_NOT_IN_CLUSTER) -> ?HTTP_403_FORBIDDEN;
 %% -----------------------------------------------------------------------------
 %% Unknown error
 %% -----------------------------------------------------------------------------
-to_http_code(?ERROR_UNRECOGNIZED_ERROR(_)) -> ?HTTP_500_INTERNAL_SERVER_ERROR;
-to_http_code(_) -> ?HTTP_500_INTERNAL_SERVER_ERROR.
+to_http_code(?ERROR_UNRECOGNIZED_ERROR(_)) -> ?HTTP_500_INTERNAL_SERVER_ERROR.
 
 %%%===================================================================
 %%% Internal functions
