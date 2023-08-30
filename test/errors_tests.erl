@@ -52,6 +52,10 @@ http_code_test_() ->
         end} end, testcases()).
 
 
+http_code_for_nonexistent_error_test() ->
+    ?assertException(_, _, errors:to_http_code({error, gibberish})).
+
+
 is_known_error_test_() ->
     lists:map(fun(Testcase) ->
         {str_utils:to_binary(Testcase), fun() ->
@@ -61,6 +65,10 @@ is_known_error_test_() ->
             end,
             ?assert(errors:is_known_error(Error))
         end} end, testcases()).
+
+
+is_not_known_error_test() ->
+    ?assertNot(errors:is_known_error({error, gibberish})).
 
 
 cannot_translate_error_test() ->
