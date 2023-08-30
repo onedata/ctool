@@ -124,7 +124,9 @@ build_verifier(AuthCtx, SupportedCaveats) ->
             throw(?ERROR_TOKEN_CAVEAT_UNKNOWN(SerializedCaveat))
         end,
         try
-            lists:member(type(Caveat), SupportedCaveats) andalso verify(Caveat, AuthCtx)
+            CaveatType = type(Caveat),
+            lists:member(CaveatType, SupportedCaveats) andalso
+                (lists:member(CaveatType, AuthCtx#auth_ctx.ignored_caveats) orelse verify(Caveat, AuthCtx))
         catch Class:Reason:Stacktrace ->
             ?debug_exception("Cannot verify caveat ~s", [SerializedCaveat], Class, Reason, Stacktrace),
             false
