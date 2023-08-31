@@ -42,8 +42,8 @@ format_exception_log(
 ) ->
     format_generic_log(
         "An unexpected exception~s occurred in ~w:~w/~B line ~B~n"
-        "> Caught: ~s:~p~n"
         "> Stacktrace:~s"
+        "> Caught: ~s:~p~n"
         "~s",
         [
             case Ref of

@@ -89,6 +89,13 @@
 -define(emergency_exception(DetailsFormat, DetailsArgs, Class, Reason, Stacktrace), ?log_exception(0, DetailsFormat, DetailsArgs, undefined, Class, Reason, Stacktrace)).
 
 
+-define(is_printable(Str), if
+    is_list(Str) -> io_lib:printable_list(Str);
+    is_binary(Str) -> io_lib:printable_list(str_utils:binary_to_unicode_list(Str));
+    _ -> false
+end).
+
+
 % produces an auto-formatted string with the values of all Terms (by variable names)
 % NOTE: the result string begins with a newline.
 % NOTE: does not handle multiline strings well (i.e. when one of the Terms is a multiline string);
@@ -98,7 +105,7 @@
 -define(autoformat(TermOrTerms),
     str_utils:format(
         lists:flatten(lists:map(fun({Term, TermName}) ->
-            "~n    " ++ TermName ++ " = " ++ if is_binary(Term) -> "~ts"; true -> "~tp" end
+            "~n    " ++ TermName ++ " = " ++ case ?is_printable(Term) of true -> "~ts"; false -> "~tp" end
         end, lists:zip(utils:ensure_list(TermOrTerms), string:tokens(??TermOrTerms, "[] ,")))),
         utils:ensure_list(TermOrTerms)
     )
