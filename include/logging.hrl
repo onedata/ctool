@@ -92,22 +92,26 @@
 -define(is_printable(Str), if
     is_list(Str) -> io_lib:printable_list(Str);
     is_binary(Str) -> io_lib:printable_list(str_utils:binary_to_unicode_list(Str));
-    _ -> false
+    true -> false
 end).
 
+
+-define(ensure_list_of_terms(TermOrTerms), case string:slice(??TermOrTerms, 0, 1) of
+    "[" -> TermOrTerms;
+    _ -> [TermOrTerms]
+end).
 
 % produces an auto-formatted string with the values of all Terms (by variable names)
 % NOTE: the result string begins with a newline.
 % NOTE: does not handle multiline strings well (i.e. when one of the Terms is a multiline string);
 %       the "~p" formatter just prints an inline "\n". Thus, it's recommended to print such strings
 %       using different methods, or just use binaries, which are handled well using "~s".
-
 -define(autoformat(TermOrTerms),
     str_utils:format(
         lists:flatten(lists:map(fun({Term, TermName}) ->
             "~n    " ++ TermName ++ " = " ++ case ?is_printable(Term) of true -> "~ts"; false -> "~tp" end
-        end, lists:zip(utils:ensure_list(TermOrTerms), string:tokens(??TermOrTerms, "[] ,")))),
-        utils:ensure_list(TermOrTerms)
+        end, lists:zip(?ensure_list_of_terms(TermOrTerms), string:tokens(??TermOrTerms, "[] ,")))),
+        ?ensure_list_of_terms(TermOrTerms)
     )
 ).
 % wrappers for convenience (the original macro accepts a list, but it's not 100% intuitive)
@@ -119,7 +123,7 @@ end).
 -define(autoformat(A, B, C, D, E, F, G), ?autoformat([A, B, C, D, E, F, G])).
 -define(autoformat(A, B, C, D, E, F, G, H), ?autoformat([A, B, C, D, E, F, G, H])).
 -define(autoformat(A, B, C, D, E, F, G, H, I), ?autoformat([A, B, C, D, E, F, G, H, I])).
--define(autoformat(A, B, C, D, E, F, G, H, I, J), ?autoformat([A, B, C, D, E, F, G, H, I, J])).
+-define(autoformat(A, B, C, D, E, F, G, H, I, J, K), ?autoformat([A, B, C, D, E, F, G, H, I, J, K])).
 
 
 % DEPRECATED - use ?error_exception instead
@@ -242,11 +246,19 @@ end).
 
 % Convenience macros for debug
 
-% Prints a single term by the name of the variable
--define(dump(Term), io:format(user, "[DUMP] ~s = ~p~n~n", [??Term, Term])).
-
-% Prints a list of terms
--define(dump_all(Terms), io:format(user, "[DUMP ALL]" ++ ?autoformat(Terms) ++ "~n~n", [])).
+% Prints a term or a list of terms by the name of the variable
+-define(dump(TermOrTerms), io:format(user, "[DUMP]~s~n", [?autoformat(TermOrTerms)])).
+% wrappers for convenience (the original macro accepts a list, but it's not 100% intuitive)
+-define(dump(A, B), ?dump([A, B])).
+-define(dump(A, B, C), ?dump([A, B, C])).
+-define(dump(A, B, C, D), ?dump([A, B, C, D])).
+-define(dump(A, B, C, D, E), ?dump([A, B, C, D, E])).
+-define(dump(A, B, C, D, E, F), ?dump([A, B, C, D, E, F])).
+-define(dump(A, B, C, D, E, F, G), ?dump([A, B, C, D, E, F, G])).
+-define(dump(A, B, C, D, E, F, G, H), ?dump([A, B, C, D, E, F, G, H])).
+-define(dump(A, B, C, D, E, F, G, H, I), ?dump([A, B, C, D, E, F, G, H, I])).
+-define(dump(A, B, C, D, E, F, G, H, I, J), ?dump([A, B, C, D, E, F, G, H, I, J])).
+-define(dump(A, B, C, D, E, F, G, H, I, J, K), ?dump([A, B, C, D, E, F, G, H, I, J, K])).
 
 
 %% Macros used internally

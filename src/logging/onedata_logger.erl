@@ -42,8 +42,8 @@ format_exception_log(
 ) ->
     format_generic_log(
         "An unexpected exception~s occurred in ~w:~w/~B line ~B~n"
-        "> Stacktrace:~s"
-        "> Caught: ~s:~p~n"
+        "> Stacktrace:~s~n"
+        "> Caught: ~s:~p"
         "~s",
         [
             case Ref of
@@ -51,8 +51,8 @@ format_exception_log(
                 _ -> str_utils:format(" (ref: ~s)", [Ref])
             end,
             Module, Function, Arity, Line,
-            Class, Reason,
             lager:pr_stacktrace(Stacktrace),
+            Class, Reason,
             format_details_suffix(DetailsFormat, DetailsArgs)
         ]
     ).
