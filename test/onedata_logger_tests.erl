@@ -12,7 +12,7 @@
 
 -ifdef(TEST).
 -include_lib("eunit/include/eunit.hrl").
--include("logging.hrl").
+-include("test/test_utils.hrl").
 
 main_test_() ->
     {setup,
@@ -110,5 +110,45 @@ lager_interfacing_test_() ->
             }
         ]
     }.
+
+
+% makes sure the ?autoformat macro works with different kinds of inputs;
+% checks if the code compiles and does not crash in runtime, the visual
+% examination of the formatted output must be done manually
+autoformatter_test() ->
+    eunit_utils:dump(io:printable_range()),
+    Integer = 17,
+    Float = -13.75,
+    Atom = atom,
+    Bool = true,
+    List = [1,2,3] ++ str_utils:binary_to_unicode_list(?RAND_UNICODE_STR()),
+    PrintableString = str_utils:binary_to_unicode_list(?RAND_UNICODE_STR()),
+    MultilineString = "mul-\n\tti-\n\tline\n\t" ++ str_utils:binary_to_unicode_list(?RAND_UNICODE_STR(5)),
+    RawBinary = <<<<C>> || C <- lists:seq(1, 255)>>,
+    PrintableBinary = ?RAND_UNICODE_STR(),
+    MultilineBinary = <<"mul-\n\tti-\n\tline\n\t", (?RAND_UNICODE_STR())/binary>>,
+    Map = #{<<"key">> => value},
+    Term = {tuple_with, {complex_terms, [<<"1">>, #{2 => [true, dont_know, false]}, lists:seq(1, 20)]}},
+    io:format(user, "~ts~n", [?autoformat(Integer)]),
+    io:format(user, "~ts~n", [?autoformat([Float])]),
+    io:format(user, "~ts~n", [?autoformat(PrintableString)]),
+    io:format(user, "~ts~n", [?autoformat([PrintableString, RawBinary])]),
+    io:format(user, "~ts~n", [?autoformat(MultilineString, MultilineBinary)]),
+    io:format(user, "~ts~n", [?autoformat(Map, Term, List)]),
+    io:format(user, "~ts~n", [?autoformat([Atom, Bool, Bool])]),
+    io:format(user, "~ts~n", [?autoformat(
+        Integer,
+        Float,
+        Atom,
+        List,
+        PrintableString,
+        MultilineString,
+        RawBinary,
+        PrintableBinary,
+        MultilineBinary,
+        Map,
+        Term
+    )]).
+
 
 -endif.

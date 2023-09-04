@@ -224,6 +224,7 @@
 -export_type([error/0, reason/0, as_json/0]).
 
 %% API
+-export([is_known_error/1, is_posix_code/1]).
 -export([to_json/1, from_json/1, to_http_code/1]).
 
 -define(FMT(Format, Args), str_utils:format_bin(Format, Args)).
@@ -232,6 +233,21 @@
 %%%===================================================================
 %%% API
 %%%===================================================================
+
+-spec is_known_error(term()) -> boolean().
+is_known_error(Error) ->
+    try
+        errors:to_http_code(Error),
+        true
+    catch _:_ ->
+        false
+    end.
+
+
+-spec is_posix_code(term()) -> boolean().
+is_posix_code(ErrorCode) ->
+    ordsets:is_element(ErrorCode, ?ERROR_CODES).
+
 
 -spec to_json(undefined | error()) -> as_json().
 to_json(undefined) ->
@@ -2780,8 +2796,7 @@ to_http_code(?ERROR_USER_NOT_IN_CLUSTER) -> ?HTTP_403_FORBIDDEN;
 %% -----------------------------------------------------------------------------
 %% Unknown error
 %% -----------------------------------------------------------------------------
-to_http_code(?ERROR_UNRECOGNIZED_ERROR(_)) -> ?HTTP_500_INTERNAL_SERVER_ERROR;
-to_http_code(_) -> ?HTTP_500_INTERNAL_SERVER_ERROR.
+to_http_code(?ERROR_UNRECOGNIZED_ERROR(_)) -> ?HTTP_500_INTERNAL_SERVER_ERROR.
 
 %%%===================================================================
 %%% Internal functions

@@ -176,10 +176,11 @@ verify(Token = #token{macaroon = Macaroon}, Secret, AuthCtx, SupportedCaveats) -
                 ?ERROR_TOKEN_INVALID
         end
     catch
-        throw:{error, _} = Error ->
-            Error;
-        _:_ ->
-            ?ERROR_TOKEN_INVALID
+        Class:Reason ->
+            case {Class, errors:is_known_error(Reason)} of
+                {throw, true} -> Reason;
+                _ -> ?ERROR_TOKEN_INVALID
+            end
     end.
 
 

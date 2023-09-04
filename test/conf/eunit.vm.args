@@ -1,0 +1,2 @@
+# the default printable characters detection is set to latin1, we want unicode for some of the tests
++pc unicode
