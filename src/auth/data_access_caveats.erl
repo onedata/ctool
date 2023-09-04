@@ -47,6 +47,7 @@
 
 -type cv_data_path() :: #cv_data_path{}.
 -type cv_data_objectid() :: #cv_data_objectid{}.
+-type data_access_caveat() :: #cv_interface{} | #cv_data_readonly{} | #cv_data_path{} | #cv_data_objectid{}.
 
 -define(DATA_ACCESS_CAVEATS, [
     cv_interface, cv_data_readonly, cv_data_path, cv_data_objectid
@@ -57,6 +58,7 @@
 -export([sanitize_objectid_caveat/1]).
 -export([filter/1]).
 -export([to_allowed_api/2]).
+-export([infer_available_spaces/1]).
 
 %%%===================================================================
 %%% API functions
@@ -92,7 +94,7 @@ sanitize_objectid_caveat(#cv_data_objectid{whitelist = Whitelist}) ->
     end.
 
 
--spec filter([caveats:caveat()]) -> [caveats:caveat()].
+-spec filter([caveats:caveat()]) -> [data_access_caveat()].
 filter(Caveats) ->
     Filtered = caveats:filter(?DATA_ACCESS_CAVEATS, Caveats),
     lists:filtermap(fun
@@ -110,7 +112,7 @@ filter(Caveats) ->
 %% (OZ|OP)-PANEL API is completely disallowed.
 %% @end
 %%--------------------------------------------------------------------
--spec to_allowed_api(onedata:service(), caveats:caveat()) -> cv_api:cv_api().
+-spec to_allowed_api(onedata:service(), data_access_caveat()) -> cv_api:cv_api().
 to_allowed_api(?OZ_PANEL, _) ->
     #cv_api{whitelist = []};
 
@@ -122,46 +124,45 @@ to_allowed_api(?OP_WORKER, _) ->
         {?OP_WORKER, all, ?GRI_PATTERN(op_file, <<"*">>, <<"*">>, '*')}
     ]};
 
-to_allowed_api(?OZ_WORKER, #cv_interface{interface = oneclient}) ->
-    % Oneclient interface caveat does not confine access to specific spaces
-    AllowedSpaces = [<<"*">>],
-    oz_worker_allowed_api(AllowedSpaces);
-
-to_allowed_api(?OZ_WORKER, #cv_data_readonly{}) ->
-    % Data readonly caveat does not confine access to specific spaces
-    AllowedSpaces = [<<"*">>],
-    oz_worker_allowed_api(AllowedSpaces);
-
-to_allowed_api(?OZ_WORKER, #cv_data_path{whitelist = PathsWhitelist}) ->
-    % Data path caveat includes a list of canonical paths that precisely
-    % narrow down the allowed spaces
-    AllowedSpaces = lists:filtermap(fun(Path) ->
-        case filename:split(Path) of
-            [<<"/">>, SpaceId | _] -> {true, SpaceId};
-            _ -> false  % Invalid paths are ignored
-        end
-    end, PathsWhitelist),
-    oz_worker_allowed_api(AllowedSpaces);
-
-to_allowed_api(?OZ_WORKER, #cv_data_objectid{whitelist = ObjectidsWhitelist}) ->
-    % Data objectid caveat includes a list of file ids that precisely
-    % narrow down the allowed spaces
-    AllowedSpaces = lists:filtermap(fun(Objectid) ->
-        try
-            {ok, Guid} = file_id:objectid_to_guid(Objectid),
-            {true, <<_/binary>> = file_id:guid_to_space_id(Guid)}
-        catch _:_ ->
-            false  % Invalid Objectids are ignored
-        end
-    end, ObjectidsWhitelist),
-    oz_worker_allowed_api(AllowedSpaces).
-
-
-%% @private
--spec oz_worker_allowed_api(['*' | file_id:space_id()]) -> cv_api:cv_api().
-oz_worker_allowed_api(AllowedSpaces) ->
+to_allowed_api(?OZ_WORKER, DataAccessCaveat) ->
+    AllowedSpaces = infer_available_spaces(DataAccessCaveat),
     #cv_api{whitelist = lists:flatten([
         {?OZ_WORKER, get, ?GRI_PATTERN(od_user, <<"*">>, <<"instance">>, '*')},
         {?OZ_WORKER, get, ?GRI_PATTERN(od_share, <<"*">>, <<"instance">>, '*')},
         [{?OZ_WORKER, get, ?GRI_PATTERN(od_space, S, <<"instance">>, '*')} || S <- AllowedSpaces]
     ])}.
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Returns the list of spaces that are available in regard to given data access caveat.
+%% A one-item list with a wildcard character indicates no limit on available spaces.
+%% @end
+%%--------------------------------------------------------------------
+-spec infer_available_spaces(data_access_caveat()) -> [file_id:space_id()].
+infer_available_spaces(#cv_interface{interface = oneclient}) ->
+    % Oneclient interface caveat does not confine access to specific spaces
+    [<<"*">>];
+infer_available_spaces(#cv_data_readonly{}) ->
+    % Data readonly caveat does not confine access to specific spaces
+    [<<"*">>];
+infer_available_spaces(#cv_data_path{whitelist = PathsWhitelist}) ->
+    % Data path caveat includes a list of canonical paths that precisely
+    % narrow down the allowed spaces
+    lists:filtermap(fun(Path) ->
+        case filename:split(Path) of
+            [<<"/">>, SpaceId | _] -> {true, SpaceId};
+            _ -> false  % Invalid paths are ignored
+        end
+    end, PathsWhitelist);
+infer_available_spaces(#cv_data_objectid{whitelist = ObjectIdsWhitelist}) ->
+    % Data objectid caveat includes a list of file ids that precisely
+    % narrow down the allowed spaces
+    lists:filtermap(fun(Objectid) ->
+        try
+            {ok, Guid} = file_id:objectid_to_guid(Objectid),
+            {true, <<_/binary>> = file_id:guid_to_space_id(Guid)}
+        catch _:_ ->
+            false  % Invalid ObjectIds are ignored
+        end
+    end, ObjectIdsWhitelist).

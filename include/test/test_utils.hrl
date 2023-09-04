@@ -118,6 +118,8 @@ end).
 -define(SHUFFLED(List), lists_utils:shuffle(List)).
 -define(RAND_SUBMAP(Map), maps:with(lists_utils:random_sublist(maps:keys(Map)), Map)).
 -define(RAND_EMAIL_ADDRESS(), str_utils:format_bin("~s@example.com", [?RAND_STR(20)])).
+-define(RAND_OBJECTID, ?check(file_id:guid_to_objectid(file_id:pack_guid(str_utils:rand_hex(6), str_utils:rand_hex(6))))).
+
 
 
 -define(TOO_LONG_NAME, <<
