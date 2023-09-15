@@ -12,6 +12,7 @@
 
 -module(onedata_logger).
 
+-include("global_definitions.hrl").
 -include("logging.hrl").
 
 -export([format_generic_log/2, format_exception_log/10, format_deprecated_exception_log/7, format_error_report/7]).
@@ -33,7 +34,7 @@ format_generic_log(Format, Args) ->
 -spec format_exception_log(
     module(), atom(), non_neg_integer(), non_neg_integer(),
     string(), list(), undefined | string() | binary(),
-    atom(), term(), list()
+    atom(), term(), stacktrace()
 ) -> string().
 format_exception_log(
     Module, Function, Arity, Line,
@@ -60,7 +61,7 @@ format_exception_log(
 
 -spec format_deprecated_exception_log(
     module(), atom(), non_neg_integer(), non_neg_integer(),
-    string(), list(), list()
+    string(), list(), stacktrace()
 ) -> string().
 format_deprecated_exception_log(
     Module, Function, Arity, Line,
