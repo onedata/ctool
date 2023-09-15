@@ -13,6 +13,7 @@
 -ifndef(ERRORS_HRL).
 -define(ERRORS_HRL, 1).
 
+-include("global_definitions.hrl").
 -include("posix/errno.hrl").
 
 %%--------------------------------------------------------------------
