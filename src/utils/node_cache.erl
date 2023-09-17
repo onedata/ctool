@@ -33,8 +33,7 @@
 -type ttl() :: time:seconds() | time:infinity().
 
 -type update_callback() :: fun((value()) ->
-    {ok, value(), ttl()} |
-    {error, Reason :: term()}).
+    {ok, value(), ttl()} | clear | {error, Reason :: term()}).
 
 %% function called by acquire/2 when there is no valid value in cache
 -type acquire_callback() :: fun(() ->
@@ -98,11 +97,11 @@ get(Key, Default) ->
     end.
 
 
--spec update(key(), update_callback()) -> {ok, value()} | {error, term()}.
+-spec update(key(), update_callback()) -> {ok, value() | cleared} | {error, term()}.
 update(Key, UpdateCallback) ->
     update_internal(Key, fun() -> get(Key) end, UpdateCallback).
 
--spec update(key(), update_callback(), value()) -> {ok, value()} | {error, term()}.
+-spec update(key(), update_callback(), value()) -> {ok, value() | cleared} | {error, term()}.
 update(Key, UpdateCallback, DefaultInitialValue) ->
     update_internal(Key, fun() -> get(Key, DefaultInitialValue) end, UpdateCallback).
 
@@ -175,7 +174,7 @@ lookup_in_cache(Key) ->
 
 
 %% @private
--spec update_internal(key(), fun(() -> value()), update_callback()) -> {ok, value()} | {error, term()}.
+-spec update_internal(key(), fun(() -> value()), update_callback()) -> {ok, value() | cleared} | {error, term()}.
 update_internal(Key, GetCallback, UpdateCallback) ->
     ?critical_section(Key, fun() ->
         CurrentValue = GetCallback(),
@@ -183,6 +182,9 @@ update_internal(Key, GetCallback, UpdateCallback) ->
             {ok, UpdatedValue, TTL} ->
                 put(Key, UpdatedValue, TTL),
                 {ok, UpdatedValue};
+            clear ->
+                clear(Key),
+                {ok, cleared};
             {error, _} = Error ->
                 Error
         end
