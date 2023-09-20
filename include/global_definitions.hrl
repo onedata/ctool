@@ -17,6 +17,8 @@
 %%% Global names
 %%%===================================================================
 
+-type stacktrace() :: list().
+
 %% Global name of gen_server that provides cluster manager functionality.
 -define(CLUSTER_MANAGER, cluster_manager).
 
