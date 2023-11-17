@@ -148,7 +148,9 @@ end).
 -define(RAND_SUBMAP(Map), maps:with(lists_utils:random_sublist(maps:keys(Map)), Map)).
 -define(RAND_EMAIL_ADDRESS(), str_utils:format_bin("~s@example.com", [?RAND_STR(20)])).
 -define(RAND_OBJECTID, ?RAND_OBJECTID(?RAND_STR(16))).
--define(RAND_OBJECTID(SpaceId), ?check(file_id:guid_to_objectid(file_id:pack_guid(str_utils:rand_hex(4), SpaceId)))
+-define(RAND_OBJECTID(SpaceId), ?check(file_id:guid_to_objectid(file_id:pack_guid(str_utils:rand_hex(4), SpaceId)))).
+-define(RAND_CANONICAL_PATH(SpaceId),
+    filename:join([<<"/">>, SpaceId] ++ lists_utils:generate(fun() -> ?RAND_STR() end, ?RAND_INT(0, 5)))
 ).
 
 
