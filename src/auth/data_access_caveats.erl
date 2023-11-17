@@ -58,7 +58,7 @@
 -export([sanitize_objectid_caveat/1]).
 -export([filter/1]).
 -export([to_allowed_api/2]).
--export([infer_available_spaces/1]).
+-export([match_available_spaces/2]).
 
 %%%===================================================================
 %%% API functions
@@ -133,7 +133,21 @@ to_allowed_api(?OZ_WORKER, DataAccessCaveat) ->
     ])}.
 
 
+-spec match_available_spaces([data_access_caveat()], [file_id:space_id()]) -> [file_id:space_id()].
+match_available_spaces(DataAccessCaveats, AllSpaceIds) ->
+    lists:foldl(fun(DataAccessCaveat, Acc) ->
+        case infer_available_spaces(DataAccessCaveat) of
+            [<<"*">>] -> Acc;
+            Whitelist -> lists_utils:intersect(Acc, Whitelist)
+        end
+    end, AllSpaceIds, DataAccessCaveats).
+
+%%%===================================================================
+%%% Internal functions
+%%%===================================================================
+
 %%--------------------------------------------------------------------
+%% @private
 %% @doc
 %% Returns the list of spaces that are available in regard to given data access caveat.
 %% A one-item list with a wildcard character indicates no limit on available spaces.
