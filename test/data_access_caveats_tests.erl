@@ -49,7 +49,7 @@ match_allowed_service_ids_test() ->
             ?CO(?RAND_OBJECTID(<<"3">>)),
             ?CP([?RAND_CANONICAL_PATH(<<"1">>), ?RAND_CANONICAL_PATH(<<"3">>)])
         ],
-        all_space_ids = [<<"1">>, <<"2">>, <<"3">>],
+        all_space_ids = [<<"*">>],
         expected_result = [<<"3">>]
     })),
     ?assert(run_test(#test_spec{
@@ -74,6 +74,13 @@ match_allowed_service_ids_test() ->
         ],
         all_space_ids = [<<"1">>, <<"2">>, <<"3">>, <<"4">>],
         expected_result = [<<"1">>]
+    })),
+    ?assert(run_test(#test_spec{
+        data_access_caveats = [
+            ?CP([?RAND_CANONICAL_PATH(<<"1">>), ?RAND_CANONICAL_PATH(<<"2">>), ?RAND_CANONICAL_PATH(<<"3">>)])
+        ],
+        all_space_ids = [<<"*">>],
+        expected_result = [<<"1">>, <<"2">>, <<"3">>]
     })).
 
 %%%===================================================================

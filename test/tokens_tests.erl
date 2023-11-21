@@ -216,6 +216,8 @@ sanitize_type_test() ->
     ?assertEqual({true, ?INVITE_TOKEN(?GROUP_JOIN_GROUP, <<"id">>)}, S(#{<<"inviteToken">> => #{
         <<"inviteType">> => <<"groupJoinGroup">>, <<"groupId">> => <<"id">>
     }})),
+    ?assertEqual(false, S(#{<<"inviteToken">> => #{<<"inviteType">> => <<"groupJoinGroup">>}})),
+    ?assertEqual(false, S(#{<<"inviteToken">> => #{<<"inviteType">> => <<"groupJoinGroup">>, <<"spaceId">> => <<"id">>}})),
 
     ?assertEqual({true, ?INVITE_TOKEN(?USER_JOIN_SPACE, <<"id">>)}, S(?INVITE_TOKEN(?USER_JOIN_SPACE, <<"id">>))),
     ?assertEqual({true, ?INVITE_TOKEN(?USER_JOIN_SPACE, <<"id">>)}, S(#{<<"inviteToken">> => #{

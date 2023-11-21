@@ -119,10 +119,13 @@ to_allowed_api(?OZ_PANEL, _) ->
 to_allowed_api(?OP_PANEL, _) ->
     #cv_api{whitelist = []};
 
-to_allowed_api(?OP_WORKER, _) ->
-    #cv_api{whitelist = [
-        {?OP_WORKER, all, ?GRI_PATTERN(op_file, <<"*">>, <<"*">>, '*')}
-    ]};
+to_allowed_api(?OP_WORKER, DataAccessCaveat) ->
+    AllowedSpaces = infer_available_spaces(DataAccessCaveat),
+    #cv_api{whitelist = lists:flatten([
+        {?OP_WORKER, all, ?GRI_PATTERN(op_file, <<"*">>, <<"*">>, '*')},
+        {?OP_WORKER, get, ?GRI_PATTERN(op_space, undefined, <<"list">>, private)},
+        [{?OP_WORKER, get, ?GRI_PATTERN(op_space, S, <<"instance">>, private)} || S <- AllowedSpaces]
+    ])};
 
 to_allowed_api(?OZ_WORKER, DataAccessCaveat) ->
     AllowedSpaces = infer_available_spaces(DataAccessCaveat),
@@ -133,11 +136,13 @@ to_allowed_api(?OZ_WORKER, DataAccessCaveat) ->
     ])}.
 
 
+% AllSpaceIds can be provided as [<<"*">>] to find out all available spaces
 -spec match_available_spaces([data_access_caveat()], [file_id:space_id()]) -> [file_id:space_id()].
 match_available_spaces(DataAccessCaveats, AllSpaceIds) ->
     lists:foldl(fun(DataAccessCaveat, Acc) ->
         case infer_available_spaces(DataAccessCaveat) of
             [<<"*">>] -> Acc;
+            Whitelist when Acc == [<<"*">>] -> Whitelist;
             Whitelist -> lists_utils:intersect(Acc, Whitelist)
         end
     end, AllSpaceIds, DataAccessCaveats).
