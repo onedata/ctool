@@ -109,16 +109,12 @@ from_json(#{<<"accessToken">> := EmptyMap}) when map_size(EmptyMap) == 0 ->
 from_json(#{<<"identityToken">> := _}) ->
     ?IDENTITY_TOKEN;
 from_json(#{<<"inviteToken">> := InviteTokenTypeData = #{<<"inviteType">> := InviteTypeStr}}) ->
-    try
-        InviteType = invite_type_from_str(InviteTypeStr),
-        TargetJsonKey = invite_target_json_key(InviteType),
-        EntityId = maps:get(TargetJsonKey, InviteTokenTypeData),
-        ParametersJson = maps:get(<<"parameters">>, InviteTokenTypeData, #{}),
-        Parameters = invite_parameters_from_json(InviteType, ParametersJson),
-        ?INVITE_TOKEN(InviteType, EntityId, Parameters)
-    catch _:_ ->
-        throw(?ERROR_BAD_DATA(<<"type">>))
-    end.
+    InviteType = invite_type_from_str(InviteTypeStr),
+    TargetJsonKey = invite_target_json_key(InviteType),
+    EntityId = maps:get(TargetJsonKey, InviteTokenTypeData),
+    ParametersJson = maps:get(<<"parameters">>, InviteTokenTypeData, #{}),
+    Parameters = invite_parameters_from_json(InviteType, ParametersJson),
+    ?INVITE_TOKEN(InviteType, EntityId, Parameters).
 
 
 -spec serialize(type()) -> binary().

@@ -150,7 +150,7 @@ end).
 -define(RAND_OBJECTID, ?RAND_OBJECTID(?RAND_STR(16))).
 -define(RAND_OBJECTID(SpaceId), ?check(file_id:guid_to_objectid(file_id:pack_guid(str_utils:rand_hex(4), SpaceId)))).
 -define(RAND_CANONICAL_PATH(SpaceId),
-    filename:join([<<"/">>, SpaceId] ++ lists_utils:generate(fun() -> ?RAND_STR() end, ?RAND_INT(0, 5)))
+    filename:join([<<"/">>, SpaceId | lists_utils:generate(fun() -> ?RAND_STR() end, ?RAND_INT(0, 5))])
 ).
 
 

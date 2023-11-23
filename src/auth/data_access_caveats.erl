@@ -122,6 +122,9 @@ to_allowed_api(?OP_PANEL, _) ->
 to_allowed_api(?OP_WORKER, DataAccessCaveat) ->
     AllowedSpaces = infer_available_spaces(DataAccessCaveat),
     #cv_api{whitelist = lists:flatten([
+        % From the API point of view, all operations on all files are available, but the
+        % specific data access caveats are still verified and effectively the list of
+        % available paths / file ids may be limited.
         {?OP_WORKER, all, ?GRI_PATTERN(op_file, <<"*">>, <<"*">>, '*')},
         {?OP_WORKER, get, ?GRI_PATTERN(op_space, undefined, <<"list">>, private)},
         [{?OP_WORKER, get, ?GRI_PATTERN(op_space, S, <<"instance">>, private)} || S <- AllowedSpaces]
