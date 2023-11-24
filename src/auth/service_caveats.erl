@@ -38,11 +38,17 @@ filter(Caveats) ->
     caveats:filter([cv_service], Caveats).
 
 
+% AllSpaceIds can be provided as [<<"*">>] to find out all allowed service ids.
+% The result may also be expressed as [<<"*">>].
 -spec match_allowed_service_ids(cv_service() | [cv_service()], onedata:service(), [onedata:service_id()]) ->
     [onedata:service_id()].
 match_allowed_service_ids(ServiceCaveats, ServiceType, AllServiceIds) when is_list(ServiceCaveats) ->
     lists:foldl(fun(ServiceCaveat, Acc) ->
-        lists_utils:intersect(Acc, match_allowed_service_ids(ServiceCaveat, ServiceType, AllServiceIds))
+        case match_allowed_service_ids(ServiceCaveat, ServiceType, AllServiceIds) of
+            [<<"*">>] -> Acc;
+            WhitelistedServiceIds when Acc == [<<"*">>] -> WhitelistedServiceIds;
+            WhitelistedServiceIds -> lists_utils:intersect(Acc, WhitelistedServiceIds)
+        end
     end, AllServiceIds, ServiceCaveats);
 match_allowed_service_ids(#cv_service{whitelist = Whitelist}, ServiceType, AllServiceIds) ->
     WhitelistedServiceIds = lists:usort(lists:filtermap(fun(ServiceSpec) ->
@@ -53,7 +59,7 @@ match_allowed_service_ids(#cv_service{whitelist = Whitelist}, ServiceType, AllSe
     end, Whitelist)),
     case lists:member(<<"*">>, WhitelistedServiceIds) of
         true -> AllServiceIds;
-        false when WhitelistedServiceIds == [] -> [];
+        false when AllServiceIds == [<<"*">>] -> WhitelistedServiceIds;
         false -> lists_utils:intersect(AllServiceIds, WhitelistedServiceIds)
     end.
 

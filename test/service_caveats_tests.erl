@@ -36,6 +36,15 @@ match_allowed_service_ids_test() ->
         expected_result = [<<"1">>, <<"2">>, <<"3">>]
     })),
     ?assert(run_test(#test_spec{
+        service_caveats = [?CVS([
+            ?SERVICE(?OZ_PANEL, <<"1">>),
+            ?SERVICE(?OZ_PANEL, <<"2">>),
+            ?SERVICE(?OZ_PANEL, <<"3">>)
+        ])],
+        service_type = ?OZ_PANEL, all_service_ids = [<<"*">>],
+        expected_result = [<<"1">>, <<"2">>, <<"3">>]
+    })),
+    ?assert(run_test(#test_spec{
         service_caveats = [?CVS([?SERVICE(?OZ_WORKER, <<"1">>)])],
         service_type = ?OP_WORKER, all_service_ids = [<<"1">>, <<"2">>, <<"3">>],
         expected_result = []
@@ -65,7 +74,7 @@ match_allowed_service_ids_test() ->
             ?SERVICE(?OZ_PANEL, <<"2">>)
         ])],
         service_type = ?OZ_PANEL, all_service_ids = [<<"*">>],
-        expected_result = []
+        expected_result = [<<"1">>, <<"2">>]
     })),
     ?assert(run_test(#test_spec{
         service_caveats = [
@@ -93,6 +102,22 @@ match_allowed_service_ids_test() ->
         ],
         service_type = ?OP_PANEL, all_service_ids = [<<"1">>, <<"2">>, <<"3">>, <<"4">>],
         expected_result = [<<"1">>]
+    })),
+    ?assert(run_test(#test_spec{
+        service_caveats = [
+            ?CVS([?SERVICE(?OZ_PANEL, <<"1">>)]),
+            ?CVS([?SERVICE(?OZ_PANEL, <<"2">>)])
+        ],
+        service_type = ?OZ_PANEL, all_service_ids = [<<"1">>, <<"2">>],
+        expected_result = []
+    })),
+    ?assert(run_test(#test_spec{
+        service_caveats = [
+            ?CVS([?SERVICE(?OZ_PANEL, <<"1">>)]),
+            ?CVS([?SERVICE(?OZ_PANEL, <<"2">>)])
+        ],
+        service_type = ?OZ_PANEL, all_service_ids = [<<"*">>],
+        expected_result = []
     })).
 
 %%%===================================================================

@@ -139,7 +139,8 @@ to_allowed_api(?OZ_WORKER, DataAccessCaveat) ->
     ])}.
 
 
-% AllSpaceIds can be provided as [<<"*">>] to find out all available spaces
+% AllSpaceIds can be provided as [<<"*">>] to find out all allowed service ids.
+% The result may also be expressed as [<<"*">>].
 -spec match_available_spaces([data_access_caveat()], [file_id:space_id()]) -> [file_id:space_id()].
 match_available_spaces(DataAccessCaveats, AllSpaceIds) ->
     lists:foldl(fun(DataAccessCaveat, Acc) ->
