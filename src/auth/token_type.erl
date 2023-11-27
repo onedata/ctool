@@ -14,6 +14,7 @@
 -author("Lukasz Opiola").
 
 -include("aai/aai.hrl").
+-include("errors.hrl").
 
 % Type of the token as recognized across Onedata components
 -type type() :: #access_token_typespec{} | #identity_token_typespec{} | #invite_token_typespec{}.

@@ -14,6 +14,7 @@
 
 %% API
 -export([debug_log/2, dump/1, dump/2]).
+-export([is_equal/3]).
 -export([is_equal_after_json_encode_and_decode/1, is_equal_after_json_encode_and_decode/2]).
 -export([is_equal_after_db_encode_and_decode/1, is_equal_after_db_encode_and_decode/2]).
 -export([throws_error_during_decode_from_json/2, throws_error_during_decode_from_json/3]).
@@ -48,21 +49,26 @@ dump(Name, Term) ->
     debug_log("~s = ~p", [Name, Term]).
 
 
+%% @doc gives you nice debug logs when not equal
+-spec is_equal(term(), term(), string()) -> boolean().
+is_equal(ExpectedValue, ExpectedValue, _) ->
+    true;
+is_equal(ActualValue, ExpectedValue, LogMessage) ->
+    debug_log("~s~n> Exp: ~p~n> Got: ~p", [LogMessage, ExpectedValue, ActualValue]),
+    false.
+
+
 -spec is_equal_after_json_encode_and_decode(tuple()) -> boolean().
 is_equal_after_json_encode_and_decode(Record) ->
     is_equal_after_json_encode_and_decode(Record, utils:record_type(Record)).
 
 -spec is_equal_after_json_encode_and_decode(tuple(), atom()) -> boolean().
 is_equal_after_json_encode_and_decode(Record, RecordType) ->
-    case jsonable_record:from_json(jsonable_record:to_json(Record, RecordType), RecordType) of
-        Record ->
-            true;
-        Other ->
-            debug_log("Record different after json encode and decode!~nExpected: ~p~nGot:      ~p", [
-                Record, Other
-            ]),
-            false
-    end.
+    is_equal(
+        jsonable_record:from_json(jsonable_record:to_json(Record, RecordType), RecordType),
+        Record,
+        "Record different after json encode and decode!"
+    ).
 
 
 -spec is_equal_after_db_encode_and_decode(tuple()) -> boolean().
@@ -71,15 +77,11 @@ is_equal_after_db_encode_and_decode(Record) ->
 
 -spec is_equal_after_db_encode_and_decode(tuple(), atom()) -> boolean().
 is_equal_after_db_encode_and_decode(Record, RecordType) ->
-    case persistent_record:from_string(persistent_record:to_string(Record, RecordType), RecordType) of
-        Record ->
-            true;
-        Other ->
-            debug_log("Record different after DB encode and decode!~nExpected: ~p~nGot:      ~p", [
-                Record, Other
-            ]),
-            false
-    end.
+    is_equal(
+        persistent_record:from_string(persistent_record:to_string(Record, RecordType), RecordType),
+        Record,
+        "Record different after DB encode and decode!"
+    ).
 
 
 % validation is done during decoding from json, so it is possible to encode an invalid record

@@ -15,6 +15,7 @@
 -ifdef(TEST).
 
 -include_lib("eunit/include/eunit.hrl").
+-include("test/test_utils.hrl").
 -include("aai/aai.hrl").
 -include("errors.hrl").
 -include("graph_sync/gri.hrl").
@@ -23,19 +24,12 @@
 -define(SPACE_GAMMA, <<"bdee07d32260a56d159a980ca0d64357">>).
 -define(SPACE_DELTA, <<"0d64357a778c44679dd816329e3d6527">>).
 
--define(RAND_STR, str_utils:rand_hex(6)).
--define(RAND_PATH_IN_SPACE(SpaceId), filename:join(
-    [<<"/">>, SpaceId] ++ lists_utils:random_sublist([?RAND_STR, ?RAND_STR, ?RAND_STR, ?RAND_STR])
-)).
--define(RAND_OBJECTID_IN_SPACE(SpaceId),
-    element(2, {ok, _} = file_id:guid_to_objectid(file_id:pack_guid(?RAND_STR, SpaceId)))
-).
 
 -define(DATA_ACCESS_CAVEATS_EXAMPLES, [
     #cv_interface{interface = oneclient},
     #cv_data_readonly{},
-    #cv_data_path{whitelist = [?RAND_PATH_IN_SPACE(?SPACE_ALPHA), ?RAND_PATH_IN_SPACE(?SPACE_GAMMA)]},
-    #cv_data_objectid{whitelist = [?RAND_OBJECTID_IN_SPACE(?SPACE_DELTA)]}
+    #cv_data_path{whitelist = [?RAND_CANONICAL_PATH(?SPACE_ALPHA), ?RAND_CANONICAL_PATH(?SPACE_GAMMA)]},
+    #cv_data_objectid{whitelist = [?RAND_OBJECTID(?SPACE_DELTA)]}
 ]).
 
 
@@ -188,11 +182,11 @@ testcases() -> [
             % will not match the above id of <<"123">>
             #caveat_example{
                 should_verify = false,
-                caveat = #cv_data_path{whitelist = [?RAND_PATH_IN_SPACE(?SPACE_DELTA)]}
+                caveat = #cv_data_path{whitelist = [?RAND_CANONICAL_PATH(?SPACE_DELTA)]}
             },
             #caveat_example{
                 should_verify = false,
-                caveat = #cv_data_objectid{whitelist = [?RAND_OBJECTID_IN_SPACE(?SPACE_ALPHA)]}
+                caveat = #cv_data_objectid{whitelist = [?RAND_OBJECTID(?SPACE_ALPHA)]}
             },
             gen_service_caveat_examples([?OZ_WORKER, ?OP_WORKER], true),
             gen_service_caveat_examples([?OZ_PANEL, ?OP_PANEL], false)
@@ -222,29 +216,29 @@ testcases() -> [
             #caveat_example{
                 should_verify = false,
                 caveat = #cv_data_path{whitelist = [
-                    ?RAND_PATH_IN_SPACE(?SPACE_GAMMA),
-                    ?RAND_PATH_IN_SPACE(?SPACE_DELTA)
+                    ?RAND_CANONICAL_PATH(?SPACE_GAMMA),
+                    ?RAND_CANONICAL_PATH(?SPACE_DELTA)
                 ]}
             },
             #caveat_example{
                 should_verify = false,
                 caveat = #cv_data_objectid{whitelist = [
-                    ?RAND_OBJECTID_IN_SPACE(?SPACE_GAMMA),
-                    ?RAND_OBJECTID_IN_SPACE(?SPACE_DELTA)
+                    ?RAND_OBJECTID(?SPACE_GAMMA),
+                    ?RAND_OBJECTID(?SPACE_DELTA)
                 ]}
             },
 
             #caveat_example{
                 should_verify = true,
                 caveat = #cv_data_path{whitelist = [
-                    ?RAND_PATH_IN_SPACE(?SPACE_ALPHA),
+                    ?RAND_CANONICAL_PATH(?SPACE_ALPHA),
                     <<"noncanonical-bad-path">>
                 ]}
             },
             #caveat_example{
                 should_verify = true,
                 caveat = #cv_data_objectid{whitelist = [
-                    ?RAND_OBJECTID_IN_SPACE(?SPACE_ALPHA),
+                    ?RAND_OBJECTID(?SPACE_ALPHA),
                     <<"bad-objectid">>
                 ]}
             },
@@ -252,17 +246,17 @@ testcases() -> [
             #caveat_example{
                 should_verify = true,
                 caveat = #cv_data_path{whitelist = [
-                    ?RAND_PATH_IN_SPACE(?SPACE_GAMMA),
-                    ?RAND_PATH_IN_SPACE(?SPACE_DELTA),
-                    ?RAND_PATH_IN_SPACE(?SPACE_ALPHA)
+                    ?RAND_CANONICAL_PATH(?SPACE_GAMMA),
+                    ?RAND_CANONICAL_PATH(?SPACE_DELTA),
+                    ?RAND_CANONICAL_PATH(?SPACE_ALPHA)
                 ]}
             },
             #caveat_example{
                 should_verify = true,
                 caveat = #cv_data_objectid{whitelist = [
-                    ?RAND_OBJECTID_IN_SPACE(?SPACE_GAMMA),
-                    ?RAND_OBJECTID_IN_SPACE(?SPACE_DELTA),
-                    ?RAND_OBJECTID_IN_SPACE(?SPACE_ALPHA)
+                    ?RAND_OBJECTID(?SPACE_GAMMA),
+                    ?RAND_OBJECTID(?SPACE_DELTA),
+                    ?RAND_OBJECTID(?SPACE_ALPHA)
                 ]}
             },
             gen_service_caveat_examples([?OZ_WORKER, ?OP_WORKER], true),
@@ -342,6 +336,77 @@ testcases() -> [
     #testcase{
         service = ?OP_WORKER,
         operation = get,
+        gri = ?GRI(op_space, undefined, list, private),
+        caveat_examples = lists:flatten([
+            #caveat_example{
+                should_verify = false,
+                caveat = #cv_api{whitelist = [
+                    {?OZ_PANEL, update, ?GRI_PATTERN('*', <<"*">>, <<"*">>, '*')}
+                ]}
+            },
+            #caveat_example{
+                should_verify = true,
+                caveat = #cv_api{whitelist = [
+                    {?OP_PANEL, update, ?GRI_PATTERN('*', <<"*">>, <<"*">>, '*')},
+                    {?OP_WORKER, get, ?GRI_PATTERN('*', <<"*">>, <<"list">>, private)}
+                ]}
+            },
+            gen_data_access_caveat_examples(true),
+            gen_service_caveat_examples([?OP_WORKER], true),
+            gen_service_caveat_examples([?OZ_WORKER, ?OZ_PANEL, ?OP_PANEL], false)
+        ])
+    },
+
+    #testcase{
+        service = ?OP_WORKER,
+        operation = get,
+        gri = ?GRI(op_space, ?SPACE_ALPHA, instance, private),
+        caveat_examples = lists:flatten([
+            #caveat_example{
+                should_verify = false,
+                caveat = #cv_api{whitelist = [
+                    {?OP_WORKER, get, ?GRI_PATTERN(op_space, ?SPACE_GAMMA, <<"*">>, '*')}
+                ]}
+            },
+            #caveat_example{
+                should_verify = true,
+                caveat = #cv_api{whitelist = [
+                    {?OP_PANEL, update, ?GRI_PATTERN('*', <<"*">>, <<"*">>, '*')},
+                    {?OP_WORKER, get, ?GRI_PATTERN('*', <<"*">>, <<"instance">>, private)}
+                ]}
+            },
+            #caveat_example{
+                should_verify = true,
+                caveat = #cv_data_readonly{}
+            },
+            #caveat_example{
+                should_verify = true,
+                caveat = #cv_interface{interface = oneclient}
+            },
+            #caveat_example{
+                should_verify = true,
+                caveat = #cv_data_objectid{whitelist = [?RAND_OBJECTID(?SPACE_ALPHA), ?RAND_OBJECTID(?SPACE_GAMMA)]}
+            },
+            #caveat_example{
+                should_verify = false,
+                caveat = #cv_data_objectid{whitelist = [?RAND_OBJECTID(?SPACE_DELTA)]}
+            },
+            #caveat_example{
+                should_verify = true,
+                caveat = #cv_data_path{whitelist = [?RAND_CANONICAL_PATH(?SPACE_ALPHA)]}
+            },
+            #caveat_example{
+                should_verify = false,
+                caveat = #cv_data_path{whitelist = [?RAND_CANONICAL_PATH(?SPACE_DELTA), ?RAND_CANONICAL_PATH(?SPACE_GAMMA)]}
+            },
+            gen_service_caveat_examples([?OP_WORKER], true),
+            gen_service_caveat_examples([?OZ_WORKER, ?OZ_PANEL, ?OP_PANEL], false)
+        ])
+    },
+
+    #testcase{
+        service = ?OP_WORKER,
+        operation = get,
         gri = ?GRI(op_replica, <<"replicaid">>, instance, private),
         caveat_examples = lists:flatten([
             #caveat_example{
@@ -363,6 +428,16 @@ testcases() -> [
             gen_data_access_caveat_examples(false),
             gen_service_caveat_examples([?OP_WORKER], true),
             gen_service_caveat_examples([?OZ_WORKER, ?OZ_PANEL, ?OP_PANEL], false)
+        ])
+    },
+
+    % any other operation than tested above should be blocked in OP_WORKER by data access caveats
+    #testcase{
+        service = ?OP_WORKER,
+        operation = ?RAND_CHOICE(create, update, delete),
+        gri = ?GRI(?RAND_CHOICE(op_archive, op_group, op_handle_service), <<"id">>, instance, private),
+        caveat_examples = lists:flatten([
+            gen_data_access_caveat_examples(false)
         ])
     },
 
@@ -425,6 +500,24 @@ testcases() -> [
             gen_data_access_caveat_examples(false),
             gen_service_caveat_examples([?OP_PANEL], true),
             gen_service_caveat_examples([?OZ_WORKER, ?OZ_PANEL, ?OP_WORKER], false)
+        ])
+    },
+
+    % data access caveats cause Onepanel API to be completely disabled
+    #testcase{
+        service = ?OZ_PANEL,
+        operation = ?RAND_CHOICE(get, create, update, delete),
+        gri = ?GRI(?RAND_CHOICE(onp_cluster, onp_panel, onp_service), <<"id">>, instance, private),
+        caveat_examples = lists:flatten([
+            gen_data_access_caveat_examples(false)
+        ])
+    },
+    #testcase{
+        service = ?OP_PANEL,
+        operation = ?RAND_CHOICE(get, create, update, delete),
+        gri = ?GRI(?RAND_CHOICE(onp_storage, onp_user, onp_zone), <<"id">>, instance, private),
+        caveat_examples = lists:flatten([
+            gen_data_access_caveat_examples(false)
         ])
     }
 ].

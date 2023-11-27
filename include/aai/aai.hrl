@@ -54,7 +54,12 @@
     % all these cases apply to the ?ACCESS_TOKEN(SessionId) type only, otherwise this field is ignored
     session_id = undefined :: any | aai:session_id(),
     data_access_caveats_policy = disallow_data_access_caveats :: data_access_caveats:policy(),
-    group_membership_checker = undefined :: undefined | aai:group_membership_checker()
+    group_membership_checker = undefined :: undefined | aai:group_membership_checker(),
+    % Allows completely ignoring certain types of caveats when performing verification.
+    % The idea is to check hypothetical verifiability of a token assuming that some
+    % caveats are not present or are already verified.
+    % MUST NOT be used when authorizing operations in the system!
+    ignored_caveats = [] :: [caveats:type()]
 }).
 
 % Current (newest) version of tokens used in Onedata

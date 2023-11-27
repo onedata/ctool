@@ -48,6 +48,32 @@
     end)())
 end).
 
+-define(eunit_print_exception(DetailsStr, Class, Reason, Stacktrace),
+    ?eunit_print_exception(DetailsStr, "", Class, Reason, Stacktrace)
+).
+-define(eunit_print_exception(DetailsFormat, DetailsArgs, Class, Reason, Stacktrace),
+    eunit_utils:debug_log(onedata_logger:format_exception_log(
+        ?MODULE, ?FUNCTION_NAME, ?FUNCTION_ARITY, ?LINE,
+        DetailsFormat, DetailsArgs, undefined,
+        Class, Reason, Stacktrace
+    ), [])
+).
+
+-define(eunit_catch_exceptions(Expr), begin
+    ((fun() ->
+        try
+            Expr
+        catch
+            Class:Reason:Stacktrace ->
+                ?eunit_print_exception(
+                    "Test crashed!",
+                    Class, Reason, Stacktrace
+                ),
+                error(test_crashed)
+        end
+    end)())
+end).
+
 
 %% temporary directory for test files
 -define(TEMP_DIR, "/tmp").
@@ -98,13 +124,16 @@ end).
 ).
 
 -define(RAND_ELEMENT(List), lists_utils:random_element(List)).
+-define(RAND_CHOICE(A, B), ?RAND_ELEMENT([A, B])).
+-define(RAND_CHOICE(A, B, C), ?RAND_ELEMENT([A, B, C])).
+-define(RAND_CHOICE(A, B, C, D), ?RAND_ELEMENT([A, B, C, D])).
 -define(RAND_STR(), ?RAND_STR(16)).
 -define(RAND_STR(Size), string:slice(str_utils:rand_hex(Size), 0, Size)).
 -define(RAND_UNICODE_STR(), ?RAND_UNICODE_STR(30)).
 -define(RAND_UNICODE_STR(Size), str_utils:unicode_list_to_binary(string:slice(lists:flatten(
     lists:duplicate(ceil(Size / string:length(?EXAMPLE_UNICODE_CHARS)), ?SHUFFLED(?EXAMPLE_UNICODE_CHARS))
 ), 0, Size))).
--define(RAND_BOOL(), ?RAND_ELEMENT([true, false])).
+-define(RAND_BOOL(), ?RAND_CHOICE(true, false)).
 -define(RAND_INT(To), ?RAND_INT(0, To)).
 -define(RAND_INT(From, To), From + rand:uniform(To - From + 1) - 1).
 -define(RAND_FLOAT(From, To), From + rand:uniform() * (To - From)).
@@ -118,6 +147,11 @@ end).
 -define(SHUFFLED(List), lists_utils:shuffle(List)).
 -define(RAND_SUBMAP(Map), maps:with(lists_utils:random_sublist(maps:keys(Map)), Map)).
 -define(RAND_EMAIL_ADDRESS(), str_utils:format_bin("~s@example.com", [?RAND_STR(20)])).
+-define(RAND_OBJECTID, ?RAND_OBJECTID(?RAND_STR(16))).
+-define(RAND_OBJECTID(SpaceId), ?check(file_id:guid_to_objectid(file_id:pack_guid(str_utils:rand_hex(4), SpaceId)))).
+-define(RAND_CANONICAL_PATH(SpaceId),
+    filename:join([<<"/">>, SpaceId | lists_utils:generate(fun() -> ?RAND_STR() end, ?RAND_INT(0, 5))])
+).
 
 
 -define(TOO_LONG_NAME, <<

@@ -216,6 +216,8 @@ sanitize_type_test() ->
     ?assertEqual({true, ?INVITE_TOKEN(?GROUP_JOIN_GROUP, <<"id">>)}, S(#{<<"inviteToken">> => #{
         <<"inviteType">> => <<"groupJoinGroup">>, <<"groupId">> => <<"id">>
     }})),
+    ?assertEqual(false, S(#{<<"inviteToken">> => #{<<"inviteType">> => <<"groupJoinGroup">>}})),
+    ?assertEqual(false, S(#{<<"inviteToken">> => #{<<"inviteType">> => <<"groupJoinGroup">>, <<"spaceId">> => <<"id">>}})),
 
     ?assertEqual({true, ?INVITE_TOKEN(?USER_JOIN_SPACE, <<"id">>)}, S(?INVITE_TOKEN(?USER_JOIN_SPACE, <<"id">>))),
     ?assertEqual({true, ?INVITE_TOKEN(?USER_JOIN_SPACE, <<"id">>)}, S(#{<<"inviteToken">> => #{
@@ -1003,12 +1005,17 @@ check_verification_result(Token, Secret, Subject, AuthCtx, Caveats, [] = _Unveri
     check_verification_against_session_ctx(Token, Secret, Subject, AuthCtx, CaveatTypes);
 % If there are any caveats expected to fail verification, make sure that token verification
 % fails and indicates one of the bad caveats.
-check_verification_result(Token, Secret, _Subject, AuthCtx, Caveats, Unverified) ->
+check_verification_result(Token, Secret, Subject, AuthCtx, Caveats, Unverified) ->
     CaveatTypes = [caveats:type(C) || C <- Caveats],
     VerifyResult = tokens:verify(Token, Secret, AuthCtx, CaveatTypes),
     ?assertMatch(?ERROR_TOKEN_CAVEAT_UNVERIFIED(_), VerifyResult),
     ?ERROR_TOKEN_CAVEAT_UNVERIFIED(UnverifiedCaveat) = VerifyResult,
-    ?assert(lists:member(UnverifiedCaveat, Unverified)).
+    ?assert(lists:member(UnverifiedCaveat, Unverified)),
+    % ignoring the unverified caveats should cause the token to be verified successfully
+    UnverifiedCaveatTypes = lists:usort([caveats:type(C) || C <- Unverified]),
+    check_verification_against_session_ctx(
+        Token, Secret, Subject, AuthCtx#auth_ctx{ignored_caveats = UnverifiedCaveatTypes}, CaveatTypes
+    ).
 
 
 % Session context is checked last, upon successful caveats verification. For access tokens

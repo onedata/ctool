@@ -26,6 +26,7 @@
 
 %% API
 -export([filter/1]).
+-export([match_allowed_service_ids/3]).
 -export([to_allowed_api/1]).
 
 %%%===================================================================
@@ -35,6 +36,32 @@
 -spec filter([caveats:caveat()]) -> [cv_service()].
 filter(Caveats) ->
     caveats:filter([cv_service], Caveats).
+
+
+% AllSpaceIds can be provided as [<<"*">>] to find out all allowed service ids.
+% The result may also be expressed as [<<"*">>].
+-spec match_allowed_service_ids(cv_service() | [cv_service()], onedata:service(), [onedata:service_id()]) ->
+    [onedata:service_id()].
+match_allowed_service_ids(ServiceCaveats, ServiceType, AllServiceIds) when is_list(ServiceCaveats) ->
+    lists:foldl(fun(ServiceCaveat, Acc) ->
+        case match_allowed_service_ids(ServiceCaveat, ServiceType, AllServiceIds) of
+            [<<"*">>] -> Acc;
+            WhitelistedServiceIds when Acc == [<<"*">>] -> WhitelistedServiceIds;
+            WhitelistedServiceIds -> lists_utils:intersect(Acc, WhitelistedServiceIds)
+        end
+    end, AllServiceIds, ServiceCaveats);
+match_allowed_service_ids(#cv_service{whitelist = Whitelist}, ServiceType, AllServiceIds) ->
+    WhitelistedServiceIds = lists:usort(lists:filtermap(fun(ServiceSpec) ->
+        case ServiceSpec of
+            ?SERVICE(ServiceType, ServiceId) -> {true, ServiceId};
+            _ -> false
+        end
+    end, Whitelist)),
+    case lists:member(<<"*">>, WhitelistedServiceIds) of
+        true -> AllServiceIds;
+        false when AllServiceIds == [<<"*">>] -> WhitelistedServiceIds;
+        false -> lists_utils:intersect(AllServiceIds, WhitelistedServiceIds)
+    end.
 
 
 %%--------------------------------------------------------------------
