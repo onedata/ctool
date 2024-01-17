@@ -192,6 +192,7 @@ testcases() -> [
     ?ERROR_BAD_VALUE_INTEGER(<<"size">>),
     ?ERROR_BAD_VALUE_FLOAT(<<"latitude">>),
     ?ERROR_BAD_VALUE_JSON(<<"<xml></xml>">>),
+    ?ERROR_BAD_VALUE_XML(<<"null">>),
     ?ERROR_BAD_VALUE_TOKEN(<<"supportToken">>, ?ERROR_BAD_TOKEN),
     ?ERROR_BAD_VALUE_TOKEN(<<"supportToken">>, ?ERROR_TOKEN_INVALID),
     ?ERROR_BAD_VALUE_TOKEN(<<"supportToken">>, ?ERROR_TOKEN_REVOKED),
