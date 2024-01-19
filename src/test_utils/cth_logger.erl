@@ -71,18 +71,35 @@ pre_init_per_testcase(TestCase, Config, State = #logger_state{suite = Suite}) ->
     Return :: ok | {error | skip, term()}, State :: logger_state()) ->
     {ok | {error | skip, term()}, logger_state()}.
 post_end_per_testcase(TestCase, _Config, ok, State) ->
-    ct:pal("Testcase ~p in suite: ~p PASSED",
-        [TestCase, State#logger_state.suite]),
+    ct:pal("Testcase ~p in suite: ~p PASSED", [TestCase, State#logger_state.suite]),
     {ok, State};
-post_end_per_testcase(TestCase, _Config, Return = {error, _},
-    State = #logger_state{suite = Suite}) ->
-    ct:pal("Testcase ~p in suite: ~p FAILED", [TestCase, Suite]),
+
+post_end_per_testcase(TestCase, _Config, Return = {skip, _}, State) ->
+    ct:pal("Testcase ~p in suite: ~p SKIPPED", [TestCase, State#logger_state.suite]),
     {Return, State};
-post_end_per_testcase(TestCase, _Config, Return = {skip, _},
-    State = #logger_state{suite = Suite}) ->
-    ct:pal("Testcase ~p in suite: ~p SKIPPED", [TestCase, Suite]),
+
+post_end_per_testcase(TestCase, _Config, Return = {error, _}, State) ->
+    Msg = case Return of
+        {error, {thrown, Reason}} ->
+            onedata_logger:format_generic_log("An uncaught throw occurred: ~p", [Reason]);
+        {error, {Reason, Stacktrace}} ->
+            onedata_logger:format_generic_log(
+                "An unexpected error occurred~n"
+                "> Stacktrace:~s~n"
+                "> Caught: ~p",
+                [lager:pr_stacktrace(Stacktrace), Reason]
+            );
+        {error, Reason} ->
+            onedata_logger:format_generic_log(
+                "An unexpected exception occurred~n~n~p",
+                [Reason]
+            )
+    end,
+    ct:pal("Testcase ~p in suite: ~p FAILED~n~n~s", [TestCase, State#logger_state.suite, Msg]),
     {Return, State};
-post_end_per_testcase(TestCase, _Config, Return,
-    State = #logger_state{suite = Suite}) ->
-    ct:pal("Testcase ~p in suite: ~p RETURNED: ~p", [TestCase, Suite, Return]),
+
+post_end_per_testcase(TestCase, _Config, Return, State) ->
+    ct:pal("Testcase ~p in suite: ~p RETURNED: ~p", [
+        TestCase, State#logger_state.suite, Return
+    ]),
     {Return, State}.
