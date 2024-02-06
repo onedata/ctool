@@ -1919,6 +1919,9 @@ from_json(#{<<"id">> := <<"badValueFloat">>, <<"details">> := #{<<"key">> := Key
 from_json(#{<<"id">> := <<"badValueJSON">>, <<"details">> := #{<<"key">> := Key}}) ->
     ?ERROR_BAD_VALUE_JSON(Key);
 
+from_json(#{<<"id">> := <<"badValueXML">>, <<"details">> := #{<<"key">> := Key}}) ->
+    ?ERROR_BAD_VALUE_XML(Key);
+
 from_json(#{<<"id">> := <<"badValueToken">>, <<"details">> := #{<<"key">> := Key, <<"tokenError">> := TokenError}}) ->
     ?ERROR_BAD_VALUE_TOKEN(Key, from_json(TokenError));
 
@@ -2650,6 +2653,7 @@ to_http_code(?ERROR_BAD_VALUE_LIST_OF_BINARIES(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_BAD_VALUE_INTEGER(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_BAD_VALUE_FLOAT(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_BAD_VALUE_JSON(_)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_BAD_VALUE_XML(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_BAD_VALUE_TOKEN(_, _)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_BAD_VALUE_TOKEN_TYPE(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_BAD_VALUE_INVITE_TYPE(_)) -> ?HTTP_400_BAD_REQUEST;
