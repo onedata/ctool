@@ -84,4 +84,11 @@ fold_while_test() ->
     ?assertEqual(lists:sort(CheckedKeys2), [a, b, c]).
 
 
+update_existing_key_test() ->
+    ?assertEqual(#{}, maps_utils:update_existing_key(#{}, key, value)),
+    ?assertEqual(#{key => new_value}, maps_utils:update_existing_key(#{key => prev_value}, key, new_value)),
+    ?assertEqual(#{key => new_value, other_key => other_value},
+        maps_utils:update_existing_key(#{key => prev_value, other_key => other_value}, key, new_value)).
+
+
 -endif.

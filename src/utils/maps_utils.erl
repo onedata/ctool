@@ -23,6 +23,7 @@
 -export([random_submap/1, random_submap/3]).
 -export([fold_while/3]).
 -export([all/2]).
+-export([update_existing_key/3]).
 
 %%%===================================================================
 %%% API functions
@@ -166,3 +167,8 @@ all(Predicate, Map) ->
             false -> {halt, false}
         end
     end, true, Map).
+
+
+-spec update_existing_key(#{X => Y}, X, Y) -> #{X => Y}.
+update_existing_key(Map, Key, Value) when is_map_key(Key, Map) -> Map#{Key => Value};
+update_existing_key(Map, _Key, _Value)                         -> Map.
