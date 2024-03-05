@@ -26,17 +26,24 @@
 
 -type type() :: ?REGULAR_FILE_TYPE | ?DIRECTORY_TYPE | ?SYMLINK_TYPE | ?LINK_TYPE.
 
+%% @formatter:off
 -type attr_generation() :: current | deprecated.
--type attr_name() :: ?attr_guid | ?attr_index | ?attr_type | ?attr_active_permissions_type | ?attr_mode | ?attr_acl |
-?attr_name | ?attr_conflicting_name | ?attr_path | ?attr_parent_guid | ?attr_gid | ?attr_uid | ?attr_atime |
-?attr_mtime | ?attr_ctime | ?attr_size | ?attr_is_fully_replicated | ?attr_local_replication_rate | ?attr_provider_id |
-?attr_shares | ?attr_owner_id | ?attr_hardlink_count | ?attr_symlink_value | ?attr_has_custom_metadata |
-?attr_eff_protection_flags | ?attr_eff_dataset_protection_flags | ?attr_eff_dataset_inheritance_path |
-?attr_eff_qos_inheritance_path | ?attr_qos_status | ?attr_recall_root_id | ?attr_is_deleted |
-?attr_conflicting_files | ?attr_xattrs([xattr_name()]).
+-type attr_name() :: ?attr_guid | ?attr_index | ?attr_type
+                   | ?attr_active_permissions_type | ?attr_mode | ?attr_acl
+                   | ?attr_name | ?attr_conflicting_name | ?attr_path | ?attr_parent_guid
+                   | ?attr_gid | ?attr_uid | ?attr_atime | ?attr_mtime | ?attr_ctime
+                   | ?attr_size | ?attr_is_fully_replicated | ?attr_local_replication_rate
+                   | ?attr_provider_id | ?attr_shares | ?attr_owner_id
+                   | ?attr_hardlink_count | ?attr_symlink_value | ?attr_has_custom_metadata
+                   | ?attr_eff_protection_flags | ?attr_eff_dataset_protection_flags
+                   | ?attr_eff_dataset_inheritance_path
+                   | ?attr_eff_qos_inheritance_path | ?attr_qos_status
+                   | ?attr_recall_root_id | ?attr_is_deleted | ?attr_conflicting_files
+                   | ?attr_xattrs([xattr_name()]).
+%% @formatter:on
 
 -type xattr_name() :: binary().
--type xattr_value() :: binary().
+-type xattr_value() :: json_utils:json_term().
 
 -export_type([type/0]).
 -export_type([attr_name/0, attr_generation/0]).
@@ -170,7 +177,7 @@ attr_name_to_json(?attr_recall_root_id)               -> <<"archiveRecallRootFil
 
 
 %%%===================================================================
-%%% API
+%%% Internal functions
 %%%===================================================================
 
 

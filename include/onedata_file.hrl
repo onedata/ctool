@@ -29,7 +29,7 @@
 -define(SYMLINK_TYPE, 'SYMLNK'). % symbolic link
 
 
-%% attributes
+%% file attributes
 -define(attr_guid, guid).
 -define(attr_index, index).
 -define(attr_type, type).

@@ -124,11 +124,6 @@ decode(ValidationStrategy, RecordJson) ->
     }.
 
 
-%%%===================================================================
-%%% Internal functions
-%%%===================================================================
-
-
 %% @private
 -spec file_type_to_json(file_type_spec()) -> json_utils:json_term().
 file_type_to_json('ANY') -> <<"ANY">>;
