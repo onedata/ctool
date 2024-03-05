@@ -19,6 +19,7 @@
 -export([get_host/1, get_host_as_atom/1, cmd/1]).
 -export([process_info/1, process_info/2]).
 -export([ensure_defined/2, ensure_defined/3, undefined_to_null/1, null_to_undefined/1]).
+-export([convert_defined/2]).
 -export([throttle/2, throttle/3]).
 -export([timeout/2, timeout/4]).
 -export([duration/1, adjust_duration/2]).
@@ -308,6 +309,13 @@ null_to_undefined(null) ->
     undefined;
 null_to_undefined(Other) ->
     Other.
+
+
+-spec convert_defined(undefined | X, fun((X) -> Y)) -> undefined | Y.
+convert_defined(undefined, _) ->
+    undefined;
+convert_defined(Value, ConversionFun) ->
+    ConversionFun(Value).
 
 
 %%--------------------------------------------------------------------

@@ -14,6 +14,7 @@
 
 -include_lib("eunit/include/eunit.hrl").
 -include_lib("kernel/include/file.hrl").
+-include("onedata_file.hrl").
 
 -define(RANDOM_NAME(), binary:replace(base64:encode(crypto:strong_rand_bytes(12)), <<"/">>, <<"">>, [global])).
 
@@ -39,7 +40,9 @@ file_with_long_name_test() ->
     FileContent = crypto:strong_rand_bytes(10),
     
     TarStream1 = tar_utils:open_archive_stream(),
-    TarStream2 = tar_utils:new_file_entry(TarStream1, LongFilename, byte_size(FileContent), 8#664, 1616070881, 'REG'),
+    TarStream2 = tar_utils:new_file_entry(
+        TarStream1, LongFilename, byte_size(FileContent), 8#664, 1616070881, ?REGULAR_FILE_TYPE
+    ),
     TarStream3 = tar_utils:append_to_file_content(TarStream2, FileContent),
     Bytes = tar_utils:close_archive_stream(TarStream3),
     
@@ -53,7 +56,7 @@ dir_with_long_name_test() ->
     LongDirname = binary:copy(<<"a">>, 120),
     
     TarStream1 = tar_utils:open_archive_stream(),
-    TarStream2 = tar_utils:new_file_entry(TarStream1, LongDirname, 0, 8#775, 1616070881, 'DIR'),
+    TarStream2 = tar_utils:new_file_entry(TarStream1, LongDirname, 0, 8#775, 1616070881, ?DIRECTORY_TYPE),
     Bytes = tar_utils:close_archive_stream(TarStream2),
     
     ?assertEqual(ok, erl_tar:extract({binary, Bytes}, [compressed, {cwd, TmpPath}])),
@@ -94,11 +97,15 @@ create_archive_test_base(OpenOptions, FileSize) ->
     FileName = ?RANDOM_NAME(),
     
     TarStream = tar_utils:open_archive_stream(OpenOptions),
-    TarStream1 = tar_utils:new_file_entry(TarStream, Dirname, 0, 8#775, 1616070881, 'DIR'),
-    TarStream2 = tar_utils:new_file_entry(TarStream1, NestedFilePath, 2 * byte_size(FileContent), 8#664, 1616070881, 'REG'),
+    TarStream1 = tar_utils:new_file_entry(TarStream, Dirname, 0, 8#775, 1616070881, ?DIRECTORY_TYPE),
+    TarStream2 = tar_utils:new_file_entry(
+        TarStream1, NestedFilePath, 2 * byte_size(FileContent), 8#664, 1616070881, ?REGULAR_FILE_TYPE
+    ),
     TarStream3 = tar_utils:append_to_file_content(TarStream2, FileContent),
     TarStream4 = tar_utils:append_to_file_content(TarStream3, FileContent),
-    TarStream5 = tar_utils:new_file_entry(TarStream4, FileName, byte_size(FileContent), 8#664, 1616070881, 'REG'),
+    TarStream5 = tar_utils:new_file_entry(
+        TarStream4, FileName, byte_size(FileContent), 8#664, 1616070881, ?REGULAR_FILE_TYPE
+    ),
     TarStream6 = tar_utils:append_to_file_content(TarStream5, FileContent),
     Bytes = tar_utils:close_archive_stream(TarStream6),
     
@@ -116,9 +123,11 @@ symlink_test_base(FileName, LinkName, SymlinkPath) ->
     FileContent = crypto:strong_rand_bytes(rand:uniform(1000) + 1000),
     
     TarStream1 = tar_utils:open_archive_stream(),
-    TarStream2 = tar_utils:new_file_entry(TarStream1, FileName, byte_size(FileContent), 8#664, 1616070881, 'REG'),
+    TarStream2 = tar_utils:new_file_entry(
+        TarStream1, FileName, byte_size(FileContent), 8#664, 1616070881, ?REGULAR_FILE_TYPE
+    ),
     TarStream3 = tar_utils:append_to_file_content(TarStream2, FileContent),
-    TarStream4 = tar_utils:new_file_entry(TarStream3, LinkName, 0, 8#664, 1616070881, {'SYMLNK', SymlinkPath}),
+    TarStream4 = tar_utils:new_file_entry(TarStream3, LinkName, 0, 8#664, 1616070881, {?SYMLINK_TYPE, SymlinkPath}),
     Bytes = tar_utils:close_archive_stream(TarStream4),
     
     ?assertEqual(ok, erl_tar:extract({binary, Bytes}, [compressed, {cwd, TmpPath}])),

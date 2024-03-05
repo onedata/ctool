@@ -33,6 +33,8 @@
 -module(tar_utils).
 -author("Michal Stanisz").
 
+-include("onedata_file.hrl").
+
 %% API
 -export([open_archive_stream/0, open_archive_stream/1]).
 -export([new_file_entry/6]).
@@ -78,6 +80,8 @@
 
 -export_type([stream/0, bytes/0]).
 
+-type type_spec() :: ?REGULAR_FILE_TYPE | ?DIRECTORY_TYPE | {?SYMLINK_TYPE, binary()}.
+
 %%%===================================================================
 %%% API
 %%%===================================================================
@@ -92,7 +96,7 @@ open_archive_stream(Options) ->
 
 
 -spec new_file_entry(stream(), binary(), FileSize :: non_neg_integer(), Mode :: non_neg_integer(), 
-    Timestamp :: non_neg_integer(), 'DIR' | 'REG' | {'SYMLNK', binary()}) -> stream().
+    Timestamp :: non_neg_integer(), type_spec()) -> stream().
 new_file_entry(Stream, Filename, FileSize, Mode, Timestamp, TypeSpec) ->
     Padding = data_padding(Stream),
     Header = file_header(Filename, FileSize, Mode, Timestamp, TypeSpec),
@@ -126,14 +130,14 @@ flush_buffer(#stream{buffer = Bytes} = Stream) ->
 
 %% @private
 -spec file_header(binary(), FileSize :: non_neg_integer(), Mode :: non_neg_integer(), 
-    Timestamp :: non_neg_integer(), 'DIR' | 'REG' | {'SYMLNK', binary()}) -> bytes().
+    Timestamp :: non_neg_integer(), type_spec()) -> bytes().
 file_header(Filename, FileSize, Mode, Timestamp, TypeSpec) ->
     {Type, FinalFilename, SymlinkPath, FinalMode} = case TypeSpec of
-        'DIR' ->
+        ?DIRECTORY_TYPE ->
             {?DIRECTORY_TYPE_FLAG, str_utils:ensure_suffix(Filename, <<"/">>), <<>>, Mode};
-        'REG' ->
+        ?REGULAR_FILE_TYPE ->
             {?FILE_TYPE_FLAG, Filename, <<>>, Mode};
-        {'SYMLNK', Path} ->
+        {?SYMLINK_TYPE, Path} ->
             {?SYMLINK_TYPE_FLAG, Filename, Path, 8#777}
     end,
     file_header(FinalFilename, byte_size(FinalFilename), FileSize, FinalMode, Timestamp, Type, SymlinkPath).

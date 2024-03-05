@@ -16,6 +16,10 @@
 -behaviour(persistent_record).
 
 -include("automation/automation.hrl").
+-include("onedata_file.hrl").
+
+%% API
+-export([allowed_file_type_specs/0]).
 
 %% Jsonable record callbacks
 -export([to_json/1, from_json/1]).
@@ -24,33 +28,21 @@
 -export([version/0, db_encode/2, db_decode/2]).
 
 -type record() :: #atm_file_data_spec{}.
--type file_type() :: 'REG' | 'DIR' | 'SYMLNK' | 'ANY'.
--type attribute() ::
-    name |
-    type |
-    mode |
-    size |
-    atime |
-    mtime |
-    ctime |
-    owner_id |
-    file_id |
-    parent_id |
-    provider_id |
-    storage_user_id |
-    storage_group_id |
-    shares |
-    hardlinks_count |
-    index.
+% ?LINK_TYPE is not allowed (it's allowed only upon file creation; then, the file is
+% considered a regular file from the user point of view).
+-type file_type_spec() :: ?REGULAR_FILE_TYPE | ?DIRECTORY_TYPE | ?SYMLINK_TYPE | 'ANY'.
 
--export_type([file_type/0, attribute/0, record/0]).
+-export_type([record/0, file_type_spec/0]).
 
--define(ALL_ATTRIBUTES, [
-    name, type, mode, size, atime, mtime, ctime,
-    owner_id, file_id, parent_id, provider_id,
-    storage_user_id, storage_group_id,
-    shares, hardlinks_count, index
-]).
+
+%%%===================================================================
+%%% API
+%%%===================================================================
+
+
+-spec allowed_file_type_specs() -> [file_type_spec()].
+allowed_file_type_specs() ->
+    [?REGULAR_FILE_TYPE, ?DIRECTORY_TYPE, ?SYMLINK_TYPE, 'ANY'].
 
 
 %%%===================================================================
@@ -60,12 +52,12 @@
 
 -spec to_json(record()) -> json_utils:json_term().
 to_json(Record) ->
-    db_encode(Record, fun jsonable_record:to_json/2).
+    encode(Record).
 
 
 -spec from_json(json_utils:json_term()) -> record().
 from_json(RecordJson) ->
-    db_decode(RecordJson, fun jsonable_record:from_json/2).
+    decode(validate, RecordJson).
 
 
 %%%===================================================================
@@ -79,29 +71,55 @@ version() ->
 
 
 -spec db_encode(record(), persistent_record:nested_record_encoder()) -> json_utils:json_term().
-db_encode(Record = #atm_file_data_spec{file_type = FileType}, _NestedRecordEncoder) ->
-    #{
-        <<"fileType">> => file_type_to_json(FileType),
-        <<"attributes">> => case Record#atm_file_data_spec.attributes of
-            undefined -> null;
-            Attributes -> lists:map(fun attribute_to_json/1, Attributes)
-        end
-    }.
+db_encode(Record, _NestedRecordEncoder) ->
+    encode(Record).
 
 
 -spec db_decode(json_utils:json_term(), persistent_record:nested_record_decoder()) -> record().
 db_decode(RecordJson, _NestedRecordDecoder) ->
+    decode(skip_validation, RecordJson).
+
+
+%%%===================================================================
+%%% Internal functions
+%%%===================================================================
+
+
+%% @private
+-spec encode(record()) -> json_utils:json_term().
+encode(Record = #atm_file_data_spec{file_type = FileType}) ->
+    #{
+        <<"fileType">> => file_type_to_json(FileType),
+        <<"attributes">> => case Record#atm_file_data_spec.attributes of
+            undefined -> null;
+            Attributes -> lists:map(fun onedata_file:attr_name_to_json/1, Attributes)
+        end
+    }.
+
+
+%% @private
+-spec decode(jsonable_record:validation_strategy(), json_utils:json_term()) -> record().
+decode(ValidationStrategy, RecordJson) ->
     #atm_file_data_spec{
         file_type = file_type_from_json(maps:get(<<"fileType">>, RecordJson, <<"ANY">>)),
         attributes = case maps:find(<<"attributes">>, RecordJson) of
             error ->
                 % Set all possible attributes when field is missing to previous
-                % version behaviour when all file attrs where always resolved
-                lists:usort(?ALL_ATTRIBUTES);
+                % version behaviour when all file attrs where always resolved.
+                lists:usort(?API_ATTRS);
             {ok, null} ->
                 undefined;
-            {ok, AttributesJson} ->
-                lists:usort(lists:map(fun attribute_from_json/1, AttributesJson))
+            {ok, AttrNamesJson} ->
+                try
+                    lists:usort(onedata_file:sanitize_attr_names(<<"attributes">>, AttrNamesJson, current, ?API_ATTRS))
+                catch
+                    Class:Reason:Stacktrace when ValidationStrategy == validate ->
+                        erlang:raise(Class, Reason, Stacktrace);
+                    _:_ when ValidationStrategy == skip_validation ->
+                        % In case of older schemas, decoding will fail (attr names have changed),
+                        % so we just default to the full list to ensure that they can be loaded.
+                        lists:usort(?API_ATTRS)
+                end
         end
     }.
 
@@ -112,56 +130,23 @@ db_decode(RecordJson, _NestedRecordDecoder) ->
 
 
 %% @private
--spec file_type_to_json(file_type()) -> json_utils:json_term().
-file_type_to_json('REG') -> <<"REG">>;
-file_type_to_json('DIR') -> <<"DIR">>;
-file_type_to_json('SYMLNK') -> <<"SYMLNK">>;
-file_type_to_json('ANY') -> <<"ANY">>.
+-spec file_type_to_json(file_type_spec()) -> json_utils:json_term().
+file_type_to_json('ANY') -> <<"ANY">>;
+file_type_to_json(?LINK_TYPE) -> error(hardlink_type_not_allowed);
+file_type_to_json(Atom) -> onedata_file:type_to_json(Atom).
 
 
 %% @private
--spec file_type_from_json(json_utils:json_term()) -> file_type().
-file_type_from_json(<<"REG">>) -> 'REG';
-file_type_from_json(<<"DIR">>) -> 'DIR';
-file_type_from_json(<<"SYMLNK">>) -> 'SYMLNK';
-file_type_from_json(<<"ANY">>) -> 'ANY'.
-
-
-%% @private
--spec attribute_to_json(attribute()) -> binary().
-attribute_to_json(name) -> <<"name">>;
-attribute_to_json(type) -> <<"type">>;
-attribute_to_json(mode) -> <<"mode">>;
-attribute_to_json(size) -> <<"size">>;
-attribute_to_json(atime) -> <<"atime">>;
-attribute_to_json(mtime) -> <<"mtime">>;
-attribute_to_json(ctime) -> <<"ctime">>;
-attribute_to_json(owner_id) -> <<"owner_id">>;
-attribute_to_json(file_id) -> <<"file_id">>;
-attribute_to_json(parent_id) -> <<"parent_id">>;
-attribute_to_json(provider_id) -> <<"provider_id">>;
-attribute_to_json(storage_user_id) -> <<"storage_user_id">>;
-attribute_to_json(storage_group_id) -> <<"storage_group_id">>;
-attribute_to_json(shares) -> <<"shares">>;
-attribute_to_json(hardlinks_count) -> <<"hardlinks_count">>;
-attribute_to_json(index) -> <<"index">>.
-
-
-%% @private
--spec attribute_from_json(binary()) -> attribute().
-attribute_from_json(<<"name">>) -> name;
-attribute_from_json(<<"type">>) -> type;
-attribute_from_json(<<"mode">>) -> mode;
-attribute_from_json(<<"size">>) -> size;
-attribute_from_json(<<"atime">>) -> atime;
-attribute_from_json(<<"mtime">>) -> mtime;
-attribute_from_json(<<"ctime">>) -> ctime;
-attribute_from_json(<<"owner_id">>) -> owner_id;
-attribute_from_json(<<"file_id">>) -> file_id;
-attribute_from_json(<<"parent_id">>) -> parent_id;
-attribute_from_json(<<"provider_id">>) -> provider_id;
-attribute_from_json(<<"storage_user_id">>) -> storage_user_id;
-attribute_from_json(<<"storage_group_id">>) -> storage_group_id;
-attribute_from_json(<<"shares">>) -> shares;
-attribute_from_json(<<"hardlinks_count">>) -> hardlinks_count;
-attribute_from_json(<<"index">>) -> index.
+-spec file_type_from_json(json_utils:json_term()) -> file_type_spec().
+file_type_from_json(<<"ANY">>) ->
+    'ANY';
+file_type_from_json(Binary) ->
+    case onedata_file:type_from_json(Binary) of
+        ?LINK_TYPE ->
+            throw(?ERROR_BAD_VALUE_NOT_ALLOWED(
+                <<"fileType">>,
+                lists:map(fun file_type_to_json/1, allowed_file_type_specs()))
+            );
+        Other ->
+            Other
+    end.

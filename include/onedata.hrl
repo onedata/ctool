@@ -51,12 +51,4 @@
 -define(LINE_21_02(Suffix), <<"21.02.", Suffix/binary>>).
 -define(LINE_21_02, <<"21.02.*">>).
 
-%% Macros used for file manipulation
--define(DIRECTORY_SEPARATOR, "/").
--define(DIRECTORY_SEPARATOR_CHAR, $/).
--define(DIRECTORY_SEPARATOR_BIN, <<?DIRECTORY_SEPARATOR>>).
-
--define(CURRENT_DIRECTORY, ".").
--define(PARENT_DIRECTORY, "..").
-
 -endif.

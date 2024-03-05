@@ -16,19 +16,13 @@
 
 -include("test/test_utils.hrl").
 -include("automation/automation.hrl").
+-include("onedata_file.hrl").
 
 
 upgrade_db_data_spec_test_() ->
     U = fun(JsonData) ->
         persistent_record:from_string(json_utils:encode(JsonData), atm_data_spec)
     end,
-
-    AllFileAttrs = lists:usort([
-        name, type, mode, size, atime, mtime, ctime,
-        owner_id, file_id, parent_id, provider_id,
-        storage_user_id, storage_group_id,
-        shares, hardlinks_count, index
-    ]),
 
     [
         ?_assertEqual(
@@ -82,8 +76,8 @@ upgrade_db_data_spec_test_() ->
 
         ?_assertEqual(
             #atm_file_data_spec{
-                file_type = 'REG',
-                attributes = AllFileAttrs
+                file_type = ?REGULAR_FILE_TYPE,
+                attributes = lists:usort(?API_ATTRS)
             },
             U(#{
                 <<"_data">> => #{
@@ -183,13 +177,6 @@ load_deprecated_json_data_spec_test_() ->
         jsonable_record:from_json(JsonData, atm_data_spec)
     end,
 
-    AllFileAttrs = lists:usort([
-        name, type, mode, size, atime, mtime, ctime,
-        owner_id, file_id, parent_id, provider_id,
-        storage_user_id, storage_group_id,
-        shares, hardlinks_count, index
-    ]),
-
     [
         ?_assertEqual(
             #atm_array_data_spec{
@@ -230,8 +217,8 @@ load_deprecated_json_data_spec_test_() ->
 
         ?_assertEqual(
             #atm_file_data_spec{
-                file_type = 'REG',
-                attributes = AllFileAttrs
+                file_type = ?REGULAR_FILE_TYPE,
+                attributes = lists:usort(lists:usort(?API_ATTRS))
             },
             U(#{
                 <<"type">> => <<"file">>,

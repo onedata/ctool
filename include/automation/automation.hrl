@@ -56,8 +56,8 @@
 -record(atm_dataset_data_spec, {}).
 
 -record(atm_file_data_spec, {
-    file_type :: atm_file_data_spec:file_type(),
-    attributes :: undefined | [atm_file_data_spec:attribute()]
+    file_type :: atm_file_data_spec:file_type_spec(),
+    attributes :: undefined | [onedata_file:attr_name()]
 }).
 
 -record(atm_number_data_spec, {

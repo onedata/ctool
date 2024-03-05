@@ -15,7 +15,7 @@
 -author("Tomasz Lichon").
 -author("Bartosz Walkowicz").
 
--include("onedata.hrl").
+-include("onedata_file.hrl").
 -include("errors.hrl").
 
 % File path validation
