@@ -74,16 +74,35 @@ upgrade_db_data_spec_test_() ->
             })
         ),
 
+        % On the API level, the version without the attributes field or with older values is no
+        % longer accepted. However, to ensure that older schemas can be loaded from the DB,
+        % it is still retained there (Attributes default to all possible values).
         ?_assertEqual(
             #atm_file_data_spec{
                 file_type = ?REGULAR_FILE_TYPE,
-                attributes = lists:usort(?API_ATTRS)
+                attributes = lists:usort(?API_FILE_ATTRS)
             },
             U(#{
                 <<"_data">> => #{
                     <<"type">> => <<"file">>,
                     <<"valueConstraints">> => #{
                         <<"fileType">> => <<"REG">>
+                    }
+                },
+                <<"_version">> => 1
+            })
+        ),
+        ?_assertEqual(
+            #atm_file_data_spec{
+                file_type = ?REGULAR_FILE_TYPE,
+                attributes = lists:usort(?API_FILE_ATTRS)
+            },
+            U(#{
+                <<"_data">> => #{
+                    <<"type">> => <<"file">>,
+                    <<"valueConstraints">> => #{
+                        <<"fileType">> => <<"REG">>,
+                        <<"attrbiutes">> => [<<"file_id">>, <<"storage_user_id">>]
                     }
                 },
                 <<"_version">> => 1
@@ -215,15 +234,25 @@ load_deprecated_json_data_spec_test_() ->
             })
         ),
 
-        ?_assertEqual(
-            #atm_file_data_spec{
-                file_type = ?REGULAR_FILE_TYPE,
-                attributes = lists:usort(lists:usort(?API_ATTRS))
-            },
+        % On the API level, the version without the attributes field or with older values is no
+        % longer accepted. However, to ensure that older schemas can be loaded from the DB,
+        % it is still retained there (see upgrade_db_data_spec_test_)
+        ?_assertException(
+            _, _,
             U(#{
                 <<"type">> => <<"file">>,
                 <<"valueConstraints">> => #{
                     <<"fileType">> => <<"REG">>
+                }
+            })
+        ),
+        ?_assertException(
+            _, _,
+            U(#{
+                <<"type">> => <<"file">>,
+                <<"valueConstraints">> => #{
+                    <<"fileType">> => <<"REG">>,
+                    <<"attributes">> => [<<"file_id">>]
                 }
             })
         ),

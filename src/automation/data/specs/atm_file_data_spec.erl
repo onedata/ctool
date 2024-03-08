@@ -102,24 +102,20 @@ encode(Record = #atm_file_data_spec{file_type = FileType}) ->
 decode(ValidationStrategy, RecordJson) ->
     #atm_file_data_spec{
         file_type = file_type_from_json(maps:get(<<"fileType">>, RecordJson, <<"ANY">>)),
-        attributes = case maps:find(<<"attributes">>, RecordJson) of
-            error ->
-                % Set all possible attributes when field is missing to previous
-                % version behaviour when all file attrs where always resolved.
-                lists:usort(?API_ATTRS);
-            {ok, null} ->
-                undefined;
-            {ok, AttrNamesJson} ->
-                try
-                    lists:usort(onedata_file:sanitize_attr_names(<<"attributes">>, AttrNamesJson, current, ?API_ATTRS))
-                catch
-                    Class:Reason:Stacktrace when ValidationStrategy == validate ->
-                        erlang:raise(Class, Reason, Stacktrace);
-                    _:_ when ValidationStrategy == skip_validation ->
-                        % In case of older schemas, decoding will fail (attr names have changed),
-                        % so we just default to the full list to ensure that they can be loaded.
-                        lists:usort(?API_ATTRS)
-                end
+        attributes = try
+            case maps:get(<<"attributes">>, RecordJson) of
+                null ->
+                    undefined;
+                AttrNamesJson ->
+                    lists:usort(onedata_file:sanitize_attr_names(<<"attributes">>, AttrNamesJson, current, ?API_FILE_ATTRS))
+            end
+        catch
+            Class:Reason:Stacktrace when ValidationStrategy == validate ->
+                erlang:raise(Class, Reason, Stacktrace);
+            _:_ when ValidationStrategy == skip_validation ->
+                % In case of older schemas, decoding will fail (attr names have changed),
+                % so we just default to the full list to ensure that they can be loaded.
+                lists:usort(?API_FILE_ATTRS)
         end
     }.
 
