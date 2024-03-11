@@ -743,5 +743,7 @@ ensure_data_spec_valid_for_input_parameters(#atm_file_data_spec{attributes = [_ 
 ensure_data_spec_valid_for_input_parameters(#atm_file_data_spec{attributes = _} = DataSpec) ->
     % the attributes field must be a non-empty list
     DataSpec#atm_file_data_spec{attributes = ?RAND_SUBLIST(?API_FILE_ATTRS, 1, all)};
+ensure_data_spec_valid_for_input_parameters(#atm_array_data_spec{item_data_spec = ItemDataSpec}) ->
+    #atm_array_data_spec{item_data_spec = ensure_data_spec_valid_for_input_parameters(ItemDataSpec)};
 ensure_data_spec_valid_for_input_parameters(DataSpec) ->
     DataSpec.
