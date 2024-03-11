@@ -238,7 +238,7 @@ load_deprecated_json_data_spec_test_() ->
         % longer accepted. However, to ensure that older schemas can be loaded from the DB,
         % it is still retained there (see upgrade_db_data_spec_test_)
         ?_assertException(
-            _, _,
+            error, {badkey,<<"attributes">>},
             U(#{
                 <<"type">> => <<"file">>,
                 <<"valueConstraints">> => #{
@@ -247,7 +247,7 @@ load_deprecated_json_data_spec_test_() ->
             })
         ),
         ?_assertException(
-            _, _,
+            throw, ?ERROR_BAD_VALUE_NOT_ALLOWED(<<"attributes">>, _),
             U(#{
                 <<"type">> => <<"file">>,
                 <<"valueConstraints">> => #{
