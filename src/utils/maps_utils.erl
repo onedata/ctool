@@ -95,12 +95,12 @@ put_if_defined(Map, Key, DefinedValue, _UndefinedValue) ->
     maps:put(Key, DefinedValue, Map).
 
 
+%% see notes for generate_from_list/2
 -spec map_key_value(fun((OldKey, OldValue) -> {NewKey, NewValue}), #{OldKey => OldValue}) -> #{NewKey => NewValue}.
 map_key_value(MapKeyValueFun, Map) ->
-    maps:fold(fun(OldKey, OldValue, Acc) ->
-        {NewKey, NewValue} = MapKeyValueFun(OldKey, OldValue),
-        Acc#{NewKey => NewValue}
-    end, #{}, Map).
+    generate_from_list(fun({OldKey, OldValue}) ->
+        MapKeyValueFun(OldKey, OldValue)
+    end, maps:to_list(Map)).
 
 
 -spec generate(fun(() -> {Key, Value}) | fun((Ordinal :: non_neg_integer()) -> {Key, Value}), non_neg_integer()) ->
@@ -112,16 +112,17 @@ generate(Generator, Count) ->
     end, lists:seq(1, Count)).
 
 
+%% NOTE: this implementation (building a proplist and then calling maps:from_list/2) performs much better
+%%       than building a map key-by-key using a fold function that inserts a new key every time
+%%       (effectively destroying the old map and building a new one)
 -spec generate_from_list(fun((Element) -> Value | {Key, Value}), [Element]) -> #{Element | Key => Value}.
 generate_from_list(Generator, Elements) ->
-    lists:foldl(fun(Element, Acc) ->
+    maps:from_list(lists:map(fun(Element) ->
         case Generator(Element) of
-            {Key, Value} ->
-                Acc#{Key => Value};
-            Value ->
-                Acc#{Element => Value}
+            {Key, Value} -> {Key, Value};
+            Value -> {Element, Value}
         end
-    end, #{}, Elements).
+    end, Elements)).
 
 
 -spec random_submap(#{Key => Value}) -> #{Key => Value}.
@@ -169,6 +170,8 @@ all(Predicate, Map) ->
     end, true, Map).
 
 
+%% @formatter:off
 -spec update_existing_key(#{X => Y}, X, Y) -> #{X => Y}.
 update_existing_key(Map, Key, Value) when is_map_key(Key, Map) -> Map#{Key => Value};
 update_existing_key(Map, _Key, _Value)                         -> Map.
+%% @formatter:on
