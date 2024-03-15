@@ -107,7 +107,10 @@ encode_with(Record, NestedRecordEncoder) ->
         <<"resultSpecs">> => [NestedRecordEncoder(S, atm_lambda_result_spec) || S <- Record#atm_lambda_revision.result_specs],
         <<"preferredBatchSize">> => Record#atm_lambda_revision.preferred_batch_size,
         <<"resourceSpec">> => NestedRecordEncoder(Record#atm_lambda_revision.resource_spec, atm_resource_spec),
-        <<"checksum">> => Record#atm_lambda_revision.checksum,
+        %% TODO VFS-11849 consider including the checksum field only in the JSON that get written
+        %% to the database, and leave it out in other contexts
+        %% NOTE: the checksum field is currently not included in the JSON representation of the lambda revision record,
+        %% but always calculated during decoding
         <<"state">> => automation:lifecycle_state_to_json(Record#atm_lambda_revision.state)
     }.
 
@@ -144,11 +147,8 @@ decode_with(ValidationStrategy, RecordJson, NestedRecordDecoder) ->
         state = automation:lifecycle_state_from_json(maps:get(<<"state">>, RecordJson))
     },
 
+    %% NOTE: the checksum field is currently not included in the JSON representation of the lambda revision record,
+    %% but always calculated during decoding
     RevisionWithoutChecksum#atm_lambda_revision{
-        checksum = case {ValidationStrategy, maps:find(<<"checksum">>, RecordJson)} of
-            {skip_validation, {ok, PersistedChecksum}} ->
-                PersistedChecksum;
-            {_, _} ->
-                calculate_checksum(RevisionWithoutChecksum)
-        end
+        checksum = calculate_checksum(RevisionWithoutChecksum)
     }.
