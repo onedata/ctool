@@ -67,6 +67,7 @@
 | {bad_value_list_of_binaries, key()}
 | {bad_value_integer, key()} | {bad_value_float, key()}
 | {bad_value_json, key()}
+| {bad_value_xml, key()}
 | {bad_value_token, key(), auth()}
 | {bad_value_token_type, key()} | {bad_value_invite_type, key()}
 | {bad_value_ipv4_address, key()} | {bad_value_list_of_ipv4_addresses, key()}
@@ -684,6 +685,13 @@ to_json(?ERROR_BAD_VALUE_JSON(Key)) -> #{
         <<"key">> => Key
     },
     <<"description">> => ?FMT("Bad value: provided \"~s\" must be a valid JSON.", [Key])
+};
+to_json(?ERROR_BAD_VALUE_XML(Key)) -> #{
+    <<"id">> => <<"badValueXML">>,
+    <<"details">> => #{
+        <<"key">> => Key
+    },
+    <<"description">> => ?FMT("Bad value: provided \"~s\" must be a valid XML.", [Key])
 };
 to_json(?ERROR_BAD_VALUE_TOKEN(Key, TokenError)) -> #{
     <<"id">> => <<"badValueToken">>,
@@ -1911,6 +1919,9 @@ from_json(#{<<"id">> := <<"badValueFloat">>, <<"details">> := #{<<"key">> := Key
 from_json(#{<<"id">> := <<"badValueJSON">>, <<"details">> := #{<<"key">> := Key}}) ->
     ?ERROR_BAD_VALUE_JSON(Key);
 
+from_json(#{<<"id">> := <<"badValueXML">>, <<"details">> := #{<<"key">> := Key}}) ->
+    ?ERROR_BAD_VALUE_XML(Key);
+
 from_json(#{<<"id">> := <<"badValueToken">>, <<"details">> := #{<<"key">> := Key, <<"tokenError">> := TokenError}}) ->
     ?ERROR_BAD_VALUE_TOKEN(Key, from_json(TokenError));
 
@@ -2642,6 +2653,7 @@ to_http_code(?ERROR_BAD_VALUE_LIST_OF_BINARIES(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_BAD_VALUE_INTEGER(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_BAD_VALUE_FLOAT(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_BAD_VALUE_JSON(_)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?ERROR_BAD_VALUE_XML(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_BAD_VALUE_TOKEN(_, _)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_BAD_VALUE_TOKEN_TYPE(_)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_BAD_VALUE_INVITE_TYPE(_)) -> ?HTTP_400_BAD_REQUEST;

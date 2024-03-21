@@ -114,6 +114,7 @@
 -define(ERROR_BAD_VALUE_INTEGER(Key), {error, {bad_value_integer, Key}}).
 -define(ERROR_BAD_VALUE_FLOAT(Key), {error, {bad_value_float, Key}}).
 -define(ERROR_BAD_VALUE_JSON(Key), {error, {bad_value_json, Key}}).
+-define(ERROR_BAD_VALUE_XML(Key), {error, {bad_value_xml, Key}}).
 -define(ERROR_BAD_VALUE_TOKEN(Key, TokenError), {error, {bad_value_token, Key, TokenError}}).
 -define(ERROR_BAD_VALUE_TOKEN_TYPE(Key), {error, {bad_value_token_type, Key}}).
 -define(ERROR_BAD_VALUE_INVITE_TYPE(Key), {error, {bad_value_invite_type, Key}}).
