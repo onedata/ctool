@@ -32,7 +32,7 @@ debug_log(Format, Args) ->
         user,
         "~n"
         "----------------------------------------------------------~n"
-        "~s~n"
+        "~ts~n"
         "----------------------------------------------------------~n",
         [FormattedOutput]
     ),
@@ -46,7 +46,7 @@ dump(Term) ->
 
 -spec dump(string(), term()) -> ok.
 dump(Name, Term) ->
-    debug_log("~s = ~p", [Name, Term]).
+    debug_log("~ts = ~p", [Name, Term]).
 
 
 %% @doc gives you nice debug logs when not equal
@@ -54,7 +54,7 @@ dump(Name, Term) ->
 is_equal(ExpectedValue, ExpectedValue, _) ->
     true;
 is_equal(ActualValue, ExpectedValue, LogMessage) ->
-    debug_log("~s~n> Exp: ~p~n> Got: ~p", [LogMessage, ExpectedValue, ActualValue]),
+    debug_log("~ts~n> Exp: ~p~n> Got: ~p", [LogMessage, ExpectedValue, ActualValue]),
     false.
 
 
