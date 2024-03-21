@@ -14,6 +14,7 @@
 
 -include("automation/automation.hrl").
 -include("test/test_utils.hrl").
+-include("onedata_file.hrl").
 
 -export([example_id/0]).
 -export([example_name/0]).
@@ -141,7 +142,8 @@ example_docker_execution_options() ->
 
 -spec example_parameter_spec() -> atm_parameter_spec:record().
 example_parameter_spec() ->
-    example_parameter_spec(example_data_spec_except([atm_time_series_measurement_type])).
+    DataSpec = example_data_spec_except([atm_time_series_measurement_type]),
+    example_parameter_spec(ensure_data_spec_valid_for_input_parameters(DataSpec)).
 
 -spec example_parameter_spec(atm_data_spec:record()) -> atm_parameter_spec:record().
 example_parameter_spec(DataSpec) ->
@@ -159,7 +161,9 @@ example_parameter_spec(DataSpec, DefaultValue) ->
 
 -spec example_parameter_specs() -> [atm_parameter_spec:record()].
 example_parameter_specs() ->
-    lists:map(fun example_parameter_spec/1, example_data_specs_except([atm_time_series_measurement_type])).
+    lists:map(fun(DataSpec) ->
+        example_parameter_spec(ensure_data_spec_valid_for_input_parameters(DataSpec))
+    end, example_data_specs_except([atm_time_series_measurement_type])).
 
 
 -spec example_result_spec() -> atm_lambda_result_spec:record().
@@ -223,12 +227,8 @@ example_data_spec_except(atm_dataset_type, _) ->
     #atm_dataset_data_spec{};
 example_data_spec_except(atm_file_type, _) ->
     #atm_file_data_spec{
-        file_type = ?RAND_ELEMENT(['REG', 'DIR', 'ANY']),
-        attributes = lists:usort(?RAND_SUBLIST([
-            name, type, mode, size, atime, mtime, ctime, owner_id, file_id,
-            parent_id, provider_id, storage_user_id, storage_group_id,
-            shares, hardlinks_count, index
-        ]))
+        file_type = ?RAND_ELEMENT(atm_file_data_spec:allowed_file_type_specs()),
+        attributes = ?RAND_CHOICE(undefined, lists:usort(?RAND_SUBLIST(?API_FILE_ATTRS)))
     };
 example_data_spec_except(atm_number_type, _) ->
     #atm_number_data_spec{
@@ -273,7 +273,7 @@ example_predefined_value(#atm_boolean_data_spec{}) ->
 example_predefined_value(#atm_dataset_data_spec{}) ->
     #{<<"datasetId">> => ?RAND_STR()};
 example_predefined_value(#atm_file_data_spec{}) ->
-    #{<<"file_id">> => ?RAND_STR()};
+    #{<<"fileId">> => ?RAND_STR()};
 example_predefined_value(#atm_object_data_spec{}) ->
     ?RAND_ELEMENT([#{}, #{<<"key">> => 984.222}, #{<<"key">> => #{<<"nested">> => 984.222}}]);
 example_predefined_value(#atm_number_data_spec{}) ->
@@ -734,3 +734,16 @@ example_dashboard_spec() ->
     undefined.
 
 
+% in the context of input parameters (config, arguments), data specs
+% have additional restrictions - make sure they are valid
+%% @private
+-spec ensure_data_spec_valid_for_input_parameters(atm_data_spec:record()) -> atm_data_spec:record().
+ensure_data_spec_valid_for_input_parameters(#atm_file_data_spec{attributes = [_ | _]} = DataSpec) ->
+    DataSpec;
+ensure_data_spec_valid_for_input_parameters(#atm_file_data_spec{attributes = _} = DataSpec) ->
+    % the attributes field must be a non-empty list
+    DataSpec#atm_file_data_spec{attributes = lists:sort(?RAND_SUBLIST(?API_FILE_ATTRS, 1, all))};
+ensure_data_spec_valid_for_input_parameters(#atm_array_data_spec{item_data_spec = ItemDataSpec}) ->
+    #atm_array_data_spec{item_data_spec = ensure_data_spec_valid_for_input_parameters(ItemDataSpec)};
+ensure_data_spec_valid_for_input_parameters(DataSpec) ->
+    DataSpec.

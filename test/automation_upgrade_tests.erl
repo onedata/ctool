@@ -16,19 +16,13 @@
 
 -include("test/test_utils.hrl").
 -include("automation/automation.hrl").
+-include("onedata_file.hrl").
 
 
 upgrade_db_data_spec_test_() ->
     U = fun(JsonData) ->
         persistent_record:from_string(json_utils:encode(JsonData), atm_data_spec)
     end,
-
-    AllFileAttrs = lists:usort([
-        name, type, mode, size, atime, mtime, ctime,
-        owner_id, file_id, parent_id, provider_id,
-        storage_user_id, storage_group_id,
-        shares, hardlinks_count, index
-    ]),
 
     [
         ?_assertEqual(
@@ -80,16 +74,35 @@ upgrade_db_data_spec_test_() ->
             })
         ),
 
+        % On the API level, the version without the attributes field or with older values is no
+        % longer accepted. However, to ensure that older schemas can be loaded from the DB,
+        % it is still retained there (Attributes default to all possible values).
         ?_assertEqual(
             #atm_file_data_spec{
-                file_type = 'REG',
-                attributes = AllFileAttrs
+                file_type = ?REGULAR_FILE_TYPE,
+                attributes = lists:usort(?API_FILE_ATTRS)
             },
             U(#{
                 <<"_data">> => #{
                     <<"type">> => <<"file">>,
                     <<"valueConstraints">> => #{
                         <<"fileType">> => <<"REG">>
+                    }
+                },
+                <<"_version">> => 1
+            })
+        ),
+        ?_assertEqual(
+            #atm_file_data_spec{
+                file_type = ?REGULAR_FILE_TYPE,
+                attributes = lists:usort(?API_FILE_ATTRS)
+            },
+            U(#{
+                <<"_data">> => #{
+                    <<"type">> => <<"file">>,
+                    <<"valueConstraints">> => #{
+                        <<"fileType">> => <<"REG">>,
+                        <<"attrbiutes">> => [<<"file_id">>, <<"storage_user_id">>]
                     }
                 },
                 <<"_version">> => 1
@@ -183,13 +196,6 @@ load_deprecated_json_data_spec_test_() ->
         jsonable_record:from_json(JsonData, atm_data_spec)
     end,
 
-    AllFileAttrs = lists:usort([
-        name, type, mode, size, atime, mtime, ctime,
-        owner_id, file_id, parent_id, provider_id,
-        storage_user_id, storage_group_id,
-        shares, hardlinks_count, index
-    ]),
-
     [
         ?_assertEqual(
             #atm_array_data_spec{
@@ -228,15 +234,25 @@ load_deprecated_json_data_spec_test_() ->
             })
         ),
 
-        ?_assertEqual(
-            #atm_file_data_spec{
-                file_type = 'REG',
-                attributes = AllFileAttrs
-            },
+        % On the API level, the version without the attributes field or with older values is no
+        % longer accepted. However, to ensure that older schemas can be loaded from the DB,
+        % it is still retained there (see upgrade_db_data_spec_test_)
+        ?_assertException(
+            error, {badkey,<<"attributes">>},
             U(#{
                 <<"type">> => <<"file">>,
                 <<"valueConstraints">> => #{
                     <<"fileType">> => <<"REG">>
+                }
+            })
+        ),
+        ?_assertException(
+            throw, ?ERROR_BAD_VALUE_NOT_ALLOWED(<<"attributes">>, _),
+            U(#{
+                <<"type">> => <<"file">>,
+                <<"valueConstraints">> => #{
+                    <<"fileType">> => <<"REG">>,
+                    <<"attributes">> => [<<"file_id">>]
                 }
             })
         ),

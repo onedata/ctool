@@ -69,7 +69,7 @@ is_instance(atm_boolean_type, Value) when is_boolean(Value) ->
     true;
 is_instance(atm_dataset_type, #{<<"datasetId">> := DatasetId}) when is_binary(DatasetId) ->
     true;
-is_instance(atm_file_type, #{<<"file_id">> := FileId}) when is_binary(FileId) ->
+is_instance(atm_file_type, #{<<"fileId">> := FileId}) when is_binary(FileId) ->
     true;
 is_instance(atm_number_type, Value) when is_number(Value) ->
     true;

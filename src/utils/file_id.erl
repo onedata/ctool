@@ -28,7 +28,7 @@
 -export([pack_share_guid/3, unpack_share_guid/1]).
 -export([pack_guid/2, unpack_guid/1]).
 -export([guid_to_share_guid/2, share_guid_to_guid/1]).
--export([guid_to_objectid/1, objectid_to_guid/1]).
+-export([guid_to_objectid/1, check_guid_to_objectid/1, objectid_to_guid/1, check_objectid_to_guid/1]).
 -export([guid_to_space_id/1, guid_to_uuid/1, guid_to_share_id/1]).
 -export([is_share_guid/1]).
 
@@ -198,6 +198,14 @@ guid_to_objectid(Guid) ->
     end.
 
 
+-spec check_guid_to_objectid(file_guid()) -> objectid() | no_return().
+check_guid_to_objectid(Guid) ->
+    case guid_to_objectid(Guid) of
+        {error, _} -> error({bad_guid, Guid});
+        {ok, ObjectId} -> ObjectId
+    end.
+
+
 %%--------------------------------------------------------------------
 %% @doc Converts cdmi objectid format to guid
 %%--------------------------------------------------------------------
@@ -207,6 +215,14 @@ objectid_to_guid(ObjectId) ->
         <<0:8, _Enum:24, 0:8, _Length:8, _Crc:16, Data/binary>> ->
             {ok, http_utils:base64url_encode(Data)};
         _Other -> {error, badarg}
+    end.
+
+
+-spec check_objectid_to_guid(objectid()) -> file_guid() | no_return().
+check_objectid_to_guid(ObjectId) ->
+    case objectid_to_guid(ObjectId) of
+        {error, badarg} -> error({bad_objectid, ObjectId});
+        {ok, Guid} -> Guid
     end.
 
 
