@@ -532,9 +532,15 @@ repeat(Count, Fun) ->
     (ok) -> ok;
     ({ok, Value}) -> Value;
     (errors:error()) -> no_return().
-check_result(ok) -> ok;
-check_result({ok, Value}) -> Value;
-check_result({error, _} = Error) -> throw(Error).
+check_result(ok) ->
+    ok;
+check_result({ok, Value}) ->
+    Value;
+check_result({error, _} = Error) ->
+    case errors:is_known_error(Error) of
+        true -> throw(Error);
+        false -> error(Error)
+    end.
 
 %%%===================================================================
 %%% Internal functions
