@@ -260,13 +260,13 @@ deserialize_service(_) ->
 -spec auth_to_printable(auth()) -> string().
 auth_to_printable(?NOBODY) -> "nobody (unauthenticated client)";
 auth_to_printable(?ROOT) -> "root";
-auth_to_printable(?USER(UId)) -> str_utils:format("user:~s", [UId]);
-auth_to_printable(?PROVIDER(PId)) -> str_utils:format("provider:~s", [PId]).
+auth_to_printable(?USER(UId)) -> str_utils:format("user:~ts", [UId]);
+auth_to_printable(?PROVIDER(PId)) -> str_utils:format("provider:~ts", [PId]).
 
 
 -spec subject_to_printable(subject()) -> string().
-subject_to_printable(?SUB(Type, Id)) -> str_utils:format("~s:~s", [Type, Id]).
+subject_to_printable(?SUB(Type, Id)) -> str_utils:format("~ts:~ts", [Type, Id]).
 
 
 -spec service_to_printable(service_spec()) -> string().
-service_to_printable(?SERVICE(Type, Id)) -> str_utils:format("~s:~s", [Type, Id]).
+service_to_printable(?SERVICE(Type, Id)) -> str_utils:format("~ts:~ts", [Type, Id]).

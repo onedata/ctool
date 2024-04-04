@@ -128,7 +128,7 @@ upgrade_encoded_record(Version, Version, _RecordType, Json) ->
 
 upgrade_encoded_record(TargetVersion, CurrentVersion, RecordType, _Json) when CurrentVersion > TargetVersion ->
     ?emergency(
-        "Upgrade requested for record '~p' with future version ~B (known versions up to: ~B)",
+        "Upgrade requested for record '~tp' with future version ~B (known versions up to: ~B)",
         [RecordType, CurrentVersion, TargetVersion]
     ),
     error({future_version, RecordType, CurrentVersion, TargetVersion});
@@ -139,7 +139,7 @@ upgrade_encoded_record(TargetVersion, CurrentVersion, RecordType, Json) ->
     catch
         error:undef ->
             ?emergency(
-                "Missing upgrade procedure for record '~p' from version ~B to ~B",
+                "Missing upgrade procedure for record '~tp' from version ~B to ~B",
                 [RecordType, CurrentVersion, TargetVersion]
             ),
             error({missing_upgrader, RecordType, CurrentVersion, TargetVersion})

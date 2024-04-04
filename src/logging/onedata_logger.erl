@@ -42,14 +42,14 @@ format_exception_log(
     Class, Reason, Stacktrace
 ) ->
     format_generic_log(
-        "An unexpected exception~s occurred in ~w:~w/~B line ~B~n"
-        "> Stacktrace:~s~n"
-        "> Caught: ~s:~p"
-        "~s",
+        "An unexpected exception~ts occurred in ~w:~w/~B line ~B~n"
+        "> Stacktrace:~ts~n"
+        "> Caught: ~ts:~tp"
+        "~ts",
         [
             case Ref of
                 undefined -> "";
-                _ -> str_utils:format(" (ref: ~s)", [Ref])
+                _ -> str_utils:format(" (ref: ~ts)", [Ref])
             end,
             Module, Function, Arity, Line,
             lager:pr_stacktrace(Stacktrace),
@@ -69,8 +69,8 @@ format_deprecated_exception_log(
 ) ->
     format_generic_log(
         "An unexpected exception occurred in ~w:~w/~B line ~B~n"
-        "> Stacktrace:~s"
-        "~s",
+        "> Stacktrace:~ts"
+        "~ts",
         [
             Module, Function, Arity, Line,
             lager:pr_stacktrace(Stacktrace),
@@ -88,8 +88,8 @@ format_error_report(
     DetailsFormat, DetailsArgs, Ref
 ) ->
     format_generic_log(
-        "An error (ref: ~s) occurred in ~w:~w/~B line ~B"
-        "~s",
+        "An error (ref: ~ts) occurred in ~w:~w/~B line ~B"
+        "~ts",
         [
             Ref, Module, Function, Arity, Line,
             format_details_suffix(DetailsFormat, DetailsArgs)
@@ -251,7 +251,7 @@ log_with_rotation(LogFile, Format, Args, MaxSize) ->
             ok
     end,
     file:write_file(LogFile,
-        io_lib:format("~n~s, ~s: " ++ Format, [Date, Time | Args]), [append]),
+        io_lib:format("~n~ts, ~ts: " ++ Format, [Date, Time | Args]), [append]),
     ok.
 
 %%%===================================================================

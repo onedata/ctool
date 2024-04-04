@@ -103,8 +103,8 @@ setup() ->
     }),
     meck:new(http_client, []),
     meck:expect(http_client, get, fun(Url) ->
-        AnsUrl = str_utils:format_bin("~s&license_key=~s", [?DUMMY_DB_MIRROR(asn), ?DUMMY_LICENSE_KEY]),
-        CountryUrl = str_utils:format_bin("~s&license_key=~s", [?DUMMY_DB_MIRROR(country), ?DUMMY_LICENSE_KEY]),
+        AnsUrl = str_utils:format_bin("~ts&license_key=~ts", [?DUMMY_DB_MIRROR(asn), ?DUMMY_LICENSE_KEY]),
+        CountryUrl = str_utils:format_bin("~ts&license_key=~ts", [?DUMMY_DB_MIRROR(country), ?DUMMY_LICENSE_KEY]),
         case Url of
             AnsUrl -> {ok, 200, #{}, integer_to_binary(get_frozen_time())};
             CountryUrl -> {ok, 200, #{}, integer_to_binary(get_frozen_time())};
@@ -152,7 +152,7 @@ simulate_seconds_passing(Seconds) ->
     clock_freezer_mock:simulate_seconds_passing(Seconds).
 
 -define(DUMMY_ENV(DbType),
-    binary_to_atom(str_utils:format_bin("db_loaded_~p", [DbType]), utf8)
+    binary_to_atom(str_utils:format_bin("db_loaded_~tp", [DbType]), utf8)
 ).
 mock_is_db_loaded(DbType) ->
     % {true, Timestamp} | false

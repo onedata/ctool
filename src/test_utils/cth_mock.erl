@@ -66,8 +66,8 @@ post_end_per_suite(_Suite, Config, Return, State) ->
                 ok; % Test can kill nodes
             Type:Reason:Stacktrace ->
                 ct:print(
-                    "WARNING: Stopping mock manager on node ~p failed - ~p:~p~n"
-                    "Stacktrace: ~p", [
+                    "WARNING: Stopping mock manager on node ~tp failed - ~tp:~tp~n"
+                    "Stacktrace: ~tp", [
                         Node, Type, Reason, Stacktrace
                     ])
         end

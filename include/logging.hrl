@@ -15,7 +15,7 @@
 %%% Use ?autoformat([TermA, TermB, ...]) for an auto-formatted string with the values
 %%% of all Terms (by variable names).
 %%%
-%%% NOTE: always avoid using the `~p` formatter at the end of the line to avoid large indents.
+%%% NOTE: always avoid using the `~tp` formatter at the end of the line to avoid large indents.
 %%%
 %%% NOTE: see the LOGGING.md file for usage examples.
 %%% @end
@@ -104,8 +104,8 @@ end).
 % produces an auto-formatted string with the values of all Terms (by variable names)
 % NOTE: the result string begins with a newline.
 % NOTE: does not handle multiline strings well (i.e. when one of the Terms is a multiline string);
-%       the "~p" formatter just prints an inline "\n". Thus, it's recommended to print such strings
-%       using different methods, or just use binaries, which are handled well using "~s".
+%       the "~tp" formatter just prints an inline "\n". Thus, it's recommended to print such strings
+%       using different methods, or just use binaries, which are handled well using "~ts".
 -define(autoformat(TermOrTerms),
     str_utils:format(
         lists:flatten(lists:map(fun({Term, TermName}) ->
@@ -230,7 +230,7 @@ end).
 % Prints bad request warning (frequently used in gen_servers)
 -define(log_bad_request(Request),
     % cannot use ?autoformat here as Request may be a complex term
-    ?warning("~w:~B - received a bad request:~n    Request = ~p", [?MODULE, ?LINE, Request])
+    ?warning("~w:~B - received a bad request:~n    Request = ~tp", [?MODULE, ?LINE, Request])
 ).
 
 
@@ -240,7 +240,7 @@ end).
         normal -> ok;
         shutdown -> ok;
         {shutdown, _} -> ok;
-        _ -> ?warning("~w terminated in state ~p~nReason: ~p", [?MODULE, State, Reason])
+        _ -> ?warning("~w terminated in state ~tp~nReason: ~tp", [?MODULE, State, Reason])
     end
 ).
 
@@ -248,7 +248,7 @@ end).
 % Convenience macros for debug
 
 % Prints a term or a list of terms by the name of the variable
--define(dump(TermOrTerms), io:format(user, "[DUMP]~s~n", [?autoformat(TermOrTerms)])).
+-define(dump(TermOrTerms), io:format(user, "[DUMP]~ts~n", [?autoformat(TermOrTerms)])).
 % wrappers for convenience (the original macro accepts a list, but it's not 100% intuitive)
 -define(dump(A, B), ?dump([A, B])).
 -define(dump(A, B, C), ?dump([A, B, C])).

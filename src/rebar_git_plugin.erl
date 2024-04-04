@@ -37,8 +37,8 @@ post_compile(Config, AppFile) ->
         end
     catch
         Error:Reason:Stacktrace ->
-            apply(rebar_log, log, [error, "~s - Failed to set git metadata due to: "
-            "~p:~p~nStacktrace:~n~p~n", [?MODULE_STRING, Error, Reason, Stacktrace]]),
+            apply(rebar_log, log, [error, "~ts - Failed to set git metadata due to: "
+            "~tp:~tp~nStacktrace:~n~tp~n", [?MODULE_STRING, Error, Reason, Stacktrace]]),
             {Error, Reason}
     end.
 
@@ -76,5 +76,5 @@ inject_git_metadata(Config, AppFile) ->
     GitMetadata = get_git_metadata(),
     NewEnv = Env ++ GitMetadata,
     NewMetadata = lists:keyreplace(env, 1, Metadata, {env, NewEnv}),
-    NewAppFile = io_lib:fwrite("~p.\n", [{application, AppName, NewMetadata}]),
+    NewAppFile = io_lib:fwrite("~tp.\n", [{application, AppName, NewMetadata}]),
     ok = file:write_file(EbinAppFile, NewAppFile).

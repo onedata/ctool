@@ -287,7 +287,7 @@ to_json(?ERROR_INTERNAL_SERVER_ERROR(ErrorRef)) -> #{
     },
     <<"description">> => ?FMT(
         "The server has encountered an error while processing this request. "
-        "If the problem persists, please contact the site's administrators, citing the following reference: ~s.", [ErrorRef]
+        "If the problem persists, please contact the site's administrators, citing the following reference: ~ts.", [ErrorRef]
     )
 };
 to_json(?ERROR_INTERNAL_SERVER_ERROR) -> #{
@@ -341,7 +341,7 @@ to_json(?ERROR_FORBIDDEN(HumanReadableHint)) -> #{
     <<"details">> => #{
         <<"hint">> => HumanReadableHint
     },
-    <<"description">> => ?FMT("You are not authorized to perform this operation: ~s", [
+    <<"description">> => ?FMT("You are not authorized to perform this operation: ~ts", [
         str_utils:ensure_suffix(HumanReadableHint, <<".">>)
     ])
 };
@@ -362,7 +362,7 @@ to_json(?ERROR_FILE_ACCESS(Path, Errno)) ->
     #{
         <<"id">> => <<"fileAccess">>,
         <<"details">> => #{<<"path">> => PathBin, <<"errno">> => Errno},
-        <<"description">> => ?FMT("Cannot access file \"~ts\": ~p.", [PathBin, Errno])
+        <<"description">> => ?FMT("Cannot access file \"~ts\": ~tp.", [PathBin, Errno])
     };
 to_json(?ERROR_LIMIT_REACHED(Limit, ResourceDescription)) ->
     #{
@@ -371,7 +371,7 @@ to_json(?ERROR_LIMIT_REACHED(Limit, ResourceDescription)) ->
             <<"limit">> => Limit,
             <<"resourceDescription">> => ResourceDescription
         },
-        <<"description">> => ?FMT("The limit for ~s has been reached: ~p.", [ResourceDescription, Limit])
+        <<"description">> => ?FMT("The limit for ~ts has been reached: ~tp.", [ResourceDescription, Limit])
     };
 
 %% -----------------------------------------------------------------------------
@@ -382,7 +382,7 @@ to_json(?ERROR_POSIX(Errno)) -> #{
     <<"details">> => #{
         <<"errno">> => atom_to_binary(Errno, utf8)
     },
-    <<"description">> => ?FMT("Operation failed with POSIX error: ~s.", [Errno])
+    <<"description">> => ?FMT("Operation failed with POSIX error: ~ts.", [Errno])
 };
 
 %% -----------------------------------------------------------------------------
@@ -404,7 +404,7 @@ to_json(?ERROR_BAD_IDP_ACCESS_TOKEN(IdP)) -> #{
     <<"details">> => #{
         <<"idp">> => IdP
     },
-    <<"description">> => ?FMT("Provided access token for \"~p\" is not valid.", [IdP])
+    <<"description">> => ?FMT("Provided access token for \"~tp\" is not valid.", [IdP])
 };
 to_json(?ERROR_BAD_TOKEN) -> #{
     <<"id">> => <<"badToken">>,
@@ -444,7 +444,7 @@ to_json(?ERROR_NOT_AN_ACCESS_TOKEN(ReceivedTokenType)) -> #{
     <<"details">> => #{
         <<"received">> => token_type:to_json(ReceivedTokenType)
     },
-    <<"description">> => ?FMT("Expected an access token, but received a(n) ~s.", [
+    <<"description">> => ?FMT("Expected an access token, but received a(n) ~ts.", [
         token_type:to_printable(ReceivedTokenType)
     ])
 };
@@ -453,7 +453,7 @@ to_json(?ERROR_NOT_AN_IDENTITY_TOKEN(ReceivedTokenType)) -> #{
     <<"details">> => #{
         <<"received">> => token_type:to_json(ReceivedTokenType)
     },
-    <<"description">> => ?FMT("Expected an identity token, but received a(n) ~s.", [
+    <<"description">> => ?FMT("Expected an identity token, but received a(n) ~ts.", [
         token_type:to_printable(ReceivedTokenType)
     ])
 };
@@ -466,7 +466,7 @@ to_json(?ERROR_NOT_AN_INVITE_TOKEN(ExpectedInviteType, ReceivedTokenType)) -> #{
         end,
         <<"received">> => token_type:to_json(ReceivedTokenType)
     },
-    <<"description">> => ?FMT("Expected an invitation token of type '~s', but received a(n) ~s.", [
+    <<"description">> => ?FMT("Expected an invitation token of type '~ts', but received a(n) ~ts.", [
         ExpectedInviteType,
         token_type:to_printable(ReceivedTokenType)
     ])
@@ -501,7 +501,7 @@ to_json(?ERROR_TOKEN_SERVICE_FORBIDDEN(Service)) -> #{
     <<"details">> => #{
         <<"service">> => aai:service_to_json(Service)
     },
-    <<"description">> => ?FMT("The service ~s is forbidden for this subject.", [aai:service_to_printable(Service)])
+    <<"description">> => ?FMT("The service ~ts is forbidden for this subject.", [aai:service_to_printable(Service)])
 };
 to_json(?ERROR_INVITE_TOKEN_SUBJECT_NOT_AUTHORIZED) -> #{
     <<"id">> => <<"inviteTokenSubjectNotAuthorized">>,
@@ -516,7 +516,7 @@ to_json(?ERROR_INVITE_TOKEN_CONSUMER_INVALID(Consumer)) -> #{
     <<"details">> => #{
         <<"consumer">> => aai:subject_to_json(Consumer)
     },
-    <<"description">> => ?FMT("The consumer '~s' is invalid for this type of invite token.", [
+    <<"description">> => ?FMT("The consumer '~ts' is invalid for this type of invite token.", [
         aai:subject_to_printable(Consumer)
     ])
 };
@@ -525,7 +525,7 @@ to_json(?ERROR_INVITE_TOKEN_TARGET_ID_INVALID(Id)) -> #{
     <<"details">> => #{
         <<"id">> => Id
     },
-    <<"description">> => ?FMT("The target id '~s' is invalid for this type of invite token.", [Id])
+    <<"description">> => ?FMT("The target id '~ts' is invalid for this type of invite token.", [Id])
 };
 to_json(?ERROR_TOKEN_SESSION_INVALID) -> #{
     <<"id">> => <<"tokenSessionInvalid">>,
@@ -548,7 +548,7 @@ to_json(?ERROR_BAD_VERSION(SupportedVersions)) -> #{
     <<"details">> => #{
         <<"supportedVersions">> => SupportedVersions
     },
-    <<"description">> => ?FMT("Bad version - supported versions: ~p.", [SupportedVersions])
+    <<"description">> => ?FMT("Bad version - supported versions: ~tp.", [SupportedVersions])
 };
 to_json(?ERROR_BAD_GRI) -> #{
     <<"id">> => <<"badGRI">>,
@@ -575,14 +575,14 @@ to_json(?ERROR_MISSING_REQUIRED_VALUE(Key)) -> #{
     <<"details">> => #{
         <<"key">> => Key
     },
-    <<"description">> => ?FMT("Missing required value: ~s.", [Key])
+    <<"description">> => ?FMT("Missing required value: ~ts.", [Key])
 };
 to_json(?ERROR_MISSING_AT_LEAST_ONE_VALUE(Keys)) -> #{
     <<"id">> => <<"missingAtLeastOneValue">>,
     <<"details">> => #{
         <<"keys">> => Keys
     },
-    <<"description">> => ?FMT("Missing data, you must provide at least one of: ~p.", [Keys])
+    <<"description">> => ?FMT("Missing data, you must provide at least one of: ~tp.", [Keys])
 };
 to_json(?ERROR_BAD_DATA(Key, {error, _} = SpecificError)) -> #{
     <<"id">> => <<"badData">>,
@@ -590,7 +590,7 @@ to_json(?ERROR_BAD_DATA(Key, {error, _} = SpecificError)) -> #{
         <<"key">> => Key,
         <<"specificError">> => to_json(SpecificError)
     },
-    <<"description">> => ?FMT("Bad value provided for \"~s\" (see details).", [Key])
+    <<"description">> => ?FMT("Bad value provided for \"~ts\" (see details).", [Key])
 };
 to_json(?ERROR_BAD_DATA(Key, HumanReadableHint)) -> #{
     <<"id">> => <<"badData">>,
@@ -598,7 +598,7 @@ to_json(?ERROR_BAD_DATA(Key, HumanReadableHint)) -> #{
         <<"key">> => Key,
         <<"hint">> => HumanReadableHint
     },
-    <<"description">> => ?FMT("Bad value provided for \"~s\": ~ts.", [Key, HumanReadableHint])
+    <<"description">> => ?FMT("Bad value provided for \"~ts\": ~ts.", [Key, HumanReadableHint])
 };
 to_json(?ERROR_BAD_DATA(Key)) -> #{
     <<"id">> => <<"badData">>,
@@ -606,7 +606,7 @@ to_json(?ERROR_BAD_DATA(Key)) -> #{
         <<"key">> => Key
     },
     <<"description">> => ?FMT(
-        "Bad value: provided \"~s\" has an invalid format or is incomprehensible "
+        "Bad value: provided \"~ts\" has an invalid format or is incomprehensible "
         "in the context of this operation.",
         [Key]
     )
@@ -616,14 +616,14 @@ to_json(?ERROR_BAD_VALUE_EMPTY(Key)) -> #{
     <<"details">> => #{
         <<"key">> => Key
     },
-    <<"description">> => ?FMT("Bad value: provided \"~s\" must not be empty.", [Key])
+    <<"description">> => ?FMT("Bad value: provided \"~ts\" must not be empty.", [Key])
 };
 to_json(?ERROR_BAD_VALUE_BOOLEAN(Key)) -> #{
     <<"id">> => <<"badValueBoolean">>,
     <<"details">> => #{
         <<"key">> => Key
     },
-    <<"description">> => ?FMT("Bad value: provided \"~s\" must be a boolean.", [Key])
+    <<"description">> => ?FMT("Bad value: provided \"~ts\" must be a boolean.", [Key])
 };
 % We do not differentiate between atoms and binaries in JSON, so they are
 % treated as the same.
@@ -632,21 +632,21 @@ to_json(?ERROR_BAD_VALUE_ATOM(Key)) -> #{
     <<"details">> => #{
         <<"key">> => Key
     },
-    <<"description">> => ?FMT("Bad value: provided \"~s\" must be a string.", [Key])
+    <<"description">> => ?FMT("Bad value: provided \"~ts\" must be a string.", [Key])
 };
 to_json(?ERROR_BAD_VALUE_LIST_OF_ATOMS(Key)) -> #{
     <<"id">> => <<"badValueListOfStrings">>,
     <<"details">> => #{
         <<"key">> => Key
     },
-    <<"description">> => ?FMT("Bad value: provided \"~s\" must be a list of strings.", [Key])
+    <<"description">> => ?FMT("Bad value: provided \"~ts\" must be a list of strings.", [Key])
 };
 to_json(?ERROR_BAD_VALUE_BINARY(Key)) -> #{
     <<"id">> => <<"badValueString">>,
     <<"details">> => #{
         <<"key">> => Key
     },
-    <<"description">> => ?FMT("Bad value: provided \"~s\" must be a string.", [Key])
+    <<"description">> => ?FMT("Bad value: provided \"~ts\" must be a string.", [Key])
 };
 to_json(?ERROR_BAD_VALUE_TEXT_TOO_LARGE(Key, SizeLimit)) -> #{
     <<"id">> => <<"badValueTextTooLarge">>,
@@ -654,7 +654,7 @@ to_json(?ERROR_BAD_VALUE_TEXT_TOO_LARGE(Key, SizeLimit)) -> #{
         <<"key">> => Key,
         <<"limit">> => SizeLimit
     },
-    <<"description">> => ?FMT("Bad value: the text provided in \"~s\" cannot be larger than ~B characters.", [
+    <<"description">> => ?FMT("Bad value: the text provided in \"~ts\" cannot be larger than ~B characters.", [
         Key, SizeLimit
     ])
 };
@@ -663,35 +663,35 @@ to_json(?ERROR_BAD_VALUE_LIST_OF_BINARIES(Key)) -> #{
     <<"details">> => #{
         <<"key">> => Key
     },
-    <<"description">> => ?FMT("Bad value: provided \"~s\" must be a list of strings.", [Key])
+    <<"description">> => ?FMT("Bad value: provided \"~ts\" must be a list of strings.", [Key])
 };
 to_json(?ERROR_BAD_VALUE_INTEGER(Key)) -> #{
     <<"id">> => <<"badValueInteger">>,
     <<"details">> => #{
         <<"key">> => Key
     },
-    <<"description">> => ?FMT("Bad value: provided \"~s\" must be an integer.", [Key])
+    <<"description">> => ?FMT("Bad value: provided \"~ts\" must be an integer.", [Key])
 };
 to_json(?ERROR_BAD_VALUE_FLOAT(Key)) -> #{
     <<"id">> => <<"badValueFloat">>,
     <<"details">> => #{
         <<"key">> => Key
     },
-    <<"description">> => ?FMT("Bad value: provided \"~s\" must be a floating point number.", [Key])
+    <<"description">> => ?FMT("Bad value: provided \"~ts\" must be a floating point number.", [Key])
 };
 to_json(?ERROR_BAD_VALUE_JSON(Key)) -> #{
     <<"id">> => <<"badValueJSON">>,
     <<"details">> => #{
         <<"key">> => Key
     },
-    <<"description">> => ?FMT("Bad value: provided \"~s\" must be a valid JSON.", [Key])
+    <<"description">> => ?FMT("Bad value: provided \"~ts\" must be a valid JSON.", [Key])
 };
 to_json(?ERROR_BAD_VALUE_XML(Key)) -> #{
     <<"id">> => <<"badValueXML">>,
     <<"details">> => #{
         <<"key">> => Key
     },
-    <<"description">> => ?FMT("Bad value: provided \"~s\" must be a valid XML.", [Key])
+    <<"description">> => ?FMT("Bad value: provided \"~ts\" must be a valid XML.", [Key])
 };
 to_json(?ERROR_BAD_VALUE_TOKEN(Key, TokenError)) -> #{
     <<"id">> => <<"badValueToken">>,
@@ -699,35 +699,35 @@ to_json(?ERROR_BAD_VALUE_TOKEN(Key, TokenError)) -> #{
         <<"key">> => Key,
         <<"tokenError">> => to_json(TokenError)
     },
-    <<"description">> => ?FMT("Bad value: provided \"~s\" is not a valid token (see details).", [Key])
+    <<"description">> => ?FMT("Bad value: provided \"~ts\" is not a valid token (see details).", [Key])
 };
 to_json(?ERROR_BAD_VALUE_TOKEN_TYPE(Key)) -> #{
     <<"id">> => <<"badValueTokenType">>,
     <<"details">> => #{
         <<"key">> => Key
     },
-    <<"description">> => ?FMT("Bad value: provided \"~s\" is not a valid token type.", [Key])
+    <<"description">> => ?FMT("Bad value: provided \"~ts\" is not a valid token type.", [Key])
 };
 to_json(?ERROR_BAD_VALUE_INVITE_TYPE(Key)) -> #{
     <<"id">> => <<"badValueInviteType">>,
     <<"details">> => #{
         <<"key">> => Key
     },
-    <<"description">> => ?FMT("Bad value: provided \"~s\" is not a valid invite type.", [Key])
+    <<"description">> => ?FMT("Bad value: provided \"~ts\" is not a valid invite type.", [Key])
 };
 to_json(?ERROR_BAD_VALUE_IPV4_ADDRESS(Key)) -> #{
     <<"id">> => <<"badValueIPv4Address">>,
     <<"details">> => #{
         <<"key">> => Key
     },
-    <<"description">> => ?FMT("Bad value: provided \"~s\" is not a valid IPv4 address.", [Key])
+    <<"description">> => ?FMT("Bad value: provided \"~ts\" is not a valid IPv4 address.", [Key])
 };
 to_json(?ERROR_BAD_VALUE_LIST_OF_IPV4_ADDRESSES(Key)) -> #{
     <<"id">> => <<"badValueListOfIPv4Addresses">>,
     <<"details">> => #{
         <<"key">> => Key
     },
-    <<"description">> => ?FMT("Bad value: provided \"~s\" is not a valid list of IPv4 addresses.", [Key])
+    <<"description">> => ?FMT("Bad value: provided \"~ts\" is not a valid list of IPv4 addresses.", [Key])
 };
 to_json(?ERROR_BAD_VALUE_TOO_LOW(Key, Threshold)) -> #{
     <<"id">> => <<"badValueTooLow">>,
@@ -735,7 +735,7 @@ to_json(?ERROR_BAD_VALUE_TOO_LOW(Key, Threshold)) -> #{
         <<"key">> => Key,
         <<"limit">> => Threshold
     },
-    <<"description">> => ?FMT("Bad value: provided \"~s\" must be at least ~B.", [Key, Threshold])
+    <<"description">> => ?FMT("Bad value: provided \"~ts\" must be at least ~B.", [Key, Threshold])
 };
 to_json(?ERROR_BAD_VALUE_TOO_HIGH(Key, Threshold)) -> #{
     <<"id">> => <<"badValueTooHigh">>,
@@ -743,7 +743,7 @@ to_json(?ERROR_BAD_VALUE_TOO_HIGH(Key, Threshold)) -> #{
         <<"key">> => Key,
         <<"limit">> => Threshold
     },
-    <<"description">> => ?FMT("Bad value: provided \"~s\" must not exceed ~B.", [Key, Threshold])
+    <<"description">> => ?FMT("Bad value: provided \"~ts\" must not exceed ~B.", [Key, Threshold])
 };
 to_json(?ERROR_BAD_VALUE_NOT_IN_RANGE(Key, Low, High)) -> #{
     <<"id">> => <<"badValueNotInRange">>,
@@ -752,7 +752,7 @@ to_json(?ERROR_BAD_VALUE_NOT_IN_RANGE(Key, Low, High)) -> #{
         <<"low">> => Low,
         <<"high">> => High
     },
-    <<"description">> => ?FMT("Bad value: provided \"~s\" must be between <~B, ~B>.", [Key, Low, High])
+    <<"description">> => ?FMT("Bad value: provided \"~ts\" must be between <~B, ~B>.", [Key, Low, High])
 };
 to_json(?ERROR_BAD_VALUE_NOT_ALLOWED(Key, AllowedValues)) -> #{
     <<"id">> => <<"badValueNotAllowed">>,
@@ -761,7 +761,7 @@ to_json(?ERROR_BAD_VALUE_NOT_ALLOWED(Key, AllowedValues)) -> #{
         <<"allowed">> => AllowedValues
     },
     <<"description">> => ?FMT(
-        "Bad value: provided \"~s\" must be one of: ~ts.",
+        "Bad value: provided \"~ts\" must be one of: ~ts.",
         [Key, join_values_with_commas(AllowedValues)]
     )
 };
@@ -772,7 +772,7 @@ to_json(?ERROR_BAD_VALUE_LIST_NOT_ALLOWED(Key, AllowedValues)) -> #{
         <<"allowed">> => AllowedValues
     },
     <<"description">> => ?FMT(
-        "Bad value: provided \"~s\" must be a list containing zero or more following values: ~ts.",
+        "Bad value: provided \"~ts\" must be a list containing zero or more following values: ~ts.",
         [Key, join_values_with_commas(AllowedValues)]
     )
 };
@@ -781,33 +781,33 @@ to_json(?ERROR_BAD_VALUE_ID_NOT_FOUND(Key)) -> #{
     <<"details">> => #{
         <<"key">> => Key
     },
-    <<"description">> => ?FMT("Bad value: provided ID (\"~s\") does not exist.", [Key])
+    <<"description">> => ?FMT("Bad value: provided ID (\"~ts\") does not exist.", [Key])
 };
 to_json(?ERROR_BAD_VALUE_AMBIGUOUS_ID(Key)) -> #{
     <<"id">> => <<"badValueAmbiguousId">>,
     <<"details">> => #{
         <<"key">> => Key
     },
-    <<"description">> => ?FMT("Bad value: provided ID (\"~s\") is ambiguous.", [Key])
+    <<"description">> => ?FMT("Bad value: provided ID (\"~ts\") is ambiguous.", [Key])
 };
 to_json(?ERROR_BAD_VALUE_IDENTIFIER(Key)) -> #{
     <<"id">> => <<"badValueIdentifier">>,
     <<"details">> => #{
         <<"key">> => Key
     },
-    <<"description">> => ?FMT("Bad value: provided \"~s\" is not a valid identifier.", [Key])
+    <<"description">> => ?FMT("Bad value: provided \"~ts\" is not a valid identifier.", [Key])
 };
 to_json(?ERROR_BAD_VALUE_IDENTIFIER_OCCUPIED(Key)) -> #{
     <<"id">> => <<"badValueIdentifierOccupied">>,
     <<"details">> => #{
         <<"key">> => Key
     },
-    <<"description">> => ?FMT("Bad value: provided identifier (\"~s\") is already occupied.", [Key])
+    <<"description">> => ?FMT("Bad value: provided identifier (\"~ts\") is already occupied.", [Key])
 };
 to_json(?ERROR_BAD_VALUE_OCTAL(Key)) -> #{
     <<"id">> => <<"badValueOctal">>,
     <<"details">> => #{<<"key">> => Key},
-    <<"description">> => ?FMT("Bad value: provided \"~s\" is not a valid octal number.", [Key])
+    <<"description">> => ?FMT("Bad value: provided \"~ts\" is not a valid octal number.", [Key])
 };
 to_json(?ERROR_BAD_VALUE_FILE_PATH) -> #{
     <<"id">> => <<"badValueFilePath">>,
@@ -836,7 +836,7 @@ to_json(?ERROR_BAD_VALUE_NAME) -> #{
 to_json(?ERROR_BAD_VALUE_NAME(Key)) -> #{
     <<"id">> => <<"badValueName">>,
     <<"details">> => #{<<"key">> => Key},
-    <<"description">> => <<"Bad value provided for \"~s\": ", (?NAME_REQUIREMENTS_DESCRIPTION)/binary>>
+    <<"description">> => <<"Bad value provided for \"~ts\": ", (?NAME_REQUIREMENTS_DESCRIPTION)/binary>>
 };
 to_json(?ERROR_BAD_VALUE_DOMAIN) -> #{
     <<"id">> => <<"badValueDomain">>,
@@ -851,7 +851,7 @@ to_json(?ERROR_BAD_VALUE_CAVEAT(CaveatJson)) -> #{
     <<"details">> => #{
         <<"caveat">> => CaveatJson
     },
-    <<"description">> => ?FMT("Provided caveat is invalid: '~s'.", [json_utils:encode(CaveatJson)])
+    <<"description">> => ?FMT("Provided caveat is invalid: '~ts'.", [json_utils:encode(CaveatJson)])
 };
 to_json(?ERROR_BAD_VALUE_QOS_PARAMETERS) -> #{
     <<"id">> => <<"badValueQoSParameters">>,
@@ -864,9 +864,9 @@ to_json(?ERROR_TSC_MISSING_LAYOUT(MissingLayout)) -> #{
     },
     <<"description">> => ?FMT(
         "The request refers to a layout that is not reflected in the time series collection; "
-        "the following part of the layout is missing (time series name -> metric names): ~s.", [
+        "the following part of the layout is missing (time series name -> metric names): ~ts.", [
             join_values_with_commas(maps:fold(fun(TimeSeriesName, MetricNames, Acc) ->
-                Acc ++ [?FMT("~s -> [~s]", [TimeSeriesName, join_values_with_commas(MetricNames)])]
+                Acc ++ [?FMT("~ts -> [~ts]", [TimeSeriesName, join_values_with_commas(MetricNames)])]
             end, [], MissingLayout))
         ])
 };
@@ -886,7 +886,7 @@ to_json(?ERROR_BAD_VALUE_TSC_CONFLICTING_METRIC_CONFIG(TSName, MetricName, Exist
         <<"conflictingMetricConfig">> => jsonable_record:to_json(ConflictingMConfig, metric_config)
     },
     <<"description">> => ?FMT(
-        "Provided metric config for 'time series' ~s and metric '~s' conflicts with existing metric config (see details).", [
+        "Provided metric config for 'time series' ~ts and metric '~ts' conflicts with existing metric config (see details).", [
             TSName, MetricName
         ])
 };
@@ -903,7 +903,7 @@ to_json(?ERROR_GUI_PACKAGE_UNVERIFIED(ShaSum)) -> #{
     <<"details">> => #{
         <<"shaSum">> => ShaSum
     },
-    <<"description">> => ?FMT("Provided GUI package could not be verified - unknown SHA sum '~s'.", [ShaSum])
+    <<"description">> => ?FMT("Provided GUI package could not be verified - unknown SHA sum '~ts'.", [ShaSum])
 };
 to_json(?ERROR_INVALID_QOS_EXPRESSION(Reason)) -> #{
     <<"id">> => <<"invalidQosExpression">>,
@@ -958,7 +958,7 @@ to_json(?ERROR_ATM_LAMBDA_IN_USE(AtmWorkflowSchemas)) -> #{
         <<"atmWorkflowSchemas">> => AtmWorkflowSchemas
     },
     <<"description">> => ?FMT(
-        "This lambda cannot be removed because it is used by the following workflow schemas: ~s.",
+        "This lambda cannot be removed because it is used by the following workflow schemas: ~ts.",
         [join_values_with_commas(AtmWorkflowSchemas)]
     )
 };
@@ -979,7 +979,7 @@ to_json(?ERROR_CANNOT_DELETE_ENTITY(EntityType, EntityId)) -> #{
         <<"entityType">> => EntityType,
         <<"entityId">> => EntityId
     },
-    <<"description">> => ?FMT("Cannot delete ~s:~s; failed to delete some dependent relations.", [
+    <<"description">> => ?FMT("Cannot delete ~ts:~ts; failed to delete some dependent relations.", [
         gri:serialize_type(EntityType), EntityId
     ])
 };
@@ -1000,7 +1000,7 @@ to_json(?ERROR_RELATION_DOES_NOT_EXIST(ChType, ChId, ParType, ParId)) ->
             <<"parentType">> => ParType,
             <<"parentId">> => ParId
         },
-        <<"description">> => ?FMT("Bad value: ~s:~s ~s ~s:~s.", [
+        <<"description">> => ?FMT("Bad value: ~ts:~ts ~ts ~ts:~ts.", [
             gri:serialize_type(ChType), ChId,
             RelationToString,
             gri:serialize_type(ParType), ParId
@@ -1019,7 +1019,7 @@ to_json(?ERROR_RELATION_ALREADY_EXISTS(ChType, ChId, ParType, ParId)) ->
             <<"parentType">> => gri:serialize_type(ParType),
             <<"parentId">> => ParId
         },
-        <<"description">> => ?FMT("Bad value: ~s:~s ~s ~s:~s.", [
+        <<"description">> => ?FMT("Bad value: ~ts:~ts ~ts ~ts:~ts.", [
             gri:serialize_type(ChType), ChId,
             RelationToString,
             gri:serialize_type(ParType), ParId
@@ -1031,7 +1031,7 @@ to_json(?ERROR_SPACE_ALREADY_SUPPORTED_WITH_IMPORTED_STORAGE(SpaceId, StorageId)
         <<"spaceId">> => SpaceId,
         <<"storageId">> => StorageId
     },
-    <<"description">> => ?FMT("Space ~s is already supported with an imported storage ~s.", [SpaceId, StorageId])
+    <<"description">> => ?FMT("Space ~ts is already supported with an imported storage ~ts.", [SpaceId, StorageId])
 };
 
 %%--------------------------------------------------------------------
@@ -1058,7 +1058,7 @@ to_json(?ERROR_SPACE_NOT_SUPPORTED_BY(SpaceId, ProviderId)) -> #{
         <<"spaceId">> => SpaceId,
         <<"providerId">> => ProviderId
     },
-    <<"description">> => ?FMT("Specified space: ~s is not supported by provider ~s.", [SpaceId, ProviderId])
+    <<"description">> => ?FMT("Specified space: ~ts is not supported by provider ~ts.", [SpaceId, ProviderId])
 };
 to_json(?ERROR_NOT_A_LOCAL_STORAGE_SUPPORTING_SPACE(ProviderId, StorageId, SpaceId)) -> #{
     <<"id">> => <<"notALocalStorageSupportingSpace">>,
@@ -1068,7 +1068,7 @@ to_json(?ERROR_NOT_A_LOCAL_STORAGE_SUPPORTING_SPACE(ProviderId, StorageId, Space
         <<"spaceId">> => SpaceId
     },
     <<"description">> => ?FMT(
-        "Storage ~s does not belong to this Oneprovider (~s) and/or does not support the space ~s.",
+        "Storage ~ts does not belong to this Oneprovider (~ts) and/or does not support the space ~ts.",
         [StorageId, ProviderId, SpaceId]
     )
 };
@@ -1089,7 +1089,7 @@ to_json(?ERROR_REQUIRES_NON_IMPORTED_STORAGE(StorageId)) -> #{
     <<"id">> => <<"requiresNonImportedStorage">>,
     <<"details">> => #{<<"storageId">> => StorageId},
     <<"description">> => ?FMT(
-        "Cannot apply for storage ~s - this operation requires a non-imported storage.",
+        "Cannot apply for storage ~ts - this operation requires a non-imported storage.",
         [StorageId]
     )
 };
@@ -1097,7 +1097,7 @@ to_json(?ERROR_REQUIRES_IMPORTED_STORAGE(StorageId)) -> #{
     <<"id">> => <<"requiresImportedStorage">>,
     <<"details">> => #{<<"storageId">> => StorageId},
     <<"description">> => ?FMT(
-        "Cannot apply for storage ~s - this operation requires an imported storage.",
+        "Cannot apply for storage ~ts - this operation requires an imported storage.",
         [StorageId]
     )
 };
@@ -1105,7 +1105,7 @@ to_json(?ERROR_REQUIRES_READONLY_STORAGE(StorageIdOrType)) -> #{
     <<"id">> => <<"requiresReadonlyStorage">>,
     <<"details">> => #{<<"storageIdOrType">> => StorageIdOrType},
     <<"description">> => ?FMT(
-        "Cannot apply for storage ~s - this operation requires a readonly storage.",
+        "Cannot apply for storage ~ts - this operation requires a readonly storage.",
         [StorageIdOrType]
     )
 };
@@ -1113,8 +1113,8 @@ to_json(?ERROR_REQUIRES_POSIX_COMPATIBLE_STORAGE(StorageId, PosixCompatibleStora
     <<"id">> => <<"requiresPosixCompatibleStorage">>,
     <<"details">> => #{<<"storageId">> => StorageId, <<"posixCompatibleStorages">> => PosixCompatibleStorages},
     <<"description">> => ?FMT(
-        "Cannot apply for storage ~s - this operation requires a POSIX-compatible storage "
-        "(any of: ~s).",
+        "Cannot apply for storage ~ts - this operation requires a POSIX-compatible storage "
+        "(any of: ~ts).",
         [StorageId, join_values_with_commas(PosixCompatibleStorages)]
     )
 };
@@ -1126,8 +1126,8 @@ to_json(?ERROR_AUTO_STORAGE_IMPORT_NOT_SUPPORTED(StorageId, SupportedStorages, S
         <<"supportedObjectStorages">> => SupportedObjectStorages
     },
     <<"description">> => ?FMT(
-        "Cannot configure auto storage import on storage ~s - this operation requires any of: ~s storage with canonical path type and on "
-        "object storages (any of: ~s) it requires blockSize = 0.",
+        "Cannot configure auto storage import on storage ~ts - this operation requires any of: ~ts storage with canonical path type and on "
+        "object storages (any of: ~ts) it requires blockSize = 0.",
         [StorageId, join_values_with_commas(SupportedStorages), join_values_with_commas(SupportedObjectStorages)]
     )
 };
@@ -1135,8 +1135,8 @@ to_json(?ERROR_STORAGE_IMPORT_NOT_SUPPORTED(StorageId, ObjectStorages)) -> #{
     <<"id">> => <<"storageImportNotSupported">>,
     <<"details">> => #{<<"storageId">> => StorageId, <<"objectStorages">> => ObjectStorages},
     <<"description">> => ?FMT(
-        "Cannot configure storage import on storage ~s - this operation requires storage with canonical path type and on "
-        "object storages (any of: ~s) it requires blockSize = 0.",
+        "Cannot configure storage import on storage ~ts - this operation requires storage with canonical path type and on "
+        "object storages (any of: ~ts) it requires blockSize = 0.",
         [StorageId, join_values_with_commas(ObjectStorages)]
     )
 };
@@ -1144,7 +1144,7 @@ to_json(?ERROR_STAT_OPERATION_NOT_SUPPORTED(StorageId)) -> #{
     <<"id">> => <<"statOperationNotSupported">>,
     <<"details">> => #{<<"storageId">> => StorageId},
     <<"description">> => ?FMT(
-        "Storage ~s does not support the `stat` operation or equivalent used for acquiring files metadata.",
+        "Storage ~ts does not support the `stat` operation or equivalent used for acquiring files metadata.",
         [StorageId]
     )
 };
@@ -1161,7 +1161,7 @@ to_json(?ERROR_VIEW_NOT_EXISTS_ON(ProviderId)) -> #{
     <<"details">> => #{
         <<"providerId">> => ProviderId
     },
-    <<"description">> => ?FMT("Specified view does not exist on provider ~s.", [ProviderId])
+    <<"description">> => ?FMT("Specified view does not exist on provider ~ts.", [ProviderId])
 };
 to_json(?ERROR_VIEW_QUERY_FAILED(Category, Description)) -> #{
     <<"id">> => <<"viewQueryFailed">>,
@@ -1169,7 +1169,7 @@ to_json(?ERROR_VIEW_QUERY_FAILED(Category, Description)) -> #{
         <<"category">> => Category,
         <<"description">> => Description
     },
-    <<"description">> => ?FMT("Query on view failed. Error category: ~s. Description: ~s.", [Category, Description])
+    <<"description">> => ?FMT("Query on view failed. Error category: ~ts. Description: ~ts.", [Category, Description])
 };
 to_json(?ERROR_QUOTA_EXCEEDED) -> #{
     <<"id">> => <<"quotaExceeded">>,
@@ -1187,7 +1187,7 @@ to_json(?ERROR_ATM_UNSUPPORTED_DATA_TYPE(Type, SupportedTypes)) ->
             <<"allowed">> => SupportedTypesJson
         },
         <<"description">> => ?FMT(
-            "Bad automation data type: provided \"~s\" is not one of: ~ts.",
+            "Bad automation data type: provided \"~ts\" is not one of: ~ts.",
             [TypeJson, join_values_with_commas(SupportedTypesJson)]
         )
     };
@@ -1216,7 +1216,7 @@ to_json(?ERROR_ATM_STORE_CREATION_FAILED(AtmStoreSchemaId, {error, _} = Specific
         <<"specificError">> => to_json(SpecificError)
     },
     <<"description">> => ?FMT(
-        "Failed to create automation store (schema id: \"~s\") (see details).",
+        "Failed to create automation store (schema id: \"~ts\") (see details).",
         [AtmStoreSchemaId]
     )
 };
@@ -1230,7 +1230,7 @@ to_json(?ERROR_ATM_STORE_FROZEN(AtmStoreSchemaId)) -> #{
         <<"atmStoreSchemaId">> => AtmStoreSchemaId
     },
     <<"description">> => ?FMT(
-        "Failed to perform operation on automation store (schema id: \"~s\") as any modification is forbidden.",
+        "Failed to perform operation on automation store (schema id: \"~ts\") as any modification is forbidden.",
         [AtmStoreSchemaId]
     )
 };
@@ -1244,7 +1244,7 @@ to_json(?ERROR_ATM_STORE_TYPE_DISALLOWED(AtmStoreSchemaId, AllowedTypes)) ->
             <<"allowed">> => AllowedTypesJson
         },
         <<"description">> => ?FMT(
-            "Bad automation store: the type of store (schema id: \"~s\") must be one of: ~ts.",
+            "Bad automation store: the type of store (schema id: \"~ts\") must be one of: ~ts.",
             [AtmStoreSchemaId, join_values_with_commas(AllowedTypesJson)]
         )
     };
@@ -1254,7 +1254,7 @@ to_json(?ERROR_ATM_STORE_CONTENT_NOT_SET(AtmStoreSchemaId)) -> #{
         <<"atmStoreSchemaId">> => AtmStoreSchemaId
     },
     <<"description">> => ?FMT(
-        "No content has been set for this store (schema id: \"~s\").",
+        "No content has been set for this store (schema id: \"~ts\").",
         [AtmStoreSchemaId]
     )
 };
@@ -1264,7 +1264,7 @@ to_json(?ERROR_ATM_STORE_NOT_FOUND(AtmStoreSchemaId)) -> #{
         <<"atmStoreSchemaId">> => AtmStoreSchemaId
     },
     <<"description">> => ?FMT(
-        "Bad automation store: store (schema id: \"~s\") does not exist.",
+        "Bad automation store: store (schema id: \"~ts\") does not exist.",
         [AtmStoreSchemaId]
     )
 };
@@ -1310,7 +1310,7 @@ to_json(?ERROR_ATM_LANE_EMPTY(AtmLaneSchemaId)) -> #{
         <<"atmLaneSchemaId">> => AtmLaneSchemaId
     },
     <<"description">> => ?FMT(
-        "Bad automation lane: lane (id: \"~s\") must not be empty.",
+        "Bad automation lane: lane (id: \"~ts\") must not be empty.",
         [AtmLaneSchemaId]
     )
 };
@@ -1321,7 +1321,7 @@ to_json(?ERROR_ATM_LANE_EXECUTION_CREATION_FAILED(AtmLaneSchemaId, {error, _} = 
         <<"specificError">> => to_json(SpecificError)
     },
     <<"description">> => ?FMT(
-        "Failed to create automation lane execution (id: \"~s\") (see details).",
+        "Failed to create automation lane execution (id: \"~ts\") (see details).",
         [AtmLaneSchemaId]
     )
 };
@@ -1332,7 +1332,7 @@ to_json(?ERROR_ATM_LANE_EXECUTION_INITIATION_FAILED(AtmLaneSchemaId, {error, _} 
         <<"specificError">> => to_json(SpecificError)
     },
     <<"description">> => ?FMT(
-        "Failed to initiate automation lane execution (id: \"~s\") (see details).",
+        "Failed to initiate automation lane execution (id: \"~ts\") (see details).",
         [AtmLaneSchemaId]
     )
 };
@@ -1357,7 +1357,7 @@ to_json(?ERROR_ATM_PARALLEL_BOX_EMPTY(AtmParallelBoxSchemaId)) -> #{
         <<"atmParallelBoxSchemaId">> => AtmParallelBoxSchemaId
     },
     <<"description">> => ?FMT(
-        "Bad automation parallel box: parallel box (id: \"~s\") must not be empty.",
+        "Bad automation parallel box: parallel box (id: \"~ts\") must not be empty.",
         [AtmParallelBoxSchemaId]
     )
 };
@@ -1371,7 +1371,7 @@ to_json(?ERROR_ATM_PARALLEL_BOX_EXECUTION_CREATION_FAILED(
         <<"specificError">> => to_json(SpecificError)
     },
     <<"description">> => ?FMT(
-        "Failed to create automation parallel box execution (id: \"~s\") (see details).",
+        "Failed to create automation parallel box execution (id: \"~ts\") (see details).",
         [AtmParallelBoxSchemaId]
     )
 };
@@ -1385,7 +1385,7 @@ to_json(?ERROR_ATM_PARALLEL_BOX_EXECUTION_INITIATION_FAILED(
         <<"specificError">> => to_json(SpecificError)
     },
     <<"description">> => ?FMT(
-        "Failed to initiate automation parallel box execution (id: \"~s\") (see details).",
+        "Failed to initiate automation parallel box execution (id: \"~ts\") (see details).",
         [AtmParallelBoxSchemaId]
     )
 };
@@ -1397,7 +1397,7 @@ to_json(?ERROR_ATM_TASK_EXECUTION_CREATION_FAILED(AtmTaskSchemaId, {error, _} = 
         <<"specificError">> => to_json(SpecificError)
     },
     <<"description">> => ?FMT(
-        "Failed to create automation task execution (id: \"~s\") (see details).",
+        "Failed to create automation task execution (id: \"~ts\") (see details).",
         [AtmTaskSchemaId]
     )
 };
@@ -1408,7 +1408,7 @@ to_json(?ERROR_ATM_TASK_EXECUTION_INITIATION_FAILED(AtmTaskSchemaId, {error, _} 
         <<"specificError">> => to_json(SpecificError)
     },
     <<"description">> => ?FMT(
-        "Failed to initiate automation task execution (id: \"~s\") (see details).",
+        "Failed to initiate automation task execution (id: \"~ts\") (see details).",
         [AtmTaskSchemaId]
     )
 };
@@ -1419,7 +1419,7 @@ to_json(?ERROR_ATM_LAMBDA_CONFIG_BAD_VALUE(ParameterName, {error, _} = SpecificE
         <<"specificError">> => to_json(SpecificError)
     },
     <<"description">> => ?FMT(
-        "Bad value provided for parameter \"~s\" of lambda config (see details).",
+        "Bad value provided for parameter \"~ts\" of lambda config (see details).",
         [ParameterName]
     )
 };
@@ -1429,7 +1429,7 @@ to_json(?ERROR_ATM_TASK_ARG_MAPPER_FOR_REQUIRED_LAMBDA_ARG_MISSING(ArgName)) -> 
         <<"argument">> => ArgName
     },
     <<"description">> => ?FMT(
-        "Missing argument mapper for required lambda argument: ~s.",
+        "Missing argument mapper for required lambda argument: ~ts.",
         [ArgName]
     )
 };
@@ -1439,7 +1439,7 @@ to_json(?ERROR_ATM_TASK_ARG_MAPPER_FOR_NONEXISTENT_LAMBDA_ARG(ArgName)) -> #{
         <<"argument">> => ArgName
     },
     <<"description">> => ?FMT(
-        "Found excessive argument mapper for nonexistent lambda argument: ~s.",
+        "Found excessive argument mapper for nonexistent lambda argument: ~ts.",
         [ArgName]
     )
 };
@@ -1450,7 +1450,7 @@ to_json(?ERROR_ATM_TASK_ARG_MAPPING_FAILED(ArgName, {error, _} = SpecificError))
         <<"specificError">> => to_json(SpecificError)
     },
     <<"description">> => ?FMT(
-        "Failed to map automation task execution argument \"~s\" (see details).",
+        "Failed to map automation task execution argument \"~ts\" (see details).",
         [ArgName]
     )
 };
@@ -1465,7 +1465,7 @@ to_json(?ERROR_ATM_TASK_ARG_MAPPER_UNSUPPORTED_VALUE_BUILDER(Type, SupportedType
             <<"supported">> => SupportedTypesJson
         },
         <<"description">> => ?FMT(
-            "Bad automation task argument value builder: type \"~s\" not supported - must be one of: ~ts.",
+            "Bad automation task argument value builder: type \"~ts\" not supported - must be one of: ~ts.",
             [TypeJson, join_values_with_commas(SupportedTypesJson)]
         )
     };
@@ -1484,7 +1484,7 @@ to_json(?ERROR_ATM_TASK_RESULT_MISSING(MissingResultName, ReceivedResultNames)) 
         <<"receivedResultNames">> => ReceivedResultNames
     },
     <<"description">> => ?FMT(
-        "Missing required value for result '~s' in the lambda output. Received values for result names: ~s.",
+        "Missing required value for result '~ts' in the lambda output. Received values for result names: ~ts.",
         [MissingResultName, join_values_with_commas(ReceivedResultNames)]
     )
 };
@@ -1495,7 +1495,7 @@ to_json(?ERROR_ATM_TASK_RESULT_MAPPING_FAILED(ResultName, {error, _} = SpecificE
         <<"specificError">> => to_json(SpecificError)
     },
     <<"description">> => ?FMT(
-        "Failed to map automation task execution result \"~s\" (see details).",
+        "Failed to map automation task execution result \"~ts\" (see details).",
         [ResultName]
     )
 };
@@ -1506,7 +1506,7 @@ to_json(?ERROR_ATM_TASK_RESULT_DISPATCH_FAILED(AtmStoreSchemaId, {error, _} = Sp
         <<"specificError">> => to_json(SpecificError)
     },
     <<"description">> => ?FMT(
-        "Failed to dispatch automation task execution result to automation store \"~s\" (see details).",
+        "Failed to dispatch automation task execution result to automation store \"~ts\" (see details).",
         [AtmStoreSchemaId]
     )
 };
@@ -1580,7 +1580,7 @@ to_json(?ERROR_DIR_STATS_NOT_READY) -> #{
 to_json(?ERROR_FORBIDDEN_FOR_CURRENT_ARCHIVE_STATE(CurrentState, AllowedStates)) -> #{
     <<"id">> => <<"forbiddenForCurrentArchiveState">>,
     <<"description">> => ?FMT(
-        "This operation is forbidden while the archive state is ~s. Allowed states are: ~s.",
+        "This operation is forbidden while the archive state is ~ts. Allowed states are: ~ts.",
         [CurrentState, join_values_with_commas(AllowedStates)]
     ),
     <<"details">> => #{
@@ -1633,7 +1633,7 @@ to_json(?ERROR_DNS_SERVERS_UNREACHABLE(UsedServers)) ->
     };
 to_json(?ERROR_FILE_ALLOCATION(ActualSize, TargetSize)) -> #{
     <<"id">> => <<"fileAllocation">>,
-    <<"description">> => ?FMT("File allocation error. Allocated ~s out of ~s.",
+    <<"description">> => ?FMT("File allocation error. Allocated ~ts out of ~ts.",
         [str_utils:format_byte_size(ActualSize), str_utils:format_byte_size(TargetSize)]),
     <<"details">> => #{
         <<"actualSize">> => ActualSize,
@@ -1672,7 +1672,7 @@ to_json(?ERROR_NO_CONNECTION_TO_NEW_NODE(Hostname)) -> #{
 };
 to_json(?ERROR_NO_SERVICE_NODES(Service)) -> #{
     <<"id">> => <<"noServiceNodes">>,
-    <<"description">> => ?FMT("Service ~s is not deployed on any node.", [Service]),
+    <<"description">> => ?FMT("Service ~ts is not deployed on any node.", [Service]),
     <<"details">> => #{
         <<"service">> => Service
     }

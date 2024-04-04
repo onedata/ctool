@@ -197,37 +197,37 @@ invite_type_from_str(<<"groupJoinAtmInventory">>) -> ?GROUP_JOIN_ATM_INVENTORY.
 to_printable(?ACCESS_TOKEN(undefined)) ->
     "access token";
 to_printable(?ACCESS_TOKEN(SessionId)) when is_binary(SessionId) ->
-    str_utils:format("access token for session \"~s\"", [SessionId]);
+    str_utils:format("access token for session \"~ts\"", [SessionId]);
 to_printable(?IDENTITY_TOKEN) ->
     "identity token";
 to_printable(?INVITE_TOKEN(?USER_JOIN_GROUP, GroupId)) ->
-    str_utils:format("invite token for a user to join group \"~s\"", [GroupId]);
+    str_utils:format("invite token for a user to join group \"~ts\"", [GroupId]);
 to_printable(?INVITE_TOKEN(?GROUP_JOIN_GROUP, GroupId)) ->
-    str_utils:format("invite token for a group to join group \"~s\"", [GroupId]);
+    str_utils:format("invite token for a group to join group \"~ts\"", [GroupId]);
 to_printable(?INVITE_TOKEN(?USER_JOIN_SPACE, SpaceId)) ->
-    str_utils:format("invite token for a user to join space \"~s\"", [SpaceId]);
+    str_utils:format("invite token for a user to join space \"~ts\"", [SpaceId]);
 to_printable(?INVITE_TOKEN(?GROUP_JOIN_SPACE, SpaceId)) ->
-    str_utils:format("invite token for a group to join space \"~s\"", [SpaceId]);
+    str_utils:format("invite token for a group to join space \"~ts\"", [SpaceId]);
 to_printable(?INVITE_TOKEN(?SUPPORT_SPACE, SpaceId)) ->
-    str_utils:format("invite token to grant support for space \"~s\"", [SpaceId]);
+    str_utils:format("invite token to grant support for space \"~ts\"", [SpaceId]);
 to_printable(?INVITE_TOKEN(?HARVESTER_JOIN_SPACE, SpaceId)) ->
-    str_utils:format("invite token for a harvester to become a metadata sink for space \"~s\"", [SpaceId]);
+    str_utils:format("invite token for a harvester to become a metadata sink for space \"~ts\"", [SpaceId]);
 to_printable(?INVITE_TOKEN(?REGISTER_ONEPROVIDER, AdminUserId)) ->
-    str_utils:format("invite token to register a Oneprovider for admin user \"~s\"", [AdminUserId]);
+    str_utils:format("invite token to register a Oneprovider for admin user \"~ts\"", [AdminUserId]);
 to_printable(?INVITE_TOKEN(?USER_JOIN_CLUSTER, ClusterId)) ->
-    str_utils:format("invite token for a user to join cluster \"~s\"", [ClusterId]);
+    str_utils:format("invite token for a user to join cluster \"~ts\"", [ClusterId]);
 to_printable(?INVITE_TOKEN(?GROUP_JOIN_CLUSTER, ClusterId)) ->
-    str_utils:format("invite token for a group to join cluster \"~s\"", [ClusterId]);
+    str_utils:format("invite token for a group to join cluster \"~ts\"", [ClusterId]);
 to_printable(?INVITE_TOKEN(?USER_JOIN_HARVESTER, HarvesterId)) ->
-    str_utils:format("invite token for a user to join harvester \"~s\"", [HarvesterId]);
+    str_utils:format("invite token for a user to join harvester \"~ts\"", [HarvesterId]);
 to_printable(?INVITE_TOKEN(?GROUP_JOIN_HARVESTER, HarvesterId)) ->
-    str_utils:format("invite token for a group to join harvester \"~s\"", [HarvesterId]);
+    str_utils:format("invite token for a group to join harvester \"~ts\"", [HarvesterId]);
 to_printable(?INVITE_TOKEN(?SPACE_JOIN_HARVESTER, HarvesterId)) ->
-    str_utils:format("invite token for a space to become a metadata source for harvester \"~s\"", [HarvesterId]);
+    str_utils:format("invite token for a space to become a metadata source for harvester \"~ts\"", [HarvesterId]);
 to_printable(?INVITE_TOKEN(?USER_JOIN_ATM_INVENTORY, AtmInventoryId)) ->
-    str_utils:format("invite token for a user to join automation inventory \"~s\"", [AtmInventoryId]);
+    str_utils:format("invite token for a user to join automation inventory \"~ts\"", [AtmInventoryId]);
 to_printable(?INVITE_TOKEN(?GROUP_JOIN_ATM_INVENTORY, AtmInventoryId)) ->
-    str_utils:format("invite token for a group to join automation inventory \"~s\"", [AtmInventoryId]).
+    str_utils:format("invite token for a group to join automation inventory \"~ts\"", [AtmInventoryId]).
 
 %%%===================================================================
 %%% Internal functions

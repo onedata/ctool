@@ -215,7 +215,7 @@ finalize_cluster_resizing() ->
         {[], []} ->
             ok;
         _ ->
-            ?error("Error finalizing cluster resizing for nodes ~p~nrpc ans: ~p", [Nodes, FullAns]),
+            ?error("Error finalizing cluster resizing for nodes ~tp~nrpc ans: ~tp", [Nodes, FullAns]),
             throw({error, FullAns})
     end.
 
@@ -250,7 +250,7 @@ replicate_ring_to_nodes(Nodes, RingGeneration, Ring) ->
         {[], []} ->
             ok;
         _ ->
-            ?error("Error replicating ring to nodes ~p~nrpc ans: ~p", [Nodes, FullAns]),
+            ?error("Error replicating ring to nodes ~tp~nrpc ans: ~tp", [Nodes, FullAns]),
             {error, FullAns}
     end.
 

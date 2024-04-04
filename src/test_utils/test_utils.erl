@@ -82,7 +82,7 @@ load_utility_modules(Config) ->
         []
     ),
 
-    ct:pal("Recompiled utility modules: ~p", [AllRecompiledModules]).
+    ct:pal("Recompiled utility modules: ~tp", [AllRecompiledModules]).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -340,11 +340,11 @@ do_action(Fun, Num) ->
         {badrpc, nodedown} = Error ->
             {failure, Error};
         Other ->
-            ct:print("Action ~p failed with ans: ~p", [Fun, Other]),
+            ct:print("Action ~tp failed with ans: ~tp", [Fun, Other]),
             retry
     catch
         E1:E2 ->
-            ct:print("Action ~p failed with error: ~p", [Fun, {E1, E2}]),
+            ct:print("Action ~tp failed with error: ~tp", [Fun, {E1, E2}]),
             retry
     end,
     case Result of
@@ -372,7 +372,7 @@ maybe_recompile_module(ModuleName, SrcFilePath, Includes) ->
                 {ok, ModuleName} ->
                     true;
                 Error ->
-                    ct:fail("Couldn't compile module '~w'~n~p", [ModuleName, Error])
+                    ct:fail("Couldn't compile module '~w'~n~tp", [ModuleName, Error])
             end;
         false ->
             false

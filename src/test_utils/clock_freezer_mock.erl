@@ -104,7 +104,7 @@ current_time_seconds() ->
 current_time_millis() ->
     case ctool:get_env(clock_freezer_timestamp_millis, undefined) of
         Time when is_integer(Time) -> Time;
-        undefined -> error(str_utils:format("~p:setup/x must be called first to use the clock freezer", [?MODULE]))
+        undefined -> error(str_utils:format("~tp:setup/x must be called first to use the clock freezer", [?MODULE]))
     end.
 
 -spec current_time_micros() -> time:micros().

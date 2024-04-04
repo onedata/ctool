@@ -46,7 +46,7 @@ dump(Term) ->
 
 -spec dump(string(), term()) -> ok.
 dump(Name, Term) ->
-    debug_log("~ts = ~p", [Name, Term]).
+    debug_log("~ts = ~tp", [Name, Term]).
 
 
 %% @doc gives you nice debug logs when not equal
@@ -54,7 +54,7 @@ dump(Name, Term) ->
 is_equal(ExpectedValue, ExpectedValue, _) ->
     true;
 is_equal(ActualValue, ExpectedValue, LogMessage) ->
-    debug_log("~ts~n> Exp: ~p~n> Got: ~p", [LogMessage, ExpectedValue, ActualValue]),
+    debug_log("~ts~n> Exp: ~tp~n> Got: ~tp", [LogMessage, ExpectedValue, ActualValue]),
     false.
 
 
@@ -109,7 +109,7 @@ throws_error_during_decode_from_json(ExpError, RecordType, Record) ->
                 ExpError ->
                     true;
                 _ ->
-                    debug_log("Validation did not throw the expected error!~nExpected: ~p~nGot:      ~p", [
+                    debug_log("Validation did not throw the expected error!~nExpected: ~tp~nGot:      ~tp", [
                         ExpError, ActualError
                     ]),
                     false

@@ -128,7 +128,7 @@ build_verifier(AuthCtx, SupportedCaveats) ->
             lists:member(CaveatType, SupportedCaveats) andalso
                 (lists:member(CaveatType, AuthCtx#auth_ctx.ignored_caveats) orelse verify(Caveat, AuthCtx))
         catch Class:Reason:Stacktrace ->
-            ?debug_exception("Cannot verify caveat ~s", [SerializedCaveat], Class, Reason, Stacktrace),
+            ?debug_exception("Cannot verify caveat ~ts", [SerializedCaveat], Class, Reason, Stacktrace),
             false
         end
     end).
@@ -517,20 +517,20 @@ sanitize(_) ->
 -spec unverified_description(caveat()) -> binary().
 unverified_description(#cv_time{valid_until = ValidUntil}) ->
     str_utils:format_bin(
-        "unverified time caveat: this token has expired at '~s'",
+        "unverified time caveat: this token has expired at '~ts'",
         [time:seconds_to_iso8601(ValidUntil)]
     );
 
 unverified_description(#cv_ip{whitelist = Whitelist}) ->
     str_utils:format_bin(
-        "unverified IP caveat: this token can only be used from an IP address that matches: '~s'",
+        "unverified IP caveat: this token can only be used from an IP address that matches: '~ts'",
         [?JOIN([element(2, {ok, _} = ip_utils:serialize_mask(M)) || M <- Whitelist], <<" or ">>)]
     );
 
 unverified_description(#cv_asn{whitelist = Whitelist}) ->
     str_utils:format_bin(
         "unverified ASN caveat: this token can only be used from an IP address that "
-        "maps to the following Autonomous System Number: '~s'",
+        "maps to the following Autonomous System Number: '~ts'",
         [?JOIN(lists:map(fun integer_to_binary/1, Whitelist), <<" or ">>)]
     );
 
@@ -541,7 +541,7 @@ unverified_description(#cv_country{type = Type, list = List}) ->
     end,
     str_utils:format_bin(
         "unverified country caveat: this token can only be used from an IP address that "
-        "~s from the following country: '~s'",
+        "~ts from the following country: '~ts'",
         [ComesStr, ?JOIN(List, <<" or ">>)]
     );
 
@@ -552,13 +552,13 @@ unverified_description(#cv_region{type = Type, list = List}) ->
     end,
     str_utils:format_bin(
         "unverified region caveat: this token can only be used from an IP address that "
-        "~s from the following region: '~s'",
+        "~ts from the following region: '~ts'",
         [ComesStr, ?JOIN(List, <<" or ">>)]
     );
 
 unverified_description(#cv_service{whitelist = AllowedServices}) ->
     str_utils:format_bin(
-        "unverified service caveat: the service using this token must authenticate as '~s' "
+        "unverified service caveat: the service using this token must authenticate as '~ts' "
         "(use the x-onedata-service-token header), or the requested API operation "
         "is disallowed for the whitelisted services",
         [?JOIN([list_to_binary(aai:service_to_printable(S)) || S <- AllowedServices], <<" or ">>)]
@@ -566,7 +566,7 @@ unverified_description(#cv_service{whitelist = AllowedServices}) ->
 
 unverified_description(#cv_consumer{whitelist = AllowedConsumers}) ->
     str_utils:format_bin(
-        "unverified consumer caveat: the consumer of this token must authenticate as '~s' - if that's you, you should:~n"
+        "unverified consumer caveat: the consumer of this token must authenticate as '~ts' - if that's you, you should:~n"
         "   * send your access token in 'x-auth-token' header if consuming an invite token~n"
         "   * send your identity token in 'x-onedata-consumer-token' header if performing an "
         "operation on behalf of somebody else with their access token~n"
@@ -576,14 +576,14 @@ unverified_description(#cv_consumer{whitelist = AllowedConsumers}) ->
 
 unverified_description(#cv_interface{interface = Interface}) ->
     str_utils:format_bin(
-        "unverified interface caveat: this token can only be used in the '~s' interface",
+        "unverified interface caveat: this token can only be used in the '~ts' interface",
         [Interface]
     );
 
 unverified_description(#cv_api{whitelist = Whitelist}) ->
     str_utils:format_bin(
         "unverified API caveat: this token can only be used for API calls that match "
-        "the following spec: '~s'",
+        "the following spec: '~ts'",
         [?JOIN(lists:map(fun cv_api:serialize_matchspec/1, Whitelist), <<" or ">>)]
     );
 

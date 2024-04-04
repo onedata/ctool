@@ -86,7 +86,7 @@ decode(JSON, JiffyOpts) ->
     try
         jiffy:decode(JSON, [return_maps, copy_strings | JiffyOpts])
     catch Class:Reason ->
-        ?debug("Failed to decode invalid json (~w:~p), payload:~n~p", [Class, Reason, JSON]),
+        ?debug("Failed to decode invalid json (~w:~tp), payload:~n~tp", [Class, Reason, JSON]),
         error(invalid_json)
     end.
 

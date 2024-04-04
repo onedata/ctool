@@ -97,11 +97,11 @@ lager_interfacing_test_() ->
                     onedata_logger:log(3, [], "error message"),
                     onedata_logger:log(0, [], "emergency message"),
                     ?debug("debug message"),
-                    ?debug("debug ~s", ["message"]),
+                    ?debug("debug ~ts", ["message"]),
                     ?info("info message"),
                     try throw(test) catch Class:Reason:Stacktrace ->
                         ?warning_exception("warning message", Class, Reason, Stacktrace),
-                        ?critical_exception("critical message ~p", [?MODULE], Class, Reason, Stacktrace)
+                        ?critical_exception("critical message ~tp", [?MODULE], Class, Reason, Stacktrace)
                     end,
                     ?error("error message"),
                     ?emergency("emergency message"),

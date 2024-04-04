@@ -23,9 +23,9 @@ Exemplary usages of logging macros and samples of corresponding output.
 ```erlang
 % an error log NOT related to an exception
 ?error("Custom message")
-?warning("Custom formatted message: ~p", [TermA])
+?warning("Custom formatted message: ~tp", [TermA])
 ?notice(
-    "Custom formatted message~nwith some multine content~nand autoformatted terms: ~s",
+    "Custom formatted message~nwith some multine content~nand autoformatted terms: ~ts",
     [?autoformat([TermA, TermB])]
 ),
 ```
@@ -63,7 +63,7 @@ and autoformatted terms:
 
 ```erlang
 % DEPRECATED error log with stacktrace - use ?error_exception for that
-?error_stacktrace("Custom formatted message: ~p", [TermA], Stacktrace)
+?error_stacktrace("Custom formatted message: ~tp", [TermA], Stacktrace)
 ```
 
 ```
@@ -118,7 +118,7 @@ and autoformatted terms:
 
 ```erlang
 % generic exception log with details as formatted message
-?critical_exception("Custom formatted message: ~p", [TermA], Class, Reason, Stacktrace)
+?critical_exception("Custom formatted message: ~tp", [TermA], Class, Reason, Stacktrace)
 ```
 
 ```
@@ -161,7 +161,7 @@ and autoformatted terms:
 % generic exception log with details as formatted message and
 % additional terms printed out (by variable names)
 ?warning_exception(
-    "Custom formatted message~nwith some multine content~nand autoformatted terms: ~s",
+    "Custom formatted message~nwith some multine content~nand autoformatted terms: ~ts",
     [?autoformat([TermA, TermB])],
     Class, Reason, Stacktrace
 )
@@ -226,7 +226,7 @@ and autoformatted terms:
 
 ```erlang
 % as above, but with custom details formatted message
-?examine_exception("Custom formatted message: ~p", [TermA], Class, Reason, Stacktrace)
+?examine_exception("Custom formatted message: ~tp", [TermA], Class, Reason, Stacktrace)
 ```
 
 ```
@@ -269,7 +269,7 @@ and autoformatted terms:
 % logs and returns an INTERNAL_SERVER_ERROR with error reference
 % used when there was no unexpected exception
 ?report_internal_server_error("Custom message")
-?report_internal_server_error("Custom formatted message: ~p", [TermA])
+?report_internal_server_error("Custom formatted message: ~tp", [TermA])
 ?report_internal_server_error(?autoformat([TermA, TermB]))
 ```
 

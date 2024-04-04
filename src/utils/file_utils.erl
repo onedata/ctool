@@ -85,7 +85,7 @@ recursive_del(Path) ->
 move(From, To) ->
     case {filelib:is_file(From), filelib:is_file(To)} of
         {true, false} ->
-            Cmd = str_utils:format("mv -T '~s' '~s'", [From, To]),
+            Cmd = str_utils:format("mv -T '~ts' '~ts'", [From, To]),
             case os:cmd(Cmd) of
                 "" -> ok;
                 Error -> {error, Error}

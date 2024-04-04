@@ -242,7 +242,7 @@ select_referenced_time_series_schema(#atm_time_series_dispatch_rule{
             TimeSeriesSchema;
         error ->
             throw(?ERROR_BAD_DATA(<<"dispatchRules">>, str_utils:format_bin(
-                "Time series name generator '~s' specified in one of the dispatch rules "
+                "Time series name generator '~ts' specified in one of the dispatch rules "
                 "does not reference any defined time series schema",
                 [TargetTsNameGenerator]
             )))

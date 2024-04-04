@@ -154,7 +154,7 @@ parse_mask(IP, MaskLength) ->
 serialize_mask({MaskIP, MaskLength}) ->
     case inet:ntoa(MaskIP) of
         {error, ?EINVAL} -> {error, ?EINVAL};
-        AddressStr -> {ok, str_utils:format_bin("~s/~B", [AddressStr, MaskLength])}
+        AddressStr -> {ok, str_utils:format_bin("~ts/~B", [AddressStr, MaskLength])}
     end.
 
 

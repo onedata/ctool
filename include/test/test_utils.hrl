@@ -20,7 +20,7 @@
 
 
 -define(eunit_dump(Arg), eunit_utils:dump(??Arg, Arg)).
--define(ct_dump(Arg), ct:print("~s = ~p", [??Arg, Arg])).
+-define(ct_dump(Arg), ct:print("~ts = ~tp", [??Arg, Arg])).
 
 -define(ct_pal_exception(DetailsStr, Class, Reason, Stacktrace),
     ?ct_pal_exception(DetailsStr, "", Class, Reason, Stacktrace)
@@ -146,7 +146,7 @@ end).
 -define(RAND_SUBLIST(List, MinLength, MaxLength), lists_utils:random_sublist(List, MinLength, MaxLength)).
 -define(SHUFFLED(List), lists_utils:shuffle(List)).
 -define(RAND_SUBMAP(Map), maps:with(lists_utils:random_sublist(maps:keys(Map)), Map)).
--define(RAND_EMAIL_ADDRESS(), str_utils:format_bin("~s@example.com", [?RAND_STR(20)])).
+-define(RAND_EMAIL_ADDRESS(), str_utils:format_bin("~ts@example.com", [?RAND_STR(20)])).
 -define(RAND_OBJECTID, ?RAND_OBJECTID(?RAND_STR(16))).
 -define(RAND_OBJECTID(SpaceId), ?check(file_id:guid_to_objectid(file_id:pack_guid(str_utils:rand_hex(4), SpaceId)))).
 -define(RAND_CANONICAL_PATH(SpaceId),
