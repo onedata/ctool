@@ -24,10 +24,9 @@ Exemplary usages of logging macros and samples of corresponding output.
 % an error log NOT related to an exception
 ?error("Custom message")
 ?warning("Custom formatted message: ~tp", [TermA])
-?notice(
-    "Custom formatted message~nwith some multine content~nand autoformatted terms: ~ts",
-    [?autoformat([TermA, TermB])]
-),
+?notice(?autoformat_with_msg(
+    "Custom formatted message~nwith some multine content~nand autoformatted terms:", [TermA, TermB]
+)),
 ```
 
 ```
@@ -160,9 +159,10 @@ and autoformatted terms:
 ```erlang
 % generic exception log with details as formatted message and
 % additional terms printed out (by variable names)
-?warning_exception(
-    "Custom formatted message~nwith some multine content~nand autoformatted terms: ~ts",
-    [?autoformat([TermA, TermB])],
+?warning_exception(?notice(
+    ?autoformat_with_msg(
+        "Custom formatted message~nwith some multine content~nand autoformatted terms:", [TermA, TermB]
+    )),
     Class, Reason, Stacktrace
 )
 ```

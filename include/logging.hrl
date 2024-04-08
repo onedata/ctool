@@ -104,16 +104,10 @@ end).
 % produces an auto-formatted string with the values of all Terms (by variable names)
 % NOTE: the result string begins with a newline.
 % NOTE: does not handle multiline strings well (i.e. when one of the Terms is a multiline string);
-%       the "~tp" formatter just prints an inline "\n". Thus, it's recommended to print such strings
-%       using different methods, or just use binaries, which are handled well using "~ts".
--define(autoformat(TermOrTerms),
-    str_utils:format(
-        lists:flatten(lists:map(fun({Term, TermName}) ->
-            "~n    " ++ TermName ++ " = " ++ case ?is_printable(Term) of true -> "~ts"; false -> "~tp" end
-        end, lists:zip(?ensure_list_of_terms(TermOrTerms), string:tokens(??TermOrTerms, "[] ,")))),
-        ?ensure_list_of_terms(TermOrTerms)
-    )
-).
+%       the "~p" formatter just prints an inline "\n". Thus, it's recommended to print such strings
+%       using different methods, or just use binaries, which are handled well using "~s".
+-define(autoformat(TermOrTerms), ?autoformat_with_msg("", [], TermOrTerms)).
+
 % wrappers for convenience (the original macro accepts a list, but it's not 100% intuitive)
 -define(autoformat(A, B), ?autoformat([A, B])).
 -define(autoformat(A, B, C), ?autoformat([A, B, C])).
@@ -125,6 +119,19 @@ end).
 -define(autoformat(A, B, C, D, E, F, G, H, I), ?autoformat([A, B, C, D, E, F, G, H, I])).
 -define(autoformat(A, B, C, D, E, F, G, H, I, J), ?autoformat([A, B, C, D, E, F, G, H, I, J])).
 -define(autoformat(A, B, C, D, E, F, G, H, I, J, K), ?autoformat([A, B, C, D, E, F, G, H, I, J, K])).
+
+-define(autoformat_with_msg(Msg, FormatArgs, TermOrTerms), {autoformat, Msg, FormatArgs, string:tokens(??TermOrTerms, "[] ,"), ?ensure_list_of_terms(TermOrTerms)}).
+-define(autoformat_with_msg(Msg, TermOrTerms), ?autoformat_with_msg(Msg, [], TermOrTerms)).
+-define(autoformat_with_msg(Msg, FormatArgs, A, B), ?autoformat_with_msg(Msg, FormatArgs, [A, B])).
+-define(autoformat_with_msg(Msg, FormatArgs, A, B, C), ?autoformat_with_msg(Msg, FormatArgs, [A, B, C])).
+-define(autoformat_with_msg(Msg, FormatArgs, A, B, C, D), ?autoformat_with_msg(Msg, FormatArgs, [A, B, C, D])).
+-define(autoformat_with_msg(Msg, FormatArgs, A, B, C, D, E), ?autoformat_with_msg(Msg, FormatArgs, [A, B, C, D, E])).
+-define(autoformat_with_msg(Msg, FormatArgs, A, B, C, D, E, F), ?autoformat_with_msg(Msg, FormatArgs, [A, B, C, D, E, F])).
+-define(autoformat_with_msg(Msg, FormatArgs, A, B, C, D, E, F, G), ?autoformat_with_msg(Msg, FormatArgs, [A, B, C, D, E, F, G])).
+-define(autoformat_with_msg(Msg, FormatArgs, A, B, C, D, E, F, G, H), ?autoformat_with_msg(Msg, FormatArgs, [A, B, C, D, E, F, G, H])).
+-define(autoformat_with_msg(Msg, FormatArgs, A, B, C, D, E, F, G, H, I), ?autoformat_with_msg(Msg, FormatArgs, [A, B, C, D, E, F, G, H, I])).
+-define(autoformat_with_msg(Msg, FormatArgs, A, B, C, D, E, F, G, H, I, J), ?autoformat_with_msg(Msg, FormatArgs, [A, B, C, D, E, F, G, H, I, J])).
+-define(autoformat_with_msg(Msg, FormatArgs, A, B, C, D, E, F, G, H, I, J, K), ?autoformat_with_msg(Msg, FormatArgs, [A, B, C, D, E, F, G, H, I, J, K])).
 
 
 % DEPRECATED - use ?error_exception instead
@@ -248,7 +255,11 @@ end).
 % Convenience macros for debug
 
 % Prints a term or a list of terms by the name of the variable
--define(dump(TermOrTerms), io:format(user, "[DUMP]~ts~n", [?autoformat(TermOrTerms)])).
+-define(dump(TermOrTerms), io:format(user, "[DUMP]~ts~n", [
+    case TermOrTerms of
+        {autoformat, _, _, _, _} -> onedata_logger:format_generic_log(TermOrTerms);
+        _ -> onedata_logger:format_generic_log(?autoformat(TermOrTerms))
+end])).
 % wrappers for convenience (the original macro accepts a list, but it's not 100% intuitive)
 -define(dump(A, B), ?dump([A, B])).
 -define(dump(A, B, C), ?dump([A, B, C])).
