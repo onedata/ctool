@@ -104,8 +104,8 @@ end).
 % produces an auto-formatted string with the values of all Terms (by variable names)
 % NOTE: the result string begins with a newline.
 % NOTE: does not handle multiline strings well (i.e. when one of the Terms is a multiline string);
-%       the "~p" formatter just prints an inline "\n". Thus, it's recommended to print such strings
-%       using different methods, or just use binaries, which are handled well using "~s".
+%       the "~tp" formatter just prints an inline "\n". Thus, it's recommended to print such strings
+%       using different methods, or just use binaries, which are handled well using "~ts".
 -define(autoformat(TermOrTerms), ?autoformat_with_msg("", [], TermOrTerms)).
 
 % wrappers for convenience (the original macro accepts a list, but it's not 100% intuitive)
