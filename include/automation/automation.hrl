@@ -60,6 +60,10 @@
     attributes :: undefined | [onedata_file:attr_name()]
 }).
 
+-record(atm_group_data_spec, {
+    attributes :: [atm_group_data_spec:attribute_name()]
+}).
+
 -record(atm_number_data_spec, {
     integers_only :: boolean(),
     allowed_values :: undefined | [number()]
