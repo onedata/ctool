@@ -28,7 +28,7 @@
 
 -type record() :: #atm_group_data_spec{}.
 
--type attribute_name() :: id | name | type.
+-type attribute_name() :: group_id | name | type.
 
 -export_type([record/0, attribute_name/0]).
 
@@ -40,7 +40,7 @@
 
 -spec allowed_group_attributes() -> [attribute_name()].
 allowed_group_attributes() ->
-    [id, name, type].
+    [group_id, name, type].
 
 
 %%%===================================================================
@@ -93,13 +93,13 @@ db_decode(RecordJson, _NestedRecordDecoder) ->
 
 %% @private
 -spec attribute_name_to_json(attribute_name()) -> json_utils:json_term().
-attribute_name_to_json(id) -> <<"id">>;
+attribute_name_to_json(group_id) -> <<"groupId">>;
 attribute_name_to_json(name) -> <<"name">>;
 attribute_name_to_json(type) -> <<"type">>.
 
 
 %% @private
 -spec attribute_name_from_json(json_utils:json_term()) -> attribute_name().
-attribute_name_from_json(<<"id">>) -> id;
+attribute_name_from_json(<<"groupId">>) -> group_id;
 attribute_name_from_json(<<"name">>) -> name;
 attribute_name_from_json(<<"type">>) -> type.
