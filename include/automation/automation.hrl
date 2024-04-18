@@ -57,11 +57,14 @@
 
 -record(atm_file_data_spec, {
     file_type :: atm_file_data_spec:file_type_spec(),
+    % this field can be undefined in the context of results and stores,
+    % but must be a non-empty list in case of input parameters
     attributes :: undefined | [onedata_file:attr_name()]
 }).
 
 -record(atm_group_data_spec, {
-    attributes :: [atm_group_data_spec:attribute_name()]
+    % the same considerations as for atm_file_data_spec.attributes apply here
+    attributes :: undefined | [atm_group_data_spec:attribute_name()]
 }).
 
 -record(atm_number_data_spec, {
