@@ -19,6 +19,7 @@
 
 %% API
 -export([allowed_group_attributes/0]).
+-export([attribute_name_to_json/1, attribute_name_from_json/1]).
 
 %% Jsonable record callbacks
 -export([to_json/1, from_json/1]).
@@ -41,6 +42,18 @@
 -spec allowed_group_attributes() -> [attribute_name()].
 allowed_group_attributes() ->
     [group_id, name, type].
+
+
+-spec attribute_name_to_json(attribute_name()) -> json_utils:json_term().
+attribute_name_to_json(group_id) -> <<"groupId">>;
+attribute_name_to_json(name) -> <<"name">>;
+attribute_name_to_json(type) -> <<"type">>.
+
+
+-spec attribute_name_from_json(json_utils:json_term()) -> attribute_name().
+attribute_name_from_json(<<"groupId">>) -> group_id;
+attribute_name_from_json(<<"name">>) -> name;
+attribute_name_from_json(<<"type">>) -> type.
 
 
 %%%===================================================================
@@ -84,22 +97,3 @@ db_encode(Record, _NestedRecordEncoder) ->
 -spec db_decode(json_utils:json_term(), persistent_record:nested_record_decoder()) -> record().
 db_decode(RecordJson, _NestedRecordDecoder) ->
     from_json(RecordJson).
-
-
-%%%===================================================================
-%%% Internal functions
-%%%===================================================================
-
-
-%% @private
--spec attribute_name_to_json(attribute_name()) -> json_utils:json_term().
-attribute_name_to_json(group_id) -> <<"groupId">>;
-attribute_name_to_json(name) -> <<"name">>;
-attribute_name_to_json(type) -> <<"type">>.
-
-
-%% @private
--spec attribute_name_from_json(json_utils:json_term()) -> attribute_name().
-attribute_name_from_json(<<"groupId">>) -> group_id;
-attribute_name_from_json(<<"name">>) -> name;
-attribute_name_from_json(<<"type">>) -> type.
