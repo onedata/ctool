@@ -158,6 +158,9 @@
 }).
 
 -record(atm_audit_log_store_config, {
+    % NOTE: the log cannot hold data types such as file, dataset or group
+    % (ones that have dynamically computed values), although currently
+    % there are no validators on the schema level that would check that
     log_content_data_spec :: atm_data_spec:record()
 }).
 
