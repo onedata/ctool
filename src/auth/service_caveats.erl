@@ -103,6 +103,7 @@ allowed_api_by_service_type(?OP_WORKER) -> [
     {?OZ_WORKER, create, ?GRI_PATTERN(od_user, <<"*">>, {<<"idp_access_token">>, <<"*">>}, '*')},
     {?OZ_WORKER, get, ?GRI_PATTERN(od_group, <<"*">>, <<"*">>, '*')},
     {?OZ_WORKER, get, ?GRI_PATTERN(od_space, <<"*">>, <<"*">>, '*')},
+    {?OZ_WORKER, create, ?GRI_PATTERN(od_space, <<"*">>, <<"infer_accessible_eff_groups">>, '*')},
     {?OZ_WORKER, all, ?GRI_PATTERN(od_share, <<"*">>, <<"*">>, '*')},
     {?OZ_WORKER, get, ?GRI_PATTERN(od_provider, <<"*">>, <<"*">>, '*')},
     {?OZ_WORKER, all, ?GRI_PATTERN(od_handle, <<"*">>, <<"*">>, '*')},
