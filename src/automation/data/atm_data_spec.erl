@@ -33,6 +33,7 @@
     atm_boolean_data_spec |
     atm_dataset_data_spec |
     atm_file_data_spec |
+    atm_group_data_spec |
     atm_number_data_spec |
     atm_object_data_spec |
     atm_range_data_spec |
@@ -44,6 +45,7 @@
     atm_boolean_data_spec:record() |
     atm_dataset_data_spec:record() |
     atm_file_data_spec:record() |
+    atm_group_data_spec:record() |
     atm_number_data_spec:record() |
     atm_object_data_spec:record() |
     atm_range_data_spec:record() |
@@ -153,6 +155,7 @@ record_type_to_data_type(atm_array_data_spec) -> atm_array_type;
 record_type_to_data_type(atm_boolean_data_spec) -> atm_boolean_type;
 record_type_to_data_type(atm_dataset_data_spec) -> atm_dataset_type;
 record_type_to_data_type(atm_file_data_spec) -> atm_file_type;
+record_type_to_data_type(atm_group_data_spec) -> atm_group_type;
 record_type_to_data_type(atm_number_data_spec) -> atm_number_type;
 record_type_to_data_type(atm_object_data_spec) -> atm_object_type;
 record_type_to_data_type(atm_range_data_spec) -> atm_range_type;
@@ -166,6 +169,7 @@ data_type_to_record_type(atm_array_type) -> atm_array_data_spec;
 data_type_to_record_type(atm_boolean_type) -> atm_boolean_data_spec;
 data_type_to_record_type(atm_dataset_type) -> atm_dataset_data_spec;
 data_type_to_record_type(atm_file_type) -> atm_file_data_spec;
+data_type_to_record_type(atm_group_type) -> atm_group_data_spec;
 data_type_to_record_type(atm_number_type) -> atm_number_data_spec;
 data_type_to_record_type(atm_object_type) -> atm_object_data_spec;
 data_type_to_record_type(atm_range_type) -> atm_range_data_spec;

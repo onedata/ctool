@@ -22,8 +22,9 @@
               | atm_boolean_type
               | atm_dataset_type
               | atm_file_type
-              | atm_object_type
+              | atm_group_type
               | atm_number_type
+              | atm_object_type
               | atm_range_type
               | atm_string_type
               | atm_time_series_measurement_type.
@@ -53,6 +54,7 @@ all_data_types() -> [
     atm_boolean_type,
     atm_dataset_type,
     atm_file_type,
+    atm_group_type,
     atm_number_type,
     atm_object_type,
     atm_range_type,
@@ -70,6 +72,8 @@ is_instance(atm_boolean_type, Value) when is_boolean(Value) ->
 is_instance(atm_dataset_type, #{<<"datasetId">> := DatasetId}) when is_binary(DatasetId) ->
     true;
 is_instance(atm_file_type, #{<<"fileId">> := FileId}) when is_binary(FileId) ->
+    true;
+is_instance(atm_group_type, #{<<"groupId">> := GroupId}) when is_binary(GroupId) ->
     true;
 is_instance(atm_number_type, Value) when is_number(Value) ->
     true;
@@ -95,8 +99,9 @@ type_to_json(atm_array_type) -> <<"array">>;
 type_to_json(atm_boolean_type) -> <<"boolean">>;
 type_to_json(atm_dataset_type) -> <<"dataset">>;
 type_to_json(atm_file_type) -> <<"file">>;
-type_to_json(atm_object_type) -> <<"object">>;
+type_to_json(atm_group_type) -> <<"group">>;
 type_to_json(atm_number_type) -> <<"number">>;
+type_to_json(atm_object_type) -> <<"object">>;
 type_to_json(atm_range_type) -> <<"range">>;
 type_to_json(atm_string_type) -> <<"string">>;
 type_to_json(atm_time_series_measurement_type) -> <<"timeSeriesMeasurement">>.
@@ -107,8 +112,9 @@ type_from_json(<<"array">>) -> atm_array_type;
 type_from_json(<<"boolean">>) -> atm_boolean_type;
 type_from_json(<<"dataset">>) -> atm_dataset_type;
 type_from_json(<<"file">>) -> atm_file_type;
-type_from_json(<<"object">>) -> atm_object_type;
+type_from_json(<<"group">>) -> atm_group_type;
 type_from_json(<<"number">>) -> atm_number_type;
+type_from_json(<<"object">>) -> atm_object_type;
 type_from_json(<<"range">>) -> atm_range_type;
 type_from_json(<<"string">>) -> atm_string_type;
 type_from_json(<<"timeSeriesMeasurement">>) -> atm_time_series_measurement_type.
