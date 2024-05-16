@@ -836,7 +836,7 @@ to_json(?ERROR_BAD_VALUE_NAME) -> #{
 to_json(?ERROR_BAD_VALUE_NAME(Key)) -> #{
     <<"id">> => <<"badValueName">>,
     <<"details">> => #{<<"key">> => Key},
-    <<"description">> => <<"Bad value provided for \"~s\": ", (?NAME_REQUIREMENTS_DESCRIPTION)/binary>>
+    <<"description">> => ?FMT("Bad value provided for \"~ts\": ~ts", [Key, ?NAME_REQUIREMENTS_DESCRIPTION])
 };
 to_json(?ERROR_BAD_VALUE_DOMAIN) -> #{
     <<"id">> => <<"badValueDomain">>,
