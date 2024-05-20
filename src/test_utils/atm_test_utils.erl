@@ -230,6 +230,10 @@ example_data_spec_except(atm_file_type, _) ->
         file_type = ?RAND_ELEMENT(atm_file_data_spec:allowed_file_type_specs()),
         attributes = ?RAND_CHOICE(undefined, lists:usort(?RAND_SUBLIST(?API_FILE_ATTRS)))
     };
+example_data_spec_except(atm_group_type, _) ->
+    #atm_group_data_spec{
+        attributes = ?RAND_CHOICE(undefined, lists:usort(?RAND_SUBLIST(atm_group_data_spec:allowed_group_attributes())))
+    };
 example_data_spec_except(atm_number_type, _) ->
     #atm_number_data_spec{
         integers_only = ?RAND_BOOL(),
@@ -274,10 +278,12 @@ example_predefined_value(#atm_dataset_data_spec{}) ->
     #{<<"datasetId">> => ?RAND_STR()};
 example_predefined_value(#atm_file_data_spec{}) ->
     #{<<"fileId">> => ?RAND_STR()};
-example_predefined_value(#atm_object_data_spec{}) ->
-    ?RAND_ELEMENT([#{}, #{<<"key">> => 984.222}, #{<<"key">> => #{<<"nested">> => 984.222}}]);
+example_predefined_value(#atm_group_data_spec{}) ->
+    #{<<"groupId">> => ?RAND_STR()};
 example_predefined_value(#atm_number_data_spec{}) ->
     ?RAND_ELEMENT([?RAND_INT(0, 1000), rand:uniform() * ?RAND_INT(0, 1000)]);
+example_predefined_value(#atm_object_data_spec{}) ->
+    ?RAND_ELEMENT([#{}, #{<<"key">> => 984.222}, #{<<"key">> => #{<<"nested">> => 984.222}}]);
 example_predefined_value(#atm_range_data_spec{}) ->
     #{<<"start">> => ?RAND_INT(0, 10), <<"end">> => ?RAND_INT(10, 20), <<"step">> => ?RAND_INT(0, 5)};
 example_predefined_value(#atm_string_data_spec{}) ->
@@ -743,7 +749,17 @@ ensure_data_spec_valid_for_input_parameters(#atm_file_data_spec{attributes = [_ 
 ensure_data_spec_valid_for_input_parameters(#atm_file_data_spec{attributes = _} = DataSpec) ->
     % the attributes field must be a non-empty list
     DataSpec#atm_file_data_spec{attributes = lists:sort(?RAND_SUBLIST(?API_FILE_ATTRS, 1, all))};
+
+ensure_data_spec_valid_for_input_parameters(#atm_group_data_spec{attributes = [_ | _]} = DataSpec) ->
+    DataSpec;
+ensure_data_spec_valid_for_input_parameters(#atm_group_data_spec{attributes = _} = DataSpec) ->
+    % the attributes field must be a non-empty list
+    DataSpec#atm_group_data_spec{
+        attributes = lists:sort(?RAND_SUBLIST(atm_group_data_spec:allowed_group_attributes(), 1, all))
+    };
+
 ensure_data_spec_valid_for_input_parameters(#atm_array_data_spec{item_data_spec = ItemDataSpec}) ->
     #atm_array_data_spec{item_data_spec = ensure_data_spec_valid_for_input_parameters(ItemDataSpec)};
+
 ensure_data_spec_valid_for_input_parameters(DataSpec) ->
     DataSpec.
