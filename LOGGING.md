@@ -187,6 +187,38 @@ and autoformatted terms:
 *****
 
 ```erlang
+% generic exception log with details as formatted message 
+% additional information and terms printed out (by variable names)
+?warning_exception(?notice(
+    ?autoformat_with_msg(
+        "Custom formatted message~nwith some multine content~nadditional information ~ts
+         ~tp~nand autoformatted terms:", ["additional args", 1], TermA, TermB
+    )),
+    Class, Reason, Stacktrace
+)
+```
+
+```
+[W 22:16:40.926 <0.373.0>] An unexpected exception occurred in logging_examples:test/0 line 139
+> Caught: error:{some_exception,that_was_not_expected}
+> Stacktrace:
+    shell:eval_loop/3 line 627
+    shell:eval_exprs/7 line 642
+    shell:exprs/7 line 686
+    erl_eval:do_apply/6 line 689
+    logging_examples:test/0 line 111
+> Details: Custom formatted message
+with some multine content
+additional information additional args 1
+and autoformatted terms: 
+    TermA = <<"77b6b86da69e5d84">>
+    TermB = {tuple,#{<<"with nested">> =>
+                         [terms,that,will,be,printed,as,multiline,text]}}
+```
+
+*****
+
+```erlang
 % returns thrown errors that are known (no logging in this case),
 % otherwise generates an INTERNAL_SERVER_ERROR with reference and logs using ?error_exception
 ?examine_exception(Class, Reason, Stacktrace)

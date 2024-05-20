@@ -26,6 +26,12 @@
 
 -include("errors.hrl").
 
+-record(autoformat_spec, {
+    format :: string(),
+    args :: list(),
+    term_names :: list(),
+    term_values :: list()
+}).
 
 % Macros that should be used in code for logging.
 
@@ -120,18 +126,24 @@ end).
 -define(autoformat(A, B, C, D, E, F, G, H, I, J), ?autoformat([A, B, C, D, E, F, G, H, I, J])).
 -define(autoformat(A, B, C, D, E, F, G, H, I, J, K), ?autoformat([A, B, C, D, E, F, G, H, I, J, K])).
 
--define(autoformat_with_msg(Msg, FormatArgs, TermOrTerms), {autoformat, Msg, FormatArgs, string:tokens(??TermOrTerms, "[] ,"), ?ensure_list_of_terms(TermOrTerms)}).
+% works like ?autoformat, but precedes the output with a (possibly formatted) message
+-define(autoformat_with_msg(Format, Args, TermOrTerms), #autoformat_spec{
+    format = Format,
+    args = Args,
+    term_names = string:tokens(??TermOrTerms, "[] ,"),
+    term_values = ?ensure_list_of_terms(TermOrTerms)}
+).
 -define(autoformat_with_msg(Msg, TermOrTerms), ?autoformat_with_msg(Msg, [], TermOrTerms)).
--define(autoformat_with_msg(Msg, FormatArgs, A, B), ?autoformat_with_msg(Msg, FormatArgs, [A, B])).
--define(autoformat_with_msg(Msg, FormatArgs, A, B, C), ?autoformat_with_msg(Msg, FormatArgs, [A, B, C])).
--define(autoformat_with_msg(Msg, FormatArgs, A, B, C, D), ?autoformat_with_msg(Msg, FormatArgs, [A, B, C, D])).
--define(autoformat_with_msg(Msg, FormatArgs, A, B, C, D, E), ?autoformat_with_msg(Msg, FormatArgs, [A, B, C, D, E])).
--define(autoformat_with_msg(Msg, FormatArgs, A, B, C, D, E, F), ?autoformat_with_msg(Msg, FormatArgs, [A, B, C, D, E, F])).
--define(autoformat_with_msg(Msg, FormatArgs, A, B, C, D, E, F, G), ?autoformat_with_msg(Msg, FormatArgs, [A, B, C, D, E, F, G])).
--define(autoformat_with_msg(Msg, FormatArgs, A, B, C, D, E, F, G, H), ?autoformat_with_msg(Msg, FormatArgs, [A, B, C, D, E, F, G, H])).
--define(autoformat_with_msg(Msg, FormatArgs, A, B, C, D, E, F, G, H, I), ?autoformat_with_msg(Msg, FormatArgs, [A, B, C, D, E, F, G, H, I])).
--define(autoformat_with_msg(Msg, FormatArgs, A, B, C, D, E, F, G, H, I, J), ?autoformat_with_msg(Msg, FormatArgs, [A, B, C, D, E, F, G, H, I, J])).
--define(autoformat_with_msg(Msg, FormatArgs, A, B, C, D, E, F, G, H, I, J, K), ?autoformat_with_msg(Msg, FormatArgs, [A, B, C, D, E, F, G, H, I, J, K])).
+-define(autoformat_with_msg(Format, Args, A, B), ?autoformat_with_msg(Format, Args, [A, B])).
+-define(autoformat_with_msg(Format, Args, A, B, C), ?autoformat_with_msg(Format, Args, [A, B, C])).
+-define(autoformat_with_msg(Format, Args, A, B, C, D), ?autoformat_with_msg(Format, Args, [A, B, C, D])).
+-define(autoformat_with_msg(Format, Args, A, B, C, D, E), ?autoformat_with_msg(Format, Args, [A, B, C, D, E])).
+-define(autoformat_with_msg(Format, Args, A, B, C, D, E, F), ?autoformat_with_msg(Format, Args, [A, B, C, D, E, F])).
+-define(autoformat_with_msg(Format, Args, A, B, C, D, E, F, G), ?autoformat_with_msg(Format, Args, [A, B, C, D, E, F, G])).
+-define(autoformat_with_msg(Format, Args, A, B, C, D, E, F, G, H), ?autoformat_with_msg(Format, Args, [A, B, C, D, E, F, G, H])).
+-define(autoformat_with_msg(Format, Args, A, B, C, D, E, F, G, H, I), ?autoformat_with_msg(Format, Args, [A, B, C, D, E, F, G, H, I])).
+-define(autoformat_with_msg(Format, Args, A, B, C, D, E, F, G, H, I, J), ?autoformat_with_msg(Format, Args, [A, B, C, D, E, F, G, H, I, J])).
+-define(autoformat_with_msg(Format, Args, A, B, C, D, E, F, G, H, I, J, K), ?autoformat_with_msg(Format, Args, [A, B, C, D, E, F, G, H, I, J, K])).
 
 
 % DEPRECATED - use ?error_exception instead
@@ -255,11 +267,7 @@ end).
 % Convenience macros for debug
 
 % Prints a term or a list of terms by the name of the variable
--define(dump(TermOrTerms), io:format(user, "[DUMP]~ts~n", [
-    case TermOrTerms of
-        {autoformat, _, _, _, _} -> onedata_logger:format_generic_log(TermOrTerms);
-        _ -> onedata_logger:format_generic_log(?autoformat(TermOrTerms))
-end])).
+-define(dump(TermOrTerms), ?autoformat_with_msg("[DUMP]", TermOrTems)).
 % wrappers for convenience (the original macro accepts a list, but it's not 100% intuitive)
 -define(dump(A, B), ?dump([A, B])).
 -define(dump(A, B, C), ?dump([A, B, C])).

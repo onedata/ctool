@@ -15,30 +15,32 @@
 -include("global_definitions.hrl").
 -include("logging.hrl").
 
--export([format_generic_log/1, format_generic_log/2, format_exception_log/10,
+-export([format_generic_log/2, format_exception_log/10,
     format_deprecated_exception_log/7, format_error_report/7]).
 -export([should_log/1, log/3, parse_process_info/1, log_with_rotation/4]).
 -export([set_loglevel/1, set_console_loglevel/1]).
 -export([get_current_loglevel/0, get_default_loglevel/0, get_console_loglevel/0]).
 -export([loglevel_int_to_atom/1, loglevel_atom_to_int/1]).
 
+-type autoformat_spec() :: #autoformat_spec{}.
 
 %%%===================================================================
 %%% API
 %%%===================================================================
 
--spec format_generic_log(string() | tuple()) -> string().
-format_generic_log(Message) ->
-    format_generic_log(Message, []).
-
--spec format_generic_log(string() | tuple(), list()) -> string().
-format_generic_log({autoformat, Msg, MsgArgs, TermNames, TermValues}, []) ->
+-spec format_generic_log(string() | autoformat_spec(), list()) -> string().
+format_generic_log(#autoformat_spec{
+    format = Format,
+    args = Args,
+    term_names = TermNames,
+    term_values = TermValues
+}, _List) ->
     format_generic_log(
-        Msg ++ lists:flatten(lists:map(fun({TermName, Term}) ->
+        Format ++ lists:flatten(lists:map(fun({TermName, Term}) ->
             "~n    " ++ TermName ++  " = " ++
                 case ?is_printable(Term) of true -> "~ts"; false -> "~tp" end
         end, lists:zip(TermNames, TermValues))),
-        MsgArgs ++ TermValues
+        Args ++ TermValues
     );
 format_generic_log(Format, Args) ->
     str_utils:format(Format, Args).
