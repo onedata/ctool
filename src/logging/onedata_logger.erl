@@ -48,7 +48,7 @@ format_generic_log(Format, Args) ->
 
 -spec format_exception_log(
     module(), atom(), non_neg_integer(), non_neg_integer(),
-    string(), list(), undefined | string() | binary(),
+    string() | autoformat_spec(), list(), undefined | string() | binary(),
     atom(), term(), stacktrace()
 ) -> string().
 format_exception_log(
@@ -76,7 +76,7 @@ format_exception_log(
 
 -spec format_deprecated_exception_log(
     module(), atom(), non_neg_integer(), non_neg_integer(),
-    string(), list(), stacktrace()
+    string() | autoformat_spec(), list(), stacktrace()
 ) -> string().
 format_deprecated_exception_log(
     Module, Function, Arity, Line,
@@ -96,7 +96,7 @@ format_deprecated_exception_log(
 
 -spec format_error_report(
     module(), atom(), non_neg_integer(), non_neg_integer(),
-    string(), list(), undefined | string() | binary()
+    string() | autoformat_spec(), list(), undefined | string() | binary()
 ) -> string().
 format_error_report(
     Module, Function, Arity, Line,
@@ -273,8 +273,20 @@ log_with_rotation(LogFile, Format, Args, MaxSize) ->
 %%%===================================================================
 
 %% @private
--spec format_details_suffix(string(), list()) -> string().
+-spec format_details_suffix(string() | autoformat_spec(), list()) -> string().
 format_details_suffix("", _) ->
     "";
+format_details_suffix(#autoformat_spec{
+    format = Format,
+    args = Args,
+    term_names = TermNames,
+    term_values = TermValues
+}, _DetailsArgs) ->
+    str_utils:format(
+        "~n> Details: " ++ Format ++ lists:flatten(lists:map(fun({TermName, Term}) ->
+            "~n    " ++ TermName ++  " = " ++
+            case ?is_printable(Term) of true -> "~ts"; false -> "~tp"
+        end
+    end, lists:zip(TermNames, TermValues))), Args ++ TermValues);
 format_details_suffix(DetailsFormat, DetailsArgs) ->
     str_utils:format("~n> Details: " ++ DetailsFormat, DetailsArgs).
