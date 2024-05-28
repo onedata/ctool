@@ -29,19 +29,9 @@
 %%%===================================================================
 
 -spec format_generic_log(string() | autoformat_spec(), list()) -> string().
-format_generic_log(#autoformat_spec{
-    format = Format,
-    args = Args,
-    term_names = TermNames,
-    term_values = TermValues
-}, _List) ->
-    format_generic_log(
-        Format ++ lists:flatten(lists:map(fun({TermName, Term}) ->
-            "~n    " ++ TermName ++  " = " ++
-                case ?is_printable(Term) of true -> "~ts"; false -> "~tp" end
-        end, lists:zip(TermNames, TermValues))),
-        Args ++ TermValues
-    );
+format_generic_log(#autoformat_spec{} = AutoformatSpec, _List) ->
+    {DetailsFormat, DetailsArgs} = autoformat_spec_to_format_and_args(AutoformatSpec),
+    format_generic_log(DetailsFormat, DetailsArgs);
 format_generic_log(Format, Args) ->
     str_utils:format(Format, Args).
 
@@ -276,17 +266,23 @@ log_with_rotation(LogFile, Format, Args, MaxSize) ->
 -spec format_details_suffix(string() | autoformat_spec(), list()) -> string().
 format_details_suffix("", _) ->
     "";
-format_details_suffix(#autoformat_spec{
+format_details_suffix(#autoformat_spec{} = AutoformatSpec, _DetailsArgs) ->
+    {DetailsFormat, DetailsArgs} = autoformat_spec_to_format_and_args(AutoformatSpec),
+    format_details_suffix(DetailsFormat, DetailsArgs);
+format_details_suffix(DetailsFormat, DetailsArgs) ->
+    str_utils:format("~n> Details: " ++ DetailsFormat, DetailsArgs).
+
+
+%% private
+-spec autoformat_spec_to_format_and_args(autoformat_spec()) -> {string(), list()}.
+autoformat_spec_to_format_and_args(#autoformat_spec{
     format = Format,
     args = Args,
     term_names = TermNames,
     term_values = TermValues
-}, _DetailsArgs) ->
-    str_utils:format(
-        "~n> Details: " ++ Format ++ lists:flatten(lists:map(fun({TermName, Term}) ->
-            "~n    " ++ TermName ++  " = " ++
-            case ?is_printable(Term) of true -> "~ts"; false -> "~tp"
-        end
-    end, lists:zip(TermNames, TermValues))), Args ++ TermValues);
-format_details_suffix(DetailsFormat, DetailsArgs) ->
-    str_utils:format("~n> Details: " ++ DetailsFormat, DetailsArgs).
+}) ->
+    DetailsFormat = Format ++ lists:flatten(lists:map(fun({TermName, Term}) ->
+        ControlSequence = case ?is_printable(Term) of true -> "~ts"; false -> "~tp" end,
+        "~n    " ++ TermName ++  " = " ++ ControlSequence
+    end, lists:zip(TermNames, TermValues))),
+    {DetailsFormat, Args ++ TermValues}.

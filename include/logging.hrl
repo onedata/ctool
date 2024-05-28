@@ -26,12 +26,6 @@
 
 -include("errors.hrl").
 
--record(autoformat_spec, {
-    format :: string(),
-    args :: list(),
-    term_names :: list(),
-    term_values :: list()
-}).
 
 % Macros that should be used in code for logging.
 
@@ -107,6 +101,15 @@ end).
     _ -> [TermOrTerms]
 end).
 
+
+-record(autoformat_spec, {
+    format :: string(),
+    args :: [string()],
+    term_names :: [term()],
+    term_values :: [term()]
+}).
+
+
 % produces an auto-formatted string with the values of all Terms (by variable names)
 % NOTE: the result string begins with a newline.
 % NOTE: does not handle multiline strings well (i.e. when one of the Terms is a multiline string);
@@ -125,6 +128,8 @@ end).
 -define(autoformat(A, B, C, D, E, F, G, H, I), ?autoformat([A, B, C, D, E, F, G, H, I])).
 -define(autoformat(A, B, C, D, E, F, G, H, I, J), ?autoformat([A, B, C, D, E, F, G, H, I, J])).
 -define(autoformat(A, B, C, D, E, F, G, H, I, J, K), ?autoformat([A, B, C, D, E, F, G, H, I, J, K])).
+-define(autoformat(A, B, C, D, E, F, G, H, I, J, K, L), ?autoformat([A, B, C, D, E, F, G, H, I, J, K, L])).
+
 
 % works like ?autoformat, but precedes the output with a (possibly formatted) message
 -define(autoformat_with_msg(Format, Args, TermOrTerms), #autoformat_spec{
@@ -144,6 +149,7 @@ end).
 -define(autoformat_with_msg(Format, Args, A, B, C, D, E, F, G, H, I), ?autoformat_with_msg(Format, Args, [A, B, C, D, E, F, G, H, I])).
 -define(autoformat_with_msg(Format, Args, A, B, C, D, E, F, G, H, I, J), ?autoformat_with_msg(Format, Args, [A, B, C, D, E, F, G, H, I, J])).
 -define(autoformat_with_msg(Format, Args, A, B, C, D, E, F, G, H, I, J, K), ?autoformat_with_msg(Format, Args, [A, B, C, D, E, F, G, H, I, J, K])).
+-define(autoformat_with_msg(Format, Args, A, B, C, D, E, F, G, H, I, J, K, L), ?autoformat_with_msg(Format, Args, [A, B, C, D, E, F, G, H, I, J, K, L])).
 
 
 % DEPRECATED - use ?error_exception instead

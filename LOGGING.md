@@ -159,10 +159,10 @@ and autoformatted terms:
 ```erlang
 % generic exception log with details as formatted message and
 % additional terms printed out (by variable names)
-?warning_exception(?notice(
+?warning_exception(
     ?autoformat_with_msg(
         "Custom formatted message~nwith some multine content~nand autoformatted terms:", [TermA, TermB]
-    )),
+    ),
     Class, Reason, Stacktrace
 )
 ```
@@ -189,11 +189,11 @@ and autoformatted terms:
 ```erlang
 % generic exception log with details as formatted message 
 % additional information and terms printed out (by variable names)
-?warning_exception(?notice(
+?warning_exception(
     ?autoformat_with_msg(
         "Custom formatted message~nwith some multine content~nadditional information ~ts
          ~tp~nand autoformatted terms:", ["additional args", 1], TermA, TermB
-    )),
+    ),
     Class, Reason, Stacktrace
 )
 ```

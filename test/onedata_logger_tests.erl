@@ -134,6 +134,7 @@ autoformatter_test() ->
         Integer,
         Float,
         Atom,
+        Bool,
         List,
         PrintableString,
         MultilineString,
@@ -144,37 +145,82 @@ autoformatter_test() ->
         Term
     ),
     ?assertEqual(str_utils:format(
-        "\n    Integer = ~tp\n    Float = ~tp\n    Atom = ~tp\n    List = ~tp" ++
-        "\n    PrintableString = ~ts\n    MultilineString = ~ts\n    RawBinary = ~tp" ++
-        "\n    PrintableBinary = ~ts\n    MultilineBinary = ~ts\n    Map = ~tp\n    Term = ~tp",
-        [Integer, Float, Atom, List, PrintableString, MultilineString, RawBinary,
-            PrintableBinary, MultilineBinary, Map, Term]),
-    onedata_logger:format_generic_log(AutoformatAll, [])),
+        "\n"
+        "    Integer = ~tp\n"
+        "    Float = ~tp\n"
+        "    Atom = ~tp\n"
+        "    Bool = ~tp\n"
+        "    List = ~tp\n"
+        "    PrintableString = ~ts\n"
+        "    MultilineString = ~ts\n"
+        "    RawBinary = ~tp\n"
+        "    PrintableBinary = ~ts\n"
+        "    MultilineBinary = ~ts\n"
+        "    Map = ~tp\n"
+        "    Term = ~tp", [
+            Integer,
+            Float,
+            Atom,
+            Bool,
+            List,
+            PrintableString,
+            MultilineString,
+            RawBinary,
+            PrintableBinary,
+            MultilineBinary,
+            Map,
+            Term
+        ]
+    ), onedata_logger:format_generic_log(AutoformatAll, [])),
     ?error(AutoformatAll),
 
     ?assertEqual(str_utils:format(
-        "Test message with test arg: test arg 1\n    Integer = ~tp\n    Float = ~tp\n    Atom = ~tp\n    List = ~tp" ++
-        "\n    PrintableString = ~ts\n    MultilineString = ~ts\n    RawBinary = ~tp" ++
-        "\n    PrintableBinary = ~ts\n    MultilineBinary = ~ts\n    Map = ~tp\n    Term = ~tp",
-        [Integer, Float, Atom, List, PrintableString, MultilineString, RawBinary,
-            PrintableBinary, MultilineBinary, Map, Term]),
-    onedata_logger:format_generic_log(?autoformat_with_msg("Test message with test arg: ~ts ~tp", ["test arg", 1],
-        Integer,
-        Float,
-        Atom,
-        List,
-        PrintableString,
-        MultilineString,
-        RawBinary,
-        PrintableBinary,
-        MultilineBinary,
-        Map,
-        Term
-    ), [])),
+        "Test message with test arg: test arg 1\n"
+        "    Integer = ~tp\n"
+        "    Float = ~tp\n"
+        "    Atom = ~tp\n"
+        "    Bool = ~tp\n"
+        "    List = ~tp\n"
+        "    PrintableString = ~ts\n"
+        "    MultilineString = ~ts\n"
+        "    RawBinary = ~tp\n"
+        "    PrintableBinary = ~ts\n"
+        "    MultilineBinary = ~ts\n"
+        "    Map = ~tp\n"
+        "    Term = ~tp", [
+            Integer,
+            Float,
+            Atom,
+            Bool,
+            List,
+            PrintableString,
+            MultilineString,
+            RawBinary,
+            PrintableBinary,
+            MultilineBinary,
+            Map,
+            Term
+        ]),
+        onedata_logger:format_generic_log(?autoformat_with_msg("Test message with test arg: ~ts ~tp", ["test arg", 1],
+            Integer,
+            Float,
+            Atom,
+            Bool,
+            List,
+            PrintableString,
+            MultilineString,
+            RawBinary,
+            PrintableBinary,
+            MultilineBinary,
+            Map,
+            Term
+        ), [])
+    ),
     ?error(?autoformat_with_msg("Test message with test arg: ~ts ~tp", ["test arg", 1],
         Integer,
         Float,
         Atom,
+        Bool,
         List,
         PrintableString,
         MultilineString,
@@ -185,8 +231,16 @@ autoformatter_test() ->
         Term
     )),
 
-    ?assertEqual("Test message, no args.\n    Atom = atom\n    Integer = 17\n    Float = -13.75",
-        onedata_logger:format_generic_log(?autoformat_with_msg("Test message, no args.", [Atom, Integer, Float]), [])),
-    ?error(?autoformat_with_msg("Test message, no args.", [Atom, Integer, Float])).
+    ?assertEqual(
+        "Test message, no args.\n"
+        "    Atom = atom\n"
+        "    Bool = true\n"
+        "    Integer = 17\n"
+        "    Float = -13.75",
+        onedata_logger:format_generic_log(
+            ?autoformat_with_msg("Test message, no args.", [Atom, Bool, Integer, Float]), []
+        )
+    ),
+    ?error(?autoformat_with_msg("Test message, no args.", [Atom, Bool, Integer, Float])).
 
 -endif.
