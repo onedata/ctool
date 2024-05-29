@@ -104,8 +104,8 @@ end).
 
 -record(autoformat_spec, {
     format :: string(),
-    args :: [string()],
-    term_names :: [term()],
+    args :: [term()],
+    term_names :: [string()],
     term_values :: [term()]
 }).
 
