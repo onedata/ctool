@@ -42,6 +42,7 @@
 -define(attr_parent_guid, parent_guid).
 -define(attr_gid, gid).
 -define(attr_uid, uid).
+-define(attr_creation_time, creation_time).
 -define(attr_atime, atime).
 -define(attr_mtime, mtime).
 -define(attr_ctime, ctime).
@@ -81,7 +82,7 @@
     ?attr_gid, ?attr_uid
 ]).
 -define(TIMES_FILE_ATTRS, [
-    ?attr_atime, ?attr_mtime, ?attr_ctime
+    ?attr_creation_time, ?attr_atime, ?attr_mtime, ?attr_ctime
 ]).
 -define(LOCATION_FILE_ATTRS, [
     ?attr_size, ?attr_is_fully_replicated, ?attr_local_replication_rate
@@ -117,8 +118,8 @@
 -define(API_FILE_ATTRS, ?ALL_FILE_ATTRS -- ?INTERNAL_FILE_ATTRS).
 -define(PUBLIC_API_FILE_ATTRS, [
     ?attr_guid, ?attr_index, ?attr_type, ?attr_active_permissions_type, ?attr_mode, ?attr_name, ?attr_conflicting_name,
-    ?attr_parent_guid, ?attr_atime, ?attr_mtime, ?attr_ctime, ?attr_size, ?attr_shares,  ?attr_symlink_value,
-    ?attr_has_custom_metadata
+    ?attr_parent_guid, ?attr_creation_time, ?attr_atime, ?attr_mtime, ?attr_ctime, ?attr_size, ?attr_shares,
+    ?attr_symlink_value, ?attr_has_custom_metadata
 ]).
 
 %% @TODO VFS-11378 remove when all usages provide their custom required attrs
