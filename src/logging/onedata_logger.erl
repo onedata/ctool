@@ -29,9 +29,15 @@
 %%%===================================================================
 
 -spec format_generic_log(string() | autoformat_spec(), list()) -> string().
-format_generic_log(#autoformat_spec{} = AutoformatSpec, _List) ->
+format_generic_log(#autoformat_spec{} = AutoformatSpec, []) ->
     {DetailsFormat, DetailsArgs} = autoformat_spec_to_format_and_args(AutoformatSpec),
     format_generic_log(DetailsFormat, DetailsArgs);
+format_generic_log(#autoformat_spec{} = AutoformatSpec, _List) ->
+    ?warning(
+        "Bad usage of the ?autoformat logging macro - ignoring superfluous format arguments. The log format was: ~ts",
+        [AutoformatSpec#autoformat_spec.format]
+    ),
+    format_generic_log(AutoformatSpec, []);
 format_generic_log(Format, Args) ->
     str_utils:format(Format, Args).
 
@@ -282,7 +288,10 @@ autoformat_spec_to_format_and_args(#autoformat_spec{
     term_values = TermValues
 }) ->
     DetailsFormat = Format ++ lists:flatten(lists:map(fun({TermName, Term}) ->
-        ControlSequence = case ?is_printable(Term) of true -> "~ts"; false -> "~tp" end,
+        ControlSequence = case ?is_printable(Term) of
+            true -> "~ts";
+            false -> "~tp"
+        end,
         "~n    " ++ TermName ++  " = " ++ ControlSequence
     end, lists:zip(TermNames, TermValues))),
     {DetailsFormat, Args ++ TermValues}.
