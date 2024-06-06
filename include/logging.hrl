@@ -89,15 +89,8 @@
 -define(emergency_exception(DetailsFormat, DetailsArgs, Class, Reason, Stacktrace), ?log_exception(0, DetailsFormat, DetailsArgs, undefined, Class, Reason, Stacktrace)).
 
 
--define(is_printable(Str), if
-    is_list(Str) -> io_lib:printable_list(Str);
-    is_binary(Str) -> io_lib:printable_list(str_utils:binary_to_unicode_list(Str));
-    true -> false
-end).
-
-
 -define(ensure_list_of_terms(TermOrTerms), case string:slice(??TermOrTerms, 0, 1) of
-    "[" -> TermOrTerms;
+    "[" -> TermOrTerms; %% @codetag-tracker-ignore
     _ -> [TermOrTerms]
 end).
 

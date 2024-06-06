@@ -279,7 +279,7 @@ format_details_suffix(DetailsFormat, DetailsArgs) ->
     str_utils:format("~n> Details: " ++ DetailsFormat, DetailsArgs).
 
 
-%% private
+%% @private
 -spec autoformat_spec_to_format_and_args(autoformat_spec()) -> {string(), list()}.
 autoformat_spec_to_format_and_args(#autoformat_spec{
     format = Format,
@@ -288,10 +288,17 @@ autoformat_spec_to_format_and_args(#autoformat_spec{
     term_values = TermValues
 }) ->
     DetailsFormat = Format ++ lists:flatten(lists:map(fun({TermName, Term}) ->
-        ControlSequence = case ?is_printable(Term) of
+        ControlSequence = case is_printable(Term) of
             true -> "~ts";
             false -> "~tp"
         end,
         "~n    " ++ TermName ++  " = " ++ ControlSequence
     end, lists:zip(TermNames, TermValues))),
     {DetailsFormat, Args ++ TermValues}.
+
+
+%% @private
+-spec is_printable(term()) ->  boolean().
+is_printable(Str) when is_list(Str) -> io_lib:printable_list(Str);
+is_printable(Str) when is_binary(Str) -> io_lib:printable_list(str_utils:binary_to_unicode_list(Str));
+is_printable(_Str) -> false.
