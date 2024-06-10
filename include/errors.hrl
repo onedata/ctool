@@ -179,6 +179,7 @@
 -define(ERROR_SPACE_ALREADY_SUPPORTED_WITH_IMPORTED_STORAGE(SpaceId, StorageId), 
     {error, {space_already_supported_with_imported_storage, SpaceId, StorageId}}
 ).
+-define(ERROR_CANNOT_DELETE_NON_EMPTY_HANDLE_SERVICE, {error, cannot_delete_non_empty_handle_service}).
 
 
 %%--------------------------------------------------------------------
