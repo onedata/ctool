@@ -106,7 +106,8 @@
     ChId :: gri:entity_id(),
     ParType :: gri:entity_type(),
     ParId :: gri:entity_id()
-} | {space_already_supported_with_imported_storage, SpaceId :: binary(), StorageId :: binary()}.
+} | {space_already_supported_with_imported_storage, SpaceId :: binary(), StorageId :: binary()}
+| cannot_delete_non_empty_handle_service.
 
 -type op_worker() :: user_not_supported | auto_cleaning_disabled
 | file_popularity_disabled
@@ -1032,6 +1033,14 @@ to_json(?ERROR_SPACE_ALREADY_SUPPORTED_WITH_IMPORTED_STORAGE(SpaceId, StorageId)
         <<"storageId">> => StorageId
     },
     <<"description">> => ?FMT("Space ~ts is already supported with an imported storage ~ts.", [SpaceId, StorageId])
+};
+to_json(?ERROR_CANNOT_DELETE_NON_EMPTY_HANDLE_SERVICE) -> #{
+    <<"id">> => <<"cannotDeleteNonEmptyHandleService">>,
+    <<"description">> => <<
+        "This handle service cannot be deleted as it still has some handles registered. "
+        "All the handles would have to be deleted first, but proceed with caution as Open Data "
+        "records should be persistent."
+    >>
 };
 
 %%--------------------------------------------------------------------
@@ -2088,6 +2097,8 @@ from_json(#{<<"id">> := <<"spaceAlreadySupportedWithImportedStorage">>, <<"detai
     <<"spaceId">> := SpaceId, <<"storageId">> := StorageId}
 }) ->
     ?ERROR_SPACE_ALREADY_SUPPORTED_WITH_IMPORTED_STORAGE(SpaceId, StorageId);
+from_json(#{<<"id">> := <<"cannotDeleteNonEmptyHandleService">>}) ->
+    ?ERROR_CANNOT_DELETE_NON_EMPTY_HANDLE_SERVICE;
 
 %%--------------------------------------------------------------------
 %% op_worker errors
@@ -2705,6 +2716,7 @@ to_http_code(?ERROR_CANNOT_ADD_RELATION_TO_SELF) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_RELATION_DOES_NOT_EXIST(_, _, _, _)) -> ?HTTP_400_BAD_REQUEST;
 to_http_code(?ERROR_RELATION_ALREADY_EXISTS(_, _, _, _)) -> ?HTTP_409_CONFLICT;
 to_http_code(?ERROR_SPACE_ALREADY_SUPPORTED_WITH_IMPORTED_STORAGE(_, _)) -> ?HTTP_409_CONFLICT;
+to_http_code(?ERROR_CANNOT_DELETE_NON_EMPTY_HANDLE_SERVICE) -> ?HTTP_400_BAD_REQUEST;
 
 %%--------------------------------------------------------------------
 %% op_worker errors

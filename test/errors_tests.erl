@@ -253,6 +253,7 @@ testcases() -> [
     ?ERROR_RELATION_DOES_NOT_EXIST(od_user, <<"user1">>, od_space, <<"space1">>),
     ?ERROR_RELATION_ALREADY_EXISTS(od_user, <<"user1">>, od_space, <<"space1">>),
     ?ERROR_SPACE_ALREADY_SUPPORTED_WITH_IMPORTED_STORAGE(<<"spaceId">>, <<"storageId">>),
+    ?ERROR_CANNOT_DELETE_NON_EMPTY_HANDLE_SERVICE,
 
     %%--------------------------------------------------------------------
     %% op_worker errors
