@@ -657,11 +657,11 @@ compare_transition_result(ProviderId, StorageId, TransitionTo, ExpectedResult, A
         false ->
             io:format(user,
                 "~nStage transition result different than expected~n"
-                "ProviderId: ~s~n"
-                "StorageId: ~s~n"
-                "TransitionTo: ~p~n"
-                "Expected: ~p~n"
-                "Got: ~p~n",
+                "ProviderId: ~ts~n"
+                "StorageId: ~ts~n"
+                "TransitionTo: ~tp~n"
+                "Expected: ~tp~n"
+                "Got: ~tp~n",
                 [ProviderId, StorageId, TransitionTo, ExpectedResult, ActualResult]),
             false
     end.

@@ -79,7 +79,7 @@ example_time_series_schema(NameGenerator) ->
 -spec example_time_series_schemas() -> [time_series_schema:record()].
 example_time_series_schemas() ->
     lists_utils:generate(fun(Ordinal) ->
-        example_time_series_schema(str_utils:format_bin("~B~s", [Ordinal, example_name()]))
+        example_time_series_schema(str_utils:format_bin("~B~ts", [Ordinal, example_name()]))
     end, 5).
 
 

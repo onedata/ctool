@@ -148,8 +148,8 @@ ws_client_init(Handler, Protocol, Host, Port, Path, Headers, Args, TransportOpts
         Type:Error:Stk ->
             error_logger:error_msg(
                 "** Websocket client terminating~n"
-                "   for the reason ~p:~p~n"
-                "** Stacktrace: ~p~n~n",
+                "   for the reason ~tp:~tp~n"
+                "** Stacktrace: ~tp~n~n",
                 [Type, Error, Stk]),
             Transport:close(Socket),
             {error, {Type, Error}}
@@ -254,11 +254,11 @@ handle_websocket_message(WSReq, HandlerState, Buffer, Message) ->
                     handle_response(WSReq, HandlerResponse, Buffer)
             catch Class:Reason:Stk ->
                 error_logger:error_msg(
-                    "** Websocket client ~p terminating in ~p/~p~n"
-                    "   for the reason ~p:~p~n"
-                    "** Last message was ~p~n"
-                    "** Handler state was ~p~n"
-                    "** Stacktrace: ~p~n~n",
+                    "** Websocket client ~tp terminating in ~tp/~tp~n"
+                    "   for the reason ~tp:~tp~n"
+                    "** Last message was ~tp~n"
+                    "** Handler state was ~tp~n"
+                    "** Stacktrace: ~tp~n~n",
                     [Handler, websocket_info, 3, Class, Reason, Msg, HandlerState,
                         Stk]),
                 websocket_close(WSReq, HandlerState, Reason)
@@ -276,10 +276,10 @@ websocket_close(WSReq, HandlerState, Reason) ->
         Handler:websocket_terminate(Reason, WSReq, HandlerState)
     catch Class:Reason2:Stk ->
         error_logger:error_msg(
-            "** Websocket handler ~p terminating in ~p/~p~n"
-            "   for the reason ~p:~p~n"
-            "** Handler state was ~p~n"
-            "** Stacktrace: ~p~n~n",
+            "** Websocket handler ~tp terminating in ~tp/~tp~n"
+            "   for the reason ~tp:~tp~n"
+            "** Handler state was ~tp~n"
+            "** Stacktrace: ~tp~n~n",
             [Handler, websocket_terminate, 3, Class, Reason2, HandlerState,
                 Stk])
     end.
@@ -422,11 +422,11 @@ retrieve_frame(WSReq, HandlerState, Opcode, Len, Data, Buffer) ->
                         HandlerResponse, Rest)
             catch Class:Reason:Stk ->
                 error_logger:error_msg(
-                    "** Websocket client ~p terminating in ~p/~p~n"
-                    "   for the reason ~p:~p~n"
-                    "** Websocket message was ~p~n"
-                    "** Handler state was ~p~n"
-                    "** Stacktrace: ~p~n~n",
+                    "** Websocket client ~tp terminating in ~tp/~tp~n"
+                    "   for the reason ~tp:~tp~n"
+                    "** Websocket message was ~tp~n"
+                    "** Handler state was ~tp~n"
+                    "** Stacktrace: ~tp~n~n",
                     [Handler, websocket_handle, 3, Class, Reason, {ContinuationOpcodeName, DefragPayload}, HandlerState,
                         Stk]),
                 websocket_close(WSReq, HandlerState, Reason)
@@ -440,10 +440,10 @@ retrieve_frame(WSReq, HandlerState, Opcode, Len, Data, Buffer) ->
                         HandlerResponse, Rest)
             catch Class:Reason:Stk ->
                 error_logger:error_msg(
-                    "** Websocket client ~p terminating in ~p/~p~n"
-                    "   for the reason ~p:~p~n"
-                    "** Handler state was ~p~n"
-                    "** Stacktrace: ~p~n~n",
+                    "** Websocket client ~tp terminating in ~tp/~tp~n"
+                    "   for the reason ~tp:~tp~n"
+                    "** Handler state was ~tp~n"
+                    "** Stacktrace: ~tp~n~n",
                     [Handler, websocket_handle, 3, Class, Reason, HandlerState, Stk]),
                 websocket_close(WSReq, HandlerState, Reason)
             end

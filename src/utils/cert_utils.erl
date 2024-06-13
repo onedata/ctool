@@ -113,8 +113,8 @@ create_csr(KeyPath, OutputPath, CommonName, Hostname) ->
         "-new",
         "-key", KeyPath,
         "-out", OutputPath,
-        "-subj", str_utils:format("'/C=PL/L=OneDataTest/O=OneDataTest/CN=~s'", [CommonName]),
-        "-addext", str_utils:format("'subjectAltName = DNS:~s'", [Hostname])
+        "-subj", str_utils:format("'/C=PL/L=OneDataTest/O=OneDataTest/CN=~ts'", [CommonName]),
+        "-addext", str_utils:format("'subjectAltName = DNS:~ts'", [Hostname])
     ]),
     ok.
 

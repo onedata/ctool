@@ -36,7 +36,7 @@ run({Module, Function, Arity}, RequestBody) ->
             %% Bad Match assertion - something went wrong,
             %% but it could be expected.
             ErrorDetails = get_error_details(Reason),
-            ?warning("Error in function ~p:~p/~p: ~p",
+            ?warning("Error in function ~tp:~tp/~tp: ~tp",
                 [Module, Function, Arity, ErrorDetails]),
             ?debug_exception(error, ErrorDetails, Stacktrace),
             {error, ErrorDetails};
@@ -44,13 +44,13 @@ run({Module, Function, Arity}, RequestBody) ->
             %% Case clause assertion - something went seriously wrong
             %% and we should know about it.
             ErrorDetails = get_error_details(Reason),
-            ?error_stacktrace("Error in function ~p:~p/~p: ~p",
+            ?error_stacktrace("Error in function ~tp:~tp/~tp: ~tp",
                 [Module, Function, Arity, ErrorDetails], Stacktrace),
             {error, ErrorDetails};
         error:UnknownError:Stacktrace ->
             %% Unknown error - something went horribly wrong.
             %% This should not happen.
-            ?error_stacktrace("Error in function ~p:~p/~p: ~p",
+            ?error_stacktrace("Error in function ~tp:~tp/~tp: ~tp",
                 [Module, Function, Arity, UnknownError], Stacktrace),
             {error, UnknownError};
         _:Reason:Stacktrace ->

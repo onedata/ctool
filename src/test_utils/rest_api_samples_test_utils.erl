@@ -134,7 +134,7 @@ test_sample(#rest_api_request_sample{
         )),
         case Code > 300 of
             true ->
-                ct:pal("Code: ~p~nResponse: ~p~n~nMethod: ~p~nPath: ~p~nBody: ~p~nHeaders: ~p~n",
+                ct:pal("Code: ~tp~nResponse: ~tp~n~nMethod: ~tp~nPath: ~tp~nBody: ~tp~nHeaders: ~tp~n",
                     [Code, ResultBody, Method, FinalPath, Body, Headers]),
                 error(fail);
             false ->
@@ -144,10 +144,10 @@ test_sample(#rest_api_request_sample{
     catch Class:Reason:Stacktrace ->
         ct:pal(
             "API sample testing failed!~n"
-            "Sample: ~p~n"
-            "Context: ~p~n"
-            "Error: ~w:~p~n"
-            "Stacktrace: ~s~n", [
+            "Sample: ~tp~n"
+            "Context: ~tp~n"
+            "Error: ~w:~tp~n"
+            "Stacktrace: ~ts~n", [
                 Sample,
                 Context,
                 Class, Reason,

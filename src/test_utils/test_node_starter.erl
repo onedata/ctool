@@ -186,8 +186,8 @@ try_reusing_previous_env() ->
             catch Class:Reason:Stacktrace ->
                 ct:pal(
                     "Unable to reuse the previous environment:~n"
-                    "> Caught: ~w:~p~n"
-                    "> Stacktrace: ~s~n"
+                    "> Caught: ~w:~tp~n"
+                    "> Stacktrace: ~ts~n"
                     "~n"
                     "Starting a new environment...",
                     [Class, Reason, lager:pr_stacktrace(Stacktrace)]
@@ -231,7 +231,7 @@ clean_environment(Config, Apps) ->
             Dockers = proplists:get_value(docker_ids, Config, []),
             DockersStr = lists:map(fun atom_to_list/1, Dockers),
             ProjectRoot = ?config(project_root, Config),
-            ct:pal("Removing dockers: ~s", [?FORMAT_STRING_LIST(
+            ct:pal("Removing dockers: ~ts", [?FORMAT_STRING_LIST(
                 lists:map(fun(DockerIdStr) -> string:slice(DockerIdStr, 0, 7) end, DockersStr)
             )]),
             remove_dockers(ProjectRoot, DockersStr),
@@ -278,18 +278,18 @@ get_nodes_with_cover(Config, Apps) ->
 gather_cover([]) ->
     ok;
 gather_cover(NodesWithCover) ->
-    ct:pal("Gathering cover from nodes: ~s", [?FORMAT_ATOM_LIST(NodesWithCover)]),
+    ct:pal("Gathering cover from nodes: ~ts", [?FORMAT_ATOM_LIST(NodesWithCover)]),
     lists:foreach(fun(Node) ->
         receive
             {app_ended, CoverNode, FileData} ->
-                CoverFile = str_utils:format("~s-~s.coverdata", [CoverNode, str_utils:rand_hex(10)]),
+                CoverFile = str_utils:format("~ts-~ts.coverdata", [CoverNode, str_utils:rand_hex(10)]),
                 ok = file:write_file(CoverFile, FileData),
                 ok = cover:import(CoverFile),
                 file:delete(CoverFile)
         after
             ?NODE_CALL_TIMEOUT ->
                 ct:pal(
-                    "WARNING: Could not collect cover data from node: ~p", [
+                    "WARNING: Could not collect cover data from node: ~tp", [
                         Node
                     ])
         end
@@ -394,15 +394,15 @@ stop_applications(Config, Apps) ->
             Nodes = test_config:get_custom(Config, ConfigName, []),
             lists:foreach(fun(Node) ->
                 try
-                    ct:pal("Stopping application '~s' on node ~s...", [AppName, Node]),
+                    ct:pal("Stopping application '~ts' on node ~ts...", [AppName, Node]),
                     ok = rpc:call(Node, application, stop, [AppName])
                 catch
                     _:{badmatch, {badrpc, nodedown}} ->
                         ok; % Test can kill nodes
                     Type:Reason:Stacktrace ->
                         ct:pal(
-                            "WARNING: Stopping application ~p on node ~p failed - ~p:~p~n"
-                            "Stacktrace: ~s", [
+                            "WARNING: Stopping application ~tp on node ~tp failed - ~tp:~tp~n"
+                            "Stacktrace: ~ts", [
                                 AppName, Node, Type, Reason, lager:pr_stacktrace(Stacktrace)
                             ])
                 end
@@ -454,8 +454,8 @@ load_modules(Nodes, Modules) ->
             catch Class:Reason:Stacktrace ->
                 ct:print(
                     "Cannot load module '~w' on node ~w, does the module exist in 'test_distributed' directory?~n"
-                    "Error was: ~w:~p~n"
-                    "Stacktrace: ~s",
+                    "Error was: ~w:~tp~n"
+                    "Stacktrace: ~ts",
                     [Module, Node, Class, Reason, lager:pr_stacktrace(Stacktrace)]
                 ),
                 error({cannot_load_module, Module})
@@ -558,7 +558,7 @@ retry_running_env_up_script_until(ProjectRoot, AppmockRoot, CmRoot,
             ct:pal(
                 "ERROR: the env_up command failed with output:~n"
                 "---------------------------------------------~n"
-                "~s",
+                "~ts",
                 [case StartLog of
                     <<"">> -> <<"<empty string>">>;
                     Other -> Other
@@ -572,12 +572,12 @@ retry_running_env_up_script_until(ProjectRoot, AppmockRoot, CmRoot,
                 "docker ps -a | egrep '[0-9]+\.test' | awk '{print $1}'"
             ), right, $\n), "\n"),
             DockersToRemove = lists:delete(TestmasterDockerId, AllEnvUpDockerIds),
-            ct:pal("Removing the following dockers: ~p", [DockersToRemove]),
+            ct:pal("Removing the following dockers: ~tp", [DockersToRemove]),
             remove_dockers(ProjectRoot, DockersToRemove),
 
             case RetriesNumber > 0 of
                 true ->
-                    ct:pal("Retrying to run env_up.py. Number of retries left: ~p", [RetriesNumber]),
+                    ct:pal("Retrying to run env_up.py. Number of retries left: ~tp", [RetriesNumber]),
                     timer:sleep(timer:seconds(1)),
                     retry_running_env_up_script_until(ProjectRoot, AppmockRoot, CmRoot,
                         LogsDir, DescriptionFile, RetriesNumber - 1);

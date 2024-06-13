@@ -41,7 +41,7 @@ encode_decode_rest_api_request_sample_test() ->
 example_rest_api_samples_records() ->
     lists_utils:generate(fun() ->
         #rest_api_samples{
-            api_root = str_utils:format_bin("https://~s/api", [?RAND_STR()]),
+            api_root = str_utils:format_bin("https://~ts/api", [?RAND_STR()]),
             samples = ?RAND_SUBLIST(example_rest_api_request_sample_records())
         }
     end, 5).

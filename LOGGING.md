@@ -23,11 +23,10 @@ Exemplary usages of logging macros and samples of corresponding output.
 ```erlang
 % an error log NOT related to an exception
 ?error("Custom message")
-?warning("Custom formatted message: ~p", [TermA])
-?notice(
-    "Custom formatted message~nwith some multine content~nand autoformatted terms: ~s",
-    [?autoformat([TermA, TermB])]
-),
+?warning("Custom formatted message: ~tp", [TermA])
+?notice(?autoformat_with_msg(
+    "Custom formatted message~nwith some multine content~nand autoformatted terms:", [TermA, TermB]
+)),
 ```
 
 ```
@@ -63,7 +62,7 @@ and autoformatted terms:
 
 ```erlang
 % DEPRECATED error log with stacktrace - use ?error_exception for that
-?error_stacktrace("Custom formatted message: ~p", [TermA], Stacktrace)
+?error_stacktrace("Custom formatted message: ~tp", [TermA], Stacktrace)
 ```
 
 ```
@@ -118,7 +117,7 @@ and autoformatted terms:
 
 ```erlang
 % generic exception log with details as formatted message
-?critical_exception("Custom formatted message: ~p", [TermA], Class, Reason, Stacktrace)
+?critical_exception("Custom formatted message: ~tp", [TermA], Class, Reason, Stacktrace)
 ```
 
 ```
@@ -161,8 +160,9 @@ and autoformatted terms:
 % generic exception log with details as formatted message and
 % additional terms printed out (by variable names)
 ?warning_exception(
-    "Custom formatted message~nwith some multine content~nand autoformatted terms: ~s",
-    [?autoformat([TermA, TermB])],
+    ?autoformat_with_msg(
+        "Custom formatted message~nwith some multine content~nand autoformatted terms:", [TermA, TermB]
+    ),
     Class, Reason, Stacktrace
 )
 ```
@@ -178,6 +178,38 @@ and autoformatted terms:
     logging_examples:test/0 line 111
 > Details: Custom formatted message
 with some multine content
+and autoformatted terms: 
+    TermA = <<"77b6b86da69e5d84">>
+    TermB = {tuple,#{<<"with nested">> =>
+                         [terms,that,will,be,printed,as,multiline,text]}}
+```
+
+*****
+
+```erlang
+% generic exception log with details as formatted message 
+% additional information and terms printed out (by variable names)
+?warning_exception(
+    ?autoformat_with_msg(
+        "Custom formatted message~nwith some multine content~nadditional information ~ts
+         ~tp~nand autoformatted terms:", ["additional args", 1], TermA, TermB
+    ),
+    Class, Reason, Stacktrace
+)
+```
+
+```
+[W 22:16:40.926 <0.373.0>] An unexpected exception occurred in logging_examples:test/0 line 139
+> Caught: error:{some_exception,that_was_not_expected}
+> Stacktrace:
+    shell:eval_loop/3 line 627
+    shell:eval_exprs/7 line 642
+    shell:exprs/7 line 686
+    erl_eval:do_apply/6 line 689
+    logging_examples:test/0 line 111
+> Details: Custom formatted message
+with some multine content
+additional information additional args 1
 and autoformatted terms: 
     TermA = <<"77b6b86da69e5d84">>
     TermB = {tuple,#{<<"with nested">> =>
@@ -226,7 +258,7 @@ and autoformatted terms:
 
 ```erlang
 % as above, but with custom details formatted message
-?examine_exception("Custom formatted message: ~p", [TermA], Class, Reason, Stacktrace)
+?examine_exception("Custom formatted message: ~tp", [TermA], Class, Reason, Stacktrace)
 ```
 
 ```
@@ -269,7 +301,7 @@ and autoformatted terms:
 % logs and returns an INTERNAL_SERVER_ERROR with error reference
 % used when there was no unexpected exception
 ?report_internal_server_error("Custom message")
-?report_internal_server_error("Custom formatted message: ~p", [TermA])
+?report_internal_server_error("Custom formatted message: ~tp", [TermA])
 ?report_internal_server_error(?autoformat([TermA, TermB]))
 ```
 

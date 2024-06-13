@@ -82,10 +82,10 @@ init([], _ConnState) ->
 websocket_handle({pong, _}, _ConnState, State) ->
     {ok, State};
 websocket_handle({text, Msg}, _ConnState, 5) ->
-    io:format("Received msg ~p~n", [Msg]),
+    io:format("Received msg ~tp~n", [Msg]),
     {close, <<>>, "done"};
 websocket_handle({text, Msg}, _ConnState, State) ->
-    io:format("Received msg ~p~n", [Msg]),
+    io:format("Received msg ~tp~n", [Msg]),
     timer:sleep(1000),
     BinInt = list_to_binary(integer_to_list(State)),
     {reply, {text, <<"hello, this is message #", BinInt/binary>>}, State + 1}.
@@ -116,6 +116,6 @@ websocket_info(start, _ConnState, State) ->
     websocket_req:req(), State :: term()) -> ok when
     Reason :: normal | error | remote.
 websocket_terminate(Reason, _ConnState, State) ->
-    io:format("Websocket closed in state ~p wih reason ~p~n",
+    io:format("Websocket closed in state ~tp wih reason ~tp~n",
         [State, Reason]),
     ok.

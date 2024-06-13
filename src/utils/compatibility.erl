@@ -222,7 +222,7 @@ check_for_updates(Resolver, Mirrors) ->
                             {cont, {error, not_updated}}
                     end
                 catch Type:Reason:Stacktrace ->
-                    ?error_stacktrace("Error processing newly fetched compatibility registry from mirror: ~s~n~w:~p", [
+                    ?error_stacktrace("Error processing newly fetched compatibility registry from mirror: ~ts~n~w:~tp", [
                         Mirror, Type, Reason
                     ], Stacktrace),
                     {cont, {error, not_updated}}
@@ -261,7 +261,7 @@ clear_registry_cache() ->
 overwrite_registry(#registry{raw = Binary, revision = Revision}) ->
     RegistryFile = ?CURRENT_REGISTRY_FILE,
     ok = file:write_file(RegistryFile, Binary),
-    ?info("Overwritten the compatibility registry with a newer one (rev. ~B) at ~s", [
+    ?info("Overwritten the compatibility registry with a newer one (rev. ~B) at ~ts", [
         Revision, RegistryFile
     ]),
     clear_registry_cache().
@@ -396,14 +396,14 @@ fetch_registry(#resolver{extra_trusted_cacerts = TrustedCaCerts}, Mirror) ->
         {ok, 200, _, Response} ->
             case parse_registry(Response) of
                 {error, cannot_parse_registry} ->
-                    ?warning("Cannot parse compatibility registry from mirror: ~s", [Mirror]),
+                    ?warning("Cannot parse compatibility registry from mirror: ~ts", [Mirror]),
                     error;
                 {ok, Registry} ->
                     {ok, Registry}
             end;
         Other ->
-            ?warning("Cannot fetch compatibility registry from mirror: ~s", [Mirror]),
-            ?debug("Cannot fetch compatibility registry from mirror: ~s~nFetch result: ~p", [Mirror, Other]),
+            ?warning("Cannot fetch compatibility registry from mirror: ~ts", [Mirror]),
+            ?debug("Cannot fetch compatibility registry from mirror: ~ts~nFetch result: ~tp", [Mirror, Other]),
             error
     end.
 
@@ -431,8 +431,8 @@ take_default_registry_if_newer(Resolver) ->
         {Other1, Other2} ->
             ?warning(
                 "Cannot compare current and default compatibility registry~n"
-                "    Default: ~p~n"
-                "    Current: ~p",
+                "    Default: ~tp~n"
+                "    Current: ~tp",
                 [Other1, Other2]
             )
     end.
@@ -443,13 +443,13 @@ take_default_registry_if_newer(Resolver) ->
 take_registry_from_mirror_if_newer(Resolver, Registry = #registry{revision = CandidateRevision}, Mirror) ->
     case get_registry(Resolver, local) of
         {ok, #registry{revision = LocalRevision}} when LocalRevision >= CandidateRevision ->
-            ?debug("Ignoring compatibility registry fetched from mirror ~s - revision (~B) not newer than local (~B)", [
+            ?debug("Ignoring compatibility registry fetched from mirror ~ts - revision (~B) not newer than local (~B)", [
                 Mirror, CandidateRevision, LocalRevision
             ]),
             false;
         _ ->
             % also handles situations when the local registry has been deleted or is broken and cannot be parsed
-            ?info("Fetched a newer (rev. ~B) compatibility registry from mirror ~s", [CandidateRevision, Mirror]),
+            ?info("Fetched a newer (rev. ~B) compatibility registry from mirror ~ts", [CandidateRevision, Mirror]),
             overwrite_registry_on_all_nodes(Resolver, Registry),
             true
     end.
@@ -464,8 +464,8 @@ overwrite_registry_on_all_nodes(#resolver{nodes = Nodes}, Registry) ->
                 ok;
             {badrpc, Reason} ->
                 ?warning(
-                    "Failed to overwrite the compatibility registry on node ~p - it might have "
-                    "an outdated knowledge about Onedata services compatibility.~nError was: ~p", [
+                    "Failed to overwrite the compatibility registry on node ~tp - it might have "
+                    "an outdated knowledge about Onedata services compatibility.~nError was: ~tp", [
                         Node, {badrpc, Reason}
                     ]
                 )
@@ -479,7 +479,7 @@ read_registry(FilePath) ->
         {ok, Binary} ->
             parse_registry(Binary);
         Other ->
-            ?error("Cannot read compatibility registry (~s) due to ~w", [FilePath, Other]),
+            ?error("Cannot read compatibility registry (~ts) due to ~w", [FilePath, Other]),
             {error, cannot_parse_registry}
     end.
 

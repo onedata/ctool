@@ -49,7 +49,7 @@ pre_init_per_suite(_Suite, Config, State) ->
         ok = test_utils:load_utility_modules(Config),
         {Config, State}
     catch Class:Reason:Stacktrace ->
-        ct:print("Failed to load modules during init_per_suite - ~w:~p~nStacktrace: ~s", [
+        ct:print("Failed to load modules during init_per_suite - ~w:~tp~nStacktrace: ~ts", [
             Class, Reason, lager:pr_stacktrace(Stacktrace)
         ]),
         error(failed_to_load_modules)
@@ -76,7 +76,7 @@ post_init_per_suite(Suite, _Config, Return, State) ->
         ?DISABLE ->
             {Return, State#state{disabled = true}};
         _ ->
-            ct:pal("Environment initialization in ~p", [Suite]),
+            ct:pal("Environment initialization in ~tp", [Suite]),
             NewConfig = test_node_starter:prepare_test_environment(Return, Suite),
             {NewConfig, State}
     end.
@@ -93,7 +93,7 @@ post_init_per_suite(Suite, _Config, Return, State) ->
 post_end_per_suite(_Suite, _Config, Return, State = #state{disabled = true}) ->
     {Return, State};
 post_end_per_suite(Suite, Config, Return, State) ->
-    ct:pal("Environment cleaning in ~p", [Suite]),
+    ct:pal("Environment cleaning in ~tp", [Suite]),
     test_node_starter:clean_environment(Config),
     {Return, State}.
 

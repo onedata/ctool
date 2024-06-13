@@ -49,7 +49,7 @@ start(ProjectSourceDir) ->
             filename:join(DepPath, "include")
         end, Deps),
     ets_insert(includes, ProjIncludes ++ DepsIncludes),
-    info_msg("Project sources directory set to ~s", [ProjectSourceDir]),
+    info_msg("Project sources directory set to ~ts", [ProjectSourceDir]),
     ok.
 
 
@@ -330,13 +330,13 @@ toggle_track_dir(Path, Flag) ->
             ets_insert(dirs, NewDirs),
             case Flag of
                 true ->
-                    info_msg("Tracking all files in directory `~s`", [Path]);
+                    info_msg("Tracking all files in directory `~ts`", [Path]);
                 false ->
-                    info_msg("Untracked files in directory `~s`", [Path])
+                    info_msg("Untracked files in directory `~ts`", [Path])
             end,
             true;
         false ->
-            error_msg("Cannot track directory `~s` - it was not found in "
+            error_msg("Cannot track directory `~ts` - it was not found in "
             "the source project dir.", [Path]),
             false
     end.
@@ -358,7 +358,7 @@ toggle_track_module(PathOrName, Flag) ->
         _ ->
             case find_all_files(ProjectDir, PathOrName ++ "'.erl'", true) of
                 [] ->
-                    error_msg("Cannot track module `~s` - it was not "
+                    error_msg("Cannot track module `~ts` - it was not "
                     "found in the source project dir.", [PathOrName]),
                     undefined;
                 [FilePath] ->
@@ -379,9 +379,9 @@ toggle_track_module(PathOrName, Flag) ->
             ets_insert(files, NewFiles),
             case Flag of
                 true ->
-                    info_msg("Tracking file `~s`", [FullPath]);
+                    info_msg("Tracking file `~ts`", [FullPath]);
                 false ->
-                    info_msg("Untracked file `~s`", [FullPath])
+                    info_msg("Untracked file `~ts`", [FullPath])
             end,
             true
     end.
@@ -447,7 +447,7 @@ update_erl_file(File, CompileOpts) ->
                     code:purge(ModuleName),
                     code:load_file(ModuleName),
                     update_file_md5(File, CurrentMD5),
-                    info_msg("Compiled:  ~s", [filename:basename(File)]),
+                    info_msg("Compiled:  ~ts", [filename:basename(File)]),
                     true;
                 _ ->
                     false
@@ -694,4 +694,4 @@ error_msg(Format, Args) ->
 %%--------------------------------------------------------------------
 -spec msg(Format :: string(), Args :: [term()], Prefix :: string()) -> ok.
 msg(Format, Args, Prefix) ->
-    io:format("~s~s~n", [Prefix, str_utils:format(Format, Args)]).
+    io:format("~ts~ts~n", [Prefix, str_utils:format(Format, Args)]).

@@ -179,7 +179,7 @@ stress_test(Config, Suite) ->
         [{{history, Suite, Case}, {Rep, FailedReps, LastFails}}] = ets:lookup(?STRESS_ETS_NAME, {history, Suite, Case}),
         case LastFails of
             permanent_error ->
-                SkipMessage = str_utils:format("Case: ~p, skipped (too many fails)", [Case]),
+                SkipMessage = str_utils:format("Case: ~tp, skipped (too many fails)", [Case]),
                 [{error, list_to_binary(SkipMessage)} | Ans];
             _ ->
                 CaseAns = try
@@ -200,14 +200,14 @@ stress_test(Config, Suite) ->
 %%                           [{ok, TmpAns2} | Ans];
                                       [{ok, TmpAns} | Ans];
                                   {error, E} ->
-                                      Message = str_utils:format("Case: ~p, error: ~p", [Case, E]),
+                                      Message = str_utils:format("Case: ~tp, error: ~tp", [Case, E]),
                                       [{error, list_to_binary(Message)} | Ans]
                               end
                           catch
                               E1:E2 ->
                                   % only init_per_testcase can throw (case has catch inside)
-                                  ct:print("Case: ~p, init_per_testcase error: ~p:~p", [Case, E1, E2]),
-                                  Message2 = str_utils:format("Case: ~p, init_per_testcase error: ~p:~p", [Case, E1, E2]),
+                                  ct:print("Case: ~tp, init_per_testcase error: ~tp:~tp", [Case, E1, E2]),
+                                  Message2 = str_utils:format("Case: ~tp, init_per_testcase error: ~tp:~tp", [Case, E1, E2]),
                                   [{error, list_to_binary(Message2)} | Ans]
                           end,
                 try
@@ -216,7 +216,7 @@ stress_test(Config, Suite) ->
                     error:undef ->
                         ok;
                     E1_2:E2_2 ->
-                        ct:print("Case: ~p, end_per_testcase error: ~p:~p", [Case, E1_2, E2_2])
+                        ct:print("Case: ~tp, end_per_testcase error: ~tp:~tp", [Case, E1_2, E2_2])
                 end,
                 CaseAns
         end
@@ -544,19 +544,19 @@ exec_perf_config(SuiteName, CaseName, CaseArgs, CaseDescr, Config, DefaultReps,
         true ->
             StressStatus = maps:fold(fun(Case, SReps, Acc) ->
                 CaseRate = 100.0 * SReps / RepeatsDone,
-                ct:print("Done CASE: ~p~nOk percent: ~p, Required ok percent ~p",
+                ct:print("Done CASE: ~tp~nOk percent: ~tp, Required ok percent ~tp",
                     [Case, CaseRate, SuccessRate]),
                 case CaseRate >= SuccessRate of
                     true -> Acc;
                     _ -> error
                 end
             end, ok, SuccessfulReps),
-            ct:print("Stress test: SUITE: ~p~nCASE: ~p~nCONFIG: ~p~nStatus: ~p",
+            ct:print("Stress test: SUITE: ~tp~nCASE: ~tp~nCONFIG: ~tp~nStatus: ~tp",
                 [SuiteName, CaseName, ConfigName, StressStatus]),
             StressStatus;
         _ ->
             CaseRate = 100.0 * SuccessfulReps / RepeatsDone,
-            ct:print("Done:~nSUITE: ~p~nCASE: ~p~nCONFIG: ~p~nOk percent: ~p, Required ok percent ~p",
+            ct:print("Done:~nSUITE: ~tp~nCASE: ~tp~nCONFIG: ~tp~nOk percent: ~tp, Required ok percent ~tp",
                 [SuiteName, CaseName, ConfigName, CaseRate, SuccessRate]),
             case CaseRate >= SuccessRate of
                 true -> ok;
@@ -606,14 +606,14 @@ exec_test_repeats(SuiteName, CaseName, ConfigName, CaseConfig, Rep, Reps,
 
                        case (TimeLeft > 0) and (ErrorsHistoryOK =/= permanent_error) of
                            true ->
-                               ct:print("SUITE: ~p~nCASE: ~p~nCONFIG: ~p~nREPEAT: ~p, TEST TIME ~p sek, TIME LEFT ~p sek",
+                               ct:print("SUITE: ~tp~nCASE: ~tp~nCONFIG: ~tp~nREPEAT: ~tp, TEST TIME ~tp sek, TIME LEFT ~tp sek",
                                    [SuiteName, CaseName, ConfigName, Rep, TestTime, TimeLeft]),
                                ok;
                            _ ->
                                stop
                        end;
                    _ ->
-                       ct:print("SUITE: ~p~nCASE: ~p~nCONFIG: ~p~nREPEAT: ~p / ~p (~p%)",
+                       ct:print("SUITE: ~tp~nCASE: ~tp~nCONFIG: ~tp~nREPEAT: ~tp / ~tp (~tp%)",
                            [SuiteName, CaseName, ConfigName, Rep, Reps - 1, (100 * Rep div (Reps - 1))]),
                        ok
                end,
@@ -754,9 +754,9 @@ exec_test_repeat(SuiteName, CaseName, CaseConfig) ->
         end
     catch
         Error:Reason:Stacktrace ->
-            Message = str_utils:format("~p:~p~n~p", [Error, Reason, Stacktrace]),
-            ct:print("~p:~p failed due to: ~w:~w~n"
-            "Stacktrace: ~p", [SuiteName, CaseName, Error, Reason, Stacktrace]),
+            Message = str_utils:format("~tp:~tp~n~tp", [Error, Reason, Stacktrace]),
+            ct:print("~tp:~tp failed due to: ~w:~w~n"
+            "Stacktrace: ~tp", [SuiteName, CaseName, Error, Reason, Stacktrace]),
             {error, list_to_binary(Message)}
     end.
 

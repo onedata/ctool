@@ -162,7 +162,7 @@ synchronize_local_with_remote_server(FetchRemoteTimestamp) ->
             ?error("Failed to synchronize with remote clock due to ~w", [Error]),
             error;
         Class:Reason:Stacktrace ->
-            ?error_stacktrace("Failed to synchronize with remote clock - ~w:~p", [Class, Reason], Stacktrace),
+            ?error_stacktrace("Failed to synchronize with remote clock - ~w:~tp", [Class, Reason], Stacktrace),
             error
     end.
 
@@ -181,17 +181,17 @@ synchronize_remote_with_local(Node) ->
             {delay_ok, AverageBias, _} ->
                 store_bias({remote_clock, Node}, -AverageBias);
             {delay_too_high, AverageBias, AverageDelay} ->
-                ?error("Failed to synchronize node's clock (~p) with local - delay too high (~Bms at bias=~Bms)", [
+                ?error("Failed to synchronize node's clock (~tp) with local - delay too high (~Bms at bias=~Bms)", [
                     Node, AverageDelay, AverageBias
                 ]),
                 error
         end
     catch
         throw:{error, _} = Error ->
-            ?error("Failed to synchronize node's clock (~p) with local due to ~w", [Node, Error]),
+            ?error("Failed to synchronize node's clock (~tp) with local due to ~w", [Node, Error]),
             error;
         Class:Reason:Stacktrace ->
-            ?error_stacktrace("Failed to synchronize node's clock (~p) with local - ~w:~p", [Node, Class, Reason], Stacktrace),
+            ?error_stacktrace("Failed to synchronize node's clock (~tp) with local - ~w:~tp", [Node, Class, Reason], Stacktrace),
             error
     end.
 
@@ -351,7 +351,7 @@ recover_bias_from_disk() ->
                 not_found
             end;
         Other ->
-            ?debug("Cannot read the time synchronization backup file - ~p", [Other]),
+            ?debug("Cannot read the time synchronization backup file - ~tp", [Other]),
             not_found
     end.
 

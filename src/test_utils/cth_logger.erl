@@ -58,7 +58,7 @@ pre_init_per_suite(Suite, Config, State) ->
 -spec pre_init_per_testcase(TestCase :: atom(), Config :: [term()],
     State :: logger_state()) -> {[term()], logger_state()}.
 pre_init_per_testcase(TestCase, Config, State = #logger_state{suite = Suite}) ->
-    ct:pal("Testcase ~p in suite: ~p STARTED", [TestCase, Suite]),
+    ct:pal("Testcase ~tp in suite: ~tp STARTED", [TestCase, Suite]),
     {Config, State}.
 
 %%--------------------------------------------------------------------
@@ -71,35 +71,35 @@ pre_init_per_testcase(TestCase, Config, State = #logger_state{suite = Suite}) ->
     Return :: ok | {error | skip, term()}, State :: logger_state()) ->
     {ok | {error | skip, term()}, logger_state()}.
 post_end_per_testcase(TestCase, _Config, ok, State) ->
-    ct:pal("Testcase ~p in suite: ~p PASSED", [TestCase, State#logger_state.suite]),
+    ct:pal("Testcase ~tp in suite: ~tp PASSED", [TestCase, State#logger_state.suite]),
     {ok, State};
 
 post_end_per_testcase(TestCase, _Config, Return = {skip, _}, State) ->
-    ct:pal("Testcase ~p in suite: ~p SKIPPED", [TestCase, State#logger_state.suite]),
+    ct:pal("Testcase ~tp in suite: ~tp SKIPPED", [TestCase, State#logger_state.suite]),
     {Return, State};
 
 post_end_per_testcase(TestCase, _Config, Return = {error, _}, State) ->
     Msg = case Return of
         {error, {thrown, Reason}} ->
-            onedata_logger:format_generic_log("An uncaught throw occurred: ~p", [Reason]);
+            onedata_logger:format_generic_log("An uncaught throw occurred: ~tp", [Reason]);
         {error, {Reason, Stacktrace}} ->
             onedata_logger:format_generic_log(
                 "An unexpected error occurred~n"
-                "> Stacktrace:~s~n"
-                "> Caught: ~p",
+                "> Stacktrace:~ts~n"
+                "> Caught: ~tp",
                 [lager:pr_stacktrace(Stacktrace), Reason]
             );
         {error, Reason} ->
             onedata_logger:format_generic_log(
-                "An unexpected exception occurred~n~n~p",
+                "An unexpected exception occurred~n~n~tp",
                 [Reason]
             )
     end,
-    ct:pal("Testcase ~p in suite: ~p FAILED~n~n~s", [TestCase, State#logger_state.suite, Msg]),
+    ct:pal("Testcase ~tp in suite: ~tp FAILED~n~n~ts", [TestCase, State#logger_state.suite, Msg]),
     {Return, State};
 
 post_end_per_testcase(TestCase, _Config, Return, State) ->
-    ct:pal("Testcase ~p in suite: ~p RETURNED: ~p", [
+    ct:pal("Testcase ~tp in suite: ~tp RETURNED: ~tp", [
         TestCase, State#logger_state.suite, Return
     ]),
     {Return, State}.

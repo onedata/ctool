@@ -30,7 +30,7 @@ get_env(Key) ->
         {ok, Value} ->
             Value;
         undefined ->
-            ?alert("Could not find required env variable for ctool: ~p", [Key]),
+            ?alert("Could not find required env variable for ctool: ~tp", [Key]),
             error({missing_env_variable, Key})
     end.
 

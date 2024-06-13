@@ -97,11 +97,11 @@ lager_interfacing_test_() ->
                     onedata_logger:log(3, [], "error message"),
                     onedata_logger:log(0, [], "emergency message"),
                     ?debug("debug message"),
-                    ?debug("debug ~s", ["message"]),
+                    ?debug("debug ~ts", ["message"]),
                     ?info("info message"),
                     try throw(test) catch Class:Reason:Stacktrace ->
                         ?warning_exception("warning message", Class, Reason, Stacktrace),
-                        ?critical_exception("critical message ~p", [?MODULE], Class, Reason, Stacktrace)
+                        ?critical_exception("critical message ~tp", [?MODULE], Class, Reason, Stacktrace)
                     end,
                     ?error("error message"),
                     ?emergency("emergency message"),
@@ -129,17 +129,12 @@ autoformatter_test() ->
     MultilineBinary = <<"mul-\n\tti-\n\tline\n\t", (?RAND_UNICODE_STR())/binary>>,
     Map = #{<<"key">> => value},
     Term = {tuple_with, {complex_terms, [<<"1">>, #{2 => [true, dont_know, false]}, lists:seq(1, 20)]}},
-    io:format(user, "~ts~n", [?autoformat(Integer)]),
-    io:format(user, "~ts~n", [?autoformat([Float])]),
-    io:format(user, "~ts~n", [?autoformat(PrintableString)]),
-    io:format(user, "~ts~n", [?autoformat([PrintableString, RawBinary])]),
-    io:format(user, "~ts~n", [?autoformat(MultilineString, MultilineBinary)]),
-    io:format(user, "~ts~n", [?autoformat(Map, Term, List)]),
-    io:format(user, "~ts~n", [?autoformat([Atom, Bool, Bool])]),
-    io:format(user, "~ts~n", [?autoformat(
+
+    AutoformatAll = ?autoformat(
         Integer,
         Float,
         Atom,
+        Bool,
         List,
         PrintableString,
         MultilineString,
@@ -148,7 +143,104 @@ autoformatter_test() ->
         MultilineBinary,
         Map,
         Term
-    )]).
+    ),
+    ?assertEqual(str_utils:format(
+        "\n"
+        "    Integer = ~tp\n"
+        "    Float = ~tp\n"
+        "    Atom = ~tp\n"
+        "    Bool = ~tp\n"
+        "    List = ~tp\n"
+        "    PrintableString = ~ts\n"
+        "    MultilineString = ~ts\n"
+        "    RawBinary = ~tp\n"
+        "    PrintableBinary = ~ts\n"
+        "    MultilineBinary = ~ts\n"
+        "    Map = ~tp\n"
+        "    Term = ~tp", [
+            Integer,
+            Float,
+            Atom,
+            Bool,
+            List,
+            PrintableString,
+            MultilineString,
+            RawBinary,
+            PrintableBinary,
+            MultilineBinary,
+            Map,
+            Term
+        ]
+    ), onedata_logger:format_generic_log(AutoformatAll, [])),
+    ?error(AutoformatAll),
 
+    ?assertEqual(str_utils:format(
+        "Test message with test arg: test arg 1\n"
+        "    Integer = ~tp\n"
+        "    Float = ~tp\n"
+        "    Atom = ~tp\n"
+        "    Bool = ~tp\n"
+        "    List = ~tp\n"
+        "    PrintableString = ~ts\n"
+        "    MultilineString = ~ts\n"
+        "    RawBinary = ~tp\n"
+        "    PrintableBinary = ~ts\n"
+        "    MultilineBinary = ~ts\n"
+        "    Map = ~tp\n"
+        "    Term = ~tp", [
+            Integer,
+            Float,
+            Atom,
+            Bool,
+            List,
+            PrintableString,
+            MultilineString,
+            RawBinary,
+            PrintableBinary,
+            MultilineBinary,
+            Map,
+            Term
+        ]),
+        onedata_logger:format_generic_log(?autoformat_with_msg("Test message with test arg: ~ts ~tp", ["test arg", 1],
+            Integer,
+            Float,
+            Atom,
+            Bool,
+            List,
+            PrintableString,
+            MultilineString,
+            RawBinary,
+            PrintableBinary,
+            MultilineBinary,
+            Map,
+            Term
+        ), [])
+    ),
+    ?error(?autoformat_with_msg("Test message with test arg: ~ts ~tp", ["test arg", 1],
+        Integer,
+        Float,
+        Atom,
+        Bool,
+        List,
+        PrintableString,
+        MultilineString,
+        RawBinary,
+        PrintableBinary,
+        MultilineBinary,
+        Map,
+        Term
+    )),
+
+    ?assertEqual(
+        "Test message, no args.\n"
+        "    Atom = atom\n"
+        "    Bool = true\n"
+        "    Integer = 17\n"
+        "    Float = -13.75",
+        onedata_logger:format_generic_log(
+            ?autoformat_with_msg("Test message, no args.", [Atom, Bool, Integer, Float]), []
+        )
+    ),
+    ?error(?autoformat_with_msg("Test message, no args.", [Atom, Bool, Integer, Float])).
 
 -endif.
