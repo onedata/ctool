@@ -499,7 +499,7 @@ example_time_series_dispatch_rules() ->
     lists_utils:generate(fun(Ordinal) ->
         #atm_time_series_dispatch_rule{
             measurement_ts_name_matcher_type = ?RAND_ELEMENT([exact, has_prefix]),
-            measurement_ts_name_matcher = str_utils:format_bin("~B~s", [Ordinal, example_name()]),
+            measurement_ts_name_matcher = str_utils:format_bin("~B~ts", [Ordinal, example_name()]),
             target_ts_name_generator = example_name(),
             prefix_combiner = ?RAND_ELEMENT([concatenate, converge, overwrite])
         }
@@ -724,7 +724,7 @@ example_time_series_measurement_spec(NameMatcher) ->
 -spec example_time_series_measurement_specs() -> [atm_time_series_measurement_spec:record()].
 example_time_series_measurement_specs() ->
     lists_utils:generate(fun(Ordinal) ->
-        example_time_series_measurement_spec(str_utils:format_bin("~B~s", [Ordinal, example_name()]))
+        example_time_series_measurement_spec(str_utils:format_bin("~B~ts", [Ordinal, example_name()]))
     end, 4).
 
 %%%===================================================================

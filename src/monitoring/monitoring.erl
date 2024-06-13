@@ -210,12 +210,12 @@ get_cpu_stats(CpuStats) ->
                         {MoreCores, CurrentCpuStats}
                 end;
             Other ->
-                ?error("Cannot open CPU stats file: ~p", [Other]),
+                ?error("Cannot open CPU stats file: ~tp", [Other]),
                 {[], []}
         end
     catch
         T:M:Stacktrace ->
-            ?error_stacktrace("Cannot calculate CPU usage - ~p:~p", [T, M], Stacktrace),
+            ?error_stacktrace("Cannot calculate CPU usage - ~tp:~tp", [T, M], Stacktrace),
             {[], []}
     end.
 
@@ -284,12 +284,12 @@ get_memory_stats() ->
             {ok, Fd} ->
                 read_memory_stats(Fd, -1, -1, 0);
             Other ->
-                ?error("Cannot open memory stats file: ~p", [Other]),
+                ?error("Cannot open memory stats file: ~tp", [Other]),
                 []
         end
     catch
         T:M:Stacktrace ->
-            ?error_stacktrace("Cannot calculate memory usage - ~p:~p", [T, M], Stacktrace),
+            ?error_stacktrace("Cannot calculate memory usage - ~tp:~tp", [T, M], Stacktrace),
             []
     end.
 
@@ -364,12 +364,12 @@ get_network_stats(NetworkStats, TimeElapsed) ->
                 Result = calculate_network_stats(CurrentNetworkStats, NetworkStats, [], TimeElapsed),
                 {Result, CurrentNetworkStats};
             Other ->
-                ?error("Cannot open network stats file: ~p", [Other]),
+                ?error("Cannot open network stats file: ~tp", [Other]),
                 {[], []}
         end
     catch
         T:M:Stacktrace ->
-            ?error_stacktrace("Cannot calculate network usage - ~p:~p", [T, M], Stacktrace),
+            ?error_stacktrace("Cannot calculate network usage - ~tp:~tp", [T, M], Stacktrace),
             {[], []}
     end.
 
@@ -430,7 +430,7 @@ get_interface_stats(Interface, Type) ->
             file:close(Fd),
             InterfaceStats;
         Other ->
-            ?error("Cannot open interface stats file: ~p", [Other]),
+            ?error("Cannot open interface stats file: ~tp", [Other]),
             0
     end.
 

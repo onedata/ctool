@@ -255,8 +255,8 @@ verify_token_serialized_form(Prototype, Secret, Caveats, ExpSerialized) ->
         {ok, DifferentSerialized} ->
             eunit_utils:debug_log(
                 "Serialized token different that expected.~n"
-                "Exp: ~s~n"
-                "Got: ~s~n",
+                "Exp: ~ts~n"
+                "Got: ~ts~n",
                 [ExpSerialized, DifferentSerialized]
             ),
             false

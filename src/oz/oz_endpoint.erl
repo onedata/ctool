@@ -56,20 +56,20 @@ get_api_root(Opts) ->
     case proplists:get_value(endpoint, Opts, rest) of
         rest ->
             % Regular REST endpoint with authorization by provider certs
-            str_utils:format("~s:~B~s", [
+            str_utils:format("~ts:~B~ts", [
                 ?OZ_PLUGIN:get_oz_url(),
                 ?OZ_PLUGIN:get_oz_rest_port(),
                 ?OZ_PLUGIN:get_oz_rest_api_prefix()
             ]);
         rest_no_auth ->
             % REST endpoint without authorization on standard 443 HTTPS port
-            str_utils:format("~s~s", [
+            str_utils:format("~ts~ts", [
                 ?OZ_PLUGIN:get_oz_url(),
                 ?OZ_PLUGIN:get_oz_rest_api_prefix()
             ]);
         gui ->
             % Endpoint on standard 443 HTTPS port
-            str_utils:format("~s", [
+            str_utils:format("~ts", [
                 ?OZ_PLUGIN:get_oz_url()
             ])
     end.

@@ -215,5 +215,5 @@ tokens_to_cmd(Tokens) ->
     StdOut :: binary(), StdErr :: binary()) ->
     string().
 format_results(Tokens, Code, StdOut, StdErr) ->
-    str_utils:format("Command \"~ts\" exited with code ~p.~n> Stdout: ~ts~n> Stderr: ~ts",
+    str_utils:format("Command \"~ts\" exited with code ~tp.~n> Stdout: ~ts~n> Stderr: ~ts",
         [tokens_to_cmd(Tokens), Code, StdOut, StdErr]).

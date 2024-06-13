@@ -141,7 +141,7 @@ parse_correct_url_with_port_test_() ->
     [
         ?_assertEqual(
             #{scheme => Scheme, host => ?HOST, path => Path, qs => QS, port => ?PORT},
-            url_utils:parse(str_utils:format_bin("~s://~s:~p~s?~s", [Scheme, ?HOST, ?PORT, Path, QS]))
+            url_utils:parse(str_utils:format_bin("~ts://~ts:~tp~ts?~ts", [Scheme, ?HOST, ?PORT, Path, QS]))
         )
         || Scheme <- ?SCHEMES, Path <- ?PATHS, QS <- ?QSS
     ].
@@ -153,7 +153,7 @@ parse_correct_url_without_port_test_() ->
                 http -> ?HTTP_PORT;
                 https -> ?HTTPS_PORT
             end},
-            url_utils:parse(str_utils:format_bin("~s://~s~s?~s", [Scheme, ?HOST, Path, QS]))
+            url_utils:parse(str_utils:format_bin("~ts://~ts~ts?~ts", [Scheme, ?HOST, Path, QS]))
         )
         || Scheme <- ?SCHEMES, Path <- ?PATHS, QS <- ?QSS
     ].
@@ -168,7 +168,7 @@ parse_incorrect_url_test_() ->
 validate_correct_url_with_port_test_() ->
     [
         ?_assertEqual(true,
-            url_utils:is_valid(str_utils:format_bin("~s://~s:~p~s?~s", [Scheme, ?HOST, ?PORT, Path, QS]))
+            url_utils:is_valid(str_utils:format_bin("~ts://~ts:~tp~ts?~ts", [Scheme, ?HOST, ?PORT, Path, QS]))
         )
         || Scheme <- ?SCHEMES, Path <- ?PATHS, QS <- ?QSS
     ].
@@ -176,7 +176,7 @@ validate_correct_url_with_port_test_() ->
 validate_correct_url_without_port_test_() ->
     [
         ?_assertEqual(true,
-            url_utils:is_valid(str_utils:format_bin("~s://~s~s?~s", [Scheme, ?HOST, Path, QS]))
+            url_utils:is_valid(str_utils:format_bin("~ts://~ts~ts?~ts", [Scheme, ?HOST, Path, QS]))
         )
         || Scheme <- ?SCHEMES, Path <- ?PATHS, QS <- ?QSS
     ].

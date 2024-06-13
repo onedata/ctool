@@ -44,7 +44,7 @@
                                 {expected, (??Guard)},
                                 {value, ActualValue}
                             ],
-                            ct:print("assertMatch failed: ~p~n", [FailureSummary]),
+                            ct:print("assertMatch failed: ~tp~n", [FailureSummary]),
                             erlang:error({assertMatch_failed, FailureSummary});
                         _ ->
                             timer:sleep(Interval),
@@ -77,7 +77,7 @@ end).
                                 {expected, ExpectedValue},
                                 {value, ActualValue}
                             ],
-                            ct:print("assertEqual failed: ~p", [FailureSummary]),
+                            ct:print("assertEqual failed: ~tp", [FailureSummary]),
                             erlang:error({assertEqual_failed, FailureSummary});
                         _ ->
                             timer:sleep(Interval),
@@ -127,7 +127,7 @@ end).
                     {expected, (??Guard)},
                     {value, ActualValue}
                 ],
-                ct:print("assertReceivedMatch failed: ~p", [FailureSummary]),
+                ct:print("assertReceivedMatch failed: ~tp", [FailureSummary]),
                 erlang:error({assertReceivedMatch_failed, FailureSummary})
         end
     end)())
@@ -148,7 +148,7 @@ end).
                     {expected, (??Guard)},
                     {value, ActualValue}
                 ],
-                ct:print("assertReceivedNextMatch failed: ~p", [FailureSummary]),
+                ct:print("assertReceivedNextMatch failed: ~tp", [FailureSummary]),
                 erlang:error({assertReceivedNextMatch_failed, FailureSummary})
         after
             Timeout ->
@@ -158,7 +158,7 @@ end).
                     {expected, (??Guard)},
                     {value, timeout}
                 ],
-                ct:print("assertReceivedNextMatch failed: ~p", [FailureSummary]),
+                ct:print("assertReceivedNextMatch failed: ~tp", [FailureSummary]),
                 erlang:error({assertReceivedNextMatch_failed, FailureSummary})
         end
     end)())
@@ -178,7 +178,7 @@ end).
                     {expected, timeout},
                     {value, (??Result)}
                 ],
-                ct:print("assertNotReceivedMatch failed: ~p", [FailureSummary]),
+                ct:print("assertNotReceivedMatch failed: ~tp", [FailureSummary]),
                 erlang:error({assertNotReceivedMatch_failed, FailureSummary})
         after
             Timeout ->
@@ -203,7 +203,7 @@ end).
                     {expected, (??ExpectedValue)},
                     {value, timeout}
                 ],
-                ct:print("assertReceivedEqual failed: ~p", [FailureSummary]),
+                ct:print("assertReceivedEqual failed: ~tp", [FailureSummary]),
                 erlang:error({assertReceived_failed, FailureSummary})
         end
     end)(Expectation))
@@ -224,7 +224,7 @@ end).
                     {expected, ExpectedValue},
                     {value, ActualValue}
                 ],
-                ct:print("assertReceivedNextEqual failed: ~p", [FailureSummary]),
+                ct:print("assertReceivedNextEqual failed: ~tp", [FailureSummary]),
                 erlang:error({assertReceivedNextEqual_failed, FailureSummary})
         after
             Timeout ->
@@ -234,7 +234,7 @@ end).
                     {expected, (??ExpectedValue)},
                     {value, timeout}
                 ],
-                ct:print("assertReceivedNextEqual failed: ~p", [FailureSummary]),
+                ct:print("assertReceivedNextEqual failed: ~tp", [FailureSummary]),
                 erlang:error({assertReceivedNextEqual_failed, FailureSummary})
         end
     end)(Expectation))
@@ -253,7 +253,7 @@ end).
                     {expected, timeout},
                     {value, ExpectedValue}
                 ],
-                ct:print("assertNotReceivedEqual failed: ~p", [FailureSummary]),
+                ct:print("assertNotReceivedEqual failed: ~tp", [FailureSummary]),
                 erlang:error({assertNotReceivedEqual_failed, FailureSummary})
         after
             Timeout ->
@@ -275,7 +275,7 @@ end).
                     {expected, "{ " ++ (??Class) ++ " , " ++ (??Term) ++ " , [...] }"},
                     {unexpected_success, ActualValue}
                 ],
-                ct:print("assertException failed: ~p", [FailureSummary]),
+                ct:print("assertException failed: ~tp", [FailureSummary]),
                 erlang:error({assertException_failed, FailureSummary})
         catch
             Class:Term ->
@@ -288,7 +288,7 @@ end).
                     {expected, "{ " ++ (??Class) ++ " , " ++ (??Term) ++ " , [...] }"},
                     {unexpected_exception, {ActualClass, ActualTerm, Stacktrace}}
                 ],
-                ct:print("assertException failed: ~p", [FailureSummary]),
+                ct:print("assertException failed: ~tp", [FailureSummary]),
                 erlang:error({assertException_failed, FailureSummary})
         end
     end)())

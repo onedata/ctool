@@ -276,7 +276,7 @@ deserialize(Serialized) when is_binary(Serialized) ->
         end
     catch
         Class:Reason:Stacktrace ->
-            ?debug_exception("Cannot deserialize token: ~s", [Serialized], Class, Reason, Stacktrace),
+            ?debug_exception("Cannot deserialize token: ~ts", [Serialized], Class, Reason, Stacktrace),
             ?ERROR_BAD_TOKEN
     end;
 deserialize(_) -> ?ERROR_BAD_TOKEN.

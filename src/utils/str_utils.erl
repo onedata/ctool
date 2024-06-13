@@ -206,8 +206,8 @@ format_byte_size(Size, [_ | Units]) when Size >= 1024 ->
     format_byte_size(Size / 1024, Units);
 format_byte_size(Size, [Unit | _]) ->
     case trunc(Size) == Size of
-        true -> format("~B ~s", [trunc(Size), Unit]);
-        false -> format("~.2f ~s", [Size, Unit])
+        true -> format("~B ~ts", [trunc(Size), Unit]);
+        false -> format("~.2f ~ts", [Size, Unit])
     end.
 
 

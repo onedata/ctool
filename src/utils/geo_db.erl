@@ -83,7 +83,7 @@ ensure_db_loaded(DbType) ->
                     {ok, not_loaded, ?LOAD_ATTEMPT_BACKOFF_SEC}
             catch Type:Reason:Stacktrace ->
                 ?error_stacktrace(
-                    "Unexpected error when loading GEO DB (~p) - ~p:~p, next attempt in ~B seconds",
+                    "Unexpected error when loading GEO DB (~tp) - ~tp:~tp, next attempt in ~B seconds",
                     [DbType, Type, Reason, ?LOAD_ATTEMPT_BACKOFF_SEC],
                     Stacktrace
                 ),
@@ -122,7 +122,7 @@ load_db(DbType) ->
             locus:wait_for_loader(DbType, 2000),
             case locus:get_info(DbType) of
                 {ok, _} ->
-                    ?debug("Successfully loaded ~p GEO DB (~s)", [DbType, DbFile]),
+                    ?debug("Successfully loaded ~tp GEO DB (~ts)", [DbType, DbFile]),
                     ok;
                 {error, _} = Error ->
                     Error
@@ -155,7 +155,7 @@ fetch_newer_db(DbType) ->
     case ?MAXMIND_LICENCE_KEY of
         undefined ->
             ?warning(
-                "No MaxMind licence key found - skipping ~p GEO DB refresh. Next retry in ~B sec.",
+                "No MaxMind licence key found - skipping ~tp GEO DB refresh. Next retry in ~B sec.",
                 [DbType, ?GEO_DB_REFRESH_BACKOFF_SEC]
             ),
             write_status(DbType, keep, ?NOW()),
@@ -172,11 +172,11 @@ fetch_newer_db(DbType, LicenceKey) ->
         {ok, 200, _, Data} ->
             file:write_file(?GEO_DB_FILE(DbType), Data),
             write_status(DbType, Now, Now),
-            ?info("Fetched a newer ~p GEO DB (~s)", [DbType, Mirror]),
+            ?info("Fetched a newer ~tp GEO DB (~ts)", [DbType, Mirror]),
             true;
         OtherResult ->
             ?warning(
-                "Cannot fetch newer ~p GEO DB (~s), next retry in ~B sec~nresult was: ~p",
+                "Cannot fetch newer ~tp GEO DB (~ts), next retry in ~B sec~nresult was: ~tp",
                 [DbType, Mirror, ?GEO_DB_REFRESH_BACKOFF_SEC, OtherResult]
             ),
             write_status(DbType, keep, Now),

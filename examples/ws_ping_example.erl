@@ -85,18 +85,18 @@ websocket_handle({pong, _Msg}, _ConnState, State) ->
 
     %% This is how to access info about the connection/request
     Proto = websocket_req:protocol(_ConnState),
-    io:format("On protocol: ~p~n", [Proto]),
+    io:format("On protocol: ~tp~n", [Proto]),
 
     {ok, State};
 websocket_handle({text, Msg}, _ConnState, 5) ->
-    io:format("Received msg ~p~n", [Msg]),
+    io:format("Received msg ~tp~n", [Msg]),
     {close, <<>>, 10};
 websocket_handle({text, Msg}, _ConnState, State) ->
-    io:format("Received msg ~p~n", [Msg]),
+    io:format("Received msg ~tp~n", [Msg]),
     timer:sleep(1000),
     BinInt = list_to_binary(integer_to_list(State)),
     Reply = {text, <<"hello, this is message #", BinInt/binary>>},
-    io:format("Replying: ~p~n", [Reply]),
+    io:format("Replying: ~tp~n", [Reply]),
     {reply, Reply, State + 1}.
 
 
@@ -125,6 +125,6 @@ websocket_info(start, _ConnState, State) ->
     websocket_req:req(), State :: term()) -> ok when
     Reason :: normal | error | remote.
 websocket_terminate(Reason, _ConnState, State) ->
-    io:format("Websocket closed in state ~p wih reason ~p~n",
+    io:format("Websocket closed in state ~tp wih reason ~tp~n",
         [State, Reason]),
     ok.

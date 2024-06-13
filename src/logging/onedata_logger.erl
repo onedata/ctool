@@ -15,25 +15,36 @@
 -include("global_definitions.hrl").
 -include("logging.hrl").
 
--export([format_generic_log/2, format_exception_log/10, format_deprecated_exception_log/7, format_error_report/7]).
+-export([format_generic_log/2, format_exception_log/10,
+    format_deprecated_exception_log/7, format_error_report/7]).
 -export([should_log/1, log/3, parse_process_info/1, log_with_rotation/4]).
 -export([set_loglevel/1, set_console_loglevel/1]).
 -export([get_current_loglevel/0, get_default_loglevel/0, get_console_loglevel/0]).
 -export([loglevel_int_to_atom/1, loglevel_atom_to_int/1]).
 
+-type autoformat_spec() :: #autoformat_spec{}.
 
 %%%===================================================================
 %%% API
 %%%===================================================================
 
--spec format_generic_log(string(), list()) -> string().
+-spec format_generic_log(string() | autoformat_spec(), list()) -> string().
+format_generic_log(#autoformat_spec{} = AutoformatSpec, []) ->
+    {DetailsFormat, DetailsArgs} = autoformat_spec_to_format_and_args(AutoformatSpec),
+    format_generic_log(DetailsFormat, DetailsArgs);
+format_generic_log(#autoformat_spec{} = AutoformatSpec, _List) ->
+    ?warning(
+        "Bad usage of the ?autoformat logging macro - ignoring superfluous format arguments. The log format was: ~ts",
+        [AutoformatSpec#autoformat_spec.format]
+    ),
+    format_generic_log(AutoformatSpec, []);
 format_generic_log(Format, Args) ->
     str_utils:format(Format, Args).
 
 
 -spec format_exception_log(
     module(), atom(), non_neg_integer(), non_neg_integer(),
-    string(), list(), undefined | string() | binary(),
+    string() | autoformat_spec(), list(), undefined | string() | binary(),
     atom(), term(), stacktrace()
 ) -> string().
 format_exception_log(
@@ -42,14 +53,14 @@ format_exception_log(
     Class, Reason, Stacktrace
 ) ->
     format_generic_log(
-        "An unexpected exception~s occurred in ~w:~w/~B line ~B~n"
-        "> Stacktrace:~s~n"
-        "> Caught: ~s:~p"
-        "~s",
+        "An unexpected exception~ts occurred in ~w:~w/~B line ~B~n"
+        "> Stacktrace:~ts~n"
+        "> Caught: ~ts:~tp"
+        "~ts",
         [
             case Ref of
                 undefined -> "";
-                _ -> str_utils:format(" (ref: ~s)", [Ref])
+                _ -> str_utils:format(" (ref: ~ts)", [Ref])
             end,
             Module, Function, Arity, Line,
             lager:pr_stacktrace(Stacktrace),
@@ -61,7 +72,7 @@ format_exception_log(
 
 -spec format_deprecated_exception_log(
     module(), atom(), non_neg_integer(), non_neg_integer(),
-    string(), list(), stacktrace()
+    string() | autoformat_spec(), list(), stacktrace()
 ) -> string().
 format_deprecated_exception_log(
     Module, Function, Arity, Line,
@@ -69,8 +80,8 @@ format_deprecated_exception_log(
 ) ->
     format_generic_log(
         "An unexpected exception occurred in ~w:~w/~B line ~B~n"
-        "> Stacktrace:~s"
-        "~s",
+        "> Stacktrace:~ts"
+        "~ts",
         [
             Module, Function, Arity, Line,
             lager:pr_stacktrace(Stacktrace),
@@ -81,21 +92,20 @@ format_deprecated_exception_log(
 
 -spec format_error_report(
     module(), atom(), non_neg_integer(), non_neg_integer(),
-    string(), list(), undefined | string() | binary()
+    string() | autoformat_spec(), list(), undefined | string() | binary()
 ) -> string().
 format_error_report(
     Module, Function, Arity, Line,
     DetailsFormat, DetailsArgs, Ref
 ) ->
     format_generic_log(
-        "An error (ref: ~s) occurred in ~w:~w/~B line ~B"
-        "~s",
+        "An error (ref: ~ts) occurred in ~w:~w/~B line ~B"
+        "~ts",
         [
             Ref, Module, Function, Arity, Line,
             format_details_suffix(DetailsFormat, DetailsArgs)
         ]
     ).
-
 
 %%--------------------------------------------------------------------
 %% @doc Determines if logs with provided loglevel should be logged or discarded.
@@ -251,7 +261,7 @@ log_with_rotation(LogFile, Format, Args, MaxSize) ->
             ok
     end,
     file:write_file(LogFile,
-        io_lib:format("~n~s, ~s: " ++ Format, [Date, Time | Args]), [append]),
+        io_lib:format("~n~ts, ~ts: " ++ Format, [Date, Time | Args]), [append]),
     ok.
 
 %%%===================================================================
@@ -259,8 +269,36 @@ log_with_rotation(LogFile, Format, Args, MaxSize) ->
 %%%===================================================================
 
 %% @private
--spec format_details_suffix(string(), list()) -> string().
+-spec format_details_suffix(string() | autoformat_spec(), list()) -> string().
 format_details_suffix("", _) ->
     "";
+format_details_suffix(#autoformat_spec{} = AutoformatSpec, _DetailsArgs) ->
+    {DetailsFormat, DetailsArgs} = autoformat_spec_to_format_and_args(AutoformatSpec),
+    format_details_suffix(DetailsFormat, DetailsArgs);
 format_details_suffix(DetailsFormat, DetailsArgs) ->
     str_utils:format("~n> Details: " ++ DetailsFormat, DetailsArgs).
+
+
+%% @private
+-spec autoformat_spec_to_format_and_args(autoformat_spec()) -> {string(), list()}.
+autoformat_spec_to_format_and_args(#autoformat_spec{
+    format = Format,
+    args = Args,
+    term_names = TermNames,
+    term_values = TermValues
+}) ->
+    DetailsFormat = Format ++ lists:flatten(lists:map(fun({TermName, Term}) ->
+        ControlSequence = case is_printable(Term) of
+            true -> "~ts";
+            false -> "~tp"
+        end,
+        "~n    " ++ TermName ++  " = " ++ ControlSequence
+    end, lists:zip(TermNames, TermValues))),
+    {DetailsFormat, Args ++ TermValues}.
+
+
+%% @private
+-spec is_printable(term()) ->  boolean().
+is_printable(Str) when is_list(Str) -> io_lib:printable_list(Str);
+is_printable(Str) when is_binary(Str) -> io_lib:printable_list(str_utils:binary_to_unicode_list(Str));
+is_printable(_Str) -> false.
