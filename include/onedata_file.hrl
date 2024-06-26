@@ -115,7 +115,7 @@
     ?attr_is_deleted, ?attr_conflicting_files
 ]).
 
--define(API_FILE_ATTRS, ?ALL_FILE_ATTRS -- ?INTERNAL_FILE_ATTRS).
+-define(API_FILE_ATTRS, (?ALL_FILE_ATTRS -- ?INTERNAL_FILE_ATTRS)).
 -define(PUBLIC_API_FILE_ATTRS, [
     ?attr_guid, ?attr_index, ?attr_type, ?attr_active_permissions_type, ?attr_mode, ?attr_name, ?attr_conflicting_name,
     ?attr_parent_guid, ?attr_creation_time, ?attr_atime, ?attr_mtime, ?attr_ctime, ?attr_size, ?attr_shares,
