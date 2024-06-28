@@ -80,7 +80,8 @@ upgrade_db_data_spec_test_() ->
         ?_assertEqual(
             #atm_file_data_spec{
                 file_type = ?REGULAR_FILE_TYPE,
-                attributes = lists:usort(?API_FILE_ATTRS)
+                %% @TODO VFS-12091 include all attrs after atm versioning is introduced
+                attributes = lists:usort(?API_FILE_ATTRS -- [?attr_creation_time])
             },
             U(#{
                 <<"_data">> => #{
@@ -95,7 +96,8 @@ upgrade_db_data_spec_test_() ->
         ?_assertEqual(
             #atm_file_data_spec{
                 file_type = ?REGULAR_FILE_TYPE,
-                attributes = lists:usort(?API_FILE_ATTRS)
+                %% @TODO VFS-12091 include all attrs after atm versioning is introduced
+                attributes = lists:usort(?API_FILE_ATTRS -- [?attr_creation_time])
             },
             U(#{
                 <<"_data">> => #{
