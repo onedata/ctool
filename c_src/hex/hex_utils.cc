@@ -27,12 +27,12 @@ std::string Hex[] = {
 
 static ERL_NIF_TERM hex(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]){
     ErlNifBinary received_binary;
-    ERL_NIF_TERM hex_binary; 
+    ERL_NIF_TERM hex_binary;
 
     if (!enif_inspect_binary(env, argv[0], &received_binary)) {
        return enif_make_badarg(env);
     }
-    unsigned char* hex = enif_make_new_binary(env, received_binary.size*2, 
+    unsigned char* hex = enif_make_new_binary(env, received_binary.size*2,
             &hex_binary);
     for(unsigned int i=0;i<received_binary.size;++i){
         hex[i*2]=Hex[received_binary.data[i]][0];
