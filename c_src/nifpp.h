@@ -298,7 +298,7 @@ inline TERM make(ErlNifEnv *env, const folly::fbvector<T> &var)
 // folly::IOBufQueue
 inline int get(ErlNifEnv *env, ERL_NIF_TERM term, folly::IOBufQueue &var)
 {
-    var.clear();
+    var.reset();
 
     ErlNifBinary bin;
     if (!enif_inspect_binary(env, term, &bin))
