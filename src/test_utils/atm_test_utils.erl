@@ -228,7 +228,8 @@ example_data_spec_except(atm_dataset_type, _) ->
 example_data_spec_except(atm_file_type, _) ->
     #atm_file_data_spec{
         file_type = ?RAND_ELEMENT(atm_file_data_spec:allowed_file_type_specs()),
-        attributes = ?RAND_CHOICE(undefined, lists:usort(?RAND_SUBLIST(?API_FILE_ATTRS)))
+        %% @TODO VFS-12091 include all attrs after atm versioning is introduced
+        attributes = ?RAND_CHOICE(undefined, lists:usort(?RAND_SUBLIST(?API_FILE_ATTRS -- [?attr_creation_time])))
     };
 example_data_spec_except(atm_group_type, _) ->
     #atm_group_data_spec{
@@ -748,7 +749,8 @@ ensure_data_spec_valid_for_input_parameters(#atm_file_data_spec{attributes = [_ 
     DataSpec;
 ensure_data_spec_valid_for_input_parameters(#atm_file_data_spec{attributes = _} = DataSpec) ->
     % the attributes field must be a non-empty list
-    DataSpec#atm_file_data_spec{attributes = lists:sort(?RAND_SUBLIST(?API_FILE_ATTRS, 1, all))};
+    %% @TODO VFS-12091 include all attrs after atm versioning is introduced
+    DataSpec#atm_file_data_spec{attributes = lists:sort(?RAND_SUBLIST(?API_FILE_ATTRS -- [?attr_creation_time], 1, all))};
 
 ensure_data_spec_valid_for_input_parameters(#atm_group_data_spec{attributes = [_ | _]} = DataSpec) ->
     DataSpec;
