@@ -80,7 +80,7 @@
 %%register_handle_service | list_handle_services | % we may need those
 %% privileges for admins in oz_privileges
 ?HANDLE_SERVICE_VIEW | ?HANDLE_SERVICE_UPDATE | ?HANDLE_SERVICE_DELETE |
-?HANDLE_SERVICE_REGISTER_HANDLE | ?HANDLE_SERVICE_LIST_HANDLES.
+?HANDLE_SERVICE_REGISTER_HANDLE | ?HANDLE_SERVICE_LIST_HANDLES | ?HANDLE_SERVICE_MANAGE_HANDLES.
 
 %% User privileges with regards to handle.
 -type handle_privilege() :: ?HANDLE_VIEW | ?HANDLE_UPDATE | ?HANDLE_DELETE.
@@ -354,7 +354,7 @@ space_privileges() ->
 %%--------------------------------------------------------------------
 -spec handle_service_member() -> privileges(handle_service_privilege()).
 handle_service_member() ->
-    from_list([?HANDLE_SERVICE_VIEW, ?HANDLE_SERVICE_REGISTER_HANDLE]).
+    from_list([?HANDLE_SERVICE_VIEW, ?HANDLE_SERVICE_REGISTER_HANDLE, ?HANDLE_SERVICE_LIST_HANDLES]).
 
 %%--------------------------------------------------------------------
 %% @doc A privilege level of a handle_service administrator. This level contains all
@@ -366,7 +366,7 @@ handle_service_admin() ->
     union(handle_service_member(), [
         ?HANDLE_SERVICE_UPDATE,
         ?HANDLE_SERVICE_DELETE,
-        ?HANDLE_SERVICE_LIST_HANDLES
+        ?HANDLE_SERVICE_MANAGE_HANDLES
     ]).
 
 %%--------------------------------------------------------------------
