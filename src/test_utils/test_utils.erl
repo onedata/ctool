@@ -26,10 +26,13 @@
 ]).
 -export([get_env/3, set_env/4]).
 -export([get_docker_ip/1, get_docker_hostname/1]).
+-export([format_failure_summary/2]).
 
 -define(TIMEOUT, timer:seconds(60)).
 -define(ATTEMPTS, 10).
+-define(FIELD_LENGTH_LIMIT, ctool:get_env(log_field_length_limit, 1000)).
 
+-type failure_summary() :: #failure_summary{}.
 
 %%%===================================================================
 %%% API
@@ -299,6 +302,56 @@ get_docker_hostname(Node) ->
     re:replace(shell_utils:get_success_output(CMD), "\\s+", "", [global, {return, binary}]).
 
 
+-spec format_failure_summary(string(), failure_summary()) -> {string(), list()}.
+format_failure_summary(TestedExpressionString, #failure_summary{
+    module = Module,
+    line = Line,
+    expected_expression = ExpectedExpression,
+    expected_value = undefined,
+    actual_expression = ActualExpression,
+    actual_value = ActualValue
+}) ->
+    ActualValueStr = str_utils:format("~tp", [ActualValue]),
+    ExpectedStr = str_utils:format("~tp", [ExpectedExpression]),
+    LongestPrefix = str_utils:longest_substring(ExpectedStr, ActualValueStr),
+    ActualValueSlice = format_diff(LongestPrefix, ActualValueStr),
+    Format = "~ts - ~tp:~tp~n"
+        ++ "-  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  - ~n"
+        ++ "> Expectation: ~tp~n~n"
+        ++ "-  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  - ~n"
+        ++ "> Value: ~tp~n~n~ts~n",
+
+    {Format, [
+        TestedExpressionString, Module, Line, ExpectedExpression,
+        ActualExpression, ActualValueSlice
+    ]};
+format_failure_summary(TestedExpressionString, #failure_summary{
+    module = Module,
+    line = Line,
+    expected_expression = ExpectedExpression,
+    expected_value = ExpectedValue,
+    actual_expression = ActualExpression,
+    actual_value = ActualValue
+}) ->
+    ActualValueStr = str_utils:format("~tp", [ActualValue]),
+    ExpectedValueStr = str_utils:format("~tp", [ExpectedValue]),
+    LongestPrefix = str_utils:longest_substring(ExpectedValueStr, ActualValueStr),
+
+    ActualValueSlice = format_diff(LongestPrefix, ActualValueStr),
+    ExpectedValueSlice = format_diff(LongestPrefix, ExpectedValueStr),
+
+    Format = "~ts - ~tp:~tp~n"
+        ++ "-  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  - ~n"
+        ++ "> Expectation: ~tp~n~n~ts~n"
+        ++ "-  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  - ~n"
+        ++ "> Value: ~tp~n~n~ts~n",
+
+    {Format, [
+        TestedExpressionString, Module, Line, ExpectedExpression,
+        ExpectedValueSlice, ActualExpression, ActualValueSlice
+    ]}.
+
+
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
@@ -392,4 +445,56 @@ should_recompile_module(SrcFilePath) ->
             SrcFileInfo#file_info.mtime >= BeamFileInfo#file_info.mtime;
         {error, _} ->
             true
+    end.
+
+
+%% @private
+-spec get_limited_diff(string(), string()) -> string().
+get_limited_diff(LongestPrefix, Rest) ->
+    MaxLength = ?FIELD_LENGTH_LIMIT,
+    PrefixLength = length(LongestPrefix),
+    RestLength = length(Rest),
+
+    case PrefixLength + RestLength =< MaxLength of
+        true ->
+            LongestPrefix ++ "~n[DIFF]~n" ++  Rest;
+        false ->
+            HalfLength = MaxLength div 2,
+            ActualPrefixLength = case PrefixLength < MaxLength of
+                true -> PrefixLength;
+                false -> HalfLength
+            end,
+
+            TruncatedPrefix = string:sub_string(LongestPrefix, PrefixLength - ActualPrefixLength + 1),
+            TruncatedRest = lists:sublist(Rest, MaxLength - ActualPrefixLength),
+
+            add_dots_if_truncated(TruncatedPrefix, PrefixLength, left) ++ "~n[DIFF]~n"
+                ++ add_dots_if_truncated(TruncatedRest, RestLength, right)
+    end.
+
+
+%% @private
+-spec format_diff(string(), string()) -> string().
+format_diff(LongestPrefix, ValueStr) ->
+    case LongestPrefix of
+        [] ->
+            Truncated = string:slice(ValueStr, 0, ?FIELD_LENGTH_LIMIT),
+            "[DIFF]~n" ++ add_dots_if_truncated(Truncated, length(ValueStr), right);
+        _ ->
+            Rest = string:sub_string(ValueStr, string:len(LongestPrefix) + 1),
+            get_limited_diff(LongestPrefix, Rest)
+    end.
+
+
+%% @private
+-spec add_dots_if_truncated(string(), integer(), atom()) -> string().
+add_dots_if_truncated(TruncatedStr, OriginalLength, Position) ->
+    if
+        length(TruncatedStr) < OriginalLength ->
+            case Position of
+                left -> "... " ++ TruncatedStr;
+                right -> TruncatedStr ++ " ..."
+            end;
+        true ->
+            TruncatedStr
     end.

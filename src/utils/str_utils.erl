@@ -28,6 +28,7 @@
 -export([rand_hex/1]).
 -export([pad_left/3, pad_right/3]).
 -export([validate_name/1, validate_name/5]).
+-export([longest_substring/2]).
 
 
 %%%===================================================================
@@ -282,3 +283,23 @@ validate_name(Name, FirstRgx, MiddleRgx, LastRgx, MaxLength) ->
     catch _:_ ->
         false
     end.
+
+
+-spec longest_substring(string(), string()) -> string().
+longest_substring([X | XS], [Y | YS]) ->
+        case {is_whitespace(X), is_whitespace(Y)} of
+            {true, false} -> [X | longest_substring(XS, [Y | YS])];
+            {false, true} -> longest_substring([X | XS], YS);
+            _ -> case X == Y of
+                true -> [X | longest_substring(XS, YS)];
+                false -> []
+            end
+        end;
+longest_substring(_, _) ->
+    [].
+
+
+%% @private
+-spec is_whitespace(char()) -> boolean().
+is_whitespace(Char) ->
+    lists:member(Char, " \t\n\r").
