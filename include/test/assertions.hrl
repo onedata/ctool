@@ -23,6 +23,14 @@
 % the same block of code
 -compile(nowarn_shadow_vars).
 
+-record(failure_summary, {
+    module :: string(),
+    line :: integer(),
+    expression :: term(),
+    expected :: term(),
+    value :: term()
+}).
+
 -undef(assertMatch).
 -define(assertMatch(Guard, ExpressionToCheck),
     ?assertMatch(Guard, ExpressionToCheck, 1)).
@@ -37,14 +45,15 @@
                 _ ->
                     case AttemptsLeft of
                         1 ->
-                            FailureSummary = [
-                                {module, ?MODULE},
-                                {line, ?LINE},
-                                {expression, (??ExpressionToCheck)},
-                                {expected, (??Guard)},
-                                {value, ActualValue}
-                            ],
-                            ct:print("assertMatch failed: ~tp~n", [FailureSummary]),
+                            {Format, Args} = onedata_logger:format_failure_summary(#failure_summary{
+                                module = ?MODULE,
+                                line = ?LINE,
+                                expression = (??ExpressionToCheck),
+                                expected = (??Guard),
+                                value = ActualValue
+                            }),
+                            FailureSummary = string:slice(str_utils:format(Format, Args), 0, 1000),
+                            ct:pal(FailureSummary),
                             erlang:error({assertMatch_failed, FailureSummary});
                         _ ->
                             timer:sleep(Interval),

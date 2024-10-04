@@ -14,15 +14,17 @@
 
 -include("global_definitions.hrl").
 -include("logging.hrl").
+-include("test/assertions.hrl").
 
--export([format_generic_log/2, format_exception_log/10,
-    format_deprecated_exception_log/7, format_error_report/7]).
+-export([format_generic_log/2, format_exception_log/10, format_deprecated_exception_log/7,
+    format_error_report/7, format_failure_summary/1]).
 -export([should_log/1, log/3, parse_process_info/1, log_with_rotation/4]).
 -export([set_loglevel/1, set_console_loglevel/1]).
 -export([get_current_loglevel/0, get_default_loglevel/0, get_console_loglevel/0]).
 -export([loglevel_int_to_atom/1, loglevel_atom_to_int/1]).
 
 -type autoformat_spec() :: #autoformat_spec{}.
+-type failure_summary() :: #failure_summary{}.
 
 %%%===================================================================
 %%% API
@@ -106,6 +108,25 @@ format_error_report(
             format_details_suffix(DetailsFormat, DetailsArgs)
         ]
     ).
+
+
+-spec format_failure_summary(failure_summary()) -> {string(), list()}.
+format_failure_summary(#failure_summary{
+    module = Module,
+    line = Line,
+    expression = Expression,
+    expected = Expected,
+    value = ActualValue
+}) ->
+    Format = "assertMatch failed:~n"
+        ++ "    Module: ~tp~n"
+        ++ "    Line: ~tp~n"
+        ++ "    Expression: ~tp~n"
+        ++ "    Expected: ~tp~n"
+        ++ "    Actual Value: ~tp~n",
+
+    % Return formatted string and values
+    {Format, [Module, Line, Expression, Expected, ActualValue]}.
 
 %%--------------------------------------------------------------------
 %% @doc Determines if logs with provided loglevel should be logged or discarded.
