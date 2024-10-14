@@ -39,7 +39,7 @@ encode_decode_atm_resource_spec_test() ->
     ?assertEqual(ExampleWithRoundCpuResources, atm_resource_spec:from_json(ExampleJsonWithIntegerCpuResources)),
 
     % test validation of values
-    ?assert(eunit_utils:throws_error_during_decode_from_json(?ERROR_BAD_DATA(<<"atmResourceSpec">>), [
+    ?assert(eunit_utils:throws_error_during_decode_from_json(?ERROR_BAD_DATA(<<"atmResourceSpec">>, undefined), [
         Example#atm_resource_spec{cpu_requested = undefined},
         Example#atm_resource_spec{cpu_limit = <<"text">>},
         Example#atm_resource_spec{memory_requested = 17.8},

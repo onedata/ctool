@@ -34,7 +34,7 @@ encode_decode_error_test_() ->
             EncodedJSON = json_utils:encode(Json),
             DecodedJSON = json_utils:decode(EncodedJSON),
             FromJson = errors:from_json(DecodedJSON),
-            ?assertMatch({error, _}, FromJson),
+            ?assertMatch(#od_error{}, FromJson),
             ?assertEqual(After, FromJson)
         end} end, testcases()).
 
@@ -53,7 +53,7 @@ http_code_test_() ->
 
 
 http_code_for_nonexistent_error_test() ->
-    ?assertException(_, _, errors:to_http_code({error, gibberish})).
+    ?assertException(_, _, errors:to_http_code(#od_error{type = gibberish})).
 
 
 is_known_error_test_() ->
@@ -68,13 +68,13 @@ is_known_error_test_() ->
 
 
 is_not_known_error_test() ->
-    ?assertNot(errors:is_known_error({error, gibberish})).
+    ?assertNot(errors:is_known_error(#od_error{type = gibberish})).
 
 
 cannot_translate_error_test() ->
     % in case of an error that is not specified in the errors module,
     % a proper error log is logged and an internal server error should be returned
-    BadErrorTerm = {error, {some_error, that_we_dont_understand, 1653}},
+    BadErrorTerm = #od_error{type = some_error, args = {that_we_dont_understand, 1653}},
     ?assertMatch(
         ?ERROR_INTERNAL_SERVER_ERROR(_),
         errors:from_json(errors:to_json(BadErrorTerm))
@@ -107,7 +107,7 @@ testcases() -> [
     ?ERROR_NO_CONNECTION_TO_ONEZONE,
     ?ERROR_NO_CONNECTION_TO_PEER_ONEPROVIDER,
     ?ERROR_UNREGISTERED_ONEPROVIDER,
-    ?ERROR_INTERNAL_SERVER_ERROR,
+    ?ERROR_INTERNAL_SERVER_ERROR(undefined),
     ?ERROR_INTERNAL_SERVER_ERROR(?RAND_STR()),
     ?ERROR_NOT_IMPLEMENTED,
     ?ERROR_NOT_SUPPORTED,
@@ -116,8 +116,8 @@ testcases() -> [
     ?ERROR_TEMPORARY_FAILURE,
     ?ERROR_EXTERNAL_SERVICE_OPERATION_FAILED(<<"Some external service">>),
     ?ERROR_UNAUTHORIZED(?ERROR_NOT_AN_ACCESS_TOKEN(?IDENTITY_TOKEN)),
-    ?ERROR_UNAUTHORIZED,
-    ?ERROR_FORBIDDEN,
+    ?ERROR_UNAUTHORIZED(undefined),
+    ?ERROR_FORBIDDEN(undefined),
     ?ERROR_FORBIDDEN(<<"Sausage not for the dog">>),
     ?ERROR_FORBIDDEN(<<"Honey not for the piglets.">>),
     ?ERROR_NOT_FOUND,
@@ -178,7 +178,7 @@ testcases() -> [
     ?ERROR_MALFORMED_DATA,
     ?ERROR_MISSING_REQUIRED_VALUE(<<"spaceId">>),
     ?ERROR_MISSING_AT_LEAST_ONE_VALUE([<<"name">>, <<"type">>]),
-    ?ERROR_BAD_DATA(<<"spaceId">>),
+    ?ERROR_BAD_DATA(<<"spaceId">>, undefined),
     ?ERROR_BAD_DATA(<<"nestedRecord">>, ?ERROR_MISSING_REQUIRED_VALUE(<<"key">>)),
     ?ERROR_BAD_DATA(<<"spaceId">>, <<"Not so readable hint">>),
     ?ERROR_BAD_VALUE_EMPTY(<<"spaceId">>),
@@ -217,7 +217,7 @@ testcases() -> [
     ?ERROR_BAD_VALUE_USERNAME,
     ?ERROR_BAD_VALUE_PASSWORD,
     ?ERROR_BAD_VALUE_EMAIL,
-    ?ERROR_BAD_VALUE_NAME,
+    ?ERROR_BAD_VALUE_NAME(undefined),
     ?ERROR_BAD_VALUE_NAME(<<"key">>),
     ?ERROR_BAD_VALUE_DOMAIN,
     ?ERROR_BAD_VALUE_SUBDOMAIN,
@@ -312,27 +312,27 @@ testcases() -> [
     ?ERROR_ATM_WORKFLOW_EXECUTION_NOT_RESUMABLE,
 
     ?ERROR_ATM_LANE_EMPTY(<<"id">>),
-    ?ERROR_ATM_LANE_EXECUTION_CREATION_FAILED(<<"id">>, ?ERROR_INTERNAL_SERVER_ERROR),
+    ?ERROR_ATM_LANE_EXECUTION_CREATION_FAILED(<<"id">>, ?ERROR_INTERNAL_SERVER_ERROR(undefined)),
     ?ERROR_ATM_LANE_EXECUTION_INITIATION_FAILED(<<"id">>, ?ERROR_ATM_OPENFAAS_NOT_CONFIGURED),
     ?ERROR_ATM_LANE_EXECUTION_RETRY_FAILED,
     ?ERROR_ATM_LANE_EXECUTION_RERUN_FAILED,
 
     ?ERROR_ATM_PARALLEL_BOX_EMPTY(<<"id">>),
-    ?ERROR_ATM_PARALLEL_BOX_EXECUTION_CREATION_FAILED(<<"id">>, ?ERROR_INTERNAL_SERVER_ERROR),
+    ?ERROR_ATM_PARALLEL_BOX_EXECUTION_CREATION_FAILED(<<"id">>, ?ERROR_INTERNAL_SERVER_ERROR(undefined)),
     ?ERROR_ATM_PARALLEL_BOX_EXECUTION_INITIATION_FAILED(<<"id">>, ?ERROR_ATM_OPENFAAS_NOT_CONFIGURED),
 
-    ?ERROR_ATM_TASK_EXECUTION_CREATION_FAILED(<<"id">>, ?ERROR_INTERNAL_SERVER_ERROR),
+    ?ERROR_ATM_TASK_EXECUTION_CREATION_FAILED(<<"id">>, ?ERROR_INTERNAL_SERVER_ERROR(undefined)),
     ?ERROR_ATM_TASK_EXECUTION_INITIATION_FAILED(<<"id">>, ?ERROR_ATM_OPENFAAS_NOT_CONFIGURED),
     ?ERROR_ATM_LAMBDA_CONFIG_BAD_VALUE(<<"repeats">>, ?ERROR_ATM_DATA_TYPE_UNVERIFIED(<<"NaN">>, atm_number_type)),
     ?ERROR_ATM_TASK_ARG_MAPPER_FOR_REQUIRED_LAMBDA_ARG_MISSING(<<"arg">>),
     ?ERROR_ATM_TASK_ARG_MAPPER_FOR_NONEXISTENT_LAMBDA_ARG(<<"arg">>),
     ?ERROR_ATM_TASK_ARG_MAPPER_UNSUPPORTED_VALUE_BUILDER(store_credentials, [iterated_item]),
     ?ERROR_ATM_TASK_ARG_MAPPER_ITERATED_ITEM_QUERY_FAILED([1, 2], [0]),
-    ?ERROR_ATM_TASK_ARG_MAPPING_FAILED(<<"arg">>, ?ERROR_INTERNAL_SERVER_ERROR),
+    ?ERROR_ATM_TASK_ARG_MAPPING_FAILED(<<"arg">>, ?ERROR_INTERNAL_SERVER_ERROR(undefined)),
 
     ?ERROR_ATM_TASK_RESULT_MISSING(<<"result">>, [<<"key1">>, <<"key2">>]),
-    ?ERROR_ATM_TASK_RESULT_DISPATCH_FAILED(<<"id">>, ?ERROR_INTERNAL_SERVER_ERROR),
-    ?ERROR_ATM_TASK_RESULT_MAPPING_FAILED(<<"result">>, ?ERROR_INTERNAL_SERVER_ERROR),
+    ?ERROR_ATM_TASK_RESULT_DISPATCH_FAILED(<<"id">>, ?ERROR_INTERNAL_SERVER_ERROR(undefined)),
+    ?ERROR_ATM_TASK_RESULT_MAPPING_FAILED(<<"result">>, ?ERROR_INTERNAL_SERVER_ERROR(undefined)),
 
     ?ERROR_ATM_TASK_EXECUTION_STOPPED,
 
@@ -342,7 +342,7 @@ testcases() -> [
     ?ERROR_ATM_OPENFAAS_NOT_CONFIGURED,
     ?ERROR_ATM_OPENFAAS_UNREACHABLE,
     ?ERROR_ATM_OPENFAAS_UNHEALTHY,
-    ?ERROR_ATM_OPENFAAS_QUERY_FAILED,
+    ?ERROR_ATM_OPENFAAS_QUERY_FAILED(undefined),
     ?ERROR_ATM_OPENFAAS_QUERY_FAILED(<<"dns resolution error...">>),
     ?ERROR_ATM_OPENFAAS_FUNCTION_REGISTRATION_FAILED,
 
