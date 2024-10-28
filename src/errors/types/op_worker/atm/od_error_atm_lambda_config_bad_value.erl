@@ -1,11 +1,13 @@
 %%%-------------------------------------------------------------------
+%%% This file has been automatically generated - DO NOT EDIT!!!
+%%%
 %%% @copyright (C) 2024 ACK CYFRONET AGH
 %%% This software is released under the MIT license
 %%% cited in 'LICENSE.txt'.
 %%% @end
 %%%-------------------------------------------------------------------
 %%% @doc
-%%% This module implements od_error for ?MODULE.
+%%% This module implements od_error for 'od_error_atm_lambda_config_bad_value'.
 %%% @end
 %%%-------------------------------------------------------------------
 -module(od_error_atm_lambda_config_bad_value).
@@ -31,11 +33,13 @@
 
 -spec to_json(t()) -> json_utils:json_map().
 to_json(?ERROR_ATM_LAMBDA_CONFIG_BAD_VALUE(ParameterName, SpecificError)) ->
+    SpecificErrorJson = errors:to_json(SpecificError),
+
     #{
         <<"id">> => ?ERROR_ATM_LAMBDA_CONFIG_BAD_VALUE_ID,
         <<"details">> => #{
             <<"parameterName">> => ParameterName,
-            <<"specificError">> => errors:to_json(SpecificError)
+            <<"specificError">> => SpecificErrorJson
         },
         <<"description">> => ?fmt(
             "Bad value provided for parameter \"~ts\" of lambda config (see details).",
@@ -45,16 +49,16 @@ to_json(?ERROR_ATM_LAMBDA_CONFIG_BAD_VALUE(ParameterName, SpecificError)) ->
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(#{
-    <<"id">> := ?ERROR_ATM_LAMBDA_CONFIG_BAD_VALUE_ID,
-    <<"details">> := #{
-        <<"parameterName">> := ParameterName,
-        <<"specificError">> := SpecificErrorJson
-    }
-}) ->
-    ?ERROR_ATM_LAMBDA_CONFIG_BAD_VALUE(ParameterName, errors:from_json(SpecificErrorJson)).
+from_json(OdErrorJson = #{<<"id">> := ?ERROR_ATM_LAMBDA_CONFIG_BAD_VALUE_ID}) ->
+    DetailsJson = maps:get(<<"details">>, OdErrorJson),
+
+    ParameterName = maps:get(<<"parameterName">>, DetailsJson),
+    SpecificErrorJson = maps:get(<<"specificError">>, DetailsJson),
+    SpecificError = errors:from_json(SpecificErrorJson),
+
+    ?ERROR_ATM_LAMBDA_CONFIG_BAD_VALUE(ParameterName, SpecificError).
 
 
--spec to_http_code(t()) -> 400.
+-spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.
 to_http_code(_) ->
     ?HTTP_400_BAD_REQUEST.

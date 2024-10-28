@@ -1,11 +1,13 @@
 %%%-------------------------------------------------------------------
+%%% This file has been automatically generated - DO NOT EDIT!!!
+%%%
 %%% @copyright (C) 2024 ACK CYFRONET AGH
 %%% This software is released under the MIT license
 %%% cited in 'LICENSE.txt'.
 %%% @end
 %%%-------------------------------------------------------------------
 %%% @doc
-%%% This module implements od_error for ?MODULE.
+%%% This module implements od_error for 'od_error_not_a_local_storage_supporting_space'.
 %%% @end
 %%%-------------------------------------------------------------------
 -module(od_error_not_a_local_storage_supporting_space).
@@ -46,14 +48,16 @@ to_json(?ERROR_NOT_A_LOCAL_STORAGE_SUPPORTING_SPACE(ProviderId, StorageId, Space
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(#{<<"id">> := ?ERROR_NOT_A_LOCAL_STORAGE_SUPPORTING_SPACE_ID, <<"details">> := #{
-    <<"providerId">> := ProviderId,
-    <<"storageId">> := StorageId,
-    <<"spaceId">> := SpaceId
-}}) ->
+from_json(OdErrorJson = #{<<"id">> := ?ERROR_NOT_A_LOCAL_STORAGE_SUPPORTING_SPACE_ID}) ->
+    DetailsJson = maps:get(<<"details">>, OdErrorJson),
+
+    ProviderId = maps:get(<<"providerId">>, DetailsJson),
+    StorageId = maps:get(<<"storageId">>, DetailsJson),
+    SpaceId = maps:get(<<"spaceId">>, DetailsJson),
+
     ?ERROR_NOT_A_LOCAL_STORAGE_SUPPORTING_SPACE(ProviderId, StorageId, SpaceId).
 
 
--spec to_http_code(t()) -> 400.
+-spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.
 to_http_code(_) ->
     ?HTTP_400_BAD_REQUEST.

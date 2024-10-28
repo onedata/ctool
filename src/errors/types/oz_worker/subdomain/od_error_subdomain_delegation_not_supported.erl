@@ -1,11 +1,13 @@
 %%%-------------------------------------------------------------------
+%%% This file has been automatically generated - DO NOT EDIT!!!
+%%%
 %%% @copyright (C) 2024 ACK CYFRONET AGH
 %%% This software is released under the MIT license
 %%% cited in 'LICENSE.txt'.
 %%% @end
 %%%-------------------------------------------------------------------
 %%% @doc
-%%% This module implements od_error for ?MODULE.
+%%% This module implements od_error for 'od_error_subdomain_delegation_not_supported'.
 %%% @end
 %%%-------------------------------------------------------------------
 -module(od_error_subdomain_delegation_not_supported).
@@ -42,6 +44,6 @@ from_json(#{<<"id">> := ?ERROR_SUBDOMAIN_DELEGATION_NOT_SUPPORTED_ID}) ->
     ?ERROR_SUBDOMAIN_DELEGATION_NOT_SUPPORTED.
 
 
--spec to_http_code(t()) -> 400.
+-spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.
 to_http_code(_) ->
     ?HTTP_400_BAD_REQUEST.

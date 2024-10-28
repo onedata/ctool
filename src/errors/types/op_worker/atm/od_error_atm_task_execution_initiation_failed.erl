@@ -1,11 +1,13 @@
 %%%-------------------------------------------------------------------
+%%% This file has been automatically generated - DO NOT EDIT!!!
+%%%
 %%% @copyright (C) 2024 ACK CYFRONET AGH
 %%% This software is released under the MIT license
 %%% cited in 'LICENSE.txt'.
 %%% @end
 %%%-------------------------------------------------------------------
 %%% @doc
-%%% This module implements od_error for ?MODULE.
+%%% This module implements od_error for 'od_error_atm_task_execution_initiation_failed'.
 %%% @end
 %%%-------------------------------------------------------------------
 -module(od_error_atm_task_execution_initiation_failed).
@@ -31,11 +33,13 @@
 
 -spec to_json(t()) -> json_utils:json_map().
 to_json(?ERROR_ATM_TASK_EXECUTION_INITIATION_FAILED(AtmTaskSchemaId, SpecificError)) ->
+    SpecificErrorJson = errors:to_json(SpecificError),
+
     #{
         <<"id">> => ?ERROR_ATM_TASK_EXECUTION_INITIATION_FAILED_ID,
         <<"details">> => #{
             <<"atmTaskSchemaId">> => AtmTaskSchemaId,
-            <<"specificError">> => errors:to_json(SpecificError)
+            <<"specificError">> => SpecificErrorJson
         },
         <<"description">> => ?fmt(
             "Failed to initiate automation task execution (id: \"~ts\") (see details).",
@@ -45,16 +49,16 @@ to_json(?ERROR_ATM_TASK_EXECUTION_INITIATION_FAILED(AtmTaskSchemaId, SpecificErr
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(#{
-    <<"id">> := ?ERROR_ATM_TASK_EXECUTION_INITIATION_FAILED_ID,
-    <<"details">> := #{
-        <<"atmTaskSchemaId">> := AtmTaskSchemaId,
-        <<"specificError">> := SpecificErrorJson
-    }
-}) ->
-    ?ERROR_ATM_TASK_EXECUTION_INITIATION_FAILED(AtmTaskSchemaId, errors:from_json(SpecificErrorJson)).
+from_json(OdErrorJson = #{<<"id">> := ?ERROR_ATM_TASK_EXECUTION_INITIATION_FAILED_ID}) ->
+    DetailsJson = maps:get(<<"details">>, OdErrorJson),
+
+    AtmTaskSchemaId = maps:get(<<"atmTaskSchemaId">>, DetailsJson),
+    SpecificErrorJson = maps:get(<<"specificError">>, DetailsJson),
+    SpecificError = errors:from_json(SpecificErrorJson),
+
+    ?ERROR_ATM_TASK_EXECUTION_INITIATION_FAILED(AtmTaskSchemaId, SpecificError).
 
 
--spec to_http_code(t()) -> 400.
+-spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.
 to_http_code(_) ->
     ?HTTP_400_BAD_REQUEST.

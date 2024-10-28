@@ -1,11 +1,13 @@
 %%%-------------------------------------------------------------------
+%%% This file has been automatically generated - DO NOT EDIT!!!
+%%%
 %%% @copyright (C) 2024 ACK CYFRONET AGH
 %%% This software is released under the MIT license
 %%% cited in 'LICENSE.txt'.
 %%% @end
 %%%-------------------------------------------------------------------
 %%% @doc
-%%% This module implements od_error for ?MODULE.
+%%% This module implements od_error for 'od_error_limit_reached'.
 %%% @end
 %%%-------------------------------------------------------------------
 -module(od_error_limit_reached).
@@ -37,17 +39,23 @@ to_json(?ERROR_LIMIT_REACHED(Limit, ResourceDescription)) ->
             <<"limit">> => Limit,
             <<"resourceDescription">> => ResourceDescription
         },
-        <<"description">> => ?fmt("The limit for ~ts has been reached: ~tp.", [ResourceDescription, Limit])
+        <<"description">> => ?fmt(
+            "The limit for ~ts has been reached: ~tp.",
+            [ResourceDescription, Limit]
+        )
     }.
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(#{<<"id">> := ?ERROR_LIMIT_REACHED_ID, <<"details">> := #{
-    <<"limit">> := Limit, <<"resourceDescription">> := ResourceDescription
-}}) ->
+from_json(OdErrorJson = #{<<"id">> := ?ERROR_LIMIT_REACHED_ID}) ->
+    DetailsJson = maps:get(<<"details">>, OdErrorJson),
+
+    Limit = maps:get(<<"limit">>, DetailsJson),
+    ResourceDescription = maps:get(<<"resourceDescription">>, DetailsJson),
+
     ?ERROR_LIMIT_REACHED(Limit, ResourceDescription).
 
 
--spec to_http_code(t()) -> 400.
+-spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.
 to_http_code(_) ->
     ?HTTP_400_BAD_REQUEST.

@@ -1,11 +1,13 @@
 %%%-------------------------------------------------------------------
+%%% This file has been automatically generated - DO NOT EDIT!!!
+%%%
 %%% @copyright (C) 2024 ACK CYFRONET AGH
 %%% This software is released under the MIT license
 %%% cited in 'LICENSE.txt'.
 %%% @end
 %%%-------------------------------------------------------------------
 %%% @doc
-%%% This module implements od_error for ?MODULE.
+%%% This module implements od_error for 'od_error_illegal_support_stage_transition'.
 %%% @end
 %%%-------------------------------------------------------------------
 -module(od_error_illegal_support_stage_transition).
@@ -30,32 +32,35 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_ILLEGAL_SUPPORT_STAGE_TRANSITION(ProviderStage, StorageStage)) ->
+to_json(?ERROR_ILLEGAL_SUPPORT_STAGE_TRANSITION(CurrentProviderStage, CurrentStorageStage)) ->
+    CurrentProviderStageJson = support_stage:serialize(provider, CurrentProviderStage),
+    CurrentStorageStageJson = support_stage:serialize(storage, CurrentStorageStage),
+
     #{
         <<"id">> => ?ERROR_ILLEGAL_SUPPORT_STAGE_TRANSITION_ID,
         <<"details">> => #{
-            <<"currentProviderStage">> => support_stage:serialize(provider, ProviderStage),
-            <<"currentStorageStage">> => support_stage:serialize(storage, StorageStage)
+            <<"currentProviderStage">> => CurrentProviderStageJson,
+            <<"currentStorageStage">> => CurrentStorageStageJson
         },
         <<"description">> => ?fmt(
-            "Illegal support stage transition: this operation cannot be performed while "
-            "the storage is in stage '~w' and provider is in stage '~w'.",
-            [StorageStage, ProviderStage]
+            "Illegal support stage transition: this operation cannot be performed while the storage is in stage '~w' and provider is in stage '~w'.",
+            [CurrentStorageStage, CurrentProviderStage]
         )
     }.
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(#{<<"id">> := ?ERROR_ILLEGAL_SUPPORT_STAGE_TRANSITION_ID, <<"details">> := #{
-    <<"currentProviderStage">> := ProviderStageJson,
-    <<"currentStorageStage">> := StorageStageJson
-}}) ->
-    ProviderStage = support_stage:deserialize(provider, ProviderStageJson),
-    StorageStage = support_stage:deserialize(storage, StorageStageJson),
+from_json(OdErrorJson = #{<<"id">> := ?ERROR_ILLEGAL_SUPPORT_STAGE_TRANSITION_ID}) ->
+    DetailsJson = maps:get(<<"details">>, OdErrorJson),
 
-    ?ERROR_ILLEGAL_SUPPORT_STAGE_TRANSITION(ProviderStage, StorageStage).
+    CurrentProviderStageJson = maps:get(<<"currentProviderStage">>, DetailsJson),
+    CurrentProviderStage = support_stage:deserialize(provider, CurrentProviderStageJson),
+    CurrentStorageStageJson = maps:get(<<"currentStorageStage">>, DetailsJson),
+    CurrentStorageStage = support_stage:deserialize(storage, CurrentStorageStageJson),
+
+    ?ERROR_ILLEGAL_SUPPORT_STAGE_TRANSITION(CurrentProviderStage, CurrentStorageStage).
 
 
--spec to_http_code(t()) -> 400.
+-spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.
 to_http_code(_) ->
     ?HTTP_400_BAD_REQUEST.

@@ -1,11 +1,13 @@
 %%%-------------------------------------------------------------------
+%%% This file has been automatically generated - DO NOT EDIT!!!
+%%%
 %%% @copyright (C) 2024 ACK CYFRONET AGH
 %%% This software is released under the MIT license
 %%% cited in 'LICENSE.txt'.
 %%% @end
 %%%-------------------------------------------------------------------
 %%% @doc
-%%% This module implements od_error for ?MODULE.
+%%% This module implements od_error for 'od_error_atm_task_arg_mapper_iterated_item_query_failed'.
 %%% @end
 %%%-------------------------------------------------------------------
 -module(od_error_atm_task_arg_mapper_iterated_item_query_failed).
@@ -42,16 +44,15 @@ to_json(?ERROR_ATM_TASK_ARG_MAPPER_ITERATED_ITEM_QUERY_FAILED(Value, Query)) ->
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(#{
-    <<"id">> := ?ERROR_ATM_TASK_ARG_MAPPER_ITERATED_ITEM_QUERY_FAILED_ID,
-    <<"details">> := #{
-        <<"value">> := Value,
-        <<"query">> := Query
-    }
-}) ->
+from_json(OdErrorJson = #{<<"id">> := ?ERROR_ATM_TASK_ARG_MAPPER_ITERATED_ITEM_QUERY_FAILED_ID}) ->
+    DetailsJson = maps:get(<<"details">>, OdErrorJson),
+
+    Value = maps:get(<<"value">>, DetailsJson),
+    Query = maps:get(<<"query">>, DetailsJson),
+
     ?ERROR_ATM_TASK_ARG_MAPPER_ITERATED_ITEM_QUERY_FAILED(Value, Query).
 
 
--spec to_http_code(t()) -> 400.
+-spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.
 to_http_code(_) ->
     ?HTTP_400_BAD_REQUEST.

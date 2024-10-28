@@ -1,11 +1,13 @@
 %%%-------------------------------------------------------------------
+%%% This file has been automatically generated - DO NOT EDIT!!!
+%%%
 %%% @copyright (C) 2024 ACK CYFRONET AGH
 %%% This software is released under the MIT license
 %%% cited in 'LICENSE.txt'.
 %%% @end
 %%%-------------------------------------------------------------------
 %%% @doc
-%%% This module implements od_error for ?MODULE.
+%%% This module implements od_error for 'od_error_atm_task_arg_mapping_failed'.
 %%% @end
 %%%-------------------------------------------------------------------
 -module(od_error_atm_task_arg_mapping_failed).
@@ -30,31 +32,33 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_ATM_TASK_ARG_MAPPING_FAILED(ArgName, SpecificError)) ->
+to_json(?ERROR_ATM_TASK_ARG_MAPPING_FAILED(Argument, SpecificError)) ->
+    SpecificErrorJson = errors:to_json(SpecificError),
+
     #{
         <<"id">> => ?ERROR_ATM_TASK_ARG_MAPPING_FAILED_ID,
         <<"details">> => #{
-            <<"argument">> => ArgName,
-            <<"specificError">> => errors:to_json(SpecificError)
+            <<"argument">> => Argument,
+            <<"specificError">> => SpecificErrorJson
         },
         <<"description">> => ?fmt(
             "Failed to map automation task execution argument \"~ts\" (see details).",
-            [ArgName]
+            [Argument]
         )
     }.
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(#{
-    <<"id">> := ?ERROR_ATM_TASK_ARG_MAPPING_FAILED_ID,
-    <<"details">> := #{
-        <<"argument">> := ArgName,
-        <<"specificError">> := SpecificErrorJson
-    }
-}) ->
-    ?ERROR_ATM_TASK_ARG_MAPPING_FAILED(ArgName, errors:from_json(SpecificErrorJson)).
+from_json(OdErrorJson = #{<<"id">> := ?ERROR_ATM_TASK_ARG_MAPPING_FAILED_ID}) ->
+    DetailsJson = maps:get(<<"details">>, OdErrorJson),
+
+    Argument = maps:get(<<"argument">>, DetailsJson),
+    SpecificErrorJson = maps:get(<<"specificError">>, DetailsJson),
+    SpecificError = errors:from_json(SpecificErrorJson),
+
+    ?ERROR_ATM_TASK_ARG_MAPPING_FAILED(Argument, SpecificError).
 
 
--spec to_http_code(t()) -> 400.
+-spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.
 to_http_code(_) ->
     ?HTTP_400_BAD_REQUEST.

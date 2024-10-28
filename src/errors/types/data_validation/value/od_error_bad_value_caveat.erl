@@ -1,11 +1,13 @@
 %%%-------------------------------------------------------------------
+%%% This file has been automatically generated - DO NOT EDIT!!!
+%%%
 %%% @copyright (C) 2024 ACK CYFRONET AGH
 %%% This software is released under the MIT license
 %%% cited in 'LICENSE.txt'.
 %%% @end
 %%%-------------------------------------------------------------------
 %%% @doc
-%%% This module implements od_error for ?MODULE.
+%%% This module implements od_error for 'od_error_bad_value_caveat'.
 %%% @end
 %%%-------------------------------------------------------------------
 -module(od_error_bad_value_caveat).
@@ -30,21 +32,30 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_BAD_VALUE_CAVEAT(CaveatJson)) ->
+to_json(?ERROR_BAD_VALUE_CAVEAT(Caveat)) ->
+    CaveatPrint = json_utils:encode(Caveat),
+
     #{
         <<"id">> => ?ERROR_BAD_VALUE_CAVEAT_ID,
         <<"details">> => #{
-            <<"caveat">> => CaveatJson
+            <<"caveat">> => Caveat
         },
-        <<"description">> => ?fmt("Provided caveat is invalid: '~ts'.", [json_utils:encode(CaveatJson)])
+        <<"description">> => ?fmt(
+            "Provided caveat is invalid: '~ts'.",
+            [CaveatPrint]
+        )
     }.
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(#{<<"id">> := ?ERROR_BAD_VALUE_CAVEAT_ID, <<"details">> := #{<<"caveat">> := CaveatJson}}) ->
-    ?ERROR_BAD_VALUE_CAVEAT(CaveatJson).
+from_json(OdErrorJson = #{<<"id">> := ?ERROR_BAD_VALUE_CAVEAT_ID}) ->
+    DetailsJson = maps:get(<<"details">>, OdErrorJson),
+
+    Caveat = maps:get(<<"caveat">>, DetailsJson),
+
+    ?ERROR_BAD_VALUE_CAVEAT(Caveat).
 
 
--spec to_http_code(t()) -> 400.
+-spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.
 to_http_code(_) ->
     ?HTTP_400_BAD_REQUEST.

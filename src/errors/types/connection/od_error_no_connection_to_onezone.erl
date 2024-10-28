@@ -1,11 +1,13 @@
 %%%-------------------------------------------------------------------
+%%% This file has been automatically generated - DO NOT EDIT!!!
+%%%
 %%% @copyright (C) 2024 ACK CYFRONET AGH
 %%% This software is released under the MIT license
 %%% cited in 'LICENSE.txt'.
 %%% @end
 %%%-------------------------------------------------------------------
 %%% @doc
-%%% This module implements od_error for ?MODULE.
+%%% This module implements od_error for 'od_error_no_connection_to_onezone'.
 %%% @end
 %%%-------------------------------------------------------------------
 -module(od_error_no_connection_to_onezone).
@@ -42,6 +44,6 @@ from_json(#{<<"id">> := ?ERROR_NO_CONNECTION_TO_ONEZONE_ID}) ->
     ?ERROR_NO_CONNECTION_TO_ONEZONE.
 
 
--spec to_http_code(t()) -> 503.
+-spec to_http_code(t()) -> ?HTTP_503_SERVICE_UNAVAILABLE.
 to_http_code(_) ->
     ?HTTP_503_SERVICE_UNAVAILABLE.

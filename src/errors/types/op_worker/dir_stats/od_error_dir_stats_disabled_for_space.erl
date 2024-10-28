@@ -1,11 +1,13 @@
 %%%-------------------------------------------------------------------
+%%% This file has been automatically generated - DO NOT EDIT!!!
+%%%
 %%% @copyright (C) 2024 ACK CYFRONET AGH
 %%% This software is released under the MIT license
 %%% cited in 'LICENSE.txt'.
 %%% @end
 %%%-------------------------------------------------------------------
 %%% @doc
-%%% This module implements od_error for ?MODULE.
+%%% This module implements od_error for 'od_error_dir_stats_disabled_for_space'.
 %%% @end
 %%%-------------------------------------------------------------------
 -module(od_error_dir_stats_disabled_for_space).
@@ -42,6 +44,6 @@ from_json(#{<<"id">> := ?ERROR_DIR_STATS_DISABLED_FOR_SPACE_ID}) ->
     ?ERROR_DIR_STATS_DISABLED_FOR_SPACE.
 
 
--spec to_http_code(t()) -> 400.
+-spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.
 to_http_code(_) ->
     ?HTTP_400_BAD_REQUEST.

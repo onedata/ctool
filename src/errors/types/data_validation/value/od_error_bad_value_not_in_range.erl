@@ -1,11 +1,13 @@
 %%%-------------------------------------------------------------------
+%%% This file has been automatically generated - DO NOT EDIT!!!
+%%%
 %%% @copyright (C) 2024 ACK CYFRONET AGH
 %%% This software is released under the MIT license
 %%% cited in 'LICENSE.txt'.
 %%% @end
 %%%-------------------------------------------------------------------
 %%% @doc
-%%% This module implements od_error for ?MODULE.
+%%% This module implements od_error for 'od_error_bad_value_not_in_range'.
 %%% @end
 %%%-------------------------------------------------------------------
 -module(od_error_bad_value_not_in_range).
@@ -38,19 +40,24 @@ to_json(?ERROR_BAD_VALUE_NOT_IN_RANGE(Key, Low, High)) ->
             <<"low">> => Low,
             <<"high">> => High
         },
-        <<"description">> => ?fmt("Bad value: provided \"~ts\" must be between <~B, ~B>.", [Key, Low, High])
+        <<"description">> => ?fmt(
+            "Bad value: provided \"~ts\" must be between <~B, ~B>.",
+            [Key, Low, High]
+        )
     }.
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(#{<<"id">> := ?ERROR_BAD_VALUE_NOT_IN_RANGE_ID, <<"details">> := #{
-    <<"key">> := Key,
-    <<"low">> := Low,
-    <<"high">> := High
-}}) ->
+from_json(OdErrorJson = #{<<"id">> := ?ERROR_BAD_VALUE_NOT_IN_RANGE_ID}) ->
+    DetailsJson = maps:get(<<"details">>, OdErrorJson),
+
+    Key = maps:get(<<"key">>, DetailsJson),
+    Low = maps:get(<<"low">>, DetailsJson),
+    High = maps:get(<<"high">>, DetailsJson),
+
     ?ERROR_BAD_VALUE_NOT_IN_RANGE(Key, Low, High).
 
 
--spec to_http_code(t()) -> 400.
+-spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.
 to_http_code(_) ->
     ?HTTP_400_BAD_REQUEST.

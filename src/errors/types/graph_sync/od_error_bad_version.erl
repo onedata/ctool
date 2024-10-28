@@ -1,11 +1,13 @@
 %%%-------------------------------------------------------------------
+%%% This file has been automatically generated - DO NOT EDIT!!!
+%%%
 %%% @copyright (C) 2024 ACK CYFRONET AGH
 %%% This software is released under the MIT license
 %%% cited in 'LICENSE.txt'.
 %%% @end
 %%%-------------------------------------------------------------------
 %%% @doc
-%%% This module implements od_error for ?MODULE.
+%%% This module implements od_error for 'od_error_bad_version'.
 %%% @end
 %%%-------------------------------------------------------------------
 -module(od_error_bad_version).
@@ -36,17 +38,22 @@ to_json(?ERROR_BAD_VERSION(SupportedVersions)) ->
         <<"details">> => #{
             <<"supportedVersions">> => SupportedVersions
         },
-        <<"description">> => ?fmt("Bad version - supported versions: ~tp.", [SupportedVersions])
+        <<"description">> => ?fmt(
+            "Bad version - supported versions: ~tp.",
+            [SupportedVersions]
+        )
     }.
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(#{<<"id">> := ?ERROR_BAD_VERSION_ID, <<"details">> := #{
-    <<"supportedVersions">> := SupportedVersions
-}}) ->
+from_json(OdErrorJson = #{<<"id">> := ?ERROR_BAD_VERSION_ID}) ->
+    DetailsJson = maps:get(<<"details">>, OdErrorJson),
+
+    SupportedVersions = maps:get(<<"supportedVersions">>, DetailsJson),
+
     ?ERROR_BAD_VERSION(SupportedVersions).
 
 
--spec to_http_code(t()) -> 400.
+-spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.
 to_http_code(_) ->
     ?HTTP_400_BAD_REQUEST.

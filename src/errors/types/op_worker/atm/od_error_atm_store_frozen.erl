@@ -1,11 +1,13 @@
 %%%-------------------------------------------------------------------
+%%% This file has been automatically generated - DO NOT EDIT!!!
+%%%
 %%% @copyright (C) 2024 ACK CYFRONET AGH
 %%% This software is released under the MIT license
 %%% cited in 'LICENSE.txt'.
 %%% @end
 %%%-------------------------------------------------------------------
 %%% @doc
-%%% This module implements od_error for ?MODULE.
+%%% This module implements od_error for 'od_error_atm_store_frozen'.
 %%% @end
 %%%-------------------------------------------------------------------
 -module(od_error_atm_store_frozen).
@@ -44,15 +46,14 @@ to_json(?ERROR_ATM_STORE_FROZEN(AtmStoreSchemaId)) ->
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(#{
-    <<"id">> := ?ERROR_ATM_STORE_FROZEN_ID,
-    <<"details">> := #{
-        <<"atmStoreSchemaId">> := AtmStoreSchemaId
-    }
-}) ->
+from_json(OdErrorJson = #{<<"id">> := ?ERROR_ATM_STORE_FROZEN_ID}) ->
+    DetailsJson = maps:get(<<"details">>, OdErrorJson),
+
+    AtmStoreSchemaId = maps:get(<<"atmStoreSchemaId">>, DetailsJson),
+
     ?ERROR_ATM_STORE_FROZEN(AtmStoreSchemaId).
 
 
--spec to_http_code(t()) -> 403.
+-spec to_http_code(t()) -> ?HTTP_403_FORBIDDEN.
 to_http_code(_) ->
     ?HTTP_403_FORBIDDEN.

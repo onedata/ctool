@@ -1,11 +1,13 @@
 %%%-------------------------------------------------------------------
+%%% This file has been automatically generated - DO NOT EDIT!!!
+%%%
 %%% @copyright (C) 2024 ACK CYFRONET AGH
 %%% This software is released under the MIT license
 %%% cited in 'LICENSE.txt'.
 %%% @end
 %%%-------------------------------------------------------------------
 %%% @doc
-%%% This module implements od_error for ?MODULE.
+%%% This module implements od_error for 'od_error_atm_task_arg_mapper_for_nonexistent_lambda_arg'.
 %%% @end
 %%%-------------------------------------------------------------------
 -module(od_error_atm_task_arg_mapper_for_nonexistent_lambda_arg).
@@ -30,29 +32,28 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_ATM_TASK_ARG_MAPPER_FOR_NONEXISTENT_LAMBDA_ARG(ArgName)) ->
+to_json(?ERROR_ATM_TASK_ARG_MAPPER_FOR_NONEXISTENT_LAMBDA_ARG(Argument)) ->
     #{
         <<"id">> => ?ERROR_ATM_TASK_ARG_MAPPER_FOR_NONEXISTENT_LAMBDA_ARG_ID,
         <<"details">> => #{
-            <<"argument">> => ArgName
+            <<"argument">> => Argument
         },
         <<"description">> => ?fmt(
             "Found excessive argument mapper for nonexistent lambda argument: ~ts.",
-            [ArgName]
+            [Argument]
         )
     }.
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(#{
-    <<"id">> := ?ERROR_ATM_TASK_ARG_MAPPER_FOR_NONEXISTENT_LAMBDA_ARG_ID,
-    <<"details">> := #{
-        <<"argument">> := ArgName
-    }
-}) ->
-    ?ERROR_ATM_TASK_ARG_MAPPER_FOR_NONEXISTENT_LAMBDA_ARG(ArgName).
+from_json(OdErrorJson = #{<<"id">> := ?ERROR_ATM_TASK_ARG_MAPPER_FOR_NONEXISTENT_LAMBDA_ARG_ID}) ->
+    DetailsJson = maps:get(<<"details">>, OdErrorJson),
+
+    Argument = maps:get(<<"argument">>, DetailsJson),
+
+    ?ERROR_ATM_TASK_ARG_MAPPER_FOR_NONEXISTENT_LAMBDA_ARG(Argument).
 
 
--spec to_http_code(t()) -> 400.
+-spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.
 to_http_code(_) ->
     ?HTTP_400_BAD_REQUEST.

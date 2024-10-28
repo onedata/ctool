@@ -1,11 +1,13 @@
 %%%-------------------------------------------------------------------
+%%% This file has been automatically generated - DO NOT EDIT!!!
+%%%
 %%% @copyright (C) 2024 ACK CYFRONET AGH
 %%% This software is released under the MIT license
 %%% cited in 'LICENSE.txt'.
 %%% @end
 %%%-------------------------------------------------------------------
 %%% @doc
-%%% This module implements od_error for ?MODULE.
+%%% This module implements od_error for 'od_error_tsc_too_many_metrics'.
 %%% @end
 %%%-------------------------------------------------------------------
 -module(od_error_tsc_too_many_metrics).
@@ -36,15 +38,22 @@ to_json(?ERROR_TSC_TOO_MANY_METRICS(Limit)) ->
         <<"details">> => #{
             <<"limit">> => Limit
         },
-        <<"description">> => ?fmt("The time series collection cannot have more than ~B metrics.", [Limit])
+        <<"description">> => ?fmt(
+            "The time series collection cannot have more than ~B metrics.",
+            [Limit]
+        )
     }.
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(#{<<"id">> := ?ERROR_TSC_TOO_MANY_METRICS_ID, <<"details">> := #{<<"limit">> := Limit}}) ->
+from_json(OdErrorJson = #{<<"id">> := ?ERROR_TSC_TOO_MANY_METRICS_ID}) ->
+    DetailsJson = maps:get(<<"details">>, OdErrorJson),
+
+    Limit = maps:get(<<"limit">>, DetailsJson),
+
     ?ERROR_TSC_TOO_MANY_METRICS(Limit).
 
 
--spec to_http_code(t()) -> 400.
+-spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.
 to_http_code(_) ->
     ?HTTP_400_BAD_REQUEST.

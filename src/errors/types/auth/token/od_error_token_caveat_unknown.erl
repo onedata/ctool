@@ -1,11 +1,13 @@
 %%%-------------------------------------------------------------------
+%%% This file has been automatically generated - DO NOT EDIT!!!
+%%%
 %%% @copyright (C) 2024 ACK CYFRONET AGH
 %%% This software is released under the MIT license
 %%% cited in 'LICENSE.txt'.
 %%% @end
 %%%-------------------------------------------------------------------
 %%% @doc
-%%% This module implements od_error for ?MODULE.
+%%% This module implements od_error for 'od_error_token_caveat_unknown'.
 %%% @end
 %%%-------------------------------------------------------------------
 -module(od_error_token_caveat_unknown).
@@ -30,21 +32,28 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_TOKEN_CAVEAT_UNKNOWN(CaveatBinary)) ->
+to_json(?ERROR_TOKEN_CAVEAT_UNKNOWN(Caveat)) ->
     #{
         <<"id">> => ?ERROR_TOKEN_CAVEAT_UNKNOWN_ID,
         <<"details">> => #{
-            <<"caveat">> => CaveatBinary
+            <<"caveat">> => Caveat
         },
-        <<"description">> => ?fmt("Unknown caveat - '~ts'.", [CaveatBinary])
+        <<"description">> => ?fmt(
+            "Unknown caveat - '~ts'.",
+            [Caveat]
+        )
     }.
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(#{<<"id">> := ?ERROR_TOKEN_CAVEAT_UNKNOWN_ID, <<"details">> := #{<<"caveat">> := CaveatBinary}}) ->
-    ?ERROR_TOKEN_CAVEAT_UNKNOWN(CaveatBinary).
+from_json(OdErrorJson = #{<<"id">> := ?ERROR_TOKEN_CAVEAT_UNKNOWN_ID}) ->
+    DetailsJson = maps:get(<<"details">>, OdErrorJson),
+
+    Caveat = maps:get(<<"caveat">>, DetailsJson),
+
+    ?ERROR_TOKEN_CAVEAT_UNKNOWN(Caveat).
 
 
--spec to_http_code(t()) -> 400.
+-spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.
 to_http_code(_) ->
     ?HTTP_400_BAD_REQUEST.

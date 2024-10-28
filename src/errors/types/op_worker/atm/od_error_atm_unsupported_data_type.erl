@@ -1,11 +1,13 @@
 %%%-------------------------------------------------------------------
+%%% This file has been automatically generated - DO NOT EDIT!!!
+%%%
 %%% @copyright (C) 2024 ACK CYFRONET AGH
 %%% This software is released under the MIT license
 %%% cited in 'LICENSE.txt'.
 %%% @end
 %%%-------------------------------------------------------------------
 %%% @doc
-%%% This module implements od_error for ?MODULE.
+%%% This module implements od_error for 'od_error_atm_unsupported_data_type'.
 %%% @end
 %%%-------------------------------------------------------------------
 -module(od_error_atm_unsupported_data_type).
@@ -30,37 +32,36 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_ATM_UNSUPPORTED_DATA_TYPE(Type, SupportedTypes)) ->
+to_json(?ERROR_ATM_UNSUPPORTED_DATA_TYPE(Type, Allowed)) ->
     TypeJson = atm_data_type:type_to_json(Type),
-    SupportedTypesJson = lists:map(fun atm_data_type:type_to_json/1, SupportedTypes),
+    AllowedJson = lists:map(fun atm_data_type:type_to_json/1, Allowed),
+    AllowedPrint = ?fmt_csv(AllowedJson),
 
     #{
         <<"id">> => ?ERROR_ATM_UNSUPPORTED_DATA_TYPE_ID,
         <<"details">> => #{
             <<"type">> => TypeJson,
-            <<"allowed">> => SupportedTypesJson
+            <<"allowed">> => AllowedJson
         },
         <<"description">> => ?fmt(
             "Bad automation data type: provided \"~ts\" is not one of: ~ts.",
-            [TypeJson, ?fmt_csv(SupportedTypesJson)]
+            [Type, AllowedPrint]
         )
     }.
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(#{
-    <<"id">> := ?ERROR_ATM_UNSUPPORTED_DATA_TYPE_ID,
-    <<"details">> := #{
-        <<"type">> := TypeJson,
-        <<"allowed">> := SupportedTypesJson
-    }
-}) ->
+from_json(OdErrorJson = #{<<"id">> := ?ERROR_ATM_UNSUPPORTED_DATA_TYPE_ID}) ->
+    DetailsJson = maps:get(<<"details">>, OdErrorJson),
+
+    TypeJson = maps:get(<<"type">>, DetailsJson),
     Type = atm_data_type:type_from_json(TypeJson),
-    SupportedTypes = lists:map(fun atm_data_type:type_from_json/1, SupportedTypesJson),
+    AllowedJson = maps:get(<<"allowed">>, DetailsJson),
+    Allowed = lists:map(fun atm_data_type:type_from_json/1, AllowedJson),
 
-    ?ERROR_ATM_UNSUPPORTED_DATA_TYPE(Type, SupportedTypes).
+    ?ERROR_ATM_UNSUPPORTED_DATA_TYPE(Type, Allowed).
 
 
--spec to_http_code(t()) -> 403.
+-spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.
 to_http_code(_) ->
-    ?HTTP_403_FORBIDDEN.
+    ?HTTP_400_BAD_REQUEST.

@@ -17,6 +17,8 @@
 -include("errors.hrl").
 
 
+-type http_code() :: 400 | 401 | 403 | 404 | 409 | 500 | 501 | 503.
+
 -type errno() :: 
     ?OK | ?E2BIG | ?EACCES | ?EADDRINUSE | ?EADDRNOTAVAIL |
     ?EAFNOSUPPORT | ?EAGAIN | ?EALREADY | ?EBADF | ?EBADMSG | ?EBUSY |
@@ -34,7 +36,7 @@
 
 -type t() :: #od_error{}.
 
--export_type([errno/0, t/0]).
+-export_type([http_code/0, errno/0, t/0]).
 
 
 %%%===================================================================
@@ -63,4 +65,4 @@
 %% Returns HTTP code to be returned in REST response.
 %% @end
 %%--------------------------------------------------------------------
--callback to_http_code(t()) -> 400 | 401 | 403 | 404 | 409 | 500 | 501 | 503.
+-callback to_http_code(t()) -> http_code().

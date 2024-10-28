@@ -1,11 +1,13 @@
 %%%-------------------------------------------------------------------
+%%% This file has been automatically generated - DO NOT EDIT!!!
+%%%
 %%% @copyright (C) 2024 ACK CYFRONET AGH
 %%% This software is released under the MIT license
 %%% cited in 'LICENSE.txt'.
 %%% @end
 %%%-------------------------------------------------------------------
 %%% @doc
-%%% This module implements od_error for ?MODULE.
+%%% This module implements od_error for 'od_error_bad_data'.
 %%% @end
 %%%-------------------------------------------------------------------
 -module(od_error_bad_data).
@@ -30,46 +32,42 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_BAD_DATA(Key, {error, _} = SpecificError)) -> #{
-    <<"id">> => <<"badData">>,
-    <<"details">> => #{
-        <<"key">> => Key,
-        <<"specificError">> => to_json(SpecificError)
-    },
-    <<"description">> => ?fmt("Bad value provided for \"~ts\" (see details).", [Key])
-};
-to_json(?ERROR_BAD_DATA(Key, HumanReadableHint)) -> #{
-    <<"id">> => <<"badData">>,
-    <<"details">> => #{
-        <<"key">> => Key,
-        <<"hint">> => HumanReadableHint
-    },
-    <<"description">> => ?fmt("Bad value provided for \"~ts\": ~ts.", [Key, HumanReadableHint])
-%%};
-%%to_json(?ERROR_BAD_DATA(Key)) -> #{
-%%    <<"id">> => <<"badData">>,
-%%    <<"details">> => #{
-%%        <<"key">> => Key
-%%    },
-%%    <<"description">> => ?fmt(
-%%        "Bad value: provided \"~ts\" has an invalid format or is incomprehensible "
-%%        "in the context of this operation.",
-%%        [Key]
-%%    )
-}.
+to_json(?ERROR_BAD_DATA(Key, ?ERROR = SpecificError)) ->
+    #{
+        <<"id">> => ?ERROR_BAD_DATA_ID,
+        <<"details">> => #{
+            <<"key">> => Key,
+            <<"specificError">> => errors:to_json(SpecificError)
+        },
+        <<"description">> => ?fmt("Bad value provided for \"~ts\" (see details).", [Key])
+    };
+to_json(?ERROR_BAD_DATA(Key, HumanReadableHint)) ->
+    HumanReadableHintJson = utils:undefined_to_null(HumanReadableHint),
+
+    #{
+        <<"id">> => <<"badData">>,
+        <<"details">> => #{
+            <<"key">> => Key,
+            <<"hint">> => HumanReadableHintJson
+        },
+        <<"description">> => ?fmt("Bad value provided for \"~ts\": ~ts.", [Key, HumanReadableHintJson])
+    }.
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(#{<<"id">> := <<"badData">>, <<"details">> := #{<<"key">> := Key, <<"specificError">> := SpecificError}}) ->
-    ?ERROR_BAD_DATA(Key, from_json(SpecificError));
+from_json(#{<<"id">> := ?ERROR_BAD_DATA_ID, <<"details">> := #{
+    <<"key">> := Key,
+    <<"specificError">> := SpecificError
+}}) ->
+    ?ERROR_BAD_DATA(Key, errors:from_json(SpecificError));
 
-from_json(#{<<"id">> := <<"badData">>, <<"details">> := #{<<"key">> := Key, <<"hint">> := HumanReadableHint}}) ->
+from_json(#{<<"id">> := ?ERROR_BAD_DATA_ID, <<"details">> := DetailsJson}) ->
+    Key = maps:get(<<"key">>, DetailsJson),
+    HumanReadableHint = utils:null_to_undefined(maps:get(<<"hint">>, DetailsJson, null)),
+
     ?ERROR_BAD_DATA(Key, HumanReadableHint).
 
-%%from_json(#{<<"id">> := <<"badData">>, <<"details">> := #{<<"key">> := Key}}) ->
-%%    ?ERROR_BAD_DATA(Key).
-%%
 
--spec to_http_code(t()) -> 400.
+-spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.
 to_http_code(_) ->
     ?HTTP_400_BAD_REQUEST.

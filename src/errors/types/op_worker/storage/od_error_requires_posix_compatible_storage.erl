@@ -1,11 +1,13 @@
 %%%-------------------------------------------------------------------
+%%% This file has been automatically generated - DO NOT EDIT!!!
+%%%
 %%% @copyright (C) 2024 ACK CYFRONET AGH
 %%% This software is released under the MIT license
 %%% cited in 'LICENSE.txt'.
 %%% @end
 %%%-------------------------------------------------------------------
 %%% @doc
-%%% This module implements od_error for ?MODULE.
+%%% This module implements od_error for 'od_error_requires_posix_compatible_storage'.
 %%% @end
 %%%-------------------------------------------------------------------
 -module(od_error_requires_posix_compatible_storage).
@@ -31,25 +33,31 @@
 
 -spec to_json(t()) -> json_utils:json_map().
 to_json(?ERROR_REQUIRES_POSIX_COMPATIBLE_STORAGE(StorageId, PosixCompatibleStorages)) ->
+    PosixCompatibleStoragesPrint = ?fmt_csv(PosixCompatibleStorages),
+
     #{
         <<"id">> => ?ERROR_REQUIRES_POSIX_COMPATIBLE_STORAGE_ID,
-        <<"details">> => #{<<"storageId">> => StorageId, <<"posixCompatibleStorages">> => PosixCompatibleStorages},
+        <<"details">> => #{
+            <<"storageId">> => StorageId,
+            <<"posixCompatibleStorages">> => PosixCompatibleStorages
+        },
         <<"description">> => ?fmt(
-            "Cannot apply for storage ~ts - this operation requires a POSIX-compatible storage "
-            "(any of: ~ts).",
-            [StorageId, ?fmt_csv(PosixCompatibleStorages)]
+            "Cannot apply for storage ~ts - this operation requires a POSIX-compatible storage (any of: ~ts).",
+            [StorageId, PosixCompatibleStoragesPrint]
         )
     }.
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(#{<<"id">> := ?ERROR_REQUIRES_POSIX_COMPATIBLE_STORAGE_ID, <<"details">> := #{
-    <<"storageId">> := StorageId,
-    <<"posixCompatibleStorages">> := PosixCompatibleStorages
-}}) ->
+from_json(OdErrorJson = #{<<"id">> := ?ERROR_REQUIRES_POSIX_COMPATIBLE_STORAGE_ID}) ->
+    DetailsJson = maps:get(<<"details">>, OdErrorJson),
+
+    StorageId = maps:get(<<"storageId">>, DetailsJson),
+    PosixCompatibleStorages = maps:get(<<"posixCompatibleStorages">>, DetailsJson),
+
     ?ERROR_REQUIRES_POSIX_COMPATIBLE_STORAGE(StorageId, PosixCompatibleStorages).
 
 
--spec to_http_code(t()) -> 400.
+-spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.
 to_http_code(_) ->
     ?HTTP_400_BAD_REQUEST.

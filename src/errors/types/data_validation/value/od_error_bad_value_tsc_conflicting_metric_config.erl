@@ -1,11 +1,13 @@
 %%%-------------------------------------------------------------------
+%%% This file has been automatically generated - DO NOT EDIT!!!
+%%%
 %%% @copyright (C) 2024 ACK CYFRONET AGH
 %%% This software is released under the MIT license
 %%% cited in 'LICENSE.txt'.
 %%% @end
 %%%-------------------------------------------------------------------
 %%% @doc
-%%% This module implements od_error for ?MODULE.
+%%% This module implements od_error for 'od_error_bad_value_tsc_conflicting_metric_config'.
 %%% @end
 %%%-------------------------------------------------------------------
 -module(od_error_bad_value_tsc_conflicting_metric_config).
@@ -30,36 +32,39 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_BAD_VALUE_TSC_CONFLICTING_METRIC_CONFIG(TSName, MetricName, ExistingMConfig, ConflictingMConfig)) ->
+to_json(?ERROR_BAD_VALUE_TSC_CONFLICTING_METRIC_CONFIG(TimeSeriesName, MetricName, ExistingMetricConfig, ConflictingMetricConfig)) ->
+    ExistingMetricConfigJson = jsonable_record:to_json(ExistingMetricConfig, metric_config),
+    ConflictingMetricConfigJson = jsonable_record:to_json(ConflictingMetricConfig, metric_config),
+
     #{
         <<"id">> => ?ERROR_BAD_VALUE_TSC_CONFLICTING_METRIC_CONFIG_ID,
         <<"details">> => #{
-            <<"timeSeriesName">> => TSName,
+            <<"timeSeriesName">> => TimeSeriesName,
             <<"metricName">> => MetricName,
-            <<"existingMetricConfig">> => jsonable_record:to_json(ExistingMConfig, metric_config),
-            <<"conflictingMetricConfig">> => jsonable_record:to_json(ConflictingMConfig, metric_config)
+            <<"existingMetricConfig">> => ExistingMetricConfigJson,
+            <<"conflictingMetricConfig">> => ConflictingMetricConfigJson
         },
         <<"description">> => ?fmt(
-            "Provided metric config for 'time series' ~ts and metric '~ts' conflicts with existing metric config (see details).", [
-                TSName, MetricName
-            ])
+            "Provided metric config for 'time series' ~ts and metric '~ts' conflicts with existing metric config (see details).",
+            [TimeSeriesName, MetricName]
+        )
     }.
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(#{<<"id">> := ?ERROR_BAD_VALUE_TSC_CONFLICTING_METRIC_CONFIG_ID, <<"details">> := #{
-    <<"timeSeriesName">> := TSName,
-    <<"metricName">> := MetricName,
-    <<"existingMetricConfig">> := ExistingMetricConfig,
-    <<"conflictingMetricConfig">> := ConflictingMetricConfig
-}}) ->
-    ?ERROR_BAD_VALUE_TSC_CONFLICTING_METRIC_CONFIG(
-        TSName, MetricName,
-        jsonable_record:from_json(ExistingMetricConfig, metric_config),
-        jsonable_record:from_json(ConflictingMetricConfig, metric_config)
-    ).
+from_json(OdErrorJson = #{<<"id">> := ?ERROR_BAD_VALUE_TSC_CONFLICTING_METRIC_CONFIG_ID}) ->
+    DetailsJson = maps:get(<<"details">>, OdErrorJson),
+
+    TimeSeriesName = maps:get(<<"timeSeriesName">>, DetailsJson),
+    MetricName = maps:get(<<"metricName">>, DetailsJson),
+    ExistingMetricConfigJson = maps:get(<<"existingMetricConfig">>, DetailsJson),
+    ExistingMetricConfig = jsonable_record:from_json(ExistingMetricConfigJson, metric_config),
+    ConflictingMetricConfigJson = maps:get(<<"conflictingMetricConfig">>, DetailsJson),
+    ConflictingMetricConfig = jsonable_record:from_json(ConflictingMetricConfigJson, metric_config),
+
+    ?ERROR_BAD_VALUE_TSC_CONFLICTING_METRIC_CONFIG(TimeSeriesName, MetricName, ExistingMetricConfig, ConflictingMetricConfig).
 
 
--spec to_http_code(t()) -> 400.
+-spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.
 to_http_code(_) ->
     ?HTTP_400_BAD_REQUEST.

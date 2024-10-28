@@ -1,11 +1,13 @@
 %%%-------------------------------------------------------------------
+%%% This file has been automatically generated - DO NOT EDIT!!!
+%%%
 %%% @copyright (C) 2024 ACK CYFRONET AGH
 %%% This software is released under the MIT license
 %%% cited in 'LICENSE.txt'.
 %%% @end
 %%%-------------------------------------------------------------------
 %%% @doc
-%%% This module implements od_error for ?MODULE.
+%%% This module implements od_error for 'od_error_storage_import_not_supported'.
 %%% @end
 %%%-------------------------------------------------------------------
 -module(od_error_storage_import_not_supported).
@@ -31,25 +33,31 @@
 
 -spec to_json(t()) -> json_utils:json_map().
 to_json(?ERROR_STORAGE_IMPORT_NOT_SUPPORTED(StorageId, ObjectStorages)) ->
+    ObjectStoragesPrint = ?fmt_csv(ObjectStorages),
+
     #{
         <<"id">> => ?ERROR_STORAGE_IMPORT_NOT_SUPPORTED_ID,
-        <<"details">> => #{<<"storageId">> => StorageId, <<"objectStorages">> => ObjectStorages},
+        <<"details">> => #{
+            <<"storageId">> => StorageId,
+            <<"objectStorages">> => ObjectStorages
+        },
         <<"description">> => ?fmt(
-            "Cannot configure storage import on storage ~ts - this operation requires storage with canonical path type and on "
-            "object storages (any of: ~ts) it requires blockSize = 0.",
-            [StorageId, ?fmt_csv(ObjectStorages)]
+            "Cannot configure storage import on storage ~ts - this operation requires storage with canonical path type and on object storages (any of: ~ts) it requires blockSize = 0.",
+            [StorageId, ObjectStoragesPrint]
         )
     }.
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(#{<<"id">> := ?ERROR_STORAGE_IMPORT_NOT_SUPPORTED_ID, <<"details">> := #{
-    <<"storageId">> := StorageId,
-    <<"objectStorages">> := ObjectStorages
-}}) ->
+from_json(OdErrorJson = #{<<"id">> := ?ERROR_STORAGE_IMPORT_NOT_SUPPORTED_ID}) ->
+    DetailsJson = maps:get(<<"details">>, OdErrorJson),
+
+    StorageId = maps:get(<<"storageId">>, DetailsJson),
+    ObjectStorages = maps:get(<<"objectStorages">>, DetailsJson),
+
     ?ERROR_STORAGE_IMPORT_NOT_SUPPORTED(StorageId, ObjectStorages).
 
 
--spec to_http_code(t()) -> 400.
+-spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.
 to_http_code(_) ->
     ?HTTP_400_BAD_REQUEST.

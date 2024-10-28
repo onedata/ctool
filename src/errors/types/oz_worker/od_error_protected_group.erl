@@ -1,11 +1,13 @@
 %%%-------------------------------------------------------------------
+%%% This file has been automatically generated - DO NOT EDIT!!!
+%%%
 %%% @copyright (C) 2024 ACK CYFRONET AGH
 %%% This software is released under the MIT license
 %%% cited in 'LICENSE.txt'.
 %%% @end
 %%%-------------------------------------------------------------------
 %%% @doc
-%%% This module implements od_error for ?MODULE.
+%%% This module implements od_error for 'od_error_protected_group'.
 %%% @end
 %%%-------------------------------------------------------------------
 -module(od_error_protected_group).
@@ -42,6 +44,6 @@ from_json(#{<<"id">> := ?ERROR_PROTECTED_GROUP_ID}) ->
     ?ERROR_PROTECTED_GROUP.
 
 
--spec to_http_code(t()) -> 403.
+-spec to_http_code(t()) -> ?HTTP_403_FORBIDDEN.
 to_http_code(_) ->
     ?HTTP_403_FORBIDDEN.

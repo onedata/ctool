@@ -1,11 +1,13 @@
 %%%-------------------------------------------------------------------
+%%% This file has been automatically generated - DO NOT EDIT!!!
+%%%
 %%% @copyright (C) 2024 ACK CYFRONET AGH
 %%% This software is released under the MIT license
 %%% cited in 'LICENSE.txt'.
 %%% @end
 %%%-------------------------------------------------------------------
 %%% @doc
-%%% This module implements od_error for ?MODULE.
+%%% This module implements od_error for 'od_error_atm_job_batch_withdrawn'.
 %%% @end
 %%%-------------------------------------------------------------------
 -module(od_error_atm_job_batch_withdrawn).
@@ -36,18 +38,19 @@ to_json(?ERROR_ATM_JOB_BATCH_WITHDRAWN(Reason)) ->
         <<"details">> => #{
             <<"reason">> => Reason
         },
-        <<"description">> => <<"Previosuly scheduled job batch has been withdrawn.">>
+        <<"description">> => <<"Previously scheduled job batch has been withdrawn.">>
     }.
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(#{
-    <<"id">> := ?ERROR_ATM_JOB_BATCH_WITHDRAWN_ID,
-    <<"details">> := #{<<"reason">> := Reason}
-}) ->
+from_json(OdErrorJson = #{<<"id">> := ?ERROR_ATM_JOB_BATCH_WITHDRAWN_ID}) ->
+    DetailsJson = maps:get(<<"details">>, OdErrorJson),
+
+    Reason = maps:get(<<"reason">>, DetailsJson),
+
     ?ERROR_ATM_JOB_BATCH_WITHDRAWN(Reason).
 
 
--spec to_http_code(t()) -> 404.
+-spec to_http_code(t()) -> ?HTTP_404_NOT_FOUND.
 to_http_code(_) ->
     ?HTTP_404_NOT_FOUND.

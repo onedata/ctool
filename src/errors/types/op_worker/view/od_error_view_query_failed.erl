@@ -1,11 +1,13 @@
 %%%-------------------------------------------------------------------
+%%% This file has been automatically generated - DO NOT EDIT!!!
+%%%
 %%% @copyright (C) 2024 ACK CYFRONET AGH
 %%% This software is released under the MIT license
 %%% cited in 'LICENSE.txt'.
 %%% @end
 %%%-------------------------------------------------------------------
 %%% @doc
-%%% This module implements od_error for ?MODULE.
+%%% This module implements od_error for 'od_error_view_query_failed'.
 %%% @end
 %%%-------------------------------------------------------------------
 -module(od_error_view_query_failed).
@@ -37,18 +39,23 @@ to_json(?ERROR_VIEW_QUERY_FAILED(Category, Description)) ->
             <<"category">> => Category,
             <<"description">> => Description
         },
-        <<"description">> => ?fmt("Query on view failed. Error category: ~ts. Description: ~ts.", [Category, Description])
+        <<"description">> => ?fmt(
+            "Query on view failed. Error category: ~ts. Description: ~ts.",
+            [Category, Description]
+        )
     }.
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(#{<<"id">> := ?ERROR_VIEW_QUERY_FAILED_ID, <<"details">> := #{
-    <<"category">> := Category,
-    <<"description">> := Description
-}}) ->
+from_json(OdErrorJson = #{<<"id">> := ?ERROR_VIEW_QUERY_FAILED_ID}) ->
+    DetailsJson = maps:get(<<"details">>, OdErrorJson),
+
+    Category = maps:get(<<"category">>, DetailsJson),
+    Description = maps:get(<<"description">>, DetailsJson),
+
     ?ERROR_VIEW_QUERY_FAILED(Category, Description).
 
 
--spec to_http_code(t()) -> 400.
+-spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.
 to_http_code(_) ->
     ?HTTP_400_BAD_REQUEST.

@@ -1,11 +1,13 @@
 %%%-------------------------------------------------------------------
+%%% This file has been automatically generated - DO NOT EDIT!!!
+%%%
 %%% @copyright (C) 2024 ACK CYFRONET AGH
 %%% This software is released under the MIT license
 %%% cited in 'LICENSE.txt'.
 %%% @end
 %%%-------------------------------------------------------------------
 %%% @doc
-%%% This module implements od_error for ?MODULE.
+%%% This module implements od_error for 'od_error_unauthorized'.
 %%% @end
 %%%-------------------------------------------------------------------
 -module(od_error_unauthorized).
@@ -32,8 +34,10 @@
 -spec to_json(t()) -> json_utils:json_map().
 to_json(?ERROR_UNAUTHORIZED(AuthError)) ->
     AuthErrorJson = case AuthError of
-        undefined -> null;
-        _ -> errors:to_json(AuthError)
+        undefined ->
+            null;
+        _ ->
+            errors:to_json(AuthError)
     end,
 
     #{
@@ -46,16 +50,19 @@ to_json(?ERROR_UNAUTHORIZED(AuthError)) ->
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(ErrorJson = #{<<"id">> := ?ERROR_UNAUTHORIZED_ID}) ->
-    DetailsJson = maps:get(<<"details">>, ErrorJson, #{}),
+from_json(OdErrorJson = #{<<"id">> := ?ERROR_UNAUTHORIZED_ID}) ->
+    DetailsJson = maps:get(<<"details">>, OdErrorJson, #{}),
+
     AuthError = case maps:get(<<"authError">>, DetailsJson, null) of
-        null -> undefined;
-        AuthErrorJson -> errors:from_json(AuthErrorJson)
+        null ->
+            undefined;
+        AuthErrorJson ->
+            errors:from_json(AuthErrorJson)
     end,
 
     ?ERROR_UNAUTHORIZED(AuthError).
 
 
--spec to_http_code(t()) -> 401.
+-spec to_http_code(t()) -> ?HTTP_401_UNAUTHORIZED.
 to_http_code(_) ->
     ?HTTP_401_UNAUTHORIZED.

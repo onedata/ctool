@@ -1,11 +1,13 @@
 %%%-------------------------------------------------------------------
+%%% This file has been automatically generated - DO NOT EDIT!!!
+%%%
 %%% @copyright (C) 2024 ACK CYFRONET AGH
 %%% This software is released under the MIT license
 %%% cited in 'LICENSE.txt'.
 %%% @end
 %%%-------------------------------------------------------------------
 %%% @doc
-%%% This module implements od_error for ?MODULE.
+%%% This module implements od_error for 'od_error_lets_encrypt_response'.
 %%% @end
 %%%-------------------------------------------------------------------
 -module(od_error_lets_encrypt_response).
@@ -31,23 +33,31 @@
 
 -spec to_json(t()) -> json_utils:json_map().
 to_json(?ERROR_LETS_ENCRYPT_RESPONSE(ProblemDocument, ErrorMessage)) ->
+    ProblemDocumentJson = utils:undefined_to_null(ProblemDocument),
+
     #{
         <<"id">> => ?ERROR_LETS_ENCRYPT_RESPONSE_ID,
-        <<"description">> => ?fmt("Bad Let's Encrypt response: ~ts.", [ErrorMessage]),
         <<"details">> => #{
-            <<"problemDocument">> => utils:undefined_to_null(ProblemDocument),
+            <<"problemDocument">> => ProblemDocumentJson,
             <<"errorMessage">> => ErrorMessage
-        }
+        },
+        <<"description">> => ?fmt(
+            "Bad Let's Encrypt response: ~ts.",
+            [ErrorMessage]
+        )
     }.
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(#{<<"id">> := ?ERROR_LETS_ENCRYPT_RESPONSE_ID, <<"details">> := #{
-    <<"problemDocument">> := ProblemDocument, <<"errorMessage">> := ErrorMessage
-}}) ->
-    ?ERROR_LETS_ENCRYPT_RESPONSE(utils:null_to_undefined(ProblemDocument), ErrorMessage).
+from_json(OdErrorJson = #{<<"id">> := ?ERROR_LETS_ENCRYPT_RESPONSE_ID}) ->
+    DetailsJson = maps:get(<<"details">>, OdErrorJson),
+
+    ProblemDocument = utils:null_to_undefined(maps:get(<<"problemDocument">>, DetailsJson, null)),
+    ErrorMessage = maps:get(<<"errorMessage">>, DetailsJson),
+
+    ?ERROR_LETS_ENCRYPT_RESPONSE(ProblemDocument, ErrorMessage).
 
 
--spec to_http_code(t()) -> 400.
+-spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.
 to_http_code(_) ->
     ?HTTP_400_BAD_REQUEST.

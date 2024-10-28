@@ -1,11 +1,13 @@
 %%%-------------------------------------------------------------------
+%%% This file has been automatically generated - DO NOT EDIT!!!
+%%%
 %%% @copyright (C) 2024 ACK CYFRONET AGH
 %%% This software is released under the MIT license
 %%% cited in 'LICENSE.txt'.
 %%% @end
 %%%-------------------------------------------------------------------
 %%% @doc
-%%% This module implements od_error for ?MODULE.
+%%% This module implements od_error for 'od_error_view_not_exists_on'.
 %%% @end
 %%%-------------------------------------------------------------------
 -module(od_error_view_not_exists_on).
@@ -36,15 +38,22 @@ to_json(?ERROR_VIEW_NOT_EXISTS_ON(ProviderId)) ->
         <<"details">> => #{
             <<"providerId">> => ProviderId
         },
-        <<"description">> => ?fmt("Specified view does not exist on provider ~ts.", [ProviderId])
+        <<"description">> => ?fmt(
+            "Specified view does not exist on provider ~ts.",
+            [ProviderId]
+        )
     }.
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(#{<<"id">> := ?ERROR_VIEW_NOT_EXISTS_ON_ID, <<"details">> := #{<<"providerId">> := ProviderId}}) ->
+from_json(OdErrorJson = #{<<"id">> := ?ERROR_VIEW_NOT_EXISTS_ON_ID}) ->
+    DetailsJson = maps:get(<<"details">>, OdErrorJson),
+
+    ProviderId = maps:get(<<"providerId">>, DetailsJson),
+
     ?ERROR_VIEW_NOT_EXISTS_ON(ProviderId).
 
 
--spec to_http_code(t()) -> 400.
+-spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.
 to_http_code(_) ->
     ?HTTP_400_BAD_REQUEST.

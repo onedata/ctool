@@ -1,11 +1,13 @@
 %%%-------------------------------------------------------------------
+%%% This file has been automatically generated - DO NOT EDIT!!!
+%%%
 %%% @copyright (C) 2024 ACK CYFRONET AGH
 %%% This software is released under the MIT license
 %%% cited in 'LICENSE.txt'.
 %%% @end
 %%%-------------------------------------------------------------------
 %%% @doc
-%%% This module implements od_error for ?MODULE.
+%%% This module implements od_error for 'od_error_relation_already_exists'.
 %%% @end
 %%%-------------------------------------------------------------------
 -module(od_error_relation_already_exists).
@@ -52,15 +54,19 @@ to_json(?ERROR_RELATION_ALREADY_EXISTS(ChType, ChId, ParType, ParId)) ->
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(#{<<"id">> := ?ERROR_RELATION_ALREADY_EXISTS_ID, <<"details">> := #{
-    <<"childType">> := ChType, <<"childId">> := ChId, <<"parentType">> := ParType, <<"parentId">> := ParId}
-}) ->
-    ChTypeAtom = gri:deserialize_type(ChType),
-    ParTypeAtom = gri:deserialize_type(ParType),
+from_json(OdErrorJson = #{<<"id">> := ?ERROR_RELATION_ALREADY_EXISTS_ID}) ->
+    DetailsJson = maps:get(<<"details">>, OdErrorJson),
 
-    ?ERROR_RELATION_ALREADY_EXISTS(ChTypeAtom, ChId, ParTypeAtom, ParId).
+    ChildTypeJson = maps:get(<<"childType">>, DetailsJson),
+    ChildType = gri:deserialize_type(ChildTypeJson),
+    ChildId = maps:get(<<"childId">>, DetailsJson),
+    ParentTypeJson = maps:get(<<"parentType">>, DetailsJson),
+    ParentType = gri:deserialize_type(ParentTypeJson),
+    ParentId = maps:get(<<"parentId">>, DetailsJson),
+
+    ?ERROR_RELATION_ALREADY_EXISTS(ChildType, ChildId, ParentType, ParentId).
 
 
--spec to_http_code(t()) -> 409.
+-spec to_http_code(t()) -> ?HTTP_409_CONFLICT.
 to_http_code(_) ->
     ?HTTP_409_CONFLICT.

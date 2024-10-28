@@ -18,7 +18,7 @@
 
 -type errno() :: od_error:errno().
 
--type t() ::
+-type error() ::
     od_error_unauthorized:t() |
     od_error_forbidden:t() |
     od_error_bad_basic_credentials:t() |
@@ -210,7 +210,7 @@
     % unrecognized is a special error and as such does not have its own module
     #od_error{type :: od_error_unrecognized_error}.
 
--export_type([errno/0, t/0]).
+-export_type([errno/0, error/0]).
 
 %% API
 -export([
@@ -432,7 +432,7 @@ is_posix_code(ErrorCode) ->
 
 -spec to_json
     (undefined) -> null;
-    (t()) -> json_utils:json_map().
+    (error()) -> json_utils:json_map().
 to_json(undefined) ->
     null;
 
@@ -458,7 +458,7 @@ to_json(OtherError) ->
 
 -spec from_json
     (null) -> undefined;
-    (json_utils:json_map()) -> t().
+    (json_utils:json_map()) -> error().
 from_json(null) ->
     undefined;
 
@@ -472,7 +472,7 @@ from_json(ErrorJson) ->
     end.
 
 
--spec to_http_code(t()) -> 400 | 401 | 403 | 404 | 409 | 500 | 501 | 503.
+-spec to_http_code(error()) -> 400 | 401 | 403 | 404 | 409 | 500 | 501 | 503.
 to_http_code(?ERROR_UNRECOGNIZED_ERROR(_)) ->
     ?HTTP_500_INTERNAL_SERVER_ERROR;
 

@@ -1,11 +1,13 @@
 %%%-------------------------------------------------------------------
+%%% This file has been automatically generated - DO NOT EDIT!!!
+%%%
 %%% @copyright (C) 2024 ACK CYFRONET AGH
 %%% This software is released under the MIT license
 %%% cited in 'LICENSE.txt'.
 %%% @end
 %%%-------------------------------------------------------------------
 %%% @doc
-%%% This module implements od_error for ?MODULE.
+%%% This module implements od_error for 'od_error_user_blocked'.
 %%% @end
 %%%-------------------------------------------------------------------
 -module(od_error_user_blocked).
@@ -33,10 +35,7 @@
 to_json(?ERROR_USER_BLOCKED) ->
     #{
         <<"id">> => ?ERROR_USER_BLOCKED_ID,
-        <<"description">> => <<
-            "This user account has been blocked by the administrator and "
-            "cannot be used unless it is unblocked again."
-        >>
+        <<"description">> => <<"This user account has been blocked by the administrator and cannot be used unless it is unblocked again.">>
     }.
 
 
@@ -45,6 +44,6 @@ from_json(#{<<"id">> := ?ERROR_USER_BLOCKED_ID}) ->
     ?ERROR_USER_BLOCKED.
 
 
--spec to_http_code(t()) -> 400.
+-spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.
 to_http_code(_) ->
     ?HTTP_400_BAD_REQUEST.

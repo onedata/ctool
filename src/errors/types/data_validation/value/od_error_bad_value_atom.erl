@@ -1,11 +1,13 @@
 %%%-------------------------------------------------------------------
+%%% This file has been automatically generated - DO NOT EDIT!!!
+%%%
 %%% @copyright (C) 2024 ACK CYFRONET AGH
 %%% This software is released under the MIT license
 %%% cited in 'LICENSE.txt'.
 %%% @end
 %%%-------------------------------------------------------------------
 %%% @doc
-%%% This module implements od_error for ?MODULE.
+%%% This module implements od_error for 'od_error_bad_value_atom'.
 %%% @end
 %%%-------------------------------------------------------------------
 -module(od_error_bad_value_atom).
@@ -14,7 +16,6 @@
 
 -include("errors.hrl").
 -include("http/codes.hrl").
--include("validation.hrl").
 
 
 -type t() :: #od_error{type :: ?MODULE}.
@@ -33,20 +34,26 @@
 -spec to_json(t()) -> json_utils:json_map().
 to_json(?ERROR_BAD_VALUE_ATOM(Key)) ->
     #{
-        <<"id">> => <<"badValueString">>,  %% TODO ID?
+        <<"id">> => ?ERROR_BAD_VALUE_ATOM_ID,
         <<"details">> => #{
             <<"key">> => Key
         },
-        <<"description">> => ?fmt("Bad value: provided \"~ts\" must be a string.", [Key])
+        <<"description">> => ?fmt(
+            "Bad value: provided \"~ts\" must be a string.",
+            [Key]
+        )
     }.
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(_) ->
-    %% TODO ??
-    error(not_supported).
+from_json(OdErrorJson = #{<<"id">> := ?ERROR_BAD_VALUE_ATOM_ID}) ->
+    DetailsJson = maps:get(<<"details">>, OdErrorJson),
+
+    Key = maps:get(<<"key">>, DetailsJson),
+
+    ?ERROR_BAD_VALUE_ATOM(Key).
 
 
--spec to_http_code(t()) -> 400.
+-spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.
 to_http_code(_) ->
     ?HTTP_400_BAD_REQUEST.

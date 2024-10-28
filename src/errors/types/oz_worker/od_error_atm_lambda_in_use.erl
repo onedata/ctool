@@ -1,11 +1,13 @@
 %%%-------------------------------------------------------------------
+%%% This file has been automatically generated - DO NOT EDIT!!!
+%%%
 %%% @copyright (C) 2024 ACK CYFRONET AGH
 %%% This software is released under the MIT license
 %%% cited in 'LICENSE.txt'.
 %%% @end
 %%%-------------------------------------------------------------------
 %%% @doc
-%%% This module implements od_error for ?MODULE.
+%%% This module implements od_error for 'od_error_atm_lambda_in_use'.
 %%% @end
 %%%-------------------------------------------------------------------
 -module(od_error_atm_lambda_in_use).
@@ -31,6 +33,8 @@
 
 -spec to_json(t()) -> json_utils:json_map().
 to_json(?ERROR_ATM_LAMBDA_IN_USE(AtmWorkflowSchemas)) ->
+    AtmWorkflowSchemasPrint = ?fmt_csv(AtmWorkflowSchemas),
+
     #{
         <<"id">> => ?ERROR_ATM_LAMBDA_IN_USE_ID,
         <<"details">> => #{
@@ -38,19 +42,20 @@ to_json(?ERROR_ATM_LAMBDA_IN_USE(AtmWorkflowSchemas)) ->
         },
         <<"description">> => ?fmt(
             "This lambda cannot be removed because it is used by the following workflow schemas: ~ts.",
-            [?fmt_csv(AtmWorkflowSchemas)]
+            [AtmWorkflowSchemasPrint]
         )
     }.
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(#{
-    <<"id">> := ?ERROR_ATM_LAMBDA_IN_USE_ID,
-    <<"details">> := #{<<"atmWorkflowSchemas">> := AtmWorkflowSchemas}
-}) ->
+from_json(OdErrorJson = #{<<"id">> := ?ERROR_ATM_LAMBDA_IN_USE_ID}) ->
+    DetailsJson = maps:get(<<"details">>, OdErrorJson),
+
+    AtmWorkflowSchemas = maps:get(<<"atmWorkflowSchemas">>, DetailsJson),
+
     ?ERROR_ATM_LAMBDA_IN_USE(AtmWorkflowSchemas).
 
 
--spec to_http_code(t()) -> 403.
+-spec to_http_code(t()) -> ?HTTP_403_FORBIDDEN.
 to_http_code(_) ->
     ?HTTP_403_FORBIDDEN.

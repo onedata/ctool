@@ -1,11 +1,13 @@
 %%%-------------------------------------------------------------------
+%%% This file has been automatically generated - DO NOT EDIT!!!
+%%%
 %%% @copyright (C) 2024 ACK CYFRONET AGH
 %%% This software is released under the MIT license
 %%% cited in 'LICENSE.txt'.
 %%% @end
 %%%-------------------------------------------------------------------
 %%% @doc
-%%% This module implements od_error for ?MODULE.
+%%% This module implements od_error for 'od_error_atm_data_value_constraint_unverified'.
 %%% @end
 %%%-------------------------------------------------------------------
 -module(od_error_atm_data_value_constraint_unverified).
@@ -30,31 +32,32 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_ATM_DATA_VALUE_CONSTRAINT_UNVERIFIED(Value, Type, ValueConstraintJson)) -> #{
-    <<"id">> => ?ERROR_ATM_DATA_VALUE_CONSTRAINT_UNVERIFIED_ID,
-    <<"details">> => #{
-        <<"value">> => Value,
-        <<"type">> => atm_data_type:type_to_json(Type),
-        <<"valueConstraints">> => ValueConstraintJson
-    },
-    <<"description">> => <<"Provided value doesn't meet the constraints (see details).">>
-}.
+to_json(?ERROR_ATM_DATA_VALUE_CONSTRAINT_UNVERIFIED(Value, Type, ValueConstraints)) ->
+    TypeJson = atm_data_type:type_to_json(Type),
+
+    #{
+        <<"id">> => ?ERROR_ATM_DATA_VALUE_CONSTRAINT_UNVERIFIED_ID,
+        <<"details">> => #{
+            <<"value">> => Value,
+            <<"type">> => TypeJson,
+            <<"valueConstraints">> => ValueConstraints
+        },
+        <<"description">> => <<"Provided value doesn't meet the constraints (see details).">>
+    }.
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(#{
-    <<"id">> := ?ERROR_ATM_DATA_VALUE_CONSTRAINT_UNVERIFIED_ID,
-    <<"details">> := #{
-        <<"value">> := Value,
-        <<"type">> := TypeJson,
-        <<"valueConstraints">> := ValueConstraintsJson
-    }
-}) ->
+from_json(OdErrorJson = #{<<"id">> := ?ERROR_ATM_DATA_VALUE_CONSTRAINT_UNVERIFIED_ID}) ->
+    DetailsJson = maps:get(<<"details">>, OdErrorJson),
+
+    Value = maps:get(<<"value">>, DetailsJson),
+    TypeJson = maps:get(<<"type">>, DetailsJson),
     Type = atm_data_type:type_from_json(TypeJson),
+    ValueConstraints = maps:get(<<"valueConstraints">>, DetailsJson),
 
-    ?ERROR_ATM_DATA_VALUE_CONSTRAINT_UNVERIFIED(Value, Type, ValueConstraintsJson).
+    ?ERROR_ATM_DATA_VALUE_CONSTRAINT_UNVERIFIED(Value, Type, ValueConstraints).
 
 
--spec to_http_code(t()) -> 400.
+-spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.
 to_http_code(_) ->
     ?HTTP_400_BAD_REQUEST.

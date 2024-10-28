@@ -1,11 +1,13 @@
 %%%-------------------------------------------------------------------
+%%% This file has been automatically generated - DO NOT EDIT!!!
+%%%
 %%% @copyright (C) 2024 ACK CYFRONET AGH
 %%% This software is released under the MIT license
 %%% cited in 'LICENSE.txt'.
 %%% @end
 %%%-------------------------------------------------------------------
 %%% @doc
-%%% This module implements od_error for ?MODULE.
+%%% This module implements od_error for 'od_error_cannot_delete_entity'.
 %%% @end
 %%%-------------------------------------------------------------------
 -module(od_error_cannot_delete_entity).
@@ -31,26 +33,33 @@
 
 -spec to_json(t()) -> json_utils:json_map().
 to_json(?ERROR_CANNOT_DELETE_ENTITY(EntityType, EntityId)) ->
+    EntityTypeJson = atom_to_binary(EntityType, utf8),
+    EntityTypePrint = gri:serialize_type(EntityType),
+
     #{
         <<"id">> => ?ERROR_CANNOT_DELETE_ENTITY_ID,
         <<"details">> => #{
-            <<"entityType">> => EntityType,
+            <<"entityType">> => EntityTypeJson,
             <<"entityId">> => EntityId
         },
-        <<"description">> => ?fmt("Cannot delete ~ts:~ts; failed to delete some dependent relations.", [
-            gri:serialize_type(EntityType), EntityId
-        ])
+        <<"description">> => ?fmt(
+            "Cannot delete ~ts:~ts; failed to delete some dependent relations.",
+            [EntityTypePrint, EntityId]
+        )
     }.
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(#{<<"id">> := ?ERROR_CANNOT_DELETE_ENTITY_ID, <<"details">> := #{
-    <<"entityType">> := EntType,
-    <<"entityId">> := EntId
-}}) ->
-    ?ERROR_CANNOT_DELETE_ENTITY(binary_to_existing_atom(EntType, utf8), EntId).
+from_json(OdErrorJson = #{<<"id">> := ?ERROR_CANNOT_DELETE_ENTITY_ID}) ->
+    DetailsJson = maps:get(<<"details">>, OdErrorJson),
+
+    EntityTypeJson = maps:get(<<"entityType">>, DetailsJson),
+    EntityType = binary_to_existing_atom(EntityTypeJson, utf8),
+    EntityId = maps:get(<<"entityId">>, DetailsJson),
+
+    ?ERROR_CANNOT_DELETE_ENTITY(EntityType, EntityId).
 
 
--spec to_http_code(t()) -> 500.
+-spec to_http_code(t()) -> ?HTTP_500_INTERNAL_SERVER_ERROR.
 to_http_code(_) ->
     ?HTTP_500_INTERNAL_SERVER_ERROR.

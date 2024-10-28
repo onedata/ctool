@@ -1,11 +1,13 @@
 %%%-------------------------------------------------------------------
+%%% This file has been automatically generated - DO NOT EDIT!!!
+%%%
 %%% @copyright (C) 2024 ACK CYFRONET AGH
 %%% This software is released under the MIT license
 %%% cited in 'LICENSE.txt'.
 %%% @end
 %%%-------------------------------------------------------------------
 %%% @doc
-%%% This module implements od_error for ?MODULE.
+%%% This module implements od_error for 'od_error_stat_operation_not_supported'.
 %%% @end
 %%%-------------------------------------------------------------------
 -module(od_error_stat_operation_not_supported).
@@ -33,7 +35,9 @@
 to_json(?ERROR_STAT_OPERATION_NOT_SUPPORTED(StorageId)) ->
     #{
         <<"id">> => ?ERROR_STAT_OPERATION_NOT_SUPPORTED_ID,
-        <<"details">> => #{<<"storageId">> => StorageId},
+        <<"details">> => #{
+            <<"storageId">> => StorageId
+        },
         <<"description">> => ?fmt(
             "Storage ~ts does not support the `stat` operation or equivalent used for acquiring files metadata.",
             [StorageId]
@@ -42,12 +46,14 @@ to_json(?ERROR_STAT_OPERATION_NOT_SUPPORTED(StorageId)) ->
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(#{<<"id">> := ?ERROR_STAT_OPERATION_NOT_SUPPORTED_ID, <<"details">> := #{
-    <<"storageId">> := StorageId
-}}) ->
+from_json(OdErrorJson = #{<<"id">> := ?ERROR_STAT_OPERATION_NOT_SUPPORTED_ID}) ->
+    DetailsJson = maps:get(<<"details">>, OdErrorJson),
+
+    StorageId = maps:get(<<"storageId">>, DetailsJson),
+
     ?ERROR_STAT_OPERATION_NOT_SUPPORTED(StorageId).
 
 
--spec to_http_code(t()) -> 400.
+-spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.
 to_http_code(_) ->
     ?HTTP_400_BAD_REQUEST.

@@ -1,11 +1,13 @@
 %%%-------------------------------------------------------------------
+%%% This file has been automatically generated - DO NOT EDIT!!!
+%%%
 %%% @copyright (C) 2024 ACK CYFRONET AGH
 %%% This software is released under the MIT license
 %%% cited in 'LICENSE.txt'.
 %%% @end
 %%%-------------------------------------------------------------------
 %%% @doc
-%%% This module implements od_error for ?MODULE.
+%%% This module implements od_error for 'od_error_requires_non_imported_storage'.
 %%% @end
 %%%-------------------------------------------------------------------
 -module(od_error_requires_non_imported_storage).
@@ -33,7 +35,9 @@
 to_json(?ERROR_REQUIRES_NON_IMPORTED_STORAGE(StorageId)) ->
     #{
         <<"id">> => ?ERROR_REQUIRES_NON_IMPORTED_STORAGE_ID,
-        <<"details">> => #{<<"storageId">> => StorageId},
+        <<"details">> => #{
+            <<"storageId">> => StorageId
+        },
         <<"description">> => ?fmt(
             "Cannot apply for storage ~ts - this operation requires a non-imported storage.",
             [StorageId]
@@ -42,10 +46,14 @@ to_json(?ERROR_REQUIRES_NON_IMPORTED_STORAGE(StorageId)) ->
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(#{<<"id">> := ?ERROR_REQUIRES_NON_IMPORTED_STORAGE_ID, <<"details">> := #{<<"storageId">> := StorageId}}) ->
+from_json(OdErrorJson = #{<<"id">> := ?ERROR_REQUIRES_NON_IMPORTED_STORAGE_ID}) ->
+    DetailsJson = maps:get(<<"details">>, OdErrorJson),
+
+    StorageId = maps:get(<<"storageId">>, DetailsJson),
+
     ?ERROR_REQUIRES_NON_IMPORTED_STORAGE(StorageId).
 
 
--spec to_http_code(t()) -> 400.
+-spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.
 to_http_code(_) ->
     ?HTTP_400_BAD_REQUEST.

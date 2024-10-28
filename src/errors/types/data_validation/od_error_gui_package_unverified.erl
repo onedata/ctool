@@ -1,11 +1,13 @@
 %%%-------------------------------------------------------------------
+%%% This file has been automatically generated - DO NOT EDIT!!!
+%%%
 %%% @copyright (C) 2024 ACK CYFRONET AGH
 %%% This software is released under the MIT license
 %%% cited in 'LICENSE.txt'.
 %%% @end
 %%%-------------------------------------------------------------------
 %%% @doc
-%%% This module implements od_error for ?MODULE.
+%%% This module implements od_error for 'od_error_gui_package_unverified'.
 %%% @end
 %%%-------------------------------------------------------------------
 -module(od_error_gui_package_unverified).
@@ -36,15 +38,22 @@ to_json(?ERROR_GUI_PACKAGE_UNVERIFIED(ShaSum)) ->
         <<"details">> => #{
             <<"shaSum">> => ShaSum
         },
-        <<"description">> => ?fmt("Provided GUI package could not be verified - unknown SHA sum '~ts'.", [ShaSum])
+        <<"description">> => ?fmt(
+            "Provided GUI package could not be verified - unknown SHA sum '~ts'.",
+            [ShaSum]
+        )
     }.
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(#{<<"id">> := ?ERROR_GUI_PACKAGE_UNVERIFIED_ID, <<"details">> := #{<<"shaSum">> := ShaSum}}) ->
+from_json(OdErrorJson = #{<<"id">> := ?ERROR_GUI_PACKAGE_UNVERIFIED_ID}) ->
+    DetailsJson = maps:get(<<"details">>, OdErrorJson),
+
+    ShaSum = maps:get(<<"shaSum">>, DetailsJson),
+
     ?ERROR_GUI_PACKAGE_UNVERIFIED(ShaSum).
 
 
--spec to_http_code(t()) -> 400.
+-spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.
 to_http_code(_) ->
     ?HTTP_400_BAD_REQUEST.

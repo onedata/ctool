@@ -1,11 +1,13 @@
 %%%-------------------------------------------------------------------
+%%% This file has been automatically generated - DO NOT EDIT!!!
+%%%
 %%% @copyright (C) 2024 ACK CYFRONET AGH
 %%% This software is released under the MIT license
 %%% cited in 'LICENSE.txt'.
 %%% @end
 %%%-------------------------------------------------------------------
 %%% @doc
-%%% This module implements od_error for ?MODULE.
+%%% This module implements od_error for 'od_error_dns_servers_unreachable'.
 %%% @end
 %%%-------------------------------------------------------------------
 -module(od_error_dns_servers_unreachable).
@@ -15,14 +17,13 @@
 -include("errors.hrl").
 -include("http/codes.hrl").
 
+
 -type t() :: #od_error{type :: ?MODULE}.
 
 -export_type([t/0]).
 
 %% od_error callbacks
 -export([to_json/1, from_json/1, to_http_code/1]).
-
--define(DNS_DEFAULTS, <<"system defaults">>).
 
 
 %%%===================================================================
@@ -31,34 +32,38 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_DNS_SERVERS_UNREACHABLE(UsedServers)) ->
-    Servers = lists:map(fun
-        (default) -> ?DNS_DEFAULTS;
-        (IP) -> element(2, {ok, _} = ip_utils:to_binary(IP))
-    end, UsedServers),
+to_json(?ERROR_DNS_SERVERS_UNREACHABLE(Servers)) ->
+    ServersJson = lists:map(fun
+        (default) -> <<"system defaults">>;
+        (Ip) -> element(2, {ok, _} = ip_utils:to_binary(Ip))
+    end, Servers),
+    ServersPrint = ?fmt_csv(ServersJson),
 
     #{
         <<"id">> => ?ERROR_DNS_SERVERS_UNREACHABLE_ID,
         <<"details">> => #{
-            <<"servers">> => Servers
+            <<"servers">> => ServersJson
         },
-        <<"description">> => ?fmt("Error fetching DNS records. Used servers: ~ts.",
-            [?fmt_csv(Servers)])
+        <<"description">> => ?fmt(
+            "Error fetching DNS records. Used servers: ~ts.",
+            [ServersPrint]
+        )
     }.
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(#{<<"id">> := ?ERROR_DNS_SERVERS_UNREACHABLE_ID, <<"details">> := #{
-    <<"servers">> := UsedServers
-}}) ->
+from_json(OdErrorJson = #{<<"id">> := ?ERROR_DNS_SERVERS_UNREACHABLE_ID}) ->
+    DetailsJson = maps:get(<<"details">>, OdErrorJson),
+
+    ServersJson = maps:get(<<"servers">>, DetailsJson),
     Servers = lists:map(fun
-        (?DNS_DEFAULTS) -> default;
-        (IP) -> element(2, {ok, _} = ip_utils:to_ip4_address(IP))
-    end, UsedServers),
+        (<<"system defaults">>) -> default;
+        (Ip) -> element(2, {ok, _} = ip_utils:to_ip4_address(Ip))
+    end, ServersJson),
 
     ?ERROR_DNS_SERVERS_UNREACHABLE(Servers).
 
 
--spec to_http_code(t()) -> 503.
+-spec to_http_code(t()) -> ?HTTP_503_SERVICE_UNAVAILABLE.
 to_http_code(_) ->
     ?HTTP_503_SERVICE_UNAVAILABLE.

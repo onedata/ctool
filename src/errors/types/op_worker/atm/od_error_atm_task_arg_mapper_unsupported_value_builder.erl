@@ -1,11 +1,13 @@
 %%%-------------------------------------------------------------------
+%%% This file has been automatically generated - DO NOT EDIT!!!
+%%%
 %%% @copyright (C) 2024 ACK CYFRONET AGH
 %%% This software is released under the MIT license
 %%% cited in 'LICENSE.txt'.
 %%% @end
 %%%-------------------------------------------------------------------
 %%% @doc
-%%% This module implements od_error for ?MODULE.
+%%% This module implements od_error for 'od_error_atm_task_arg_mapper_unsupported_value_builder'.
 %%% @end
 %%%-------------------------------------------------------------------
 -module(od_error_atm_task_arg_mapper_unsupported_value_builder).
@@ -30,37 +32,36 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_ATM_TASK_ARG_MAPPER_UNSUPPORTED_VALUE_BUILDER(Type, SupportedTypes)) ->
+to_json(?ERROR_ATM_TASK_ARG_MAPPER_UNSUPPORTED_VALUE_BUILDER(Type, Supported)) ->
     TypeJson = atm_task_argument_value_builder:type_to_json(Type),
-    SupportedTypesJson = lists:map(fun atm_task_argument_value_builder:type_to_json/1, SupportedTypes),
+    SupportedJson = lists:map(fun atm_task_argument_value_builder:type_to_json/1, Supported),
+    SupportedPrint = ?fmt_csv(SupportedJson),
 
     #{
         <<"id">> => ?ERROR_ATM_TASK_ARG_MAPPER_UNSUPPORTED_VALUE_BUILDER_ID,
         <<"details">> => #{
             <<"type">> => TypeJson,
-            <<"supported">> => SupportedTypesJson
+            <<"supported">> => SupportedJson
         },
         <<"description">> => ?fmt(
             "Bad automation task argument value builder: type \"~ts\" not supported - must be one of: ~ts.",
-            [TypeJson, ?fmt_csv(SupportedTypesJson)]
+            [TypeJson, SupportedPrint]
         )
     }.
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(#{
-    <<"id">> := ?ERROR_ATM_TASK_ARG_MAPPER_UNSUPPORTED_VALUE_BUILDER_ID,
-    <<"details">> := #{
-        <<"type">> := TypeJson,
-        <<"supported">> := SupportedTypesJson
-    }
-}) ->
+from_json(OdErrorJson = #{<<"id">> := ?ERROR_ATM_TASK_ARG_MAPPER_UNSUPPORTED_VALUE_BUILDER_ID}) ->
+    DetailsJson = maps:get(<<"details">>, OdErrorJson),
+
+    TypeJson = maps:get(<<"type">>, DetailsJson),
     Type = atm_task_argument_value_builder:type_from_json(TypeJson),
-    SupportedTypes = lists:map(fun atm_task_argument_value_builder:type_from_json/1, SupportedTypesJson),
+    SupportedJson = maps:get(<<"supported">>, DetailsJson),
+    Supported = lists:map(fun atm_task_argument_value_builder:type_from_json/1, SupportedJson),
 
-    ?ERROR_ATM_TASK_ARG_MAPPER_UNSUPPORTED_VALUE_BUILDER(Type, SupportedTypes).
+    ?ERROR_ATM_TASK_ARG_MAPPER_UNSUPPORTED_VALUE_BUILDER(Type, Supported).
 
 
--spec to_http_code(t()) -> 400.
+-spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.
 to_http_code(_) ->
     ?HTTP_400_BAD_REQUEST.

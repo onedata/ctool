@@ -1,11 +1,13 @@
 %%%-------------------------------------------------------------------
+%%% This file has been automatically generated - DO NOT EDIT!!!
+%%%
 %%% @copyright (C) 2024 ACK CYFRONET AGH
 %%% This software is released under the MIT license
 %%% cited in 'LICENSE.txt'.
 %%% @end
 %%%-------------------------------------------------------------------
 %%% @doc
-%%% This module implements od_error for ?MODULE.
+%%% This module implements od_error for 'od_error_bad_value_text_too_large'.
 %%% @end
 %%%-------------------------------------------------------------------
 -module(od_error_bad_value_text_too_large).
@@ -30,27 +32,30 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_BAD_VALUE_TEXT_TOO_LARGE(Key, SizeLimit)) ->
+to_json(?ERROR_BAD_VALUE_TEXT_TOO_LARGE(Key, Limit)) ->
     #{
         <<"id">> => ?ERROR_BAD_VALUE_TEXT_TOO_LARGE_ID,
         <<"details">> => #{
             <<"key">> => Key,
-            <<"limit">> => SizeLimit
+            <<"limit">> => Limit
         },
-        <<"description">> => ?fmt("Bad value: the text provided in \"~ts\" cannot be larger than ~B characters.", [
-            Key, SizeLimit
-        ])
+        <<"description">> => ?fmt(
+            "Bad value: the text provided in \"~ts\" cannot be larger than ~B characters.",
+            [Key, Limit]
+        )
     }.
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(#{<<"id">> := ?ERROR_BAD_VALUE_TEXT_TOO_LARGE_ID, <<"details">> := #{
-    <<"key">> := Key,
-    <<"limit">> := SizeLimit
-}}) ->
-    ?ERROR_BAD_VALUE_TEXT_TOO_LARGE(Key, SizeLimit).
+from_json(OdErrorJson = #{<<"id">> := ?ERROR_BAD_VALUE_TEXT_TOO_LARGE_ID}) ->
+    DetailsJson = maps:get(<<"details">>, OdErrorJson),
+
+    Key = maps:get(<<"key">>, DetailsJson),
+    Limit = maps:get(<<"limit">>, DetailsJson),
+
+    ?ERROR_BAD_VALUE_TEXT_TOO_LARGE(Key, Limit).
 
 
--spec to_http_code(t()) -> 400.
+-spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.
 to_http_code(_) ->
     ?HTTP_400_BAD_REQUEST.

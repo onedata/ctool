@@ -1,11 +1,13 @@
 %%%-------------------------------------------------------------------
+%%% This file has been automatically generated - DO NOT EDIT!!!
+%%%
 %%% @copyright (C) 2024 ACK CYFRONET AGH
 %%% This software is released under the MIT license
 %%% cited in 'LICENSE.txt'.
 %%% @end
 %%%-------------------------------------------------------------------
 %%% @doc
-%%% This module implements od_error for ?MODULE.
+%%% This module implements od_error for 'od_error_bad_value_full_name'.
 %%% @end
 %%%-------------------------------------------------------------------
 -module(od_error_bad_value_full_name).
@@ -15,7 +17,6 @@
 -include("errors.hrl").
 -include("http/codes.hrl").
 -include("validation.hrl").
-
 
 -type t() :: #od_error{type :: ?MODULE}.
 
@@ -34,7 +35,10 @@
 to_json(?ERROR_BAD_VALUE_FULL_NAME) ->
     #{
         <<"id">> => ?ERROR_BAD_VALUE_FULL_NAME_ID,
-        <<"description">> => <<"Bad value: ", (?FULL_NAME_REQUIREMENTS_DESCRIPTION)/binary>>
+        <<"description">> => ?fmt(
+            "Bad value: ~ts",
+            [?FULL_NAME_REQUIREMENTS_DESCRIPTION]
+        )
     }.
 
 
@@ -43,6 +47,6 @@ from_json(#{<<"id">> := ?ERROR_BAD_VALUE_FULL_NAME_ID}) ->
     ?ERROR_BAD_VALUE_FULL_NAME.
 
 
--spec to_http_code(t()) -> 400.
+-spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.
 to_http_code(_) ->
     ?HTTP_400_BAD_REQUEST.

@@ -1,11 +1,13 @@
 %%%-------------------------------------------------------------------
+%%% This file has been automatically generated - DO NOT EDIT!!!
+%%%
 %%% @copyright (C) 2024 ACK CYFRONET AGH
 %%% This software is released under the MIT license
 %%% cited in 'LICENSE.txt'.
 %%% @end
 %%%-------------------------------------------------------------------
 %%% @doc
-%%% This module implements od_error for ?MODULE.
+%%% This module implements od_error for 'od_error_file_access'.
 %%% @end
 %%%-------------------------------------------------------------------
 -module(od_error_file_access).
@@ -31,23 +33,33 @@
 
 -spec to_json(t()) -> json_utils:json_map().
 to_json(?ERROR_FILE_ACCESS(Path, Errno)) ->
-    PathBin = str_utils:to_binary(filename:flatten(Path)),
+    PathJson = str_utils:to_binary(filename:flatten(Path)),
+    ErrnoJson = atom_to_binary(Errno, utf8),
 
     #{
         <<"id">> => ?ERROR_FILE_ACCESS_ID,
-        <<"details">> => #{<<"path">> => PathBin, <<"errno">> => Errno},
-        <<"description">> => ?fmt("Cannot access file \"~ts\": ~tp.", [PathBin, Errno])
+        <<"details">> => #{
+            <<"path">> => PathJson,
+            <<"errno">> => ErrnoJson
+        },
+        <<"description">> => ?fmt(
+            "Cannot access file \"~ts\": ~ts.",
+            [PathJson, Errno]
+        )
     }.
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(#{<<"id">> := ?ERROR_FILE_ACCESS_ID, <<"details">> := #{
-    <<"path">> := Path,
-    <<"errno">> := Errno
-}}) ->
-    ?ERROR_FILE_ACCESS(Path, binary_to_existing_atom(Errno, utf8)).
+from_json(OdErrorJson = #{<<"id">> := ?ERROR_FILE_ACCESS_ID}) ->
+    DetailsJson = maps:get(<<"details">>, OdErrorJson),
+
+    Path = maps:get(<<"path">>, DetailsJson),
+    ErrnoJson = maps:get(<<"errno">>, DetailsJson),
+    Errno = binary_to_existing_atom(ErrnoJson, utf8),
+
+    ?ERROR_FILE_ACCESS(Path, Errno).
 
 
--spec to_http_code(t()) -> 500.
+-spec to_http_code(t()) -> ?HTTP_500_INTERNAL_SERVER_ERROR.
 to_http_code(_) ->
     ?HTTP_500_INTERNAL_SERVER_ERROR.

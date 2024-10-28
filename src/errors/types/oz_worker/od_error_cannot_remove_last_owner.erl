@@ -1,11 +1,13 @@
 %%%-------------------------------------------------------------------
+%%% This file has been automatically generated - DO NOT EDIT!!!
+%%%
 %%% @copyright (C) 2024 ACK CYFRONET AGH
 %%% This software is released under the MIT license
 %%% cited in 'LICENSE.txt'.
 %%% @end
 %%%-------------------------------------------------------------------
 %%% @doc
-%%% This module implements od_error for ?MODULE.
+%%% This module implements od_error for 'od_error_cannot_remove_last_owner'.
 %%% @end
 %%%-------------------------------------------------------------------
 -module(od_error_cannot_remove_last_owner).
@@ -31,27 +33,29 @@
 
 -spec to_json(t()) -> json_utils:json_map().
 to_json(?ERROR_CANNOT_REMOVE_LAST_OWNER(EntityType, EntityId)) ->
+    EntityTypeJson = atom_to_binary(EntityType, utf8),
+
     #{
         <<"id">> => ?ERROR_CANNOT_REMOVE_LAST_OWNER_ID,
         <<"details">> => #{
-            <<"entityType">> => EntityType,
+            <<"entityType">> => EntityTypeJson,
             <<"entityId">> => EntityId
         },
-        <<"description">> => <<
-            "Cannot remove the last owner - another owner must be assigned first. "
-            "Ownership can be granted to any direct or effective member."
-        >>
+        <<"description">> => <<"Cannot remove the last owner - another owner must be assigned first. Ownership can be granted to any direct or effective member.">>
     }.
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(#{<<"id">> := ?ERROR_CANNOT_REMOVE_LAST_OWNER_ID, <<"details">> := #{
-    <<"entityType">> := EntType,
-    <<"entityId">> := EntId
-}}) ->
-    ?ERROR_CANNOT_REMOVE_LAST_OWNER(binary_to_existing_atom(EntType, utf8), EntId).
+from_json(OdErrorJson = #{<<"id">> := ?ERROR_CANNOT_REMOVE_LAST_OWNER_ID}) ->
+    DetailsJson = maps:get(<<"details">>, OdErrorJson),
+
+    EntityTypeJson = maps:get(<<"entityType">>, DetailsJson),
+    EntityType = binary_to_existing_atom(EntityTypeJson, utf8),
+    EntityId = maps:get(<<"entityId">>, DetailsJson),
+
+    ?ERROR_CANNOT_REMOVE_LAST_OWNER(EntityType, EntityId).
 
 
--spec to_http_code(t()) -> 400.
+-spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.
 to_http_code(_) ->
     ?HTTP_400_BAD_REQUEST.

@@ -1,11 +1,13 @@
 %%%-------------------------------------------------------------------
+%%% This file has been automatically generated - DO NOT EDIT!!!
+%%%
 %%% @copyright (C) 2024 ACK CYFRONET AGH
 %%% This software is released under the MIT license
 %%% cited in 'LICENSE.txt'.
 %%% @end
 %%%-------------------------------------------------------------------
 %%% @doc
-%%% This module implements od_error for ?MODULE.
+%%% This module implements od_error for 'od_error_bad_consumer_token'.
 %%% @end
 %%%-------------------------------------------------------------------
 -module(od_error_bad_consumer_token).
@@ -31,20 +33,27 @@
 
 -spec to_json(t()) -> json_utils:json_map().
 to_json(?ERROR_BAD_CONSUMER_TOKEN(TokenError)) ->
+    TokenErrorJson = errors:to_json(TokenError),
+
     #{
         <<"id">> => ?ERROR_BAD_CONSUMER_TOKEN_ID,
         <<"details">> => #{
-            <<"tokenError">> => errors:to_json(TokenError)
+            <<"tokenError">> => TokenErrorJson
         },
         <<"description">> => <<"Provided consumer token is not valid (see details).">>
     }.
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(#{<<"id">> := ?ERROR_BAD_CONSUMER_TOKEN_ID, <<"details">> := #{<<"tokenError">> := TokenError}}) ->
-    ?ERROR_BAD_CONSUMER_TOKEN(errors:from_json(TokenError)).
+from_json(OdErrorJson = #{<<"id">> := ?ERROR_BAD_CONSUMER_TOKEN_ID}) ->
+    DetailsJson = maps:get(<<"details">>, OdErrorJson),
+
+    TokenErrorJson = maps:get(<<"tokenError">>, DetailsJson),
+    TokenError = errors:from_json(TokenErrorJson),
+
+    ?ERROR_BAD_CONSUMER_TOKEN(TokenError).
 
 
--spec to_http_code(t()) -> 400.
+-spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.
 to_http_code(_) ->
     ?HTTP_400_BAD_REQUEST.

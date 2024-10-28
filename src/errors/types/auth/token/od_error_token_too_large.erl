@@ -1,11 +1,13 @@
 %%%-------------------------------------------------------------------
+%%% This file has been automatically generated - DO NOT EDIT!!!
+%%%
 %%% @copyright (C) 2024 ACK CYFRONET AGH
 %%% This software is released under the MIT license
 %%% cited in 'LICENSE.txt'.
 %%% @end
 %%%-------------------------------------------------------------------
 %%% @doc
-%%% This module implements od_error for ?MODULE.
+%%% This module implements od_error for 'od_error_token_too_large'.
 %%% @end
 %%%-------------------------------------------------------------------
 -module(od_error_token_too_large).
@@ -30,21 +32,28 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_TOKEN_TOO_LARGE(SizeLimit)) ->
+to_json(?ERROR_TOKEN_TOO_LARGE(Limit)) ->
     #{
         <<"id">> => ?ERROR_TOKEN_TOO_LARGE_ID,
         <<"details">> => #{
-            <<"limit">> => SizeLimit
+            <<"limit">> => Limit
         },
-        <<"description">> => ?fmt("Provided token exceeds the allowed size (~B characters).", [SizeLimit])
+        <<"description">> => ?fmt(
+            "Provided token exceeds the allowed size (~B characters).",
+            [Limit]
+        )
     }.
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(#{<<"id">> := ?ERROR_TOKEN_TOO_LARGE_ID, <<"details">> := #{<<"limit">> := SizeLimit}}) ->
-    ?ERROR_TOKEN_TOO_LARGE(SizeLimit).
+from_json(OdErrorJson = #{<<"id">> := ?ERROR_TOKEN_TOO_LARGE_ID}) ->
+    DetailsJson = maps:get(<<"details">>, OdErrorJson),
+
+    Limit = maps:get(<<"limit">>, DetailsJson),
+
+    ?ERROR_TOKEN_TOO_LARGE(Limit).
 
 
--spec to_http_code(t()) -> 400.
+-spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.
 to_http_code(_) ->
     ?HTTP_400_BAD_REQUEST.

@@ -1,11 +1,13 @@
 %%%-------------------------------------------------------------------
+%%% This file has been automatically generated - DO NOT EDIT!!!
+%%%
 %%% @copyright (C) 2024 ACK CYFRONET AGH
 %%% This software is released under the MIT license
 %%% cited in 'LICENSE.txt'.
 %%% @end
 %%%-------------------------------------------------------------------
 %%% @doc
-%%% This module implements od_error for ?MODULE.
+%%% This module implements od_error for 'od_error_storage_test_failed'.
 %%% @end
 %%%-------------------------------------------------------------------
 -module(od_error_storage_test_failed).
@@ -47,6 +49,6 @@ from_json(#{<<"id">> := ?ERROR_STORAGE_TEST_FAILED_ID, <<"details">> := #{<<"ope
     ?ERROR_STORAGE_TEST_FAILED(binary_to_atom(Operation, utf8)).
 
 
--spec to_http_code(t()) -> 400.
+-spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.
 to_http_code(_) ->
     ?HTTP_400_BAD_REQUEST.

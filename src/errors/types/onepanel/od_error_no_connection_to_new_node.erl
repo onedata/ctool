@@ -1,11 +1,13 @@
 %%%-------------------------------------------------------------------
+%%% This file has been automatically generated - DO NOT EDIT!!!
+%%%
 %%% @copyright (C) 2024 ACK CYFRONET AGH
 %%% This software is released under the MIT license
 %%% cited in 'LICENSE.txt'.
 %%% @end
 %%%-------------------------------------------------------------------
 %%% @doc
-%%% This module implements od_error for ?MODULE.
+%%% This module implements od_error for 'od_error_no_connection_to_new_node'.
 %%% @end
 %%%-------------------------------------------------------------------
 -module(od_error_no_connection_to_new_node).
@@ -33,18 +35,25 @@
 to_json(?ERROR_NO_CONNECTION_TO_NEW_NODE(Hostname)) ->
     #{
         <<"id">> => ?ERROR_NO_CONNECTION_TO_NEW_NODE_ID,
-        <<"details">> => #{<<"hostname">> => Hostname},
-        <<"description">> => ?fmt("Cannot add node \"~ts\", connection failed.", [Hostname])
+        <<"details">> => #{
+            <<"hostname">> => Hostname
+        },
+        <<"description">> => ?fmt(
+            "Cannot add node \"~ts\", connection failed.",
+            [Hostname]
+        )
     }.
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(#{<<"id">> := ?ERROR_NO_CONNECTION_TO_NEW_NODE_ID, <<"details">> := #{
-    <<"hostname">> := Hostname
-}}) ->
+from_json(OdErrorJson = #{<<"id">> := ?ERROR_NO_CONNECTION_TO_NEW_NODE_ID}) ->
+    DetailsJson = maps:get(<<"details">>, OdErrorJson),
+
+    Hostname = maps:get(<<"hostname">>, DetailsJson),
+
     ?ERROR_NO_CONNECTION_TO_NEW_NODE(Hostname).
 
 
--spec to_http_code(t()) -> 400.
+-spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.
 to_http_code(_) ->
     ?HTTP_400_BAD_REQUEST.

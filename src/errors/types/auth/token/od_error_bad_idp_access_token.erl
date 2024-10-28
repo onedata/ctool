@@ -1,11 +1,13 @@
 %%%-------------------------------------------------------------------
+%%% This file has been automatically generated - DO NOT EDIT!!!
+%%%
 %%% @copyright (C) 2024 ACK CYFRONET AGH
 %%% This software is released under the MIT license
 %%% cited in 'LICENSE.txt'.
 %%% @end
 %%%-------------------------------------------------------------------
 %%% @doc
-%%% This module implements od_error for ?MODULE.
+%%% This module implements od_error for 'od_error_bad_idp_access_token'.
 %%% @end
 %%%-------------------------------------------------------------------
 -module(od_error_bad_idp_access_token).
@@ -30,21 +32,28 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_BAD_IDP_ACCESS_TOKEN(IdP)) ->
+to_json(?ERROR_BAD_IDP_ACCESS_TOKEN(Idp)) ->
     #{
         <<"id">> => ?ERROR_BAD_IDP_ACCESS_TOKEN_ID,
         <<"details">> => #{
-            <<"idp">> => IdP
+            <<"idp">> => Idp
         },
-        <<"description">> => ?fmt("Provided access token for \"~tp\" is not valid.", [IdP])
+        <<"description">> => ?fmt(
+            "Provided access token for \"~tp\" is not valid.",
+            [Idp]
+        )
     }.
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(#{<<"id">> := ?ERROR_BAD_IDP_ACCESS_TOKEN_ID, <<"details">> := #{<<"idp">> := IdP}}) ->
-    ?ERROR_BAD_IDP_ACCESS_TOKEN(IdP).
+from_json(OdErrorJson = #{<<"id">> := ?ERROR_BAD_IDP_ACCESS_TOKEN_ID}) ->
+    DetailsJson = maps:get(<<"details">>, OdErrorJson),
+
+    Idp = maps:get(<<"idp">>, DetailsJson),
+
+    ?ERROR_BAD_IDP_ACCESS_TOKEN(Idp).
 
 
--spec to_http_code(t()) -> 400.
+-spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.
 to_http_code(_) ->
     ?HTTP_400_BAD_REQUEST.

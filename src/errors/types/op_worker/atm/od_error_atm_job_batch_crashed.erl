@@ -1,11 +1,13 @@
 %%%-------------------------------------------------------------------
+%%% This file has been automatically generated - DO NOT EDIT!!!
+%%%
 %%% @copyright (C) 2024 ACK CYFRONET AGH
 %%% This software is released under the MIT license
 %%% cited in 'LICENSE.txt'.
 %%% @end
 %%%-------------------------------------------------------------------
 %%% @doc
-%%% This module implements od_error for ?MODULE.
+%%% This module implements od_error for 'od_error_atm_job_batch_crashed'.
 %%% @end
 %%%-------------------------------------------------------------------
 -module(od_error_atm_job_batch_crashed).
@@ -41,13 +43,14 @@ to_json(?ERROR_ATM_JOB_BATCH_CRASHED(Reason)) ->
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(#{
-    <<"id">> := ?ERROR_ATM_JOB_BATCH_CRASHED_ID,
-    <<"details">> := #{<<"reason">> := Reason}
-}) ->
+from_json(OdErrorJson = #{<<"id">> := ?ERROR_ATM_JOB_BATCH_CRASHED_ID}) ->
+    DetailsJson = maps:get(<<"details">>, OdErrorJson),
+
+    Reason = maps:get(<<"reason">>, DetailsJson),
+
     ?ERROR_ATM_JOB_BATCH_CRASHED(Reason).
 
 
--spec to_http_code(t()) -> 500.
+-spec to_http_code(t()) -> ?HTTP_500_INTERNAL_SERVER_ERROR.
 to_http_code(_) ->
     ?HTTP_500_INTERNAL_SERVER_ERROR.

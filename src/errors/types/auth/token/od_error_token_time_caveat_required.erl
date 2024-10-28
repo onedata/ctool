@@ -1,11 +1,13 @@
 %%%-------------------------------------------------------------------
+%%% This file has been automatically generated - DO NOT EDIT!!!
+%%%
 %%% @copyright (C) 2024 ACK CYFRONET AGH
 %%% This software is released under the MIT license
 %%% cited in 'LICENSE.txt'.
 %%% @end
 %%%-------------------------------------------------------------------
 %%% @doc
-%%% This module implements od_error for ?MODULE.
+%%% This module implements od_error for 'od_error_token_time_caveat_required'.
 %%% @end
 %%%-------------------------------------------------------------------
 -module(od_error_token_time_caveat_required).
@@ -36,15 +38,22 @@ to_json(?ERROR_TOKEN_TIME_CAVEAT_REQUIRED(MaxTtl)) ->
         <<"details">> => #{
             <<"maxTtl">> => MaxTtl
         },
-        <<"description">> => ?fmt("You must specify a time caveat with maximum TTL of ~B seconds.", [MaxTtl])
+        <<"description">> => ?fmt(
+            "You must specify a time caveat with maximum TTL of ~B seconds.",
+            [MaxTtl]
+        )
     }.
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(#{<<"id">> := ?ERROR_TOKEN_TIME_CAVEAT_REQUIRED_ID, <<"details">> := #{<<"maxTtl">> := MaxTtl}}) ->
+from_json(OdErrorJson = #{<<"id">> := ?ERROR_TOKEN_TIME_CAVEAT_REQUIRED_ID}) ->
+    DetailsJson = maps:get(<<"details">>, OdErrorJson),
+
+    MaxTtl = maps:get(<<"maxTtl">>, DetailsJson),
+
     ?ERROR_TOKEN_TIME_CAVEAT_REQUIRED(MaxTtl).
 
 
--spec to_http_code(t()) -> 400.
+-spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.
 to_http_code(_) ->
     ?HTTP_400_BAD_REQUEST.
