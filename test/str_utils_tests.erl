@@ -67,4 +67,17 @@ name_validation_test() ->
     ?assertEqual(true, V(<<"µńż_źć-21.3(1)"/utf8>>)).
 
 
--endif.
+longest_substring_ignoring_whitespace_test() ->
+    V = fun str_utils:longest_substring_ignoring_whitespace/2,
+    ?assertEqual({"abc", ""}, V("abc", "abc")),
+    ?assertEqual({"abc", ""}, V(" a b c ", "abc")),
+    ?assertEqual({"abc", ""}, V("abc", " a b c ")),
+    ?assertEqual({" a b c ", ""}, V(" a b c ", " a b c ")),
+    ?assertEqual({"a b ", "c"}, V("a b c", " a b d")),
+    ?assertEqual({"", "abc"}, V("abc", "xyz")),
+    ?assertEqual({"", "abc"}, V("abc", "")),
+    ?assertEqual({"", ""}, V("", "abc")),
+    ?assertEqual({"", ""}, V("", "")),
+    ?assertEqual({"ab ", ""}, V(" a  b ", "ab d e")).
+
+    -endif.

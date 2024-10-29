@@ -16,7 +16,7 @@
 -export([to_list/1, to_binary/1]).
 -export([join_as_binaries/2, join_binary/1, join_binary/2, reverse_binary/1]).
 -export([binary_starts_with/2, binary_ends_with/2]).
--export([ensure_suffix/2, truncate_overflow/2]).
+-export([ensure_suffix/2, truncate_overflow/2, truncate_prefix/3]).
 
 % Conversion between unicode and binaries
 -export([unicode_list_to_binary/1, binary_to_unicode_list/1]).
@@ -28,7 +28,7 @@
 -export([rand_hex/1]).
 -export([pad_left/3, pad_right/3]).
 -export([validate_name/1, validate_name/5]).
--export([longest_substring/2]).
+-export([longest_substring_ignoring_whitespace/2]).
 
 
 %%%===================================================================
@@ -135,7 +135,15 @@ ensure_suffix(String, Suffix)->
     end.
 
 
--spec truncate_overflow(binary(), non_neg_integer()) -> binary().
+-spec truncate_overflow(term(), non_neg_integer()) -> binary().
+truncate_overflow(Term, MaxSize) when is_list(Term) ->
+    case length(Term) > MaxSize of
+        true ->
+            Part = string:slice(Term, 0, MaxSize),
+            Part ++ "... [truncated]";
+        false ->
+            Term
+    end;
 truncate_overflow(Binary, MaxSize) ->
     case byte_size(Binary) > MaxSize of
         true ->
@@ -144,6 +152,16 @@ truncate_overflow(Binary, MaxSize) ->
         false ->
             Binary
     end.
+
+
+-spec truncate_prefix(term(), non_neg_integer(), non_neg_integer()) -> binary().
+truncate_prefix(Term, Position, Size) when is_list(Term) ->
+    Part = string:slice(Term, Position, Size),
+    "[truncated] ..." ++ Part;
+truncate_prefix(Binary, Position, Size) ->
+    Part = binary:part(Binary, Position, Size),
+    <<"[truncated] ...", Part/binary>>.
+
 
 %%--------------------------------------------------------------------
 %% @doc Converts a unicode list to utf8 binary.
@@ -285,18 +303,24 @@ validate_name(Name, FirstRgx, MiddleRgx, LastRgx, MaxLength) ->
     end.
 
 
--spec longest_substring(string(), string()) -> string().
-longest_substring([X | XS], [Y | YS]) ->
-        case {is_whitespace(X), is_whitespace(Y)} of
-            {true, false} -> [X | longest_substring(XS, [Y | YS])];
-            {false, true} -> longest_substring([X | XS], YS);
-            _ -> case X == Y of
-                true -> [X | longest_substring(XS, YS)];
-                false -> []
-            end
-        end;
-longest_substring(_, _) ->
-    [].
+-spec longest_substring_ignoring_whitespace(string(), string()) -> {string(), string()}.
+longest_substring_ignoring_whitespace(BaseStr, SecondStr) ->
+    longest_substring_ignoring_whitespace(BaseStr, SecondStr, []).
+
+longest_substring_ignoring_whitespace([X | XS], [Y | YS], Acc) ->
+    case {is_whitespace(X), is_whitespace(Y)} of
+        {true, false} -> longest_substring_ignoring_whitespace(XS, [Y | YS], Acc);
+        {false, true} -> longest_substring_ignoring_whitespace([X | XS], YS, Acc);
+        _ -> case X == Y of
+            true -> longest_substring_ignoring_whitespace(XS, YS, Acc ++ [X]);
+            false -> {Acc, [X | XS]}
+        end
+    end;
+longest_substring_ignoring_whitespace(BaseStr, _, Acc) ->
+    case Acc of
+        [] -> {[], BaseStr};
+        _ -> {Acc, []}
+    end.
 
 
 %% @private

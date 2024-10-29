@@ -26,11 +26,11 @@
 ]).
 -export([get_env/3, set_env/4]).
 -export([get_docker_ip/1, get_docker_hostname/1]).
--export([format_failure_summary/2]).
+-export([format_failure_summary/2, format_failure_summary/3]).
 
 -define(TIMEOUT, timer:seconds(60)).
 -define(ATTEMPTS, 10).
--define(FIELD_LENGTH_LIMIT, ctool:get_env(log_field_length_limit, 1000)).
+-define(CT_ASSERT_LOG_TERM_TRUNCATION_THRESHOLD, ctool:get_env(ct_assert_log_term_truncation_threshold, 2000)).
 
 -type failure_summary() :: #failure_summary{}.
 
@@ -303,28 +303,9 @@ get_docker_hostname(Node) ->
 
 
 -spec format_failure_summary(string(), failure_summary()) -> {string(), list()}.
-format_failure_summary(TestedExpressionString, #failure_summary{
-    module = Module,
-    line = Line,
-    expected_expression = ExpectedExpression,
-    expected_value = undefined,
-    actual_expression = ActualExpression,
-    actual_value = ActualValue
-}) ->
-    ActualValueStr = str_utils:format("~tp", [ActualValue]),
-    ExpectedStr = str_utils:format("~tp", [ExpectedExpression]),
-    LongestPrefix = str_utils:longest_substring(ExpectedStr, ActualValueStr),
-    ActualValueSlice = format_diff(LongestPrefix, ActualValueStr),
-    Format = "~ts - ~tp:~tp~n"
-        ++ "-  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  - ~n"
-        ++ "> Expectation: ~tp~n~n"
-        ++ "-  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  - ~n"
-        ++ "> Value: ~tp~n~n~ts~n",
+format_failure_summary(TestedExpressionString, FailureSummary) ->
+    format_failure_summary(TestedExpressionString, FailureSummary, positive).
 
-    {Format, [
-        TestedExpressionString, Module, Line, ExpectedExpression,
-        ActualExpression, ActualValueSlice
-    ]};
 format_failure_summary(TestedExpressionString, #failure_summary{
     module = Module,
     line = Line,
@@ -332,25 +313,32 @@ format_failure_summary(TestedExpressionString, #failure_summary{
     expected_value = ExpectedValue,
     actual_expression = ActualExpression,
     actual_value = ActualValue
-}) ->
-    ActualValueStr = str_utils:format("~tp", [ActualValue]),
-    ExpectedValueStr = str_utils:format("~tp", [ExpectedValue]),
-    LongestPrefix = str_utils:longest_substring(ExpectedValueStr, ActualValueStr),
+}, AssertType) ->
+    ActualValueStr = pretty_format(ActualValue),
+    ExpectedValueStr = pretty_format(ExpectedValue),
 
-    ActualValueSlice = format_diff(LongestPrefix, ActualValueStr),
-    ExpectedValueSlice = format_diff(LongestPrefix, ExpectedValueStr),
+    ActualValueSlice = get_slice_depending_on_assert_type(ActualValueStr, ExpectedValueStr, AssertType),
+    ExpectedValueSlice = get_slice_depending_on_assert_type(ExpectedValueStr, ActualValueStr, AssertType),
 
     Format = "~ts - ~tp:~tp~n"
         ++ "-  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  - ~n"
-        ++ "> Expectation: ~tp~n~n~ts~n"
+        ++ "> Expectation: ~tp~n"
+        ++ "~n"
+        ++ "~ts~n"
         ++ "-  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  - ~n"
-        ++ "> Value: ~tp~n~n~ts~n",
+        ++ "> Value: ~tp~n"
+        ++ "~n"
+        ++ "~ts~n",
 
     {Format, [
-        TestedExpressionString, Module, Line, ExpectedExpression,
-        ExpectedValueSlice, ActualExpression, ActualValueSlice
+        TestedExpressionString,
+        Module,
+        Line,
+        ExpectedExpression,
+        ExpectedValueSlice,
+        ActualExpression,
+        ActualValueSlice
     ]}.
-
 
 %%%===================================================================
 %%% Internal functions
@@ -451,7 +439,7 @@ should_recompile_module(SrcFilePath) ->
 %% @private
 -spec get_limited_diff(string(), string()) -> string().
 get_limited_diff(LongestPrefix, Rest) ->
-    MaxLength = ?FIELD_LENGTH_LIMIT,
+    MaxLength = ?CT_ASSERT_LOG_TERM_TRUNCATION_THRESHOLD,
     PrefixLength = length(LongestPrefix),
     RestLength = length(Rest),
 
@@ -465,36 +453,55 @@ get_limited_diff(LongestPrefix, Rest) ->
                 false -> HalfLength
             end,
 
-            TruncatedPrefix = string:sub_string(LongestPrefix, PrefixLength - ActualPrefixLength + 1),
-            TruncatedRest = lists:sublist(Rest, MaxLength - ActualPrefixLength),
+            TruncatedPrefix = str_utils:truncate_prefix(
+                LongestPrefix,
+                PrefixLength - ActualPrefixLength + 1,
+                ActualPrefixLength
+            ),
+            TruncatedRest = str_utils:truncate_overflow(Rest, MaxLength - ActualPrefixLength),
 
-            add_dots_if_truncated(TruncatedPrefix, PrefixLength, left) ++ "~n[DIFF]~n"
-                ++ add_dots_if_truncated(TruncatedRest, RestLength, right)
+            str_utils:format("~ts ~n[DIFF]~n ~ts", [TruncatedPrefix, TruncatedRest])
     end.
 
 
 %% @private
--spec format_diff(string(), string()) -> string().
-format_diff(LongestPrefix, ValueStr) ->
+-spec annotate_difference(string(), string()) -> string().
+annotate_difference(BaseStr, "") ->
+    str_utils:truncate_overflow(
+        BaseStr, ?CT_ASSERT_LOG_TERM_TRUNCATION_THRESHOLD
+    );
+annotate_difference("", _) ->
+    "";
+annotate_difference(BaseStr, SecondStr) ->
+    {LongestPrefix, Rest} = str_utils:longest_substring_ignoring_whitespace(BaseStr, SecondStr),
     case LongestPrefix of
         [] ->
-            Truncated = string:slice(ValueStr, 0, ?FIELD_LENGTH_LIMIT),
-            "[DIFF]~n" ++ add_dots_if_truncated(Truncated, length(ValueStr), right);
+            "[DIFF]~n" ++ str_utils:truncate_overflow(
+                BaseStr, ?CT_ASSERT_LOG_TERM_TRUNCATION_THRESHOLD
+            );
         _ ->
-            Rest = string:sub_string(ValueStr, string:len(LongestPrefix) + 1),
             get_limited_diff(LongestPrefix, Rest)
     end.
 
 
 %% @private
--spec add_dots_if_truncated(string(), integer(), atom()) -> string().
-add_dots_if_truncated(TruncatedStr, OriginalLength, Position) ->
-    if
-        length(TruncatedStr) < OriginalLength ->
-            case Position of
-                left -> "... " ++ TruncatedStr;
-                right -> TruncatedStr ++ " ..."
-            end;
-        true ->
-            TruncatedStr
+-spec get_slice_depending_on_assert_type(string(), string(), atom()) -> string().
+get_slice_depending_on_assert_type(BaseStr, SecondStr, AssertType) ->
+    case AssertType of
+        positive ->
+            annotate_difference(BaseStr, SecondStr);
+        negative ->
+            str_utils:truncate_overflow(BaseStr, ?CT_ASSERT_LOG_TERM_TRUNCATION_THRESHOLD)
     end.
+
+
+%% @private
+-spec pretty_format(term()) -> string().
+pretty_format(undefined) ->
+    "";
+pretty_format(Value) ->
+    ControlSequence = case onedata_logger:is_printable(Value) of
+        true -> "~ts";
+        false -> "~tp"
+    end,
+    str_utils:format(ControlSequence, [Value]).
