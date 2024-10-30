@@ -60,15 +60,15 @@ check_authorization(#auth{caveats = Caveats}, Service, Operation, GRI) ->
             case verify_service_caveats_against_operation(Caveats, Service, Operation, GRI) of
                 ok ->
                     verify_data_access_caveats_against_operation(Caveats, Service, Operation, GRI);
-                {error, _} = Err1 ->
+                ?ERROR = Err1 ->
                     Err1
             end;
-        {error, _} = Err2 ->
+        ?ERROR = Err2 ->
             Err2
     end,
     case Result of
         ok -> ok;
-        {error, _} = Error -> ?ERROR_UNAUTHORIZED(Error)
+        ?ERROR = Error -> ?ERROR_UNAUTHORIZED(Error)
     end.
 
 %%%===================================================================
@@ -89,7 +89,7 @@ verify_api_caveats_against_operation(Caveats, Service, Operation, GRI) ->
     lists:foldl(fun
         (ApiCaveat, ok) ->
             cv_api:verify(ApiCaveat, Service, Operation, GRI);
-        (_ApiCaveat, {error, _} = Error) ->
+        (_ApiCaveat, ?ERROR = Error) ->
             Error
     end, ok, ApiCaveats).
 
@@ -104,9 +104,9 @@ verify_service_caveats_against_operation(Caveats, Service, Operation, GRI) ->
             ApiCaveat = service_caveats:to_allowed_api(ServiceCaveat),
             case cv_api:verify(ApiCaveat, Service, Operation, GRI) of
                 ok -> ok;
-                {error, _} -> ?ERROR_TOKEN_CAVEAT_UNVERIFIED(ServiceCaveat)
+                ?ERROR -> ?ERROR_TOKEN_CAVEAT_UNVERIFIED(ServiceCaveat)
             end;
-        (_ServiceCaveat, {error, _} = Error) ->
+        (_ServiceCaveat, ?ERROR = Error) ->
             Error
     end, ok, ServiceCaveats).
 
@@ -121,8 +121,8 @@ verify_data_access_caveats_against_operation(Caveats, Service, Operation, GRI) -
             ApiCaveat = data_access_caveats:to_allowed_api(Service, DataAccessCaveat),
             case cv_api:verify(ApiCaveat, Service, Operation, GRI) of
                 ok -> ok;
-                {error, _} -> ?ERROR_TOKEN_CAVEAT_UNVERIFIED(DataAccessCaveat)
+                ?ERROR -> ?ERROR_TOKEN_CAVEAT_UNVERIFIED(DataAccessCaveat)
             end;
-        (_DataAccessCaveat, {error, _} = Error) ->
+        (_DataAccessCaveat, ?ERROR = Error) ->
             Error
     end, ok, DataAccessCaveats).

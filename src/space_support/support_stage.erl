@@ -171,7 +171,7 @@ apply_transition(PerProvider, ProviderId, StorageId, NewStorageStage) ->
     case apply_stage_transition(CurrentStageDetails, StorageId, NewStorageStage) of
         {ok, NewStageDetails} ->
             {ok, PerProvider#{ProviderId => NewStageDetails}};
-        {error, _} = Error ->
+        ?ERROR = Error ->
             Error
     end.
 

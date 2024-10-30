@@ -53,7 +53,7 @@ http_code_test_() ->
 
 
 http_code_for_nonexistent_error_test() ->
-    ?assertException(_, _, errors:to_http_code(#od_error{type = gibberish})).
+    ?assertException(_, _, errors:to_http_code({error, gibberish})).
 
 
 is_known_error_test_() ->
@@ -68,13 +68,13 @@ is_known_error_test_() ->
 
 
 is_not_known_error_test() ->
-    ?assertNot(errors:is_known_error(#od_error{type = gibberish})).
+    ?assertNot(errors:is_known_error({error, gibberish})).
 
 
 cannot_translate_error_test() ->
     % in case of an error that is not specified in the errors module,
     % a proper error log is logged and an internal server error should be returned
-    BadErrorTerm = #od_error{type = some_error, args = {that_we_dont_understand, 1653}},
+    BadErrorTerm = {error, {some_error, that_we_dont_understand, 1653}},
     ?assertMatch(
         ?ERROR_INTERNAL_SERVER_ERROR(_),
         errors:from_json(errors:to_json(BadErrorTerm))

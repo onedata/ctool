@@ -116,7 +116,7 @@ update_support_parameters_test() ->
         DummyRegistry = insert_parameters_into_registry(DummyProviderId, RecordToUpdate, ExampleRegistry),
 
         case ExpectedResult of
-            {error, _} ->
+            ?ERROR ->
                 ?assertEqual(
                     ExpectedResult,
                     support_parameters_registry:update_entry(DummyProviderId, OverlayRecord, DummyRegistry)

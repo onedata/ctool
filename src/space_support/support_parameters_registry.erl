@@ -63,7 +63,7 @@ insert_entry(ProviderId, Parameters, Record = #support_parameters_registry{regis
 update_entry(ProviderId, ParametersOverlay, Record = #support_parameters_registry{registry = Registry}) ->
     PreviousParameters = maps:get(ProviderId, Registry),
     case support_parameters:update(PreviousParameters, ParametersOverlay) of
-        {error, _} = Error ->
+        ?ERROR = Error ->
             Error;
         {ok, NewParameters} ->
             {ok, Record#support_parameters_registry{
