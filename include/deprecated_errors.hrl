@@ -1,0 +1,369 @@
+%%%-------------------------------------------------------------------
+%%% @author Lukasz Opiola
+%%% @copyright (C) 2016 ACK CYFRONET AGH
+%%% This software is released under the MIT license
+%%% cited in 'LICENSE.txt'.
+%%% @end
+%%%-------------------------------------------------------------------
+%%% @doc
+%%% Error definitions to be used across all APIs in Onedata products.
+%%% @end
+%%%-------------------------------------------------------------------
+
+-ifndef(DEPRECATED_ERRORS_HRL).
+-define(DEPRECATED_ERRORS_HRL, 1).
+
+-include("global_definitions.hrl").
+-include("posix/errno.hrl").
+
+%%--------------------------------------------------------------------
+%% General errors
+%%--------------------------------------------------------------------
+-define(DEPRECATED_ERROR_BAD_MESSAGE(MessageBinOrJson), {error, {bad_message, MessageBinOrJson}}).
+-define(DEPRECATED_ERROR_NO_CONNECTION_TO_ONEZONE, {error, no_connection_to_onezone}).
+-define(DEPRECATED_ERROR_NO_CONNECTION_TO_PEER_ONEPROVIDER, {error, no_connection_to_peer_oneprovider}).
+-define(DEPRECATED_ERROR_NO_CONNECTION_TO_CLUSTER_NODE, {error, no_connection_to_cluster_node}).
+-define(DEPRECATED_ERROR_UNREGISTERED_ONEPROVIDER, {error, unregistered_oneprovider}).
+% deprecated version; use ERROR_INTERNAL_SERVER_ERROR(ErrorRef) in new code
+-define(DEPRECATED_ERROR_INTERNAL_SERVER_ERROR, {error, internal_server_error}).
+% carries an identifier that can be logged and then cited by the client that received the error
+-define(DEPRECATED_ERROR_INTERNAL_SERVER_ERROR(ErrorRef), {error, {internal_server_error, ErrorRef}}).     % ref => nallable
+% feature not implemented yet, to be expected in the future
+-define(DEPRECATED_ERROR_NOT_IMPLEMENTED, {error, not_implemented}).
+% feature does not exist
+-define(DEPRECATED_ERROR_NOT_SUPPORTED, {error, not_supported}).
+-define(DEPRECATED_ERROR_SERVICE_UNAVAILABLE, {error, service_unavailable}).
+-define(DEPRECATED_ERROR_TIMEOUT, {error, timeout}).
+-define(DEPRECATED_ERROR_TEMPORARY_FAILURE, {error, temporary_failure}).
+-define(DEPRECATED_ERROR_EXTERNAL_SERVICE_OPERATION_FAILED(ServiceName), {error, {external_service_operation_failed, ServiceName}}).
+-define(DEPRECATED_ERROR_UNAUTHORIZED(AuthError), {error, {unauthorized, AuthError}}).
+-define(DEPRECATED_ERROR_UNAUTHORIZED, {error, unauthorized}).
+-define(DEPRECATED_ERROR_FORBIDDEN, {error, forbidden}).
+-define(DEPRECATED_ERROR_FORBIDDEN(HumanReadableHint), {error, {forbidden, HumanReadableHint}}).
+-define(DEPRECATED_ERROR_NOT_FOUND, {error, not_found}).
+-define(DEPRECATED_ERROR_ALREADY_EXISTS, {error, already_exists}).
+-define(DEPRECATED_ERROR_FILE_ACCESS(Path, Errno), {error, {file_access, Path, Errno}}).
+-define(DEPRECATED_ERROR_LIMIT_REACHED(Limit, ResourceDescription), {error, {limit_reached, Limit, ResourceDescription}}).
+
+%%--------------------------------------------------------------------
+%% POSIX errors
+%%--------------------------------------------------------------------
+-define(DEPRECATED_ERROR_POSIX(Errno), {error, {posix, Errno}}).
+
+
+% value - bo obecne nie mają ścieżki a to jest przydatne
+
+% datastore wrapper - może?
+
+%%--------------------------------------------------------------------
+%% Auth errors
+%%--------------------------------------------------------------------
+-define(DEPRECATED_ERROR_USER_BLOCKED, {error, user_blocked}).
+-define(DEPRECATED_ERROR_BAD_BASIC_CREDENTIALS, {error, bad_basic_credentials}).
+-define(DEPRECATED_ERROR_BAD_IDP_ACCESS_TOKEN(IdP), {error, {bad_idp_access_token, IdP}}).
+% The presented token cannot be understood by the server
+-define(DEPRECATED_ERROR_BAD_TOKEN, {error, bad_token}).
+% The presented service token is not valid due to TokenError
+-define(DEPRECATED_ERROR_BAD_SERVICE_TOKEN(TokenError), {error, {bad_service_token, TokenError}}).
+% The presented consumer token is not valid due to TokenError
+-define(DEPRECATED_ERROR_BAD_CONSUMER_TOKEN(TokenError), {error, {bad_consumer_token, TokenError}}).
+% The token is comprehensible, but not valid
+-define(DEPRECATED_ERROR_TOKEN_INVALID, {error, token_invalid}).
+-define(DEPRECATED_ERROR_TOKEN_REVOKED, {error, token_revoked}).
+-define(DEPRECATED_ERROR_TOKEN_TOO_LARGE(SizeLimit), {error, {token_too_large, {max, SizeLimit}}}).
+-define(DEPRECATED_ERROR_NOT_AN_ACCESS_TOKEN(ReceivedTokenType), {error, {not_an_access_token, ReceivedTokenType}}).
+-define(DEPRECATED_ERROR_NOT_AN_IDENTITY_TOKEN(ReceivedTokenType), {error, {not_an_identity_token, ReceivedTokenType}}).
+-define(DEPRECATED_ERROR_NOT_AN_INVITE_TOKEN(ExpInviteType, ReceivedTokenType), {error, {not_an_invite_token, ExpInviteType, ReceivedTokenType}}).
+-define(DEPRECATED_ERROR_TOKEN_CAVEAT_UNKNOWN(CaveatBinary), {error, {token_caveat_unknown, CaveatBinary}}).
+-define(DEPRECATED_ERROR_TOKEN_CAVEAT_UNVERIFIED(Caveat), {error, {token_caveat_unverified, Caveat}}).
+-define(DEPRECATED_ERROR_TOKEN_TIME_CAVEAT_REQUIRED(MaxTtl), {error, {token_time_caveat_required, MaxTtl}}).
+% Token cannot be created for requested subject as it is invalid
+-define(DEPRECATED_ERROR_TOKEN_SUBJECT_INVALID, {error, token_subject_invalid}).
+% Requested service is forbidden to use the token on behalf of the subject
+% (e.g. subject user is not supported by the provider specified in service)
+-define(DEPRECATED_ERROR_TOKEN_SERVICE_FORBIDDEN(ServiceSpec), {error, {token_service_forbidden, ServiceSpec}}).
+-define(DEPRECATED_ERROR_INVITE_TOKEN_SUBJECT_NOT_AUTHORIZED, {error, invite_token_subject_not_authorized}).
+-define(DEPRECATED_ERROR_INVITE_TOKEN_USAGE_LIMIT_REACHED, {error, invite_token_usage_limit_exceeded}).
+-define(DEPRECATED_ERROR_INVITE_TOKEN_CONSUMER_INVALID(Consumer), {error, {invite_token_consumer_invalid, Consumer}}).
+-define(DEPRECATED_ERROR_INVITE_TOKEN_TARGET_ID_INVALID(Id), {error, {invite_token_target_id_invalid, Id}}).
+-define(DEPRECATED_ERROR_TOKEN_SESSION_INVALID, {error, token_session_invalid}).
+
+
+%%--------------------------------------------------------------------
+%% Graph Sync errors
+%%--------------------------------------------------------------------
+-define(DEPRECATED_ERROR_EXPECTED_HANDSHAKE_MESSAGE, {error, expected_handshake_message}).
+-define(DEPRECATED_ERROR_HANDSHAKE_ALREADY_DONE, {error, handshake_already_done}).
+-define(DEPRECATED_ERROR_BAD_VERSION(SupportedVersions), {error, {bad_version, {supported, SupportedVersions}}}).
+-define(DEPRECATED_ERROR_BAD_GRI, {error, bad_gri}).
+-define(DEPRECATED_ERROR_RPC_UNDEFINED, {error, rpc_undefined}).
+-define(DEPRECATED_ERROR_NOT_SUBSCRIBABLE, {error, not_subscribable}).
+
+
+%%--------------------------------------------------------------------
+%% Data validation errors
+%%--------------------------------------------------------------------
+-define(DEPRECATED_ERROR_MALFORMED_DATA, {error, malformed_data}).
+-define(DEPRECATED_ERROR_MISSING_REQUIRED_VALUE(Key), {error, {missing_required_value, Key}}).
+-define(DEPRECATED_ERROR_MISSING_AT_LEAST_ONE_VALUE(Keys), {error, {missing_at_least_one_value, Keys}}).
+-define(DEPRECATED_ERROR_BAD_DATA(Key), {error, {bad_data, Key}}).
+-define(DEPRECATED_ERROR_BAD_DATA(Key, SpecificErrorOrHumanReadableHint), {error, {bad_data, Key, SpecificErrorOrHumanReadableHint}}).
+-define(DEPRECATED_ERROR_BAD_VALUE_EMPTY(Key), {error, {empty_value, Key}}).
+-define(DEPRECATED_ERROR_BAD_VALUE_BOOLEAN(Key), {error, {bad_value_boolean, Key}}).
+-define(DEPRECATED_ERROR_BAD_VALUE_ATOM(Key), {error, {bad_value_atom, Key}}).
+-define(DEPRECATED_ERROR_BAD_VALUE_LIST_OF_ATOMS(Key), {error, {bad_value_list_of_atoms, Key}}).
+-define(DEPRECATED_ERROR_BAD_VALUE_BINARY(Key), {error, {bad_value_binary, Key}}).
+-define(DEPRECATED_ERROR_BAD_VALUE_TEXT_TOO_LARGE(Key, SizeLimit), {error, {bad_value_text_too_large, Key, {max, SizeLimit}}}).
+-define(DEPRECATED_ERROR_BAD_VALUE_LIST_OF_BINARIES(Key), {error, {bad_value_list_of_binaries, Key}}).
+-define(DEPRECATED_ERROR_BAD_VALUE_INTEGER(Key), {error, {bad_value_integer, Key}}).
+-define(DEPRECATED_ERROR_BAD_VALUE_FLOAT(Key), {error, {bad_value_float, Key}}).
+-define(DEPRECATED_ERROR_BAD_VALUE_JSON(Key), {error, {bad_value_json, Key}}).
+-define(DEPRECATED_ERROR_BAD_VALUE_XML(Key), {error, {bad_value_xml, Key}}).
+-define(DEPRECATED_ERROR_BAD_VALUE_TOKEN(Key, TokenError), {error, {bad_value_token, Key, TokenError}}).
+-define(DEPRECATED_ERROR_BAD_VALUE_TOKEN_TYPE(Key), {error, {bad_value_token_type, Key}}).
+-define(DEPRECATED_ERROR_BAD_VALUE_INVITE_TYPE(Key), {error, {bad_value_invite_type, Key}}).
+-define(DEPRECATED_ERROR_BAD_VALUE_IPV4_ADDRESS(Key), {error, {bad_value_ipv4_address, Key}}).
+-define(DEPRECATED_ERROR_BAD_VALUE_LIST_OF_IPV4_ADDRESSES(Key), {error, {bad_value_list_of_ipv4_addresses, Key}}).
+-define(DEPRECATED_ERROR_BAD_VALUE_TOO_LOW(Key, Threshold), {error, {value_too_low, Key, {min, Threshold}}}).
+-define(DEPRECATED_ERROR_BAD_VALUE_TOO_HIGH(Key, Threshold), {error, {value_too_high, Key, {max, Threshold}}}).
+-define(DEPRECATED_ERROR_BAD_VALUE_NOT_IN_RANGE(Key, Low, High), {error, {value_not_in_range, Key, {range, Low, High}}}).
+-define(DEPRECATED_ERROR_BAD_VALUE_NOT_ALLOWED(Key, AllowedVals), {error, {value_not_allowed, Key, {allowed, AllowedVals}}}).
+-define(DEPRECATED_ERROR_BAD_VALUE_LIST_NOT_ALLOWED(Key, AllowedVals), {error, {values_not_allowed, Key, {allowed, AllowedVals}}}).
+-define(DEPRECATED_ERROR_BAD_VALUE_ID_NOT_FOUND(Key), {error, {id_not_found, Key}}).
+-define(DEPRECATED_ERROR_BAD_VALUE_AMBIGUOUS_ID(Key), {error, {ambiguous_id, Key}}).
+-define(DEPRECATED_ERROR_BAD_VALUE_IDENTIFIER(Key), {error, {bad_identifier, Key}}).
+-define(DEPRECATED_ERROR_BAD_VALUE_IDENTIFIER_OCCUPIED(Key), {error, {identifier_occupied, Key}}).
+-define(DEPRECATED_ERROR_BAD_VALUE_OCTAL(Key), {error, {bad_value_octal, Key}}).
+-define(DEPRECATED_ERROR_BAD_VALUE_FILE_PATH, {error, bad_file_path}).
+-define(DEPRECATED_ERROR_BAD_VALUE_FULL_NAME, {error, bad_full_name}).
+-define(DEPRECATED_ERROR_BAD_VALUE_USERNAME, {error, bad_username}).
+-define(DEPRECATED_ERROR_BAD_VALUE_PASSWORD, {error, bad_password}).
+-define(DEPRECATED_ERROR_BAD_VALUE_EMAIL, {error, bad_value_email}).
+-define(DEPRECATED_ERROR_BAD_VALUE_NAME, {error, bad_value_name}).
+-define(DEPRECATED_ERROR_BAD_VALUE_NAME(Key), {error, {bad_value_name, Key}}).
+-define(DEPRECATED_ERROR_BAD_VALUE_DOMAIN, {error, bad_value_domain}).
+-define(DEPRECATED_ERROR_BAD_VALUE_SUBDOMAIN, {error, bad_value_subdomain}).
+-define(DEPRECATED_ERROR_BAD_VALUE_CAVEAT(Caveat), {error, {bad_value_caveat, Caveat}}).
+-define(DEPRECATED_ERROR_BAD_VALUE_QOS_PARAMETERS, {error, bad_value_qos_parameters}).
+-define(DEPRECATED_ERROR_TSC_MISSING_LAYOUT(MissingLayout), {error, {tsc_missing_layout, MissingLayout}}).
+-define(DEPRECATED_ERROR_TSC_TOO_MANY_METRICS(Limit), {error, {tsc_too_many_metrics, Limit}}).
+-define(DEPRECATED_ERROR_BAD_VALUE_TSC_CONFLICTING_METRIC_CONFIG(TSName, MetricName, ExistingMetricConfig, ConflictingMetricConfig),
+    {error, {bad_value_tsc_conflicting_metric_configs, TSName, MetricName, ExistingMetricConfig, ConflictingMetricConfig}}
+).
+-define(DEPRECATED_ERROR_BAD_GUI_PACKAGE, {error, bad_gui_package}).
+-define(DEPRECATED_ERROR_GUI_PACKAGE_TOO_LARGE, {error, gui_package_too_large}).
+-define(DEPRECATED_ERROR_GUI_PACKAGE_UNVERIFIED(ShaSum), {error, {gui_package_unverified, ShaSum}}).
+-define(DEPRECATED_ERROR_INVALID_QOS_EXPRESSION(Reason), {error, {invalid_qos_expression, Reason}}).
+-define(DEPRECATED_ERROR_ILLEGAL_SUPPORT_STAGE_TRANSITION(ProviderStage, StorageStage), {error, {illegal_support_stage_transition, ProviderStage, StorageStage}}).
+
+%%--------------------------------------------------------------------
+%% oz_worker errors
+%%--------------------------------------------------------------------
+% Basic auth is not (currently) supported by this Onezone
+-define(DEPRECATED_ERROR_BASIC_AUTH_NOT_SUPPORTED, {error, basic_auth_not_supported}).
+% Basic auth is disabled for given user
+-define(DEPRECATED_ERROR_BASIC_AUTH_DISABLED, {error, basic_auth_disabled}).
+% Subdomain delegation is (currently) not supported by this Onezone
+-define(DEPRECATED_ERROR_SUBDOMAIN_DELEGATION_NOT_SUPPORTED, {error, subdomain_delegation_not_supported}).
+% Subdomain delegation is disabled for given Oneprovider
+-define(DEPRECATED_ERROR_SUBDOMAIN_DELEGATION_DISABLED, {error, subdomain_delegation_disabled}).
+% Space marketplace is disabled for this Onezone
+-define(DEPRECATED_ERROR_SPACE_MARKETPLACE_DISABLED, {error, space_marketplace_disabled}).
+-define(DEPRECATED_ERROR_PROTECTED_GROUP, {error, protected_group}).
+-define(DEPRECATED_ERROR_ATM_LAMBDA_IN_USE(AtmWorkflowSchemas), {error, {atm_lambda_in_use, AtmWorkflowSchemas}}).
+-define(DEPRECATED_ERROR_CANNOT_REMOVE_LAST_OWNER(EntityType, EntityId), {error, {cannot_remove_last_owner, EntityType, EntityId}}).
+-define(DEPRECATED_ERROR_CANNOT_DELETE_ENTITY(EntityType, EntityId), {error, {cannot_delete_entity, EntityType, EntityId}}).
+-define(DEPRECATED_ERROR_CANNOT_ADD_RELATION_TO_SELF, {error, cannot_add_relation_to_self}).
+-define(DEPRECATED_ERROR_RELATION_DOES_NOT_EXIST(ChType, ChId, ParType, ParId),
+    {error, {relation_does_not_exist, ChType, ChId, ParType, ParId}}
+).
+-define(DEPRECATED_ERROR_RELATION_ALREADY_EXISTS(ChType, ChId, ParType, ParId),
+    {error, {relation_already_exists, ChType, ChId, ParType, ParId}}
+).
+-define(DEPRECATED_ERROR_SPACE_ALREADY_SUPPORTED_WITH_IMPORTED_STORAGE(SpaceId, StorageId),
+    {error, {space_already_supported_with_imported_storage, SpaceId, StorageId}}
+).
+-define(DEPRECATED_ERROR_CANNOT_DELETE_NON_EMPTY_HANDLE_SERVICE, {error, cannot_delete_non_empty_handle_service}).
+
+
+%%--------------------------------------------------------------------
+%% op_worker errors
+%%--------------------------------------------------------------------
+-define(DEPRECATED_ERROR_USER_NOT_SUPPORTED, {error, user_not_supported}).
+-define(DEPRECATED_ERROR_AUTO_CLEANING_DISABLED, {error, auto_cleaning_disabled}).
+-define(DEPRECATED_ERROR_FILE_POPULARITY_DISABLED, {error, file_popularity_disabled}).
+-define(DEPRECATED_ERROR_SPACE_NOT_SUPPORTED_BY(SpaceId, ProviderId), {error, {space_not_supported_by, SpaceId, ProviderId}}).
+-define(DEPRECATED_ERROR_NOT_A_LOCAL_STORAGE_SUPPORTING_SPACE(ProviderId, StorageId, SpaceId),
+    {error, {not_a_local_storage_supporting_space, ProviderId, StorageId, SpaceId}}).
+-define(DEPRECATED_ERROR_STORAGE_IN_USE, {error, storage_in_use}).
+-define(DEPRECATED_ERROR_REQUIRES_AUTO_STORAGE_IMPORT_MODE, {error, requires_auto_storage_import_mode}).
+-define(DEPRECATED_ERROR_STORAGE_TEST_FAILED(Operation), {error, {storage_test_failed, Operation}}).
+-define(DEPRECATED_ERROR_REQUIRES_NON_IMPORTED_STORAGE(StorageId), {error, {requires_non_imported_storage, StorageId}}).
+-define(DEPRECATED_ERROR_REQUIRES_IMPORTED_STORAGE(StorageId), {error, {requires_imported_storage, StorageId}}).
+-define(DEPRECATED_ERROR_REQUIRES_READONLY_STORAGE(StorageIdOrType), {error, {requires_readonly_storage, StorageIdOrType}}).
+-define(DEPRECATED_ERROR_REQUIRES_POSIX_COMPATIBLE_STORAGE(StorageId, PosixCompatibleStorages), {error, {requires_posix_compatible_storage, StorageId, PosixCompatibleStorages}}).
+
+-define(DEPRECATED_ERROR_AUTO_STORAGE_IMPORT_NOT_SUPPORTED(StorageId, SupportedStorages, SupportedObjectStorages),
+    {error, {auto_storage_import_not_supported, StorageId, SupportedStorages, SupportedObjectStorages}}).
+-define(DEPRECATED_ERROR_STORAGE_IMPORT_NOT_SUPPORTED(StorageId, ObjectStorages), {error, {storage_import_not_supported, StorageId, ObjectStorages}}).
+-define(DEPRECATED_ERROR_STAT_OPERATION_NOT_SUPPORTED(StorageId), {error, {stat_operation_not_supported, StorageId}}).
+-define(DEPRECATED_ERROR_TRANSFER_ALREADY_ENDED, {error, transfer_already_ended}).
+-define(DEPRECATED_ERROR_TRANSFER_NOT_ENDED, {error, transfer_not_ended}).
+-define(DEPRECATED_ERROR_VIEW_NOT_EXISTS_ON(ProviderId), {error, {view_not_exists_on, ProviderId}}).
+-define(DEPRECATED_ERROR_VIEW_QUERY_FAILED(Category, Description), {error, {view_query_failed, Category, Description}}).
+-define(DEPRECATED_ERROR_QUOTA_EXCEEDED, {error, quota_exceeded}).
+
+%% TODO VFS-8272 move all internal atm errors (those that will never be returned via REST/gs) to op
+-define(DEPRECATED_ERROR_ATM_UNSUPPORTED_DATA_TYPE(UnsupportedType, SupportedTypes),
+    {error, {atm_unsupported_data_type, UnsupportedType, SupportedTypes}}
+).
+-define(DEPRECATED_ERROR_ATM_DATA_TYPE_UNVERIFIED(Value, ExpType),
+    {error, {atm_data_type_unverified, Value, ExpType}}
+).
+-define(DEPRECATED_ERROR_ATM_DATA_VALUE_CONSTRAINT_UNVERIFIED(Value, Type, ValueConstraintsJson),
+    {error, {atm_data_value_constraint_unverified, Value, Type, ValueConstraintsJson}}
+).
+
+-define(DEPRECATED_ERROR_ATM_STORE_MISSING_REQUIRED_INITIAL_CONTENT,
+    {error, atm_store_missing_required_initial_content}
+).
+-define(DEPRECATED_ERROR_ATM_STORE_CREATION_FAILED(AtmStoreSchemaId, SpecificError),
+    {error, {atm_store_creation_failed, AtmStoreSchemaId, SpecificError}}
+).
+-define(DEPRECATED_ERROR_ATM_STORE_FROZEN(AtmStoreSchemaId),
+    {error, {atm_store_frozen, AtmStoreSchemaId}}
+).
+-define(DEPRECATED_ERROR_ATM_STORE_TYPE_DISALLOWED(AtmStoreSchemaId, AllowedTypes),
+    {error, {atm_store_type_disallowed, AtmStoreSchemaId, AllowedTypes}}
+).
+-define(DEPRECATED_ERROR_ATM_STORE_CONTENT_NOT_SET(AtmStoreSchemaId),
+    {error, {atm_store_content_not_set, AtmStoreSchemaId}}
+).
+-define(DEPRECATED_ERROR_ATM_STORE_NOT_FOUND(AtmStoreSchemaId),
+    {error, {atm_store_not_found, AtmStoreSchemaId}}
+).
+
+-define(DEPRECATED_ERROR_ATM_WORKFLOW_EMPTY, {error, atm_workflow_empty}).
+-define(DEPRECATED_ERROR_ATM_WORKFLOW_EXECUTION_STOPPING, {error, atm_workflow_execution_aborting}).
+-define(DEPRECATED_ERROR_ATM_WORKFLOW_EXECUTION_STOPPED, {error, atm_workflow_execution_stopped}).
+-define(DEPRECATED_ERROR_ATM_WORKFLOW_EXECUTION_NOT_STOPPED, {error, atm_workflow_execution_not_stopped}).
+-define(DEPRECATED_ERROR_ATM_WORKFLOW_EXECUTION_ENDED, {error, atm_workflow_execution_ended}).
+-define(DEPRECATED_ERROR_ATM_WORKFLOW_EXECUTION_NOT_ENDED, {error, atm_workflow_execution_not_ended}).
+-define(DEPRECATED_ERROR_ATM_WORKFLOW_EXECUTION_NOT_RESUMABLE, {error, atm_workflow_execution_not_resumable}).
+
+-define(DEPRECATED_ERROR_ATM_LANE_EMPTY(AtmLaneSchemaId),
+    {error, {atm_lane_empty, AtmLaneSchemaId}}
+).
+-define(DEPRECATED_ERROR_ATM_LANE_EXECUTION_CREATION_FAILED(AtmLaneSchemaId, SpecificError),
+    {error, {atm_lane_execution_creation_failed, AtmLaneSchemaId, SpecificError}}
+).
+-define(DEPRECATED_ERROR_ATM_LANE_EXECUTION_INITIATION_FAILED(AtmLaneSchemaId, SpecificError),
+    {error, {atm_lane_execution_initiation_failed, AtmLaneSchemaId, SpecificError}}
+).
+
+-define(DEPRECATED_ERROR_ATM_LANE_EXECUTION_RETRY_FAILED, {error, atm_lane_execution_retry_failed}).
+-define(DEPRECATED_ERROR_ATM_LANE_EXECUTION_RERUN_FAILED, {error, atm_lane_execution_rerun_failed}).
+
+-define(DEPRECATED_ERROR_ATM_PARALLEL_BOX_EMPTY(AtmParallelBoxSchemaId),
+    {error, {atm_parallel_box_empty, AtmParallelBoxSchemaId}}
+).
+-define(DEPRECATED_ERROR_ATM_PARALLEL_BOX_EXECUTION_CREATION_FAILED(AtmParallelBoxSchemaId, SpecificError),
+    {error, {atm_parallel_box_execution_creation_failed, AtmParallelBoxSchemaId, SpecificError}}
+).
+-define(DEPRECATED_ERROR_ATM_PARALLEL_BOX_EXECUTION_INITIATION_FAILED(AtmParallelBoxSchemaId, SpecificError),
+    {error, {atm_parallel_box_execution_initiation_failed, AtmParallelBoxSchemaId, SpecificError}}
+).
+
+-define(DEPRECATED_ERROR_ATM_TASK_EXECUTION_CREATION_FAILED(AtmTaskSchemaId, SpecificError),
+    {error, {atm_task_execution_creation_failed, AtmTaskSchemaId, SpecificError}}
+).
+-define(DEPRECATED_ERROR_ATM_TASK_EXECUTION_INITIATION_FAILED(AtmTaskSchemaId, SpecificError),
+    {error, {atm_task_execution_initiation_failed, AtmTaskSchemaId, SpecificError}}
+).
+
+-define(DEPRECATED_ERROR_ATM_LAMBDA_CONFIG_BAD_VALUE(ParameterName, SpecificError),
+    {error, {atm_lambda_config_bad_value, ParameterName, SpecificError}}
+).
+
+-define(DEPRECATED_ERROR_ATM_TASK_ARG_MAPPER_FOR_REQUIRED_LAMBDA_ARG_MISSING(ArgName),
+    {error, {atm_task_arg_mapper_for_required_lambda_arg_missing, ArgName}}
+).
+-define(DEPRECATED_ERROR_ATM_TASK_ARG_MAPPER_FOR_NONEXISTENT_LAMBDA_ARG(ArgName),
+    {error, {atm_task_arg_mapper_for_nonexistent_lambda_arg, ArgName}}
+).
+-define(DEPRECATED_ERROR_ATM_TASK_ARG_MAPPER_UNSUPPORTED_VALUE_BUILDER(Type, SupportedTypes),
+    {error, {atm_task_arg_mapper_unsupported_value_builder, Type, SupportedTypes}}
+).
+-define(DEPRECATED_ERROR_ATM_TASK_ARG_MAPPER_ITERATED_ITEM_QUERY_FAILED(IteratedItem, Query),
+    {error, {atm_task_arg_mapper_iterated_item_query_failed, IteratedItem, Query}}
+).
+-define(DEPRECATED_ERROR_ATM_TASK_ARG_MAPPING_FAILED(ArgName, SpecificError),
+    {error, {atm_task_arg_mapping_failed, ArgName, SpecificError}}
+).
+
+-define(DEPRECATED_ERROR_ATM_TASK_RESULT_MISSING(MissingResultName, ReceivedResultNames),
+    {error, {atm_task_result_missing, MissingResultName, ReceivedResultNames}}
+).
+-define(DEPRECATED_ERROR_ATM_TASK_RESULT_DISPATCH_FAILED(AtmStoreSchemaId, SpecificError),
+    {error, {atm_task_result_dispatch_failed, AtmStoreSchemaId, SpecificError}}
+).
+-define(DEPRECATED_ERROR_ATM_TASK_RESULT_MAPPING_FAILED(ResultName, SpecificError),
+    {error, {atm_task_result_mapping_failed, ResultName, SpecificError}}
+).
+
+-define(DEPRECATED_ERROR_ATM_TASK_EXECUTION_STOPPED, {error, atm_task_execution_stopped}).
+
+-define(DEPRECATED_ERROR_ATM_JOB_BATCH_WITHDRAWN(Reason), {error, {atm_job_batch_withdrawn, Reason}}).
+-define(DEPRECATED_ERROR_ATM_JOB_BATCH_CRASHED(Reason), {error, {atm_job_batch_crashed, Reason}}).
+
+-define(DEPRECATED_ERROR_ATM_OPENFAAS_NOT_CONFIGURED, {error, atm_openfaas_not_configured}).
+-define(DEPRECATED_ERROR_ATM_OPENFAAS_UNREACHABLE, {error, atm_openfaas_unreachable}).
+-define(DEPRECATED_ERROR_ATM_OPENFAAS_UNHEALTHY, {error, atm_openfaas_unhealthy}).
+-define(DEPRECATED_ERROR_ATM_OPENFAAS_QUERY_FAILED, {error, atm_openfaas_query_failed}).
+-define(DEPRECATED_ERROR_ATM_OPENFAAS_QUERY_FAILED(Reason),
+    {error, {atm_openfaas_query_failed, Reason}}
+).
+-define(DEPRECATED_ERROR_ATM_OPENFAAS_FUNCTION_REGISTRATION_FAILED,
+    {error, atm_openfaas_function_registration_failed}
+).
+
+-define(DEPRECATED_ERROR_ATM_INVALID_STATUS_TRANSITION(PrevStatus, NewStatus),
+    {error, {atm_invalid_status_transition, PrevStatus, NewStatus}}
+).
+
+-define(DEPRECATED_ERROR_DIR_STATS_DISABLED_FOR_SPACE, {error, dir_stats_disabled_for_space}).
+-define(DEPRECATED_ERROR_DIR_STATS_NOT_READY, {error, dir_stats_not_ready}).
+
+-define(DEPRECATED_ERROR_FORBIDDEN_FOR_CURRENT_ARCHIVE_STATE(CurrentState, AllowedStates), {error, {forbidden_for_current_archive_state, CurrentState, AllowedStates}}).
+-define(DEPRECATED_ERROR_NESTED_ARCHIVE_DELETION_FORBIDDEN(ParentArchiveId), {error, {nested_archive_deletion_forbidden, ParentArchiveId}}).
+-define(DEPRECATED_ERROR_RECALL_TARGET_CONFLICT, {error, recall_target_conflict}).
+
+
+%%--------------------------------------------------------------------
+%% onepanel errors
+%%--------------------------------------------------------------------
+% error wrapper to indicate nodes where error occurred
+-define(DEPRECATED_ERROR_ON_NODES(Error, Hostnames), {error, {error_on_nodes, Error, Hostnames}}).
+-define(DEPRECATED_ERROR_DNS_SERVERS_UNREACHABLE(UsedServers), {error, {dns_servers_unreachable, UsedServers}}).
+-define(DEPRECATED_ERROR_FILE_ALLOCATION(ActualSize, TargetSize), {error, {file_allocation, ActualSize, TargetSize}}).
+-define(DEPRECATED_ERROR_LETS_ENCRYPT_NOT_REACHABLE, {error, lets_encrypt_not_reachable}).
+-define(DEPRECATED_ERROR_LETS_ENCRYPT_RESPONSE(ProblemDocument, ErrorMessage), {error, {lets_encrypt_response, ProblemDocument, ErrorMessage}}).
+-define(DEPRECATED_ERROR_NODE_ALREADY_IN_CLUSTER(HostnameBin), {error, {node_already_in_cluster, HostnameBin}}).
+-define(DEPRECATED_ERROR_NODE_NOT_COMPATIBLE(HostnameBin, ClusterType), {error, {node_not_compatible, HostnameBin, ClusterType}}).
+-define(DEPRECATED_ERROR_NO_CONNECTION_TO_NEW_NODE(HostnameBin), {error, {no_connection_to_new_node, HostnameBin}}).
+-define(DEPRECATED_ERROR_NO_SERVICE_NODES(Service), {error, {no_service_nodes, Service}}).
+-define(DEPRECATED_ERROR_USER_NOT_IN_CLUSTER, {error, user_not_in_cluster}).
+
+
+%%--------------------------------------------------------------------
+%% Unknown / unexpected error
+%%--------------------------------------------------------------------
+% Used to carry errors that have the proper JSON error format, but do not match
+% any error specified in this software version. This can happen if a newer
+% server responds with an error to an older client, which does not know the
+% error Id. The original JSON representing the error is retained and returned
+% upon encoding.
+-define(DEPRECATED_ERROR_UNRECOGNIZED_ERROR(ErrorAsJson), {error, {unrecognized_error, ErrorAsJson}}).
+
+-endif.
+
