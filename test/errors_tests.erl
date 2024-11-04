@@ -29,6 +29,31 @@
 }).
 
 
+assert_all_errors_are_tested_test() ->
+    AllModules = lists:flatmap(fun(Path) ->
+        case filelib:wildcard(Path ++ "/*.beam") of
+            [] -> [];
+            Files -> [filename:basename(File, ".beam") || File <- Files]
+        end
+    end, code:get_path()),
+
+    ErrorModules = lists:usort(lists:filtermap(fun
+        (Module = "od_error_" ++ _) -> {true, list_to_atom(Module)};
+        (_) -> false
+    end, AllModules)),
+
+    AllTestedErrorTypes = lists:usort(lists:map(fun(#testcase{error = Error}) ->
+        Error#od_error.type
+    end, testcases())),
+
+    case ErrorModules == AllTestedErrorTypes of
+        true ->
+            ok;
+        false ->
+            ?assertEqual(ok, {not_tested, ErrorModules -- AllTestedErrorTypes})
+    end.
+
+
 encode_decode_error_test_() ->
     lists:flatmap(fun(#testcase{
         error = Error,
