@@ -69,15 +69,15 @@ name_validation_test() ->
 
 longest_substring_ignoring_whitespace_test() ->
     V = fun str_utils:longest_substring_ignoring_whitespace/2,
-    ?assertEqual({"abc", ""}, V("abc", "abc")),
-    ?assertEqual({"abc", ""}, V(" a b c ", "abc")),
-    ?assertEqual({"abc", ""}, V("abc", " a b c ")),
-    ?assertEqual({" a b c ", ""}, V(" a b c ", " a b c ")),
-    ?assertEqual({"a b ", "c"}, V("a b c", " a b d")),
-    ?assertEqual({"", "abc"}, V("abc", "xyz")),
-    ?assertEqual({"", "abc"}, V("abc", "")),
-    ?assertEqual({"", ""}, V("", "abc")),
-    ?assertEqual({"", ""}, V("", "")),
-    ?assertEqual({"ab ", ""}, V(" a  b ", "ab d e")).
+    ?assertEqual("abc", V("abc", "abc")),
+    ?assertEqual(" a b c", V(" a b c ", "abc")),
+    ?assertEqual("abc", V("abc", " a b c ")),
+    ?assertEqual(" a b c ", V(" a b c ", " a b c ")),
+    ?assertEqual("a b ", V("a b c", " a b d")),
+    ?assertEqual("", V("abc", "xyz")),
+    ?assertEqual("", V("abc", "")),
+    ?assertEqual("", V("", "abc")),
+    ?assertEqual("", V("", "")),
+    ?assertEqual(" a  b ", V(" a  b ", "ab d e")).
 
     -endif.

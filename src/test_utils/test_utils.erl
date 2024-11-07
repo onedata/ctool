@@ -26,7 +26,7 @@
 ]).
 -export([get_env/3, set_env/4]).
 -export([get_docker_ip/1, get_docker_hostname/1]).
--export([format_failure_summary/2, format_failure_summary/3]).
+-export([ct_pal_failure_summary/3]).
 
 -define(TIMEOUT, timer:seconds(60)).
 -define(ATTEMPTS, 10).
@@ -302,25 +302,22 @@ get_docker_hostname(Node) ->
     re:replace(shell_utils:get_success_output(CMD), "\\s+", "", [global, {return, binary}]).
 
 
--spec format_failure_summary(string(), failure_summary()) -> {string(), list()}.
-format_failure_summary(TestedExpressionString, FailureSummary) ->
-    format_failure_summary(TestedExpressionString, FailureSummary, positive).
-
-format_failure_summary(TestedExpressionString, #failure_summary{
+-spec ct_pal_failure_summary(string(), failure_summary(), annotate_diff | skip_diff_annotation) -> ok.
+ct_pal_failure_summary(AssertionType, #failure_summary{
     module = Module,
     line = Line,
     expected_expression = ExpectedExpression,
     expected_value = ExpectedValue,
     actual_expression = ActualExpression,
     actual_value = ActualValue
-}, AssertType) ->
+}, DiffAnnotation) ->
     ActualValueStr = pretty_format(ActualValue),
     ExpectedValueStr = pretty_format(ExpectedValue),
 
-    ActualValueSlice = get_slice_depending_on_assert_type(ActualValueStr, ExpectedValueStr, AssertType),
-    ExpectedValueSlice = get_slice_depending_on_assert_type(ExpectedValueStr, ActualValueStr, AssertType),
+    ActualValueSlice = get_slice_with_comparison_to(ActualValueStr, ExpectedValueStr, DiffAnnotation),
+    ExpectedValueSlice = get_slice_with_comparison_to(ExpectedValueStr, ActualValueStr, DiffAnnotation),
 
-    Format = "~ts - ~tp:~tp~n"
+    ct:pal("~ts failed: ~tp:~tp~n"
         ++ "-  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  - ~n"
         ++ "> Expectation: ~tp~n"
         ++ "~n"
@@ -328,17 +325,15 @@ format_failure_summary(TestedExpressionString, #failure_summary{
         ++ "-  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  - ~n"
         ++ "> Value: ~tp~n"
         ++ "~n"
-        ++ "~ts~n",
-
-    {Format, [
-        TestedExpressionString,
+        ++ "~ts~n", [
+        AssertionType,
         Module,
         Line,
         ExpectedExpression,
         ExpectedValueSlice,
         ActualExpression,
         ActualValueSlice
-    ]}.
+    ]).
 
 %%%===================================================================
 %%% Internal functions
@@ -453,12 +448,12 @@ get_limited_diff(LongestPrefix, Rest) ->
                 false -> HalfLength
             end,
 
-            TruncatedPrefix = str_utils:truncate_prefix(
+            TruncatedPrefix = str_utils:truncate_overflow(
                 LongestPrefix,
-                PrefixLength - ActualPrefixLength + 1,
-                ActualPrefixLength
+                ActualPrefixLength,
+                left
             ),
-            TruncatedRest = str_utils:truncate_overflow(Rest, MaxLength - ActualPrefixLength),
+            TruncatedRest = str_utils:truncate_overflow(Rest, MaxLength - ActualPrefixLength, right),
 
             str_utils:format("~ts ~n[DIFF]~n ~ts", [TruncatedPrefix, TruncatedRest])
     end.
@@ -468,30 +463,31 @@ get_limited_diff(LongestPrefix, Rest) ->
 -spec annotate_difference(string(), string()) -> string().
 annotate_difference(BaseStr, "") ->
     str_utils:truncate_overflow(
-        BaseStr, ?CT_ASSERT_LOG_TERM_TRUNCATION_THRESHOLD
+        BaseStr, ?CT_ASSERT_LOG_TERM_TRUNCATION_THRESHOLD, right
     );
 annotate_difference("", _) ->
     "";
 annotate_difference(BaseStr, SecondStr) ->
-    {LongestPrefix, Rest} = str_utils:longest_substring_ignoring_whitespace(BaseStr, SecondStr),
+    LongestPrefix = str_utils:longest_substring_ignoring_whitespace(BaseStr, SecondStr),
     case LongestPrefix of
         [] ->
-            "[DIFF]~n" ++ str_utils:truncate_overflow(
-                BaseStr, ?CT_ASSERT_LOG_TERM_TRUNCATION_THRESHOLD
+            "[DIFF] ~n" ++ str_utils:truncate_overflow(
+                BaseStr, ?CT_ASSERT_LOG_TERM_TRUNCATION_THRESHOLD, right
             );
         _ ->
+            Rest = string:sub_string(BaseStr, string:len(LongestPrefix) + 1),
             get_limited_diff(LongestPrefix, Rest)
     end.
 
 
 %% @private
--spec get_slice_depending_on_assert_type(string(), string(), atom()) -> string().
-get_slice_depending_on_assert_type(BaseStr, SecondStr, AssertType) ->
-    case AssertType of
-        positive ->
+-spec get_slice_with_comparison_to(string(), string(), atom()) -> string().
+get_slice_with_comparison_to(BaseStr, SecondStr, DiffAnnotation) ->
+    case DiffAnnotation of
+        annotate_diff ->
             annotate_difference(BaseStr, SecondStr);
-        negative ->
-            str_utils:truncate_overflow(BaseStr, ?CT_ASSERT_LOG_TERM_TRUNCATION_THRESHOLD)
+        skip_diff_annotation ->
+            str_utils:truncate_overflow(BaseStr, ?CT_ASSERT_LOG_TERM_TRUNCATION_THRESHOLD, right)
     end.
 
 
