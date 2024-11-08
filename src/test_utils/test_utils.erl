@@ -432,30 +432,25 @@ should_recompile_module(SrcFilePath) ->
 
 
 %% @private
--spec get_limited_diff(string(), string()) -> string().
-get_limited_diff(LongestPrefix, Rest) ->
-    MaxLength = ?CT_ASSERT_LOG_TERM_TRUNCATION_THRESHOLD,
-    PrefixLength = length(LongestPrefix),
-    RestLength = length(Rest),
+-spec pretty_format(term()) -> string().
+pretty_format(undefined) ->
+    "";
+pretty_format(Value) ->
+    ControlSequence = case onedata_logger:is_printable(Value) of
+        true -> "~ts";
+        false -> "~tp"
+    end,
+    str_utils:format(ControlSequence, [Value]).
 
-    case PrefixLength + RestLength =< MaxLength of
-        true ->
-            LongestPrefix ++ "~n[DIFF]~n" ++  Rest;
-        false ->
-            HalfLength = MaxLength div 2,
-            ActualPrefixLength = case PrefixLength < MaxLength of
-                true -> PrefixLength;
-                false -> HalfLength
-            end,
 
-            TruncatedPrefix = str_utils:truncate_overflow(
-                LongestPrefix,
-                ActualPrefixLength,
-                left
-            ),
-            TruncatedRest = str_utils:truncate_overflow(Rest, MaxLength - ActualPrefixLength, right),
-
-            str_utils:format("~ts ~n[DIFF]~n ~ts", [TruncatedPrefix, TruncatedRest])
+%% @private
+-spec get_slice_with_comparison_to(string(), string(), atom()) -> string().
+get_slice_with_comparison_to(BaseStr, SecondStr, DiffAnnotation) ->
+    case DiffAnnotation of
+        annotate_diff ->
+            annotate_difference(BaseStr, SecondStr);
+        skip_diff_annotation ->
+            str_utils:truncate_overflow(BaseStr, ?CT_ASSERT_LOG_TERM_TRUNCATION_THRESHOLD, right)
     end.
 
 
@@ -481,23 +476,27 @@ annotate_difference(BaseStr, SecondStr) ->
 
 
 %% @private
--spec get_slice_with_comparison_to(string(), string(), atom()) -> string().
-get_slice_with_comparison_to(BaseStr, SecondStr, DiffAnnotation) ->
-    case DiffAnnotation of
-        annotate_diff ->
-            annotate_difference(BaseStr, SecondStr);
-        skip_diff_annotation ->
-            str_utils:truncate_overflow(BaseStr, ?CT_ASSERT_LOG_TERM_TRUNCATION_THRESHOLD, right)
+-spec get_limited_diff(string(), string()) -> string().
+get_limited_diff(Prefix, Rest) ->
+    MaxLength = ?CT_ASSERT_LOG_TERM_TRUNCATION_THRESHOLD,
+    PrefixLength = length(Prefix),
+    RestLength = length(Rest),
+
+    case PrefixLength + RestLength =< MaxLength of
+        true ->
+            Prefix ++ "~n[DIFF]~n" ++  Rest;
+        false ->
+            FinalPrefixLength = case PrefixLength < MaxLength + 20 of
+                true -> PrefixLength;
+                false -> MaxLength div 2
+            end,
+
+            TruncatedPrefix = str_utils:truncate_overflow(
+                Prefix,
+                FinalPrefixLength,
+                left
+            ),
+            TruncatedRest = str_utils:truncate_overflow(Rest, MaxLength - FinalPrefixLength, right),
+
+            str_utils:format("~ts ~n[DIFF]~n ~ts", [TruncatedPrefix, TruncatedRest])
     end.
-
-
-%% @private
--spec pretty_format(term()) -> string().
-pretty_format(undefined) ->
-    "";
-pretty_format(Value) ->
-    ControlSequence = case onedata_logger:is_printable(Value) of
-        true -> "~ts";
-        false -> "~tp"
-    end,
-    str_utils:format(ControlSequence, [Value]).

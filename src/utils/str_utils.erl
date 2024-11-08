@@ -16,7 +16,7 @@
 -export([to_list/1, to_binary/1]).
 -export([join_as_binaries/2, join_binary/1, join_binary/2, reverse_binary/1]).
 -export([binary_starts_with/2, binary_ends_with/2]).
--export([ensure_suffix/2, truncate_overflow/3]).
+-export([ensure_suffix/2, truncate_overflow/2, truncate_overflow/3]).
 
 % Conversion between unicode and binaries
 -export([unicode_list_to_binary/1, binary_to_unicode_list/1]).
@@ -135,29 +135,17 @@ ensure_suffix(String, Suffix)->
     end.
 
 
--spec truncate_overflow(term(), non_neg_integer(), right | left) -> binary().
-truncate_overflow(Term, MaxSize, right) when is_list(Term) ->
-    case length(Term) > MaxSize of
-        true ->
-            Part = string:slice(Term, 0, MaxSize),
-            Part ++ "... [truncated]";
-        false ->
-            Term
-    end;
-truncate_overflow(Binary, MaxSize, right) ->
-    case byte_size(Binary) > MaxSize of
-        true ->
-            Part = binary:part(Binary, 0, MaxSize),
-            <<Part/binary, "... [truncated]">>;
-        false ->
-            Binary
-    end;
-truncate_overflow(Term, Size, left) when is_list(Term) ->
-    Part = string:slice(Term, length(Term) - Size + 1, Size),
-    "[truncated] ..." ++ Part;
-truncate_overflow(Binary, Size, left) ->
-    Part = binary:part(Binary, byte_size(Binary) - Size + 1, Size),
-    <<"[truncated] ...", Part/binary>>.
+-spec truncate_overflow(String, non_neg_integer()) -> String when String :: binary() | list().
+truncate_overflow(Term, MaxSize)  ->
+    truncate_overflow(Term, MaxSize, right).
+
+
+-spec truncate_overflow(String, non_neg_integer(), right | left) -> String when String :: binary() | list().
+truncate_overflow(Term, MaxSize, Direction) ->
+    case needs_truncation(Term, MaxSize) of
+        true -> truncate(Term, MaxSize, Direction);
+        false -> Term
+    end.
 
 
 %%--------------------------------------------------------------------
@@ -307,7 +295,8 @@ longest_substring_ignoring_whitespace([X | XS], [Y | YS]) ->
     case {is_whitespace(X), is_whitespace(Y)} of
         {true, false} -> [X | longest_substring_ignoring_whitespace(XS, [Y | YS])];
         {false, true} -> longest_substring_ignoring_whitespace([X | XS], YS);
-        _ ->  []
+        {true, true} ->  [X |longest_substring_ignoring_whitespace(XS, YS)];
+        {false, false} ->  []
     end;
 longest_substring_ignoring_whitespace(_, _) ->
     [].
@@ -317,3 +306,26 @@ longest_substring_ignoring_whitespace(_, _) ->
 -spec is_whitespace(char()) -> boolean().
 is_whitespace(Char) ->
     lists:member(Char, " \t\n\r").
+
+
+%% @private
+-spec needs_truncation(binary() | list(), non_neg_integer()) -> boolean().
+needs_truncation(String, MaxSize) when is_list(String) ->
+    length(String) > MaxSize;
+needs_truncation(Binary, MaxSize) ->
+    byte_size(Binary) > MaxSize.
+
+
+%% @private
+truncate(String, MaxSize, right) when is_list(String) ->
+    Part = string:slice(String, 0, MaxSize),
+    Part ++ "... [truncated]";
+truncate(String, MaxSize, left) when is_list(String) ->
+    Part = string:slice(String, length(String) - MaxSize + 1, MaxSize),
+    "[truncated] ..." ++ Part;
+truncate(Binary, MaxSize, right) ->
+    Part = binary:part(Binary, 0, MaxSize),
+    <<Part/binary, "... [truncated]">>;
+truncate(Binary, MaxSize, left) ->
+    Part = binary:part(Binary, byte_size(Binary) - MaxSize + 1, MaxSize),
+    <<"[truncated] ...", Part/binary>>.
