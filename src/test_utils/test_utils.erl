@@ -486,7 +486,7 @@ get_limited_diff(Prefix, Rest) ->
         true ->
             Prefix ++ "~n[DIFF]~n" ++  Rest;
         false ->
-            FinalPrefixLength = case PrefixLength < MaxLength + 20 of
+            FinalPrefixLength = case PrefixLength < MaxLength of
                 true -> PrefixLength;
                 false -> MaxLength div 2
             end,
@@ -496,7 +496,7 @@ get_limited_diff(Prefix, Rest) ->
                 FinalPrefixLength,
                 left
             ),
-            TruncatedRest = str_utils:truncate_overflow(Rest, MaxLength - FinalPrefixLength, right),
+            TruncatedRest = str_utils:truncate_overflow(Rest, max(20, MaxLength - FinalPrefixLength), right),
 
             str_utils:format("~ts ~n[DIFF]~n ~ts", [TruncatedPrefix, TruncatedRest])
     end.
