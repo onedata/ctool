@@ -141,11 +141,16 @@ truncate_overflow(Term, MaxSize)  ->
 
 
 -spec truncate_overflow(String, non_neg_integer(), right | left) -> String when String :: binary() | list().
-truncate_overflow(Term, MaxSize, Direction) ->
-    case needs_truncation(Term, MaxSize) of
-        true -> truncate(Term, MaxSize, Direction);
-        false -> Term
-    end.
+truncate_overflow(List, MaxSize, Direction) when is_list(List) ->
+    binary_to_unicode_list(truncate_overflow(unicode_list_to_binary(List), MaxSize, Direction));
+truncate_overflow(Binary, MaxSize, _Direction) when byte_size(Binary) =< MaxSize ->
+    Binary;
+truncate_overflow(Binary, MaxSize, right) ->
+    Part = binary:part(Binary, 0, MaxSize),
+    <<Part/binary, "... [truncated]">>;
+truncate_overflow(Binary, MaxSize, left) ->
+    Part = binary:part(Binary, byte_size(Binary) - MaxSize + 1, MaxSize),
+    <<"[truncated] ...", Part/binary>>.
 
 
 %%--------------------------------------------------------------------
@@ -305,27 +310,4 @@ longest_substring_ignoring_whitespace(_, _) ->
 %% @private
 -spec is_whitespace(char()) -> boolean().
 is_whitespace(Char) ->
-    lists:member(Char, " \t\n\r").
-
-
-%% @private
--spec needs_truncation(binary() | list(), non_neg_integer()) -> boolean().
-needs_truncation(String, MaxSize) when is_list(String) ->
-    length(String) > MaxSize;
-needs_truncation(Binary, MaxSize) ->
-    byte_size(Binary) > MaxSize.
-
-
-%% @private
-truncate(String, MaxSize, right) when is_list(String) ->
-    Part = string:slice(String, 0, MaxSize),
-    Part ++ "... [truncated]";
-truncate(String, MaxSize, left) when is_list(String) ->
-    Part = string:slice(String, length(String) - MaxSize + 1, MaxSize),
-    "[truncated] ..." ++ Part;
-truncate(Binary, MaxSize, right) ->
-    Part = binary:part(Binary, 0, MaxSize),
-    <<Part/binary, "... [truncated]">>;
-truncate(Binary, MaxSize, left) ->
-    Part = binary:part(Binary, byte_size(Binary) - MaxSize + 1, MaxSize),
-    <<"[truncated] ...", Part/binary>>.
+    re:run(<<Char>>, <<"\\s">>, [{capture, none}]) == match.

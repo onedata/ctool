@@ -317,7 +317,8 @@ ct_pal_failure_summary(AssertionType, #failure_summary{
     ActualValueSlice = get_slice_with_comparison_to(ActualValueStr, ExpectedValueStr, DiffAnnotation),
     ExpectedValueSlice = get_slice_with_comparison_to(ExpectedValueStr, ActualValueStr, DiffAnnotation),
 
-    ct:pal("~ts failed: ~tp:~tp~n"
+    ct:pal(
+        "~ts failed: ~tp:~tp~n"
         ++ "-  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  - ~n"
         ++ "> Expectation: ~tp~n"
         ++ "~n"
@@ -325,15 +326,15 @@ ct_pal_failure_summary(AssertionType, #failure_summary{
         ++ "-  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  - ~n"
         ++ "> Value: ~tp~n"
         ++ "~n"
-        ++ "~ts~n", [
-        AssertionType,
-        Module,
-        Line,
-        ExpectedExpression,
-        ExpectedValueSlice,
-        ActualExpression,
-        ActualValueSlice
-    ]).
+        ++ "~ts~n",
+        [
+            AssertionType, Module, Line,
+            ExpectedExpression,
+            ExpectedValueSlice,
+            ActualExpression,
+            ActualValueSlice
+        ]
+    ).
 
 %%%===================================================================
 %%% Internal functions
