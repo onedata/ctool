@@ -23,6 +23,15 @@
 % the same block of code
 -compile(nowarn_shadow_vars).
 
+-record(failure_summary, {
+    module = ?MODULE :: atom(),
+    line = ?LINE :: integer(),
+    expected_expression :: term(),
+    expected_value = undefined :: term(),
+    actual_expression :: term(),
+    actual_value :: term()
+}).
+
 -undef(assertMatch).
 -define(assertMatch(Guard, ExpressionToCheck),
     ?assertMatch(Guard, ExpressionToCheck, 1)).
@@ -37,15 +46,45 @@
                 _ ->
                     case AttemptsLeft of
                         1 ->
-                            FailureSummary = [
-                                {module, ?MODULE},
-                                {line, ?LINE},
-                                {expression, (??ExpressionToCheck)},
-                                {expected, (??Guard)},
-                                {value, ActualValue}
-                            ],
-                            ct:print("assertMatch failed: ~tp~n", [FailureSummary]),
-                            erlang:error({assertMatch_failed, FailureSummary});
+                            test_utils:ct_pal_failure_summary(
+                                "assertMatch", #failure_summary{
+                                    expected_expression = (??Guard),
+                                    actual_expression = (??ExpressionToCheck),
+                                    actual_value = ActualValue
+                                }, annotate_diff
+                            ),
+                            erlang:error(assertMatch_failed);
+                        _ ->
+                            timer:sleep(Interval),
+                            {cont, ExpressionToCheck}
+                    end
+            end
+        end, ExpressionToCheck, lists:seq(max(Attempts, 1), 1, -1))
+    end)())
+end).
+
+-undef(assertNotMatch).
+-define(assertNotMatch(Guard, ExpressionToCheck),
+    ?assertNotMatch(Guard, ExpressionToCheck, 1)).
+-define(assertNotMatch(Guard, ExpressionToCheck, Attempts),
+    ?assertNotMatch(Guard, ExpressionToCheck, Attempts, timer:seconds(1))).
+-define(assertNotMatch(Guard, ExpressionToCheck, Attempts, Interval), begin
+    ((fun() ->
+        lists_utils:foldl_while(fun(AttemptsLeft, ActualValue) ->
+            case ActualValue of
+                Guard ->
+                    test_utils:ct_pal_failure_summary(
+                        "assertNotMatch", #failure_summary{
+                            expected_expression = (??Guard),
+                            actual_expression = (??ExpressionToCheck),
+                            actual_value = ActualValue
+                        }, skip_diff_annotation
+                    ),
+                    erlang:error(assertNotMatch_failed);
+                _ ->
+                    case AttemptsLeft of
+                        1 ->
+                            {halt, ActualValue};
                         _ ->
                             timer:sleep(Interval),
                             {cont, ExpressionToCheck}
@@ -70,15 +109,48 @@ end).
                 ActualValue ->
                     case AttemptsLeft of
                         1 ->
-                            FailureSummary = [
-                                {module, ?MODULE},
-                                {line, ?LINE},
-                                {expression, (??ExpressionToCheck)},
-                                {expected, ExpectedValue},
-                                {value, ActualValue}
-                            ],
-                            ct:print("assertEqual failed: ~tp", [FailureSummary]),
-                            erlang:error({assertEqual_failed, FailureSummary});
+                            test_utils:ct_pal_failure_summary(
+                                "assertEqual", #failure_summary{
+                                    expected_expression = (??Expectation),
+                                    expected_value = ExpectedValue,
+                                    actual_expression = (??ExpressionToCheck),
+                                    actual_value = ActualValue
+                                }, annotate_diff
+                            ),
+                            erlang:error(assertEqual_failed);
+                        _ ->
+                            timer:sleep(Interval),
+                            {cont, Expectation}
+                    end
+            end
+        end, Expectation, lists:seq(max(Attempts, 1), 1, -1))
+    end)())
+end).
+
+
+-undef(assertNotEqual).
+-define(assertNotEqual(Expectation, ExpressionToCheck),
+    ?assertNotEqual(Expectation, ExpressionToCheck, 1)).
+-define(assertNotEqual(Expectation, ExpressionToCheck, Attempts),
+    ?assertNotEqual(Expectation, ExpressionToCheck, Attempts, timer:seconds(1))).
+-define(assertNotEqual(Expectation, ExpressionToCheck, Attempts, Interval), begin
+    ((fun() ->
+        lists_utils:foldl_while(fun(AttemptsLeft, ExpectedValue) ->
+            case (ExpressionToCheck) of
+                ExpectedValue ->
+                    test_utils:ct_pal_failure_summary(
+                        "assertNotEqual", #failure_summary{
+                            expected_expression = (??Expectation),
+                            expected_value = ExpectedValue,
+                            actual_expression = (??ExpressionToCheck),
+                            actual_value = ExpectedValue
+                        }, skip_diff_annotation
+                    ),
+                    erlang:error(assertNotEqual_failed);
+                _ ->
+                    case AttemptsLeft of
+                        1 ->
+                            {halt, ok};
                         _ ->
                             timer:sleep(Interval),
                             {cont, Expectation}
@@ -121,14 +193,14 @@ end).
                 after
                     0 -> timeout
                 end,
-                FailureSummary = [
-                    {module, ?MODULE},
-                    {line, ?LINE},
-                    {expected, (??Guard)},
-                    {value, ActualValue}
-                ],
-                ct:print("assertReceivedMatch failed: ~tp", [FailureSummary]),
-                erlang:error({assertReceivedMatch_failed, FailureSummary})
+                test_utils:ct_pal_failure_summary(
+                    "assertReceivedMatch", #failure_summary{
+                        expected_expression = (??Guard),
+                        actual_expression = (??ActualValue),
+                        actual_value = ActualValue
+                    }, annotate_diff
+                ),
+                erlang:error(assertReceivedMatch_failed)
         end
     end)())
 end).
@@ -142,24 +214,24 @@ end).
             Guard = Result ->
                 Result;
             ActualValue ->
-                FailureSummary = [
-                    {module, ?MODULE},
-                    {line, ?LINE},
-                    {expected, (??Guard)},
-                    {value, ActualValue}
-                ],
-                ct:print("assertReceivedNextMatch failed: ~tp", [FailureSummary]),
-                erlang:error({assertReceivedNextMatch_failed, FailureSummary})
+                test_utils:ct_pal_failure_summary(
+                    "assertReceivedNextMatch", #failure_summary{
+                        expected_expression = (??Guard),
+                        actual_expression = (??ActualValue),
+                        actual_value = ActualValue
+                    }, annotate_diff
+                ),
+                erlang:error(assertReceivedNextMatch_failed)
         after
             Timeout ->
-                FailureSummary = [
-                    {module, ?MODULE},
-                    {line, ?LINE},
-                    {expected, (??Guard)},
-                    {value, timeout}
-                ],
-                ct:print("assertReceivedNextMatch failed: ~tp", [FailureSummary]),
-                erlang:error({assertReceivedNextMatch_failed, FailureSummary})
+                test_utils:ct_pal_failure_summary(
+                    "assertReceivedNextMatch", #failure_summary{
+                        expected_expression = (??Guard),
+                        actual_expression = timeout,
+                        actual_value = timeout
+                    }, annotate_diff
+                ),
+                erlang:error(assertReceivedNextMatch_failed)
         end
     end)())
 end).
@@ -171,15 +243,15 @@ end).
     ((fun() ->
         receive
             Guard = Result ->
-                FailureSummary = [
-                    {module, ?MODULE},
-                    {line, ?LINE},
-                    {expression, (??Guard)},
-                    {expected, timeout},
-                    {value, (??Result)}
-                ],
-                ct:print("assertNotReceivedMatch failed: ~tp", [FailureSummary]),
-                erlang:error({assertNotReceivedMatch_failed, FailureSummary})
+                test_utils:ct_pal_failure_summary(
+                    "assertNotReceivedMatch", #failure_summary{
+                        expected_expression = (??Guard),
+                        expected_value = timeout,
+                        actual_expression = (??Result),
+                        actual_value = Result
+                    }, skip_diff_annotation
+                ),
+                erlang:error(assertNotReceivedMatch_failed)
         after
             Timeout ->
                 ok
@@ -197,14 +269,15 @@ end).
                 ExpectedValue
         after
             Timeout ->
-                FailureSummary = [
-                    {module, ?MODULE},
-                    {line, ?LINE},
-                    {expected, (??ExpectedValue)},
-                    {value, timeout}
-                ],
-                ct:print("assertReceivedEqual failed: ~tp", [FailureSummary]),
-                erlang:error({assertReceived_failed, FailureSummary})
+                test_utils:ct_pal_failure_summary(
+                    "assertReceivedEqual", #failure_summary{
+                        expected_expression = (??Expectation),
+                        expected_value = ExpectedValue,
+                        actual_expression = timeout,
+                        actual_value = timeout
+                    }, annotate_diff
+                ),
+                erlang:error(assertReceivedEqual_failed)
         end
     end)(Expectation))
 end).
@@ -218,24 +291,26 @@ end).
             ExpectedValue ->
                 ExpectedValue;
             ActualValue ->
-                FailureSummary = [
-                    {module, ?MODULE},
-                    {line, ?LINE},
-                    {expected, ExpectedValue},
-                    {value, ActualValue}
-                ],
-                ct:print("assertReceivedNextEqual failed: ~tp", [FailureSummary]),
-                erlang:error({assertReceivedNextEqual_failed, FailureSummary})
+                test_utils:ct_pal_failure_summary(
+                    "assertReceivedNextEqual", #failure_summary{
+                        expected_expression = (??Expectation),
+                        expected_value = ExpectedValue,
+                        actual_expression = (??ActualValue),
+                        actual_value = ActualValue
+                    }, annotate_diff
+                ),
+                erlang:error(assertReceivedNextEqual_failed)
         after
             Timeout ->
-                FailureSummary = [
-                    {module, ?MODULE},
-                    {line, ?LINE},
-                    {expected, (??ExpectedValue)},
-                    {value, timeout}
-                ],
-                ct:print("assertReceivedNextEqual failed: ~tp", [FailureSummary]),
-                erlang:error({assertReceivedNextEqual_failed, FailureSummary})
+                test_utils:ct_pal_failure_summary(
+                    "assertReceivedNextEqual", #failure_summary{
+                        expected_expression = (??Expectation),
+                        expected_value = ExpectedValue,
+                        actual_expression = timeout,
+                        actual_value = timeout
+                    }, annotate_diff
+                ),
+                erlang:error(assertReceivedNextEqual_failed)
         end
     end)(Expectation))
 end).
@@ -247,14 +322,15 @@ end).
     ((fun(ExpectedValue) ->
         receive
             ExpectedValue ->
-                FailureSummary = [
-                    {module, ?MODULE},
-                    {line, ?LINE},
-                    {expected, timeout},
-                    {value, ExpectedValue}
-                ],
-                ct:print("assertNotReceivedEqual failed: ~tp", [FailureSummary]),
-                erlang:error({assertNotReceivedEqual_failed, FailureSummary})
+                test_utils:ct_pal_failure_summary(
+                    "assertNotReceivedEqual", #failure_summary{
+                        expected_expression = timeout,
+                        expected_value = timeout,
+                        actual_expression = (??Expectation),
+                        actual_value = ExpectedValue
+                    }, skip_diff_annotation
+                ),
+                erlang:error(assertNotReceivedEqual_failed)
         after
             Timeout ->
                 ok
@@ -268,28 +344,26 @@ end).
     ((fun() ->
         try (ExpressionToCheck) of
             ActualValue ->
-                FailureSummary = [
-                    {module, ?MODULE},
-                    {line, ?LINE},
-                    {expression, (??ExpressionToCheck)},
-                    {expected, "{ " ++ (??Class) ++ " , " ++ (??Term) ++ " , [...] }"},
-                    {unexpected_success, ActualValue}
-                ],
-                ct:print("assertException failed: ~tp", [FailureSummary]),
-                erlang:error({assertException_failed, FailureSummary})
+                test_utils:ct_pal_failure_summary(
+                    "assertException", #failure_summary{
+                        expected_expression = "{ " ++ (??Class) ++ " , " ++ (??Term) ++ " , [...] }",
+                        actual_expression = (??ExpressionToCheck),
+                        actual_value = ActualValue
+                    }, annotate_diff
+                ),
+                erlang:error(assertException_failed)
         catch
             Class:Term ->
                 ok;
             ActualClass:ActualTerm:Stacktrace ->
-                FailureSummary = [
-                    {module, ?MODULE},
-                    {line, ?LINE},
-                    {expression, (??ExpressionToCheck)},
-                    {expected, "{ " ++ (??Class) ++ " , " ++ (??Term) ++ " , [...] }"},
-                    {unexpected_exception, {ActualClass, ActualTerm, Stacktrace}}
-                ],
-                ct:print("assertException failed: ~tp", [FailureSummary]),
-                erlang:error({assertException_failed, FailureSummary})
+                test_utils:ct_pal_failure_summary(
+                    "assertException", #failure_summary{
+                        expected_expression = "{ " ++ (??Class) ++ " , " ++ (??Term) ++ " , [...] }",
+                        actual_expression = (??ExpressionToCheck),
+                        actual_value = {ActualClass, ActualTerm, Stacktrace}
+                    }, annotate_diff
+                ),
+                erlang:error(assertException_failed)
         end
     end)())
 end).

@@ -16,7 +16,7 @@
 -export([to_list/1, to_binary/1]).
 -export([join_as_binaries/2, join_binary/1, join_binary/2, reverse_binary/1]).
 -export([binary_starts_with/2, binary_ends_with/2]).
--export([ensure_suffix/2, truncate_overflow/2]).
+-export([ensure_suffix/2, truncate_overflow/2, truncate_overflow/3]).
 
 % Conversion between unicode and binaries
 -export([unicode_list_to_binary/1, binary_to_unicode_list/1]).
@@ -28,6 +28,7 @@
 -export([rand_hex/1]).
 -export([pad_left/3, pad_right/3]).
 -export([validate_name/1, validate_name/5]).
+-export([longest_substring_ignoring_whitespace/2]).
 
 
 %%%===================================================================
@@ -134,15 +135,23 @@ ensure_suffix(String, Suffix)->
     end.
 
 
--spec truncate_overflow(binary(), non_neg_integer()) -> binary().
-truncate_overflow(Binary, MaxSize) ->
-    case byte_size(Binary) > MaxSize of
-        true ->
-            Part = binary:part(Binary, 0, MaxSize),
-            <<Part/binary, "... [truncated]">>;
-        false ->
-            Binary
-    end.
+-spec truncate_overflow(String, non_neg_integer()) -> String when String :: binary() | list().
+truncate_overflow(Term, MaxSize)  ->
+    truncate_overflow(Term, MaxSize, right).
+
+
+-spec truncate_overflow(String, non_neg_integer(), right | left) -> String when String :: binary() | list().
+truncate_overflow(List, MaxSize, Direction) when is_list(List) ->
+    binary_to_unicode_list(truncate_overflow(unicode_list_to_binary(List), MaxSize, Direction));
+truncate_overflow(Binary, MaxSize, _Direction) when byte_size(Binary) =< MaxSize ->
+    Binary;
+truncate_overflow(Binary, MaxSize, right) ->
+    Part = binary:part(Binary, 0, MaxSize),
+    <<Part/binary, "... [truncated]">>;
+truncate_overflow(Binary, MaxSize, left) ->
+    Part = binary:part(Binary, byte_size(Binary) - MaxSize + 1, MaxSize),
+    <<"[truncated] ...", Part/binary>>.
+
 
 %%--------------------------------------------------------------------
 %% @doc Converts a unicode list to utf8 binary.
@@ -282,3 +291,23 @@ validate_name(Name, FirstRgx, MiddleRgx, LastRgx, MaxLength) ->
     catch _:_ ->
         false
     end.
+
+
+-spec longest_substring_ignoring_whitespace(string(), string()) -> string().
+longest_substring_ignoring_whitespace([X | XS], [X | YS]) ->
+    [X |longest_substring_ignoring_whitespace(XS, YS)];
+longest_substring_ignoring_whitespace([X | XS], [Y | YS]) ->
+    case {is_whitespace(X), is_whitespace(Y)} of
+        {true, false} -> [X | longest_substring_ignoring_whitespace(XS, [Y | YS])];
+        {false, true} -> longest_substring_ignoring_whitespace([X | XS], YS);
+        {true, true} ->  [X |longest_substring_ignoring_whitespace(XS, YS)];
+        {false, false} ->  []
+    end;
+longest_substring_ignoring_whitespace(_, _) ->
+    [].
+
+
+%% @private
+-spec is_whitespace(char()) -> boolean().
+is_whitespace(Char) ->
+    re:run(<<Char>>, <<"\\s">>, [{capture, none}]) == match.
