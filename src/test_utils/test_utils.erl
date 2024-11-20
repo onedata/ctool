@@ -319,14 +319,14 @@ ct_pal_failure_summary(AssertionType, #failure_summary{
 
     ct:pal(
         "~ts failed: ~tp:~tp~n"
-        ++ "-  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  - ~n"
-        ++ "> Expectation: ~tp~n"
-        ++ "~n"
-        ++ "~ts~n"
-        ++ "-  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  - ~n"
-        ++ "> Value: ~tp~n"
-        ++ "~n"
-        ++ "~ts~n",
+        "-  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  - ~n"
+        "> Expectation: ~tp~n"
+        "~n"
+        "~ts~n"
+        "-  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  - ~n"
+        "> Value: ~tp~n"
+        "~n"
+        "~ts~n",
         [
             AssertionType, Module, Line,
             ExpectedExpression,
@@ -421,9 +421,9 @@ should_recompile_module(SrcFilePath) ->
     ModuleDirPath = filename:dirname(SrcFilePath),
     ModuleNameStr = filename:basename(SrcFilePath, ".erl"),
     BeamFilePath = filename:join(ModuleDirPath, ModuleNameStr ++ ".beam"),
-    
+
     {ok, SrcFileInfo} = file:read_file_info(SrcFilePath),
-    
+
     case file:read_file_info(BeamFilePath) of
         {ok, BeamFileInfo} ->
             SrcFileInfo#file_info.mtime >= BeamFileInfo#file_info.mtime;
@@ -467,7 +467,7 @@ annotate_difference(BaseStr, SecondStr) ->
     LongestPrefix = str_utils:longest_substring_ignoring_whitespace(BaseStr, SecondStr),
     case LongestPrefix of
         [] ->
-            "[DIFF] ~n" ++ str_utils:truncate_overflow(
+            "[DIFF] \n" ++ str_utils:truncate_overflow(
                 BaseStr, ?CT_ASSERT_LOG_TERM_TRUNCATION_THRESHOLD, right
             );
         _ ->
@@ -483,9 +483,9 @@ get_limited_diff(Prefix, Rest) ->
     PrefixLength = length(Prefix),
     RestLength = length(Rest),
 
-    case PrefixLength + RestLength =< MaxLength of
+    {FinalPrefix, FinalRest} = case PrefixLength + RestLength =< MaxLength of
         true ->
-            Prefix ++ "~n[DIFF]~n" ++  Rest;
+            {Prefix, Rest};
         false ->
             FinalPrefixLength = case PrefixLength < MaxLength of
                 true -> PrefixLength;
@@ -498,6 +498,11 @@ get_limited_diff(Prefix, Rest) ->
                 left
             ),
             TruncatedRest = str_utils:truncate_overflow(Rest, max(20, MaxLength - FinalPrefixLength), right),
+            {TruncatedPrefix, TruncatedRest}
+    end,
 
-            str_utils:format("~ts ~n[DIFF]~n ~ts", [TruncatedPrefix, TruncatedRest])
+    case FinalPrefix of
+        % do not include the DIFF marker if there is no common prefix
+        "" -> FinalRest;
+        _ -> str_utils:format("~ts~n[DIFF]~n~ts", [FinalPrefix, FinalRest])
     end.

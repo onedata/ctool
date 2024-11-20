@@ -17,6 +17,8 @@
 
 
 %% API
+-export([is_valid_filename/1]).
+
 -export([type_to_json/1, type_from_json/1]).
 
 -export([sanitize_attr_names/4]).
@@ -53,6 +55,23 @@
 %%%===================================================================
 %%% API
 %%%===================================================================
+
+% TODO VFS-7208 this should return a proper ERROR_BAD_FILE_NAME error (assert_valid_filename?)
+% (waits for od_error in fslogic and od_error generation)
+-spec is_valid_filename(term()) -> boolean().
+is_valid_filename(FileName) when not is_binary(FileName) ->
+    false;
+is_valid_filename(<<"">>) ->
+    false;
+is_valid_filename(FileName) when byte_size(FileName) > ?FILE_NAME_MAX_LENGTH ->
+    false;
+is_valid_filename(FileName) ->
+    case lists:member(FileName, ?FILE_NAME_FORBIDDEN_NAMES) of
+        true ->
+            false;
+        false ->
+            [] == binary:matches(FileName, ?FILE_NAME_FORBIDDEN_CHARACTERS)
+    end.
 
 
 -spec type_to_json(type()) -> json_utils:json_term().

@@ -21,6 +21,11 @@
 -define(CURRENT_DIRECTORY, ".").
 -define(PARENT_DIRECTORY, "..").
 
+% limits on file names as in POSIX
+-define(FILE_NAME_MAX_LENGTH, 255).
+-define(FILE_NAME_FORBIDDEN_NAMES, [<<?CURRENT_DIRECTORY>>, <<?PARENT_DIRECTORY>>]).
+-define(FILE_NAME_FORBIDDEN_CHARACTERS, [<<?DIRECTORY_SEPARATOR>>, <<0>>]).
+
 
 %% file types
 -define(REGULAR_FILE_TYPE, 'REG').
