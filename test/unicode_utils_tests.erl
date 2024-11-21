@@ -89,7 +89,7 @@ remove_diacritics_test() ->
     ?test(
         "ÀÁÂÃÄÅÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖØÙÚÛÜÝÞàáâãäåçèéêëEËËËìíîïðñòóôõöøùúûýýÿŔŕ",
         "AAAAAACEEEEIIIIDNOOOOOOUUUUYBaaaaaaceeeeEEEEiiiidnoooooouuuyyyRr"
-    ).
+).
 
 
 
