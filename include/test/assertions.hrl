@@ -39,18 +39,18 @@
     ?assertMatch(Guard, ExpressionToCheck, Attempts, timer:seconds(1))).
 -define(assertMatch(Guard, ExpressionToCheck, Attempts, Interval), begin
     ((fun() ->
-        lists_utils:foldl_while(fun(AttemptsLeft, ActualValue) ->
-            case ActualValue of
+        lists_utils:foldl_while(fun(AttemptsLeft__Local, ActualValue__Local) ->
+            case ActualValue__Local of
                 Guard ->
-                    {halt, ActualValue};
+                    {halt, ActualValue__Local};
                 _ ->
-                    case AttemptsLeft of
+                    case AttemptsLeft__Local of
                         1 ->
                             test_utils:ct_pal_failure_summary(
                                 "assertMatch", #failure_summary{
                                     expected_expression = (??Guard),
                                     actual_expression = (??ExpressionToCheck),
-                                    actual_value = ActualValue
+                                    actual_value = ActualValue__Local
                                 }, annotate_diff
                             ),
                             erlang:error(assertMatch_failed);
@@ -70,21 +70,21 @@ end).
     ?assertNotMatch(Guard, ExpressionToCheck, Attempts, timer:seconds(1))).
 -define(assertNotMatch(Guard, ExpressionToCheck, Attempts, Interval), begin
     ((fun() ->
-        lists_utils:foldl_while(fun(AttemptsLeft, ActualValue) ->
-            case ActualValue of
+        lists_utils:foldl_while(fun(AttemptsLeft__Local, ActualValue__Local) ->
+            case ActualValue__Local of
                 Guard ->
                     test_utils:ct_pal_failure_summary(
                         "assertNotMatch", #failure_summary{
                             expected_expression = (??Guard),
                             actual_expression = (??ExpressionToCheck),
-                            actual_value = ActualValue
+                            actual_value = ActualValue__Local
                         }, skip_diff_annotation
                     ),
                     erlang:error(assertNotMatch_failed);
                 _ ->
-                    case AttemptsLeft of
+                    case AttemptsLeft__Local of
                         1 ->
-                            {halt, ActualValue};
+                            {halt, ActualValue__Local};
                         _ ->
                             timer:sleep(Interval),
                             {cont, ExpressionToCheck}
@@ -102,19 +102,19 @@ end).
     ?assertEqual(Expectation, ExpressionToCheck, Attempts, timer:seconds(1))).
 -define(assertEqual(Expectation, ExpressionToCheck, Attempts, Interval), begin
     ((fun() ->
-        lists_utils:foldl_while(fun(AttemptsLeft, ExpectedValue) ->
+        lists_utils:foldl_while(fun(AttemptsLeft__Local, ExpectedValue__Local) ->
             case (ExpressionToCheck) of
-                ExpectedValue ->
+                ExpectedValue__Local ->
                     {halt, ok};
-                ActualValue ->
-                    case AttemptsLeft of
+                ActualValue__Local ->
+                    case AttemptsLeft__Local of
                         1 ->
                             test_utils:ct_pal_failure_summary(
                                 "assertEqual", #failure_summary{
                                     expected_expression = (??Expectation),
-                                    expected_value = ExpectedValue,
+                                    expected_value = ExpectedValue__Local,
                                     actual_expression = (??ExpressionToCheck),
-                                    actual_value = ActualValue
+                                    actual_value = ActualValue__Local
                                 }, annotate_diff
                             ),
                             erlang:error(assertEqual_failed);
@@ -135,26 +135,23 @@ end).
     ?assertNotEqual(Expectation, ExpressionToCheck, Attempts, timer:seconds(1))).
 -define(assertNotEqual(Expectation, ExpressionToCheck, Attempts, Interval), begin
     ((fun() ->
-        lists_utils:foldl_while(fun(AttemptsLeft, ExpectedValue) ->
+        lists_utils:foldl_while(fun(AttemptsLeft__Local, ExpectedValue__Local) ->
             case (ExpressionToCheck) of
-                ExpectedValue ->
+                ExpectedValue__Local when AttemptsLeft__Local == 1 ->
                     test_utils:ct_pal_failure_summary(
                         "assertNotEqual", #failure_summary{
                             expected_expression = (??Expectation),
-                            expected_value = ExpectedValue,
+                            expected_value = ExpectedValue__Local,
                             actual_expression = (??ExpressionToCheck),
-                            actual_value = ExpectedValue
+                            actual_value = ExpectedValue__Local
                         }, skip_diff_annotation
                     ),
                     erlang:error(assertNotEqual_failed);
+                ExpectedValue__Local when AttemptsLeft__Local > 1 ->
+                    timer:sleep(Interval),
+                    {cont, Expectation};
                 _ ->
-                    case AttemptsLeft of
-                        1 ->
-                            {halt, ok};
-                        _ ->
-                            timer:sleep(Interval),
-                            {cont, Expectation}
-                    end
+                    {halt, ok}
             end
         end, Expectation, lists:seq(max(Attempts, 1), 1, -1))
     end)())
@@ -184,20 +181,20 @@ end).
 -define(assertReceivedMatch(Guard, Timeout), begin
     ((fun() ->
         receive
-            Guard = Result ->
-                Result
+            Guard = Result__Local ->
+                Result__Local
         after
             Timeout ->
-                ActualValue = receive
-                    Result -> Result
+                ActualValue__Local = receive
+                    Result__Local -> Result__Local
                 after
                     0 -> timeout
                 end,
                 test_utils:ct_pal_failure_summary(
                     "assertReceivedMatch", #failure_summary{
                         expected_expression = (??Guard),
-                        actual_expression = (??ActualValue),
-                        actual_value = ActualValue
+                        actual_expression = (??ActualValue__Local),
+                        actual_value = ActualValue__Local
                     }, annotate_diff
                 ),
                 erlang:error(assertReceivedMatch_failed)
@@ -211,14 +208,14 @@ end).
 -define(assertReceivedNextMatch(Guard, Timeout), begin
     ((fun() ->
         receive
-            Guard = Result ->
-                Result;
-            ActualValue ->
+            Guard = Result__Local ->
+                Result__Local;
+            ActualValue__Local ->
                 test_utils:ct_pal_failure_summary(
                     "assertReceivedNextMatch", #failure_summary{
                         expected_expression = (??Guard),
-                        actual_expression = (??ActualValue),
-                        actual_value = ActualValue
+                        actual_expression = (??ActualValue__Local),
+                        actual_value = ActualValue__Local
                     }, annotate_diff
                 ),
                 erlang:error(assertReceivedNextMatch_failed)
@@ -242,13 +239,13 @@ end).
 -define(assertNotReceivedMatch(Guard, Timeout), begin
     ((fun() ->
         receive
-            Guard = Result ->
+            Guard = Result__Local ->
                 test_utils:ct_pal_failure_summary(
                     "assertNotReceivedMatch", #failure_summary{
                         expected_expression = (??Guard),
                         expected_value = timeout,
-                        actual_expression = (??Result),
-                        actual_value = Result
+                        actual_expression = (??Result__Local),
+                        actual_value = Result__Local
                     }, skip_diff_annotation
                 ),
                 erlang:error(assertNotReceivedMatch_failed)
@@ -263,16 +260,16 @@ end).
 -define(assertReceivedEqual(Expectation),
     ?assertReceivedEqual(Expectation, 0)).
 -define(assertReceivedEqual(Expectation, Timeout), begin
-    ((fun(ExpectedValue) ->
+    ((fun(ExpectedValue__Local) ->
         receive
-            ExpectedValue ->
-                ExpectedValue
+            ExpectedValue__Local ->
+                ExpectedValue__Local
         after
             Timeout ->
                 test_utils:ct_pal_failure_summary(
                     "assertReceivedEqual", #failure_summary{
                         expected_expression = (??Expectation),
-                        expected_value = ExpectedValue,
+                        expected_value = ExpectedValue__Local,
                         actual_expression = timeout,
                         actual_value = timeout
                     }, annotate_diff
@@ -286,17 +283,17 @@ end).
 -define(assertReceivedNextEqual(Expectation),
     ?assertReceivedNextEqual(Expectation, 0)).
 -define(assertReceivedNextEqual(Expectation, Timeout), begin
-    ((fun(ExpectedValue) ->
+    ((fun(ExpectedValue__Local) ->
         receive
-            ExpectedValue ->
-                ExpectedValue;
-            ActualValue ->
+            ExpectedValue__Local ->
+                ExpectedValue__Local;
+            ActualValue__Local ->
                 test_utils:ct_pal_failure_summary(
                     "assertReceivedNextEqual", #failure_summary{
                         expected_expression = (??Expectation),
-                        expected_value = ExpectedValue,
-                        actual_expression = (??ActualValue),
-                        actual_value = ActualValue
+                        expected_value = ExpectedValue__Local,
+                        actual_expression = (??ActualValue__Local),
+                        actual_value = ActualValue__Local
                     }, annotate_diff
                 ),
                 erlang:error(assertReceivedNextEqual_failed)
@@ -305,7 +302,7 @@ end).
                 test_utils:ct_pal_failure_summary(
                     "assertReceivedNextEqual", #failure_summary{
                         expected_expression = (??Expectation),
-                        expected_value = ExpectedValue,
+                        expected_value = ExpectedValue__Local,
                         actual_expression = timeout,
                         actual_value = timeout
                     }, annotate_diff
@@ -319,15 +316,15 @@ end).
 -define(assertNotReceivedEqual(Expectation),
     ?assertNotReceivedEqual(Expectation, 0)).
 -define(assertNotReceivedEqual(Expectation, Timeout), begin
-    ((fun(ExpectedValue) ->
+    ((fun(ExpectedValue__Local) ->
         receive
-            ExpectedValue ->
+            ExpectedValue__Local ->
                 test_utils:ct_pal_failure_summary(
                     "assertNotReceivedEqual", #failure_summary{
                         expected_expression = timeout,
                         expected_value = timeout,
                         actual_expression = (??Expectation),
-                        actual_value = ExpectedValue
+                        actual_value = ExpectedValue__Local
                     }, skip_diff_annotation
                 ),
                 erlang:error(assertNotReceivedEqual_failed)
@@ -343,24 +340,24 @@ end).
 -define(assertException(Class, Term, ExpressionToCheck), begin
     ((fun() ->
         try (ExpressionToCheck) of
-            ActualValue ->
+            ActualValue__Local ->
                 test_utils:ct_pal_failure_summary(
                     "assertException", #failure_summary{
                         expected_expression = "{ " ++ (??Class) ++ " , " ++ (??Term) ++ " , [...] }",
                         actual_expression = (??ExpressionToCheck),
-                        actual_value = ActualValue
+                        actual_value = ActualValue__Local
                     }, annotate_diff
                 ),
                 erlang:error(assertException_failed)
         catch
             Class:Term ->
                 ok;
-            ActualClass:ActualTerm:Stacktrace ->
+            ActualClass__Local:ActualTerm__Local:Stacktrace__Local ->
                 test_utils:ct_pal_failure_summary(
                     "assertException", #failure_summary{
                         expected_expression = "{ " ++ (??Class) ++ " , " ++ (??Term) ++ " , [...] }",
                         actual_expression = (??ExpressionToCheck),
-                        actual_value = {ActualClass, ActualTerm, Stacktrace}
+                        actual_value = {ActualClass__Local, ActualTerm__Local, Stacktrace__Local}
                     }, annotate_diff
                 ),
                 erlang:error(assertException_failed)

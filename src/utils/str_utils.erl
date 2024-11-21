@@ -149,7 +149,7 @@ truncate_overflow(Binary, MaxSize, right) ->
     Part = binary:part(Binary, 0, MaxSize),
     <<Part/binary, "... [truncated]">>;
 truncate_overflow(Binary, MaxSize, left) ->
-    Part = binary:part(Binary, byte_size(Binary) - MaxSize + 1, MaxSize),
+    Part = binary:part(Binary, byte_size(Binary) - MaxSize, MaxSize),
     <<"[truncated] ...", Part/binary>>.
 
 

@@ -461,13 +461,18 @@ annotate_difference(BaseStr, "") ->
     str_utils:truncate_overflow(
         BaseStr, ?CT_ASSERT_LOG_TERM_TRUNCATION_THRESHOLD, right
     );
+annotate_difference("", [$[ | _]) ->
+    % when comparing lists and one of them is empty, it will be pretty-printed as an empty string
+    % this little hack fixes that, guessing that it might have been a list based on the second string...
+    "[]";
 annotate_difference("", _) ->
     "";
 annotate_difference(BaseStr, SecondStr) ->
     LongestPrefix = str_utils:longest_substring_ignoring_whitespace(BaseStr, SecondStr),
     case LongestPrefix of
         [] ->
-            "[DIFF] \n" ++ str_utils:truncate_overflow(
+            % do not include the DIFF marker if there is no common prefix
+            str_utils:truncate_overflow(
                 BaseStr, ?CT_ASSERT_LOG_TERM_TRUNCATION_THRESHOLD, right
             );
         _ ->
@@ -501,8 +506,4 @@ get_limited_diff(Prefix, Rest) ->
             {TruncatedPrefix, TruncatedRest}
     end,
 
-    case FinalPrefix of
-        % do not include the DIFF marker if there is no common prefix
-        "" -> FinalRest;
-        _ -> str_utils:format("~ts~n[DIFF]~n~ts", [FinalPrefix, FinalRest])
-    end.
+    str_utils:format("~ts~n[DIFF]~n~ts", [FinalPrefix, FinalRest]).

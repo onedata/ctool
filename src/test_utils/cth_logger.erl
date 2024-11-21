@@ -20,7 +20,7 @@
 %% prehooks
 -export([pre_init_per_suite/3, pre_init_per_testcase/3]).
 %% posthooks
--export([post_end_per_testcase/4]).
+-export([post_init_per_testcase/4, post_end_per_testcase/4]).
 
 -record(logger_state, {suite}).
 -type logger_state() :: #logger_state{}.
@@ -61,6 +61,37 @@ pre_init_per_testcase(TestCase, Config, State = #logger_state{suite = Suite}) ->
     ct:pal("Testcase ~tp in suite: ~tp STARTED", [TestCase, Suite]),
     {Config, State}.
 
+
+-spec post_init_per_testcase(TestCase :: atom(), Config :: [term()],
+    Return :: ok | {error | skip, term()}, State :: logger_state()) ->
+    {ok | {error | skip, term()}, logger_state()}.
+post_init_per_testcase(_TestCase, _Config, ok, State) ->
+    {ok, State};
+
+post_init_per_testcase(TestCase, _Config, Return, State) ->
+    Msg = case Return of
+        {skip, {failed, {_, _, {Reason, Stacktrace}}}} ->
+            onedata_logger:format_generic_log(
+                "An unexpected error occurred~n"
+                "> Stacktrace:~ts~n"
+                "> Reason: ~tp",
+                [lager:pr_stacktrace(Stacktrace), Reason]
+            );
+        {skip, {failed, {_, _, ThrownTerm}}} ->
+            onedata_logger:format_generic_log(
+                "Thrown: ~tp",
+                [ThrownTerm]
+            );
+        _ ->
+            onedata_logger:format_generic_log(
+                "Got an unexpected return in ~tp - consider adding a nicer log here!~n~n~tp",
+                [?MODULE, Return]
+            )
+    end,
+    ct:pal("Testcase ~tp in suite: ~tp SKIPPED~n~n~ts", [TestCase, State#logger_state.suite, Msg]),
+    {Return, State}.
+
+
 %%--------------------------------------------------------------------
 %% @doc
 %% CTH callback called after end_per_testcase.
@@ -74,8 +105,27 @@ post_end_per_testcase(TestCase, _Config, ok, State) ->
     ct:pal("Testcase ~tp in suite: ~tp PASSED", [TestCase, State#logger_state.suite]),
     {ok, State};
 
-post_end_per_testcase(TestCase, _Config, Return = {skip, _}, State) ->
-    ct:pal("Testcase ~tp in suite: ~tp SKIPPED", [TestCase, State#logger_state.suite]),
+post_end_per_testcase(TestCase, _Config, Return = {failed, {_, _, FailureSummary}}, State) ->
+    Msg = case FailureSummary of
+        {Class, {Reason, Stacktrace}} ->
+            onedata_logger:format_generic_log(
+                "An unexpected error occurred~n"
+                "> Stacktrace:~ts~n"
+                "> Class: ~tp~n"
+                "> Reason: ~tp",
+                [lager:pr_stacktrace(Stacktrace), Class, Reason]
+            );
+        ThrownTerm ->
+            onedata_logger:format_generic_log(
+                "Thrown: ~tp",
+                [ThrownTerm]
+            )
+    end,
+    ct:pal("Testcase ~tp in suite: ~tp end_per_testcase CRASHED~n~n~ts", [
+        TestCase,
+        State#logger_state.suite,
+        Msg
+    ]),
     {Return, State};
 
 post_end_per_testcase(TestCase, _Config, Return = {error, _}, State) ->
@@ -99,7 +149,7 @@ post_end_per_testcase(TestCase, _Config, Return = {error, _}, State) ->
     {Return, State};
 
 post_end_per_testcase(TestCase, _Config, Return, State) ->
-    ct:pal("Testcase ~tp in suite: ~tp RETURNED: ~tp", [
+    ct:pal("Testcase ~tp in suite: ~tp RETURNED:~n~tp", [
         TestCase, State#logger_state.suite, Return
     ]),
     {Return, State}.
