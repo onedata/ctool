@@ -365,4 +365,26 @@ end).
     end)())
 end).
 
+
+-undef(assertNotException).
+-define(assertNotException(ExpressionToCheck), begin
+    ((fun() ->
+        try (ExpressionToCheck) of
+            _ ->
+                ok
+        catch
+            ActualClass__Local:ActualTerm__Local:Stacktrace__Local ->
+                test_utils:ct_pal_failure_summary(
+                    "assertNotException", #failure_summary{
+                        expected_expression = "none",
+                        actual_expression = (??ExpressionToCheck),
+                        actual_value = {ActualClass__Local, ActualTerm__Local, Stacktrace__Local}
+                    }, skip_diff_annotation
+                ),
+                erlang:error(assertNotException_failed)
+        end
+    end)())
+end).
+
+
 -endif.

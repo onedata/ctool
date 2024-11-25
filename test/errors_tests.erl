@@ -53,7 +53,7 @@ http_code_test_() ->
 
 
 http_code_for_nonexistent_error_test() ->
-    ?assertException(_, _, errors:to_http_code({error, gibberish})).
+    ?assertException(error, _, errors:to_http_code({error, gibberish})).
 
 
 is_known_error_test_() ->

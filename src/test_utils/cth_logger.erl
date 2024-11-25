@@ -168,12 +168,12 @@ post_end_per_testcase(TestCase, _Config, Return, State) ->
 
 
 %% @private
--spec ct_pal_report(logger_state(), atom(), string()) -> string().
+-spec ct_pal_report(logger_state(), atom(), string()) -> ok.
 ct_pal_report(State, TestCaseOrGroupName, Msg) ->
     ct_pal_report(State, TestCaseOrGroupName, "~ts", [Msg]).
 
 %% @private
--spec ct_pal_report(logger_state(), atom(), string(), [term()]) -> string().
+-spec ct_pal_report(logger_state(), atom(), string(), [term()]) -> ok.
 ct_pal_report(#logger_state{suite = Suite}, TestCaseOrGroupName, Format, Args) ->
     ct:pal("[~tp] ~tp " ++ Format, [Suite, TestCaseOrGroupName] ++ Args).
 

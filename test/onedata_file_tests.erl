@@ -36,7 +36,12 @@ is_valid_filename_test() ->
     ?assertEqual(false, F(<<"\0">>)),
 
     lists:foreach(fun(UnicodeList) ->
-        ?assertNotException(_, _, F(str_utils:unicode_list_to_binary(UnicodeList)))
+        AsBinary = str_utils:unicode_list_to_binary(UnicodeList),
+        ShouldBeValid = binary:match(AsBinary, [<<"/">>, <<0>>]) == nomatch andalso
+            not lists:member(AsBinary, [<<".">>, <<"..">>]) andalso
+            byte_size(AsBinary) =< 255,
+        ShouldBeValid == F(AsBinary) orelse ?eunit_dump(AsBinary),
+        ?assertEqual(ShouldBeValid, F(AsBinary))
     end, ?NAUGHTY_STRINGS).
 
 
@@ -101,7 +106,7 @@ sorting_test() ->
     ?assertEqual(ExpectedSortingResult, SortedNames),
 
     lists:foreach(fun(UnicodeList) ->
-        ?assertNotException(_, _, onedata_file:filename_to_sorting_key(str_utils:unicode_list_to_binary(UnicodeList)))
+        ?assertNotException(onedata_file:filename_to_sorting_key(str_utils:unicode_list_to_binary(UnicodeList)))
     end, ?NAUGHTY_STRINGS).
 
 
