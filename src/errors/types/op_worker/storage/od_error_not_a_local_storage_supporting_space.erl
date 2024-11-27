@@ -23,7 +23,7 @@
 -export_type([t/0]).
 
 %% od_error callbacks
--export([to_json/1, from_json/1, to_http_code/1]).
+-export([to_json/1, from_json/1, to_http_code/1, to_errno/1]).
 
 
 %%%===================================================================
@@ -32,7 +32,7 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_NOT_A_LOCAL_STORAGE_SUPPORTING_SPACE(ProviderId, StorageId, SpaceId)) ->
+to_json(?ERROR_NOT_A_LOCAL_STORAGE_SUPPORTING_SPACE_MATCH(ProviderId, StorageId, SpaceId)) ->
     #{
         <<"id">> => ?ERROR_NOT_A_LOCAL_STORAGE_SUPPORTING_SPACE_ID,
         <<"details">> => #{
@@ -40,7 +40,7 @@ to_json(?ERROR_NOT_A_LOCAL_STORAGE_SUPPORTING_SPACE(ProviderId, StorageId, Space
             <<"storageId">> => StorageId,
             <<"spaceId">> => SpaceId
         },
-        <<"description">> => ?fmt(
+        <<"description">> => od_error:format_description(
             "Storage ~ts does not belong to this Oneprovider (~ts) and/or does not support the space ~ts.",
             [StorageId, ProviderId, SpaceId]
         )
@@ -55,9 +55,14 @@ from_json(OdErrorJson = #{<<"id">> := ?ERROR_NOT_A_LOCAL_STORAGE_SUPPORTING_SPAC
     StorageId = maps:get(<<"storageId">>, DetailsJson),
     SpaceId = maps:get(<<"spaceId">>, DetailsJson),
 
-    ?ERROR_NOT_A_LOCAL_STORAGE_SUPPORTING_SPACE(ProviderId, StorageId, SpaceId).
+    ?new_ERROR_NOT_A_LOCAL_STORAGE_SUPPORTING_SPACE(ProviderId, StorageId, SpaceId).
 
 
 -spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.
 to_http_code(_) ->
     ?HTTP_400_BAD_REQUEST.
+
+
+-spec to_errno(t()) -> {true, od_error:errno()}.
+to_errno(_) ->
+    {true, ?EINVAL}.

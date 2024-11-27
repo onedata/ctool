@@ -120,7 +120,7 @@
 -spec construct(Prototype :: token(), secret(), [caveats:caveat()]) -> token().
 % Subject is supported for versions 2 and above, make sure that it is valid
 construct(#token{version = V, subject = ?SUB(S)}, _, _) when V > 1 andalso S /= user andalso S /= ?ONEPROVIDER ->
-    throw(?ERROR_TOKEN_SUBJECT_INVALID);
+    throw(?new_ERROR_TOKEN_SUBJECT_INVALID());
 construct(Prototype = #token{onezone_domain = OzDomain}, Secret, Caveats) ->
     Identifier = to_identifier(Prototype),
     Macaroon = macaroon:create(OzDomain, Secret, Identifier),
@@ -171,15 +171,15 @@ verify(Token = #token{macaroon = Macaroon}, Secret, AuthCtx, SupportedCaveats) -
                     session_id = examine_session_id(Token, AuthCtx)
                 }};
             {error, {unverified_caveat, Serialized}} ->
-                ?ERROR_TOKEN_CAVEAT_UNVERIFIED(caveats:deserialize(Serialized));
+                ?new_ERROR_TOKEN_CAVEAT_UNVERIFIED(caveats:deserialize(Serialized));
             _ ->
-                ?ERROR_TOKEN_INVALID
+                ?new_ERROR_TOKEN_INVALID()
         end
     catch
         Class:Reason ->
             case {Class, errors:is_known_error(Reason)} of
                 {throw, true} -> Reason;
-                _ -> ?ERROR_TOKEN_INVALID
+                _ -> ?new_ERROR_TOKEN_INVALID()
             end
     end.
 
@@ -215,7 +215,7 @@ serialize(Token) ->
         {ok, Token64} = macaroon:serialize(Token#token.macaroon),
         {ok, base62:from_base64(Token64)}
     catch
-        _:_ -> ?ERROR_BAD_TOKEN
+        _:_ -> ?new_ERROR_BAD_TOKEN()
     end.
 
 
@@ -253,13 +253,13 @@ check_for_oneprovider_service_indication(Serialized) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec deserialize(serialized()) -> {ok, token()} | errors:error().
-deserialize(<<>>) -> ?ERROR_BAD_TOKEN;
+deserialize(<<>>) -> ?new_ERROR_BAD_TOKEN();
 deserialize(Serialized) when is_binary(Serialized) ->
     try
         MaxTokenSize = ?MAX_TOKEN_SIZE,
         case size(Serialized) > MaxTokenSize of
             true ->
-                ?ERROR_TOKEN_TOO_LARGE(MaxTokenSize);
+                ?new_ERROR_TOKEN_TOO_LARGE(MaxTokenSize);
             false ->
                 {SubjectSubtype, ProperToken} = check_for_oneprovider_service_indication(Serialized),
                 {ok, Macaroon} = macaroon:deserialize(base62:to_base64(ProperToken)),
@@ -277,9 +277,9 @@ deserialize(Serialized) when is_binary(Serialized) ->
     catch
         Class:Reason:Stacktrace ->
             ?debug_exception("Cannot deserialize token: ~ts", [Serialized], Class, Reason, Stacktrace),
-            ?ERROR_BAD_TOKEN
+            ?new_ERROR_BAD_TOKEN()
     end;
-deserialize(_) -> ?ERROR_BAD_TOKEN.
+deserialize(_) -> ?new_ERROR_BAD_TOKEN().
 
 
 -spec is_token(term()) -> boolean().
@@ -357,7 +357,7 @@ examine_session_id(#token{type = ?ACCESS_TOKEN(SessId)}, #auth_ctx{session_id = 
 examine_session_id(#token{type = ?ACCESS_TOKEN(SessId)}, #auth_ctx{session_id = SessId}) ->
     SessId;
 examine_session_id(#token{type = ?ACCESS_TOKEN(_SessA)}, #auth_ctx{session_id = _SessB}) ->
-    throw(?ERROR_TOKEN_SESSION_INVALID);
+    throw(?new_ERROR_TOKEN_SESSION_INVALID());
 examine_session_id(#token{type = _}, #auth_ctx{session_id = _}) ->
     undefined.
 

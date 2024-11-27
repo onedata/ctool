@@ -23,7 +23,7 @@
 -export_type([t/0]).
 
 %% od_error callbacks
--export([to_json/1, from_json/1, to_http_code/1]).
+-export([to_json/1, from_json/1, to_http_code/1, to_errno/1]).
 
 
 %%%===================================================================
@@ -32,7 +32,7 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_RELATION_ALREADY_EXISTS(ChType, ChId, ParType, ParId)) ->
+to_json(?ERROR_RELATION_ALREADY_EXISTS_MATCH(ChType, ChId, ParType, ParId)) ->
     RelationToString = case {ChType, ParType} of
         {od_space, od_provider} -> <<"is already supported by">>;
         {_, _} -> <<"is already a member of">>
@@ -45,7 +45,7 @@ to_json(?ERROR_RELATION_ALREADY_EXISTS(ChType, ChId, ParType, ParId)) ->
             <<"parentType">> => gri:serialize_type(ParType),
             <<"parentId">> => ParId
         },
-        <<"description">> => ?fmt("Bad value: ~ts:~ts ~ts ~ts:~ts.", [
+        <<"description">> => od_error:format_description("Bad value: ~ts:~ts ~ts ~ts:~ts.", [
             gri:serialize_type(ChType), ChId,
             RelationToString,
             gri:serialize_type(ParType), ParId
@@ -64,9 +64,14 @@ from_json(OdErrorJson = #{<<"id">> := ?ERROR_RELATION_ALREADY_EXISTS_ID}) ->
     ParentType = gri:deserialize_type(ParentTypeJson),
     ParentId = maps:get(<<"parentId">>, DetailsJson),
 
-    ?ERROR_RELATION_ALREADY_EXISTS(ChildType, ChildId, ParentType, ParentId).
+    ?new_ERROR_RELATION_ALREADY_EXISTS(ChildType, ChildId, ParentType, ParentId).
 
 
 -spec to_http_code(t()) -> ?HTTP_409_CONFLICT.
 to_http_code(_) ->
     ?HTTP_409_CONFLICT.
+
+
+-spec to_errno(t()) -> false.
+to_errno(_) ->
+    false.

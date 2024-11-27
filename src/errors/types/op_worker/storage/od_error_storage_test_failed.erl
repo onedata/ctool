@@ -23,7 +23,7 @@
 -export_type([t/0]).
 
 %% od_error callbacks
--export([to_json/1, from_json/1, to_http_code/1]).
+-export([to_json/1, from_json/1, to_http_code/1, to_errno/1]).
 
 
 %%%===================================================================
@@ -32,11 +32,11 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_STORAGE_TEST_FAILED(Operation)) ->
+to_json(?ERROR_STORAGE_TEST_FAILED_MATCH(Operation)) ->
     #{
         <<"id">> => ?ERROR_STORAGE_TEST_FAILED_ID,
         <<"details">> => #{<<"operation">> => str_utils:to_binary(Operation)},
-        <<"description">> => ?fmt("Failed to ~ts test file on storage.", [Operation])
+        <<"description">> => od_error:format_description("Failed to ~ts test file on storage.", [Operation])
     }.
 
 
@@ -46,9 +46,14 @@ from_json(#{<<"id">> := ?ERROR_STORAGE_TEST_FAILED_ID, <<"details">> := #{<<"ope
     Operation == <<"write">>;
     Operation == <<"remove">>
 ->
-    ?ERROR_STORAGE_TEST_FAILED(binary_to_atom(Operation, utf8)).
+    ?new_ERROR_STORAGE_TEST_FAILED(binary_to_atom(Operation, utf8)).
 
 
 -spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.
 to_http_code(_) ->
     ?HTTP_400_BAD_REQUEST.
+
+
+-spec to_errno(t()) -> {true, od_error:errno()}.
+to_errno(_) ->
+    {true, ?EIO}.

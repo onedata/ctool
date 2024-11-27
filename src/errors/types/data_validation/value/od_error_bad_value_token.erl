@@ -23,7 +23,7 @@
 -export_type([t/0]).
 
 %% od_error callbacks
--export([to_json/1, from_json/1, to_http_code/1]).
+-export([to_json/1, from_json/1, to_http_code/1, to_errno/1]).
 
 
 %%%===================================================================
@@ -32,8 +32,9 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_BAD_VALUE_TOKEN(Key, TokenError)) ->
+to_json(?ERROR_BAD_VALUE_TOKEN_MATCH(Key, TokenError)) ->
     TokenErrorJson = errors:to_json(TokenError),
+    TokenErrorPrint = maps:get(<<"description">>, TokenErrorJson),
 
     #{
         <<"id">> => ?ERROR_BAD_VALUE_TOKEN_ID,
@@ -41,9 +42,9 @@ to_json(?ERROR_BAD_VALUE_TOKEN(Key, TokenError)) ->
             <<"key">> => Key,
             <<"tokenError">> => TokenErrorJson
         },
-        <<"description">> => ?fmt(
-            "Bad value: provided \"~ts\" is not a valid token (see details).",
-            [Key]
+        <<"description">> => od_error:format_description(
+            "Bad value: provided \"~ts\" is not a valid token. ~ts",
+            [Key, TokenErrorPrint]
         )
     }.
 
@@ -56,9 +57,14 @@ from_json(OdErrorJson = #{<<"id">> := ?ERROR_BAD_VALUE_TOKEN_ID}) ->
     TokenErrorJson = maps:get(<<"tokenError">>, DetailsJson),
     TokenError = errors:from_json(TokenErrorJson),
 
-    ?ERROR_BAD_VALUE_TOKEN(Key, TokenError).
+    ?new_ERROR_BAD_VALUE_TOKEN(Key, TokenError).
 
 
 -spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.
 to_http_code(_) ->
     ?HTTP_400_BAD_REQUEST.
+
+
+-spec to_errno(t()) -> {true, od_error:errno()}.
+to_errno(_) ->
+    {true, ?EINVAL}.

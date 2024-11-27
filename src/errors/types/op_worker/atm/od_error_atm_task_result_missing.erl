@@ -23,7 +23,7 @@
 -export_type([t/0]).
 
 %% od_error callbacks
--export([to_json/1, from_json/1, to_http_code/1]).
+-export([to_json/1, from_json/1, to_http_code/1, to_errno/1]).
 
 
 %%%===================================================================
@@ -32,8 +32,8 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_ATM_TASK_RESULT_MISSING(MissingResultName, ReceivedResultNames)) ->
-    ReceivedResultNamesPrint = ?fmt_csv(ReceivedResultNames),
+to_json(?ERROR_ATM_TASK_RESULT_MISSING_MATCH(MissingResultName, ReceivedResultNames)) ->
+    ReceivedResultNamesPrint = od_error:format_csv(ReceivedResultNames),
 
     #{
         <<"id">> => ?ERROR_ATM_TASK_RESULT_MISSING_ID,
@@ -41,7 +41,7 @@ to_json(?ERROR_ATM_TASK_RESULT_MISSING(MissingResultName, ReceivedResultNames)) 
             <<"missingResultName">> => MissingResultName,
             <<"receivedResultNames">> => ReceivedResultNames
         },
-        <<"description">> => ?fmt(
+        <<"description">> => od_error:format_description(
             "Missing required value for result '~ts' in the lambda output. Received values for result names: ~ts.",
             [MissingResultName, ReceivedResultNamesPrint]
         )
@@ -55,9 +55,14 @@ from_json(OdErrorJson = #{<<"id">> := ?ERROR_ATM_TASK_RESULT_MISSING_ID}) ->
     MissingResultName = maps:get(<<"missingResultName">>, DetailsJson),
     ReceivedResultNames = maps:get(<<"receivedResultNames">>, DetailsJson),
 
-    ?ERROR_ATM_TASK_RESULT_MISSING(MissingResultName, ReceivedResultNames).
+    ?new_ERROR_ATM_TASK_RESULT_MISSING(MissingResultName, ReceivedResultNames).
 
 
 -spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.
 to_http_code(_) ->
     ?HTTP_400_BAD_REQUEST.
+
+
+-spec to_errno(t()) -> false.
+to_errno(_) ->
+    false.

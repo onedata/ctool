@@ -23,7 +23,7 @@
 -export_type([t/0]).
 
 %% od_error callbacks
--export([to_json/1, from_json/1, to_http_code/1]).
+-export([to_json/1, from_json/1, to_http_code/1, to_errno/1]).
 
 
 %%%===================================================================
@@ -32,7 +32,7 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_FILE_ACCESS(Path, Errno)) ->
+to_json(?ERROR_FILE_ACCESS_MATCH(Path, Errno)) ->
     PathJson = str_utils:to_binary(filename:flatten(Path)),
     ErrnoJson = atom_to_binary(Errno, utf8),
 
@@ -42,7 +42,7 @@ to_json(?ERROR_FILE_ACCESS(Path, Errno)) ->
             <<"path">> => PathJson,
             <<"errno">> => ErrnoJson
         },
-        <<"description">> => ?fmt(
+        <<"description">> => od_error:format_description(
             "Cannot access file \"~ts\": ~ts.",
             [PathJson, Errno]
         )
@@ -57,9 +57,14 @@ from_json(OdErrorJson = #{<<"id">> := ?ERROR_FILE_ACCESS_ID}) ->
     ErrnoJson = maps:get(<<"errno">>, DetailsJson),
     Errno = binary_to_existing_atom(ErrnoJson, utf8),
 
-    ?ERROR_FILE_ACCESS(Path, Errno).
+    ?new_ERROR_FILE_ACCESS(Path, Errno).
 
 
 -spec to_http_code(t()) -> ?HTTP_500_INTERNAL_SERVER_ERROR.
 to_http_code(_) ->
     ?HTTP_500_INTERNAL_SERVER_ERROR.
+
+
+-spec to_errno(t()) -> {true, od_error:errno()}.
+to_errno(_) ->
+    {true, ?EIO}.

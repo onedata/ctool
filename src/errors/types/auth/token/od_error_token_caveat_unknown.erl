@@ -23,7 +23,7 @@
 -export_type([t/0]).
 
 %% od_error callbacks
--export([to_json/1, from_json/1, to_http_code/1]).
+-export([to_json/1, from_json/1, to_http_code/1, to_errno/1]).
 
 
 %%%===================================================================
@@ -32,13 +32,13 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_TOKEN_CAVEAT_UNKNOWN(Caveat)) ->
+to_json(?ERROR_TOKEN_CAVEAT_UNKNOWN_MATCH(Caveat)) ->
     #{
         <<"id">> => ?ERROR_TOKEN_CAVEAT_UNKNOWN_ID,
         <<"details">> => #{
             <<"caveat">> => Caveat
         },
-        <<"description">> => ?fmt(
+        <<"description">> => od_error:format_description(
             "Unknown caveat - '~ts'.",
             [Caveat]
         )
@@ -51,9 +51,14 @@ from_json(OdErrorJson = #{<<"id">> := ?ERROR_TOKEN_CAVEAT_UNKNOWN_ID}) ->
 
     Caveat = maps:get(<<"caveat">>, DetailsJson),
 
-    ?ERROR_TOKEN_CAVEAT_UNKNOWN(Caveat).
+    ?new_ERROR_TOKEN_CAVEAT_UNKNOWN(Caveat).
 
 
 -spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.
 to_http_code(_) ->
     ?HTTP_400_BAD_REQUEST.
+
+
+-spec to_errno(t()) -> {true, od_error:errno()}.
+to_errno(_) ->
+    {true, ?EINVAL}.

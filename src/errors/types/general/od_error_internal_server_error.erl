@@ -23,7 +23,7 @@
 -export_type([t/0]).
 
 %% od_error callbacks
--export([to_json/1, from_json/1, to_http_code/1]).
+-export([to_json/1, from_json/1, to_http_code/1, to_errno/1]).
 
 
 %%%===================================================================
@@ -32,7 +32,7 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_INTERNAL_SERVER_ERROR(Reference)) ->
+to_json(?ERROR_INTERNAL_SERVER_ERROR_MATCH(Reference)) ->
     ReferenceJson = utils:undefined_to_null(Reference),
 
     #{
@@ -40,7 +40,7 @@ to_json(?ERROR_INTERNAL_SERVER_ERROR(Reference)) ->
         <<"details">> => #{
             <<"reference">> => ReferenceJson
         },
-        <<"description">> => ?fmt(
+        <<"description">> => od_error:format_description(
             "The server has encountered an error while processing this request. If the problem persists, please contact the site's administrators, citing the following reference: ~ts",
             [ReferenceJson]
         )
@@ -53,9 +53,14 @@ from_json(OdErrorJson = #{<<"id">> := ?ERROR_INTERNAL_SERVER_ERROR_ID}) ->
 
     Reference = utils:null_to_undefined(maps:get(<<"reference">>, DetailsJson, null)),
 
-    ?ERROR_INTERNAL_SERVER_ERROR(Reference).
+    ?new_ERROR_INTERNAL_SERVER_ERROR(Reference).
 
 
 -spec to_http_code(t()) -> ?HTTP_500_INTERNAL_SERVER_ERROR.
 to_http_code(_) ->
     ?HTTP_500_INTERNAL_SERVER_ERROR.
+
+
+-spec to_errno(t()) -> {true, od_error:errno()}.
+to_errno(_) ->
+    {true, ?EAGAIN}.

@@ -23,7 +23,7 @@
 -export_type([t/0]).
 
 %% od_error callbacks
--export([to_json/1, from_json/1, to_http_code/1]).
+-export([to_json/1, from_json/1, to_http_code/1, to_errno/1]).
 
 
 %%%===================================================================
@@ -32,7 +32,7 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_FORBIDDEN(Hint)) ->
+to_json(?ERROR_FORBIDDEN_MATCH(Hint)) ->
     HintJson = utils:undefined_to_null(Hint),
 
     #{
@@ -40,7 +40,7 @@ to_json(?ERROR_FORBIDDEN(Hint)) ->
         <<"details">> => #{
             <<"hint">> => HintJson
         },
-        <<"description">> => ?fmt(
+        <<"description">> => od_error:format_description(
             "You are not authorized to perform this operation: ~ts",
             [HintJson]
         )
@@ -53,9 +53,14 @@ from_json(OdErrorJson = #{<<"id">> := ?ERROR_FORBIDDEN_ID}) ->
 
     Hint = utils:null_to_undefined(maps:get(<<"hint">>, DetailsJson, null)),
 
-    ?ERROR_FORBIDDEN(Hint).
+    ?new_ERROR_FORBIDDEN(Hint).
 
 
 -spec to_http_code(t()) -> ?HTTP_403_FORBIDDEN.
 to_http_code(_) ->
     ?HTTP_403_FORBIDDEN.
+
+
+-spec to_errno(t()) -> {true, od_error:errno()}.
+to_errno(_) ->
+    {true, ?EACCES}.

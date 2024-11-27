@@ -23,7 +23,7 @@
 -export_type([t/0]).
 
 %% od_error callbacks
--export([to_json/1, from_json/1, to_http_code/1]).
+-export([to_json/1, from_json/1, to_http_code/1, to_errno/1]).
 
 
 %%%===================================================================
@@ -32,8 +32,9 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_ATM_LANE_EXECUTION_INITIATION_FAILED(AtmLaneSchemaId, SpecificError)) ->
+to_json(?ERROR_ATM_LANE_EXECUTION_INITIATION_FAILED_MATCH(AtmLaneSchemaId, SpecificError)) ->
     SpecificErrorJson = errors:to_json(SpecificError),
+    SpecificErrorPrint = maps:get(<<"description">>, SpecificErrorJson),
 
     #{
         <<"id">> => ?ERROR_ATM_LANE_EXECUTION_INITIATION_FAILED_ID,
@@ -41,9 +42,9 @@ to_json(?ERROR_ATM_LANE_EXECUTION_INITIATION_FAILED(AtmLaneSchemaId, SpecificErr
             <<"atmLaneSchemaId">> => AtmLaneSchemaId,
             <<"specificError">> => SpecificErrorJson
         },
-        <<"description">> => ?fmt(
-            "Failed to initiate automation lane execution (id: \"~ts\") (see details).",
-            [AtmLaneSchemaId]
+        <<"description">> => od_error:format_description(
+            "Failed to initiate automation lane execution (id: \"~ts\"). ~ts",
+            [AtmLaneSchemaId, SpecificErrorPrint]
         )
     }.
 
@@ -56,9 +57,14 @@ from_json(OdErrorJson = #{<<"id">> := ?ERROR_ATM_LANE_EXECUTION_INITIATION_FAILE
     SpecificErrorJson = maps:get(<<"specificError">>, DetailsJson),
     SpecificError = errors:from_json(SpecificErrorJson),
 
-    ?ERROR_ATM_LANE_EXECUTION_INITIATION_FAILED(AtmLaneSchemaId, SpecificError).
+    ?new_ERROR_ATM_LANE_EXECUTION_INITIATION_FAILED(AtmLaneSchemaId, SpecificError).
 
 
 -spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.
 to_http_code(_) ->
     ?HTTP_400_BAD_REQUEST.
+
+
+-spec to_errno(t()) -> false.
+to_errno(_) ->
+    false.

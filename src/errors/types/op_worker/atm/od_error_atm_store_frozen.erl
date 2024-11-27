@@ -23,7 +23,7 @@
 -export_type([t/0]).
 
 %% od_error callbacks
--export([to_json/1, from_json/1, to_http_code/1]).
+-export([to_json/1, from_json/1, to_http_code/1, to_errno/1]).
 
 
 %%%===================================================================
@@ -32,13 +32,13 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_ATM_STORE_FROZEN(AtmStoreSchemaId)) ->
+to_json(?ERROR_ATM_STORE_FROZEN_MATCH(AtmStoreSchemaId)) ->
     #{
         <<"id">> => ?ERROR_ATM_STORE_FROZEN_ID,
         <<"details">> => #{
             <<"atmStoreSchemaId">> => AtmStoreSchemaId
         },
-        <<"description">> => ?fmt(
+        <<"description">> => od_error:format_description(
             "Failed to perform operation on automation store (schema id: \"~ts\") as any modification is forbidden.",
             [AtmStoreSchemaId]
         )
@@ -51,9 +51,14 @@ from_json(OdErrorJson = #{<<"id">> := ?ERROR_ATM_STORE_FROZEN_ID}) ->
 
     AtmStoreSchemaId = maps:get(<<"atmStoreSchemaId">>, DetailsJson),
 
-    ?ERROR_ATM_STORE_FROZEN(AtmStoreSchemaId).
+    ?new_ERROR_ATM_STORE_FROZEN(AtmStoreSchemaId).
 
 
 -spec to_http_code(t()) -> ?HTTP_403_FORBIDDEN.
 to_http_code(_) ->
     ?HTTP_403_FORBIDDEN.
+
+
+-spec to_errno(t()) -> false.
+to_errno(_) ->
+    false.

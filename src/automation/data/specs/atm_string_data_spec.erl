@@ -97,5 +97,5 @@ decode_allowed_values(Values, skip_validation) ->
 decode_allowed_values(Values, validate) ->
     case is_list(Values) andalso lists:all(fun is_binary/1, Values) of
         true -> Values;
-        false -> throw(?ERROR_BAD_DATA(<<"allowedValues">>, <<"You must provide a list of strings">>))
+        false -> throw(?new_ERROR_BAD_DATA(<<"allowedValues">>, <<"You must provide a list of strings">>))
     end.

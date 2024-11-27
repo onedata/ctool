@@ -23,7 +23,7 @@
 -export_type([t/0]).
 
 %% od_error callbacks
--export([to_json/1, from_json/1, to_http_code/1]).
+-export([to_json/1, from_json/1, to_http_code/1, to_errno/1]).
 
 
 %%%===================================================================
@@ -32,7 +32,7 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_TOKEN_CAVEAT_UNVERIFIED(Caveat)) ->
+to_json(?ERROR_TOKEN_CAVEAT_UNVERIFIED_MATCH(Caveat)) ->
     CaveatJson = caveats:to_json(Caveat),
     CaveatPrint = caveats:unverified_description(Caveat),
 
@@ -41,7 +41,7 @@ to_json(?ERROR_TOKEN_CAVEAT_UNVERIFIED(Caveat)) ->
         <<"details">> => #{
             <<"caveat">> => CaveatJson
         },
-        <<"description">> => ?fmt(
+        <<"description">> => od_error:format_description(
             "Provided token is not valid - ~ts.",
             [CaveatPrint]
         )
@@ -55,9 +55,14 @@ from_json(OdErrorJson = #{<<"id">> := ?ERROR_TOKEN_CAVEAT_UNVERIFIED_ID}) ->
     CaveatJson = maps:get(<<"caveat">>, DetailsJson),
     Caveat = caveats:from_json(CaveatJson),
 
-    ?ERROR_TOKEN_CAVEAT_UNVERIFIED(Caveat).
+    ?new_ERROR_TOKEN_CAVEAT_UNVERIFIED(Caveat).
 
 
 -spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.
 to_http_code(_) ->
     ?HTTP_400_BAD_REQUEST.
+
+
+-spec to_errno(t()) -> {true, od_error:errno()}.
+to_errno(_) ->
+    {true, ?EINVAL}.

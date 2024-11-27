@@ -23,7 +23,7 @@
 -export_type([t/0]).
 
 %% od_error callbacks
--export([to_json/1, from_json/1, to_http_code/1]).
+-export([to_json/1, from_json/1, to_http_code/1, to_errno/1]).
 
 
 %%%===================================================================
@@ -32,7 +32,7 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_BAD_VALUE_NAME(Key)) ->
+to_json(?ERROR_BAD_VALUE_NAME_MATCH(Key)) ->
     KeyJson = utils:undefined_to_null(Key),
 
     #{
@@ -40,7 +40,7 @@ to_json(?ERROR_BAD_VALUE_NAME(Key)) ->
         <<"details">> => #{
             <<"key">> => KeyJson
         },
-        <<"description">> => ?fmt(
+        <<"description">> => od_error:format_description(
             "Bad value provided for \"~ts\": ~ts",
             [KeyJson, ?NAME_REQUIREMENTS_DESCRIPTION]
         )
@@ -53,9 +53,14 @@ from_json(OdErrorJson = #{<<"id">> := ?ERROR_BAD_VALUE_NAME_ID}) ->
 
     Key = utils:null_to_undefined(maps:get(<<"key">>, DetailsJson, null)),
 
-    ?ERROR_BAD_VALUE_NAME(Key).
+    ?new_ERROR_BAD_VALUE_NAME(Key).
 
 
 -spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.
 to_http_code(_) ->
     ?HTTP_400_BAD_REQUEST.
+
+
+-spec to_errno(t()) -> {true, od_error:errno()}.
+to_errno(_) ->
+    {true, ?EINVAL}.

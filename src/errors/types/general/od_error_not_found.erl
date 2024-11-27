@@ -23,7 +23,7 @@
 -export_type([t/0]).
 
 %% od_error callbacks
--export([to_json/1, from_json/1, to_http_code/1]).
+-export([to_json/1, from_json/1, to_http_code/1, to_errno/1]).
 
 
 %%%===================================================================
@@ -32,7 +32,7 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_NOT_FOUND) ->
+to_json(?ERROR_NOT_FOUND_MATCH) ->
     #{
         <<"id">> => ?ERROR_NOT_FOUND_ID,
         <<"description">> => <<"The resource could not be found.">>
@@ -41,9 +41,14 @@ to_json(?ERROR_NOT_FOUND) ->
 
 -spec from_json(json_utils:json_map()) -> t().
 from_json(#{<<"id">> := ?ERROR_NOT_FOUND_ID}) ->
-    ?ERROR_NOT_FOUND.
+    ?new_ERROR_NOT_FOUND().
 
 
 -spec to_http_code(t()) -> ?HTTP_404_NOT_FOUND.
 to_http_code(_) ->
     ?HTTP_404_NOT_FOUND.
+
+
+-spec to_errno(t()) -> {true, od_error:errno()}.
+to_errno(_) ->
+    {true, ?EINVAL}.

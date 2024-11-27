@@ -121,7 +121,7 @@ build_verifier(AuthCtx, SupportedCaveats) ->
         Caveat = try
             deserialize(SerializedCaveat)
         catch _:_ ->
-            throw(?ERROR_TOKEN_CAVEAT_UNKNOWN(SerializedCaveat))
+            throw(?new_ERROR_TOKEN_CAVEAT_UNKNOWN(SerializedCaveat))
         end,
         try
             CaveatType = type(Caveat),

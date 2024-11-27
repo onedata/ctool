@@ -23,7 +23,7 @@
 -export_type([t/0]).
 
 %% od_error callbacks
--export([to_json/1, from_json/1, to_http_code/1]).
+-export([to_json/1, from_json/1, to_http_code/1, to_errno/1]).
 
 
 %%%===================================================================
@@ -32,8 +32,8 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_REQUIRES_POSIX_COMPATIBLE_STORAGE(StorageId, PosixCompatibleStorages)) ->
-    PosixCompatibleStoragesPrint = ?fmt_csv(PosixCompatibleStorages),
+to_json(?ERROR_REQUIRES_POSIX_COMPATIBLE_STORAGE_MATCH(StorageId, PosixCompatibleStorages)) ->
+    PosixCompatibleStoragesPrint = od_error:format_csv(PosixCompatibleStorages),
 
     #{
         <<"id">> => ?ERROR_REQUIRES_POSIX_COMPATIBLE_STORAGE_ID,
@@ -41,7 +41,7 @@ to_json(?ERROR_REQUIRES_POSIX_COMPATIBLE_STORAGE(StorageId, PosixCompatibleStora
             <<"storageId">> => StorageId,
             <<"posixCompatibleStorages">> => PosixCompatibleStorages
         },
-        <<"description">> => ?fmt(
+        <<"description">> => od_error:format_description(
             "Cannot apply for storage ~ts - this operation requires a POSIX-compatible storage (any of: ~ts).",
             [StorageId, PosixCompatibleStoragesPrint]
         )
@@ -55,9 +55,14 @@ from_json(OdErrorJson = #{<<"id">> := ?ERROR_REQUIRES_POSIX_COMPATIBLE_STORAGE_I
     StorageId = maps:get(<<"storageId">>, DetailsJson),
     PosixCompatibleStorages = maps:get(<<"posixCompatibleStorages">>, DetailsJson),
 
-    ?ERROR_REQUIRES_POSIX_COMPATIBLE_STORAGE(StorageId, PosixCompatibleStorages).
+    ?new_ERROR_REQUIRES_POSIX_COMPATIBLE_STORAGE(StorageId, PosixCompatibleStorages).
 
 
 -spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.
 to_http_code(_) ->
     ?HTTP_400_BAD_REQUEST.
+
+
+-spec to_errno(t()) -> {true, od_error:errno()}.
+to_errno(_) ->
+    {true, ?EINVAL}.

@@ -23,7 +23,7 @@
 -export_type([t/0]).
 
 %% od_error callbacks
--export([to_json/1, from_json/1, to_http_code/1]).
+-export([to_json/1, from_json/1, to_http_code/1, to_errno/1]).
 
 
 %%%===================================================================
@@ -32,14 +32,14 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_VIEW_QUERY_FAILED(Category, Description)) ->
+to_json(?ERROR_VIEW_QUERY_FAILED_MATCH(Category, Description)) ->
     #{
         <<"id">> => ?ERROR_VIEW_QUERY_FAILED_ID,
         <<"details">> => #{
             <<"category">> => Category,
             <<"description">> => Description
         },
-        <<"description">> => ?fmt(
+        <<"description">> => od_error:format_description(
             "Query on view failed. Error category: ~ts. Description: ~ts.",
             [Category, Description]
         )
@@ -53,9 +53,14 @@ from_json(OdErrorJson = #{<<"id">> := ?ERROR_VIEW_QUERY_FAILED_ID}) ->
     Category = maps:get(<<"category">>, DetailsJson),
     Description = maps:get(<<"description">>, DetailsJson),
 
-    ?ERROR_VIEW_QUERY_FAILED(Category, Description).
+    ?new_ERROR_VIEW_QUERY_FAILED(Category, Description).
 
 
 -spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.
 to_http_code(_) ->
     ?HTTP_400_BAD_REQUEST.
+
+
+-spec to_errno(t()) -> false.
+to_errno(_) ->
+    false.

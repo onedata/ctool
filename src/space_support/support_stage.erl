@@ -305,10 +305,10 @@ apply_stage_transition(SupportStageDetails, StorageId, NewStorageStage) ->
                         per_storage = NewStagesPerStorage
                     }};
                 illegal ->
-                    ?ERROR_ILLEGAL_SUPPORT_STAGE_TRANSITION(ProviderStage, CurrentStorageStage)
+                    ?new_ERROR_ILLEGAL_SUPPORT_STAGE_TRANSITION(ProviderStage, CurrentStorageStage)
             end;
         false ->
-            ?ERROR_ILLEGAL_SUPPORT_STAGE_TRANSITION(ProviderStage, CurrentStorageStage)
+            ?new_ERROR_ILLEGAL_SUPPORT_STAGE_TRANSITION(ProviderStage, CurrentStorageStage)
     end.
 
 

@@ -23,7 +23,7 @@
 -export_type([t/0]).
 
 %% od_error callbacks
--export([to_json/1, from_json/1, to_http_code/1]).
+-export([to_json/1, from_json/1, to_http_code/1, to_errno/1]).
 
 
 %%%===================================================================
@@ -32,7 +32,7 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_EXPECTED_HANDSHAKE_MESSAGE) ->
+to_json(?ERROR_EXPECTED_HANDSHAKE_MESSAGE_MATCH) ->
     #{
         <<"id">> => ?ERROR_EXPECTED_HANDSHAKE_MESSAGE_ID,
         <<"description">> => <<"Handshake must be performed prior to any requests.">>
@@ -41,9 +41,14 @@ to_json(?ERROR_EXPECTED_HANDSHAKE_MESSAGE) ->
 
 -spec from_json(json_utils:json_map()) -> t().
 from_json(#{<<"id">> := ?ERROR_EXPECTED_HANDSHAKE_MESSAGE_ID}) ->
-    ?ERROR_EXPECTED_HANDSHAKE_MESSAGE.
+    ?new_ERROR_EXPECTED_HANDSHAKE_MESSAGE().
 
 
 -spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.
 to_http_code(_) ->
     ?HTTP_400_BAD_REQUEST.
+
+
+-spec to_errno(t()) -> {true, od_error:errno()}.
+to_errno(_) ->
+    {true, ?EPROTO}.

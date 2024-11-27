@@ -23,7 +23,7 @@
 -export_type([t/0]).
 
 %% od_error callbacks
--export([to_json/1, from_json/1, to_http_code/1]).
+-export([to_json/1, from_json/1, to_http_code/1, to_errno/1]).
 
 
 %%%===================================================================
@@ -32,9 +32,9 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_TSC_MISSING_LAYOUT(MissingLayout)) ->
-    MissingLayoutPrint = ?fmt_csv(maps:fold(fun(TimeSeriesName, MetricNames, Acc) ->
-        Acc ++ [?fmt("~ts -> [~ts]", [TimeSeriesName, ?fmt_csv(MetricNames)])]
+to_json(?ERROR_TSC_MISSING_LAYOUT_MATCH(MissingLayout)) ->
+    MissingLayoutPrint = od_error:format_csv(maps:fold(fun(TimeSeriesName, MetricNames, Acc) ->
+        Acc ++ [str_utils:format_bin("~ts -> [~ts]", [TimeSeriesName, od_error:format_csv(MetricNames)])]
     end, [], MissingLayout)),
 
     #{
@@ -42,7 +42,7 @@ to_json(?ERROR_TSC_MISSING_LAYOUT(MissingLayout)) ->
         <<"details">> => #{
             <<"missingLayout">> => MissingLayout
         },
-        <<"description">> => ?fmt(
+        <<"description">> => od_error:format_description(
             "The request refers to a layout that is not reflected in the time series collection; the following part of the layout is missing (time series name -> metric names): ~ts.",
             [MissingLayoutPrint]
         )
@@ -55,9 +55,14 @@ from_json(OdErrorJson = #{<<"id">> := ?ERROR_TSC_MISSING_LAYOUT_ID}) ->
 
     MissingLayout = maps:get(<<"missingLayout">>, DetailsJson),
 
-    ?ERROR_TSC_MISSING_LAYOUT(MissingLayout).
+    ?new_ERROR_TSC_MISSING_LAYOUT(MissingLayout).
 
 
 -spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.
 to_http_code(_) ->
     ?HTTP_400_BAD_REQUEST.
+
+
+-spec to_errno(t()) -> {true, od_error:errno()}.
+to_errno(_) ->
+    {true, ?EINVAL}.

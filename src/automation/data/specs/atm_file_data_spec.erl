@@ -136,7 +136,7 @@ file_type_from_json(<<"ANY">>) ->
 file_type_from_json(Binary) ->
     case onedata_file:type_from_json(Binary) of
         ?LINK_TYPE ->
-            throw(?ERROR_BAD_VALUE_NOT_ALLOWED(
+            throw(?new_ERROR_BAD_VALUE_NOT_ALLOWED(
                 <<"fileType">>,
                 lists:map(fun file_type_to_json/1, allowed_file_type_specs()))
             );

@@ -23,7 +23,7 @@
 -export_type([t/0]).
 
 %% od_error callbacks
--export([to_json/1, from_json/1, to_http_code/1]).
+-export([to_json/1, from_json/1, to_http_code/1, to_errno/1]).
 
 
 %%%===================================================================
@@ -32,7 +32,7 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_LETS_ENCRYPT_RESPONSE(ProblemDocument, ErrorMessage)) ->
+to_json(?ERROR_LETS_ENCRYPT_RESPONSE_MATCH(ProblemDocument, ErrorMessage)) ->
     ProblemDocumentJson = utils:undefined_to_null(ProblemDocument),
 
     #{
@@ -41,7 +41,7 @@ to_json(?ERROR_LETS_ENCRYPT_RESPONSE(ProblemDocument, ErrorMessage)) ->
             <<"problemDocument">> => ProblemDocumentJson,
             <<"errorMessage">> => ErrorMessage
         },
-        <<"description">> => ?fmt(
+        <<"description">> => od_error:format_description(
             "Bad Let's Encrypt response: ~ts.",
             [ErrorMessage]
         )
@@ -55,9 +55,14 @@ from_json(OdErrorJson = #{<<"id">> := ?ERROR_LETS_ENCRYPT_RESPONSE_ID}) ->
     ProblemDocument = utils:null_to_undefined(maps:get(<<"problemDocument">>, DetailsJson, null)),
     ErrorMessage = maps:get(<<"errorMessage">>, DetailsJson),
 
-    ?ERROR_LETS_ENCRYPT_RESPONSE(ProblemDocument, ErrorMessage).
+    ?new_ERROR_LETS_ENCRYPT_RESPONSE(ProblemDocument, ErrorMessage).
 
 
 -spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.
 to_http_code(_) ->
     ?HTTP_400_BAD_REQUEST.
+
+
+-spec to_errno(t()) -> false.
+to_errno(_) ->
+    false.

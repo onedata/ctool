@@ -23,7 +23,7 @@
 -export_type([t/0]).
 
 %% od_error callbacks
--export([to_json/1, from_json/1, to_http_code/1]).
+-export([to_json/1, from_json/1, to_http_code/1, to_errno/1]).
 
 
 %%%===================================================================
@@ -32,19 +32,21 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_DNS_SERVERS_UNREACHABLE(Servers)) ->
+to_json(?ERROR_DNS_SERVERS_UNREACHABLE_MATCH(Servers)) ->
     ServersJson = lists:map(fun
-        (default) -> <<"system defaults">>;
-        (Ip) -> element(2, {ok, _} = ip_utils:to_binary(Ip))
+        (default) ->
+            <<"system defaults">>;
+        (Ip) ->
+            element(2, {ok, _} = ip_utils:to_binary(Ip))
     end, Servers),
-    ServersPrint = ?fmt_csv(ServersJson),
+    ServersPrint = od_error:format_csv(ServersJson),
 
     #{
         <<"id">> => ?ERROR_DNS_SERVERS_UNREACHABLE_ID,
         <<"details">> => #{
             <<"servers">> => ServersJson
         },
-        <<"description">> => ?fmt(
+        <<"description">> => od_error:format_description(
             "Error fetching DNS records. Used servers: ~ts.",
             [ServersPrint]
         )
@@ -57,13 +59,20 @@ from_json(OdErrorJson = #{<<"id">> := ?ERROR_DNS_SERVERS_UNREACHABLE_ID}) ->
 
     ServersJson = maps:get(<<"servers">>, DetailsJson),
     Servers = lists:map(fun
-        (<<"system defaults">>) -> default;
-        (Ip) -> element(2, {ok, _} = ip_utils:to_ip4_address(Ip))
+        (<<"system defaults">>) ->
+            default;
+        (Ip) ->
+            element(2, {ok, _} = ip_utils:to_ip4_address(Ip))
     end, ServersJson),
 
-    ?ERROR_DNS_SERVERS_UNREACHABLE(Servers).
+    ?new_ERROR_DNS_SERVERS_UNREACHABLE(Servers).
 
 
 -spec to_http_code(t()) -> ?HTTP_503_SERVICE_UNAVAILABLE.
 to_http_code(_) ->
     ?HTTP_503_SERVICE_UNAVAILABLE.
+
+
+-spec to_errno(t()) -> false.
+to_errno(_) ->
+    false.

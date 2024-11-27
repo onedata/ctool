@@ -23,7 +23,7 @@
 -export_type([t/0]).
 
 %% od_error callbacks
--export([to_json/1, from_json/1, to_http_code/1]).
+-export([to_json/1, from_json/1, to_http_code/1, to_errno/1]).
 
 
 %%%===================================================================
@@ -32,10 +32,10 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_ATM_UNSUPPORTED_DATA_TYPE(Type, Allowed)) ->
+to_json(?ERROR_ATM_UNSUPPORTED_DATA_TYPE_MATCH(Type, Allowed)) ->
     TypeJson = atm_data_type:type_to_json(Type),
     AllowedJson = lists:map(fun atm_data_type:type_to_json/1, Allowed),
-    AllowedPrint = ?fmt_csv(AllowedJson),
+    AllowedPrint = od_error:format_csv(AllowedJson),
 
     #{
         <<"id">> => ?ERROR_ATM_UNSUPPORTED_DATA_TYPE_ID,
@@ -43,7 +43,7 @@ to_json(?ERROR_ATM_UNSUPPORTED_DATA_TYPE(Type, Allowed)) ->
             <<"type">> => TypeJson,
             <<"allowed">> => AllowedJson
         },
-        <<"description">> => ?fmt(
+        <<"description">> => od_error:format_description(
             "Bad automation data type: provided \"~ts\" is not one of: ~ts.",
             [Type, AllowedPrint]
         )
@@ -59,9 +59,14 @@ from_json(OdErrorJson = #{<<"id">> := ?ERROR_ATM_UNSUPPORTED_DATA_TYPE_ID}) ->
     AllowedJson = maps:get(<<"allowed">>, DetailsJson),
     Allowed = lists:map(fun atm_data_type:type_from_json/1, AllowedJson),
 
-    ?ERROR_ATM_UNSUPPORTED_DATA_TYPE(Type, Allowed).
+    ?new_ERROR_ATM_UNSUPPORTED_DATA_TYPE(Type, Allowed).
 
 
 -spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.
 to_http_code(_) ->
     ?HTTP_400_BAD_REQUEST.
+
+
+-spec to_errno(t()) -> false.
+to_errno(_) ->
+    false.

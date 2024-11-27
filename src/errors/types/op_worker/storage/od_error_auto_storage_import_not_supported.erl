@@ -23,7 +23,7 @@
 -export_type([t/0]).
 
 %% od_error callbacks
--export([to_json/1, from_json/1, to_http_code/1]).
+-export([to_json/1, from_json/1, to_http_code/1, to_errno/1]).
 
 
 %%%===================================================================
@@ -32,9 +32,9 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_AUTO_STORAGE_IMPORT_NOT_SUPPORTED(StorageId, SupportedStorages, SupportedObjectStorages)) ->
-    SupportedStoragesPrint = ?fmt_csv(SupportedStorages),
-    SupportedObjectStoragesPrint = ?fmt_csv(SupportedObjectStorages),
+to_json(?ERROR_AUTO_STORAGE_IMPORT_NOT_SUPPORTED_MATCH(StorageId, SupportedStorages, SupportedObjectStorages)) ->
+    SupportedStoragesPrint = od_error:format_csv(SupportedStorages),
+    SupportedObjectStoragesPrint = od_error:format_csv(SupportedObjectStorages),
 
     #{
         <<"id">> => ?ERROR_AUTO_STORAGE_IMPORT_NOT_SUPPORTED_ID,
@@ -43,7 +43,7 @@ to_json(?ERROR_AUTO_STORAGE_IMPORT_NOT_SUPPORTED(StorageId, SupportedStorages, S
             <<"supportedStorages">> => SupportedStorages,
             <<"supportedObjectStorages">> => SupportedObjectStorages
         },
-        <<"description">> => ?fmt(
+        <<"description">> => od_error:format_description(
             "Cannot configure auto storage import on storage ~ts - this operation requires any of: ~ts storage with canonical path type and on object storages (any of: ~ts) it requires blockSize = 0.",
             [StorageId, SupportedStoragesPrint, SupportedObjectStoragesPrint]
         )
@@ -58,9 +58,14 @@ from_json(OdErrorJson = #{<<"id">> := ?ERROR_AUTO_STORAGE_IMPORT_NOT_SUPPORTED_I
     SupportedStorages = maps:get(<<"supportedStorages">>, DetailsJson),
     SupportedObjectStorages = maps:get(<<"supportedObjectStorages">>, DetailsJson),
 
-    ?ERROR_AUTO_STORAGE_IMPORT_NOT_SUPPORTED(StorageId, SupportedStorages, SupportedObjectStorages).
+    ?new_ERROR_AUTO_STORAGE_IMPORT_NOT_SUPPORTED(StorageId, SupportedStorages, SupportedObjectStorages).
 
 
 -spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.
 to_http_code(_) ->
     ?HTTP_400_BAD_REQUEST.
+
+
+-spec to_errno(t()) -> {true, od_error:errno()}.
+to_errno(_) ->
+    {true, ?EINVAL}.

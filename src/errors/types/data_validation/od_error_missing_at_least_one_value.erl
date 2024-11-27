@@ -23,7 +23,7 @@
 -export_type([t/0]).
 
 %% od_error callbacks
--export([to_json/1, from_json/1, to_http_code/1]).
+-export([to_json/1, from_json/1, to_http_code/1, to_errno/1]).
 
 
 %%%===================================================================
@@ -32,13 +32,13 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_MISSING_AT_LEAST_ONE_VALUE(Keys)) ->
+to_json(?ERROR_MISSING_AT_LEAST_ONE_VALUE_MATCH(Keys)) ->
     #{
         <<"id">> => ?ERROR_MISSING_AT_LEAST_ONE_VALUE_ID,
         <<"details">> => #{
             <<"keys">> => Keys
         },
-        <<"description">> => ?fmt(
+        <<"description">> => od_error:format_description(
             "Missing data, you must provide at least one of: ~tp.",
             [Keys]
         )
@@ -51,9 +51,14 @@ from_json(OdErrorJson = #{<<"id">> := ?ERROR_MISSING_AT_LEAST_ONE_VALUE_ID}) ->
 
     Keys = maps:get(<<"keys">>, DetailsJson),
 
-    ?ERROR_MISSING_AT_LEAST_ONE_VALUE(Keys).
+    ?new_ERROR_MISSING_AT_LEAST_ONE_VALUE(Keys).
 
 
 -spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.
 to_http_code(_) ->
     ?HTTP_400_BAD_REQUEST.
+
+
+-spec to_errno(t()) -> {true, od_error:errno()}.
+to_errno(_) ->
+    {true, ?EINVAL}.

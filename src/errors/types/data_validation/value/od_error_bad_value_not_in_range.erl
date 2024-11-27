@@ -23,7 +23,7 @@
 -export_type([t/0]).
 
 %% od_error callbacks
--export([to_json/1, from_json/1, to_http_code/1]).
+-export([to_json/1, from_json/1, to_http_code/1, to_errno/1]).
 
 
 %%%===================================================================
@@ -32,7 +32,7 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_BAD_VALUE_NOT_IN_RANGE(Key, Low, High)) ->
+to_json(?ERROR_BAD_VALUE_NOT_IN_RANGE_MATCH(Key, Low, High)) ->
     #{
         <<"id">> => ?ERROR_BAD_VALUE_NOT_IN_RANGE_ID,
         <<"details">> => #{
@@ -40,7 +40,7 @@ to_json(?ERROR_BAD_VALUE_NOT_IN_RANGE(Key, Low, High)) ->
             <<"low">> => Low,
             <<"high">> => High
         },
-        <<"description">> => ?fmt(
+        <<"description">> => od_error:format_description(
             "Bad value: provided \"~ts\" must be between <~B, ~B>.",
             [Key, Low, High]
         )
@@ -55,9 +55,14 @@ from_json(OdErrorJson = #{<<"id">> := ?ERROR_BAD_VALUE_NOT_IN_RANGE_ID}) ->
     Low = maps:get(<<"low">>, DetailsJson),
     High = maps:get(<<"high">>, DetailsJson),
 
-    ?ERROR_BAD_VALUE_NOT_IN_RANGE(Key, Low, High).
+    ?new_ERROR_BAD_VALUE_NOT_IN_RANGE(Key, Low, High).
 
 
 -spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.
 to_http_code(_) ->
     ?HTTP_400_BAD_REQUEST.
+
+
+-spec to_errno(t()) -> {true, od_error:errno()}.
+to_errno(_) ->
+    {true, ?EINVAL}.

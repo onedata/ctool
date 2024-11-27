@@ -23,7 +23,7 @@
 -export_type([t/0]).
 
 %% od_error callbacks
--export([to_json/1, from_json/1, to_http_code/1]).
+-export([to_json/1, from_json/1, to_http_code/1, to_errno/1]).
 
 
 %%%===================================================================
@@ -32,7 +32,7 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_REQUIRES_AUTO_STORAGE_IMPORT_MODE) ->
+to_json(?ERROR_REQUIRES_AUTO_STORAGE_IMPORT_MODE_MATCH) ->
     #{
         <<"id">> => ?ERROR_REQUIRES_AUTO_STORAGE_IMPORT_MODE_ID,
         <<"description">> => <<"Operation requires space with auto storage import mode.">>
@@ -41,9 +41,14 @@ to_json(?ERROR_REQUIRES_AUTO_STORAGE_IMPORT_MODE) ->
 
 -spec from_json(json_utils:json_map()) -> t().
 from_json(#{<<"id">> := ?ERROR_REQUIRES_AUTO_STORAGE_IMPORT_MODE_ID}) ->
-    ?ERROR_REQUIRES_AUTO_STORAGE_IMPORT_MODE.
+    ?new_ERROR_REQUIRES_AUTO_STORAGE_IMPORT_MODE().
 
 
 -spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.
 to_http_code(_) ->
     ?HTTP_400_BAD_REQUEST.
+
+
+-spec to_errno(t()) -> {true, od_error:errno()}.
+to_errno(_) ->
+    {true, ?EINVAL}.

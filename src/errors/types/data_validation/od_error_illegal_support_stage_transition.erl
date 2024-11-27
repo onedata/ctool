@@ -23,7 +23,7 @@
 -export_type([t/0]).
 
 %% od_error callbacks
--export([to_json/1, from_json/1, to_http_code/1]).
+-export([to_json/1, from_json/1, to_http_code/1, to_errno/1]).
 
 
 %%%===================================================================
@@ -32,7 +32,7 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_ILLEGAL_SUPPORT_STAGE_TRANSITION(CurrentProviderStage, CurrentStorageStage)) ->
+to_json(?ERROR_ILLEGAL_SUPPORT_STAGE_TRANSITION_MATCH(CurrentProviderStage, CurrentStorageStage)) ->
     CurrentProviderStageJson = support_stage:serialize(provider, CurrentProviderStage),
     CurrentStorageStageJson = support_stage:serialize(storage, CurrentStorageStage),
 
@@ -42,7 +42,7 @@ to_json(?ERROR_ILLEGAL_SUPPORT_STAGE_TRANSITION(CurrentProviderStage, CurrentSto
             <<"currentProviderStage">> => CurrentProviderStageJson,
             <<"currentStorageStage">> => CurrentStorageStageJson
         },
-        <<"description">> => ?fmt(
+        <<"description">> => od_error:format_description(
             "Illegal support stage transition: this operation cannot be performed while the storage is in stage '~w' and provider is in stage '~w'.",
             [CurrentStorageStage, CurrentProviderStage]
         )
@@ -58,9 +58,14 @@ from_json(OdErrorJson = #{<<"id">> := ?ERROR_ILLEGAL_SUPPORT_STAGE_TRANSITION_ID
     CurrentStorageStageJson = maps:get(<<"currentStorageStage">>, DetailsJson),
     CurrentStorageStage = support_stage:deserialize(storage, CurrentStorageStageJson),
 
-    ?ERROR_ILLEGAL_SUPPORT_STAGE_TRANSITION(CurrentProviderStage, CurrentStorageStage).
+    ?new_ERROR_ILLEGAL_SUPPORT_STAGE_TRANSITION(CurrentProviderStage, CurrentStorageStage).
 
 
 -spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.
 to_http_code(_) ->
     ?HTTP_400_BAD_REQUEST.
+
+
+-spec to_errno(t()) -> {true, od_error:errno()}.
+to_errno(_) ->
+    {true, ?EINVAL}.

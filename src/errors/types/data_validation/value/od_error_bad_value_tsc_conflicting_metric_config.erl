@@ -23,7 +23,7 @@
 -export_type([t/0]).
 
 %% od_error callbacks
--export([to_json/1, from_json/1, to_http_code/1]).
+-export([to_json/1, from_json/1, to_http_code/1, to_errno/1]).
 
 
 %%%===================================================================
@@ -32,7 +32,7 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_BAD_VALUE_TSC_CONFLICTING_METRIC_CONFIG(TimeSeriesName, MetricName, ExistingMetricConfig, ConflictingMetricConfig)) ->
+to_json(?ERROR_BAD_VALUE_TSC_CONFLICTING_METRIC_CONFIG_MATCH(TimeSeriesName, MetricName, ExistingMetricConfig, ConflictingMetricConfig)) ->
     ExistingMetricConfigJson = jsonable_record:to_json(ExistingMetricConfig, metric_config),
     ConflictingMetricConfigJson = jsonable_record:to_json(ConflictingMetricConfig, metric_config),
 
@@ -44,7 +44,7 @@ to_json(?ERROR_BAD_VALUE_TSC_CONFLICTING_METRIC_CONFIG(TimeSeriesName, MetricNam
             <<"existingMetricConfig">> => ExistingMetricConfigJson,
             <<"conflictingMetricConfig">> => ConflictingMetricConfigJson
         },
-        <<"description">> => ?fmt(
+        <<"description">> => od_error:format_description(
             "Provided metric config for 'time series' ~ts and metric '~ts' conflicts with existing metric config (see details).",
             [TimeSeriesName, MetricName]
         )
@@ -62,9 +62,14 @@ from_json(OdErrorJson = #{<<"id">> := ?ERROR_BAD_VALUE_TSC_CONFLICTING_METRIC_CO
     ConflictingMetricConfigJson = maps:get(<<"conflictingMetricConfig">>, DetailsJson),
     ConflictingMetricConfig = jsonable_record:from_json(ConflictingMetricConfigJson, metric_config),
 
-    ?ERROR_BAD_VALUE_TSC_CONFLICTING_METRIC_CONFIG(TimeSeriesName, MetricName, ExistingMetricConfig, ConflictingMetricConfig).
+    ?new_ERROR_BAD_VALUE_TSC_CONFLICTING_METRIC_CONFIG(TimeSeriesName, MetricName, ExistingMetricConfig, ConflictingMetricConfig).
 
 
 -spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.
 to_http_code(_) ->
     ?HTTP_400_BAD_REQUEST.
+
+
+-spec to_errno(t()) -> {true, od_error:errno()}.
+to_errno(_) ->
+    {true, ?EINVAL}.

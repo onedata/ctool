@@ -23,7 +23,7 @@
 -export_type([t/0]).
 
 %% od_error callbacks
--export([to_json/1, from_json/1, to_http_code/1]).
+-export([to_json/1, from_json/1, to_http_code/1, to_errno/1]).
 
 
 %%%===================================================================
@@ -32,13 +32,13 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_EXTERNAL_SERVICE_OPERATION_FAILED(ServiceName)) ->
+to_json(?ERROR_EXTERNAL_SERVICE_OPERATION_FAILED_MATCH(ServiceName)) ->
     #{
         <<"id">> => ?ERROR_EXTERNAL_SERVICE_OPERATION_FAILED_ID,
         <<"details">> => #{
             <<"serviceName">> => ServiceName
         },
-        <<"description">> => ?fmt(
+        <<"description">> => od_error:format_description(
             "Your request could not be fulfilled due to problems with the external service '~ts'. This might be a temporary problem or a misconfiguration. Please try again later or contact the site administrators if the problem persists.",
             [ServiceName]
         )
@@ -51,9 +51,14 @@ from_json(OdErrorJson = #{<<"id">> := ?ERROR_EXTERNAL_SERVICE_OPERATION_FAILED_I
 
     ServiceName = maps:get(<<"serviceName">>, DetailsJson),
 
-    ?ERROR_EXTERNAL_SERVICE_OPERATION_FAILED(ServiceName).
+    ?new_ERROR_EXTERNAL_SERVICE_OPERATION_FAILED(ServiceName).
 
 
 -spec to_http_code(t()) -> ?HTTP_503_SERVICE_UNAVAILABLE.
 to_http_code(_) ->
     ?HTTP_503_SERVICE_UNAVAILABLE.
+
+
+-spec to_errno(t()) -> {true, od_error:errno()}.
+to_errno(_) ->
+    {true, ?EAGAIN}.

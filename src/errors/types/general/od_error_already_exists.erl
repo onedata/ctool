@@ -23,7 +23,7 @@
 -export_type([t/0]).
 
 %% od_error callbacks
--export([to_json/1, from_json/1, to_http_code/1]).
+-export([to_json/1, from_json/1, to_http_code/1, to_errno/1]).
 
 
 %%%===================================================================
@@ -32,7 +32,7 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_ALREADY_EXISTS) ->
+to_json(?ERROR_ALREADY_EXISTS_MATCH) ->
     #{
         <<"id">> => ?ERROR_ALREADY_EXISTS_ID,
         <<"description">> => <<"The resource already exists.">>
@@ -41,9 +41,14 @@ to_json(?ERROR_ALREADY_EXISTS) ->
 
 -spec from_json(json_utils:json_map()) -> t().
 from_json(#{<<"id">> := ?ERROR_ALREADY_EXISTS_ID}) ->
-    ?ERROR_ALREADY_EXISTS.
+    ?new_ERROR_ALREADY_EXISTS().
 
 
 -spec to_http_code(t()) -> ?HTTP_409_CONFLICT.
 to_http_code(_) ->
     ?HTTP_409_CONFLICT.
+
+
+-spec to_errno(t()) -> {true, od_error:errno()}.
+to_errno(_) ->
+    {true, ?EINVAL}.

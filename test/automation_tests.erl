@@ -39,7 +39,7 @@ encode_decode_atm_resource_spec_test() ->
     ?assertEqual(ExampleWithRoundCpuResources, atm_resource_spec:from_json(ExampleJsonWithIntegerCpuResources)),
 
     % test validation of values
-    ?assert(eunit_utils:throws_error_during_decode_from_json(?ERROR_BAD_DATA(<<"atmResourceSpec">>, undefined), [
+    ?assert(eunit_utils:throws_error_during_decode_from_json(?ERROR_BAD_DATA_MATCH(<<"atmResourceSpec">>, undefined), [
         Example#atm_resource_spec{cpu_requested = undefined},
         Example#atm_resource_spec{cpu_limit = <<"text">>},
         Example#atm_resource_spec{memory_requested = 17.8},
@@ -52,7 +52,7 @@ encode_decode_atm_resource_spec_test() ->
 encode_decode_atm_data_spec_test() ->
     encode_decode_test_base(atm_test_utils:example_data_specs()),
 
-    ExpDuplicateNameMatchersError = ?ERROR_BAD_DATA(
+    ExpDuplicateNameMatchersError = ?ERROR_BAD_DATA_MATCH(
         <<"specs">>,
         <<"There cannot be two measurement specs with the same name matcher">>
     ),
@@ -280,7 +280,7 @@ check_binary_text_sanitization(RecordType, Record, DataKey, SizeLimit) ->
     ?assertThrow(?ERROR_BAD_VALUE_TEXT_TOO_LARGE(DataKey, SizeLimit), jsonable_record:from_json(ExampleJson#{
         DataKey => ?RAND_UNICODE_STR(SizeLimit + 1)
     }, RecordType)),
-    ?assertThrow(?ERROR_BAD_VALUE_BINARY(DataKey), jsonable_record:from_json(ExampleJson#{
+    ?assertThrow(?ERROR_BAD_VALUE_STRING(DataKey), jsonable_record:from_json(ExampleJson#{
         DataKey => lists_utils:random_element([12345, atom, #{<<"a">> => <<"b">>}, [1, 2, 3]])
     }, RecordType)).
 

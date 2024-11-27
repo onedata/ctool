@@ -41,7 +41,7 @@
 verify(#cv_api{whitelist = Whitelist} = Cv, Service, Operation, GRI) ->
     case is_operation_whitelisted(Whitelist, Service, Operation, GRI) of
         true -> ok;
-        false -> ?ERROR_TOKEN_CAVEAT_UNVERIFIED(Cv)
+        false -> ?new_ERROR_TOKEN_CAVEAT_UNVERIFIED(Cv)
     end.
 
 

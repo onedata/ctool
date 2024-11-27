@@ -139,7 +139,7 @@ decode_with(skip_validation, RecordJson, NestedRecordDecoder) ->
 decode_with(validate, RecordJson, NestedRecordDecoder) ->
     Spec = decode_with(skip_validation, RecordJson, NestedRecordDecoder),
 
-    maps:size(Spec#time_series_schema.metrics) == 0 andalso throw(?ERROR_BAD_VALUE_EMPTY(<<"metrics">>)),
+    maps:size(Spec#time_series_schema.metrics) == 0 andalso throw(?new_ERROR_BAD_VALUE_EMPTY(<<"metrics">>)),
 
     % it is not allowed to specify two metrics with the same resolution and aggregator
     maps:fold(fun(_MetricName, MetricConfig, AlreadyUsedResolutionsAndAggregators) ->
@@ -148,7 +148,7 @@ decode_with(validate, RecordJson, NestedRecordDecoder) ->
             MetricConfig#metric_config.aggregator
         },
         ordsets:is_element(ResolutionAndAggregator, AlreadyUsedResolutionsAndAggregators) andalso throw(
-            ?ERROR_BAD_DATA(<<"metrics">>, <<"There cannot be two metrics with the same resolution and aggregator">>)
+            ?new_ERROR_BAD_DATA(<<"metrics">>, <<"There cannot be two metrics with the same resolution and aggregator">>)
         ),
         ordsets:add_element(ResolutionAndAggregator, AlreadyUsedResolutionsAndAggregators)
     end, ordsets:new(), Spec#time_series_schema.metrics),

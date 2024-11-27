@@ -81,7 +81,7 @@ infer_components(URL) ->
     try
         infer_components_insecure(URL)
     catch
-        _:_ -> throw(?ERROR_MALFORMED_DATA)
+        _:_ -> throw(?new_ERROR_MALFORMED_DATA())
     end.
 
 
@@ -102,7 +102,7 @@ infer_components_insecure(URL) ->
 
     {FinalScheme, FinalPort} = case {URLScheme, URLPort} of
         {undefined, undefined} ->
-            throw(?ERROR_MALFORMED_DATA);
+            throw(?new_ERROR_MALFORMED_DATA());
         {undefined, ?DEFAULT_HTTPS_PORT} ->
             {https, ?DEFAULT_HTTPS_PORT};
         {undefined, ?DEFAULT_HTTP_PORT} ->

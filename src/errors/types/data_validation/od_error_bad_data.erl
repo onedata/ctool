@@ -23,7 +23,7 @@
 -export_type([t/0]).
 
 %% od_error callbacks
--export([to_json/1, from_json/1, to_http_code/1]).
+-export([to_json/1, from_json/1, to_http_code/1, to_errno/1]).
 
 
 %%%===================================================================
@@ -32,16 +32,16 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_BAD_DATA(Key, ?ERROR = SpecificError)) ->
+to_json(?ERROR_BAD_DATA_MATCH(Key, ?ERROR = SpecificError)) ->
     #{
         <<"id">> => ?ERROR_BAD_DATA_ID,
         <<"details">> => #{
             <<"key">> => Key,
             <<"specificError">> => errors:to_json(SpecificError)
         },
-        <<"description">> => ?fmt("Bad value provided for \"~ts\" (see details).", [Key])
+        <<"description">> => od_error:format_description("Bad value provided for \"~ts\" (see details).", [Key])
     };
-to_json(?ERROR_BAD_DATA(Key, HumanReadableHint)) ->
+to_json(?ERROR_BAD_DATA_MATCH(Key, HumanReadableHint)) ->
     HumanReadableHintJson = utils:undefined_to_null(HumanReadableHint),
 
     #{
@@ -50,7 +50,7 @@ to_json(?ERROR_BAD_DATA(Key, HumanReadableHint)) ->
             <<"key">> => Key,
             <<"hint">> => HumanReadableHintJson
         },
-        <<"description">> => ?fmt("Bad value provided for \"~ts\": ~ts.", [Key, HumanReadableHintJson])
+        <<"description">> => od_error:format_description("Bad value provided for \"~ts\": ~ts.", [Key, HumanReadableHintJson])
     }.
 
 
@@ -59,15 +59,20 @@ from_json(#{<<"id">> := ?ERROR_BAD_DATA_ID, <<"details">> := #{
     <<"key">> := Key,
     <<"specificError">> := SpecificError
 }}) ->
-    ?ERROR_BAD_DATA(Key, errors:from_json(SpecificError));
+    ?new_ERROR_BAD_DATA(Key, errors:from_json(SpecificError));
 
 from_json(#{<<"id">> := ?ERROR_BAD_DATA_ID, <<"details">> := DetailsJson}) ->
     Key = maps:get(<<"key">>, DetailsJson),
     HumanReadableHint = utils:null_to_undefined(maps:get(<<"hint">>, DetailsJson, null)),
 
-    ?ERROR_BAD_DATA(Key, HumanReadableHint).
+    ?new_ERROR_BAD_DATA(Key, HumanReadableHint).
 
 
 -spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.
 to_http_code(_) ->
     ?HTTP_400_BAD_REQUEST.
+
+
+-spec to_errno(t()) -> {true, od_error:errno()}.
+to_errno(_) ->
+    {true, ?EINVAL}.

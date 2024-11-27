@@ -23,7 +23,7 @@
 -export_type([t/0]).
 
 %% od_error callbacks
--export([to_json/1, from_json/1, to_http_code/1]).
+-export([to_json/1, from_json/1, to_http_code/1, to_errno/1]).
 
 
 %%%===================================================================
@@ -32,9 +32,8 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_CANNOT_DELETE_ENTITY(EntityType, EntityId)) ->
-    EntityTypeJson = atom_to_binary(EntityType, utf8),
-    EntityTypePrint = gri:serialize_type(EntityType),
+to_json(?ERROR_CANNOT_DELETE_ENTITY_MATCH(EntityType, EntityId)) ->
+    EntityTypeJson = gri:serialize_type(EntityType),
 
     #{
         <<"id">> => ?ERROR_CANNOT_DELETE_ENTITY_ID,
@@ -42,9 +41,9 @@ to_json(?ERROR_CANNOT_DELETE_ENTITY(EntityType, EntityId)) ->
             <<"entityType">> => EntityTypeJson,
             <<"entityId">> => EntityId
         },
-        <<"description">> => ?fmt(
+        <<"description">> => od_error:format_description(
             "Cannot delete ~ts:~ts; failed to delete some dependent relations.",
-            [EntityTypePrint, EntityId]
+            [EntityTypeJson, EntityId]
         )
     }.
 
@@ -54,12 +53,17 @@ from_json(OdErrorJson = #{<<"id">> := ?ERROR_CANNOT_DELETE_ENTITY_ID}) ->
     DetailsJson = maps:get(<<"details">>, OdErrorJson),
 
     EntityTypeJson = maps:get(<<"entityType">>, DetailsJson),
-    EntityType = binary_to_existing_atom(EntityTypeJson, utf8),
+    EntityType = gri:deserialize_type(EntityTypeJson),
     EntityId = maps:get(<<"entityId">>, DetailsJson),
 
-    ?ERROR_CANNOT_DELETE_ENTITY(EntityType, EntityId).
+    ?new_ERROR_CANNOT_DELETE_ENTITY(EntityType, EntityId).
 
 
 -spec to_http_code(t()) -> ?HTTP_500_INTERNAL_SERVER_ERROR.
 to_http_code(_) ->
     ?HTTP_500_INTERNAL_SERVER_ERROR.
+
+
+-spec to_errno(t()) -> false.
+to_errno(_) ->
+    false.

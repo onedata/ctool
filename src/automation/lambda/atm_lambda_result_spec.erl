@@ -104,7 +104,7 @@ decode_with(skip_validation, RecordJson, NestedRecordDecoder) ->
     };
 decode_with(validate, RecordJson, NestedRecordDecoder) ->
     #atm_lambda_result_spec{name = Name} = ResultSpec = decode_with(skip_validation, RecordJson, NestedRecordDecoder),
-    str_utils:validate_name(Name) orelse throw(?ERROR_BAD_VALUE_NAME(<<"resultSpec.name">>)),
+    str_utils:validate_name(Name) orelse throw(?new_ERROR_BAD_VALUE_NAME(<<"resultSpec.name">>)),
     ResultSpec.
 
 

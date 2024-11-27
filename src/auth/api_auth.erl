@@ -68,7 +68,7 @@ check_authorization(#auth{caveats = Caveats}, Service, Operation, GRI) ->
     end,
     case Result of
         ok -> ok;
-        ?ERROR = Error -> ?ERROR_UNAUTHORIZED(Error)
+        ?ERROR = Error -> ?new_ERROR_UNAUTHORIZED(Error)
     end.
 
 %%%===================================================================
@@ -104,7 +104,7 @@ verify_service_caveats_against_operation(Caveats, Service, Operation, GRI) ->
             ApiCaveat = service_caveats:to_allowed_api(ServiceCaveat),
             case cv_api:verify(ApiCaveat, Service, Operation, GRI) of
                 ok -> ok;
-                ?ERROR -> ?ERROR_TOKEN_CAVEAT_UNVERIFIED(ServiceCaveat)
+                ?ERROR -> ?new_ERROR_TOKEN_CAVEAT_UNVERIFIED(ServiceCaveat)
             end;
         (_ServiceCaveat, ?ERROR = Error) ->
             Error
@@ -121,7 +121,7 @@ verify_data_access_caveats_against_operation(Caveats, Service, Operation, GRI) -
             ApiCaveat = data_access_caveats:to_allowed_api(Service, DataAccessCaveat),
             case cv_api:verify(ApiCaveat, Service, Operation, GRI) of
                 ok -> ok;
-                ?ERROR -> ?ERROR_TOKEN_CAVEAT_UNVERIFIED(DataAccessCaveat)
+                ?ERROR -> ?new_ERROR_TOKEN_CAVEAT_UNVERIFIED(DataAccessCaveat)
             end;
         (_DataAccessCaveat, ?ERROR = Error) ->
             Error

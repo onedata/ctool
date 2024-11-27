@@ -23,7 +23,7 @@
 -export_type([t/0]).
 
 %% od_error callbacks
--export([to_json/1, from_json/1, to_http_code/1]).
+-export([to_json/1, from_json/1, to_http_code/1, to_errno/1]).
 
 
 %%%===================================================================
@@ -32,7 +32,7 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_USER_BLOCKED) ->
+to_json(?ERROR_USER_BLOCKED_MATCH) ->
     #{
         <<"id">> => ?ERROR_USER_BLOCKED_ID,
         <<"description">> => <<"This user account has been blocked by the administrator and cannot be used unless it is unblocked again.">>
@@ -41,9 +41,14 @@ to_json(?ERROR_USER_BLOCKED) ->
 
 -spec from_json(json_utils:json_map()) -> t().
 from_json(#{<<"id">> := ?ERROR_USER_BLOCKED_ID}) ->
-    ?ERROR_USER_BLOCKED.
+    ?new_ERROR_USER_BLOCKED().
 
 
 -spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.
 to_http_code(_) ->
     ?HTTP_400_BAD_REQUEST.
+
+
+-spec to_errno(t()) -> {true, od_error:errno()}.
+to_errno(_) ->
+    {true, ?EINVAL}.

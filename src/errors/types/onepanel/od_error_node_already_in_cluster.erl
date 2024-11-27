@@ -23,7 +23,7 @@
 -export_type([t/0]).
 
 %% od_error callbacks
--export([to_json/1, from_json/1, to_http_code/1]).
+-export([to_json/1, from_json/1, to_http_code/1, to_errno/1]).
 
 
 %%%===================================================================
@@ -32,13 +32,13 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_NODE_ALREADY_IN_CLUSTER(Hostname)) ->
+to_json(?ERROR_NODE_ALREADY_IN_CLUSTER_MATCH(Hostname)) ->
     #{
         <<"id">> => ?ERROR_NODE_ALREADY_IN_CLUSTER_ID,
         <<"details">> => #{
             <<"hostname">> => Hostname
         },
-        <<"description">> => ?fmt(
+        <<"description">> => od_error:format_description(
             "Cannot add \"~ts\", it is already part of a cluster.",
             [Hostname]
         )
@@ -51,9 +51,14 @@ from_json(OdErrorJson = #{<<"id">> := ?ERROR_NODE_ALREADY_IN_CLUSTER_ID}) ->
 
     Hostname = maps:get(<<"hostname">>, DetailsJson),
 
-    ?ERROR_NODE_ALREADY_IN_CLUSTER(Hostname).
+    ?new_ERROR_NODE_ALREADY_IN_CLUSTER(Hostname).
 
 
 -spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.
 to_http_code(_) ->
     ?HTTP_400_BAD_REQUEST.
+
+
+-spec to_errno(t()) -> false.
+to_errno(_) ->
+    false.

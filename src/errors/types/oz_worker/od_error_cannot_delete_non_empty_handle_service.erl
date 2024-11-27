@@ -23,7 +23,7 @@
 -export_type([t/0]).
 
 %% od_error callbacks
--export([to_json/1, from_json/1, to_http_code/1]).
+-export([to_json/1, from_json/1, to_http_code/1, to_errno/1]).
 
 
 %%%===================================================================
@@ -32,7 +32,7 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_CANNOT_DELETE_NON_EMPTY_HANDLE_SERVICE) ->
+to_json(?ERROR_CANNOT_DELETE_NON_EMPTY_HANDLE_SERVICE_MATCH) ->
     #{
         <<"id">> => ?ERROR_CANNOT_DELETE_NON_EMPTY_HANDLE_SERVICE_ID,
         <<"description">> => <<"This handle service cannot be deleted as it still has some handles registered. All the handles would have to be deleted first, but proceed with caution as Open Data records should be persistent.">>
@@ -41,9 +41,14 @@ to_json(?ERROR_CANNOT_DELETE_NON_EMPTY_HANDLE_SERVICE) ->
 
 -spec from_json(json_utils:json_map()) -> t().
 from_json(#{<<"id">> := ?ERROR_CANNOT_DELETE_NON_EMPTY_HANDLE_SERVICE_ID}) ->
-    ?ERROR_CANNOT_DELETE_NON_EMPTY_HANDLE_SERVICE.
+    ?new_ERROR_CANNOT_DELETE_NON_EMPTY_HANDLE_SERVICE().
 
 
 -spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.
 to_http_code(_) ->
     ?HTTP_400_BAD_REQUEST.
+
+
+-spec to_errno(t()) -> false.
+to_errno(_) ->
+    false.

@@ -23,7 +23,7 @@
 -export_type([t/0]).
 
 %% od_error callbacks
--export([to_json/1, from_json/1, to_http_code/1]).
+-export([to_json/1, from_json/1, to_http_code/1, to_errno/1]).
 
 
 %%%===================================================================
@@ -32,14 +32,14 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_SPACE_ALREADY_SUPPORTED_WITH_IMPORTED_STORAGE(SpaceId, StorageId)) ->
+to_json(?ERROR_SPACE_ALREADY_SUPPORTED_WITH_IMPORTED_STORAGE_MATCH(SpaceId, StorageId)) ->
     #{
         <<"id">> => ?ERROR_SPACE_ALREADY_SUPPORTED_WITH_IMPORTED_STORAGE_ID,
         <<"details">> => #{
             <<"spaceId">> => SpaceId,
             <<"storageId">> => StorageId
         },
-        <<"description">> => ?fmt(
+        <<"description">> => od_error:format_description(
             "Space ~ts is already supported with an imported storage ~ts.",
             [SpaceId, StorageId]
         )
@@ -53,9 +53,14 @@ from_json(OdErrorJson = #{<<"id">> := ?ERROR_SPACE_ALREADY_SUPPORTED_WITH_IMPORT
     SpaceId = maps:get(<<"spaceId">>, DetailsJson),
     StorageId = maps:get(<<"storageId">>, DetailsJson),
 
-    ?ERROR_SPACE_ALREADY_SUPPORTED_WITH_IMPORTED_STORAGE(SpaceId, StorageId).
+    ?new_ERROR_SPACE_ALREADY_SUPPORTED_WITH_IMPORTED_STORAGE(SpaceId, StorageId).
 
 
 -spec to_http_code(t()) -> ?HTTP_409_CONFLICT.
 to_http_code(_) ->
     ?HTTP_409_CONFLICT.
+
+
+-spec to_errno(t()) -> false.
+to_errno(_) ->
+    false.

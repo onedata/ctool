@@ -23,7 +23,7 @@
 -export_type([t/0]).
 
 %% od_error callbacks
--export([to_json/1, from_json/1, to_http_code/1]).
+-export([to_json/1, from_json/1, to_http_code/1, to_errno/1]).
 
 
 %%%===================================================================
@@ -32,10 +32,12 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_NOT_AN_INVITE_TOKEN(ExpectedInviteType, Received)) ->
+to_json(?ERROR_NOT_AN_INVITE_TOKEN_MATCH(ExpectedInviteType, Received)) ->
     ExpectedInviteTypeJson = case ExpectedInviteType of
-        any -> <<"any">>;
-        _ -> token_type:invite_type_to_str(ExpectedInviteType)
+        any ->
+            <<"any">>;
+        _ ->
+            token_type:invite_type_to_str(ExpectedInviteType)
     end,
     ReceivedJson = token_type:to_json(Received),
     ReceivedPrint = token_type:to_printable(Received),
@@ -46,7 +48,7 @@ to_json(?ERROR_NOT_AN_INVITE_TOKEN(ExpectedInviteType, Received)) ->
             <<"expectedInviteType">> => ExpectedInviteTypeJson,
             <<"received">> => ReceivedJson
         },
-        <<"description">> => ?fmt(
+        <<"description">> => od_error:format_description(
             "Expected an invitation token of type '~ts', but received a(n) ~ts.",
             [ExpectedInviteType, ReceivedPrint]
         )
@@ -59,15 +61,22 @@ from_json(OdErrorJson = #{<<"id">> := ?ERROR_NOT_AN_INVITE_TOKEN_ID}) ->
 
     ExpectedInviteTypeJson = maps:get(<<"expectedInviteType">>, DetailsJson),
     ExpectedInviteType = case ExpectedInviteTypeJson of
-        <<"any">> -> any;
-        _ -> token_type:invite_type_from_str(ExpectedInviteTypeJson)
+        <<"any">> ->
+            any;
+        _ ->
+            token_type:invite_type_from_str(ExpectedInviteTypeJson)
     end,
     ReceivedJson = maps:get(<<"received">>, DetailsJson),
     Received = token_type:from_json(ReceivedJson),
 
-    ?ERROR_NOT_AN_INVITE_TOKEN(ExpectedInviteType, Received).
+    ?new_ERROR_NOT_AN_INVITE_TOKEN(ExpectedInviteType, Received).
 
 
 -spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.
 to_http_code(_) ->
     ?HTTP_400_BAD_REQUEST.
+
+
+-spec to_errno(t()) -> {true, od_error:errno()}.
+to_errno(_) ->
+    {true, ?EINVAL}.

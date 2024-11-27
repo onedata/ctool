@@ -23,7 +23,7 @@
 -export_type([t/0]).
 
 %% od_error callbacks
--export([to_json/1, from_json/1, to_http_code/1]).
+-export([to_json/1, from_json/1, to_http_code/1, to_errno/1]).
 
 
 %%%===================================================================
@@ -32,12 +32,14 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_UNAUTHORIZED(AuthError)) ->
-    AuthErrorJson = case AuthError of
+to_json(?ERROR_UNAUTHORIZED_MATCH(AuthError)) ->
+    {AuthErrorJson, AuthErrorPrint} = case AuthError of
         undefined ->
-            null;
+            {null, null};
         _ ->
-            errors:to_json(AuthError)
+            AuthErrorJsonTmp = errors:to_json(AuthError),
+            AuthErrorPrintTmp = maps:get(<<"description">>, AuthErrorJsonTmp),
+            {AuthErrorJsonTmp, AuthErrorPrintTmp}
     end,
 
     #{
@@ -45,7 +47,10 @@ to_json(?ERROR_UNAUTHORIZED(AuthError)) ->
         <<"details">> => #{
             <<"authError">> => AuthErrorJson
         },
-        <<"description">> => <<"You must authenticate yourself to perform this operation.">>
+        <<"description">> => od_error:format_description(
+            "You must authenticate yourself to perform this operation. ~ts",
+            [AuthErrorPrint]
+        )
     }.
 
 
@@ -60,9 +65,14 @@ from_json(OdErrorJson = #{<<"id">> := ?ERROR_UNAUTHORIZED_ID}) ->
             errors:from_json(AuthErrorJson)
     end,
 
-    ?ERROR_UNAUTHORIZED(AuthError).
+    ?new_ERROR_UNAUTHORIZED(AuthError).
 
 
 -spec to_http_code(t()) -> ?HTTP_401_UNAUTHORIZED.
 to_http_code(_) ->
     ?HTTP_401_UNAUTHORIZED.
+
+
+-spec to_errno(t()) -> {true, od_error:errno()}.
+to_errno(_) ->
+    {true, ?EACCES}.

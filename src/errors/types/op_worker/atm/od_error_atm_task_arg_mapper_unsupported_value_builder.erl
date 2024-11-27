@@ -23,7 +23,7 @@
 -export_type([t/0]).
 
 %% od_error callbacks
--export([to_json/1, from_json/1, to_http_code/1]).
+-export([to_json/1, from_json/1, to_http_code/1, to_errno/1]).
 
 
 %%%===================================================================
@@ -32,10 +32,10 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_ATM_TASK_ARG_MAPPER_UNSUPPORTED_VALUE_BUILDER(Type, Supported)) ->
+to_json(?ERROR_ATM_TASK_ARG_MAPPER_UNSUPPORTED_VALUE_BUILDER_MATCH(Type, Supported)) ->
     TypeJson = atm_task_argument_value_builder:type_to_json(Type),
     SupportedJson = lists:map(fun atm_task_argument_value_builder:type_to_json/1, Supported),
-    SupportedPrint = ?fmt_csv(SupportedJson),
+    SupportedPrint = od_error:format_csv(SupportedJson),
 
     #{
         <<"id">> => ?ERROR_ATM_TASK_ARG_MAPPER_UNSUPPORTED_VALUE_BUILDER_ID,
@@ -43,7 +43,7 @@ to_json(?ERROR_ATM_TASK_ARG_MAPPER_UNSUPPORTED_VALUE_BUILDER(Type, Supported)) -
             <<"type">> => TypeJson,
             <<"supported">> => SupportedJson
         },
-        <<"description">> => ?fmt(
+        <<"description">> => od_error:format_description(
             "Bad automation task argument value builder: type \"~ts\" not supported - must be one of: ~ts.",
             [TypeJson, SupportedPrint]
         )
@@ -59,9 +59,14 @@ from_json(OdErrorJson = #{<<"id">> := ?ERROR_ATM_TASK_ARG_MAPPER_UNSUPPORTED_VAL
     SupportedJson = maps:get(<<"supported">>, DetailsJson),
     Supported = lists:map(fun atm_task_argument_value_builder:type_from_json/1, SupportedJson),
 
-    ?ERROR_ATM_TASK_ARG_MAPPER_UNSUPPORTED_VALUE_BUILDER(Type, Supported).
+    ?new_ERROR_ATM_TASK_ARG_MAPPER_UNSUPPORTED_VALUE_BUILDER(Type, Supported).
 
 
 -spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.
 to_http_code(_) ->
     ?HTTP_400_BAD_REQUEST.
+
+
+-spec to_errno(t()) -> false.
+to_errno(_) ->
+    false.

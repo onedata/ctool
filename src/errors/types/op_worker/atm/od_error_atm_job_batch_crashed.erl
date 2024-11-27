@@ -23,7 +23,7 @@
 -export_type([t/0]).
 
 %% od_error callbacks
--export([to_json/1, from_json/1, to_http_code/1]).
+-export([to_json/1, from_json/1, to_http_code/1, to_errno/1]).
 
 
 %%%===================================================================
@@ -32,7 +32,7 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_ATM_JOB_BATCH_CRASHED(Reason)) ->
+to_json(?ERROR_ATM_JOB_BATCH_CRASHED_MATCH(Reason)) ->
     #{
         <<"id">> => ?ERROR_ATM_JOB_BATCH_CRASHED_ID,
         <<"details">> => #{
@@ -48,9 +48,14 @@ from_json(OdErrorJson = #{<<"id">> := ?ERROR_ATM_JOB_BATCH_CRASHED_ID}) ->
 
     Reason = maps:get(<<"reason">>, DetailsJson),
 
-    ?ERROR_ATM_JOB_BATCH_CRASHED(Reason).
+    ?new_ERROR_ATM_JOB_BATCH_CRASHED(Reason).
 
 
 -spec to_http_code(t()) -> ?HTTP_500_INTERNAL_SERVER_ERROR.
 to_http_code(_) ->
     ?HTTP_500_INTERNAL_SERVER_ERROR.
+
+
+-spec to_errno(t()) -> false.
+to_errno(_) ->
+    false.

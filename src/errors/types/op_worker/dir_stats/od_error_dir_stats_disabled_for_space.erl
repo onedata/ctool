@@ -23,7 +23,7 @@
 -export_type([t/0]).
 
 %% od_error callbacks
--export([to_json/1, from_json/1, to_http_code/1]).
+-export([to_json/1, from_json/1, to_http_code/1, to_errno/1]).
 
 
 %%%===================================================================
@@ -32,7 +32,7 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_DIR_STATS_DISABLED_FOR_SPACE) ->
+to_json(?ERROR_DIR_STATS_DISABLED_FOR_SPACE_MATCH) ->
     #{
         <<"id">> => ?ERROR_DIR_STATS_DISABLED_FOR_SPACE_ID,
         <<"description">> => <<"Directory statistics collection is disabled for this space.">>
@@ -41,9 +41,14 @@ to_json(?ERROR_DIR_STATS_DISABLED_FOR_SPACE) ->
 
 -spec from_json(json_utils:json_map()) -> t().
 from_json(#{<<"id">> := ?ERROR_DIR_STATS_DISABLED_FOR_SPACE_ID}) ->
-    ?ERROR_DIR_STATS_DISABLED_FOR_SPACE.
+    ?new_ERROR_DIR_STATS_DISABLED_FOR_SPACE().
 
 
 -spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.
 to_http_code(_) ->
     ?HTTP_400_BAD_REQUEST.
+
+
+-spec to_errno(t()) -> false.
+to_errno(_) ->
+    false.

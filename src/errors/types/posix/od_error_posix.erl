@@ -23,7 +23,7 @@
 -export_type([t/0]).
 
 %% od_error callbacks
--export([to_json/1, from_json/1, to_http_code/1]).
+-export([to_json/1, from_json/1, to_http_code/1, to_errno/1]).
 
 
 %%%===================================================================
@@ -32,7 +32,7 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_POSIX(Errno)) ->
+to_json(?ERROR_POSIX_MATCH(Errno)) ->
     ErrnoJson = atom_to_binary(Errno, utf8),
 
     #{
@@ -40,7 +40,7 @@ to_json(?ERROR_POSIX(Errno)) ->
         <<"details">> => #{
             <<"errno">> => ErrnoJson
         },
-        <<"description">> => ?fmt(
+        <<"description">> => od_error:format_description(
             "Operation failed with POSIX error: ~ts.",
             [Errno]
         )
@@ -54,9 +54,14 @@ from_json(OdErrorJson = #{<<"id">> := ?ERROR_POSIX_ID}) ->
     ErrnoJson = maps:get(<<"errno">>, DetailsJson),
     Errno = binary_to_existing_atom(ErrnoJson, utf8),
 
-    ?ERROR_POSIX(Errno).
+    ?new_ERROR_POSIX(Errno).
 
 
 -spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.
 to_http_code(_) ->
     ?HTTP_400_BAD_REQUEST.
+
+
+-spec to_errno(t()) -> {true, od_error:errno()}.
+to_errno(?ERROR_POSIX_MATCH(Errno)) ->
+    {true, Errno}.
