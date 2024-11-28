@@ -10,6 +10,7 @@
 -module(cth_logger).
 -author("Jakub Kudzia").
 
+-include("global_definitions.hrl").
 -include("test/test_utils.hrl").
 
 %% API
@@ -20,7 +21,8 @@
 %% prehooks
 -export([pre_init_per_suite/3, pre_init_per_testcase/3]).
 %% posthooks
--export([post_end_per_testcase/4]).
+-export([post_init_per_group/5, post_end_per_group/5]).
+-export([post_init_per_testcase/4, post_end_per_testcase/4]).
 
 -record(logger_state, {suite}).
 -type logger_state() :: #logger_state{}.
@@ -37,69 +39,181 @@ init(_Id, _Opts) ->
     {ok, #logger_state{}, ?CTH_LOGGER_PRIORITY}.
 
 
-%%--------------------------------------------------------------------
-%% @doc
-%% CTH callback called before init_per_suite.
-%% Saves current suite name in logger state.
-%% @end
-%%--------------------------------------------------------------------
 -spec pre_init_per_suite(Suite :: term(), Config :: [term()],
     State :: logger_state()) -> {ok, logger_state()}.
 pre_init_per_suite(Suite, Config, State) ->
     {Config, State#logger_state{suite = Suite}}.
 
 
-%%--------------------------------------------------------------------
-%% @doc
-%% CTH callback called before init_per_testcase.
-%% Logs testcase name that will be started.
-%% @end
-%%--------------------------------------------------------------------
 -spec pre_init_per_testcase(TestCase :: atom(), Config :: [term()],
     State :: logger_state()) -> {[term()], logger_state()}.
-pre_init_per_testcase(TestCase, Config, State = #logger_state{suite = Suite}) ->
-    ct:pal("Testcase ~tp in suite: ~tp STARTED", [TestCase, Suite]),
+pre_init_per_testcase(TestCase, Config, State) ->
+    ct_pal_report(State, TestCase, "STARTED"),
     {Config, State}.
 
-%%--------------------------------------------------------------------
-%% @doc
-%% CTH callback called after end_per_testcase.
-%% Logs testcase name that was executed.
-%% @end
-%%--------------------------------------------------------------------
+
+-spec post_init_per_group(SuiteName :: atom(), TestCase :: atom(), Config :: [term()],
+    Return :: ok | {error | skip, term()}, State :: logger_state()) ->
+    {ok | {error | skip, term()}, logger_state()}.
+post_init_per_group(_SuiteName, _GroupName, _Config, [_ | _] = Return, State) ->
+    % if everything is ok, the Return is the modified Config return by the callback
+    {Return, State};
+
+post_init_per_group(_SuiteName, GroupName, _Config, Return, State) ->
+    Msg = case Return of
+        {'EXIT', {Reason, Stacktrace}} ->
+            fmt_log_exception('EXIT', Reason, Stacktrace);
+        {failed, {thrown, ThrownTerm}} ->
+            fmt_log_throw(ThrownTerm);
+        _ ->
+            fmt_log_unexpected_return(?MODULE, ?FUNCTION_NAME, Return)
+    end,
+    ct_pal_report(State, GroupName, "group's init_per_group CRASHED due to:~n~n~ts", [Msg]),
+    {Return, State}.
+
+
+-spec post_end_per_group(SuiteName :: atom(), TestCase :: atom(), Config :: [term()],
+    Return :: ok | {error | skip, term()}, State :: logger_state()) ->
+    {ok | {error | skip, term()}, logger_state()}.
+post_end_per_group(_SuiteName, _GroupName, _Config, ok, State) ->
+    {ok, State};
+
+post_end_per_group(_SuiteName, GroupName, _Config, Return = {failed, {_, _, FailureSummary}}, State) ->
+    Msg = case FailureSummary of
+        {Class, {Reason, Stacktrace}} ->
+            fmt_log_exception(Class, Reason, Stacktrace);
+        ThrownTerm ->
+            fmt_log_throw(ThrownTerm)
+    end,
+    ct_pal_report(State, GroupName, "group's end_per_group CRASHED due to:~n~n~ts", [Msg]),
+    {Return, State};
+
+post_end_per_group(_SuiteName, GroupName, _Config, Return = {error, _}, State) ->
+    Msg = case Return of
+        {error, {thrown, ThrownTerm}} ->
+            fmt_log_throw(ThrownTerm);
+        {error, {Reason, Stacktrace}} ->
+            fmt_log_exception(unknown, Reason, Stacktrace);
+        {error, Reason} ->
+            fmt_log_exception(unknown, Reason, undefined)
+    end,
+    ct_pal_report(State, GroupName, "group's end_per_group CRASHED due to:~n~n~ts", [Msg]),
+    {Return, State};
+
+post_end_per_group(_SuiteName, GroupName, _Config, Return, State) ->
+    ct_pal_report(State, GroupName, "group's end_per_group DID SOMETHING WE HADN'T FORESEEN:~n~n~ts", [
+        fmt_log_unexpected_return(?MODULE, ?FUNCTION_NAME, Return)
+    ]),
+    {Return, State}.
+
+
+-spec post_init_per_testcase(TestCase :: atom(), Config :: [term()],
+    Return :: ok | {error | skip, term()}, State :: logger_state()) ->
+    {ok | {error | skip, term()}, logger_state()}.
+post_init_per_testcase(_TestCase, _Config, ok, State) ->
+    {ok, State};
+
+post_init_per_testcase(TestCase, _Config, Return, State) ->
+    Msg = case Return of
+        {skip, {failed, {_, _, {Reason, Stacktrace}}}} ->
+            fmt_log_exception(unknown, Reason, Stacktrace);
+        {skip, {failed, {_, _, ThrownTerm}}} ->
+            fmt_log_throw(ThrownTerm);
+        _ ->
+            fmt_log_unexpected_return(?MODULE, ?FUNCTION_NAME, Return)
+    end,
+    ct_pal_report(State, TestCase, "init_per_testcase CRASHED due to:~n~n~ts", [Msg]),
+    {Return, State}.
+
+
 -spec post_end_per_testcase(TestCase :: atom(), Config :: [term()],
     Return :: ok | {error | skip, term()}, State :: logger_state()) ->
     {ok | {error | skip, term()}, logger_state()}.
 post_end_per_testcase(TestCase, _Config, ok, State) ->
-    ct:pal("Testcase ~tp in suite: ~tp PASSED", [TestCase, State#logger_state.suite]),
+    ct_pal_report(State, TestCase, "PASSED"),
     {ok, State};
 
-post_end_per_testcase(TestCase, _Config, Return = {skip, _}, State) ->
-    ct:pal("Testcase ~tp in suite: ~tp SKIPPED", [TestCase, State#logger_state.suite]),
+post_end_per_testcase(TestCase, _Config, Return = {failed, {_, _, FailureSummary}}, State) ->
+    Msg = case FailureSummary of
+        {Class, {Reason, Stacktrace}} ->
+            fmt_log_exception(Class, Reason, Stacktrace);
+        ThrownTerm ->
+            fmt_log_throw(ThrownTerm)
+    end,
+    ct_pal_report(State, TestCase, "end_per_testcase CRASHED due to:~n~n~ts", [Msg]),
     {Return, State};
 
 post_end_per_testcase(TestCase, _Config, Return = {error, _}, State) ->
     Msg = case Return of
-        {error, {thrown, Reason}} ->
-            onedata_logger:format_generic_log("An uncaught throw occurred: ~tp", [Reason]);
+        {error, {thrown, ThrownTerm}} ->
+            fmt_log_throw(ThrownTerm);
         {error, {Reason, Stacktrace}} ->
-            onedata_logger:format_generic_log(
-                "An unexpected error occurred~n"
-                "> Stacktrace:~ts~n"
-                "> Caught: ~tp",
-                [lager:pr_stacktrace(Stacktrace), Reason]
-            );
+            fmt_log_exception(unknown, Reason, Stacktrace);
         {error, Reason} ->
-            onedata_logger:format_generic_log(
-                "An unexpected exception occurred~n~n~tp",
-                [Reason]
-            )
+            fmt_log_exception(unknown, Reason, undefined)
     end,
-    ct:pal("Testcase ~tp in suite: ~tp FAILED~n~n~ts", [TestCase, State#logger_state.suite, Msg]),
+    ct_pal_report(State, TestCase, "FAILED due to:~n~n~ts", [Msg]),
     {Return, State};
 
 post_end_per_testcase(TestCase, _Config, Return, State) ->
-    ct:pal("Testcase ~tp in suite: ~tp RETURNED: ~tp", [
-        TestCase, State#logger_state.suite, Return
+    ct_pal_report(State, TestCase, "DID SOMETHING WE HADN'T FORESEEN:~n~n~ts", [
+        fmt_log_unexpected_return(?MODULE, ?FUNCTION_NAME, Return)
     ]),
     {Return, State}.
+
+
+%%%===================================================================
+%%% Helpers
+%%%===================================================================
+
+
+%% @private
+-spec ct_pal_report(logger_state(), atom(), string()) -> ok.
+ct_pal_report(State, TestCaseOrGroupName, Msg) ->
+    ct_pal_report(State, TestCaseOrGroupName, "~ts", [Msg]).
+
+%% @private
+-spec ct_pal_report(logger_state(), atom(), string(), [term()]) -> ok.
+ct_pal_report(#logger_state{suite = Suite}, TestCaseOrGroupName, Format, Args) ->
+    ct:pal("[~tp] ~tp " ++ Format, [Suite, TestCaseOrGroupName] ++ Args).
+
+
+%% @private
+-spec fmt_log_exception(atom(), term(), stacktrace() | undefined) -> string().
+fmt_log_exception(Class, Reason, Stacktrace) ->
+    str_utils:format(
+        "An unexpected exception occurred:~n"
+        "> Stacktrace: ~ts~n"
+        "> Class: ~tp~n"
+        "> Reason: ~tp", [
+            case Stacktrace of
+                undefined -> "unknown";
+                _ -> lager:pr_stacktrace(Stacktrace)
+            end,
+            Class,
+            Reason
+        ]
+    ).
+
+
+%% @private
+-spec fmt_log_throw(term()) -> string().
+fmt_log_throw(ThrownTerm) ->
+    str_utils:format(
+        "An uncaught throw occurred:~n"
+        "> Thrown: ~tp~n", [
+            ThrownTerm
+        ]
+    ).
+
+
+%% @private
+-spec fmt_log_unexpected_return(module(), atom(), term()) -> string().
+fmt_log_unexpected_return(Module, Function, Return) ->
+    str_utils:format(
+        "Got an unexpected return in ~tp:~tp - consider adding a more specific log here!~n"
+        "> Return: ~tp~n", [
+            Module, Function,
+            Return
+        ]
+    ).

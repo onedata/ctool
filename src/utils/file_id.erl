@@ -39,11 +39,11 @@
 -type file_guid() :: binary().
 -type space_id() :: binary().
 -type share_id() :: binary().
--type file_meta_uuid() :: binary().
+-type file_uuid() :: binary().
 
 -type share_root_file_guid() :: file_guid().
 
--export_type([objectid/0, file_guid/0, space_id/0]).
+-export_type([objectid/0, file_uuid/0, file_guid/0, space_id/0]).
 
 %% The SNMP Enterprise Number for your organization in network byte
 %% order. See RFC 2578 and
@@ -112,7 +112,7 @@
 %% Converts Uuid, SpaceId and Share id to share guid (allowing for guest read)
 %% @end
 %%--------------------------------------------------------------------
--spec pack_share_guid(file_meta_uuid(), space_id(), share_id() | undefined) ->
+-spec pack_share_guid(file_uuid(), space_id(), share_id() | undefined) ->
     share_root_file_guid().
 pack_share_guid(FileUuid, SpaceId, undefined) ->
     pack_guid(FileUuid, SpaceId);
@@ -128,7 +128,7 @@ pack_share_guid(FileUuid, SpaceId, ShareId) when is_binary(SpaceId) andalso byte
 %% For given file Uuid and spaceId generates file's Guid.
 %% @end
 %%--------------------------------------------------------------------
--spec pack_guid(file_meta_uuid(), space_id()) -> file_guid().
+-spec pack_guid(file_uuid(), space_id()) -> file_guid().
 pack_guid(FileUuid, SpaceId) when is_binary(SpaceId) andalso byte_size(SpaceId) > 0 ->
     http_utils:base64url_encode(<<?GUID_PREFIX, ?GUID_SEPARATOR,
         FileUuid/binary, ?GUID_SEPARATOR, SpaceId/binary>>).
@@ -140,7 +140,7 @@ pack_guid(FileUuid, SpaceId) when is_binary(SpaceId) andalso byte_size(SpaceId) 
 %% @end
 %%--------------------------------------------------------------------
 -spec unpack_share_guid(share_root_file_guid()) ->
-    {file_meta_uuid(), space_id(), share_id() | undefined}.
+    {file_uuid(), space_id(), share_id() | undefined}.
 unpack_share_guid(ShareGuid) ->
     case binary:split(http_utils:base64url_decode(ShareGuid), <<?GUID_SEPARATOR>>, [global]) of
         [<<?SHARE_GUID_PREFIX>>, FileUuid, SpaceId, ShareId] ->
@@ -158,7 +158,7 @@ unpack_share_guid(ShareGuid) ->
 %% Returns file's Uuid and its SpaceId for given file's Guid.
 %% @end
 %%--------------------------------------------------------------------
--spec unpack_guid(FileGuid :: file_guid()) -> {file_meta_uuid(), space_id()}.
+-spec unpack_guid(FileGuid :: file_guid()) -> {file_uuid(), space_id()}.
 unpack_guid(FileGuid) ->
     {FileUuid, SpaceId, _ShareId} = unpack_share_guid(FileGuid),
     {FileUuid, SpaceId}.
@@ -242,7 +242,7 @@ guid_to_space_id(Guid) ->
 %% Returns file's Uuid for given file's Guid.
 %% @end
 %%--------------------------------------------------------------------
--spec guid_to_uuid(file_guid()) -> file_meta_uuid().
+-spec guid_to_uuid(file_guid()) -> file_uuid().
 guid_to_uuid(FileGuid) ->
     {FileUuid, _} = unpack_guid(FileGuid),
     FileUuid.
