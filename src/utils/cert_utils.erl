@@ -17,8 +17,8 @@
 -export([load_ders/1, load_ders_in_dir/1]).
 -export([pem_to_ders/1, ders_to_pem/1]).
 -export([create_key/1]).
--export([create_csr/4]).
--export([create_signed_webcert/5]).
+-export([create_csr/4, create_csr/5]).
+-export([create_signed_webcert/5, create_signed_webcert/6]).
 
 %%%===================================================================
 %%% API functions
@@ -94,6 +94,10 @@ create_key(Path) ->
     ok.
 
 
+create_csr(KeyPath, OutputPath, CommonName, Domain) ->
+    create_csr(KeyPath, OutputPath, CommonName, Domain, []).
+
+
 %%--------------------------------------------------------------------
 %% @doc
 %% Creates a Certificate Signing Request under given path, with
@@ -105,18 +109,34 @@ create_key(Path) ->
     KeyPath :: file:filename_all(),
     OutputPath :: file:filename_all(),
     string() | binary(),
-    string() | binary()
-) -> ok.
-create_csr(KeyPath, OutputPath, CommonName, Hostname) ->
+    string() | binary(),
+    [string() | binary()]
+) ->
+    ok.
+create_csr(KeyPath, OutputPath, CommonName, Domain, Subdomains) ->
+    SubjectAltNamesExt = lists:flatten([
+        str_utils:format("'subjectAltName = DNS:~ts", [Domain]),
+        [str_utils:format(",DNS:~ts", [Subdomain]) || Subdomain <- Subdomains],
+        "'"
+    ]),
+
     [] = shell_cmd([
         "openssl req",
         "-new",
         "-key", KeyPath,
         "-out", OutputPath,
         "-subj", str_utils:format("'/C=PL/L=OneDataTest/O=OneDataTest/CN=~ts'", [CommonName]),
-        "-addext", str_utils:format("'subjectAltName = DNS:~ts'", [Hostname])
+        "-addext", SubjectAltNamesExt
     ]),
     ok.
+
+
+-spec create_signed_webcert(KeyPath :: file:filename_all(),
+    CertPath :: file:filename_all(), Domain :: binary(),
+    CaKeyPath :: file:filename_all(), CaCertPath :: file:filename_all()) -> ok.
+create_signed_webcert(KeyPath, CertPath, Domain, CaKeyPath, CaCertPath) ->
+    create_signed_webcert(KeyPath, CertPath, Domain, [], CaKeyPath, CaCertPath).
+
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -125,18 +145,18 @@ create_csr(KeyPath, OutputPath, CommonName, Hostname) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec create_signed_webcert(KeyPath :: file:filename_all(),
-    CertPath :: file:filename_all(), Hostname :: binary(),
+    CertPath :: file:filename_all(), Domain :: binary(), [string() | binary()],
     CaKeyPath :: file:filename_all(), CaCertPath :: file:filename_all()) -> ok.
-create_signed_webcert(KeyPath, CertPath, Hostname, CaKeyPath, CaCertPath) ->
-    {Root, ConfigFile} = create_temp_ca_dir(Hostname),
+create_signed_webcert(KeyPath, CertPath, Domain, Subdomains, CaKeyPath, CaCertPath) ->
+    {Root, ConfigFile} = create_temp_ca_dir(Domain, Subdomains),
     CsrPath = filename:join(Root, "temp.csr"),
     create_key(KeyPath),
     % common name may be no longer than 64 characters
-    CommonName = case byte_size(Hostname) =< 64 of
-        true -> Hostname;
-        false -> binary:part(Hostname, 0, 64)
+    CommonName = case byte_size(Domain) =< 64 of
+        true -> Domain;
+        false -> binary:part(Domain, 0, 64)
     end,
-    create_csr(KeyPath, CsrPath, CommonName, Hostname),
+    create_csr(KeyPath, CsrPath, CommonName, Domain, Subdomains),
     shell_cmd(["openssl ca -batch",
         "-config", ConfigFile,
         "-extensions server_cert ",
@@ -159,15 +179,15 @@ create_signed_webcert(KeyPath, CertPath, Hostname, CaKeyPath, CaCertPath) ->
 %% cert.
 %% @end
 %%--------------------------------------------------------------------
--spec create_temp_ca_dir(Hostname :: string() | binary()) ->
+-spec create_temp_ca_dir(Hostname :: string() | binary(), [string() | binary()]) ->
     {Root :: file:filename_all(), ConfigFile :: file:filename_all()}.
-create_temp_ca_dir(Hostname) ->
+create_temp_ca_dir(Domain, Subdomains) ->
     Root = utils:mkdtemp(),
     ConfigFile = filename:join(Root, "openssl.cfg"),
     IndexFile = filename:join(Root, "index.txt"),
     SerialFile = filename:join(Root, "serial"),
     RandomSerial = integer_to_list(999999999 + rand:uniform(999999999), 16),
-    file:write_file(ConfigFile, openssl_cnf(Root, Hostname)),
+    file:write_file(ConfigFile, openssl_cnf(Root, Domain, Subdomains)),
     file:write_file(IndexFile, <<"">>),
     file:write_file(SerialFile, RandomSerial),
     {Root, ConfigFile}.
@@ -190,8 +210,14 @@ shell_cmd(Tokens) ->
 %% Contents of openssl.cfg file that will be used during signing by CA.
 %% @end
 %%--------------------------------------------------------------------
--spec openssl_cnf(file:filename_all(), Hostname :: string() | binary()) -> string().
-openssl_cnf(Home, Hostname) -> "
+-spec openssl_cnf(file:filename_all(), string() | binary(), [string() | binary()]) ->
+    string().
+openssl_cnf(Home, MainDomain, Subdomains) ->
+    AltNames = lists:flatmap(fun({Index, Domain}) ->
+        str_utils:format("DNS.~B = ~ts\n", [Index, Domain])
+    end, lists_utils:enumerate([MainDomain | Subdomains])),
+
+    "
 HOME                   = " ++ Home ++ "
 default_ca             = ca
 
@@ -231,4 +257,4 @@ keyUsage               = digitalSignature, keyEncipherment
 subjectAltName         = @alt_names
 
 [ alt_names ]
-DNS.1                  = " ++ str_utils:to_list(Hostname).
+" ++ AltNames.
