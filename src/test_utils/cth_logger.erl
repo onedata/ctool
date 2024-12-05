@@ -54,7 +54,9 @@ pre_init_per_suite(Suite, Config, State) ->
     State :: logger_state()) -> {[term()], logger_state()}.
 pre_init_per_testcase(TestCase, Config, State) ->
     ct_pal_report(State, TestCase, "STARTED"),
-    {Config, State}.
+    {Config, State#logger_state{
+        stopwatch_by_testcase = maps:put(TestCase, stopwatch:start(), State#logger_state.stopwatch_by_testcase)
+    }}.
 
 
 -spec post_init_per_group(SuiteName :: atom(), TestCase :: atom(), Config :: [term()],
@@ -115,10 +117,8 @@ post_end_per_group(_SuiteName, GroupName, _Config, Return, State) ->
 -spec post_init_per_testcase(TestCase :: atom(), Config :: [term()],
     Return :: ok | {error | skip, term()}, State :: logger_state()) ->
     {ok | {error | skip, term()}, logger_state()}.
-post_init_per_testcase(TestCase, _Config, ok, State) ->
-    {ok, State#logger_state{
-        stopwatch_by_testcase = maps:put(TestCase, stopwatch:start(), State#logger_state.stopwatch_by_testcase)
-    }};
+post_init_per_testcase(_TestCase, _Config, ok, State) ->
+    {ok, State};
 
 post_init_per_testcase(TestCase, _Config, Return, State) ->
     Msg = case Return of
