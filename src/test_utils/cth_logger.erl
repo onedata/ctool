@@ -23,8 +23,13 @@
 %% posthooks
 -export([post_init_per_group/5, post_end_per_group/5]).
 -export([post_init_per_testcase/4, post_end_per_testcase/4]).
+-export([post_end_per_suite/4]).
 
--record(logger_state, {suite}).
+-record(logger_state, {
+    suite :: atom(),
+    suite_stopwatch :: undefined | stopwatch:instance(),
+    stopwatch_by_testcase = #{} :: #{atom() => stopwatch:instance()}
+}).
 -type logger_state() :: #logger_state{}.
 
 
@@ -42,7 +47,7 @@ init(_Id, _Opts) ->
 -spec pre_init_per_suite(Suite :: term(), Config :: [term()],
     State :: logger_state()) -> {ok, logger_state()}.
 pre_init_per_suite(Suite, Config, State) ->
-    {Config, State#logger_state{suite = Suite}}.
+    {Config, State#logger_state{suite = Suite, suite_stopwatch = stopwatch:start()}}.
 
 
 -spec pre_init_per_testcase(TestCase :: atom(), Config :: [term()],
@@ -110,8 +115,10 @@ post_end_per_group(_SuiteName, GroupName, _Config, Return, State) ->
 -spec post_init_per_testcase(TestCase :: atom(), Config :: [term()],
     Return :: ok | {error | skip, term()}, State :: logger_state()) ->
     {ok | {error | skip, term()}, logger_state()}.
-post_init_per_testcase(_TestCase, _Config, ok, State) ->
-    {ok, State};
+post_init_per_testcase(TestCase, _Config, ok, State) ->
+    {ok, State#logger_state{
+        stopwatch_by_testcase = maps:put(TestCase, stopwatch:start(), State#logger_state.stopwatch_by_testcase)
+    }};
 
 post_init_per_testcase(TestCase, _Config, Return, State) ->
     Msg = case Return of
@@ -130,7 +137,10 @@ post_init_per_testcase(TestCase, _Config, Return, State) ->
     Return :: ok | {error | skip, term()}, State :: logger_state()) ->
     {ok | {error | skip, term()}, logger_state()}.
 post_end_per_testcase(TestCase, _Config, ok, State) ->
-    ct_pal_report(State, TestCase, "PASSED"),
+    Stopwatch = maps:get(TestCase, State#logger_state.stopwatch_by_testcase),
+    ct_pal_report(State, TestCase, "PASSED (in ~ts)", [
+        fmt_time(stopwatch:read_millis(Stopwatch))
+    ]),
     {ok, State};
 
 post_end_per_testcase(TestCase, _Config, Return = {failed, {_, _, FailureSummary}}, State) ->
@@ -152,13 +162,23 @@ post_end_per_testcase(TestCase, _Config, Return = {error, _}, State) ->
         {error, Reason} ->
             fmt_log_exception(unknown, Reason, undefined)
     end,
-    ct_pal_report(State, TestCase, "FAILED due to:~n~n~ts", [Msg]),
+    Stopwatch = maps:get(TestCase, State#logger_state.stopwatch_by_testcase),
+    ct_pal_report(State, TestCase, "FAILED (in ~ts) due to:~n~n~ts", [
+        fmt_time(stopwatch:read_millis(Stopwatch)),
+        Msg
+    ]),
     {Return, State};
 
 post_end_per_testcase(TestCase, _Config, Return, State) ->
     ct_pal_report(State, TestCase, "DID SOMETHING WE HADN'T FORESEEN:~n~n~ts", [
         fmt_log_unexpected_return(?MODULE, ?FUNCTION_NAME, Return)
     ]),
+    {Return, State}.
+
+-spec post_end_per_suite(Suite :: term(), Config :: [term()],
+    Return, State :: logger_state()) -> {Return, logger_state()}.
+post_end_per_suite(_Suite, _Config, Return, State) ->
+    ct_pal_report(State, "total duration:", fmt_time(stopwatch:read_millis(State#logger_state.suite_stopwatch))),
     {Return, State}.
 
 
@@ -168,14 +188,14 @@ post_end_per_testcase(TestCase, _Config, Return, State) ->
 
 
 %% @private
--spec ct_pal_report(logger_state(), atom(), string()) -> ok.
-ct_pal_report(State, TestCaseOrGroupName, Msg) ->
-    ct_pal_report(State, TestCaseOrGroupName, "~ts", [Msg]).
+-spec ct_pal_report(logger_state(), atom() | string(), string()) -> ok.
+ct_pal_report(State, TestCaseOrGroupNameOrSubtitle, Msg) ->
+    ct_pal_report(State, TestCaseOrGroupNameOrSubtitle, "~ts", [Msg]).
 
 %% @private
--spec ct_pal_report(logger_state(), atom(), string(), [term()]) -> ok.
-ct_pal_report(#logger_state{suite = Suite}, TestCaseOrGroupName, Format, Args) ->
-    ct:pal("[~tp] ~tp " ++ Format, [Suite, TestCaseOrGroupName] ++ Args).
+-spec ct_pal_report(logger_state(), atom() | string(), string(), [term()]) -> ok.
+ct_pal_report(#logger_state{suite = Suite}, TestCaseOrGroupNameOrSubtitle, Format, Args) ->
+    ct:pal("[~tp] ~ts " ++ Format, [Suite, TestCaseOrGroupNameOrSubtitle] ++ Args).
 
 
 %% @private
@@ -217,3 +237,12 @@ fmt_log_unexpected_return(Module, Function, Return) ->
             Return
         ]
     ).
+
+
+%% @private
+-spec fmt_time(time:millis()) -> string().
+fmt_time(MillisTotal) ->
+    Minutes = MillisTotal div timer:minutes(1),
+    Seconds = (MillisTotal - timer:minutes(Minutes)) div timer:seconds(1),
+    MillisRemainder = MillisTotal - timer:minutes(Minutes) - timer:seconds(Seconds),
+    str_utils:format("~2..0B:~2..0B.~3..0B", [Minutes, Seconds, MillisRemainder]).
