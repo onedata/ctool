@@ -7,10 +7,10 @@
 %%% @end
 %%%-------------------------------------------------------------------
 %%% @doc
-%%% This module implements od_error for 'od_error_space_marketplace_disabled'.
+%%% This module implements od_error for 'od_error_bad_value_list_of_strings'.
 %%% @end
 %%%-------------------------------------------------------------------
--module(od_error_space_marketplace_disabled).
+-module(od_error_bad_value_list_of_strings).
 
 -behaviour(od_error).
 
@@ -32,19 +32,30 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERR_SPACE_MARKETPLACE_DISABLED(ErrorCtx)) ->
+to_json(?ERR_BAD_VALUE_LIST_OF_STRINGS(ErrorCtx, Key)) ->
     #{
-        <<"id">> => ?ERR_SPACE_MARKETPLACE_DISABLED_ID,
+        <<"id">> => ?ERR_BAD_VALUE_LIST_OF_STRINGS_ID,
         <<"ctx">> => od_error:ctx_to_json(ErrorCtx),
-        <<"description">> => <<"Space marketplace is disabled in this Onezone service.">>
+        <<"details">> => #{
+            <<"key">> => Key
+        },
+        <<"description">> => od_error:format_description(
+            "Bad value: provided \"~ts\" must be a list of strings.",
+            [Key]
+        )
     }.
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(OdErrorJson = #{<<"id">> := ?ERR_SPACE_MARKETPLACE_DISABLED_ID}) ->
+from_json(OdErrorJson = #{<<"id">> := ?ERR_BAD_VALUE_LIST_OF_STRINGS_ID}) ->
     ErrorCtxJson = maps:get(<<"ctx">>, OdErrorJson, #{}),
     ErrorCtx = od_error:ctx_from_json(ErrorCtxJson),
-    ?ERR_SPACE_MARKETPLACE_DISABLED(ErrorCtx).
+
+    DetailsJson = maps:get(<<"details">>, OdErrorJson),
+
+    Key = maps:get(<<"key">>, DetailsJson),
+
+    ?ERR_BAD_VALUE_LIST_OF_STRINGS(ErrorCtx, Key).
 
 
 -spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.
@@ -52,6 +63,6 @@ to_http_code(_) ->
     ?HTTP_400_BAD_REQUEST.
 
 
--spec to_errno(t()) -> false.
+-spec to_errno(t()) -> {true, od_error:errno()}.
 to_errno(_) ->
-    false.
+    {true, ?EINVAL}.

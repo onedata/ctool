@@ -18,7 +18,7 @@
 -include("http/codes.hrl").
 
 
--type t() :: #od_error{type :: ?MODULE}.
+-type t() :: {error, #od_error{type :: ?MODULE}}.
 
 -export_type([t/0]).
 
@@ -32,11 +32,12 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_CANNOT_DELETE_ENTITY_MATCH(EntityType, EntityId)) ->
+to_json(?ERR_CANNOT_DELETE_ENTITY(ErrorCtx, EntityType, EntityId)) ->
     EntityTypeJson = gri:serialize_type(EntityType),
 
     #{
-        <<"id">> => ?ERROR_CANNOT_DELETE_ENTITY_ID,
+        <<"id">> => ?ERR_CANNOT_DELETE_ENTITY_ID,
+        <<"ctx">> => od_error:ctx_to_json(ErrorCtx),
         <<"details">> => #{
             <<"entityType">> => EntityTypeJson,
             <<"entityId">> => EntityId
@@ -49,14 +50,17 @@ to_json(?ERROR_CANNOT_DELETE_ENTITY_MATCH(EntityType, EntityId)) ->
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(OdErrorJson = #{<<"id">> := ?ERROR_CANNOT_DELETE_ENTITY_ID}) ->
+from_json(OdErrorJson = #{<<"id">> := ?ERR_CANNOT_DELETE_ENTITY_ID}) ->
+    ErrorCtxJson = maps:get(<<"ctx">>, OdErrorJson, #{}),
+    ErrorCtx = od_error:ctx_from_json(ErrorCtxJson),
+
     DetailsJson = maps:get(<<"details">>, OdErrorJson),
 
     EntityTypeJson = maps:get(<<"entityType">>, DetailsJson),
     EntityType = gri:deserialize_type(EntityTypeJson),
     EntityId = maps:get(<<"entityId">>, DetailsJson),
 
-    ?new_ERROR_CANNOT_DELETE_ENTITY(EntityType, EntityId).
+    ?ERR_CANNOT_DELETE_ENTITY(ErrorCtx, EntityType, EntityId).
 
 
 -spec to_http_code(t()) -> ?HTTP_500_INTERNAL_SERVER_ERROR.

@@ -18,7 +18,7 @@
 -include("http/codes.hrl").
 
 
--type t() :: #od_error{type :: ?MODULE}.
+-type t() :: {error, #od_error{type :: ?MODULE}}.
 
 -export_type([t/0]).
 
@@ -32,33 +32,37 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_AUTO_STORAGE_IMPORT_NOT_SUPPORTED_MATCH(StorageId, SupportedStorages, SupportedObjectStorages)) ->
+to_json(?ERR_AUTO_STORAGE_IMPORT_NOT_SUPPORTED(ErrorCtx, StorageId, SupportedStorages, SupportedObjectStorages)) ->
     SupportedStoragesPrint = od_error:format_csv(SupportedStorages),
     SupportedObjectStoragesPrint = od_error:format_csv(SupportedObjectStorages),
 
     #{
-        <<"id">> => ?ERROR_AUTO_STORAGE_IMPORT_NOT_SUPPORTED_ID,
+        <<"id">> => ?ERR_AUTO_STORAGE_IMPORT_NOT_SUPPORTED_ID,
+        <<"ctx">> => od_error:ctx_to_json(ErrorCtx),
         <<"details">> => #{
             <<"storageId">> => StorageId,
             <<"supportedStorages">> => SupportedStorages,
             <<"supportedObjectStorages">> => SupportedObjectStorages
         },
         <<"description">> => od_error:format_description(
-            "Cannot configure auto storage import on storage ~ts - this operation requires any of: ~ts storage with canonical path type and on object storages (any of: ~ts) it requires blockSize = 0.",
+            "Cannot configure auto storage import on the storage backend \"~ts\".  This operation requires any of: [~ts] storage backend with canonical path type and for object storage (any of: ~ts), it requires the block size set to 0.",
             [StorageId, SupportedStoragesPrint, SupportedObjectStoragesPrint]
         )
     }.
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(OdErrorJson = #{<<"id">> := ?ERROR_AUTO_STORAGE_IMPORT_NOT_SUPPORTED_ID}) ->
+from_json(OdErrorJson = #{<<"id">> := ?ERR_AUTO_STORAGE_IMPORT_NOT_SUPPORTED_ID}) ->
+    ErrorCtxJson = maps:get(<<"ctx">>, OdErrorJson, #{}),
+    ErrorCtx = od_error:ctx_from_json(ErrorCtxJson),
+
     DetailsJson = maps:get(<<"details">>, OdErrorJson),
 
     StorageId = maps:get(<<"storageId">>, DetailsJson),
     SupportedStorages = maps:get(<<"supportedStorages">>, DetailsJson),
     SupportedObjectStorages = maps:get(<<"supportedObjectStorages">>, DetailsJson),
 
-    ?new_ERROR_AUTO_STORAGE_IMPORT_NOT_SUPPORTED(StorageId, SupportedStorages, SupportedObjectStorages).
+    ?ERR_AUTO_STORAGE_IMPORT_NOT_SUPPORTED(ErrorCtx, StorageId, SupportedStorages, SupportedObjectStorages).
 
 
 -spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.

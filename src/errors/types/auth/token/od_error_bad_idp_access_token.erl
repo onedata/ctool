@@ -18,7 +18,7 @@
 -include("http/codes.hrl").
 
 
--type t() :: #od_error{type :: ?MODULE}.
+-type t() :: {error, #od_error{type :: ?MODULE}}.
 
 -export_type([t/0]).
 
@@ -32,26 +32,30 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_BAD_IDP_ACCESS_TOKEN_MATCH(Idp)) ->
+to_json(?ERR_BAD_IDP_ACCESS_TOKEN(ErrorCtx, Idp)) ->
     #{
-        <<"id">> => ?ERROR_BAD_IDP_ACCESS_TOKEN_ID,
+        <<"id">> => ?ERR_BAD_IDP_ACCESS_TOKEN_ID,
+        <<"ctx">> => od_error:ctx_to_json(ErrorCtx),
         <<"details">> => #{
             <<"idp">> => Idp
         },
         <<"description">> => od_error:format_description(
-            "Provided access token for \"~tp\" is not valid.",
+            "Provided access token for IdP \"~tp\" is not valid.",
             [Idp]
         )
     }.
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(OdErrorJson = #{<<"id">> := ?ERROR_BAD_IDP_ACCESS_TOKEN_ID}) ->
+from_json(OdErrorJson = #{<<"id">> := ?ERR_BAD_IDP_ACCESS_TOKEN_ID}) ->
+    ErrorCtxJson = maps:get(<<"ctx">>, OdErrorJson, #{}),
+    ErrorCtx = od_error:ctx_from_json(ErrorCtxJson),
+
     DetailsJson = maps:get(<<"details">>, OdErrorJson),
 
     Idp = maps:get(<<"idp">>, DetailsJson),
 
-    ?new_ERROR_BAD_IDP_ACCESS_TOKEN(Idp).
+    ?ERR_BAD_IDP_ACCESS_TOKEN(ErrorCtx, Idp).
 
 
 -spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.

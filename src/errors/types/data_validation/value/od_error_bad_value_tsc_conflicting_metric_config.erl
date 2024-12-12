@@ -18,7 +18,7 @@
 -include("http/codes.hrl").
 
 
--type t() :: #od_error{type :: ?MODULE}.
+-type t() :: {error, #od_error{type :: ?MODULE}}.
 
 -export_type([t/0]).
 
@@ -32,12 +32,13 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_BAD_VALUE_TSC_CONFLICTING_METRIC_CONFIG_MATCH(TimeSeriesName, MetricName, ExistingMetricConfig, ConflictingMetricConfig)) ->
+to_json(?ERR_BAD_VALUE_TSC_CONFLICTING_METRIC_CONFIG(ErrorCtx, TimeSeriesName, MetricName, ExistingMetricConfig, ConflictingMetricConfig)) ->
     ExistingMetricConfigJson = jsonable_record:to_json(ExistingMetricConfig, metric_config),
     ConflictingMetricConfigJson = jsonable_record:to_json(ConflictingMetricConfig, metric_config),
 
     #{
-        <<"id">> => ?ERROR_BAD_VALUE_TSC_CONFLICTING_METRIC_CONFIG_ID,
+        <<"id">> => ?ERR_BAD_VALUE_TSC_CONFLICTING_METRIC_CONFIG_ID,
+        <<"ctx">> => od_error:ctx_to_json(ErrorCtx),
         <<"details">> => #{
             <<"timeSeriesName">> => TimeSeriesName,
             <<"metricName">> => MetricName,
@@ -45,14 +46,17 @@ to_json(?ERROR_BAD_VALUE_TSC_CONFLICTING_METRIC_CONFIG_MATCH(TimeSeriesName, Met
             <<"conflictingMetricConfig">> => ConflictingMetricConfigJson
         },
         <<"description">> => od_error:format_description(
-            "Provided metric config for 'time series' ~ts and metric '~ts' conflicts with existing metric config (see details).",
-            [TimeSeriesName, MetricName]
+            "Bad value: Provided metric config for time series \"~ts\" and metric \"~ts\" conflicts with existing metric config: ~ts.",
+            [TimeSeriesName, MetricName, ConflictingMetricConfig] % TODO metric_confgi print
         )
     }.
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(OdErrorJson = #{<<"id">> := ?ERROR_BAD_VALUE_TSC_CONFLICTING_METRIC_CONFIG_ID}) ->
+from_json(OdErrorJson = #{<<"id">> := ?ERR_BAD_VALUE_TSC_CONFLICTING_METRIC_CONFIG_ID}) ->
+    ErrorCtxJson = maps:get(<<"ctx">>, OdErrorJson, #{}),
+    ErrorCtx = od_error:ctx_from_json(ErrorCtxJson),
+
     DetailsJson = maps:get(<<"details">>, OdErrorJson),
 
     TimeSeriesName = maps:get(<<"timeSeriesName">>, DetailsJson),
@@ -62,7 +66,7 @@ from_json(OdErrorJson = #{<<"id">> := ?ERROR_BAD_VALUE_TSC_CONFLICTING_METRIC_CO
     ConflictingMetricConfigJson = maps:get(<<"conflictingMetricConfig">>, DetailsJson),
     ConflictingMetricConfig = jsonable_record:from_json(ConflictingMetricConfigJson, metric_config),
 
-    ?new_ERROR_BAD_VALUE_TSC_CONFLICTING_METRIC_CONFIG(TimeSeriesName, MetricName, ExistingMetricConfig, ConflictingMetricConfig).
+    ?ERR_BAD_VALUE_TSC_CONFLICTING_METRIC_CONFIG(ErrorCtx, TimeSeriesName, MetricName, ExistingMetricConfig, ConflictingMetricConfig).
 
 
 -spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.

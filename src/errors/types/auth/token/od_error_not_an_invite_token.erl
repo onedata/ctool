@@ -18,7 +18,7 @@
 -include("http/codes.hrl").
 
 
--type t() :: #od_error{type :: ?MODULE}.
+-type t() :: {error, #od_error{type :: ?MODULE}}.
 
 -export_type([t/0]).
 
@@ -32,7 +32,7 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_NOT_AN_INVITE_TOKEN_MATCH(ExpectedInviteType, Received)) ->
+to_json(?ERR_NOT_AN_INVITE_TOKEN(ErrorCtx, ExpectedInviteType, Received)) ->
     ExpectedInviteTypeJson = case ExpectedInviteType of
         any ->
             <<"any">>;
@@ -43,20 +43,24 @@ to_json(?ERROR_NOT_AN_INVITE_TOKEN_MATCH(ExpectedInviteType, Received)) ->
     ReceivedPrint = token_type:to_printable(Received),
 
     #{
-        <<"id">> => ?ERROR_NOT_AN_INVITE_TOKEN_ID,
+        <<"id">> => ?ERR_NOT_AN_INVITE_TOKEN_ID,
+        <<"ctx">> => od_error:ctx_to_json(ErrorCtx),
         <<"details">> => #{
             <<"expectedInviteType">> => ExpectedInviteTypeJson,
             <<"received">> => ReceivedJson
         },
         <<"description">> => od_error:format_description(
-            "Expected an invitation token of type '~ts', but received a(n) ~ts.",
+            "Expected an invitation token of type \"~ts\", but received a(n) ~ts.",
             [ExpectedInviteType, ReceivedPrint]
         )
     }.
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(OdErrorJson = #{<<"id">> := ?ERROR_NOT_AN_INVITE_TOKEN_ID}) ->
+from_json(OdErrorJson = #{<<"id">> := ?ERR_NOT_AN_INVITE_TOKEN_ID}) ->
+    ErrorCtxJson = maps:get(<<"ctx">>, OdErrorJson, #{}),
+    ErrorCtx = od_error:ctx_from_json(ErrorCtxJson),
+
     DetailsJson = maps:get(<<"details">>, OdErrorJson),
 
     ExpectedInviteTypeJson = maps:get(<<"expectedInviteType">>, DetailsJson),
@@ -69,7 +73,7 @@ from_json(OdErrorJson = #{<<"id">> := ?ERROR_NOT_AN_INVITE_TOKEN_ID}) ->
     ReceivedJson = maps:get(<<"received">>, DetailsJson),
     Received = token_type:from_json(ReceivedJson),
 
-    ?new_ERROR_NOT_AN_INVITE_TOKEN(ExpectedInviteType, Received).
+    ?ERR_NOT_AN_INVITE_TOKEN(ErrorCtx, ExpectedInviteType, Received).
 
 
 -spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.

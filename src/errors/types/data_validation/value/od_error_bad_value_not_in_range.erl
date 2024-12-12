@@ -18,7 +18,7 @@
 -include("http/codes.hrl").
 
 
--type t() :: #od_error{type :: ?MODULE}.
+-type t() :: {error, #od_error{type :: ?MODULE}}.
 
 -export_type([t/0]).
 
@@ -32,9 +32,10 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_BAD_VALUE_NOT_IN_RANGE_MATCH(Key, Low, High)) ->
+to_json(?ERR_BAD_VALUE_NOT_IN_RANGE(ErrorCtx, Key, Low, High)) ->
     #{
-        <<"id">> => ?ERROR_BAD_VALUE_NOT_IN_RANGE_ID,
+        <<"id">> => ?ERR_BAD_VALUE_NOT_IN_RANGE_ID,
+        <<"ctx">> => od_error:ctx_to_json(ErrorCtx),
         <<"details">> => #{
             <<"key">> => Key,
             <<"low">> => Low,
@@ -48,14 +49,17 @@ to_json(?ERROR_BAD_VALUE_NOT_IN_RANGE_MATCH(Key, Low, High)) ->
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(OdErrorJson = #{<<"id">> := ?ERROR_BAD_VALUE_NOT_IN_RANGE_ID}) ->
+from_json(OdErrorJson = #{<<"id">> := ?ERR_BAD_VALUE_NOT_IN_RANGE_ID}) ->
+    ErrorCtxJson = maps:get(<<"ctx">>, OdErrorJson, #{}),
+    ErrorCtx = od_error:ctx_from_json(ErrorCtxJson),
+
     DetailsJson = maps:get(<<"details">>, OdErrorJson),
 
     Key = maps:get(<<"key">>, DetailsJson),
     Low = maps:get(<<"low">>, DetailsJson),
     High = maps:get(<<"high">>, DetailsJson),
 
-    ?new_ERROR_BAD_VALUE_NOT_IN_RANGE(Key, Low, High).
+    ?ERR_BAD_VALUE_NOT_IN_RANGE(ErrorCtx, Key, Low, High).
 
 
 -spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.

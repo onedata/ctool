@@ -18,7 +18,7 @@
 -include("http/codes.hrl").
 
 
--type t() :: #od_error{type :: ?MODULE}.
+-type t() :: {error, #od_error{type :: ?MODULE}}.
 
 -export_type([t/0]).
 
@@ -32,13 +32,14 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_TSC_MISSING_LAYOUT_MATCH(MissingLayout)) ->
+to_json(?ERR_TSC_MISSING_LAYOUT(ErrorCtx, MissingLayout)) ->
     MissingLayoutPrint = od_error:format_csv(maps:fold(fun(TimeSeriesName, MetricNames, Acc) ->
         Acc ++ [str_utils:format_bin("~ts -> [~ts]", [TimeSeriesName, od_error:format_csv(MetricNames)])]
     end, [], MissingLayout)),
 
     #{
-        <<"id">> => ?ERROR_TSC_MISSING_LAYOUT_ID,
+        <<"id">> => ?ERR_TSC_MISSING_LAYOUT_ID,
+        <<"ctx">> => od_error:ctx_to_json(ErrorCtx),
         <<"details">> => #{
             <<"missingLayout">> => MissingLayout
         },
@@ -50,12 +51,15 @@ to_json(?ERROR_TSC_MISSING_LAYOUT_MATCH(MissingLayout)) ->
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(OdErrorJson = #{<<"id">> := ?ERROR_TSC_MISSING_LAYOUT_ID}) ->
+from_json(OdErrorJson = #{<<"id">> := ?ERR_TSC_MISSING_LAYOUT_ID}) ->
+    ErrorCtxJson = maps:get(<<"ctx">>, OdErrorJson, #{}),
+    ErrorCtx = od_error:ctx_from_json(ErrorCtxJson),
+
     DetailsJson = maps:get(<<"details">>, OdErrorJson),
 
     MissingLayout = maps:get(<<"missingLayout">>, DetailsJson),
 
-    ?new_ERROR_TSC_MISSING_LAYOUT(MissingLayout).
+    ?ERR_TSC_MISSING_LAYOUT(ErrorCtx, MissingLayout).
 
 
 -spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.

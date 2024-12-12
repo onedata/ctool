@@ -18,7 +18,7 @@
 -include("http/codes.hrl").
 
 
--type t() :: #od_error{type :: ?MODULE}.
+-type t() :: {error, #od_error{type :: ?MODULE}}.
 
 -export_type([t/0]).
 
@@ -32,16 +32,19 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_BAD_VALUE_DOMAIN_MATCH) ->
+to_json(?ERR_BAD_VALUE_DOMAIN(ErrorCtx)) ->
     #{
-        <<"id">> => ?ERROR_BAD_VALUE_DOMAIN_ID,
-        <<"description">> => <<"Bad value: provided domain is not valid.">>
+        <<"id">> => ?ERR_BAD_VALUE_DOMAIN_ID,
+        <<"ctx">> => od_error:ctx_to_json(ErrorCtx),
+        <<"description">> => <<"Bad value: provided domain is invalid.">>
     }.
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(#{<<"id">> := ?ERROR_BAD_VALUE_DOMAIN_ID}) ->
-    ?new_ERROR_BAD_VALUE_DOMAIN().
+from_json(OdErrorJson = #{<<"id">> := ?ERR_BAD_VALUE_DOMAIN_ID}) ->
+    ErrorCtxJson = maps:get(<<"ctx">>, OdErrorJson, #{}),
+    ErrorCtx = od_error:ctx_from_json(ErrorCtxJson),
+    ?ERR_BAD_VALUE_DOMAIN(ErrorCtx).
 
 
 -spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.

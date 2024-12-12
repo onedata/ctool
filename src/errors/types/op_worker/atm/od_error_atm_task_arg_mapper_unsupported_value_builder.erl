@@ -18,7 +18,7 @@
 -include("http/codes.hrl").
 
 
--type t() :: #od_error{type :: ?MODULE}.
+-type t() :: {error, #od_error{type :: ?MODULE}}.
 
 -export_type([t/0]).
 
@@ -32,13 +32,14 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_ATM_TASK_ARG_MAPPER_UNSUPPORTED_VALUE_BUILDER_MATCH(Type, Supported)) ->
+to_json(?ERR_ATM_TASK_ARG_MAPPER_UNSUPPORTED_VALUE_BUILDER(ErrorCtx, Type, Supported)) ->
     TypeJson = atm_task_argument_value_builder:type_to_json(Type),
     SupportedJson = lists:map(fun atm_task_argument_value_builder:type_to_json/1, Supported),
     SupportedPrint = od_error:format_csv(SupportedJson),
 
     #{
-        <<"id">> => ?ERROR_ATM_TASK_ARG_MAPPER_UNSUPPORTED_VALUE_BUILDER_ID,
+        <<"id">> => ?ERR_ATM_TASK_ARG_MAPPER_UNSUPPORTED_VALUE_BUILDER_ID,
+        <<"ctx">> => od_error:ctx_to_json(ErrorCtx),
         <<"details">> => #{
             <<"type">> => TypeJson,
             <<"supported">> => SupportedJson
@@ -51,7 +52,10 @@ to_json(?ERROR_ATM_TASK_ARG_MAPPER_UNSUPPORTED_VALUE_BUILDER_MATCH(Type, Support
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(OdErrorJson = #{<<"id">> := ?ERROR_ATM_TASK_ARG_MAPPER_UNSUPPORTED_VALUE_BUILDER_ID}) ->
+from_json(OdErrorJson = #{<<"id">> := ?ERR_ATM_TASK_ARG_MAPPER_UNSUPPORTED_VALUE_BUILDER_ID}) ->
+    ErrorCtxJson = maps:get(<<"ctx">>, OdErrorJson, #{}),
+    ErrorCtx = od_error:ctx_from_json(ErrorCtxJson),
+
     DetailsJson = maps:get(<<"details">>, OdErrorJson),
 
     TypeJson = maps:get(<<"type">>, DetailsJson),
@@ -59,7 +63,7 @@ from_json(OdErrorJson = #{<<"id">> := ?ERROR_ATM_TASK_ARG_MAPPER_UNSUPPORTED_VAL
     SupportedJson = maps:get(<<"supported">>, DetailsJson),
     Supported = lists:map(fun atm_task_argument_value_builder:type_from_json/1, SupportedJson),
 
-    ?new_ERROR_ATM_TASK_ARG_MAPPER_UNSUPPORTED_VALUE_BUILDER(Type, Supported).
+    ?ERR_ATM_TASK_ARG_MAPPER_UNSUPPORTED_VALUE_BUILDER(ErrorCtx, Type, Supported).
 
 
 -spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.

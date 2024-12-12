@@ -18,7 +18,7 @@
 -include("http/codes.hrl").
 -include("validation.hrl").
 
--type t() :: #od_error{type :: ?MODULE}.
+-type t() :: {error, #od_error{type :: ?MODULE}}.
 
 -export_type([t/0]).
 
@@ -32,9 +32,10 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_BAD_VALUE_PASSWORD_MATCH) ->
+to_json(?ERR_BAD_VALUE_PASSWORD(ErrorCtx)) ->
     #{
-        <<"id">> => ?ERROR_BAD_VALUE_PASSWORD_ID,
+        <<"id">> => ?ERR_BAD_VALUE_PASSWORD_ID,
+        <<"ctx">> => od_error:ctx_to_json(ErrorCtx),
         <<"description">> => od_error:format_description(
             "Bad value: ~ts",
             [?PASSWORD_REQUIREMENTS_DESCRIPTION]
@@ -43,8 +44,10 @@ to_json(?ERROR_BAD_VALUE_PASSWORD_MATCH) ->
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(#{<<"id">> := ?ERROR_BAD_VALUE_PASSWORD_ID}) ->
-    ?new_ERROR_BAD_VALUE_PASSWORD().
+from_json(OdErrorJson = #{<<"id">> := ?ERR_BAD_VALUE_PASSWORD_ID}) ->
+    ErrorCtxJson = maps:get(<<"ctx">>, OdErrorJson, #{}),
+    ErrorCtx = od_error:ctx_from_json(ErrorCtxJson),
+    ?ERR_BAD_VALUE_PASSWORD(ErrorCtx).
 
 
 -spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.

@@ -18,7 +18,7 @@
 -include("http/codes.hrl").
 
 
--type t() :: #od_error{type :: ?MODULE}.
+-type t() :: {error, #od_error{type :: ?MODULE}}.
 
 -export_type([t/0]).
 
@@ -32,30 +32,34 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_REQUIRES_POSIX_COMPATIBLE_STORAGE_MATCH(StorageId, PosixCompatibleStorages)) ->
+to_json(?ERR_REQUIRES_POSIX_COMPATIBLE_STORAGE(ErrorCtx, StorageId, PosixCompatibleStorages)) ->
     PosixCompatibleStoragesPrint = od_error:format_csv(PosixCompatibleStorages),
 
     #{
-        <<"id">> => ?ERROR_REQUIRES_POSIX_COMPATIBLE_STORAGE_ID,
+        <<"id">> => ?ERR_REQUIRES_POSIX_COMPATIBLE_STORAGE_ID,
+        <<"ctx">> => od_error:ctx_to_json(ErrorCtx),
         <<"details">> => #{
             <<"storageId">> => StorageId,
             <<"posixCompatibleStorages">> => PosixCompatibleStorages
         },
         <<"description">> => od_error:format_description(
-            "Cannot apply for storage ~ts - this operation requires a POSIX-compatible storage (any of: ~ts).",
+            "Cannot apply for the storage backend \"~ts\". This operation requires a POSIX-compatible storage backend (any of: ~ts).",
             [StorageId, PosixCompatibleStoragesPrint]
         )
     }.
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(OdErrorJson = #{<<"id">> := ?ERROR_REQUIRES_POSIX_COMPATIBLE_STORAGE_ID}) ->
+from_json(OdErrorJson = #{<<"id">> := ?ERR_REQUIRES_POSIX_COMPATIBLE_STORAGE_ID}) ->
+    ErrorCtxJson = maps:get(<<"ctx">>, OdErrorJson, #{}),
+    ErrorCtx = od_error:ctx_from_json(ErrorCtxJson),
+
     DetailsJson = maps:get(<<"details">>, OdErrorJson),
 
     StorageId = maps:get(<<"storageId">>, DetailsJson),
     PosixCompatibleStorages = maps:get(<<"posixCompatibleStorages">>, DetailsJson),
 
-    ?new_ERROR_REQUIRES_POSIX_COMPATIBLE_STORAGE(StorageId, PosixCompatibleStorages).
+    ?ERR_REQUIRES_POSIX_COMPATIBLE_STORAGE(ErrorCtx, StorageId, PosixCompatibleStorages).
 
 
 -spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.

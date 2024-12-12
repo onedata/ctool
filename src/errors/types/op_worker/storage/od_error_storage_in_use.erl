@@ -18,7 +18,7 @@
 -include("http/codes.hrl").
 
 
--type t() :: #od_error{type :: ?MODULE}.
+-type t() :: {error, #od_error{type :: ?MODULE}}.
 
 -export_type([t/0]).
 
@@ -32,16 +32,19 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_STORAGE_IN_USE_MATCH) ->
+to_json(?ERR_STORAGE_IN_USE(ErrorCtx)) ->
     #{
-        <<"id">> => ?ERROR_STORAGE_IN_USE_ID,
-        <<"description">> => <<"Specified storage supports a space.">>
+        <<"id">> => ?ERR_STORAGE_IN_USE_ID,
+        <<"ctx">> => od_error:ctx_to_json(ErrorCtx),
+        <<"description">> => <<"The specified storage backend already supports a space  (imported storage backends cannot support more than one space).">>
     }.
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(#{<<"id">> := ?ERROR_STORAGE_IN_USE_ID}) ->
-    ?new_ERROR_STORAGE_IN_USE().
+from_json(OdErrorJson = #{<<"id">> := ?ERR_STORAGE_IN_USE_ID}) ->
+    ErrorCtxJson = maps:get(<<"ctx">>, OdErrorJson, #{}),
+    ErrorCtx = od_error:ctx_from_json(ErrorCtxJson),
+    ?ERR_STORAGE_IN_USE(ErrorCtx).
 
 
 -spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.

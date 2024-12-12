@@ -18,7 +18,7 @@
 -include("http/codes.hrl").
 
 
--type t() :: #od_error{type :: ?MODULE}.
+-type t() :: {error, #od_error{type :: ?MODULE}}.
 
 -export_type([t/0]).
 
@@ -32,16 +32,32 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_NO_CONNECTION_TO_PEER_ONEPROVIDER_MATCH) ->
+to_json(?ERR_NO_CONNECTION_TO_PEER_ONEPROVIDER(ErrorCtx, ProviderId, ProviderDomain)) ->
     #{
-        <<"id">> => ?ERROR_NO_CONNECTION_TO_PEER_ONEPROVIDER_ID,
-        <<"description">> => <<"No connection to peer Oneprovider.">>
+        <<"id">> => ?ERR_NO_CONNECTION_TO_PEER_ONEPROVIDER_ID,
+        <<"ctx">> => od_error:ctx_to_json(ErrorCtx),
+        <<"details">> => #{
+            <<"providerId">> => ProviderId,
+            <<"providerDomain">> => ProviderDomain
+        },
+        <<"description">> => od_error:format_description(
+            "Operation failed because the service could not connect  to its peer Oneprovider service (id: \"~ts\", url: \"https://~ts\").",
+            [ProviderId, ProviderDomain]
+        )
     }.
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(#{<<"id">> := ?ERROR_NO_CONNECTION_TO_PEER_ONEPROVIDER_ID}) ->
-    ?new_ERROR_NO_CONNECTION_TO_PEER_ONEPROVIDER().
+from_json(OdErrorJson = #{<<"id">> := ?ERR_NO_CONNECTION_TO_PEER_ONEPROVIDER_ID}) ->
+    ErrorCtxJson = maps:get(<<"ctx">>, OdErrorJson, #{}),
+    ErrorCtx = od_error:ctx_from_json(ErrorCtxJson),
+
+    DetailsJson = maps:get(<<"details">>, OdErrorJson),
+
+    ProviderId = maps:get(<<"providerId">>, DetailsJson),
+    ProviderDomain = maps:get(<<"providerDomain">>, DetailsJson),
+
+    ?ERR_NO_CONNECTION_TO_PEER_ONEPROVIDER(ErrorCtx, ProviderId, ProviderDomain).
 
 
 -spec to_http_code(t()) -> ?HTTP_503_SERVICE_UNAVAILABLE.

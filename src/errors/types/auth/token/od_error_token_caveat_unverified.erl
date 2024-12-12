@@ -18,7 +18,7 @@
 -include("http/codes.hrl").
 
 
--type t() :: #od_error{type :: ?MODULE}.
+-type t() :: {error, #od_error{type :: ?MODULE}}.
 
 -export_type([t/0]).
 
@@ -32,30 +32,34 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_TOKEN_CAVEAT_UNVERIFIED_MATCH(Caveat)) ->
+to_json(?ERR_TOKEN_CAVEAT_UNVERIFIED(ErrorCtx, Caveat)) ->
     CaveatJson = caveats:to_json(Caveat),
     CaveatPrint = caveats:unverified_description(Caveat),
 
     #{
-        <<"id">> => ?ERROR_TOKEN_CAVEAT_UNVERIFIED_ID,
+        <<"id">> => ?ERR_TOKEN_CAVEAT_UNVERIFIED_ID,
+        <<"ctx">> => od_error:ctx_to_json(ErrorCtx),
         <<"details">> => #{
             <<"caveat">> => CaveatJson
         },
         <<"description">> => od_error:format_description(
-            "Provided token is not valid - ~ts.",
+            "Provided token is not valid: ~ts.",
             [CaveatPrint]
         )
     }.
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(OdErrorJson = #{<<"id">> := ?ERROR_TOKEN_CAVEAT_UNVERIFIED_ID}) ->
+from_json(OdErrorJson = #{<<"id">> := ?ERR_TOKEN_CAVEAT_UNVERIFIED_ID}) ->
+    ErrorCtxJson = maps:get(<<"ctx">>, OdErrorJson, #{}),
+    ErrorCtx = od_error:ctx_from_json(ErrorCtxJson),
+
     DetailsJson = maps:get(<<"details">>, OdErrorJson),
 
     CaveatJson = maps:get(<<"caveat">>, DetailsJson),
     Caveat = caveats:from_json(CaveatJson),
 
-    ?new_ERROR_TOKEN_CAVEAT_UNVERIFIED(Caveat).
+    ?ERR_TOKEN_CAVEAT_UNVERIFIED(ErrorCtx, Caveat).
 
 
 -spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.

@@ -18,7 +18,7 @@
 -include("http/codes.hrl").
 
 
--type t() :: #od_error{type :: ?MODULE}.
+-type t() :: {error, #od_error{type :: ?MODULE}}.
 
 -export_type([t/0]).
 
@@ -32,30 +32,34 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_INVITE_TOKEN_CONSUMER_INVALID_MATCH(Consumer)) ->
+to_json(?ERR_INVITE_TOKEN_CONSUMER_INVALID(ErrorCtx, Consumer)) ->
     ConsumerJson = aai:subject_to_json(Consumer),
     ConsumerPrint = aai:subject_to_printable(Consumer),
 
     #{
-        <<"id">> => ?ERROR_INVITE_TOKEN_CONSUMER_INVALID_ID,
+        <<"id">> => ?ERR_INVITE_TOKEN_CONSUMER_INVALID_ID,
+        <<"ctx">> => od_error:ctx_to_json(ErrorCtx),
         <<"details">> => #{
             <<"consumer">> => ConsumerJson
         },
         <<"description">> => od_error:format_description(
-            "The consumer '~ts' is invalid for this type of invite token.",
+            "The consumer \"~ts\" is invalid for this type of invite token.",
             [ConsumerPrint]
         )
     }.
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(OdErrorJson = #{<<"id">> := ?ERROR_INVITE_TOKEN_CONSUMER_INVALID_ID}) ->
+from_json(OdErrorJson = #{<<"id">> := ?ERR_INVITE_TOKEN_CONSUMER_INVALID_ID}) ->
+    ErrorCtxJson = maps:get(<<"ctx">>, OdErrorJson, #{}),
+    ErrorCtx = od_error:ctx_from_json(ErrorCtxJson),
+
     DetailsJson = maps:get(<<"details">>, OdErrorJson),
 
     ConsumerJson = maps:get(<<"consumer">>, DetailsJson),
     Consumer = aai:subject_from_json(ConsumerJson),
 
-    ?new_ERROR_INVITE_TOKEN_CONSUMER_INVALID(Consumer).
+    ?ERR_INVITE_TOKEN_CONSUMER_INVALID(ErrorCtx, Consumer).
 
 
 -spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.

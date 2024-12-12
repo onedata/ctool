@@ -18,7 +18,7 @@
 -include("http/codes.hrl").
 
 
--type t() :: #od_error{type :: ?MODULE}.
+-type t() :: {error, #od_error{type :: ?MODULE}}.
 
 -export_type([t/0]).
 
@@ -32,28 +32,32 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_BAD_VALUE_CAVEAT_MATCH(Caveat)) ->
+to_json(?ERR_BAD_VALUE_CAVEAT(ErrorCtx, Caveat)) ->
     CaveatPrint = json_utils:encode(Caveat),
 
     #{
-        <<"id">> => ?ERROR_BAD_VALUE_CAVEAT_ID,
+        <<"id">> => ?ERR_BAD_VALUE_CAVEAT_ID,
+        <<"ctx">> => od_error:ctx_to_json(ErrorCtx),
         <<"details">> => #{
             <<"caveat">> => Caveat
         },
         <<"description">> => od_error:format_description(
-            "Provided caveat is invalid: '~ts'.",
+            "Bad value: provided caveat is invalid: \"~ts\".",
             [CaveatPrint]
         )
     }.
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(OdErrorJson = #{<<"id">> := ?ERROR_BAD_VALUE_CAVEAT_ID}) ->
+from_json(OdErrorJson = #{<<"id">> := ?ERR_BAD_VALUE_CAVEAT_ID}) ->
+    ErrorCtxJson = maps:get(<<"ctx">>, OdErrorJson, #{}),
+    ErrorCtx = od_error:ctx_from_json(ErrorCtxJson),
+
     DetailsJson = maps:get(<<"details">>, OdErrorJson),
 
     Caveat = maps:get(<<"caveat">>, DetailsJson),
 
-    ?new_ERROR_BAD_VALUE_CAVEAT(Caveat).
+    ?ERR_BAD_VALUE_CAVEAT(ErrorCtx, Caveat).
 
 
 -spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.

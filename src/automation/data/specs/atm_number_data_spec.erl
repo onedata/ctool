@@ -102,5 +102,5 @@ decode_allowed_values(Values, skip_validation) ->
 decode_allowed_values(Values, validate) ->
     case is_list(Values) andalso lists:all(fun is_number/1, Values) of
         true -> Values;
-        false -> throw(?new_ERROR_BAD_DATA(<<"allowedValues">>, <<"You must provide a list of numbers">>))
+        false -> throw(?ERR_BAD_DATA(?err_ctx(), <<"allowedValues">>, <<"You must provide a list of numbers">>))
     end.

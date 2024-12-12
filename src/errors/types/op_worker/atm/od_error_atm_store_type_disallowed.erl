@@ -18,7 +18,7 @@
 -include("http/codes.hrl").
 
 
--type t() :: #od_error{type :: ?MODULE}.
+-type t() :: {error, #od_error{type :: ?MODULE}}.
 
 -export_type([t/0]).
 
@@ -32,32 +32,36 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_ATM_STORE_TYPE_DISALLOWED_MATCH(AtmStoreSchemaId, Allowed)) ->
+to_json(?ERR_ATM_STORE_TYPE_DISALLOWED(ErrorCtx, AtmStoreSchemaId, Allowed)) ->
     AllowedJson = lists:map(fun automation:store_type_to_json/1, Allowed),
     AllowedPrint = od_error:format_csv(AllowedJson),
 
     #{
-        <<"id">> => ?ERROR_ATM_STORE_TYPE_DISALLOWED_ID,
+        <<"id">> => ?ERR_ATM_STORE_TYPE_DISALLOWED_ID,
+        <<"ctx">> => od_error:ctx_to_json(ErrorCtx),
         <<"details">> => #{
             <<"atmStoreSchemaId">> => AtmStoreSchemaId,
             <<"allowed">> => AllowedJson
         },
         <<"description">> => od_error:format_description(
-            "Bad automation store: the type of store (schema id: \"~ts\") must be one of: ~ts.",
+            "Bad automation store: the type of store (schema ID: \"~ts\") must be one of: ~ts.",
             [AtmStoreSchemaId, AllowedPrint]
         )
     }.
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(OdErrorJson = #{<<"id">> := ?ERROR_ATM_STORE_TYPE_DISALLOWED_ID}) ->
+from_json(OdErrorJson = #{<<"id">> := ?ERR_ATM_STORE_TYPE_DISALLOWED_ID}) ->
+    ErrorCtxJson = maps:get(<<"ctx">>, OdErrorJson, #{}),
+    ErrorCtx = od_error:ctx_from_json(ErrorCtxJson),
+
     DetailsJson = maps:get(<<"details">>, OdErrorJson),
 
     AtmStoreSchemaId = maps:get(<<"atmStoreSchemaId">>, DetailsJson),
     AllowedJson = maps:get(<<"allowed">>, DetailsJson),
     Allowed = lists:map(fun automation:store_type_from_json/1, AllowedJson),
 
-    ?new_ERROR_ATM_STORE_TYPE_DISALLOWED(AtmStoreSchemaId, Allowed).
+    ?ERR_ATM_STORE_TYPE_DISALLOWED(ErrorCtx, AtmStoreSchemaId, Allowed).
 
 
 -spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.

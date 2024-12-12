@@ -18,7 +18,7 @@
 -include("http/codes.hrl").
 
 
--type t() :: #od_error{type :: ?MODULE}.
+-type t() :: {error, #od_error{type :: ?MODULE}}.
 
 -export_type([t/0]).
 
@@ -32,11 +32,12 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_ATM_LAMBDA_IN_USE_MATCH(AtmWorkflowSchemas)) ->
+to_json(?ERR_ATM_LAMBDA_IN_USE(ErrorCtx, AtmWorkflowSchemas)) ->
     AtmWorkflowSchemasPrint = od_error:format_csv(AtmWorkflowSchemas),
 
     #{
-        <<"id">> => ?ERROR_ATM_LAMBDA_IN_USE_ID,
+        <<"id">> => ?ERR_ATM_LAMBDA_IN_USE_ID,
+        <<"ctx">> => od_error:ctx_to_json(ErrorCtx),
         <<"details">> => #{
             <<"atmWorkflowSchemas">> => AtmWorkflowSchemas
         },
@@ -48,12 +49,15 @@ to_json(?ERROR_ATM_LAMBDA_IN_USE_MATCH(AtmWorkflowSchemas)) ->
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(OdErrorJson = #{<<"id">> := ?ERROR_ATM_LAMBDA_IN_USE_ID}) ->
+from_json(OdErrorJson = #{<<"id">> := ?ERR_ATM_LAMBDA_IN_USE_ID}) ->
+    ErrorCtxJson = maps:get(<<"ctx">>, OdErrorJson, #{}),
+    ErrorCtx = od_error:ctx_from_json(ErrorCtxJson),
+
     DetailsJson = maps:get(<<"details">>, OdErrorJson),
 
     AtmWorkflowSchemas = maps:get(<<"atmWorkflowSchemas">>, DetailsJson),
 
-    ?new_ERROR_ATM_LAMBDA_IN_USE(AtmWorkflowSchemas).
+    ?ERR_ATM_LAMBDA_IN_USE(ErrorCtx, AtmWorkflowSchemas).
 
 
 -spec to_http_code(t()) -> ?HTTP_403_FORBIDDEN.

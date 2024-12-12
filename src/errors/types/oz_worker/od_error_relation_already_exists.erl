@@ -18,7 +18,7 @@
 -include("http/codes.hrl").
 
 
--type t() :: #od_error{type :: ?MODULE}.
+-type t() :: {error, #od_error{type :: ?MODULE}}.
 
 -export_type([t/0]).
 
@@ -32,13 +32,14 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_RELATION_ALREADY_EXISTS_MATCH(ChType, ChId, ParType, ParId)) ->
+to_json(?ERR_RELATION_ALREADY_EXISTS(ErrorCtx, ChType, ChId, ParType, ParId)) ->
     RelationToString = case {ChType, ParType} of
         {od_space, od_provider} -> <<"is already supported by">>;
         {_, _} -> <<"is already a member of">>
     end,
     #{
-        <<"id">> => ?ERROR_RELATION_ALREADY_EXISTS_ID,
+        <<"id">> => ?ERR_RELATION_ALREADY_EXISTS_ID,
+        <<"ctx">> => od_error:ctx_to_json(ErrorCtx),
         <<"details">> => #{
             <<"childType">> => gri:serialize_type(ChType),
             <<"childId">> => ChId,
@@ -54,7 +55,10 @@ to_json(?ERROR_RELATION_ALREADY_EXISTS_MATCH(ChType, ChId, ParType, ParId)) ->
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(OdErrorJson = #{<<"id">> := ?ERROR_RELATION_ALREADY_EXISTS_ID}) ->
+from_json(OdErrorJson = #{<<"id">> := ?ERR_RELATION_ALREADY_EXISTS_ID}) ->
+    ErrorCtxJson = maps:get(<<"ctx">>, OdErrorJson, #{}),
+    ErrorCtx = od_error:ctx_from_json(ErrorCtxJson),
+
     DetailsJson = maps:get(<<"details">>, OdErrorJson),
 
     ChildTypeJson = maps:get(<<"childType">>, DetailsJson),
@@ -64,7 +68,7 @@ from_json(OdErrorJson = #{<<"id">> := ?ERROR_RELATION_ALREADY_EXISTS_ID}) ->
     ParentType = gri:deserialize_type(ParentTypeJson),
     ParentId = maps:get(<<"parentId">>, DetailsJson),
 
-    ?new_ERROR_RELATION_ALREADY_EXISTS(ChildType, ChildId, ParentType, ParentId).
+    ?ERR_RELATION_ALREADY_EXISTS(ErrorCtx, ChildType, ChildId, ParentType, ParentId).
 
 
 -spec to_http_code(t()) -> ?HTTP_409_CONFLICT.

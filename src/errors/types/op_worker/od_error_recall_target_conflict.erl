@@ -18,7 +18,7 @@
 -include("http/codes.hrl").
 
 
--type t() :: #od_error{type :: ?MODULE}.
+-type t() :: {error, #od_error{type :: ?MODULE}}.
 
 -export_type([t/0]).
 
@@ -32,16 +32,19 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_RECALL_TARGET_CONFLICT_MATCH) ->
+to_json(?ERR_RECALL_TARGET_CONFLICT(ErrorCtx)) ->
     #{
-        <<"id">> => ?ERROR_RECALL_TARGET_CONFLICT_ID,
-        <<"description">> => <<"Conflict - recall target cannot be within a directory that is being recalled.">>
+        <<"id">> => ?ERR_RECALL_TARGET_CONFLICT_ID,
+        <<"ctx">> => od_error:ctx_to_json(ErrorCtx),
+        <<"description">> => <<"Conflict: recall target cannot be within a directory that is being recalled.">>
     }.
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(#{<<"id">> := ?ERROR_RECALL_TARGET_CONFLICT_ID}) ->
-    ?new_ERROR_RECALL_TARGET_CONFLICT().
+from_json(OdErrorJson = #{<<"id">> := ?ERR_RECALL_TARGET_CONFLICT_ID}) ->
+    ErrorCtxJson = maps:get(<<"ctx">>, OdErrorJson, #{}),
+    ErrorCtx = od_error:ctx_from_json(ErrorCtxJson),
+    ?ERR_RECALL_TARGET_CONFLICT(ErrorCtx).
 
 
 -spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.

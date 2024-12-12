@@ -18,7 +18,7 @@
 -include("http/codes.hrl").
 
 
--type t() :: #od_error{type :: ?MODULE}.
+-type t() :: {error, #od_error{type :: ?MODULE}}.
 
 -export_type([t/0]).
 
@@ -32,26 +32,30 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_GUI_PACKAGE_UNVERIFIED_MATCH(ShaSum)) ->
+to_json(?ERR_GUI_PACKAGE_UNVERIFIED(ErrorCtx, ShaSum)) ->
     #{
-        <<"id">> => ?ERROR_GUI_PACKAGE_UNVERIFIED_ID,
+        <<"id">> => ?ERR_GUI_PACKAGE_UNVERIFIED_ID,
+        <<"ctx">> => od_error:ctx_to_json(ErrorCtx),
         <<"details">> => #{
             <<"shaSum">> => ShaSum
         },
         <<"description">> => od_error:format_description(
-            "Provided GUI package could not be verified - unknown SHA sum '~ts'.",
+            "The uploaded GUI package could not be verified: unknown SHA sum \"~ts\". If this is a harvester GUI plugin package, contact the Onezone service administrator and ask for whitelisting it.",
             [ShaSum]
         )
     }.
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(OdErrorJson = #{<<"id">> := ?ERROR_GUI_PACKAGE_UNVERIFIED_ID}) ->
+from_json(OdErrorJson = #{<<"id">> := ?ERR_GUI_PACKAGE_UNVERIFIED_ID}) ->
+    ErrorCtxJson = maps:get(<<"ctx">>, OdErrorJson, #{}),
+    ErrorCtx = od_error:ctx_from_json(ErrorCtxJson),
+
     DetailsJson = maps:get(<<"details">>, OdErrorJson),
 
     ShaSum = maps:get(<<"shaSum">>, DetailsJson),
 
-    ?new_ERROR_GUI_PACKAGE_UNVERIFIED(ShaSum).
+    ?ERR_GUI_PACKAGE_UNVERIFIED(ErrorCtx, ShaSum).
 
 
 -spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.

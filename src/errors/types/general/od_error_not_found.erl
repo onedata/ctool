@@ -18,7 +18,7 @@
 -include("http/codes.hrl").
 
 
--type t() :: #od_error{type :: ?MODULE}.
+-type t() :: {error, #od_error{type :: ?MODULE}}.
 
 -export_type([t/0]).
 
@@ -32,16 +32,19 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_NOT_FOUND_MATCH) ->
+to_json(?ERR_NOT_FOUND(ErrorCtx)) ->
     #{
-        <<"id">> => ?ERROR_NOT_FOUND_ID,
-        <<"description">> => <<"The resource could not be found.">>
+        <<"id">> => ?ERR_NOT_FOUND_ID,
+        <<"ctx">> => od_error:ctx_to_json(ErrorCtx),
+        <<"description">> => <<"The requested resource could not be found.">>
     }.
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(#{<<"id">> := ?ERROR_NOT_FOUND_ID}) ->
-    ?new_ERROR_NOT_FOUND().
+from_json(OdErrorJson = #{<<"id">> := ?ERR_NOT_FOUND_ID}) ->
+    ErrorCtxJson = maps:get(<<"ctx">>, OdErrorJson, #{}),
+    ErrorCtx = od_error:ctx_from_json(ErrorCtxJson),
+    ?ERR_NOT_FOUND(ErrorCtx).
 
 
 -spec to_http_code(t()) -> ?HTTP_404_NOT_FOUND.

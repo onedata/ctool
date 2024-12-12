@@ -191,7 +191,7 @@ end).
         ?error(onedata_logger:format_error_report(
             ?MODULE, ?FUNCTION_NAME, ?FUNCTION_ARITY, ?LINE, DetailsFormat, DetailsArgs, ErrorRef
         )),
-        ?new_ERROR_INTERNAL_SERVER_ERROR(ErrorRef)
+        ?ERR_INTERNAL_SERVER_ERROR(?err_ctx(), ErrorRef)
     end)(?make_error_ref()))
 end).
 
@@ -224,7 +224,8 @@ end).
                 Reason;
             _ ->
                 ?log_exception(DetailsFormat, DetailsArgs, ErrorRef, Class, Reason, Stacktrace),
-                ?new_ERROR_INTERNAL_SERVER_ERROR(ErrorRef)
+                % TODO check ctx
+                ?ERR_INTERNAL_SERVER_ERROR(?err_ctx(), ErrorRef)
         end
     end)(?make_error_ref()))
 end).

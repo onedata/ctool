@@ -18,7 +18,7 @@
 -include("http/codes.hrl").
 
 
--type t() :: #od_error{type :: ?MODULE}.
+-type t() :: {error, #od_error{type :: ?MODULE}}.
 
 -export_type([t/0]).
 
@@ -32,32 +32,36 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_BAD_VALUE_TOKEN_MATCH(Key, TokenError)) ->
+to_json(?ERR_BAD_VALUE_TOKEN(ErrorCtx, Key, TokenError)) ->
     TokenErrorJson = errors:to_json(TokenError),
     TokenErrorPrint = maps:get(<<"description">>, TokenErrorJson),
 
     #{
-        <<"id">> => ?ERROR_BAD_VALUE_TOKEN_ID,
+        <<"id">> => ?ERR_BAD_VALUE_TOKEN_ID,
+        <<"ctx">> => od_error:ctx_to_json(ErrorCtx),
         <<"details">> => #{
             <<"key">> => Key,
             <<"tokenError">> => TokenErrorJson
         },
         <<"description">> => od_error:format_description(
-            "Bad value: provided \"~ts\" is not a valid token. ~ts",
+            "Bad value: provided \"~ts\" is not a valid token: ~ts",
             [Key, TokenErrorPrint]
         )
     }.
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(OdErrorJson = #{<<"id">> := ?ERROR_BAD_VALUE_TOKEN_ID}) ->
+from_json(OdErrorJson = #{<<"id">> := ?ERR_BAD_VALUE_TOKEN_ID}) ->
+    ErrorCtxJson = maps:get(<<"ctx">>, OdErrorJson, #{}),
+    ErrorCtx = od_error:ctx_from_json(ErrorCtxJson),
+
     DetailsJson = maps:get(<<"details">>, OdErrorJson),
 
     Key = maps:get(<<"key">>, DetailsJson),
     TokenErrorJson = maps:get(<<"tokenError">>, DetailsJson),
     TokenError = errors:from_json(TokenErrorJson),
 
-    ?new_ERROR_BAD_VALUE_TOKEN(Key, TokenError).
+    ?ERR_BAD_VALUE_TOKEN(ErrorCtx, Key, TokenError).
 
 
 -spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.

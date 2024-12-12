@@ -118,6 +118,6 @@ decode(skip_validation, RecordJson) ->
 decode(validate, RecordJson) ->
     Spec = decode(skip_validation, RecordJson),
     lists:member(Spec#metric_config.resolution, ?ALLOWED_METRIC_RESOLUTIONS) orelse throw(
-        ?new_ERROR_BAD_VALUE_NOT_ALLOWED(<<"resolution">>, ?ALLOWED_METRIC_RESOLUTIONS)
+        ?ERR_BAD_VALUE_NOT_ALLOWED(?err_ctx(), <<"resolution">>, ?ALLOWED_METRIC_RESOLUTIONS)
     ),
     Spec.

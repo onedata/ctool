@@ -18,7 +18,7 @@
 -include("http/codes.hrl").
 
 
--type t() :: #od_error{type :: ?MODULE}.
+-type t() :: {error, #od_error{type :: ?MODULE}}.
 
 -export_type([t/0]).
 
@@ -32,30 +32,34 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_STORAGE_IMPORT_NOT_SUPPORTED_MATCH(StorageId, ObjectStorages)) ->
+to_json(?ERR_STORAGE_IMPORT_NOT_SUPPORTED(ErrorCtx, StorageId, ObjectStorages)) ->
     ObjectStoragesPrint = od_error:format_csv(ObjectStorages),
 
     #{
-        <<"id">> => ?ERROR_STORAGE_IMPORT_NOT_SUPPORTED_ID,
+        <<"id">> => ?ERR_STORAGE_IMPORT_NOT_SUPPORTED_ID,
+        <<"ctx">> => od_error:ctx_to_json(ErrorCtx),
         <<"details">> => #{
             <<"storageId">> => StorageId,
             <<"objectStorages">> => ObjectStorages
         },
         <<"description">> => od_error:format_description(
-            "Cannot configure storage import on storage ~ts - this operation requires storage with canonical path type and on object storages (any of: ~ts) it requires blockSize = 0.",
+            "Cannot configure storage import for the storage backend \"~ts\".  This operation requires a storage backend with canonical path type and  for object storage (any of: ~ts), it requires the block size set to 0.",
             [StorageId, ObjectStoragesPrint]
         )
     }.
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(OdErrorJson = #{<<"id">> := ?ERROR_STORAGE_IMPORT_NOT_SUPPORTED_ID}) ->
+from_json(OdErrorJson = #{<<"id">> := ?ERR_STORAGE_IMPORT_NOT_SUPPORTED_ID}) ->
+    ErrorCtxJson = maps:get(<<"ctx">>, OdErrorJson, #{}),
+    ErrorCtx = od_error:ctx_from_json(ErrorCtxJson),
+
     DetailsJson = maps:get(<<"details">>, OdErrorJson),
 
     StorageId = maps:get(<<"storageId">>, DetailsJson),
     ObjectStorages = maps:get(<<"objectStorages">>, DetailsJson),
 
-    ?new_ERROR_STORAGE_IMPORT_NOT_SUPPORTED(StorageId, ObjectStorages).
+    ?ERR_STORAGE_IMPORT_NOT_SUPPORTED(ErrorCtx, StorageId, ObjectStorages).
 
 
 -spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.

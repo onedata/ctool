@@ -18,7 +18,7 @@
 -include("http/codes.hrl").
 
 
--type t() :: #od_error{type :: ?MODULE}.
+-type t() :: {error, #od_error{type :: ?MODULE}}.
 
 -export_type([t/0]).
 
@@ -32,32 +32,36 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_ATM_TASK_ARG_MAPPING_FAILED_MATCH(Argument, SpecificError)) ->
+to_json(?ERR_ATM_TASK_ARG_MAPPING_FAILED(ErrorCtx, Argument, SpecificError)) ->
     SpecificErrorJson = errors:to_json(SpecificError),
     SpecificErrorPrint = maps:get(<<"description">>, SpecificErrorJson),
 
     #{
-        <<"id">> => ?ERROR_ATM_TASK_ARG_MAPPING_FAILED_ID,
+        <<"id">> => ?ERR_ATM_TASK_ARG_MAPPING_FAILED_ID,
+        <<"ctx">> => od_error:ctx_to_json(ErrorCtx),
         <<"details">> => #{
             <<"argument">> => Argument,
             <<"specificError">> => SpecificErrorJson
         },
         <<"description">> => od_error:format_description(
-            "Failed to map automation task execution argument \"~ts\". ~ts",
+            "Failed to map automation task execution argument \"~ts\": ~ts",
             [Argument, SpecificErrorPrint]
         )
     }.
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(OdErrorJson = #{<<"id">> := ?ERROR_ATM_TASK_ARG_MAPPING_FAILED_ID}) ->
+from_json(OdErrorJson = #{<<"id">> := ?ERR_ATM_TASK_ARG_MAPPING_FAILED_ID}) ->
+    ErrorCtxJson = maps:get(<<"ctx">>, OdErrorJson, #{}),
+    ErrorCtx = od_error:ctx_from_json(ErrorCtxJson),
+
     DetailsJson = maps:get(<<"details">>, OdErrorJson),
 
     Argument = maps:get(<<"argument">>, DetailsJson),
     SpecificErrorJson = maps:get(<<"specificError">>, DetailsJson),
     SpecificError = errors:from_json(SpecificErrorJson),
 
-    ?new_ERROR_ATM_TASK_ARG_MAPPING_FAILED(Argument, SpecificError).
+    ?ERR_ATM_TASK_ARG_MAPPING_FAILED(ErrorCtx, Argument, SpecificError).
 
 
 -spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.

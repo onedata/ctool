@@ -18,7 +18,7 @@
 -include("http/codes.hrl").
 
 
--type t() :: #od_error{type :: ?MODULE}.
+-type t() :: {error, #od_error{type :: ?MODULE}}.
 
 -export_type([t/0]).
 
@@ -32,16 +32,19 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_PROTECTED_GROUP_MATCH) ->
+to_json(?ERR_PROTECTED_GROUP(ErrorCtx)) ->
     #{
-        <<"id">> => ?ERROR_PROTECTED_GROUP_ID,
+        <<"id">> => ?ERR_PROTECTED_GROUP_ID,
+        <<"ctx">> => od_error:ctx_to_json(ErrorCtx),
         <<"description">> => <<"Specified group is protected and cannot be deleted.">>
     }.
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(#{<<"id">> := ?ERROR_PROTECTED_GROUP_ID}) ->
-    ?new_ERROR_PROTECTED_GROUP().
+from_json(OdErrorJson = #{<<"id">> := ?ERR_PROTECTED_GROUP_ID}) ->
+    ErrorCtxJson = maps:get(<<"ctx">>, OdErrorJson, #{}),
+    ErrorCtx = od_error:ctx_from_json(ErrorCtxJson),
+    ?ERR_PROTECTED_GROUP(ErrorCtx).
 
 
 -spec to_http_code(t()) -> ?HTTP_403_FORBIDDEN.

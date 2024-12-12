@@ -18,7 +18,7 @@
 -include("http/codes.hrl").
 
 
--type t() :: #od_error{type :: ?MODULE}.
+-type t() :: {error, #od_error{type :: ?MODULE}}.
 
 -export_type([t/0]).
 
@@ -32,20 +32,22 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_BAD_DATA_MATCH(Key, ?ERROR = SpecificError)) ->
+to_json(?ERR_BAD_DATA(ErrorCtx, Key, ?ERR = SpecificError)) ->
     #{
-        <<"id">> => ?ERROR_BAD_DATA_ID,
+        <<"id">> => ?ERR_BAD_DATA_ID,
+        <<"ctx">> => od_error:ctx_to_json(ErrorCtx),
         <<"details">> => #{
             <<"key">> => Key,
             <<"specificError">> => errors:to_json(SpecificError)
         },
         <<"description">> => od_error:format_description("Bad value provided for \"~ts\" (see details).", [Key])
     };
-to_json(?ERROR_BAD_DATA_MATCH(Key, HumanReadableHint)) ->
+to_json(?ERR_BAD_DATA(ErrorCtx, Key, HumanReadableHint)) ->
     HumanReadableHintJson = utils:undefined_to_null(HumanReadableHint),
 
     #{
-        <<"id">> => <<"badData">>,
+        <<"id">> => ?ERR_BAD_DATA_ID,
+        <<"ctx">> => od_error:ctx_to_json(ErrorCtx),
         <<"details">> => #{
             <<"key">> => Key,
             <<"hint">> => HumanReadableHintJson
@@ -55,17 +57,23 @@ to_json(?ERROR_BAD_DATA_MATCH(Key, HumanReadableHint)) ->
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(#{<<"id">> := ?ERROR_BAD_DATA_ID, <<"details">> := #{
+from_json(ErrorJson = #{<<"id">> := ?ERR_BAD_DATA_ID, <<"details">> := #{
     <<"key">> := Key,
     <<"specificError">> := SpecificError
 }}) ->
-    ?new_ERROR_BAD_DATA(Key, errors:from_json(SpecificError));
+    ErrorCtxJson = maps:get(<<"ctx">>, ErrorJson, #{}),
+    ErrorCtx = od_error:ctx_from_json(ErrorCtxJson),
 
-from_json(#{<<"id">> := ?ERROR_BAD_DATA_ID, <<"details">> := DetailsJson}) ->
+    ?ERR_BAD_DATA(ErrorCtx, Key, errors:from_json(SpecificError));
+
+from_json(ErrorJson = #{<<"id">> := ?ERR_BAD_DATA_ID, <<"details">> := DetailsJson}) ->
+    ErrorCtxJson = maps:get(<<"ctx">>, ErrorJson, #{}),
+    ErrorCtx = od_error:ctx_from_json(ErrorCtxJson),
+
     Key = maps:get(<<"key">>, DetailsJson),
     HumanReadableHint = utils:null_to_undefined(maps:get(<<"hint">>, DetailsJson, null)),
 
-    ?new_ERROR_BAD_DATA(Key, HumanReadableHint).
+    ?ERR_BAD_DATA(ErrorCtx, Key, HumanReadableHint).
 
 
 -spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.

@@ -18,7 +18,7 @@
 -include("http/codes.hrl").
 
 
--type t() :: #od_error{type :: ?MODULE}.
+-type t() :: {error, #od_error{type :: ?MODULE}}.
 
 -export_type([t/0]).
 
@@ -32,16 +32,19 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_BAD_VALUE_EMAIL_MATCH) ->
+to_json(?ERR_BAD_VALUE_EMAIL(ErrorCtx)) ->
     #{
-        <<"id">> => ?ERROR_BAD_VALUE_EMAIL_ID,
-        <<"description">> => <<"Bad value: provided e-mail is not valid.">>
+        <<"id">> => ?ERR_BAD_VALUE_EMAIL_ID,
+        <<"ctx">> => od_error:ctx_to_json(ErrorCtx),
+        <<"description">> => <<"Bad value: provided e-mail address is invalid.">>
     }.
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(#{<<"id">> := ?ERROR_BAD_VALUE_EMAIL_ID}) ->
-    ?new_ERROR_BAD_VALUE_EMAIL().
+from_json(OdErrorJson = #{<<"id">> := ?ERR_BAD_VALUE_EMAIL_ID}) ->
+    ErrorCtxJson = maps:get(<<"ctx">>, OdErrorJson, #{}),
+    ErrorCtx = od_error:ctx_from_json(ErrorCtxJson),
+    ?ERR_BAD_VALUE_EMAIL(ErrorCtx).
 
 
 -spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.

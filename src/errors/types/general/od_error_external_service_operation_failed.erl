@@ -18,7 +18,7 @@
 -include("http/codes.hrl").
 
 
--type t() :: #od_error{type :: ?MODULE}.
+-type t() :: {error, #od_error{type :: ?MODULE}}.
 
 -export_type([t/0]).
 
@@ -32,26 +32,30 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_EXTERNAL_SERVICE_OPERATION_FAILED_MATCH(ServiceName)) ->
+to_json(?ERR_EXTERNAL_SERVICE_OPERATION_FAILED(ErrorCtx, ServiceName)) ->
     #{
-        <<"id">> => ?ERROR_EXTERNAL_SERVICE_OPERATION_FAILED_ID,
+        <<"id">> => ?ERR_EXTERNAL_SERVICE_OPERATION_FAILED_ID,
+        <<"ctx">> => od_error:ctx_to_json(ErrorCtx),
         <<"details">> => #{
             <<"serviceName">> => ServiceName
         },
         <<"description">> => od_error:format_description(
-            "Your request could not be fulfilled due to problems with the external service '~ts'. This might be a temporary problem or a misconfiguration. Please try again later or contact the site administrators if the problem persists.",
+            "Your request could not be fulfilled due to problems with the external service \"~ts\". This might be a temporary problem or a misconfiguration. Please try again later or contact the site administrators if the problem persists.",
             [ServiceName]
         )
     }.
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(OdErrorJson = #{<<"id">> := ?ERROR_EXTERNAL_SERVICE_OPERATION_FAILED_ID}) ->
+from_json(OdErrorJson = #{<<"id">> := ?ERR_EXTERNAL_SERVICE_OPERATION_FAILED_ID}) ->
+    ErrorCtxJson = maps:get(<<"ctx">>, OdErrorJson, #{}),
+    ErrorCtx = od_error:ctx_from_json(ErrorCtxJson),
+
     DetailsJson = maps:get(<<"details">>, OdErrorJson),
 
     ServiceName = maps:get(<<"serviceName">>, DetailsJson),
 
-    ?new_ERROR_EXTERNAL_SERVICE_OPERATION_FAILED(ServiceName).
+    ?ERR_EXTERNAL_SERVICE_OPERATION_FAILED(ErrorCtx, ServiceName).
 
 
 -spec to_http_code(t()) -> ?HTTP_503_SERVICE_UNAVAILABLE.

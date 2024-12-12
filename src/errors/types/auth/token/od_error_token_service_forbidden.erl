@@ -18,7 +18,7 @@
 -include("http/codes.hrl").
 
 
--type t() :: #od_error{type :: ?MODULE}.
+-type t() :: {error, #od_error{type :: ?MODULE}}.
 
 -export_type([t/0]).
 
@@ -32,30 +32,34 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_TOKEN_SERVICE_FORBIDDEN_MATCH(Service)) ->
+to_json(?ERR_TOKEN_SERVICE_FORBIDDEN(ErrorCtx, Service)) ->
     ServiceJson = aai:service_to_json(Service),
     ServicePrint = aai:service_to_printable(Service),
 
     #{
-        <<"id">> => ?ERROR_TOKEN_SERVICE_FORBIDDEN_ID,
+        <<"id">> => ?ERR_TOKEN_SERVICE_FORBIDDEN_ID,
+        <<"ctx">> => od_error:ctx_to_json(ErrorCtx),
         <<"details">> => #{
             <<"service">> => ServiceJson
         },
         <<"description">> => od_error:format_description(
-            "The service ~ts is forbidden for this subject.",
+            "The service \"~ts\" is forbidden for the token subject (creator).",
             [ServicePrint]
         )
     }.
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(OdErrorJson = #{<<"id">> := ?ERROR_TOKEN_SERVICE_FORBIDDEN_ID}) ->
+from_json(OdErrorJson = #{<<"id">> := ?ERR_TOKEN_SERVICE_FORBIDDEN_ID}) ->
+    ErrorCtxJson = maps:get(<<"ctx">>, OdErrorJson, #{}),
+    ErrorCtx = od_error:ctx_from_json(ErrorCtxJson),
+
     DetailsJson = maps:get(<<"details">>, OdErrorJson),
 
     ServiceJson = maps:get(<<"service">>, DetailsJson),
     Service = aai:service_from_json(ServiceJson),
 
-    ?new_ERROR_TOKEN_SERVICE_FORBIDDEN(Service).
+    ?ERR_TOKEN_SERVICE_FORBIDDEN(ErrorCtx, Service).
 
 
 -spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.

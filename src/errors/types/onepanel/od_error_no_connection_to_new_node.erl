@@ -18,7 +18,7 @@
 -include("http/codes.hrl").
 
 
--type t() :: #od_error{type :: ?MODULE}.
+-type t() :: {error, #od_error{type :: ?MODULE}}.
 
 -export_type([t/0]).
 
@@ -32,9 +32,10 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_NO_CONNECTION_TO_NEW_NODE_MATCH(Hostname)) ->
+to_json(?ERR_NO_CONNECTION_TO_NEW_NODE(ErrorCtx, Hostname)) ->
     #{
-        <<"id">> => ?ERROR_NO_CONNECTION_TO_NEW_NODE_ID,
+        <<"id">> => ?ERR_NO_CONNECTION_TO_NEW_NODE_ID,
+        <<"ctx">> => od_error:ctx_to_json(ErrorCtx),
         <<"details">> => #{
             <<"hostname">> => Hostname
         },
@@ -46,12 +47,15 @@ to_json(?ERROR_NO_CONNECTION_TO_NEW_NODE_MATCH(Hostname)) ->
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(OdErrorJson = #{<<"id">> := ?ERROR_NO_CONNECTION_TO_NEW_NODE_ID}) ->
+from_json(OdErrorJson = #{<<"id">> := ?ERR_NO_CONNECTION_TO_NEW_NODE_ID}) ->
+    ErrorCtxJson = maps:get(<<"ctx">>, OdErrorJson, #{}),
+    ErrorCtx = od_error:ctx_from_json(ErrorCtxJson),
+
     DetailsJson = maps:get(<<"details">>, OdErrorJson),
 
     Hostname = maps:get(<<"hostname">>, DetailsJson),
 
-    ?new_ERROR_NO_CONNECTION_TO_NEW_NODE(Hostname).
+    ?ERR_NO_CONNECTION_TO_NEW_NODE(ErrorCtx, Hostname).
 
 
 -spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.

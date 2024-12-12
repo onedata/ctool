@@ -18,7 +18,7 @@
 -include("http/codes.hrl").
 
 
--type t() :: #od_error{type :: ?MODULE}.
+-type t() :: {error, #od_error{type :: ?MODULE}}.
 
 -export_type([t/0]).
 
@@ -32,16 +32,19 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_INVITE_TOKEN_SUBJECT_NOT_AUTHORIZED_MATCH) ->
+to_json(?ERR_INVITE_TOKEN_SUBJECT_NOT_AUTHORIZED(ErrorCtx)) ->
     #{
-        <<"id">> => ?ERROR_INVITE_TOKEN_SUBJECT_NOT_AUTHORIZED_ID,
-        <<"description">> => <<"The subject of this token is not (or no longer) authorized to issue such invitations.">>
+        <<"id">> => ?ERR_INVITE_TOKEN_SUBJECT_NOT_AUTHORIZED_ID,
+        <<"ctx">> => od_error:ctx_to_json(ErrorCtx),
+        <<"description">> => <<"The token subject (creator) is not (or no longer) authorized to issue such invitations.">>
     }.
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(#{<<"id">> := ?ERROR_INVITE_TOKEN_SUBJECT_NOT_AUTHORIZED_ID}) ->
-    ?new_ERROR_INVITE_TOKEN_SUBJECT_NOT_AUTHORIZED().
+from_json(OdErrorJson = #{<<"id">> := ?ERR_INVITE_TOKEN_SUBJECT_NOT_AUTHORIZED_ID}) ->
+    ErrorCtxJson = maps:get(<<"ctx">>, OdErrorJson, #{}),
+    ErrorCtx = od_error:ctx_from_json(ErrorCtxJson),
+    ?ERR_INVITE_TOKEN_SUBJECT_NOT_AUTHORIZED(ErrorCtx).
 
 
 -spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.

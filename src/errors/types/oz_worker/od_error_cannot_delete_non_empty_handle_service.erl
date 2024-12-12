@@ -18,7 +18,7 @@
 -include("http/codes.hrl").
 
 
--type t() :: #od_error{type :: ?MODULE}.
+-type t() :: {error, #od_error{type :: ?MODULE}}.
 
 -export_type([t/0]).
 
@@ -32,16 +32,19 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_CANNOT_DELETE_NON_EMPTY_HANDLE_SERVICE_MATCH) ->
+to_json(?ERR_CANNOT_DELETE_NON_EMPTY_HANDLE_SERVICE(ErrorCtx)) ->
     #{
-        <<"id">> => ?ERROR_CANNOT_DELETE_NON_EMPTY_HANDLE_SERVICE_ID,
-        <<"description">> => <<"This handle service cannot be deleted as it still has some handles registered. All the handles would have to be deleted first, but proceed with caution as Open Data records should be persistent.">>
+        <<"id">> => ?ERR_CANNOT_DELETE_NON_EMPTY_HANDLE_SERVICE_ID,
+        <<"ctx">> => od_error:ctx_to_json(ErrorCtx),
+        <<"description">> => <<"This handle service cannot be deleted as it still has some handles registered. All the handles would have to be deleted first, but proceed with caution as Public Data records should be persistent.">>
     }.
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(#{<<"id">> := ?ERROR_CANNOT_DELETE_NON_EMPTY_HANDLE_SERVICE_ID}) ->
-    ?new_ERROR_CANNOT_DELETE_NON_EMPTY_HANDLE_SERVICE().
+from_json(OdErrorJson = #{<<"id">> := ?ERR_CANNOT_DELETE_NON_EMPTY_HANDLE_SERVICE_ID}) ->
+    ErrorCtxJson = maps:get(<<"ctx">>, OdErrorJson, #{}),
+    ErrorCtx = od_error:ctx_from_json(ErrorCtxJson),
+    ?ERR_CANNOT_DELETE_NON_EMPTY_HANDLE_SERVICE(ErrorCtx).
 
 
 -spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.

@@ -18,7 +18,7 @@
 -include("http/codes.hrl").
 
 
--type t() :: #od_error{type :: ?MODULE}.
+-type t() :: {error, #od_error{type :: ?MODULE}}.
 
 -export_type([t/0]).
 
@@ -32,25 +32,29 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_ILLEGAL_SUPPORT_STAGE_TRANSITION_MATCH(CurrentProviderStage, CurrentStorageStage)) ->
+to_json(?ERR_ILLEGAL_SUPPORT_STAGE_TRANSITION(ErrorCtx, CurrentProviderStage, CurrentStorageStage)) ->
     CurrentProviderStageJson = support_stage:serialize(provider, CurrentProviderStage),
     CurrentStorageStageJson = support_stage:serialize(storage, CurrentStorageStage),
 
     #{
-        <<"id">> => ?ERROR_ILLEGAL_SUPPORT_STAGE_TRANSITION_ID,
+        <<"id">> => ?ERR_ILLEGAL_SUPPORT_STAGE_TRANSITION_ID,
+        <<"ctx">> => od_error:ctx_to_json(ErrorCtx),
         <<"details">> => #{
             <<"currentProviderStage">> => CurrentProviderStageJson,
             <<"currentStorageStage">> => CurrentStorageStageJson
         },
         <<"description">> => od_error:format_description(
-            "Illegal support stage transition: this operation cannot be performed while the storage is in stage '~w' and provider is in stage '~w'.",
+            "Illegal support stage transition: this operation cannot be performed while the storage is in stage \"~w\" and the provider is in stage \"~w\".",
             [CurrentStorageStage, CurrentProviderStage]
         )
     }.
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(OdErrorJson = #{<<"id">> := ?ERROR_ILLEGAL_SUPPORT_STAGE_TRANSITION_ID}) ->
+from_json(OdErrorJson = #{<<"id">> := ?ERR_ILLEGAL_SUPPORT_STAGE_TRANSITION_ID}) ->
+    ErrorCtxJson = maps:get(<<"ctx">>, OdErrorJson, #{}),
+    ErrorCtx = od_error:ctx_from_json(ErrorCtxJson),
+
     DetailsJson = maps:get(<<"details">>, OdErrorJson),
 
     CurrentProviderStageJson = maps:get(<<"currentProviderStage">>, DetailsJson),
@@ -58,7 +62,7 @@ from_json(OdErrorJson = #{<<"id">> := ?ERROR_ILLEGAL_SUPPORT_STAGE_TRANSITION_ID
     CurrentStorageStageJson = maps:get(<<"currentStorageStage">>, DetailsJson),
     CurrentStorageStage = support_stage:deserialize(storage, CurrentStorageStageJson),
 
-    ?new_ERROR_ILLEGAL_SUPPORT_STAGE_TRANSITION(CurrentProviderStage, CurrentStorageStage).
+    ?ERR_ILLEGAL_SUPPORT_STAGE_TRANSITION(ErrorCtx, CurrentProviderStage, CurrentStorageStage).
 
 
 -spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.

@@ -18,7 +18,7 @@
 -include("http/codes.hrl").
 
 
--type t() :: #od_error{type :: ?MODULE}.
+-type t() :: {error, #od_error{type :: ?MODULE}}.
 
 -export_type([t/0]).
 
@@ -32,28 +32,32 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_CANNOT_REMOVE_LAST_OWNER_MATCH(EntityType, EntityId)) ->
+to_json(?ERR_CANNOT_REMOVE_LAST_OWNER(ErrorCtx, EntityType, EntityId)) ->
     EntityTypeJson = atom_to_binary(EntityType, utf8),
 
     #{
-        <<"id">> => ?ERROR_CANNOT_REMOVE_LAST_OWNER_ID,
+        <<"id">> => ?ERR_CANNOT_REMOVE_LAST_OWNER_ID,
+        <<"ctx">> => od_error:ctx_to_json(ErrorCtx),
         <<"details">> => #{
             <<"entityType">> => EntityTypeJson,
             <<"entityId">> => EntityId
         },
-        <<"description">> => <<"Cannot remove the last owner - another owner must be assigned first. Ownership can be granted to any direct or effective member.">>
+        <<"description">> => <<"Cannot remove the last owner; another owner must be assigned first. Ownership can be granted to any direct or effective member user.">>
     }.
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(OdErrorJson = #{<<"id">> := ?ERROR_CANNOT_REMOVE_LAST_OWNER_ID}) ->
+from_json(OdErrorJson = #{<<"id">> := ?ERR_CANNOT_REMOVE_LAST_OWNER_ID}) ->
+    ErrorCtxJson = maps:get(<<"ctx">>, OdErrorJson, #{}),
+    ErrorCtx = od_error:ctx_from_json(ErrorCtxJson),
+
     DetailsJson = maps:get(<<"details">>, OdErrorJson),
 
     EntityTypeJson = maps:get(<<"entityType">>, DetailsJson),
     EntityType = binary_to_existing_atom(EntityTypeJson, utf8),
     EntityId = maps:get(<<"entityId">>, DetailsJson),
 
-    ?new_ERROR_CANNOT_REMOVE_LAST_OWNER(EntityType, EntityId).
+    ?ERR_CANNOT_REMOVE_LAST_OWNER(ErrorCtx, EntityType, EntityId).
 
 
 -spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.

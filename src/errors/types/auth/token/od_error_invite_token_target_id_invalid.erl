@@ -18,7 +18,7 @@
 -include("http/codes.hrl").
 
 
--type t() :: #od_error{type :: ?MODULE}.
+-type t() :: {error, #od_error{type :: ?MODULE}}.
 
 -export_type([t/0]).
 
@@ -32,26 +32,30 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_INVITE_TOKEN_TARGET_ID_INVALID_MATCH(Id)) ->
+to_json(?ERR_INVITE_TOKEN_TARGET_ID_INVALID(ErrorCtx, Id)) ->
     #{
-        <<"id">> => ?ERROR_INVITE_TOKEN_TARGET_ID_INVALID_ID,
+        <<"id">> => ?ERR_INVITE_TOKEN_TARGET_ID_INVALID_ID,
+        <<"ctx">> => od_error:ctx_to_json(ErrorCtx),
         <<"details">> => #{
             <<"id">> => Id
         },
         <<"description">> => od_error:format_description(
-            "The target id '~ts' is invalid for this type of invite token.",
+            "The target ID \"~ts\" is invalid for this type of invite token.",
             [Id]
         )
     }.
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(OdErrorJson = #{<<"id">> := ?ERROR_INVITE_TOKEN_TARGET_ID_INVALID_ID}) ->
+from_json(OdErrorJson = #{<<"id">> := ?ERR_INVITE_TOKEN_TARGET_ID_INVALID_ID}) ->
+    ErrorCtxJson = maps:get(<<"ctx">>, OdErrorJson, #{}),
+    ErrorCtx = od_error:ctx_from_json(ErrorCtxJson),
+
     DetailsJson = maps:get(<<"details">>, OdErrorJson),
 
     Id = maps:get(<<"id">>, DetailsJson),
 
-    ?new_ERROR_INVITE_TOKEN_TARGET_ID_INVALID(Id).
+    ?ERR_INVITE_TOKEN_TARGET_ID_INVALID(ErrorCtx, Id).
 
 
 -spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.

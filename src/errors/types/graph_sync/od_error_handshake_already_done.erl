@@ -18,7 +18,7 @@
 -include("http/codes.hrl").
 
 
--type t() :: #od_error{type :: ?MODULE}.
+-type t() :: {error, #od_error{type :: ?MODULE}}.
 
 -export_type([t/0]).
 
@@ -32,16 +32,19 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_HANDSHAKE_ALREADY_DONE_MATCH) ->
+to_json(?ERR_HANDSHAKE_ALREADY_DONE(ErrorCtx)) ->
     #{
-        <<"id">> => ?ERROR_HANDSHAKE_ALREADY_DONE_ID,
-        <<"description">> => <<"Handshake has already been done.">>
+        <<"id">> => ?ERR_HANDSHAKE_ALREADY_DONE_ID,
+        <<"ctx">> => od_error:ctx_to_json(ErrorCtx),
+        <<"description">> => <<"GraphSync error: handshake has already been performed.">>
     }.
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(#{<<"id">> := ?ERROR_HANDSHAKE_ALREADY_DONE_ID}) ->
-    ?new_ERROR_HANDSHAKE_ALREADY_DONE().
+from_json(OdErrorJson = #{<<"id">> := ?ERR_HANDSHAKE_ALREADY_DONE_ID}) ->
+    ErrorCtxJson = maps:get(<<"ctx">>, OdErrorJson, #{}),
+    ErrorCtx = od_error:ctx_from_json(ErrorCtxJson),
+    ?ERR_HANDSHAKE_ALREADY_DONE(ErrorCtx).
 
 
 -spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.

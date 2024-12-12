@@ -18,7 +18,7 @@
 -include("http/codes.hrl").
 
 
--type t() :: #od_error{type :: ?MODULE}.
+-type t() :: {error, #od_error{type :: ?MODULE}}.
 
 -export_type([t/0]).
 
@@ -32,16 +32,19 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_INVITE_TOKEN_USAGE_LIMIT_REACHED_MATCH) ->
+to_json(?ERR_INVITE_TOKEN_USAGE_LIMIT_REACHED(ErrorCtx)) ->
     #{
-        <<"id">> => ?ERROR_INVITE_TOKEN_USAGE_LIMIT_REACHED_ID,
+        <<"id">> => ?ERR_INVITE_TOKEN_USAGE_LIMIT_REACHED_ID,
+        <<"ctx">> => od_error:ctx_to_json(ErrorCtx),
         <<"description">> => <<"The usage limit of this invite token has been reached.">>
     }.
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(#{<<"id">> := ?ERROR_INVITE_TOKEN_USAGE_LIMIT_REACHED_ID}) ->
-    ?new_ERROR_INVITE_TOKEN_USAGE_LIMIT_REACHED().
+from_json(OdErrorJson = #{<<"id">> := ?ERR_INVITE_TOKEN_USAGE_LIMIT_REACHED_ID}) ->
+    ErrorCtxJson = maps:get(<<"ctx">>, OdErrorJson, #{}),
+    ErrorCtx = od_error:ctx_from_json(ErrorCtxJson),
+    ?ERR_INVITE_TOKEN_USAGE_LIMIT_REACHED(ErrorCtx).
 
 
 -spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.

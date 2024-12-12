@@ -18,7 +18,7 @@
 -include("http/codes.hrl").
 
 
--type t() :: #od_error{type :: ?MODULE}.
+-type t() :: {error, #od_error{type :: ?MODULE}}.
 
 -export_type([t/0]).
 
@@ -32,26 +32,30 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_NODE_ALREADY_IN_CLUSTER_MATCH(Hostname)) ->
+to_json(?ERR_NODE_ALREADY_IN_CLUSTER(ErrorCtx, Hostname)) ->
     #{
-        <<"id">> => ?ERROR_NODE_ALREADY_IN_CLUSTER_ID,
+        <<"id">> => ?ERR_NODE_ALREADY_IN_CLUSTER_ID,
+        <<"ctx">> => od_error:ctx_to_json(ErrorCtx),
         <<"details">> => #{
             <<"hostname">> => Hostname
         },
         <<"description">> => od_error:format_description(
-            "Cannot add \"~ts\", it is already part of a cluster.",
+            "Refusing to add node \"~ts\", it's already a part of the cluster.",
             [Hostname]
         )
     }.
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(OdErrorJson = #{<<"id">> := ?ERROR_NODE_ALREADY_IN_CLUSTER_ID}) ->
+from_json(OdErrorJson = #{<<"id">> := ?ERR_NODE_ALREADY_IN_CLUSTER_ID}) ->
+    ErrorCtxJson = maps:get(<<"ctx">>, OdErrorJson, #{}),
+    ErrorCtx = od_error:ctx_from_json(ErrorCtxJson),
+
     DetailsJson = maps:get(<<"details">>, OdErrorJson),
 
     Hostname = maps:get(<<"hostname">>, DetailsJson),
 
-    ?new_ERROR_NODE_ALREADY_IN_CLUSTER(Hostname).
+    ?ERR_NODE_ALREADY_IN_CLUSTER(ErrorCtx, Hostname).
 
 
 -spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.

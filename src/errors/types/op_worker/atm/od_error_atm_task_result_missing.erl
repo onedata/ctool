@@ -18,7 +18,7 @@
 -include("http/codes.hrl").
 
 
--type t() :: #od_error{type :: ?MODULE}.
+-type t() :: {error, #od_error{type :: ?MODULE}}.
 
 -export_type([t/0]).
 
@@ -32,30 +32,34 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_ATM_TASK_RESULT_MISSING_MATCH(MissingResultName, ReceivedResultNames)) ->
+to_json(?ERR_ATM_TASK_RESULT_MISSING(ErrorCtx, MissingResultName, ReceivedResultNames)) ->
     ReceivedResultNamesPrint = od_error:format_csv(ReceivedResultNames),
 
     #{
-        <<"id">> => ?ERROR_ATM_TASK_RESULT_MISSING_ID,
+        <<"id">> => ?ERR_ATM_TASK_RESULT_MISSING_ID,
+        <<"ctx">> => od_error:ctx_to_json(ErrorCtx),
         <<"details">> => #{
             <<"missingResultName">> => MissingResultName,
             <<"receivedResultNames">> => ReceivedResultNames
         },
         <<"description">> => od_error:format_description(
-            "Missing required value for result '~ts' in the lambda output. Received values for result names: ~ts.",
+            "Missing required value for result \"~ts\" in the lambda output. Received values for result names: ~ts.",
             [MissingResultName, ReceivedResultNamesPrint]
         )
     }.
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(OdErrorJson = #{<<"id">> := ?ERROR_ATM_TASK_RESULT_MISSING_ID}) ->
+from_json(OdErrorJson = #{<<"id">> := ?ERR_ATM_TASK_RESULT_MISSING_ID}) ->
+    ErrorCtxJson = maps:get(<<"ctx">>, OdErrorJson, #{}),
+    ErrorCtx = od_error:ctx_from_json(ErrorCtxJson),
+
     DetailsJson = maps:get(<<"details">>, OdErrorJson),
 
     MissingResultName = maps:get(<<"missingResultName">>, DetailsJson),
     ReceivedResultNames = maps:get(<<"receivedResultNames">>, DetailsJson),
 
-    ?new_ERROR_ATM_TASK_RESULT_MISSING(MissingResultName, ReceivedResultNames).
+    ?ERR_ATM_TASK_RESULT_MISSING(ErrorCtx, MissingResultName, ReceivedResultNames).
 
 
 -spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.

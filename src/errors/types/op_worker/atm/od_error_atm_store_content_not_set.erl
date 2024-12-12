@@ -18,7 +18,7 @@
 -include("http/codes.hrl").
 
 
--type t() :: #od_error{type :: ?MODULE}.
+-type t() :: {error, #od_error{type :: ?MODULE}}.
 
 -export_type([t/0]).
 
@@ -32,26 +32,30 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_ATM_STORE_CONTENT_NOT_SET_MATCH(AtmStoreSchemaId)) ->
+to_json(?ERR_ATM_STORE_CONTENT_NOT_SET(ErrorCtx, AtmStoreSchemaId)) ->
     #{
-        <<"id">> => ?ERROR_ATM_STORE_CONTENT_NOT_SET_ID,
+        <<"id">> => ?ERR_ATM_STORE_CONTENT_NOT_SET_ID,
+        <<"ctx">> => od_error:ctx_to_json(ErrorCtx),
         <<"details">> => #{
             <<"atmStoreSchemaId">> => AtmStoreSchemaId
         },
         <<"description">> => od_error:format_description(
-            "No content has been set for this store (schema id: \"~ts\").",
+            "No content has been set for this store (schema ID: \"~ts\").",
             [AtmStoreSchemaId]
         )
     }.
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(OdErrorJson = #{<<"id">> := ?ERROR_ATM_STORE_CONTENT_NOT_SET_ID}) ->
+from_json(OdErrorJson = #{<<"id">> := ?ERR_ATM_STORE_CONTENT_NOT_SET_ID}) ->
+    ErrorCtxJson = maps:get(<<"ctx">>, OdErrorJson, #{}),
+    ErrorCtx = od_error:ctx_from_json(ErrorCtxJson),
+
     DetailsJson = maps:get(<<"details">>, OdErrorJson),
 
     AtmStoreSchemaId = maps:get(<<"atmStoreSchemaId">>, DetailsJson),
 
-    ?new_ERROR_ATM_STORE_CONTENT_NOT_SET(AtmStoreSchemaId).
+    ?ERR_ATM_STORE_CONTENT_NOT_SET(ErrorCtx, AtmStoreSchemaId).
 
 
 -spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.

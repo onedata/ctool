@@ -18,7 +18,7 @@
 -include("http/codes.hrl").
 
 
--type t() :: #od_error{type :: ?MODULE}.
+-type t() :: {error, #od_error{type :: ?MODULE}}.
 
 -export_type([t/0]).
 
@@ -32,16 +32,19 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_TOKEN_SESSION_INVALID_MATCH) ->
+to_json(?ERR_TOKEN_SESSION_INVALID(ErrorCtx)) ->
     #{
-        <<"id">> => ?ERROR_TOKEN_SESSION_INVALID_ID,
+        <<"id">> => ?ERR_TOKEN_SESSION_INVALID_ID,
+        <<"ctx">> => od_error:ctx_to_json(ErrorCtx),
         <<"description">> => <<"This token is bound to a session different than presented by the client or no longer existent.">>
     }.
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(#{<<"id">> := ?ERROR_TOKEN_SESSION_INVALID_ID}) ->
-    ?new_ERROR_TOKEN_SESSION_INVALID().
+from_json(OdErrorJson = #{<<"id">> := ?ERR_TOKEN_SESSION_INVALID_ID}) ->
+    ErrorCtxJson = maps:get(<<"ctx">>, OdErrorJson, #{}),
+    ErrorCtx = od_error:ctx_from_json(ErrorCtxJson),
+    ?ERR_TOKEN_SESSION_INVALID(ErrorCtx).
 
 
 -spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.

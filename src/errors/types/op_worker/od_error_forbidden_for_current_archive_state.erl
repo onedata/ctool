@@ -18,7 +18,7 @@
 -include("http/codes.hrl").
 
 
--type t() :: #od_error{type :: ?MODULE}.
+-type t() :: {error, #od_error{type :: ?MODULE}}.
 
 -export_type([t/0]).
 
@@ -32,9 +32,10 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_FORBIDDEN_FOR_CURRENT_ARCHIVE_STATE_MATCH(CurrentState, AllowedStates)) ->
+to_json(?ERR_FORBIDDEN_FOR_CURRENT_ARCHIVE_STATE(ErrorCtx, CurrentState, AllowedStates)) ->
     #{
-        <<"id">> => ?ERROR_FORBIDDEN_FOR_CURRENT_ARCHIVE_STATE_ID,
+        <<"id">> => ?ERR_FORBIDDEN_FOR_CURRENT_ARCHIVE_STATE_ID,
+        <<"ctx">> => od_error:ctx_to_json(ErrorCtx),
         <<"description">> => od_error:format_description(
             "This operation is forbidden while the archive state is ~ts. Allowed states are: ~ts.",
             [CurrentState, od_error:format_csv(AllowedStates)]
@@ -47,14 +48,17 @@ to_json(?ERROR_FORBIDDEN_FOR_CURRENT_ARCHIVE_STATE_MATCH(CurrentState, AllowedSt
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(#{
-    <<"id">> := ?ERROR_FORBIDDEN_FOR_CURRENT_ARCHIVE_STATE_ID,
+from_json(ErrorJson = #{
+    <<"id">> := ?ERR_FORBIDDEN_FOR_CURRENT_ARCHIVE_STATE_ID,
     <<"details">> := #{
         <<"allowedStates">> := AllowedStates,
         <<"currentState">> := CurrentState
     }
 }) ->
-    ?new_ERROR_FORBIDDEN_FOR_CURRENT_ARCHIVE_STATE(
+    ErrorCtxJson = maps:get(<<"ctx">>, ErrorJson, #{}),
+    ErrorCtx = od_error:ctx_from_json(ErrorCtxJson),
+
+    ?ERR_FORBIDDEN_FOR_CURRENT_ARCHIVE_STATE(ErrorCtx,
         binary_to_existing_atom(json_utils:decode(CurrentState)),
         [binary_to_existing_atom(StateBin) || StateBin <- json_utils:decode(AllowedStates)]
     ).

@@ -18,7 +18,7 @@
 -include("http/codes.hrl").
 
 
--type t() :: #od_error{type :: ?MODULE}.
+-type t() :: {error, #od_error{type :: ?MODULE}}.
 
 -export_type([t/0]).
 
@@ -32,28 +32,32 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_INTERNAL_SERVER_ERROR_MATCH(Reference)) ->
+to_json(?ERR_INTERNAL_SERVER_ERROR(ErrorCtx, Reference)) ->
     ReferenceJson = utils:undefined_to_null(Reference),
 
     #{
-        <<"id">> => ?ERROR_INTERNAL_SERVER_ERROR_ID,
+        <<"id">> => ?ERR_INTERNAL_SERVER_ERROR_ID,
+        <<"ctx">> => od_error:ctx_to_json(ErrorCtx),
         <<"details">> => #{
             <<"reference">> => ReferenceJson
         },
         <<"description">> => od_error:format_description(
-            "The server has encountered an error while processing this request. If the problem persists, please contact the site's administrators, citing the following reference: ~ts",
+            "The server has encountered an error while processing this request. If the problem persists, please contact the site's administrators, citing the following reference: \"~ts\".",
             [ReferenceJson]
         )
     }.
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(OdErrorJson = #{<<"id">> := ?ERROR_INTERNAL_SERVER_ERROR_ID}) ->
+from_json(OdErrorJson = #{<<"id">> := ?ERR_INTERNAL_SERVER_ERROR_ID}) ->
+    ErrorCtxJson = maps:get(<<"ctx">>, OdErrorJson, #{}),
+    ErrorCtx = od_error:ctx_from_json(ErrorCtxJson),
+
     DetailsJson = maps:get(<<"details">>, OdErrorJson, #{}),
 
     Reference = utils:null_to_undefined(maps:get(<<"reference">>, DetailsJson, null)),
 
-    ?new_ERROR_INTERNAL_SERVER_ERROR(Reference).
+    ?ERR_INTERNAL_SERVER_ERROR(ErrorCtx, Reference).
 
 
 -spec to_http_code(t()) -> ?HTTP_500_INTERNAL_SERVER_ERROR.

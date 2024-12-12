@@ -18,7 +18,7 @@
 -include("http/codes.hrl").
 
 
--type t() :: #od_error{type :: ?MODULE}.
+-type t() :: {error, #od_error{type :: ?MODULE}}.
 
 -export_type([t/0]).
 
@@ -32,9 +32,10 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_BAD_VALUE_TEXT_TOO_LARGE_MATCH(Key, Limit)) ->
+to_json(?ERR_BAD_VALUE_TEXT_TOO_LARGE(ErrorCtx, Key, Limit)) ->
     #{
-        <<"id">> => ?ERROR_BAD_VALUE_TEXT_TOO_LARGE_ID,
+        <<"id">> => ?ERR_BAD_VALUE_TEXT_TOO_LARGE_ID,
+        <<"ctx">> => od_error:ctx_to_json(ErrorCtx),
         <<"details">> => #{
             <<"key">> => Key,
             <<"limit">> => Limit
@@ -47,13 +48,16 @@ to_json(?ERROR_BAD_VALUE_TEXT_TOO_LARGE_MATCH(Key, Limit)) ->
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(OdErrorJson = #{<<"id">> := ?ERROR_BAD_VALUE_TEXT_TOO_LARGE_ID}) ->
+from_json(OdErrorJson = #{<<"id">> := ?ERR_BAD_VALUE_TEXT_TOO_LARGE_ID}) ->
+    ErrorCtxJson = maps:get(<<"ctx">>, OdErrorJson, #{}),
+    ErrorCtx = od_error:ctx_from_json(ErrorCtxJson),
+
     DetailsJson = maps:get(<<"details">>, OdErrorJson),
 
     Key = maps:get(<<"key">>, DetailsJson),
     Limit = maps:get(<<"limit">>, DetailsJson),
 
-    ?new_ERROR_BAD_VALUE_TEXT_TOO_LARGE(Key, Limit).
+    ?ERR_BAD_VALUE_TEXT_TOO_LARGE(ErrorCtx, Key, Limit).
 
 
 -spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.

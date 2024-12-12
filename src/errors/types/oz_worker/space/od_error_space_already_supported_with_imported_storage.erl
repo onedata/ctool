@@ -18,7 +18,7 @@
 -include("http/codes.hrl").
 
 
--type t() :: #od_error{type :: ?MODULE}.
+-type t() :: {error, #od_error{type :: ?MODULE}}.
 
 -export_type([t/0]).
 
@@ -32,28 +32,32 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_SPACE_ALREADY_SUPPORTED_WITH_IMPORTED_STORAGE_MATCH(SpaceId, StorageId)) ->
+to_json(?ERR_SPACE_ALREADY_SUPPORTED_WITH_IMPORTED_STORAGE(ErrorCtx, SpaceId, StorageId)) ->
     #{
-        <<"id">> => ?ERROR_SPACE_ALREADY_SUPPORTED_WITH_IMPORTED_STORAGE_ID,
+        <<"id">> => ?ERR_SPACE_ALREADY_SUPPORTED_WITH_IMPORTED_STORAGE_ID,
+        <<"ctx">> => od_error:ctx_to_json(ErrorCtx),
         <<"details">> => #{
             <<"spaceId">> => SpaceId,
             <<"storageId">> => StorageId
         },
         <<"description">> => od_error:format_description(
-            "Space ~ts is already supported with an imported storage ~ts.",
+            "Space \"~ts\" is already supported with an imported storage backend (\"~ts\"). A space can be supported by no more than one imported storage backend.",
             [SpaceId, StorageId]
         )
     }.
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(OdErrorJson = #{<<"id">> := ?ERROR_SPACE_ALREADY_SUPPORTED_WITH_IMPORTED_STORAGE_ID}) ->
+from_json(OdErrorJson = #{<<"id">> := ?ERR_SPACE_ALREADY_SUPPORTED_WITH_IMPORTED_STORAGE_ID}) ->
+    ErrorCtxJson = maps:get(<<"ctx">>, OdErrorJson, #{}),
+    ErrorCtx = od_error:ctx_from_json(ErrorCtxJson),
+
     DetailsJson = maps:get(<<"details">>, OdErrorJson),
 
     SpaceId = maps:get(<<"spaceId">>, DetailsJson),
     StorageId = maps:get(<<"storageId">>, DetailsJson),
 
-    ?new_ERROR_SPACE_ALREADY_SUPPORTED_WITH_IMPORTED_STORAGE(SpaceId, StorageId).
+    ?ERR_SPACE_ALREADY_SUPPORTED_WITH_IMPORTED_STORAGE(ErrorCtx, SpaceId, StorageId).
 
 
 -spec to_http_code(t()) -> ?HTTP_409_CONFLICT.

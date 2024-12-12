@@ -18,7 +18,7 @@
 -include("http/codes.hrl").
 
 
--type t() :: #od_error{type :: ?MODULE}.
+-type t() :: {error, #od_error{type :: ?MODULE}}.
 
 -export_type([t/0]).
 
@@ -32,28 +32,37 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_FORBIDDEN_MATCH(Hint)) ->
-    HintJson = utils:undefined_to_null(Hint),
+to_json(?ERR_FORBIDDEN(ErrorCtx, Hint)) ->
+    {HintJson, HintPrint} = case Hint of
+        undefined ->
+            {null, <<"no details available.">>};
+        _ ->
+            {Hint, Hint}
+    end,
 
     #{
-        <<"id">> => ?ERROR_FORBIDDEN_ID,
+        <<"id">> => ?ERR_FORBIDDEN_ID,
+        <<"ctx">> => od_error:ctx_to_json(ErrorCtx),
         <<"details">> => #{
             <<"hint">> => HintJson
         },
         <<"description">> => od_error:format_description(
             "You are not authorized to perform this operation: ~ts",
-            [HintJson]
+            [HintPrint]
         )
     }.
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(OdErrorJson = #{<<"id">> := ?ERROR_FORBIDDEN_ID}) ->
+from_json(OdErrorJson = #{<<"id">> := ?ERR_FORBIDDEN_ID}) ->
+    ErrorCtxJson = maps:get(<<"ctx">>, OdErrorJson, #{}),
+    ErrorCtx = od_error:ctx_from_json(ErrorCtxJson),
+
     DetailsJson = maps:get(<<"details">>, OdErrorJson, #{}),
 
     Hint = utils:null_to_undefined(maps:get(<<"hint">>, DetailsJson, null)),
 
-    ?new_ERROR_FORBIDDEN(Hint).
+    ?ERR_FORBIDDEN(ErrorCtx, Hint).
 
 
 -spec to_http_code(t()) -> ?HTTP_403_FORBIDDEN.

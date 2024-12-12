@@ -18,7 +18,7 @@
 -include("http/codes.hrl").
 
 
--type t() :: #od_error{type :: ?MODULE}.
+-type t() :: {error, #od_error{type :: ?MODULE}}.
 
 -export_type([t/0]).
 
@@ -32,21 +32,25 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_STORAGE_TEST_FAILED_MATCH(Operation)) ->
+to_json(?ERR_STORAGE_TEST_FAILED(ErrorCtx, Operation)) ->
     #{
-        <<"id">> => ?ERROR_STORAGE_TEST_FAILED_ID,
+        <<"id">> => ?ERR_STORAGE_TEST_FAILED_ID,
+        <<"ctx">> => od_error:ctx_to_json(ErrorCtx),
         <<"details">> => #{<<"operation">> => str_utils:to_binary(Operation)},
         <<"description">> => od_error:format_description("Failed to ~ts test file on storage.", [Operation])
     }.
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(#{<<"id">> := ?ERROR_STORAGE_TEST_FAILED_ID, <<"details">> := #{<<"operation">> := Operation}}) when
+from_json(ErrorJson = #{<<"id">> := ?ERR_STORAGE_TEST_FAILED_ID, <<"details">> := #{<<"operation">> := Operation}}) when
     Operation == <<"read">>;
     Operation == <<"write">>;
     Operation == <<"remove">>
 ->
-    ?new_ERROR_STORAGE_TEST_FAILED(binary_to_atom(Operation, utf8)).
+    ErrorCtxJson = maps:get(<<"ctx">>, ErrorJson, #{}),
+    ErrorCtx = od_error:ctx_from_json(ErrorCtxJson),
+
+    ?ERR_STORAGE_TEST_FAILED(ErrorCtx, binary_to_atom(Operation, utf8)).
 
 
 -spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.

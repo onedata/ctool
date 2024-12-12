@@ -86,7 +86,8 @@ decode_with(validate, RecordJson, NestedRecordDecoder) ->
     Spec = decode_with(skip_validation, RecordJson, NestedRecordDecoder),
     ItemDataSpec = Spec#atm_tree_forest_store_config.item_data_spec,
     lists:member(atm_data_spec:get_data_type(ItemDataSpec), ?ALLOWED_DATA_TYPES) orelse throw(
-        ?new_ERROR_BAD_VALUE_NOT_ALLOWED(
+        ?ERR_BAD_VALUE_NOT_ALLOWED(
+            ?err_ctx(),
             <<"treeForestStoreConfig.dataSpec.type">>,
             [atm_data_type:type_to_json(T) || T <- ?ALLOWED_DATA_TYPES]
         )

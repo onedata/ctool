@@ -18,7 +18,7 @@
 -include("http/codes.hrl").
 
 
--type t() :: #od_error{type :: ?MODULE}.
+-type t() :: {error, #od_error{type :: ?MODULE}}.
 
 -export_type([t/0]).
 
@@ -32,12 +32,13 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_NOT_AN_ACCESS_TOKEN_MATCH(Received)) ->
+to_json(?ERR_NOT_AN_ACCESS_TOKEN(ErrorCtx, Received)) ->
     ReceivedJson = token_type:to_json(Received),
     ReceivedPrint = token_type:to_printable(Received),
 
     #{
-        <<"id">> => ?ERROR_NOT_AN_ACCESS_TOKEN_ID,
+        <<"id">> => ?ERR_NOT_AN_ACCESS_TOKEN_ID,
+        <<"ctx">> => od_error:ctx_to_json(ErrorCtx),
         <<"details">> => #{
             <<"received">> => ReceivedJson
         },
@@ -49,13 +50,16 @@ to_json(?ERROR_NOT_AN_ACCESS_TOKEN_MATCH(Received)) ->
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(OdErrorJson = #{<<"id">> := ?ERROR_NOT_AN_ACCESS_TOKEN_ID}) ->
+from_json(OdErrorJson = #{<<"id">> := ?ERR_NOT_AN_ACCESS_TOKEN_ID}) ->
+    ErrorCtxJson = maps:get(<<"ctx">>, OdErrorJson, #{}),
+    ErrorCtx = od_error:ctx_from_json(ErrorCtxJson),
+
     DetailsJson = maps:get(<<"details">>, OdErrorJson),
 
     ReceivedJson = maps:get(<<"received">>, DetailsJson),
     Received = token_type:from_json(ReceivedJson),
 
-    ?new_ERROR_NOT_AN_ACCESS_TOKEN(Received).
+    ?ERR_NOT_AN_ACCESS_TOKEN(ErrorCtx, Received).
 
 
 -spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.

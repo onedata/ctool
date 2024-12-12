@@ -18,7 +18,7 @@
 -include("http/codes.hrl").
 
 
--type t() :: #od_error{type :: ?MODULE}.
+-type t() :: {error, #od_error{type :: ?MODULE}}.
 
 -export_type([t/0]).
 
@@ -32,16 +32,19 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_UNREGISTERED_ONEPROVIDER_MATCH) ->
+to_json(?ERR_UNREGISTERED_ONEPROVIDER(ErrorCtx)) ->
     #{
-        <<"id">> => ?ERROR_UNREGISTERED_ONEPROVIDER_ID,
-        <<"description">> => <<"This Oneprovider is not registered.">>
+        <<"id">> => ?ERR_UNREGISTERED_ONEPROVIDER_ID,
+        <<"ctx">> => od_error:ctx_to_json(ErrorCtx),
+        <<"description">> => <<"This Oneprovider service is not registered in any Onezone service.">>
     }.
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(#{<<"id">> := ?ERROR_UNREGISTERED_ONEPROVIDER_ID}) ->
-    ?new_ERROR_UNREGISTERED_ONEPROVIDER().
+from_json(OdErrorJson = #{<<"id">> := ?ERR_UNREGISTERED_ONEPROVIDER_ID}) ->
+    ErrorCtxJson = maps:get(<<"ctx">>, OdErrorJson, #{}),
+    ErrorCtx = od_error:ctx_from_json(ErrorCtxJson),
+    ?ERR_UNREGISTERED_ONEPROVIDER(ErrorCtx).
 
 
 -spec to_http_code(t()) -> ?HTTP_503_SERVICE_UNAVAILABLE.

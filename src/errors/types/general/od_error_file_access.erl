@@ -18,7 +18,7 @@
 -include("http/codes.hrl").
 
 
--type t() :: #od_error{type :: ?MODULE}.
+-type t() :: {error, #od_error{type :: ?MODULE}}.
 
 -export_type([t/0]).
 
@@ -32,32 +32,36 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_FILE_ACCESS_MATCH(Path, Errno)) ->
+to_json(?ERR_FILE_ACCESS(ErrorCtx, Path, Errno)) ->
     PathJson = str_utils:to_binary(filename:flatten(Path)),
     ErrnoJson = atom_to_binary(Errno, utf8),
 
     #{
-        <<"id">> => ?ERROR_FILE_ACCESS_ID,
+        <<"id">> => ?ERR_FILE_ACCESS_ID,
+        <<"ctx">> => od_error:ctx_to_json(ErrorCtx),
         <<"details">> => #{
             <<"path">> => PathJson,
             <<"errno">> => ErrnoJson
         },
         <<"description">> => od_error:format_description(
             "Cannot access file \"~ts\": ~ts.",
-            [PathJson, Errno]
+            [PathJson, ErrnoJson]
         )
     }.
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(OdErrorJson = #{<<"id">> := ?ERROR_FILE_ACCESS_ID}) ->
+from_json(OdErrorJson = #{<<"id">> := ?ERR_FILE_ACCESS_ID}) ->
+    ErrorCtxJson = maps:get(<<"ctx">>, OdErrorJson, #{}),
+    ErrorCtx = od_error:ctx_from_json(ErrorCtxJson),
+
     DetailsJson = maps:get(<<"details">>, OdErrorJson),
 
     Path = maps:get(<<"path">>, DetailsJson),
     ErrnoJson = maps:get(<<"errno">>, DetailsJson),
     Errno = binary_to_existing_atom(ErrnoJson, utf8),
 
-    ?new_ERROR_FILE_ACCESS(Path, Errno).
+    ?ERR_FILE_ACCESS(ErrorCtx, Path, Errno).
 
 
 -spec to_http_code(t()) -> ?HTTP_500_INTERNAL_SERVER_ERROR.

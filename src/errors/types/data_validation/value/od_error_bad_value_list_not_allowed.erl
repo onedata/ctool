@@ -18,7 +18,7 @@
 -include("http/codes.hrl").
 
 
--type t() :: #od_error{type :: ?MODULE}.
+-type t() :: {error, #od_error{type :: ?MODULE}}.
 
 -export_type([t/0]).
 
@@ -32,11 +32,12 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_BAD_VALUE_LIST_NOT_ALLOWED_MATCH(Key, Allowed)) ->
+to_json(?ERR_BAD_VALUE_LIST_NOT_ALLOWED(ErrorCtx, Key, Allowed)) ->
     AllowedPrint = od_error:format_csv(Allowed),
 
     #{
-        <<"id">> => ?ERROR_BAD_VALUE_LIST_NOT_ALLOWED_ID,
+        <<"id">> => ?ERR_BAD_VALUE_LIST_NOT_ALLOWED_ID,
+        <<"ctx">> => od_error:ctx_to_json(ErrorCtx),
         <<"details">> => #{
             <<"key">> => Key,
             <<"allowed">> => Allowed
@@ -49,13 +50,16 @@ to_json(?ERROR_BAD_VALUE_LIST_NOT_ALLOWED_MATCH(Key, Allowed)) ->
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(OdErrorJson = #{<<"id">> := ?ERROR_BAD_VALUE_LIST_NOT_ALLOWED_ID}) ->
+from_json(OdErrorJson = #{<<"id">> := ?ERR_BAD_VALUE_LIST_NOT_ALLOWED_ID}) ->
+    ErrorCtxJson = maps:get(<<"ctx">>, OdErrorJson, #{}),
+    ErrorCtx = od_error:ctx_from_json(ErrorCtxJson),
+
     DetailsJson = maps:get(<<"details">>, OdErrorJson),
 
     Key = maps:get(<<"key">>, DetailsJson),
     Allowed = maps:get(<<"allowed">>, DetailsJson),
 
-    ?new_ERROR_BAD_VALUE_LIST_NOT_ALLOWED(Key, Allowed).
+    ?ERR_BAD_VALUE_LIST_NOT_ALLOWED(ErrorCtx, Key, Allowed).
 
 
 -spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.

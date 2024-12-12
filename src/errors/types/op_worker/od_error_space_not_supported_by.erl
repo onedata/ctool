@@ -18,7 +18,7 @@
 -include("http/codes.hrl").
 
 
--type t() :: #od_error{type :: ?MODULE}.
+-type t() :: {error, #od_error{type :: ?MODULE}}.
 
 -export_type([t/0]).
 
@@ -32,28 +32,32 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_SPACE_NOT_SUPPORTED_BY_MATCH(SpaceId, ProviderId)) ->
+to_json(?ERR_SPACE_NOT_SUPPORTED_BY(ErrorCtx, SpaceId, ProviderId)) ->
     #{
-        <<"id">> => ?ERROR_SPACE_NOT_SUPPORTED_BY_ID,
+        <<"id">> => ?ERR_SPACE_NOT_SUPPORTED_BY_ID,
+        <<"ctx">> => od_error:ctx_to_json(ErrorCtx),
         <<"details">> => #{
             <<"spaceId">> => SpaceId,
             <<"providerId">> => ProviderId
         },
         <<"description">> => od_error:format_description(
-            "Specified space: ~ts is not supported by provider ~ts.",
+            "Specified space: \"~ts\" is not supported by provider \"~ts\".",
             [SpaceId, ProviderId]
         )
     }.
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(OdErrorJson = #{<<"id">> := ?ERROR_SPACE_NOT_SUPPORTED_BY_ID}) ->
+from_json(OdErrorJson = #{<<"id">> := ?ERR_SPACE_NOT_SUPPORTED_BY_ID}) ->
+    ErrorCtxJson = maps:get(<<"ctx">>, OdErrorJson, #{}),
+    ErrorCtx = od_error:ctx_from_json(ErrorCtxJson),
+
     DetailsJson = maps:get(<<"details">>, OdErrorJson),
 
     SpaceId = maps:get(<<"spaceId">>, DetailsJson),
     ProviderId = maps:get(<<"providerId">>, DetailsJson),
 
-    ?new_ERROR_SPACE_NOT_SUPPORTED_BY(SpaceId, ProviderId).
+    ?ERR_SPACE_NOT_SUPPORTED_BY(ErrorCtx, SpaceId, ProviderId).
 
 
 -spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.

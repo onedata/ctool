@@ -18,7 +18,7 @@
 -include("http/codes.hrl").
 
 
--type t() :: #od_error{type :: ?MODULE}.
+-type t() :: {error, #od_error{type :: ?MODULE}}.
 
 -export_type([t/0]).
 
@@ -32,9 +32,10 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_LIMIT_REACHED_MATCH(Limit, ResourceDescription)) ->
+to_json(?ERR_LIMIT_REACHED(ErrorCtx, Limit, ResourceDescription)) ->
     #{
-        <<"id">> => ?ERROR_LIMIT_REACHED_ID,
+        <<"id">> => ?ERR_LIMIT_REACHED_ID,
+        <<"ctx">> => od_error:ctx_to_json(ErrorCtx),
         <<"details">> => #{
             <<"limit">> => Limit,
             <<"resourceDescription">> => ResourceDescription
@@ -47,13 +48,16 @@ to_json(?ERROR_LIMIT_REACHED_MATCH(Limit, ResourceDescription)) ->
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(OdErrorJson = #{<<"id">> := ?ERROR_LIMIT_REACHED_ID}) ->
+from_json(OdErrorJson = #{<<"id">> := ?ERR_LIMIT_REACHED_ID}) ->
+    ErrorCtxJson = maps:get(<<"ctx">>, OdErrorJson, #{}),
+    ErrorCtx = od_error:ctx_from_json(ErrorCtxJson),
+
     DetailsJson = maps:get(<<"details">>, OdErrorJson),
 
     Limit = maps:get(<<"limit">>, DetailsJson),
     ResourceDescription = maps:get(<<"resourceDescription">>, DetailsJson),
 
-    ?new_ERROR_LIMIT_REACHED(Limit, ResourceDescription).
+    ?ERR_LIMIT_REACHED(ErrorCtx, Limit, ResourceDescription).
 
 
 -spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.

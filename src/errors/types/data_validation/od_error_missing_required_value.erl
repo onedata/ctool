@@ -18,7 +18,7 @@
 -include("http/codes.hrl").
 
 
--type t() :: #od_error{type :: ?MODULE}.
+-type t() :: {error, #od_error{type :: ?MODULE}}.
 
 -export_type([t/0]).
 
@@ -32,26 +32,30 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_MISSING_REQUIRED_VALUE_MATCH(Key)) ->
+to_json(?ERR_MISSING_REQUIRED_VALUE(ErrorCtx, Key)) ->
     #{
-        <<"id">> => ?ERROR_MISSING_REQUIRED_VALUE_ID,
+        <<"id">> => ?ERR_MISSING_REQUIRED_VALUE_ID,
+        <<"ctx">> => od_error:ctx_to_json(ErrorCtx),
         <<"details">> => #{
             <<"key">> => Key
         },
         <<"description">> => od_error:format_description(
-            "Missing required value: ~ts.",
+            "The request data was missing a required value for \"~ts\".",
             [Key]
         )
     }.
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(OdErrorJson = #{<<"id">> := ?ERROR_MISSING_REQUIRED_VALUE_ID}) ->
+from_json(OdErrorJson = #{<<"id">> := ?ERR_MISSING_REQUIRED_VALUE_ID}) ->
+    ErrorCtxJson = maps:get(<<"ctx">>, OdErrorJson, #{}),
+    ErrorCtx = od_error:ctx_from_json(ErrorCtxJson),
+
     DetailsJson = maps:get(<<"details">>, OdErrorJson),
 
     Key = maps:get(<<"key">>, DetailsJson),
 
-    ?new_ERROR_MISSING_REQUIRED_VALUE(Key).
+    ?ERR_MISSING_REQUIRED_VALUE(ErrorCtx, Key).
 
 
 -spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.

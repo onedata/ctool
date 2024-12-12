@@ -18,7 +18,7 @@
 -include("http/codes.hrl").
 
 
--type t() :: #od_error{type :: ?MODULE}.
+-type t() :: {error, #od_error{type :: ?MODULE}}.
 
 -export_type([t/0]).
 
@@ -32,23 +32,30 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_ATM_JOB_BATCH_WITHDRAWN_MATCH(Reason)) ->
+to_json(?ERR_ATM_JOB_BATCH_WITHDRAWN(ErrorCtx, Reason)) ->
     #{
-        <<"id">> => ?ERROR_ATM_JOB_BATCH_WITHDRAWN_ID,
+        <<"id">> => ?ERR_ATM_JOB_BATCH_WITHDRAWN_ID,
+        <<"ctx">> => od_error:ctx_to_json(ErrorCtx),
         <<"details">> => #{
             <<"reason">> => Reason
         },
-        <<"description">> => <<"Previously scheduled job batch has been withdrawn.">>
+        <<"description">> => od_error:format_description(
+            "Previously scheduled job batch has been withdrawn: ~ts.",
+            [Reason]
+        )
     }.
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(OdErrorJson = #{<<"id">> := ?ERROR_ATM_JOB_BATCH_WITHDRAWN_ID}) ->
+from_json(OdErrorJson = #{<<"id">> := ?ERR_ATM_JOB_BATCH_WITHDRAWN_ID}) ->
+    ErrorCtxJson = maps:get(<<"ctx">>, OdErrorJson, #{}),
+    ErrorCtx = od_error:ctx_from_json(ErrorCtxJson),
+
     DetailsJson = maps:get(<<"details">>, OdErrorJson),
 
     Reason = maps:get(<<"reason">>, DetailsJson),
 
-    ?new_ERROR_ATM_JOB_BATCH_WITHDRAWN(Reason).
+    ?ERR_ATM_JOB_BATCH_WITHDRAWN(ErrorCtx, Reason).
 
 
 -spec to_http_code(t()) -> ?HTTP_404_NOT_FOUND.

@@ -18,7 +18,7 @@
 -include("http/codes.hrl").
 
 
--type t() :: #od_error{type :: ?MODULE}.
+-type t() :: {error, #od_error{type :: ?MODULE}}.
 
 -export_type([t/0]).
 
@@ -32,26 +32,30 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_STAT_OPERATION_NOT_SUPPORTED_MATCH(StorageId)) ->
+to_json(?ERR_STAT_OPERATION_NOT_SUPPORTED(ErrorCtx, StorageId)) ->
     #{
-        <<"id">> => ?ERROR_STAT_OPERATION_NOT_SUPPORTED_ID,
+        <<"id">> => ?ERR_STAT_OPERATION_NOT_SUPPORTED_ID,
+        <<"ctx">> => od_error:ctx_to_json(ErrorCtx),
         <<"details">> => #{
             <<"storageId">> => StorageId
         },
         <<"description">> => od_error:format_description(
-            "Storage ~ts does not support the `stat` operation or equivalent used for acquiring files metadata.",
+            "Storage backend \"~ts\" does not support the \"stat\" operation or equivalent necessary to acquire file metadata.",
             [StorageId]
         )
     }.
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(OdErrorJson = #{<<"id">> := ?ERROR_STAT_OPERATION_NOT_SUPPORTED_ID}) ->
+from_json(OdErrorJson = #{<<"id">> := ?ERR_STAT_OPERATION_NOT_SUPPORTED_ID}) ->
+    ErrorCtxJson = maps:get(<<"ctx">>, OdErrorJson, #{}),
+    ErrorCtx = od_error:ctx_from_json(ErrorCtxJson),
+
     DetailsJson = maps:get(<<"details">>, OdErrorJson),
 
     StorageId = maps:get(<<"storageId">>, DetailsJson),
 
-    ?new_ERROR_STAT_OPERATION_NOT_SUPPORTED(StorageId).
+    ?ERR_STAT_OPERATION_NOT_SUPPORTED(ErrorCtx, StorageId).
 
 
 -spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.

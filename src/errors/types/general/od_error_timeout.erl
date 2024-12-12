@@ -18,7 +18,7 @@
 -include("http/codes.hrl").
 
 
--type t() :: #od_error{type :: ?MODULE}.
+-type t() :: {error, #od_error{type :: ?MODULE}}.
 
 -export_type([t/0]).
 
@@ -32,16 +32,19 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_TIMEOUT_MATCH) ->
+to_json(?ERR_TIMEOUT(ErrorCtx)) ->
     #{
-        <<"id">> => ?ERROR_TIMEOUT_ID,
-        <<"description">> => <<"Operation timed out.">>
+        <<"id">> => ?ERR_TIMEOUT_ID,
+        <<"ctx">> => od_error:ctx_to_json(ErrorCtx),
+        <<"description">> => <<"Operation timed out, please try again later.">>
     }.
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(#{<<"id">> := ?ERROR_TIMEOUT_ID}) ->
-    ?new_ERROR_TIMEOUT().
+from_json(OdErrorJson = #{<<"id">> := ?ERR_TIMEOUT_ID}) ->
+    ErrorCtxJson = maps:get(<<"ctx">>, OdErrorJson, #{}),
+    ErrorCtx = od_error:ctx_from_json(ErrorCtxJson),
+    ?ERR_TIMEOUT(ErrorCtx).
 
 
 -spec to_http_code(t()) -> ?HTTP_503_SERVICE_UNAVAILABLE.

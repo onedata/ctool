@@ -18,7 +18,7 @@
 -include("http/codes.hrl").
 
 
--type t() :: #od_error{type :: ?MODULE}.
+-type t() :: {error, #od_error{type :: ?MODULE}}.
 
 -export_type([t/0]).
 
@@ -32,16 +32,19 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_BAD_TOKEN_MATCH) ->
+to_json(?ERR_BAD_TOKEN(ErrorCtx)) ->
     #{
-        <<"id">> => ?ERROR_BAD_TOKEN_ID,
-        <<"description">> => <<"Provided token could not be understood by the server.">>
+        <<"id">> => ?ERR_BAD_TOKEN_ID,
+        <<"ctx">> => od_error:ctx_to_json(ErrorCtx),
+        <<"description">> => <<"Provided token could not be decoded by the server. Make sure there are no missing or superfluous characters in the token string.">>
     }.
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(#{<<"id">> := ?ERROR_BAD_TOKEN_ID}) ->
-    ?new_ERROR_BAD_TOKEN().
+from_json(OdErrorJson = #{<<"id">> := ?ERR_BAD_TOKEN_ID}) ->
+    ErrorCtxJson = maps:get(<<"ctx">>, OdErrorJson, #{}),
+    ErrorCtx = od_error:ctx_from_json(ErrorCtxJson),
+    ?ERR_BAD_TOKEN(ErrorCtx).
 
 
 -spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.

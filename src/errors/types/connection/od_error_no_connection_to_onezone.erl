@@ -18,7 +18,7 @@
 -include("http/codes.hrl").
 
 
--type t() :: #od_error{type :: ?MODULE}.
+-type t() :: {error, #od_error{type :: ?MODULE}}.
 
 -export_type([t/0]).
 
@@ -32,16 +32,30 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_NO_CONNECTION_TO_ONEZONE_MATCH) ->
+to_json(?ERR_NO_CONNECTION_TO_ONEZONE(ErrorCtx, ZoneDomain)) ->
     #{
-        <<"id">> => ?ERROR_NO_CONNECTION_TO_ONEZONE_ID,
-        <<"description">> => <<"No connection to Onezone.">>
+        <<"id">> => ?ERR_NO_CONNECTION_TO_ONEZONE_ID,
+        <<"ctx">> => od_error:ctx_to_json(ErrorCtx),
+        <<"details">> => #{
+            <<"zoneDomain">> => ZoneDomain
+        },
+        <<"description">> => od_error:format_description(
+            "Operation failed because the service could not connect  to the Onezone service (https://~ts).",
+            [ZoneDomain]
+        )
     }.
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(#{<<"id">> := ?ERROR_NO_CONNECTION_TO_ONEZONE_ID}) ->
-    ?new_ERROR_NO_CONNECTION_TO_ONEZONE().
+from_json(OdErrorJson = #{<<"id">> := ?ERR_NO_CONNECTION_TO_ONEZONE_ID}) ->
+    ErrorCtxJson = maps:get(<<"ctx">>, OdErrorJson, #{}),
+    ErrorCtx = od_error:ctx_from_json(ErrorCtxJson),
+
+    DetailsJson = maps:get(<<"details">>, OdErrorJson),
+
+    ZoneDomain = maps:get(<<"zoneDomain">>, DetailsJson),
+
+    ?ERR_NO_CONNECTION_TO_ONEZONE(ErrorCtx, ZoneDomain).
 
 
 -spec to_http_code(t()) -> ?HTTP_503_SERVICE_UNAVAILABLE.

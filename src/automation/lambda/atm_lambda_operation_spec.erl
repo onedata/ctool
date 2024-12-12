@@ -136,7 +136,8 @@ decode_with(validate, RecordJson, NestedRecordDecoder) ->
     Record = decode_with(skip_validation, RecordJson, NestedRecordDecoder),
     RecordType = utils:record_type(Record),
     Engine = record_type_to_engine(RecordType),
-    lists:member(Engine, allowed_engines_for_custom_lambdas()) orelse throw(?new_ERROR_BAD_VALUE_NOT_ALLOWED(
+    lists:member(Engine, allowed_engines_for_custom_lambdas()) orelse throw(?ERR_BAD_VALUE_NOT_ALLOWED(
+        ?err_ctx(),
         <<"operationSpec.engine">>,
         lists:map(fun engine_to_json/1, allowed_engines_for_custom_lambdas())
     )),

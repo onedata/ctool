@@ -18,7 +18,7 @@
 -include("http/codes.hrl").
 
 
--type t() :: #od_error{type :: ?MODULE}.
+-type t() :: {error, #od_error{type :: ?MODULE}}.
 
 -export_type([t/0]).
 
@@ -32,16 +32,19 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_USER_NOT_SUPPORTED_MATCH) ->
+to_json(?ERR_USER_NOT_SUPPORTED(ErrorCtx)) ->
     #{
-        <<"id">> => ?ERROR_USER_NOT_SUPPORTED_ID,
+        <<"id">> => ?ERR_USER_NOT_SUPPORTED_ID,
+        <<"ctx">> => od_error:ctx_to_json(ErrorCtx),
         <<"description">> => <<"Authenticated user is not supported by this Oneprovider (none of the user's spaces is supported by the Oneprovider).">>
     }.
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(#{<<"id">> := ?ERROR_USER_NOT_SUPPORTED_ID}) ->
-    ?new_ERROR_USER_NOT_SUPPORTED().
+from_json(OdErrorJson = #{<<"id">> := ?ERR_USER_NOT_SUPPORTED_ID}) ->
+    ErrorCtxJson = maps:get(<<"ctx">>, OdErrorJson, #{}),
+    ErrorCtx = od_error:ctx_from_json(ErrorCtxJson),
+    ?ERR_USER_NOT_SUPPORTED(ErrorCtx).
 
 
 -spec to_http_code(t()) -> ?HTTP_403_FORBIDDEN.

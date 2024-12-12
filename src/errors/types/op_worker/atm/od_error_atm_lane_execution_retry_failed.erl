@@ -18,7 +18,7 @@
 -include("http/codes.hrl").
 
 
--type t() :: #od_error{type :: ?MODULE}.
+-type t() :: {error, #od_error{type :: ?MODULE}}.
 
 -export_type([t/0]).
 
@@ -32,16 +32,19 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_ATM_LANE_EXECUTION_RETRY_FAILED_MATCH) ->
+to_json(?ERR_ATM_LANE_EXECUTION_RETRY_FAILED(ErrorCtx)) ->
     #{
-        <<"id">> => ?ERROR_ATM_LANE_EXECUTION_RETRY_FAILED_ID,
+        <<"id">> => ?ERR_ATM_LANE_EXECUTION_RETRY_FAILED_ID,
+        <<"ctx">> => od_error:ctx_to_json(ErrorCtx),
         <<"description">> => <<"Failed to retry specified lane execution. Lane execution can be retried only if all items have been processed but some of them failed.">>
     }.
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(#{<<"id">> := ?ERROR_ATM_LANE_EXECUTION_RETRY_FAILED_ID}) ->
-    ?new_ERROR_ATM_LANE_EXECUTION_RETRY_FAILED().
+from_json(OdErrorJson = #{<<"id">> := ?ERR_ATM_LANE_EXECUTION_RETRY_FAILED_ID}) ->
+    ErrorCtxJson = maps:get(<<"ctx">>, OdErrorJson, #{}),
+    ErrorCtx = od_error:ctx_from_json(ErrorCtxJson),
+    ?ERR_ATM_LANE_EXECUTION_RETRY_FAILED(ErrorCtx).
 
 
 -spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.

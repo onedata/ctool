@@ -18,7 +18,7 @@
 -include("http/codes.hrl").
 
 
--type t() :: #od_error{type :: ?MODULE}.
+-type t() :: {error, #od_error{type :: ?MODULE}}.
 
 -export_type([t/0]).
 
@@ -32,7 +32,7 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_DNS_SERVERS_UNREACHABLE_MATCH(Servers)) ->
+to_json(?ERR_DNS_SERVERS_UNREACHABLE(ErrorCtx, Servers)) ->
     ServersJson = lists:map(fun
         (default) ->
             <<"system defaults">>;
@@ -42,7 +42,8 @@ to_json(?ERROR_DNS_SERVERS_UNREACHABLE_MATCH(Servers)) ->
     ServersPrint = od_error:format_csv(ServersJson),
 
     #{
-        <<"id">> => ?ERROR_DNS_SERVERS_UNREACHABLE_ID,
+        <<"id">> => ?ERR_DNS_SERVERS_UNREACHABLE_ID,
+        <<"ctx">> => od_error:ctx_to_json(ErrorCtx),
         <<"details">> => #{
             <<"servers">> => ServersJson
         },
@@ -54,7 +55,10 @@ to_json(?ERROR_DNS_SERVERS_UNREACHABLE_MATCH(Servers)) ->
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(OdErrorJson = #{<<"id">> := ?ERROR_DNS_SERVERS_UNREACHABLE_ID}) ->
+from_json(OdErrorJson = #{<<"id">> := ?ERR_DNS_SERVERS_UNREACHABLE_ID}) ->
+    ErrorCtxJson = maps:get(<<"ctx">>, OdErrorJson, #{}),
+    ErrorCtx = od_error:ctx_from_json(ErrorCtxJson),
+
     DetailsJson = maps:get(<<"details">>, OdErrorJson),
 
     ServersJson = maps:get(<<"servers">>, DetailsJson),
@@ -65,7 +69,7 @@ from_json(OdErrorJson = #{<<"id">> := ?ERROR_DNS_SERVERS_UNREACHABLE_ID}) ->
             element(2, {ok, _} = ip_utils:to_ip4_address(Ip))
     end, ServersJson),
 
-    ?new_ERROR_DNS_SERVERS_UNREACHABLE(Servers).
+    ?ERR_DNS_SERVERS_UNREACHABLE(ErrorCtx, Servers).
 
 
 -spec to_http_code(t()) -> ?HTTP_503_SERVICE_UNAVAILABLE.

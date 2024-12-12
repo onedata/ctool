@@ -18,7 +18,7 @@
 -include("http/codes.hrl").
 
 
--type t() :: #od_error{type :: ?MODULE}.
+-type t() :: {error, #od_error{type :: ?MODULE}}.
 
 -export_type([t/0]).
 
@@ -32,26 +32,30 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_MISSING_AT_LEAST_ONE_VALUE_MATCH(Keys)) ->
+to_json(?ERR_MISSING_AT_LEAST_ONE_VALUE(ErrorCtx, Keys)) ->
     #{
-        <<"id">> => ?ERROR_MISSING_AT_LEAST_ONE_VALUE_ID,
+        <<"id">> => ?ERR_MISSING_AT_LEAST_ONE_VALUE_ID,
+        <<"ctx">> => od_error:ctx_to_json(ErrorCtx),
         <<"details">> => #{
             <<"keys">> => Keys
         },
         <<"description">> => od_error:format_description(
-            "Missing data, you must provide at least one of: ~tp.",
+            "The request data was missing some values; you must provide at least one of: ~tp.",
             [Keys]
         )
     }.
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(OdErrorJson = #{<<"id">> := ?ERROR_MISSING_AT_LEAST_ONE_VALUE_ID}) ->
+from_json(OdErrorJson = #{<<"id">> := ?ERR_MISSING_AT_LEAST_ONE_VALUE_ID}) ->
+    ErrorCtxJson = maps:get(<<"ctx">>, OdErrorJson, #{}),
+    ErrorCtx = od_error:ctx_from_json(ErrorCtxJson),
+
     DetailsJson = maps:get(<<"details">>, OdErrorJson),
 
     Keys = maps:get(<<"keys">>, DetailsJson),
 
-    ?new_ERROR_MISSING_AT_LEAST_ONE_VALUE(Keys).
+    ?ERR_MISSING_AT_LEAST_ONE_VALUE(ErrorCtx, Keys).
 
 
 -spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.

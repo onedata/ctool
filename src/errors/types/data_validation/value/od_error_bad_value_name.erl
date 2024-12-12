@@ -18,7 +18,7 @@
 -include("http/codes.hrl").
 -include("validation.hrl").
 
--type t() :: #od_error{type :: ?MODULE}.
+-type t() :: {error, #od_error{type :: ?MODULE}}.
 
 -export_type([t/0]).
 
@@ -32,11 +32,12 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_BAD_VALUE_NAME_MATCH(Key)) ->
+to_json(?ERR_BAD_VALUE_NAME(ErrorCtx, Key)) ->
     KeyJson = utils:undefined_to_null(Key),
 
     #{
-        <<"id">> => ?ERROR_BAD_VALUE_NAME_ID,
+        <<"id">> => ?ERR_BAD_VALUE_NAME_ID,
+        <<"ctx">> => od_error:ctx_to_json(ErrorCtx),
         <<"details">> => #{
             <<"key">> => KeyJson
         },
@@ -48,12 +49,15 @@ to_json(?ERROR_BAD_VALUE_NAME_MATCH(Key)) ->
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(OdErrorJson = #{<<"id">> := ?ERROR_BAD_VALUE_NAME_ID}) ->
+from_json(OdErrorJson = #{<<"id">> := ?ERR_BAD_VALUE_NAME_ID}) ->
+    ErrorCtxJson = maps:get(<<"ctx">>, OdErrorJson, #{}),
+    ErrorCtx = od_error:ctx_from_json(ErrorCtxJson),
+
     DetailsJson = maps:get(<<"details">>, OdErrorJson, #{}),
 
     Key = utils:null_to_undefined(maps:get(<<"key">>, DetailsJson, null)),
 
-    ?new_ERROR_BAD_VALUE_NAME(Key).
+    ?ERR_BAD_VALUE_NAME(ErrorCtx, Key).
 
 
 -spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.

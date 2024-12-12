@@ -18,7 +18,7 @@
 -include("http/codes.hrl").
 
 
--type t() :: #od_error{type :: ?MODULE}.
+-type t() :: {error, #od_error{type :: ?MODULE}}.
 
 -export_type([t/0]).
 
@@ -32,16 +32,19 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_ATM_STORE_MISSING_REQUIRED_INITIAL_CONTENT_MATCH) ->
+to_json(?ERR_ATM_STORE_MISSING_REQUIRED_INITIAL_CONTENT(ErrorCtx)) ->
     #{
-        <<"id">> => ?ERROR_ATM_STORE_MISSING_REQUIRED_INITIAL_CONTENT_ID,
-        <<"description">> => <<"Missing initial content required to create automation store.">>
+        <<"id">> => ?ERR_ATM_STORE_MISSING_REQUIRED_INITIAL_CONTENT_ID,
+        <<"ctx">> => od_error:ctx_to_json(ErrorCtx),
+        <<"description">> => <<"Missing initial content required to create an automation store.">>
     }.
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(#{<<"id">> := ?ERROR_ATM_STORE_MISSING_REQUIRED_INITIAL_CONTENT_ID}) ->
-    ?new_ERROR_ATM_STORE_MISSING_REQUIRED_INITIAL_CONTENT().
+from_json(OdErrorJson = #{<<"id">> := ?ERR_ATM_STORE_MISSING_REQUIRED_INITIAL_CONTENT_ID}) ->
+    ErrorCtxJson = maps:get(<<"ctx">>, OdErrorJson, #{}),
+    ErrorCtx = od_error:ctx_from_json(ErrorCtxJson),
+    ?ERR_ATM_STORE_MISSING_REQUIRED_INITIAL_CONTENT(ErrorCtx).
 
 
 -spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.

@@ -18,7 +18,7 @@
 -include("http/codes.hrl").
 
 
--type t() :: #od_error{type :: ?MODULE}.
+-type t() :: {error, #od_error{type :: ?MODULE}}.
 
 -export_type([t/0]).
 
@@ -32,16 +32,19 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_ATM_WORKFLOW_EXECUTION_STOPPED_MATCH) ->
+to_json(?ERR_ATM_WORKFLOW_EXECUTION_STOPPED(ErrorCtx)) ->
     #{
-        <<"id">> => ?ERROR_ATM_WORKFLOW_EXECUTION_STOPPED_ID,
+        <<"id">> => ?ERR_ATM_WORKFLOW_EXECUTION_STOPPED_ID,
+        <<"ctx">> => od_error:ctx_to_json(ErrorCtx),
         <<"description">> => <<"Specified automation workflow execution has already stopped.">>
     }.
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(#{<<"id">> := ?ERROR_ATM_WORKFLOW_EXECUTION_STOPPED_ID}) ->
-    ?new_ERROR_ATM_WORKFLOW_EXECUTION_STOPPED().
+from_json(OdErrorJson = #{<<"id">> := ?ERR_ATM_WORKFLOW_EXECUTION_STOPPED_ID}) ->
+    ErrorCtxJson = maps:get(<<"ctx">>, OdErrorJson, #{}),
+    ErrorCtx = od_error:ctx_from_json(ErrorCtxJson),
+    ?ERR_ATM_WORKFLOW_EXECUTION_STOPPED(ErrorCtx).
 
 
 -spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.

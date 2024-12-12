@@ -18,7 +18,7 @@
 -include("http/codes.hrl").
 
 
--type t() :: #od_error{type :: ?MODULE}.
+-type t() :: {error, #od_error{type :: ?MODULE}}.
 
 -export_type([t/0]).
 
@@ -32,26 +32,30 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_ATM_PARALLEL_BOX_EMPTY_MATCH(AtmParallelBoxSchemaId)) ->
+to_json(?ERR_ATM_PARALLEL_BOX_EMPTY(ErrorCtx, AtmParallelBoxSchemaId)) ->
     #{
-        <<"id">> => ?ERROR_ATM_PARALLEL_BOX_EMPTY_ID,
+        <<"id">> => ?ERR_ATM_PARALLEL_BOX_EMPTY_ID,
+        <<"ctx">> => od_error:ctx_to_json(ErrorCtx),
         <<"details">> => #{
             <<"atmParallelBoxSchemaId">> => AtmParallelBoxSchemaId
         },
         <<"description">> => od_error:format_description(
-            "Bad automation parallel box: parallel box (id: \"~ts\") must not be empty.",
+            "Bad automation parallel box: parallel box (ID: \"~ts\") must not be empty.",
             [AtmParallelBoxSchemaId]
         )
     }.
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(OdErrorJson = #{<<"id">> := ?ERROR_ATM_PARALLEL_BOX_EMPTY_ID}) ->
+from_json(OdErrorJson = #{<<"id">> := ?ERR_ATM_PARALLEL_BOX_EMPTY_ID}) ->
+    ErrorCtxJson = maps:get(<<"ctx">>, OdErrorJson, #{}),
+    ErrorCtx = od_error:ctx_from_json(ErrorCtxJson),
+
     DetailsJson = maps:get(<<"details">>, OdErrorJson),
 
     AtmParallelBoxSchemaId = maps:get(<<"atmParallelBoxSchemaId">>, DetailsJson),
 
-    ?new_ERROR_ATM_PARALLEL_BOX_EMPTY(AtmParallelBoxSchemaId).
+    ?ERR_ATM_PARALLEL_BOX_EMPTY(ErrorCtx, AtmParallelBoxSchemaId).
 
 
 -spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.

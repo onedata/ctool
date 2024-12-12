@@ -18,7 +18,7 @@
 -include("http/codes.hrl").
 
 
--type t() :: #od_error{type :: ?MODULE}.
+-type t() :: {error, #od_error{type :: ?MODULE}}.
 
 -export_type([t/0]).
 
@@ -32,23 +32,27 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_BAD_MESSAGE_MATCH(Message)) ->
+to_json(?ERR_BAD_MESSAGE(ErrorCtx, Message)) ->
     #{
-        <<"id">> => ?ERROR_BAD_MESSAGE_ID,
+        <<"id">> => ?ERR_BAD_MESSAGE_ID,
+        <<"ctx">> => od_error:ctx_to_json(ErrorCtx),
         <<"details">> => #{
             <<"message">> => Message
         },
-        <<"description">> => <<"This message could not be understood by the server.">>
+        <<"description">> => <<"Received a message that could not be understood by the server.">>
     }.
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(OdErrorJson = #{<<"id">> := ?ERROR_BAD_MESSAGE_ID}) ->
+from_json(OdErrorJson = #{<<"id">> := ?ERR_BAD_MESSAGE_ID}) ->
+    ErrorCtxJson = maps:get(<<"ctx">>, OdErrorJson, #{}),
+    ErrorCtx = od_error:ctx_from_json(ErrorCtxJson),
+
     DetailsJson = maps:get(<<"details">>, OdErrorJson),
 
     Message = maps:get(<<"message">>, DetailsJson),
 
-    ?new_ERROR_BAD_MESSAGE(Message).
+    ?ERR_BAD_MESSAGE(ErrorCtx, Message).
 
 
 -spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.

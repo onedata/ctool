@@ -18,7 +18,7 @@
 -include("http/codes.hrl").
 
 
--type t() :: #od_error{type :: ?MODULE}.
+-type t() :: {error, #od_error{type :: ?MODULE}}.
 
 -export_type([t/0]).
 
@@ -32,13 +32,14 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_ON_NODES_MATCH(Error, Hostnames)) ->
+to_json(?ERR_ON_NODES(ErrorCtx, Error, Hostnames)) ->
     ErrorJson = errors:to_json(Error),
     ErrorPrint = maps:get(<<"description">>, ErrorJson),
     HostnamesPrint = od_error:format_csv(Hostnames),
 
     #{
-        <<"id">> => ?ERROR_ON_NODES_ID,
+        <<"id">> => ?ERR_ON_NODES_ID,
+        <<"ctx">> => od_error:ctx_to_json(ErrorCtx),
         <<"details">> => #{
             <<"error">> => ErrorJson,
             <<"hostnames">> => Hostnames
@@ -51,18 +52,21 @@ to_json(?ERROR_ON_NODES_MATCH(Error, Hostnames)) ->
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(OdErrorJson = #{<<"id">> := ?ERROR_ON_NODES_ID}) ->
+from_json(OdErrorJson = #{<<"id">> := ?ERR_ON_NODES_ID}) ->
+    ErrorCtxJson = maps:get(<<"ctx">>, OdErrorJson, #{}),
+    ErrorCtx = od_error:ctx_from_json(ErrorCtxJson),
+
     DetailsJson = maps:get(<<"details">>, OdErrorJson),
 
     ErrorJson = maps:get(<<"error">>, DetailsJson),
     Error = errors:from_json(ErrorJson),
     Hostnames = maps:get(<<"hostnames">>, DetailsJson),
 
-    ?new_ERROR_ON_NODES(Error, Hostnames).
+    ?ERR_ON_NODES(ErrorCtx, Error, Hostnames).
 
 
 -spec to_http_code(t()) -> od_error:http_code().
-to_http_code(?ERROR_ON_NODES_MATCH(Error, _)) ->
+to_http_code(?ERR_ON_NODES(Error, _)) ->
     errors:to_http_code(Error).
 
 

@@ -18,7 +18,7 @@
 -include("http/codes.hrl").
 
 
--type t() :: #od_error{type :: ?MODULE}.
+-type t() :: {error, #od_error{type :: ?MODULE}}.
 
 -export_type([t/0]).
 
@@ -32,16 +32,19 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_TRANSFER_NOT_ENDED_MATCH) ->
+to_json(?ERR_TRANSFER_NOT_ENDED(ErrorCtx)) ->
     #{
-        <<"id">> => ?ERROR_TRANSFER_NOT_ENDED_ID,
+        <<"id">> => ?ERR_TRANSFER_NOT_ENDED_ID,
+        <<"ctx">> => od_error:ctx_to_json(ErrorCtx),
         <<"description">> => <<"Specified transfer has not ended yet.">>
     }.
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(#{<<"id">> := ?ERROR_TRANSFER_NOT_ENDED_ID}) ->
-    ?new_ERROR_TRANSFER_NOT_ENDED().
+from_json(OdErrorJson = #{<<"id">> := ?ERR_TRANSFER_NOT_ENDED_ID}) ->
+    ErrorCtxJson = maps:get(<<"ctx">>, OdErrorJson, #{}),
+    ErrorCtx = od_error:ctx_from_json(ErrorCtxJson),
+    ?ERR_TRANSFER_NOT_ENDED(ErrorCtx).
 
 
 -spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.

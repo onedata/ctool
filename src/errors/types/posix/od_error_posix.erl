@@ -18,7 +18,7 @@
 -include("http/codes.hrl").
 
 
--type t() :: #od_error{type :: ?MODULE}.
+-type t() :: {error, #od_error{type :: ?MODULE}}.
 
 -export_type([t/0]).
 
@@ -32,29 +32,33 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_POSIX_MATCH(Errno)) ->
+to_json(?ERR_POSIX(ErrorCtx, Errno)) ->
     ErrnoJson = atom_to_binary(Errno, utf8),
 
     #{
-        <<"id">> => ?ERROR_POSIX_ID,
+        <<"id">> => ?ERR_POSIX_ID,
+        <<"ctx">> => od_error:ctx_to_json(ErrorCtx),
         <<"details">> => #{
             <<"errno">> => ErrnoJson
         },
         <<"description">> => od_error:format_description(
             "Operation failed with POSIX error: ~ts.",
-            [Errno]
+            [ErrnoJson]
         )
     }.
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(OdErrorJson = #{<<"id">> := ?ERROR_POSIX_ID}) ->
+from_json(OdErrorJson = #{<<"id">> := ?ERR_POSIX_ID}) ->
+    ErrorCtxJson = maps:get(<<"ctx">>, OdErrorJson, #{}),
+    ErrorCtx = od_error:ctx_from_json(ErrorCtxJson),
+
     DetailsJson = maps:get(<<"details">>, OdErrorJson),
 
     ErrnoJson = maps:get(<<"errno">>, DetailsJson),
     Errno = binary_to_existing_atom(ErrnoJson, utf8),
 
-    ?new_ERROR_POSIX(Errno).
+    ?ERR_POSIX(ErrorCtx, Errno).
 
 
 -spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.
@@ -63,5 +67,5 @@ to_http_code(_) ->
 
 
 -spec to_errno(t()) -> {true, od_error:errno()}.
-to_errno(?ERROR_POSIX_MATCH(Errno)) ->
+to_errno(?ERR_POSIX(Errno)) ->
     {true, Errno}.

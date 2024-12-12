@@ -18,7 +18,7 @@
 -include("http/codes.hrl").
 
 
--type t() :: #od_error{type :: ?MODULE}.
+-type t() :: {error, #od_error{type :: ?MODULE}}.
 
 -export_type([t/0]).
 
@@ -32,25 +32,37 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_ATM_OPENFAAS_QUERY_FAILED_MATCH(Reason)) ->
-    ReasonJson = utils:undefined_to_null(Reason),
+to_json(?ERR_ATM_OPENFAAS_QUERY_FAILED(ErrorCtx, Reason)) ->
+    {ReasonJson, ReasonPrint} = case Reason of
+        undefined ->
+            {null, <<"no details available.">>};
+        _ ->
+            {Reason, Reason}
+    end,
 
     #{
-        <<"id">> => ?ERROR_ATM_OPENFAAS_QUERY_FAILED_ID,
+        <<"id">> => ?ERR_ATM_OPENFAAS_QUERY_FAILED_ID,
+        <<"ctx">> => od_error:ctx_to_json(ErrorCtx),
         <<"details">> => #{
             <<"reason">> => ReasonJson
         },
-        <<"description">> => <<"Failed to query OpenFaaS service.">>
+        <<"description">> => od_error:format_description(
+            "Failed to query the OpenFaaS service: ~ts.",
+            [ReasonPrint]
+        )
     }.
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(OdErrorJson = #{<<"id">> := ?ERROR_ATM_OPENFAAS_QUERY_FAILED_ID}) ->
+from_json(OdErrorJson = #{<<"id">> := ?ERR_ATM_OPENFAAS_QUERY_FAILED_ID}) ->
+    ErrorCtxJson = maps:get(<<"ctx">>, OdErrorJson, #{}),
+    ErrorCtx = od_error:ctx_from_json(ErrorCtxJson),
+
     DetailsJson = maps:get(<<"details">>, OdErrorJson, #{}),
 
     Reason = utils:null_to_undefined(maps:get(<<"reason">>, DetailsJson, null)),
 
-    ?new_ERROR_ATM_OPENFAAS_QUERY_FAILED(Reason).
+    ?ERR_ATM_OPENFAAS_QUERY_FAILED(ErrorCtx, Reason).
 
 
 -spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.

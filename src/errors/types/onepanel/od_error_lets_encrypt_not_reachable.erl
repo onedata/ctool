@@ -18,7 +18,7 @@
 -include("http/codes.hrl").
 
 
--type t() :: #od_error{type :: ?MODULE}.
+-type t() :: {error, #od_error{type :: ?MODULE}}.
 
 -export_type([t/0]).
 
@@ -32,16 +32,19 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_LETS_ENCRYPT_NOT_REACHABLE_MATCH) ->
+to_json(?ERR_LETS_ENCRYPT_NOT_REACHABLE(ErrorCtx)) ->
     #{
-        <<"id">> => ?ERROR_LETS_ENCRYPT_NOT_REACHABLE_ID,
-        <<"description">> => <<"Connection to Let's Encrypt server failed.">>
+        <<"id">> => ?ERR_LETS_ENCRYPT_NOT_REACHABLE_ID,
+        <<"ctx">> => od_error:ctx_to_json(ErrorCtx),
+        <<"description">> => <<"Connection to the Let's Encrypt server failed.">>
     }.
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(#{<<"id">> := ?ERROR_LETS_ENCRYPT_NOT_REACHABLE_ID}) ->
-    ?new_ERROR_LETS_ENCRYPT_NOT_REACHABLE().
+from_json(OdErrorJson = #{<<"id">> := ?ERR_LETS_ENCRYPT_NOT_REACHABLE_ID}) ->
+    ErrorCtxJson = maps:get(<<"ctx">>, OdErrorJson, #{}),
+    ErrorCtx = od_error:ctx_from_json(ErrorCtxJson),
+    ?ERR_LETS_ENCRYPT_NOT_REACHABLE(ErrorCtx).
 
 
 -spec to_http_code(t()) -> ?HTTP_503_SERVICE_UNAVAILABLE.

@@ -18,7 +18,7 @@
 -include("http/codes.hrl").
 
 
--type t() :: #od_error{type :: ?MODULE}.
+-type t() :: {error, #od_error{type :: ?MODULE}}.
 
 -export_type([t/0]).
 
@@ -32,16 +32,19 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_TOKEN_REVOKED_MATCH) ->
+to_json(?ERR_TOKEN_REVOKED(ErrorCtx)) ->
     #{
-        <<"id">> => ?ERROR_TOKEN_REVOKED_ID,
-        <<"description">> => <<"Provided token has been revoked.">>
+        <<"id">> => ?ERR_TOKEN_REVOKED_ID,
+        <<"ctx">> => od_error:ctx_to_json(ErrorCtx),
+        <<"description">> => <<"Provided token has been revoked by the token subject (creator).">>
     }.
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(#{<<"id">> := ?ERROR_TOKEN_REVOKED_ID}) ->
-    ?new_ERROR_TOKEN_REVOKED().
+from_json(OdErrorJson = #{<<"id">> := ?ERR_TOKEN_REVOKED_ID}) ->
+    ErrorCtxJson = maps:get(<<"ctx">>, OdErrorJson, #{}),
+    ErrorCtx = od_error:ctx_from_json(ErrorCtxJson),
+    ?ERR_TOKEN_REVOKED(ErrorCtx).
 
 
 -spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.

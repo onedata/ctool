@@ -18,7 +18,7 @@
 -include("http/codes.hrl").
 
 
--type t() :: #od_error{type :: ?MODULE}.
+-type t() :: {error, #od_error{type :: ?MODULE}}.
 
 -export_type([t/0]).
 
@@ -32,28 +32,35 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_ATM_DATA_TYPE_UNVERIFIED_MATCH(Value, ExpType)) ->
+to_json(?ERR_ATM_DATA_TYPE_UNVERIFIED(ErrorCtx, Value, ExpType)) ->
     ExpTypeJson = atm_data_type:type_to_json(ExpType),
 
     #{
-        <<"id">> => ?ERROR_ATM_DATA_TYPE_UNVERIFIED_ID,
+        <<"id">> => ?ERR_ATM_DATA_TYPE_UNVERIFIED_ID,
+        <<"ctx">> => od_error:ctx_to_json(ErrorCtx),
         <<"details">> => #{
             <<"value">> => Value,
             <<"expType">> => ExpTypeJson
         },
-        <<"description">> => <<"Provided value is not of expected type (see details).">>
+        <<"description">> => od_error:format_description(
+            "Provided value is not of expected type: ~ts.",
+            [ExpTypeJson]
+        )
     }.
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(OdErrorJson = #{<<"id">> := ?ERROR_ATM_DATA_TYPE_UNVERIFIED_ID}) ->
+from_json(OdErrorJson = #{<<"id">> := ?ERR_ATM_DATA_TYPE_UNVERIFIED_ID}) ->
+    ErrorCtxJson = maps:get(<<"ctx">>, OdErrorJson, #{}),
+    ErrorCtx = od_error:ctx_from_json(ErrorCtxJson),
+
     DetailsJson = maps:get(<<"details">>, OdErrorJson),
 
     Value = maps:get(<<"value">>, DetailsJson),
     ExpTypeJson = maps:get(<<"expType">>, DetailsJson),
     ExpType = atm_data_type:type_from_json(ExpTypeJson),
 
-    ?new_ERROR_ATM_DATA_TYPE_UNVERIFIED(Value, ExpType).
+    ?ERR_ATM_DATA_TYPE_UNVERIFIED(ErrorCtx, Value, ExpType).
 
 
 -spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.

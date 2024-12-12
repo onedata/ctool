@@ -18,7 +18,7 @@
 -include("http/codes.hrl").
 
 
--type t() :: #od_error{type :: ?MODULE}.
+-type t() :: {error, #od_error{type :: ?MODULE}}.
 
 -export_type([t/0]).
 
@@ -32,10 +32,10 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_UNAUTHORIZED_MATCH(AuthError)) ->
+to_json(?ERR_UNAUTHORIZED(ErrorCtx, AuthError)) ->
     {AuthErrorJson, AuthErrorPrint} = case AuthError of
         undefined ->
-            {null, null};
+            {null, <<"no details available.">>};
         _ ->
             AuthErrorJsonTmp = errors:to_json(AuthError),
             AuthErrorPrintTmp = maps:get(<<"description">>, AuthErrorJsonTmp),
@@ -43,19 +43,23 @@ to_json(?ERROR_UNAUTHORIZED_MATCH(AuthError)) ->
     end,
 
     #{
-        <<"id">> => ?ERROR_UNAUTHORIZED_ID,
+        <<"id">> => ?ERR_UNAUTHORIZED_ID,
+        <<"ctx">> => od_error:ctx_to_json(ErrorCtx),
         <<"details">> => #{
             <<"authError">> => AuthErrorJson
         },
         <<"description">> => od_error:format_description(
-            "You must authenticate yourself to perform this operation. ~ts",
+            "You must authenticate yourself to perform this operation: ~ts",
             [AuthErrorPrint]
         )
     }.
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(OdErrorJson = #{<<"id">> := ?ERROR_UNAUTHORIZED_ID}) ->
+from_json(OdErrorJson = #{<<"id">> := ?ERR_UNAUTHORIZED_ID}) ->
+    ErrorCtxJson = maps:get(<<"ctx">>, OdErrorJson, #{}),
+    ErrorCtx = od_error:ctx_from_json(ErrorCtxJson),
+
     DetailsJson = maps:get(<<"details">>, OdErrorJson, #{}),
 
     AuthError = case maps:get(<<"authError">>, DetailsJson, null) of
@@ -65,7 +69,7 @@ from_json(OdErrorJson = #{<<"id">> := ?ERROR_UNAUTHORIZED_ID}) ->
             errors:from_json(AuthErrorJson)
     end,
 
-    ?new_ERROR_UNAUTHORIZED(AuthError).
+    ?ERR_UNAUTHORIZED(ErrorCtx, AuthError).
 
 
 -spec to_http_code(t()) -> ?HTTP_401_UNAUTHORIZED.

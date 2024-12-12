@@ -18,7 +18,7 @@
 -include("http/codes.hrl").
 -include("onedata.hrl").
 
--type t() :: #od_error{type :: ?MODULE}.
+-type t() :: {error, #od_error{type :: ?MODULE}}.
 
 -export_type([t/0]).
 
@@ -32,28 +32,35 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_NODE_NOT_COMPATIBLE_MATCH(Hostname, NodeClusterType)) when
+to_json(Error = ?ERR_NODE_NOT_COMPATIBLE(ErrorCtx, Hostname, NodeClusterType)) when
     NodeClusterType == ?ONEPROVIDER;
     NodeClusterType == ?ONEZONE
 ->
     #{
-        <<"id">> => ?ERROR_NODE_NOT_COMPATIBLE_ID,
+        <<"id">> => ?ERR_NODE_NOT_COMPATIBLE_ID,
+        <<"ctx">> => od_error:ctx_to_json(ErrorCtx),
         <<"details">> => #{
-            <<"hostname">> => Hostname, <<"clusterType">> => NodeClusterType},
-        <<"description">> => od_error:format_description("Cannot add \"~ts\", it is a ~ts node.",
-            [Hostname, NodeClusterType])
+            <<"hostname">> => Hostname, <<"clusterType">> => NodeClusterType
+        },
+        <<"description">> => od_error:format_description(
+            "Cannot add \"~ts\", it is a ~ts node.",
+            [Hostname, NodeClusterType]
+        )
     }.
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(OdErrorJson = #{<<"id">> := ?ERROR_NODE_NOT_COMPATIBLE_ID}) ->
+from_json(OdErrorJson = #{<<"id">> := ?ERR_NODE_NOT_COMPATIBLE_ID}) ->
+    ErrorCtxJson = maps:get(<<"ctx">>, OdErrorJson, #{}),
+    ErrorCtx = od_error:ctx_from_json(ErrorCtxJson),
+
     DetailsJson = maps:get(<<"details">>, OdErrorJson),
 
     Hostname = maps:get(<<"hostname">>, DetailsJson),
     ClusterTypeJson = maps:get(<<"clusterType">>, DetailsJson),
     ClusterType = binary_to_existing_atom(ClusterTypeJson, utf8),
 
-    ?new_ERROR_NODE_NOT_COMPATIBLE(Hostname, ClusterType).
+    ?ERR_NODE_NOT_COMPATIBLE(ErrorCtx, Hostname, ClusterType).
 
 
 -spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.

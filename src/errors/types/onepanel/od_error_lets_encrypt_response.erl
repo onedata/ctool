@@ -18,7 +18,7 @@
 -include("http/codes.hrl").
 
 
--type t() :: #od_error{type :: ?MODULE}.
+-type t() :: {error, #od_error{type :: ?MODULE}}.
 
 -export_type([t/0]).
 
@@ -32,30 +32,34 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_LETS_ENCRYPT_RESPONSE_MATCH(ProblemDocument, ErrorMessage)) ->
+to_json(?ERR_LETS_ENCRYPT_RESPONSE(ErrorCtx, ProblemDocument, ErrorMessage)) ->
     ProblemDocumentJson = utils:undefined_to_null(ProblemDocument),
 
     #{
-        <<"id">> => ?ERROR_LETS_ENCRYPT_RESPONSE_ID,
+        <<"id">> => ?ERR_LETS_ENCRYPT_RESPONSE_ID,
+        <<"ctx">> => od_error:ctx_to_json(ErrorCtx),
         <<"details">> => #{
             <<"problemDocument">> => ProblemDocumentJson,
             <<"errorMessage">> => ErrorMessage
         },
         <<"description">> => od_error:format_description(
-            "Bad Let's Encrypt response: ~ts.",
-            [ErrorMessage]
+            "Bad Let's Encrypt response for document \"~ts\": ~ts.",
+            [ProblemDocumentJson, ErrorMessage]
         )
     }.
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(OdErrorJson = #{<<"id">> := ?ERROR_LETS_ENCRYPT_RESPONSE_ID}) ->
+from_json(OdErrorJson = #{<<"id">> := ?ERR_LETS_ENCRYPT_RESPONSE_ID}) ->
+    ErrorCtxJson = maps:get(<<"ctx">>, OdErrorJson, #{}),
+    ErrorCtx = od_error:ctx_from_json(ErrorCtxJson),
+
     DetailsJson = maps:get(<<"details">>, OdErrorJson),
 
     ProblemDocument = utils:null_to_undefined(maps:get(<<"problemDocument">>, DetailsJson, null)),
     ErrorMessage = maps:get(<<"errorMessage">>, DetailsJson),
 
-    ?new_ERROR_LETS_ENCRYPT_RESPONSE(ProblemDocument, ErrorMessage).
+    ?ERR_LETS_ENCRYPT_RESPONSE(ErrorCtx, ProblemDocument, ErrorMessage).
 
 
 -spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.

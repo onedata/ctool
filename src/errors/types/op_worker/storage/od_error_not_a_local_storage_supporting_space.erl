@@ -18,7 +18,7 @@
 -include("http/codes.hrl").
 
 
--type t() :: #od_error{type :: ?MODULE}.
+-type t() :: {error, #od_error{type :: ?MODULE}}.
 
 -export_type([t/0]).
 
@@ -32,30 +32,34 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_NOT_A_LOCAL_STORAGE_SUPPORTING_SPACE_MATCH(ProviderId, StorageId, SpaceId)) ->
+to_json(?ERR_NOT_A_LOCAL_STORAGE_SUPPORTING_SPACE(ErrorCtx, ProviderId, StorageId, SpaceId)) ->
     #{
-        <<"id">> => ?ERROR_NOT_A_LOCAL_STORAGE_SUPPORTING_SPACE_ID,
+        <<"id">> => ?ERR_NOT_A_LOCAL_STORAGE_SUPPORTING_SPACE_ID,
+        <<"ctx">> => od_error:ctx_to_json(ErrorCtx),
         <<"details">> => #{
             <<"providerId">> => ProviderId,
             <<"storageId">> => StorageId,
             <<"spaceId">> => SpaceId
         },
         <<"description">> => od_error:format_description(
-            "Storage ~ts does not belong to this Oneprovider (~ts) and/or does not support the space ~ts.",
+            "The storage backend \"~ts\" does not belong to this Oneprovider (\"~ts\") and/or does not support the space \"~ts\".",
             [StorageId, ProviderId, SpaceId]
         )
     }.
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(OdErrorJson = #{<<"id">> := ?ERROR_NOT_A_LOCAL_STORAGE_SUPPORTING_SPACE_ID}) ->
+from_json(OdErrorJson = #{<<"id">> := ?ERR_NOT_A_LOCAL_STORAGE_SUPPORTING_SPACE_ID}) ->
+    ErrorCtxJson = maps:get(<<"ctx">>, OdErrorJson, #{}),
+    ErrorCtx = od_error:ctx_from_json(ErrorCtxJson),
+
     DetailsJson = maps:get(<<"details">>, OdErrorJson),
 
     ProviderId = maps:get(<<"providerId">>, DetailsJson),
     StorageId = maps:get(<<"storageId">>, DetailsJson),
     SpaceId = maps:get(<<"spaceId">>, DetailsJson),
 
-    ?new_ERROR_NOT_A_LOCAL_STORAGE_SUPPORTING_SPACE(ProviderId, StorageId, SpaceId).
+    ?ERR_NOT_A_LOCAL_STORAGE_SUPPORTING_SPACE(ErrorCtx, ProviderId, StorageId, SpaceId).
 
 
 -spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.

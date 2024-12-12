@@ -18,7 +18,7 @@
 -include("http/codes.hrl").
 
 
--type t() :: #od_error{type :: ?MODULE}.
+-type t() :: {error, #od_error{type :: ?MODULE}}.
 
 -export_type([t/0]).
 
@@ -32,26 +32,30 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_ATM_UNSUPPORTED_DATA_TYPE_MATCH(Type, Allowed)) ->
+to_json(?ERR_ATM_UNSUPPORTED_DATA_TYPE(ErrorCtx, Type, Allowed)) ->
     TypeJson = atm_data_type:type_to_json(Type),
     AllowedJson = lists:map(fun atm_data_type:type_to_json/1, Allowed),
     AllowedPrint = od_error:format_csv(AllowedJson),
 
     #{
-        <<"id">> => ?ERROR_ATM_UNSUPPORTED_DATA_TYPE_ID,
+        <<"id">> => ?ERR_ATM_UNSUPPORTED_DATA_TYPE_ID,
+        <<"ctx">> => od_error:ctx_to_json(ErrorCtx),
         <<"details">> => #{
             <<"type">> => TypeJson,
             <<"allowed">> => AllowedJson
         },
         <<"description">> => od_error:format_description(
             "Bad automation data type: provided \"~ts\" is not one of: ~ts.",
-            [Type, AllowedPrint]
+            [TypeJson, AllowedPrint]
         )
     }.
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(OdErrorJson = #{<<"id">> := ?ERROR_ATM_UNSUPPORTED_DATA_TYPE_ID}) ->
+from_json(OdErrorJson = #{<<"id">> := ?ERR_ATM_UNSUPPORTED_DATA_TYPE_ID}) ->
+    ErrorCtxJson = maps:get(<<"ctx">>, OdErrorJson, #{}),
+    ErrorCtx = od_error:ctx_from_json(ErrorCtxJson),
+
     DetailsJson = maps:get(<<"details">>, OdErrorJson),
 
     TypeJson = maps:get(<<"type">>, DetailsJson),
@@ -59,7 +63,7 @@ from_json(OdErrorJson = #{<<"id">> := ?ERROR_ATM_UNSUPPORTED_DATA_TYPE_ID}) ->
     AllowedJson = maps:get(<<"allowed">>, DetailsJson),
     Allowed = lists:map(fun atm_data_type:type_from_json/1, AllowedJson),
 
-    ?new_ERROR_ATM_UNSUPPORTED_DATA_TYPE(Type, Allowed).
+    ?ERR_ATM_UNSUPPORTED_DATA_TYPE(ErrorCtx, Type, Allowed).
 
 
 -spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.

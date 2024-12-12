@@ -18,7 +18,7 @@
 -include("http/codes.hrl").
 
 
--type t() :: #od_error{type :: ?MODULE}.
+-type t() :: {error, #od_error{type :: ?MODULE}}.
 
 -export_type([t/0]).
 
@@ -32,22 +32,30 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERROR_ATM_DATA_VALUE_CONSTRAINT_UNVERIFIED_MATCH(Value, Type, ValueConstraints)) ->
+to_json(?ERR_ATM_DATA_VALUE_CONSTRAINT_UNVERIFIED(ErrorCtx, Value, Type, ValueConstraints)) ->
     TypeJson = atm_data_type:type_to_json(Type),
+    ValueConstraintsPrint = json_utils:encode(ValueConstraints),
 
     #{
-        <<"id">> => ?ERROR_ATM_DATA_VALUE_CONSTRAINT_UNVERIFIED_ID,
+        <<"id">> => ?ERR_ATM_DATA_VALUE_CONSTRAINT_UNVERIFIED_ID,
+        <<"ctx">> => od_error:ctx_to_json(ErrorCtx),
         <<"details">> => #{
             <<"value">> => Value,
             <<"type">> => TypeJson,
             <<"valueConstraints">> => ValueConstraints
         },
-        <<"description">> => <<"Provided value doesn't meet the constraints (see details).">>
+        <<"description">> => od_error:format_description(
+            "Provided value of type \"~ts\" doesn't meet the constraints: \"~ts\".",
+            [TypeJson, ValueConstraintsPrint]
+        )
     }.
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(OdErrorJson = #{<<"id">> := ?ERROR_ATM_DATA_VALUE_CONSTRAINT_UNVERIFIED_ID}) ->
+from_json(OdErrorJson = #{<<"id">> := ?ERR_ATM_DATA_VALUE_CONSTRAINT_UNVERIFIED_ID}) ->
+    ErrorCtxJson = maps:get(<<"ctx">>, OdErrorJson, #{}),
+    ErrorCtx = od_error:ctx_from_json(ErrorCtxJson),
+
     DetailsJson = maps:get(<<"details">>, OdErrorJson),
 
     Value = maps:get(<<"value">>, DetailsJson),
@@ -55,7 +63,7 @@ from_json(OdErrorJson = #{<<"id">> := ?ERROR_ATM_DATA_VALUE_CONSTRAINT_UNVERIFIE
     Type = atm_data_type:type_from_json(TypeJson),
     ValueConstraints = maps:get(<<"valueConstraints">>, DetailsJson),
 
-    ?new_ERROR_ATM_DATA_VALUE_CONSTRAINT_UNVERIFIED(Value, Type, ValueConstraints).
+    ?ERR_ATM_DATA_VALUE_CONSTRAINT_UNVERIFIED(ErrorCtx, Value, Type, ValueConstraints).
 
 
 -spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.
