@@ -33,7 +33,14 @@
 
 -spec to_json(t()) -> json_utils:json_map().
 to_json(?ERR_LETS_ENCRYPT_RESPONSE(ErrorCtx, ProblemDocument, ErrorMessage)) ->
-    ProblemDocumentJson = utils:undefined_to_null(ProblemDocument),
+    {ProblemDocumentJson, ProblemDocumentPrint} = case ProblemDocument of
+        undefined ->
+            {null, null};
+        _ ->
+            ProblemDocumentPrintTmp = json_utils:encode(ProblemDocument),
+            {ProblemDocument, ProblemDocumentPrintTmp}
+    end,
+    ErrorMessagePrint = json_utils:encode(ErrorMessage),
 
     #{
         <<"id">> => ?ERR_LETS_ENCRYPT_RESPONSE_ID,
@@ -44,7 +51,7 @@ to_json(?ERR_LETS_ENCRYPT_RESPONSE(ErrorCtx, ProblemDocument, ErrorMessage)) ->
         },
         <<"description">> => od_error:format_description(
             "Bad Let's Encrypt response for document \"~ts\": ~ts.",
-            [ProblemDocumentJson, ErrorMessage]
+            [ProblemDocumentPrint, ErrorMessagePrint]
         )
     }.
 

@@ -35,6 +35,7 @@
 to_json(?ERR_BAD_VALUE_TSC_CONFLICTING_METRIC_CONFIG(ErrorCtx, TimeSeriesName, MetricName, ExistingMetricConfig, ConflictingMetricConfig)) ->
     ExistingMetricConfigJson = jsonable_record:to_json(ExistingMetricConfig, metric_config),
     ConflictingMetricConfigJson = jsonable_record:to_json(ConflictingMetricConfig, metric_config),
+    ConflictingMetricConfigPrint = metric_config:to_binary(ConflictingMetricConfig),
 
     #{
         <<"id">> => ?ERR_BAD_VALUE_TSC_CONFLICTING_METRIC_CONFIG_ID,
@@ -47,7 +48,7 @@ to_json(?ERR_BAD_VALUE_TSC_CONFLICTING_METRIC_CONFIG(ErrorCtx, TimeSeriesName, M
         },
         <<"description">> => od_error:format_description(
             "Bad value: Provided metric config for time series \"~ts\" and metric \"~ts\" conflicts with existing metric config: ~ts.",
-            [TimeSeriesName, MetricName, ConflictingMetricConfig] % TODO metric_confgi print
+            [TimeSeriesName, MetricName, ConflictingMetricConfigPrint]
         )
     }.
 

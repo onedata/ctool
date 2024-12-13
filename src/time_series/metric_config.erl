@@ -19,6 +19,9 @@
 -include("errors.hrl").
 
 
+%% API
+-export([to_binary/1]).
+
 %% Jsonable record callbacks
 -export([to_json/1, from_json/1]).
 
@@ -36,6 +39,18 @@
 
 -type record() :: #metric_config{}.
 -export_type([record/0]).
+
+
+%%%===================================================================
+%%% API
+%%%===================================================================
+
+
+-spec to_binary(record()) -> binary().
+to_binary(#metric_config{resolution = Resolution, retention = Retention, aggregator = Aggregator}) ->
+    str_utils:format("metric_config{resolution = ~B, retention = ~B, aggregator = ~ts}", [
+        Resolution, Retention, aggregator_to_json(Aggregator)
+    ]).
 
 
 %%%===================================================================
