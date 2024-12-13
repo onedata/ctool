@@ -247,10 +247,10 @@ run_testcase(#testcase{
         ?assertEqual(TimeSeriesSchema, atm_time_series_names:select_referenced_time_series_schema(
             TimeSeriesDispatchRule, [TimeSeriesSchema]
         )),
-        ?assertThrow(?ERROR_BAD_DATA_MATCH(_, _), atm_time_series_names:select_referenced_time_series_schema(
+        ?assertThrow(?ERR_BAD_DATA(_, _), atm_time_series_names:select_referenced_time_series_schema(
             TimeSeriesDispatchRule, []
         )),
-        ?assertThrow(?ERROR_BAD_DATA_MATCH(_, _), atm_time_series_names:select_referenced_time_series_schema(
+        ?assertThrow(?ERR_BAD_DATA(_, _), atm_time_series_names:select_referenced_time_series_schema(
             TimeSeriesDispatchRule, time_series_test_utils:example_time_series_schemas()
         )),
 

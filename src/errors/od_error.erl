@@ -395,7 +395,9 @@ version() ->
 %% Encodes error context to JSON object.
 %% @end
 %%--------------------------------------------------------------------
--spec ctx_to_json(ctx()) -> json_utils:json_map().
+-spec ctx_to_json(undefined | ctx()) -> json_utils:json_map().
+ctx_to_json(undefined) ->
+    #{};
 ctx_to_json(#od_error_ctx{file = File, line = Line, timestamp = Timestamp, version = Version}) ->
     #{
         <<"file">> => utils:undefined_to_null(File),

@@ -40,6 +40,14 @@
         version = od_error:version()
     }
 ).
+-define(undefined_err_ctx,
+    #od_error_ctx{
+        file = undefined,
+        line = undefined,
+        timestamp = undefined,
+        version = undefined
+    }
+).
 
 -define(ERR, {error, #od_error{}}).
 -define(ERR(Type), {error, #od_error{type = Type}}).
