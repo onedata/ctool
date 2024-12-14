@@ -41,7 +41,7 @@ to_json(?ERR_ATM_TASK_ARG_MAPPER_ITERATED_ITEM_QUERY_FAILED(ErrorCtx, Value, Que
             <<"query">> => Query
         },
         <<"description">> => od_error:format_description(
-            "Failed to perform a query on the iterated item: \"~ts\".",
+            "Failed to perform a query on the iterated item: \"~tp\".",
             [Query]
         )
     }.

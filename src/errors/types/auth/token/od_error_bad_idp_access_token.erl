@@ -33,15 +33,17 @@
 
 -spec to_json(t()) -> json_utils:json_map().
 to_json(?ERR_BAD_IDP_ACCESS_TOKEN(ErrorCtx, Idp)) ->
+    IdpJson = atom_to_binary(Idp, utf8),
+
     #{
         <<"id">> => ?ERR_BAD_IDP_ACCESS_TOKEN_ID,
         <<"ctx">> => od_error:ctx_to_json(ErrorCtx),
         <<"details">> => #{
-            <<"idp">> => Idp
+            <<"idp">> => IdpJson
         },
         <<"description">> => od_error:format_description(
-            "Provided access token for IdP \"~tp\" is not valid.",
-            [Idp]
+            "Provided access token for IdP \"~ts\" is not valid.",
+            [IdpJson]
         )
     }.
 
@@ -53,7 +55,8 @@ from_json(OdErrorJson = #{<<"id">> := ?ERR_BAD_IDP_ACCESS_TOKEN_ID}) ->
 
     DetailsJson = maps:get(<<"details">>, OdErrorJson),
 
-    Idp = maps:get(<<"idp">>, DetailsJson),
+    IdpJson = maps:get(<<"idp">>, DetailsJson),
+    Idp = binary_to_existing_atom(IdpJson, utf8),
 
     ?ERR_BAD_IDP_ACCESS_TOKEN(ErrorCtx, Idp).
 

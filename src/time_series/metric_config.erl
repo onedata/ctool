@@ -48,7 +48,7 @@
 
 -spec to_binary(record()) -> binary().
 to_binary(#metric_config{resolution = Resolution, retention = Retention, aggregator = Aggregator}) ->
-    str_utils:format("metric_config{resolution = ~B, retention = ~B, aggregator = ~ts}", [
+    str_utils:format_bin("metric_config{resolution = ~B, retention = ~B, aggregator = ~ts}", [
         Resolution, Retention, aggregator_to_json(Aggregator)
     ]).
 

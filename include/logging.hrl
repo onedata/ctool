@@ -224,7 +224,6 @@ end).
                 Reason;
             _ ->
                 ?log_exception(DetailsFormat, DetailsArgs, ErrorRef, Class, Reason, Stacktrace),
-                % TODO check ctx
                 ?ERR_INTERNAL_SERVER_ERROR(?err_ctx(), ErrorRef)
         end
     end)(?make_error_ref()))

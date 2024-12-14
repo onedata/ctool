@@ -36,7 +36,7 @@ to_json(?ERR_SERVICE_UNAVAILABLE(ErrorCtx)) ->
     #{
         <<"id">> => ?ERR_SERVICE_UNAVAILABLE_ID,
         <<"ctx">> => od_error:ctx_to_json(ErrorCtx),
-        <<"description">> => <<"The service required for this operation is offline or unreachable.">>
+        <<"description">> => <<"The service required for this operation is currently unavailable (offline, unreachable, or disrupted).">>
     }.
 
 

@@ -41,7 +41,7 @@ to_json(?ERR_LIMIT_REACHED(ErrorCtx, Limit, ResourceDescription)) ->
             <<"resourceDescription">> => ResourceDescription
         },
         <<"description">> => od_error:format_description(
-            "The limit for ~ts has been reached: ~tp.",
+            "The limit for ~ts has been reached: ~B.",
             [ResourceDescription, Limit]
         )
     }.
