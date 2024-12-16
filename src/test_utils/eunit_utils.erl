@@ -131,6 +131,7 @@ erase_ctx_if_error(?ERR(Type, Args, _Ctx)) ->
             end, tuple_to_list(Args)))
     end,
 
-    ?ERR(Type, ArgsWithErasedCtx, ?undefined_err_ctx);
+    % Manually build tuple instead of using record to avoid dialyzer error
+    {error, {od_error, Type, ArgsWithErasedCtx, undefined}};
 erase_ctx_if_error(Else) ->
     Else.
