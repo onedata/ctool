@@ -17,6 +17,9 @@
 
 
 %% API
+-export([is_valid_filename/1]).
+-export([filename_to_sorting_key/1]).
+
 -export([type_to_json/1, type_from_json/1]).
 
 -export([sanitize_attr_names/4]).
@@ -53,6 +56,51 @@
 %%%===================================================================
 %%% API
 %%%===================================================================
+
+% TODO VFS-7208 this should return a proper ERROR_BAD_FILE_NAME error (assert_valid_filename?)
+% (waits for od_error in fslogic and od_error generation)
+-spec is_valid_filename(term()) -> boolean().
+is_valid_filename(FileName) when not is_binary(FileName) ->
+    false;
+is_valid_filename(<<"">>) ->
+    false;
+is_valid_filename(FileName) when byte_size(FileName) > ?FILE_NAME_MAX_LENGTH ->
+    false;
+is_valid_filename(FileName) ->
+    case lists:member(FileName, ?FILE_NAME_FORBIDDEN_NAMES) of
+        true ->
+            false;
+        false ->
+            [] == binary:matches(FileName, ?FILE_NAME_FORBIDDEN_CHARACTERS)
+    end.
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Converts the file name so that when it's compared to other files names
+%% during sorting, we get the following behaviour:
+%%  1. sorting is case-insensitive:
+%%      A<b<C<d<E<f (rather than A<C<E<b<d<f when it'd be sorted by ASCII codes)
+%%  2. if two strings are equal (case-insensitively), bigger letters come first:
+%%      Aaaaa
+%%      aAaaa
+%%      aaaaa
+%%  3. diacritics are converted to their closest ascii representatives:
+%%      ĄąbĆcćdefgh -> AabCccdefgh
+%%  4. similar filenames are sorted deterministically:
+%%      śtrÃngÉ ƒilËńaMę
+%%      strAngE fIlenAMe
+%%      strange filename
+%% @end
+%%--------------------------------------------------------------------
+-spec filename_to_sorting_key(binary()) -> binary().
+filename_to_sorting_key(FileName) ->
+    ComparableCase = string:casefold(FileName),
+    WithoutDiacritics = unicode_utils:remove_diacritics(ComparableCase),
+    % The filename is appended as-is at the end to ensure deterministic sorting.
+    % Use 0x01 as the joining char, as it's neutral for sorting, and we don't
+    % want to use \NULL which is forbidden in file names.
+    <<WithoutDiacritics/binary, 1, FileName/binary>>.
 
 
 -spec type_to_json(type()) -> json_utils:json_term().
