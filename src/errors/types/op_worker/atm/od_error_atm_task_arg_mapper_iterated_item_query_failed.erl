@@ -33,6 +33,8 @@
 
 -spec to_json(t()) -> json_utils:json_map().
 to_json(?ERR_ATM_TASK_ARG_MAPPER_ITERATED_ITEM_QUERY_FAILED(ErrorCtx, Value, Query)) ->
+    QueryPrint = json_utils:encode(Query),
+
     #{
         <<"id">> => ?ERR_ATM_TASK_ARG_MAPPER_ITERATED_ITEM_QUERY_FAILED_ID,
         <<"ctx">> => od_error:ctx_to_json(ErrorCtx),
@@ -41,8 +43,8 @@ to_json(?ERR_ATM_TASK_ARG_MAPPER_ITERATED_ITEM_QUERY_FAILED(ErrorCtx, Value, Que
             <<"query">> => Query
         },
         <<"description">> => od_error:format_description(
-            "Failed to perform a query on the iterated item: \"~tp\".",
-            [Query]
+            "Failed to perform a query on the iterated item: ~ts.",
+            [QueryPrint]
         )
     }.
 

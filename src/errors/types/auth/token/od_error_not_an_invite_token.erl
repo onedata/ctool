@@ -33,12 +33,7 @@
 
 -spec to_json(t()) -> json_utils:json_map().
 to_json(?ERR_NOT_AN_INVITE_TOKEN(ErrorCtx, ExpectedInviteType, Received)) ->
-    ExpectedInviteTypeJson = case ExpectedInviteType of
-        any ->
-            <<"any">>;
-        _ ->
-            token_type:invite_type_to_str(ExpectedInviteType)
-    end,
+    ExpectedInviteTypeJson = token_type:invite_type_to_str(ExpectedInviteType),
     ReceivedJson = token_type:to_json(Received),
     ReceivedPrint = token_type:to_printable(Received),
 
@@ -64,12 +59,7 @@ from_json(OdErrorJson = #{<<"id">> := ?ERR_NOT_AN_INVITE_TOKEN_ID}) ->
     DetailsJson = maps:get(<<"details">>, OdErrorJson),
 
     ExpectedInviteTypeJson = maps:get(<<"expectedInviteType">>, DetailsJson),
-    ExpectedInviteType = case ExpectedInviteTypeJson of
-        <<"any">> ->
-            any;
-        _ ->
-            token_type:invite_type_from_str(ExpectedInviteTypeJson)
-    end,
+    ExpectedInviteType = token_type:invite_type_from_str(ExpectedInviteTypeJson),
     ReceivedJson = maps:get(<<"received">>, DetailsJson),
     Received = token_type:from_json(ReceivedJson),
 

@@ -555,6 +555,10 @@ testcases() -> [
         deprecated_error = ?DEPRECATED_ERROR_BAD_VALUE_TOKEN(<<"supportToken">>, ?DEPRECATED_ERROR_TOKEN_REVOKED)
     },
     #testcase{
+        error = ?ERR_BAD_VALUE_TOKEN(<<"supportToken">>, ?ERR_NOT_AN_INVITE_TOKEN(any, ?ACCESS_TOKEN)),
+        deprecated_error = ?DEPRECATED_ERROR_BAD_VALUE_TOKEN(<<"supportToken">>, ?DEPRECATED_ERROR_NOT_AN_INVITE_TOKEN(any, ?ACCESS_TOKEN))
+    },
+    #testcase{
         error = ?ERR_BAD_VALUE_TOKEN(<<"supportToken">>, ?ERR_NOT_AN_INVITE_TOKEN(?GROUP_JOIN_GROUP, ?ACCESS_TOKEN)),
         deprecated_error = ?DEPRECATED_ERROR_BAD_VALUE_TOKEN(<<"supportToken">>, ?DEPRECATED_ERROR_NOT_AN_INVITE_TOKEN(?GROUP_JOIN_GROUP, ?ACCESS_TOKEN))
     },
@@ -681,6 +685,10 @@ testcases() -> [
     #testcase{
         error = ?ERR_BAD_VERSION([4, 5, 6, 7, 8]),
         deprecated_error = ?DEPRECATED_ERROR_BAD_VERSION([4, 5, 6, 7, 8])
+    },
+    #testcase{
+        error = ?ERR_BAD_VERSION([<<"1.1">>, <<"1.2">>]),
+        deprecated_error = ?DEPRECATED_ERROR_BAD_VERSION([<<"1.1">>, <<"1.2">>])
     },
     #testcase{
         error = ?ERR_EXPECTED_HANDSHAKE_MESSAGE,
@@ -919,8 +927,8 @@ testcases() -> [
         deprecated_error = ?DEPRECATED_ERROR_ATM_TASK_ARG_MAPPER_FOR_REQUIRED_LAMBDA_ARG_MISSING(<<"arg">>)
     },
     #testcase{
-        error = ?ERR_ATM_TASK_ARG_MAPPER_ITERATED_ITEM_QUERY_FAILED([1, 2], [0]),
-        deprecated_error = ?DEPRECATED_ERROR_ATM_TASK_ARG_MAPPER_ITERATED_ITEM_QUERY_FAILED([1, 2], [0])
+        error = ?ERR_ATM_TASK_ARG_MAPPER_ITERATED_ITEM_QUERY_FAILED([1, 2], [<<"[0]">>, <<"asd">>]),
+        deprecated_error = ?DEPRECATED_ERROR_ATM_TASK_ARG_MAPPER_ITERATED_ITEM_QUERY_FAILED([1, 2], [<<"[0]">>, <<"asd">>])
     },
     #testcase{
         error = ?ERR_ATM_TASK_ARG_MAPPER_UNSUPPORTED_VALUE_BUILDER(store_credentials, [iterated_item]),

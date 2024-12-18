@@ -159,7 +159,8 @@ deserialize(SerializedInviteTokenType) ->
     end.
 
 
--spec invite_type_to_str(invite_type()) -> binary().
+-spec invite_type_to_str(any | invite_type()) -> binary().
+invite_type_to_str(any) -> <<"any">>;
 invite_type_to_str(?USER_JOIN_GROUP) -> <<"userJoinGroup">>;
 invite_type_to_str(?GROUP_JOIN_GROUP) -> <<"groupJoinGroup">>;
 invite_type_to_str(?USER_JOIN_SPACE) -> <<"userJoinSpace">>;
@@ -176,7 +177,8 @@ invite_type_to_str(?USER_JOIN_ATM_INVENTORY) -> <<"userJoinAtmInventory">>;
 invite_type_to_str(?GROUP_JOIN_ATM_INVENTORY) -> <<"groupJoinAtmInventory">>.
 
 
--spec invite_type_from_str(binary()) -> invite_type().
+-spec invite_type_from_str(binary()) -> any | invite_type().
+invite_type_from_str(<<"any">>) -> any;
 invite_type_from_str(<<"userJoinGroup">>) -> ?USER_JOIN_GROUP;
 invite_type_from_str(<<"groupJoinGroup">>) -> ?GROUP_JOIN_GROUP;
 invite_type_from_str(<<"userJoinSpace">>) -> ?USER_JOIN_SPACE;

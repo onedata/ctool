@@ -32,6 +32,7 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
+% TODO VFS-12556 Fix and simplify args encoding
 to_json(?ERR_FORBIDDEN_FOR_CURRENT_ARCHIVE_STATE(ErrorCtx, CurrentState, AllowedStates)) ->
     #{
         <<"id">> => ?ERR_FORBIDDEN_FOR_CURRENT_ARCHIVE_STATE_ID,
@@ -48,6 +49,7 @@ to_json(?ERR_FORBIDDEN_FOR_CURRENT_ARCHIVE_STATE(ErrorCtx, CurrentState, Allowed
 
 
 -spec from_json(json_utils:json_map()) -> t().
+% TODO VFS-12556 Fix and simplify args decoding
 from_json(ErrorJson = #{
     <<"id">> := ?ERR_FORBIDDEN_FOR_CURRENT_ARCHIVE_STATE_ID,
     <<"details">> := #{

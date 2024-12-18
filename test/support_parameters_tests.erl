@@ -77,7 +77,7 @@ sanitize_support_parameters_test() ->
 
 insert_support_parameters_test() ->
     BuildExpErrorFun = fun(Field) ->
-        ?ERR_MISSING_REQUIRED_VALUE(?undefined_err_ctx, <<"supportParameters.", Field/binary>>)
+        ?ERR_MISSING_REQUIRED_VALUE(<<"supportParameters.", Field/binary>>)
     end,
 
     DummyProviderId = ?RAND_STR(),

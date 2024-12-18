@@ -33,6 +33,8 @@
 
 -spec to_json(t()) -> json_utils:json_map().
 to_json(?ERR_BAD_VERSION(ErrorCtx, SupportedVersions)) ->
+    SupportedVersionsPrint = od_error:format_csv(SupportedVersions),
+
     #{
         <<"id">> => ?ERR_BAD_VERSION_ID,
         <<"ctx">> => od_error:ctx_to_json(ErrorCtx),
@@ -40,8 +42,8 @@ to_json(?ERR_BAD_VERSION(ErrorCtx, SupportedVersions)) ->
             <<"supportedVersions">> => SupportedVersions
         },
         <<"description">> => od_error:format_description(
-            "GraphSync error: bad protocol version; supported versions: ~tp.",
-            [SupportedVersions]
+            "GraphSync error: bad protocol version; supported versions: ~ts.",
+            [SupportedVersionsPrint]
         )
     }.
 

@@ -33,6 +33,8 @@
 
 -spec to_json(t()) -> json_utils:json_map().
 to_json(?ERR_MISSING_AT_LEAST_ONE_VALUE(ErrorCtx, Keys)) ->
+    KeysPrint = od_error:format_csv(Keys),
+
     #{
         <<"id">> => ?ERR_MISSING_AT_LEAST_ONE_VALUE_ID,
         <<"ctx">> => od_error:ctx_to_json(ErrorCtx),
@@ -40,8 +42,8 @@ to_json(?ERR_MISSING_AT_LEAST_ONE_VALUE(ErrorCtx, Keys)) ->
             <<"keys">> => Keys
         },
         <<"description">> => od_error:format_description(
-            "The request data was missing some values; you must provide at least one of: ~tp.",
-            [Keys]
+            "The request data was missing some values; you must provide at least one of: ~ts.",
+            [KeysPrint]
         )
     }.
 

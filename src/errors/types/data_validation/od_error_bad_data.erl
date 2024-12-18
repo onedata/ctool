@@ -42,6 +42,7 @@ to_json(?ERR_BAD_DATA(ErrorCtx, Key, ?ERR = SpecificError)) ->
         },
         <<"description">> => od_error:format_description("Bad value provided for \"~ts\" (see details).", [Key])
     };
+% TODO VFS-12486 Remove hint variant
 to_json(?ERR_BAD_DATA(ErrorCtx, Key, HumanReadableHint)) ->
     HumanReadableHintJson = utils:undefined_to_null(HumanReadableHint),
 
@@ -66,6 +67,7 @@ from_json(ErrorJson = #{<<"id">> := ?ERR_BAD_DATA_ID, <<"details">> := #{
 
     ?ERR_BAD_DATA(ErrorCtx, Key, errors:from_json(SpecificError));
 
+% TODO VFS-12486 Remove hint variant
 from_json(ErrorJson = #{<<"id">> := ?ERR_BAD_DATA_ID, <<"details">> := DetailsJson}) ->
     ErrorCtxJson = maps:get(<<"ctx">>, ErrorJson, #{}),
     ErrorCtx = od_error:ctx_from_json(ErrorCtxJson),
