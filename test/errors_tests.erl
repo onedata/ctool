@@ -37,7 +37,8 @@ assert_all_errors_are_tested_test() ->
         end
     end, code:get_path()),
 
-    ErrorModules = lists:usort(lists:filtermap(fun
+    % od_error_unrecognized_error is special error that has not its own module
+    ErrorModules = lists:usort([od_error_unrecognized_error] ++ lists:filtermap(fun
         (Module = "od_error_" ++ _) -> {true, list_to_atom(Module)};
         (_) -> false
     end, AllModules)),
@@ -234,7 +235,7 @@ testcases() -> [
     },
     #testcase{
         error = ?ERR_BAD_IDP_ACCESS_TOKEN(keycloak),
-        error_after_encoding_decoding = ?ERR_BAD_IDP_ACCESS_TOKEN(<<"keycloak">>),
+        error_after_encoding_decoding = ?ERR_BAD_IDP_ACCESS_TOKEN(keycloak),
         deprecated_error = ?DEPRECATED_ERROR_BAD_IDP_ACCESS_TOKEN(keycloak),
         deprecated_error_after_encoding_decoding = ?DEPRECATED_ERROR_BAD_IDP_ACCESS_TOKEN(<<"keycloak">>)
     },
@@ -334,28 +335,27 @@ testcases() -> [
     %%--------------------------------------------------------------------
     %% connection errors
     %%--------------------------------------------------------------------
-% TODO
-%%    #testcase{
-%%        error = ?ERR_NO_CONNECTION_TO_CLUSTER_NODE,
-%%        deprecated_error = ?DEPRECATED_ERROR_NO_CONNECTION_TO_CLUSTER_NODE
-%%    },
-%%    #testcase{
-%%        error = ?ERR_NO_CONNECTION_TO_ONEZONE,
-%%        deprecated_error = ?DEPRECATED_ERROR_NO_CONNECTION_TO_ONEZONE
-%%    },
-%%    #testcase{
-%%        error = ?ERR_NO_CONNECTION_TO_PEER_ONEPROVIDER,
-%%        deprecated_error = ?DEPRECATED_ERROR_NO_CONNECTION_TO_PEER_ONEPROVIDER
-%%    },
-%%
-%%    %%--------------------------------------------------------------------
-%%    %% data_validation errors
-%%    %%--------------------------------------------------------------------
-%%    % TODO
-%%    #testcase{
-%%        error = ?ERR_BAD_DATA(<<"spaceId">>, undefined),
-%%        deprecated_error = ?DEPRECATED_ERROR_BAD_DATA(<<"spaceId">>, undefined)
-%%    },
+    % NOTE: no connection errors have now arguments and as such are not
+    % compatible with older versions!!!
+    #testcase{
+        error = ?ERR_NO_CONNECTION_TO_CLUSTER_NODE(<<"panel@node">>)
+    },
+    #testcase{
+        error = ?ERR_NO_CONNECTION_TO_ONEZONE(<<"domain">>)
+    },
+    #testcase{
+        error = ?ERR_NO_CONNECTION_TO_PEER_ONEPROVIDER(<<"id">>, <<"domain">>)
+    },
+
+    %%--------------------------------------------------------------------
+    %% data_validation errors
+    %%--------------------------------------------------------------------
+    % NOTE: There is also no argument ??DEPRECATED_ERROR_BAD_DATA but
+    % as it has no 'hint' field in 'details' it is incompatible with new error
+    #testcase{
+        error = ?ERR_BAD_DATA(<<"spaceId">>, undefined),
+        deprecated_error = ?DEPRECATED_ERROR_BAD_DATA(<<"spaceId">>, null)
+    },
     #testcase{
         error = ?ERR_BAD_DATA(<<"nestedRecord">>, ?ERR_MISSING_REQUIRED_VALUE(<<"key">>)),
         deprecated_error = ?DEPRECATED_ERROR_BAD_DATA(<<"nestedRecord">>, ?DEPRECATED_ERROR_MISSING_REQUIRED_VALUE(<<"key">>))
@@ -504,11 +504,12 @@ testcases() -> [
         error = ?ERR_BAD_VALUE_LIST_OF_IPV4_ADDRESSES(<<"ip_list">>),
         deprecated_error = ?DEPRECATED_ERROR_BAD_VALUE_LIST_OF_IPV4_ADDRESSES(<<"ip_list">>)
     },
-%%    % TODO
-%%    #testcase{
-%%        error = ?ERR_BAD_VALUE_NAME(undefined),
-%%        deprecated_error = ?DEPRECATED_ERROR_BAD_VALUE_NAME(undefined)
-%%    },
+    % NOTE: There is also no argument ?DEPRECATED_ERROR_BAD_VALUE_NAME but
+    % as it has no 'details' it is incompatible with new error
+    #testcase{
+        error = ?ERR_BAD_VALUE_NAME(undefined),
+        deprecated_error = ?DEPRECATED_ERROR_BAD_VALUE_NAME(null)
+    },
     #testcase{
         error = ?ERR_BAD_VALUE_NAME(<<"key">>),
         deprecated_error = ?DEPRECATED_ERROR_BAD_VALUE_NAME(<<"key">>)
@@ -623,11 +624,12 @@ testcases() -> [
         deprecated_error = ?DEPRECATED_ERROR_FILE_ACCESS(['./', ["name"]], ?EROFS),
         deprecated_error_after_encoding_decoding = ?DEPRECATED_ERROR_FILE_ACCESS(<<"./name">>, ?EROFS)
     },
-%%    % TODO
-%%    #testcase{
-%%        error = ?ERR_INTERNAL_SERVER_ERROR(undefined),
-%%        deprecated_error = ?DEPRECATED_ERROR_INTERNAL_SERVER_ERROR
-%%    },
+    % NOTE: There is also no argument ?DEPRECATED_ERROR_INTERNAL_SERVER_ERROR but
+    % as it has no 'details' it is incompatible with new error
+    #testcase{
+        error = ?ERR_INTERNAL_SERVER_ERROR(undefined),
+        deprecated_error = ?DEPRECATED_ERROR_INTERNAL_SERVER_ERROR(null)
+    },
     begin
         RandRef = ?RAND_STR(),
 
@@ -854,11 +856,12 @@ testcases() -> [
         error = ?ERR_ATM_OPENFAAS_NOT_CONFIGURED,
         deprecated_error = ?DEPRECATED_ERROR_ATM_OPENFAAS_NOT_CONFIGURED
     },
-%%    % TODO
-%%    #testcase{
-%%        error = ?ERR_ATM_OPENFAAS_QUERY_FAILED(undefined),
-%%        deprecated_error = ?DEPRECATED_ERROR_ATM_OPENFAAS_QUERY_FAILED(undefined)
-%%    },
+    % NOTE: There is also no argument ?DEPRECATED_ERROR_ATM_OPENFAAS_QUERY but
+    % as it has no 'details' it is incompatible with new error
+    #testcase{
+        error = ?ERR_ATM_OPENFAAS_QUERY_FAILED(undefined),
+        deprecated_error = ?DEPRECATED_ERROR_ATM_OPENFAAS_QUERY_FAILED(null)
+    },
     #testcase{
         error = ?ERR_ATM_OPENFAAS_QUERY_FAILED(<<"dns resolution error...">>),
         deprecated_error = ?DEPRECATED_ERROR_ATM_OPENFAAS_QUERY_FAILED(<<"dns resolution error...">>)
@@ -1091,11 +1094,12 @@ testcases() -> [
         error = ?ERR_CANNOT_ADD_RELATION_TO_SELF,
         deprecated_error = ?DEPRECATED_ERROR_CANNOT_ADD_RELATION_TO_SELF
     },
-%%    % TODO entity_type is differently encoded
-%%    #testcase{
-%%        error = ?ERR_CANNOT_DELETE_ENTITY(od_user, <<"user1">>),
-%%        deprecated_error = ?DEPRECATED_ERROR_CANNOT_DELETE_ENTITY(od_user, <<"user1">>)
-%%    }
+    % NOTE: ?ERR_CANNOT_DELETE_ENTITY changed way to encode entity_type and as such
+    % is not compatible with deprecated version. It should not be a problem as
+    % it is only generated in Onezone and passed to client
+    #testcase{
+        error = ?ERR_CANNOT_DELETE_ENTITY(od_user, <<"user1">>)
+    },
     #testcase{
         error = ?ERR_CANNOT_DELETE_NON_EMPTY_HANDLE_SERVICE,
         deprecated_error = ?DEPRECATED_ERROR_CANNOT_DELETE_NON_EMPTY_HANDLE_SERVICE
