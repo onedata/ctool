@@ -22,7 +22,8 @@
         hackney,
         kernel,
         stdlib,
-        lager
+        lager,
+        iso8601
     ]},
 
     {env, [
