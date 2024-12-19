@@ -7,10 +7,10 @@
 %%% @end
 %%%-------------------------------------------------------------------
 %%% @doc
-%%% This module implements od_error for 'od_error_file_access'.
+%%% This module implements od_error for 'od_error_forbidden_todo'.
 %%% @end
 %%%-------------------------------------------------------------------
--module(od_error_file_access).
+-module(od_error_forbidden_todo).
 
 -behaviour(od_error).
 
@@ -32,43 +32,37 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERR_FILE_ACCESS(ErrorCtx, Path, Errno)) ->
-    PathJson = str_utils:to_binary(filename:flatten(Path)),
-    ErrnoJson = erlang:atom_to_binary(Errno, utf8),
-
+to_json(?ERR_FORBIDDEN_TODO(ErrorCtx, Hint)) ->
     #{
-        <<"id">> => ?ERR_FILE_ACCESS_ID,
+        <<"id">> => ?ERR_FORBIDDEN_TODO_ID,
         <<"ctx">> => od_error:ctx_to_json(ErrorCtx),
         <<"details">> => #{
-            <<"path">> => PathJson,
-            <<"errno">> => ErrnoJson
+            <<"hint">> => Hint
         },
         <<"description">> => od_error:format_description(
-            "Cannot access file \"~ts\": ~ts.",
-            [PathJson, ErrnoJson]
+            "You are not authorized to perform this operation: ~ts",
+            [Hint]
         )
     }.
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(OdErrorJson = #{<<"id">> := ?ERR_FILE_ACCESS_ID}) ->
+from_json(OdErrorJson = #{<<"id">> := ?ERR_FORBIDDEN_TODO_ID}) ->
     ErrorCtxJson = maps:get(<<"ctx">>, OdErrorJson, #{}),
     ErrorCtx = od_error:ctx_from_json(ErrorCtxJson),
 
     DetailsJson = maps:get(<<"details">>, OdErrorJson),
 
-    Path = maps:get(<<"path">>, DetailsJson),
-    ErrnoJson = maps:get(<<"errno">>, DetailsJson),
-    Errno = erlang:binary_to_existing_atom(ErrnoJson, utf8),
+    Hint = maps:get(<<"hint">>, DetailsJson),
 
-    ?ERR_FILE_ACCESS(ErrorCtx, Path, Errno).
+    ?ERR_FORBIDDEN_TODO(ErrorCtx, Hint).
 
 
--spec to_http_code(t()) -> ?HTTP_500_INTERNAL_SERVER_ERROR.
+-spec to_http_code(t()) -> ?HTTP_403_FORBIDDEN.
 to_http_code(_) ->
-    ?HTTP_500_INTERNAL_SERVER_ERROR.
+    ?HTTP_403_FORBIDDEN.
 
 
 -spec to_errno(t()) -> {true, od_error:errno()}.
 to_errno(_) ->
-    {true, ?EIO}.
+    {true, ?EACCES}.

@@ -62,10 +62,10 @@ from_json(OdErrorJson = #{<<"id">> := ?ERR_RELATION_DOES_NOT_EXIST_ID}) ->
     DetailsJson = maps:get(<<"details">>, OdErrorJson),
 
     ChildTypeJson = maps:get(<<"childType">>, DetailsJson),
-    ChildType = binary_to_existing_atom(ChildTypeJson, utf8),
+    ChildType = erlang:binary_to_existing_atom(ChildTypeJson, utf8),
     ChildId = maps:get(<<"childId">>, DetailsJson),
     ParentTypeJson = maps:get(<<"parentType">>, DetailsJson),
-    ParentType = binary_to_existing_atom(ParentTypeJson, utf8),
+    ParentType = erlang:binary_to_existing_atom(ParentTypeJson, utf8),
     ParentId = maps:get(<<"parentId">>, DetailsJson),
 
     ?ERR_RELATION_DOES_NOT_EXIST(ErrorCtx, ChildType, ChildId, ParentType, ParentId).

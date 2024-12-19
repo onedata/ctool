@@ -33,7 +33,7 @@
 
 -spec to_json(t()) -> json_utils:json_map().
 to_json(?ERR_POSIX(ErrorCtx, Errno)) ->
-    ErrnoJson = atom_to_binary(Errno, utf8),
+    ErrnoJson = erlang:atom_to_binary(Errno, utf8),
 
     #{
         <<"id">> => ?ERR_POSIX_ID,
@@ -56,7 +56,7 @@ from_json(OdErrorJson = #{<<"id">> := ?ERR_POSIX_ID}) ->
     DetailsJson = maps:get(<<"details">>, OdErrorJson),
 
     ErrnoJson = maps:get(<<"errno">>, DetailsJson),
-    Errno = binary_to_existing_atom(ErrnoJson, utf8),
+    Errno = erlang:binary_to_existing_atom(ErrnoJson, utf8),
 
     ?ERR_POSIX(ErrorCtx, Errno).
 

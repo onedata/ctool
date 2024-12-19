@@ -30,6 +30,9 @@
 -define(ERR_FORBIDDEN_ID, <<"forbidden">>).
 -define(ERR_FORBIDDEN_TYPE, od_error_forbidden).
 
+-define(ERR_FORBIDDEN_TODO_ID, <<"forbiddenTodo">>).
+-define(ERR_FORBIDDEN_TODO_TYPE, od_error_forbidden_todo).
+
 -define(ERR_UNAUTHORIZED_ID, <<"unauthorized">>).
 -define(ERR_UNAUTHORIZED_TYPE, od_error_unauthorized).
 
@@ -654,6 +657,7 @@
 -define(ERROR_ID_TO_TYPE_MAPPING, #{
     ?ERR_BAD_BASIC_CREDENTIALS_ID => ?ERR_BAD_BASIC_CREDENTIALS_TYPE,
     ?ERR_FORBIDDEN_ID => ?ERR_FORBIDDEN_TYPE,
+    ?ERR_FORBIDDEN_TODO_ID => ?ERR_FORBIDDEN_TODO_TYPE,
     ?ERR_UNAUTHORIZED_ID => ?ERR_UNAUTHORIZED_TYPE,
     ?ERR_USER_BLOCKED_ID => ?ERR_USER_BLOCKED_TYPE,
     ?ERR_BAD_CONSUMER_TOKEN_ID => ?ERR_BAD_CONSUMER_TOKEN_TYPE,

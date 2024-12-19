@@ -194,18 +194,20 @@ testcases() -> [
         error = ?ERR_BAD_BASIC_CREDENTIALS,
         deprecated_error = ?DEPRECATED_ERROR_BAD_BASIC_CREDENTIALS
     },
-%%    % TODO
-%%    #testcase{
-%%        error = ?ERR_FORBIDDEN(undefined),
-%%        deprecated_error = ?DEPRECATED_ERROR_FORBIDDEN(null)
-%%    },
     #testcase{
-        error = ?ERR_FORBIDDEN(<<"Sausage not for the dog">>),
-        deprecated_error = ?DEPRECATED_ERROR_FORBIDDEN(<<"Sausage not for the dog">>)
+        error = ?ERR_FORBIDDEN,
+        deprecated_error = ?DEPRECATED_ERROR_FORBIDDEN
+    },
+    % NOTE: there is ?DEPRECATED_ERROR_FORBIDDEN(Hint) that is replaced by this
+    % one but those two are not compatible (they have different ids).
+    #testcase{
+        error = ?ERR_FORBIDDEN_TODO(<<"hint">>)
     },
     #testcase{
-        error = ?ERR_FORBIDDEN(<<"Honey not for the piglets.">>),
-        deprecated_error = ?DEPRECATED_ERROR_FORBIDDEN(<<"Honey not for the piglets.">>)
+        error = ?ERR_FORBIDDEN_TODO(<<"Sausage not for the dog">>)
+    },
+    #testcase{
+        error = ?ERR_FORBIDDEN_TODO(<<"Honey not for the piglets.">>)
     },
     #testcase{
         error = ?ERR_UNAUTHORIZED(?ERR_NOT_AN_ACCESS_TOKEN(?IDENTITY_TOKEN)),

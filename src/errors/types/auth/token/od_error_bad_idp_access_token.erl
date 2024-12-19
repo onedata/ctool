@@ -33,7 +33,7 @@
 
 -spec to_json(t()) -> json_utils:json_map().
 to_json(?ERR_BAD_IDP_ACCESS_TOKEN(ErrorCtx, Idp)) ->
-    IdpJson = atom_to_binary(Idp, utf8),
+    IdpJson = erlang:atom_to_binary(Idp, utf8),
 
     #{
         <<"id">> => ?ERR_BAD_IDP_ACCESS_TOKEN_ID,
@@ -56,7 +56,7 @@ from_json(OdErrorJson = #{<<"id">> := ?ERR_BAD_IDP_ACCESS_TOKEN_ID}) ->
     DetailsJson = maps:get(<<"details">>, OdErrorJson),
 
     IdpJson = maps:get(<<"idp">>, DetailsJson),
-    Idp = binary_to_existing_atom(IdpJson, utf8),
+    Idp = erlang:binary_to_existing_atom(IdpJson, utf8),
 
     ?ERR_BAD_IDP_ACCESS_TOKEN(ErrorCtx, Idp).
 

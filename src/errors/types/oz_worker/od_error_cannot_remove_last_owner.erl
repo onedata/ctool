@@ -33,7 +33,7 @@
 
 -spec to_json(t()) -> json_utils:json_map().
 to_json(?ERR_CANNOT_REMOVE_LAST_OWNER(ErrorCtx, EntityType, EntityId)) ->
-    EntityTypeJson = atom_to_binary(EntityType, utf8),
+    EntityTypeJson = erlang:atom_to_binary(EntityType, utf8),
 
     #{
         <<"id">> => ?ERR_CANNOT_REMOVE_LAST_OWNER_ID,
@@ -54,7 +54,7 @@ from_json(OdErrorJson = #{<<"id">> := ?ERR_CANNOT_REMOVE_LAST_OWNER_ID}) ->
     DetailsJson = maps:get(<<"details">>, OdErrorJson),
 
     EntityTypeJson = maps:get(<<"entityType">>, DetailsJson),
-    EntityType = binary_to_existing_atom(EntityTypeJson, utf8),
+    EntityType = erlang:binary_to_existing_atom(EntityTypeJson, utf8),
     EntityId = maps:get(<<"entityId">>, DetailsJson),
 
     ?ERR_CANNOT_REMOVE_LAST_OWNER(ErrorCtx, EntityType, EntityId).

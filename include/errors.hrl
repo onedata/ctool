@@ -41,6 +41,15 @@
     }
 ).
 
+-define(UNDEFINED_ERR_CTX,
+    #od_error_ctx{
+        file = undefined,
+        line = undefined,
+        timestamp = undefined,
+        version = undefined
+    }
+).
+
 -define(ERR, {error, #od_error{}}).
 -define(ERR(Type), {error, #od_error{type = Type}}).
 -define(ERR(Type, Args), {error, #od_error{type = Type, args = Args}}).
@@ -68,8 +77,11 @@
 -define(ERR_BAD_BASIC_CREDENTIALS, ?ERR(?ERR_BAD_BASIC_CREDENTIALS_TYPE)).
 -define(ERR_BAD_BASIC_CREDENTIALS(ErrorCtx), ?ERR(?ERR_BAD_BASIC_CREDENTIALS_TYPE, undefined, ErrorCtx)).
 
--define(ERR_FORBIDDEN(Hint), ?ERR(?ERR_FORBIDDEN_TYPE, {Hint})).
--define(ERR_FORBIDDEN(ErrorCtx, Hint), ?ERR(?ERR_FORBIDDEN_TYPE, {Hint}, ErrorCtx)).
+-define(ERR_FORBIDDEN, ?ERR(?ERR_FORBIDDEN_TYPE)).
+-define(ERR_FORBIDDEN(ErrorCtx), ?ERR(?ERR_FORBIDDEN_TYPE, undefined, ErrorCtx)).
+
+-define(ERR_FORBIDDEN_TODO(Hint), ?ERR(?ERR_FORBIDDEN_TODO_TYPE, {Hint})).
+-define(ERR_FORBIDDEN_TODO(ErrorCtx, Hint), ?ERR(?ERR_FORBIDDEN_TODO_TYPE, {Hint}, ErrorCtx)).
 
 -define(ERR_UNAUTHORIZED(AuthError), ?ERR(?ERR_UNAUTHORIZED_TYPE, {AuthError})).
 -define(ERR_UNAUTHORIZED(ErrorCtx, AuthError), ?ERR(?ERR_UNAUTHORIZED_TYPE, {AuthError}, ErrorCtx)).

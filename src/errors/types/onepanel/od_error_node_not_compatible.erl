@@ -32,7 +32,7 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(Error = ?ERR_NODE_NOT_COMPATIBLE(ErrorCtx, Hostname, NodeClusterType)) when
+to_json(?ERR_NODE_NOT_COMPATIBLE(ErrorCtx, Hostname, NodeClusterType)) when
     NodeClusterType == ?ONEPROVIDER;
     NodeClusterType == ?ONEZONE
 ->
@@ -58,7 +58,7 @@ from_json(OdErrorJson = #{<<"id">> := ?ERR_NODE_NOT_COMPATIBLE_ID}) ->
 
     Hostname = maps:get(<<"hostname">>, DetailsJson),
     ClusterTypeJson = maps:get(<<"clusterType">>, DetailsJson),
-    ClusterType = binary_to_existing_atom(ClusterTypeJson, utf8),
+    ClusterType = erlang:binary_to_existing_atom(ClusterTypeJson, utf8),
 
     ?ERR_NODE_NOT_COMPATIBLE(ErrorCtx, Hostname, ClusterType).
 

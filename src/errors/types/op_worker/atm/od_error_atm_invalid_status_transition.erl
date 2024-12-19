@@ -33,8 +33,8 @@
 
 -spec to_json(t()) -> json_utils:json_map().
 to_json(?ERR_ATM_INVALID_STATUS_TRANSITION(ErrorCtx, PrevStatus, NewStatus)) ->
-    PrevStatusJson = atom_to_binary(PrevStatus, utf8),
-    NewStatusJson = atom_to_binary(NewStatus, utf8),
+    PrevStatusJson = erlang:atom_to_binary(PrevStatus, utf8),
+    NewStatusJson = erlang:atom_to_binary(NewStatus, utf8),
 
     #{
         <<"id">> => ?ERR_ATM_INVALID_STATUS_TRANSITION_ID,
@@ -58,9 +58,9 @@ from_json(OdErrorJson = #{<<"id">> := ?ERR_ATM_INVALID_STATUS_TRANSITION_ID}) ->
     DetailsJson = maps:get(<<"details">>, OdErrorJson),
 
     PrevStatusJson = maps:get(<<"prevStatus">>, DetailsJson),
-    PrevStatus = binary_to_existing_atom(PrevStatusJson, utf8),
+    PrevStatus = erlang:binary_to_existing_atom(PrevStatusJson, utf8),
     NewStatusJson = maps:get(<<"newStatus">>, DetailsJson),
-    NewStatus = binary_to_existing_atom(NewStatusJson, utf8),
+    NewStatus = erlang:binary_to_existing_atom(NewStatusJson, utf8),
 
     ?ERR_ATM_INVALID_STATUS_TRANSITION(ErrorCtx, PrevStatus, NewStatus).
 

@@ -32,24 +32,11 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERR_FORBIDDEN(ErrorCtx, Hint)) ->
-    {HintJson, HintPrint} = case Hint of
-        undefined ->
-            {null, <<"no details available.">>};
-        _ ->
-            {Hint, Hint}
-    end,
-
+to_json(?ERR_FORBIDDEN(ErrorCtx)) ->
     #{
         <<"id">> => ?ERR_FORBIDDEN_ID,
         <<"ctx">> => od_error:ctx_to_json(ErrorCtx),
-        <<"details">> => #{
-            <<"hint">> => HintJson
-        },
-        <<"description">> => od_error:format_description(
-            "You are not authorized to perform this operation: ~ts",
-            [HintPrint]
-        )
+        <<"description">> => <<"You are not authorized to perform this operation.">>
     }.
 
 
@@ -57,12 +44,7 @@ to_json(?ERR_FORBIDDEN(ErrorCtx, Hint)) ->
 from_json(OdErrorJson = #{<<"id">> := ?ERR_FORBIDDEN_ID}) ->
     ErrorCtxJson = maps:get(<<"ctx">>, OdErrorJson, #{}),
     ErrorCtx = od_error:ctx_from_json(ErrorCtxJson),
-
-    DetailsJson = maps:get(<<"details">>, OdErrorJson, #{}),
-
-    Hint = utils:null_to_undefined(maps:get(<<"hint">>, DetailsJson, null)),
-
-    ?ERR_FORBIDDEN(ErrorCtx, Hint).
+    ?ERR_FORBIDDEN(ErrorCtx).
 
 
 -spec to_http_code(t()) -> ?HTTP_403_FORBIDDEN.

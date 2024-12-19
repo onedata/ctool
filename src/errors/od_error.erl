@@ -75,6 +75,7 @@
 -type auth_error() ::
     od_error_bad_basic_credentials:t() |
     od_error_forbidden:t() |
+    od_error_forbidden_todo:t() |
     od_error_unauthorized:t() |
     od_error_user_blocked:t() |
     auth_token_error().
@@ -387,7 +388,7 @@ iso8601_now() ->
 %%--------------------------------------------------------------------
 -spec version() -> binary().
 version() ->
-    <<"bc24caed">>.
+    <<"de1deebe">>.
 
 
 %%--------------------------------------------------------------------
