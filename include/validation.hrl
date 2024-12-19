@@ -57,6 +57,13 @@
 -define(USERNAME_MAXIMUM_LENGTH, 32).
 
 
+% TODO VFS-12486 Rework into descriptions FILE_NAME and SHARE_NAME that reuse what's possible
+-define(SHARE_NAME_REQUIREMENTS_DESCRIPTION, <<
+    "Share name must be a valid POSIX file name that is at most 128 characters long. "
+    "Forbidden characters are: forward slash ('/') and NULL ('\\0'). Forbidden names are: ('.') and ('..')."
+>>).
+
+
 -define(PASSWORD_REQUIREMENTS_DESCRIPTION, <<
     "Password must be at least 8 characters long."
 >>).

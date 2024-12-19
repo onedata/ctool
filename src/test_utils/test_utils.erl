@@ -26,10 +26,13 @@
 ]).
 -export([get_env/3, set_env/4]).
 -export([get_docker_ip/1, get_docker_hostname/1]).
+-export([ct_pal_failure_summary/3]).
 
 -define(TIMEOUT, timer:seconds(60)).
 -define(ATTEMPTS, 10).
+-define(CT_ASSERT_LOG_TERM_TRUNCATION_THRESHOLD, ctool:get_env(ct_assert_log_term_truncation_threshold, 2000)).
 
+-type failure_summary() :: #failure_summary{}.
 
 %%%===================================================================
 %%% API
@@ -299,6 +302,40 @@ get_docker_hostname(Node) ->
     re:replace(shell_utils:get_success_output(CMD), "\\s+", "", [global, {return, binary}]).
 
 
+-spec ct_pal_failure_summary(string(), failure_summary(), annotate_diff | skip_diff_annotation) -> ok.
+ct_pal_failure_summary(AssertionType, #failure_summary{
+    module = Module,
+    line = Line,
+    expected_expression = ExpectedExpression,
+    expected_value = ExpectedValue,
+    actual_expression = ActualExpression,
+    actual_value = ActualValue
+}, DiffAnnotation) ->
+    ActualValueStr = pretty_format(ActualValue),
+    ExpectedValueStr = pretty_format(ExpectedValue),
+
+    ActualValueSlice = get_slice_with_comparison_to(ActualValueStr, ExpectedValueStr, DiffAnnotation),
+    ExpectedValueSlice = get_slice_with_comparison_to(ExpectedValueStr, ActualValueStr, DiffAnnotation),
+
+    ct:pal(
+        "~ts failed: ~tp:~tp~n"
+        "-  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  - ~n"
+        "> Expectation: ~tp~n"
+        "~n"
+        "~ts~n"
+        "-  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  - ~n"
+        "> Value: ~tp~n"
+        "~n"
+        "~ts~n",
+        [
+            AssertionType, Module, Line,
+            ExpectedExpression,
+            ExpectedValueSlice,
+            ActualExpression,
+            ActualValueSlice
+        ]
+    ).
+
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
@@ -384,12 +421,89 @@ should_recompile_module(SrcFilePath) ->
     ModuleDirPath = filename:dirname(SrcFilePath),
     ModuleNameStr = filename:basename(SrcFilePath, ".erl"),
     BeamFilePath = filename:join(ModuleDirPath, ModuleNameStr ++ ".beam"),
-    
+
     {ok, SrcFileInfo} = file:read_file_info(SrcFilePath),
-    
+
     case file:read_file_info(BeamFilePath) of
         {ok, BeamFileInfo} ->
             SrcFileInfo#file_info.mtime >= BeamFileInfo#file_info.mtime;
         {error, _} ->
             true
     end.
+
+
+%% @private
+-spec pretty_format(term()) -> string().
+pretty_format(undefined) ->
+    "";
+pretty_format(Value) ->
+    ControlSequence = case onedata_logger:is_printable(Value) of
+        true -> "~ts";
+        false -> "~tp"
+    end,
+    str_utils:format(ControlSequence, [Value]).
+
+
+%% @private
+-spec get_slice_with_comparison_to(string(), string(), atom()) -> string().
+get_slice_with_comparison_to(BaseStr, SecondStr, DiffAnnotation) ->
+    case DiffAnnotation of
+        annotate_diff ->
+            annotate_difference(BaseStr, SecondStr);
+        skip_diff_annotation ->
+            str_utils:truncate_overflow(BaseStr, ?CT_ASSERT_LOG_TERM_TRUNCATION_THRESHOLD, right)
+    end.
+
+
+%% @private
+-spec annotate_difference(string(), string()) -> string().
+annotate_difference(BaseStr, "") ->
+    str_utils:truncate_overflow(
+        BaseStr, ?CT_ASSERT_LOG_TERM_TRUNCATION_THRESHOLD, right
+    );
+annotate_difference("", [$[ | _]) ->
+    % when comparing lists and one of them is empty, it will be pretty-printed as an empty string
+    % this little hack fixes that, guessing that it might have been a list based on the second string...
+    "[]";
+annotate_difference("", _) ->
+    "";
+annotate_difference(BaseStr, SecondStr) ->
+    LongestPrefix = str_utils:longest_substring_ignoring_whitespace(BaseStr, SecondStr),
+    case LongestPrefix of
+        [] ->
+            % do not include the DIFF marker if there is no common prefix
+            str_utils:truncate_overflow(
+                BaseStr, ?CT_ASSERT_LOG_TERM_TRUNCATION_THRESHOLD, right
+            );
+        _ ->
+            Rest = string:sub_string(BaseStr, string:len(LongestPrefix) + 1),
+            get_limited_diff(LongestPrefix, Rest)
+    end.
+
+
+%% @private
+-spec get_limited_diff(string(), string()) -> string().
+get_limited_diff(Prefix, Rest) ->
+    MaxLength = ?CT_ASSERT_LOG_TERM_TRUNCATION_THRESHOLD,
+    PrefixLength = length(Prefix),
+    RestLength = length(Rest),
+
+    {FinalPrefix, FinalRest} = case PrefixLength + RestLength =< MaxLength of
+        true ->
+            {Prefix, Rest};
+        false ->
+            FinalPrefixLength = case PrefixLength < MaxLength of
+                true -> PrefixLength;
+                false -> MaxLength div 2
+            end,
+
+            TruncatedPrefix = str_utils:truncate_overflow(
+                Prefix,
+                FinalPrefixLength,
+                left
+            ),
+            TruncatedRest = str_utils:truncate_overflow(Rest, max(20, MaxLength - FinalPrefixLength), right),
+            {TruncatedPrefix, TruncatedRest}
+    end,
+
+    str_utils:format("~ts~n[DIFF]~n~ts", [FinalPrefix, FinalRest]).
