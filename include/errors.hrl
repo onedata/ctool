@@ -20,7 +20,7 @@
 
 
 -record(od_error_ctx, {
-    file :: undefined | binary(),
+    module :: undefined | binary(),
     line :: undefined | integer(),
     timestamp :: undefined | time:iso8601(),
     version :: undefined | binary()
@@ -32,18 +32,11 @@
     ctx :: od_error:ctx()
 }).
 
--define(err_ctx(),
-    #od_error_ctx{
-        file = <<?FILE>>,
-        line = ?LINE,
-        timestamp = od_error:iso8601_now(),
-        version = od_error:version()
-    }
-).
+-define(err_ctx(), od_error:build_ctx(?MODULE, ?LINE)).
 
 -define(UNDEFINED_ERR_CTX,
     #od_error_ctx{
-        file = undefined,
+        module = undefined,
         line = undefined,
         timestamp = undefined,
         version = undefined

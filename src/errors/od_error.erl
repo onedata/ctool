@@ -18,14 +18,15 @@
 
 %% API
 -export([
+    build_ctx/2,
+    ctx_to_json/1,
+    ctx_from_json/1,
+
     format_description/2,
     format_csv/1,
 
     iso8601_now/0,
-    version/0,
-
-    ctx_to_json/1,
-    ctx_from_json/1
+    version/0
 ]).
 
 
@@ -357,6 +358,44 @@
 %%%===================================================================
 
 
+-spec build_ctx(module(), integer()) -> ctx().
+build_ctx(Module, Line) ->
+    #od_error_ctx{
+        module = str_utils:to_binary(Module),
+        line = Line,
+        timestamp = iso8601_now(),
+        version = version()
+    }.
+
+
+-spec ctx_to_json
+    (undefined) -> null;
+    (ctx()) -> json_utils:json_map().
+ctx_to_json(undefined) ->
+    null;
+ctx_to_json(#od_error_ctx{module = Module, line = Line, timestamp = Timestamp, version = Version}) ->
+    #{
+        <<"module">> => utils:undefined_to_null(Module),
+        <<"line">> => utils:undefined_to_null(Line),
+        <<"timestamp">> => utils:undefined_to_null(Timestamp),
+        <<"version">> => utils:undefined_to_null(Version)
+    }.
+
+
+-spec ctx_from_json
+    (null) -> undefined;
+    (json_utils:json_map()) -> ctx().
+ctx_from_json(null) ->
+    undefined;
+ctx_from_json(Json) ->
+    #od_error_ctx{
+        module = utils:null_to_undefined(maps:get(<<"module">>, Json, null)),
+        line = utils:null_to_undefined(maps:get(<<"line">>, Json, null)),
+        timestamp = utils:null_to_undefined(maps:get(<<"timestamp">>, Json, null)),
+        version = utils:null_to_undefined(maps:get(<<"version">>, Json, null))
+    }.
+
+
 -spec format_description(string(), [term()]) -> binary().
 format_description(Format, Args) ->
     Desc = str_utils:format_bin(Format, Args),
@@ -388,36 +427,4 @@ iso8601_now() ->
 %%--------------------------------------------------------------------
 -spec version() -> binary().
 version() ->
-    <<"de1deebe">>.
-
-
-%%--------------------------------------------------------------------
-%% @doc
-%% Encodes error context to JSON object.
-%% @end
-%%--------------------------------------------------------------------
--spec ctx_to_json(undefined | ctx()) -> json_utils:json_map().
-ctx_to_json(undefined) ->
-    #{};
-ctx_to_json(#od_error_ctx{file = File, line = Line, timestamp = Timestamp, version = Version}) ->
-    #{
-        <<"file">> => utils:undefined_to_null(File),
-        <<"line">> => utils:undefined_to_null(Line),
-        <<"timestamp">> => utils:undefined_to_null(Timestamp),
-        <<"version">> => utils:undefined_to_null(Version)
-    }.
-
-
-%%--------------------------------------------------------------------
-%% @doc
-%% Decodes error context from JSON object.
-%% @end
-%%--------------------------------------------------------------------
--spec ctx_from_json(json_utils:json_map()) -> ctx().
-ctx_from_json(Json) ->
-    #od_error_ctx{
-        file = utils:null_to_undefined(maps:get(<<"file">>, Json, null)),
-        line = utils:null_to_undefined(maps:get(<<"line">>, Json, null)),
-        timestamp = utils:null_to_undefined(maps:get(<<"timestamp">>, Json, null)),
-        version = utils:null_to_undefined(maps:get(<<"version">>, Json, null))
-    }.
+    <<"011bab52">>.
