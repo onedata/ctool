@@ -30,6 +30,7 @@
 init(_Id, _Opts) ->
     {ok, [], ?CTH_MOCK_PRIORITY}.
 
+
 %%--------------------------------------------------------------------
 %% @doc
 %% CTH callback called after init_per_suite.
@@ -39,12 +40,9 @@ init(_Id, _Opts) ->
 -spec post_init_per_suite(Suite :: atom(), _Config :: [term()], Return :: [term()],
     State :: []) -> {[term()], []}.
 post_init_per_suite(_Suite, _Config, Return, State) ->
-    lists:foreach(fun(N) ->
-        ok = case rpc:call(N, mock_manager, start, []) of
-            {ok, _} -> ok;
-            {error, {already_started, _}} -> ok;
-            Error -> Error
-        end
+    lists:foreach(fun(Node) ->
+        start_mock_manager(Node),
+        mock_od_error_build_ctx(Node)
     end, mock_manager_nodes(Return)),
     {Return, State}.
 
@@ -78,6 +76,8 @@ post_end_per_suite(_Suite, Config, Return, State) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
+
+
 %%--------------------------------------------------------------------
 %% @doc
 %% @private
@@ -92,3 +92,23 @@ mock_manager_nodes(Config) ->
         ?config(NodeType, Config, [])
     end, ?CTH_MOCK_MANAGER_NODES),
     [node() | lists:usort(AllNodes)]. %remove duplicates and add testmaster node
+
+
+%% @private
+start_mock_manager(Node) ->
+    ok = case rpc:call(Node, mock_manager, start, []) of
+        {ok, _} -> ok;
+        {error, {already_started, _}} -> ok;
+        Error -> Error
+    end.
+
+
+%% @private
+mock_od_error_build_ctx(Node) ->
+    case rpc:call(Node, code, ensure_loaded, [od_error]) of
+        {module, _} ->
+            test_utils:mock_new(Node, od_error),
+            test_utils:mock_expect(Node, od_error, build_ctx, fun(_, _) -> undefined end);
+        {error, _} ->
+            ok
+    end.
