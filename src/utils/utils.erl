@@ -536,6 +536,12 @@ check_result(ok) ->
     ok;
 check_result({ok, Value}) ->
     Value;
+check_result({error, timeout}) ->
+    throw(?ERR_TIMEOUT(?err_ctx()));
+check_result({error, not_found}) ->
+    throw(?ERR_NOT_FOUND(?err_ctx()));
+check_result({error, already_exist}) ->
+    throw(?ERR_ALREADY_EXISTS(?err_ctx()));
 check_result({error, _} = Error) ->
     case errors:is_known_error(Error) of
         true -> throw(Error);
