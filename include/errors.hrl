@@ -22,7 +22,7 @@
 -record(od_error_ctx, {
     module :: undefined | binary(),
     line :: undefined | integer(),
-    timestamp :: undefined | time:iso8601(),
+    timestamp :: undefined | time:millis(),
     version :: undefined | binary()
 }).
 

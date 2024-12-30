@@ -25,7 +25,6 @@
     format_description/2,
     format_csv/1,
 
-    iso8601_now/0,
     version/0
 ]).
 
@@ -363,7 +362,7 @@ build_ctx(Module, Line) ->
     #od_error_ctx{
         module = str_utils:to_binary(Module),
         line = Line,
-        timestamp = iso8601_now(),
+        timestamp = native_node_clock:system_time_millis(),
         version = version()
     }.
 
@@ -410,21 +409,9 @@ format_csv(Values) ->
 
 %%--------------------------------------------------------------------
 %% @doc
-%% Returns current timestamp in ISO8601 format.
-%% @end
-%%--------------------------------------------------------------------
--spec iso8601_now() -> time:iso8601().
-iso8601_now() ->
-    Seconds = native_node_clock:system_time_millis() div 1000,
-    DateTime = time:seconds_to_datetime(Seconds),
-    time:datetime_to_iso8601(DateTime).
-
-
-%%--------------------------------------------------------------------
-%% @doc
 %% Returns version of error definitions.
 %% @end
 %%--------------------------------------------------------------------
 -spec version() -> binary().
 version() ->
-    <<"ceddd0b9">>.
+    <<"77a9a81f">>.
