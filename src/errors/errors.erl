@@ -34,7 +34,9 @@
     % unrecognized is a special error and as such does not have its own module
     {error, #od_error{type :: od_error_unrecognized_error}}.
 
--export_type([errno/0, error/0]).
+-type as_json() :: json_utils:json_map().
+
+-export_type([errno/0, error/0, as_json/0]).
 
 
 %%%===================================================================

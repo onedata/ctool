@@ -130,6 +130,17 @@ http_code_test_() ->
     end, testcases()).
 
 
+ctx_unknown_fields_test() ->
+    KnownKeys = [<<"module">>, <<"line">>, <<"timestamp">>, <<"version">>],
+    UnknownFields = #{<<"key">> => <<"val">>},
+    Error = ?ERR_FORBIDDEN(?UNDEFINED_ERR_CTX#od_error_ctx{unknown_fields = UnknownFields}),
+
+    ErrorJson = errors:to_json(Error),
+    ?assertEqual(UnknownFields, maps:without(KnownKeys, kv_utils:get([<<"ctx">>], ErrorJson))),
+
+    ?assertEqual(Error, errors:from_json(ErrorJson)).
+
+
 http_code_for_nonexistent_error_test() ->
     ?assertException(error, _, errors:to_http_code({error, gibberish})).
 

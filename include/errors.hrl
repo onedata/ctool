@@ -23,7 +23,8 @@
     module :: undefined | binary(),
     line :: undefined | integer(),
     timestamp :: undefined | time:millis(),
-    version :: undefined | binary()
+    version :: undefined | binary(),
+    unknown_fields = #{} :: json_utils:json_map()
 }).
 
 -record(od_error, {

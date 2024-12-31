@@ -372,13 +372,21 @@ build_ctx(Module, Line) ->
     (ctx()) -> json_utils:json_map().
 ctx_to_json(undefined) ->
     null;
-ctx_to_json(#od_error_ctx{module = Module, line = Line, timestamp = Timestamp, version = Version}) ->
-    #{
+ctx_to_json(#od_error_ctx{
+    module = Module, 
+    line = Line, 
+    timestamp = Timestamp, 
+    version = Version,
+    unknown_fields = UnknownFields
+}) ->
+    KnownValues = #{
         <<"module">> => utils:undefined_to_null(Module),
-        <<"line">> => utils:undefined_to_null(Line),
+        <<"line">> => utils:undefined_to_null(Line), 
         <<"timestamp">> => utils:undefined_to_null(Timestamp),
         <<"version">> => utils:undefined_to_null(Version)
-    }.
+    },
+    % Preserve any unknown fields that might be present
+    maps:merge(UnknownFields, KnownValues).
 
 
 -spec ctx_from_json
@@ -387,11 +395,16 @@ ctx_to_json(#od_error_ctx{module = Module, line = Line, timestamp = Timestamp, v
 ctx_from_json(null) ->
     undefined;
 ctx_from_json(Json) ->
+    % Extract known fields
+    KnownKeys = [<<"module">>, <<"line">>, <<"timestamp">>, <<"version">>],
+    UnknownFields = maps:without(KnownKeys, Json),
+
     #od_error_ctx{
         module = utils:null_to_undefined(maps:get(<<"module">>, Json, null)),
         line = utils:null_to_undefined(maps:get(<<"line">>, Json, null)),
         timestamp = utils:null_to_undefined(maps:get(<<"timestamp">>, Json, null)),
-        version = utils:null_to_undefined(maps:get(<<"version">>, Json, null))
+        version = utils:null_to_undefined(maps:get(<<"version">>, Json, null)),
+        unknown_fields = UnknownFields
     }.
 
 
@@ -414,4 +427,4 @@ format_csv(Values) ->
 %%--------------------------------------------------------------------
 -spec version() -> binary().
 version() ->
-    <<"77a9a81f">>.
+    <<"cc44e170">>.
