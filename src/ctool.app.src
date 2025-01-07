@@ -21,8 +21,7 @@
         ssl,
         hackney,
         kernel,
-        stdlib,
-        lager
+        stdlib
     ]},
 
     {env, [

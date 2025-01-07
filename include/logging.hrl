@@ -6,7 +6,7 @@
 %%% @end
 %%%-------------------------------------------------------------------
 %%% @doc
-%%% Unified logging macros for all Onedata components, using lager behind the scenes.
+%%% Unified logging macros for all Onedata components, using logger behind the scenes.
 %%%
 %%%   Basic macros are intended for general purpose, manually formatted logs not related to exceptions.
 %%%
@@ -294,10 +294,12 @@ end).
 % Resolves current process's state and returns it as metadata proplist
 % Must be called from original function where the log is,
 % so that the process info makes sense
--define(gather_metadata,
-    [{pid, self()}, {line, ?LINE}] ++
-    onedata_logger:parse_process_info(process_info(self(), current_function))
-).
+-define(gather_metadata, #{
+    pid => self(),
+    mfa => {?MODULE, ?FUNCTION_NAME, ?FUNCTION_ARITY},
+    file => ?FILE,
+    line => ?LINE
+}).
 
 % List of available loglevels in cluster
 -define(CLUSTER_LOGLEVELS, [debug, info, notice, warning, error, critical, alert, emergency]).
@@ -305,5 +307,8 @@ end).
 -define(CLIENT_LOGLEVELS, [debug, info, warning, error, fatal]).
 % Client loglevel to discard all logs
 -define(CLIENT_LOGLEVEL_NONE, none).
+
+-define(pr_stacktrace(Stacktrace), onedata_logger:pr_stacktrace(Stacktrace)).
+-define(pr_stacktrace(Stacktrace, ErrorInfo), onedata_logger:pr_stacktrace(Stacktrace, ErrorInfo)).
 
 -endif.

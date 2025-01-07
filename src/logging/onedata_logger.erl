@@ -14,14 +14,18 @@
 
 -include("global_definitions.hrl").
 -include("logging.hrl").
+-include("onedata.hrl").
+-include_lib("kernel/include/logger.hrl").
 
 -export([format_generic_log/2, format_exception_log/10,
     format_deprecated_exception_log/7, format_error_report/7]).
--export([should_log/1, log/3, parse_process_info/1, log_with_rotation/4]).
+-export([should_log/1, log/3, log_with_rotation/4]).
 -export([set_loglevel/1, set_console_loglevel/1]).
 -export([get_current_loglevel/0, get_default_loglevel/0, get_console_loglevel/0]).
 -export([loglevel_int_to_atom/1, loglevel_atom_to_int/1]).
 -export([is_printable/1]).
+-export([select_self_logs/2, file_access_audit_log_filter/2]).
+-export([pr_stacktrace/1, pr_stacktrace/2]).
 
 -type autoformat_spec() :: #autoformat_spec{}.
 
@@ -64,7 +68,7 @@ format_exception_log(
                 _ -> str_utils:format(" (ref: ~ts)", [Ref])
             end,
             Module, Function, Arity, Line,
-            lager:pr_stacktrace(Stacktrace),
+            pr_stacktrace(Stacktrace),
             Class, Reason,
             format_details_suffix(DetailsFormat, DetailsArgs)
         ]
@@ -85,7 +89,7 @@ format_deprecated_exception_log(
         "~ts",
         [
             Module, Function, Arity, Line,
-            lager:pr_stacktrace(Stacktrace),
+            pr_stacktrace(Stacktrace),
             format_details_suffix(DetailsFormat, DetailsArgs)
         ]
     ).
@@ -118,12 +122,18 @@ should_log(LevelAsInt) ->
         _ -> false
     end.
 
--spec log(LoglevelAsInt :: integer(), Metadata :: [tuple()], FormattedLog :: string()) ->
-    ok | {error, lager_not_running}.
+
+-spec log(LoglevelAsInt :: integer(), Metadata :: map(), FormattedLog :: string()) ->
+    ok | {error, logger_not_running}.
 log(LoglevelAsInt, Metadata, FormattedLog) ->
+    logger:set_primary_config(level, info),
+    logger:add_primary_filter(progress, {fun logger_filters:progress/2, stop}),
     Severity = loglevel_int_to_atom(LoglevelAsInt),
-    % the reformatting with 't' modifier ensures that special characters are properly handled
-    lager:log(Severity, Metadata, "~ts", [FormattedLog]).
+
+    logger:log(Severity, "~ts", [FormattedLog], Metadata#{
+        color => default_color(Severity), reset => "\e[0m"
+    }).
+
 
 %%--------------------------------------------------------------------
 %% @doc Changes current global loglevel to desired. Argument can be loglevel as int or atom
@@ -161,13 +171,13 @@ set_console_loglevel(Loglevel) when is_atom(Loglevel) ->
     try
         LevelAsAtom = case Loglevel of
             default ->
-                {ok, Proplist} = application:get_env(lager, handlers),
-                proplists:get_value(lager_console_backend, Proplist);
+                {ok, Config} = logger:get_handler_config(logger_console_backend),
+                maps:get(level, Config);
             Atom ->
                 % Makes sure that the atom is recognizable as loglevel
                 loglevel_int_to_atom(loglevel_atom_to_int(Atom))
         end,
-        gen_event:call(lager_event, lager_console_backend, {set_loglevel, LevelAsAtom}),
+        logger:set_handler_config(logger_console_backend, #{level => LevelAsAtom}),
         ok
     catch _:_ ->
         {error, badarg}
@@ -198,10 +208,8 @@ get_default_loglevel() ->
 %%--------------------------------------------------------------------
 -spec get_console_loglevel() -> integer().
 get_console_loglevel() ->
-    {mask, Mask} = gen_event:call(lager_event, lager_console_backend, get_loglevel),
-    % lager_util:mask_to_levels(Mask) returns list of allowed log level, first of
-    % which is the lowest loglevel
-    loglevel_atom_to_int(lists:nth(1, lager_util:mask_to_levels(Mask))).
+    {ok, Config} = logger:get_handler_config(logger_console_backend),
+    loglevel_atom_to_int(maps:get(level, Config)).
 
 %%--------------------------------------------------------------------
 %% @doc Returns loglevel name associated with loglevel number
@@ -232,15 +240,6 @@ loglevel_atom_to_int(alert) -> 1;
 loglevel_atom_to_int(emergency) -> 0.
 
 %%--------------------------------------------------------------------
-%% @doc Changes standard 'process_info' tuple into metadata proplist
-%% @end
-%%--------------------------------------------------------------------
--spec parse_process_info(ProcessInfo :: tuple()) -> [tuple()].
-parse_process_info({_, {Module, Function, Arity}}) ->
-    [{module, Module}, {function, Function}, {arity, Arity}].
-
-
-%%--------------------------------------------------------------------
 %% @doc Logs given message to LogFile.
 %% If size of LogFile exceeds MaxSize, its name will be appended with
 %% suffix ".1". Previous suffixed LogFile will be deleted, if it exists.
@@ -249,8 +248,7 @@ parse_process_info({_, {Module, Function, Arity}}) ->
 -spec log_with_rotation(LogFile :: string(),
     Format :: io:format(), Args :: [term()], MaxSize :: non_neg_integer()) -> ok.
 log_with_rotation(LogFile, Format, Args, MaxSize) ->
-    {Date, Time} = lager_util:format_time(lager_util:maybe_utc(
-        lager_util:localtime_ms())),
+    DateTime = calendar:system_time_to_rfc3339(logger:timestamp(), [{unit, microsecond}]),
 
     case filelib:file_size(LogFile) > MaxSize of
         true ->
@@ -262,12 +260,75 @@ log_with_rotation(LogFile, Format, Args, MaxSize) ->
             ok
     end,
     file:write_file(LogFile,
-        io_lib:format("~n~ts, ~ts: " ++ Format, [Date, Time | Args]), [append]),
+        io_lib:format("~n~ts: " ++ Format, [DateTime | Args]), [append]),
     ok.
+
+
+-spec select_self_logs(logger:log_event(), stop) -> logger:filter_return().
+select_self_logs(LogEvent, stop) ->
+    Metadata = maps:get(meta, LogEvent),
+    Pid = maps:get(pid, Metadata),
+    case self() of
+        Pid -> LogEvent;
+        _ -> stop
+    end.
+
+
+-spec file_access_audit_log_filter(logger:log_event(), stop) -> logger:filter_return().
+file_access_audit_log_filter(LogEvent, stop) ->
+    case application:get_env(?OP_WORKER, file_access_audit_log_enabled, false) of
+        true -> LogEvent;
+        false -> stop
+    end.
+
+
+-spec pr_stacktrace(stacktrace()) -> stacktrace().
+pr_stacktrace(Stacktrace) ->
+    Indent = "\n    ",
+    lists:foldl(fun(Entry, Acc) ->
+        case Entry of
+            {Module, Function, Args, [{file, _File}, {line, Line}]} ->
+                Acc ++ Indent ++ io_lib:format("~s", [format_mfa({Module, Function, Args})]) ++
+                    " line " ++ integer_to_list(Line);
+            {Module, Function, Args, _} ->
+                Acc ++ Indent ++ io_lib:format("~s", [format_mfa({Module, Function, Args})]);
+            _ ->
+                Acc ++ Indent ++ io_lib:format("~p", [Entry])
+        end
+    end, [], lists:reverse(Stacktrace)).
+
+
+-spec pr_stacktrace(stacktrace(), {atom(), term()}) -> stacktrace().
+pr_stacktrace(Stacktrace, {Class, Reason}) ->
+    pr_stacktrace(Stacktrace) ++  "\n" ++ io_lib:format("~s:~p", [Class, Reason]).
+
 
 %%%===================================================================
 %%% API
 %%%===================================================================
+
+
+%% @private
+-spec default_color(atom()) -> list().
+default_color(debug) -> "\e[0;38m";
+default_color(info) -> "\e[1;37m";
+default_color(notice) -> "\e[1;36m";
+default_color(warning) -> "\e[1;33m";
+default_color(error) -> "\e[1;31m";
+default_color(critical) -> "\e[1;35m";
+default_color(alert) -> "\e[1;44m";
+default_color(emergency) -> "\e[1;41m".
+
+
+%% @private
+-spec format_mfa({atom(), atom(), list() | integer()} | any()) -> list().
+format_mfa({Module, Function, Args}) when is_list(Args) ->
+    io_lib:format("~p:~p/~p", [Module, Function, length(Args)]);
+format_mfa({Module, Function, Arity}) when is_integer(Arity) ->
+    io_lib:format("~p:~p/~p", [Module, Function, Arity]);
+format_mfa(Unknown) ->
+    io_lib:format("~p", [Unknown]).
+
 
 %% @private
 -spec format_details_suffix(string() | autoformat_spec(), list()) -> string().

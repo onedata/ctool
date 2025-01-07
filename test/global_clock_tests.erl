@@ -448,7 +448,6 @@ setup() ->
 
     meck:new(onedata_logger, [passthrough]),
     meck:expect(onedata_logger, should_log, fun(_) -> true end),
-    meck:expect(onedata_logger, parse_process_info, fun(_) -> [] end),
     meck:expect(onedata_logger, log, fun(_, _, _) -> ok end).
 
 

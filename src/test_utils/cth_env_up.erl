@@ -50,7 +50,7 @@ pre_init_per_suite(_Suite, Config, State) ->
         {Config, State}
     catch Class:Reason:Stacktrace ->
         ct:print("Failed to load modules during init_per_suite - ~w:~tp~nStacktrace: ~ts", [
-            Class, Reason, lager:pr_stacktrace(Stacktrace)
+            Class, Reason, ?pr_stacktrace(Stacktrace)
         ]),
         error(failed_to_load_modules)
     end.

@@ -208,7 +208,7 @@ fmt_log_exception(Class, Reason, Stacktrace) ->
         "> Reason: ~tp", [
             case Stacktrace of
                 undefined -> "unknown";
-                _ -> lager:pr_stacktrace(Stacktrace)
+                _ -> onedata_logger:pr_stacktrace(Stacktrace)
             end,
             Class,
             Reason

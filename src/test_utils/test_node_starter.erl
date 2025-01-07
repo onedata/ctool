@@ -190,7 +190,7 @@ try_reusing_previous_env() ->
                     "> Stacktrace: ~ts~n"
                     "~n"
                     "Starting a new environment...",
-                    [Class, Reason, lager:pr_stacktrace(Stacktrace)]
+                    [Class, Reason, onedata_logger:pr_stacktrace(Stacktrace)]
                 ),
                 false
             end
@@ -403,7 +403,7 @@ stop_applications(Config, Apps) ->
                         ct:pal(
                             "WARNING: Stopping application ~tp on node ~tp failed - ~tp:~tp~n"
                             "Stacktrace: ~ts", [
-                                AppName, Node, Type, Reason, lager:pr_stacktrace(Stacktrace)
+                                AppName, Node, Type, Reason, onedata_logger:pr_stacktrace(Stacktrace)
                             ])
                 end
             end, Nodes)
@@ -456,7 +456,7 @@ load_modules(Nodes, Modules) ->
                     "Cannot load module '~w' on node ~w, does the module exist in 'test_distributed' directory?~n"
                     "Error was: ~w:~tp~n"
                     "Stacktrace: ~ts",
-                    [Module, Node, Class, Reason, lager:pr_stacktrace(Stacktrace)]
+                    [Module, Node, Class, Reason, onedata_logger:pr_stacktrace(Stacktrace)]
                 ),
                 error({cannot_load_module, Module})
             end

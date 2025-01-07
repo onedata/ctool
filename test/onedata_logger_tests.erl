@@ -50,13 +50,6 @@ main_test_() ->
                 end
             },
 
-            {"parse_process_info",
-                fun() ->
-                    Proplist = onedata_logger:parse_process_info({pid, {some_module, some_fun, some_arity}}),
-                    ?assertEqual(Proplist, [{module, some_module}, {function, some_fun}, {arity, some_arity}])
-                end
-            },
-
             {"loglevel conversion",
                 fun() ->
                     ?assertEqual(debug, onedata_logger:loglevel_int_to_atom(onedata_logger:loglevel_atom_to_int(debug))),
@@ -69,33 +62,19 @@ main_test_() ->
     }.
 
 
-lager_interfacing_test_() ->
+logger_interfacing_test_() ->
     {setup,
         fun() ->
-            ctool:set_env(current_loglevel, 7),
-            meck:new(lager, [passthrough])
-        end,
-        fun(_) ->
-            ok = meck:unload(lager)
+            ctool:set_env(current_loglevel, 7)
         end,
         [
             {"log, set/get_include_stacktrace, compute_message, logging macros",
                 fun() ->
-                    meck:expect(lager, log,
-                        fun(debug, _, _, ["debug message"]) -> ok;
-                            (info, _, _, ["info message"]) -> ok;
-                            (warning, _, _, ["warning message"]) -> ok;
-                            (warning, _, _, ["An unexpected exception" ++ _]) -> ok;
-                            (critical, _, _, ["An unexpected exception" ++ _]) -> ok;
-                            (error, _, _, ["error message"]) -> ok;
-                            (emergency, _, _, ["emergency message"]) -> ok
-                        end),
-
-                    onedata_logger:log(7, [], "debug message"),
-                    onedata_logger:log(6, [], "info message"),
-                    onedata_logger:log(4, [], "warning message"),
-                    onedata_logger:log(3, [], "error message"),
-                    onedata_logger:log(0, [], "emergency message"),
+                    onedata_logger:log(7, #{}, "debug message"),
+                    onedata_logger:log(6, #{}, "info message"),
+                    onedata_logger:log(4, #{}, "warning message"),
+                    onedata_logger:log(3, #{}, "error message"),
+                    onedata_logger:log(0, #{}, "emergency message"),
                     ?debug("debug message"),
                     ?debug("debug ~ts", ["message"]),
                     ?info("info message"),
@@ -104,8 +83,7 @@ lager_interfacing_test_() ->
                         ?critical_exception("critical message ~tp", [?MODULE], Class, Reason, Stacktrace)
                     end,
                     ?error("error message"),
-                    ?emergency("emergency message"),
-                    ?assert(meck:validate(lager))
+                    ?emergency("emergency message")
                 end
             }
         ]

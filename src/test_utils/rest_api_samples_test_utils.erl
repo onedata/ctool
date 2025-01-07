@@ -151,7 +151,7 @@ test_sample(#rest_api_request_sample{
                 Sample,
                 Context,
                 Class, Reason,
-                lager:pr_stacktrace(Stacktrace)
+                onedata_logger:pr_stacktrace(Stacktrace)
             ]
         ),
         error(fail)
