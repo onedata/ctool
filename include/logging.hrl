@@ -291,7 +291,6 @@ end).
     end
 ).
 
-% Resolves current process's state and returns it as metadata proplist
 % Must be called from original function where the log is,
 % so that the process info makes sense
 -define(gather_metadata, #{
@@ -307,8 +306,5 @@ end).
 -define(CLIENT_LOGLEVELS, [debug, info, warning, error, fatal]).
 % Client loglevel to discard all logs
 -define(CLIENT_LOGLEVEL_NONE, none).
-
--define(pr_stacktrace(Stacktrace), onedata_logger:pr_stacktrace(Stacktrace)).
--define(pr_stacktrace(Stacktrace, ErrorInfo), onedata_logger:pr_stacktrace(Stacktrace, ErrorInfo)).
 
 -endif.

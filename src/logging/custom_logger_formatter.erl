@@ -6,7 +6,8 @@
 %%% @end
 %%%-------------------------------------------------------------------
 %%% @doc
-%%% This module covers customize logger formatting.
+%%% This module covers customized logger formatting,
+%%% enabling tailored display of log levels and timestamps.
 %%% @end
 %%%-------------------------------------------------------------------
 -module(custom_logger_formatter).
@@ -15,18 +16,38 @@
 
 -export([format/2]).
 
+%% one of "M", "A", "C", "E", "W", "N", "I", "D"
+-type log_level_label() :: string().
+-type formatter_config() :: #{
+    chars_limit     => pos_integer() | unlimited,
+    depth           => pos_integer() | unlimited,
+    legacy_header   => boolean(),
+    max_size        => pos_integer() | unlimited,
+    report_cb       => logger:report_cb(),
+    single_line     => boolean(),
+    template        => template(),
+    time_designator => byte(),
+    time_offset     => integer() | [byte()]
+}.
+-type template() :: [metakey() | {metakey(),template(),template()} | unicode:chardata()].
+-type metakey() :: atom() | [atom()].
+
 %%%===================================================================
 %%% API
 %%%===================================================================
 
 
--spec format(logger:log_event(), map()) -> unicode:chardata().
-format(Map = #{level:=Level, meta:=Meta}, Config) ->
-    Timestamp = maps:get(time, Meta),
-    Label = default_level(Level),
-
-    UpdatedConfig = Config#{single_line => false, template => customize_template(Config, Label, Timestamp)},
-    logger_formatter:format(Map, UpdatedConfig).
+-spec format(logger:log_event(), formatter_config()) -> unicode:chardata().
+format(LogEvent = #{level:=Level, meta:=Meta}, Config) ->
+    UpdatedConfig = Config#{
+        single_line => false,
+        template => customize_template(
+            Config,
+            Level,
+            maps:get(time, Meta)
+        )
+    },
+    logger_formatter:format(LogEvent, UpdatedConfig).
 
 
 %%%===================================================================
@@ -35,18 +56,19 @@ format(Map = #{level:=Level, meta:=Meta}, Config) ->
 
 
 %% @private
--spec customize_template(map(), list(), integer()) -> list().
-customize_template(Config, Label, Timestamp) ->
+-spec customize_template(formatter_config(), logger:level(), time:seconds()) -> template().
+customize_template(Config, Level, Timestamp) ->
     Template = maps:get(template, Config, []),
     NoDate = maps:get(no_date, Config, false),
     lists:map(
         fun
             (level) ->
-                Label;
-            (time) -> case NoDate of
-                false -> format_timestamp(Timestamp);
-                true -> format_time(Timestamp)
-            end;
+                level_to_label(Level);
+            (time) ->
+                case NoDate of
+                    false -> format_timestamp(with_date, Timestamp);
+                    true -> format_timestamp(without_date, Timestamp)
+                end;
             (Other) ->
                 Other
         end,
@@ -55,30 +77,28 @@ customize_template(Config, Label, Timestamp) ->
 
 
 %% @private
--spec default_level(atom()) -> list().
-default_level(debug) -> "D";
-default_level(info) -> "I";
-default_level(notice) -> "N";
-default_level(warning) -> "W";
-default_level(error) -> "E";
-default_level(critical) -> "C";
-default_level(alert) -> "A";
-default_level(emergency) -> "M".
+-spec level_to_label(logger:level()) -> log_level_label().
+level_to_label(debug) -> "D";
+level_to_label(info) -> "I";
+level_to_label(notice) -> "N";
+level_to_label(warning) -> "W";
+level_to_label(error) -> "E";
+level_to_label(critical) -> "C";
+level_to_label(alert) -> "A";
+level_to_label(emergency) -> "M".
 
 
 %% @private
--spec format_timestamp(integer()) -> list().
-format_timestamp(Timestamp) ->
+-spec format_timestamp(with_date | without_date, time:seconds()) -> string().
+format_timestamp(Option, Timestamp) ->
     Milliseconds = (Timestamp rem 1000000) div 1000,
     {{Year, Month, Day}, {Hour, Minute, Second}} = time:seconds_to_datetime(Timestamp div 1000000),
-    lists:flatten(io_lib:format("~4..0B-~2..0B-~2..0B ~2..0B:~2..0B:~2..0B.~3..0B",
-        [Year, Month, Day, Hour, Minute, Second, Milliseconds])).
-
-
-%% @private
--spec format_time(integer()) -> list().
-format_time(Timestamp) ->
-    Milliseconds = (Timestamp rem 1000000) div 1000,
-    {_Date, {Hour, Minute, Second}} = time:seconds_to_datetime(Timestamp div 1000000),
-    lists:flatten(io_lib:format("~2..0B:~2..0B:~2..0B.~3..0B",
-        [Hour, Minute, Second, Milliseconds])).
+    case Option of
+        with_date ->
+            str_utils:format(
+                "~4..0B-~2..0B-~2..0B ~2..0B:~2..0B:~2..0B.~3..0B",
+                [Year, Month, Day, Hour, Minute, Second, Milliseconds]
+            );
+        without_date ->
+            str_utils:format("~2..0B:~2..0B:~2..0B.~3..0B",[Hour, Minute, Second, Milliseconds])
+    end.

@@ -123,15 +123,15 @@ should_log(LevelAsInt) ->
     end.
 
 
--spec log(LoglevelAsInt :: integer(), Metadata :: map(), FormattedLog :: string()) ->
-    ok | {error, logger_not_running}.
+-spec log(LoglevelAsInt :: integer(), Metadata :: map(), FormattedLog :: string()) -> ok.
 log(LoglevelAsInt, Metadata, FormattedLog) ->
     logger:set_primary_config(level, info),
     logger:add_primary_filter(progress, {fun logger_filters:progress/2, stop}),
     Severity = loglevel_int_to_atom(LoglevelAsInt),
 
+    % the reformatting with 't' modifier ensures that special characters are properly handled
     logger:log(Severity, "~ts", [FormattedLog], Metadata#{
-        color => default_color(Severity), reset => "\e[0m"
+        color => severity_to_color(Severity), reset => "\e[0m"
     }).
 
 
@@ -264,6 +264,11 @@ log_with_rotation(LogFile, Format, Args, MaxSize) ->
     ok.
 
 
+%%--------------------------------------------------------------------
+%% @doc
+%% definition of a logger:filter, requires two arguments: log_event() and filter_arg()
+%% @end
+%%--------------------------------------------------------------------
 -spec select_self_logs(logger:log_event(), stop) -> logger:filter_return().
 select_self_logs(LogEvent, stop) ->
     Metadata = maps:get(meta, LogEvent),
@@ -274,6 +279,11 @@ select_self_logs(LogEvent, stop) ->
     end.
 
 
+%%--------------------------------------------------------------------
+%% @doc
+%% definition of a logger:filter, requires two arguments: log_event() and filter_arg()
+%% @end
+%%--------------------------------------------------------------------
 -spec file_access_audit_log_filter(logger:log_event(), stop) -> logger:filter_return().
 file_access_audit_log_filter(LogEvent, stop) ->
     case application:get_env(?OP_WORKER, file_access_audit_log_enabled, false) of
@@ -288,19 +298,19 @@ pr_stacktrace(Stacktrace) ->
     lists:foldl(fun(Entry, Acc) ->
         case Entry of
             {Module, Function, Args, [{file, _File}, {line, Line}]} ->
-                Acc ++ Indent ++ io_lib:format("~s", [format_mfa({Module, Function, Args})]) ++
+                Acc ++ Indent ++ io_lib:format("~ts", [format_mfa({Module, Function, Args})]) ++
                     " line " ++ integer_to_list(Line);
             {Module, Function, Args, _} ->
-                Acc ++ Indent ++ io_lib:format("~s", [format_mfa({Module, Function, Args})]);
+                Acc ++ Indent ++ io_lib:format("~ts", [format_mfa({Module, Function, Args})]);
             _ ->
-                Acc ++ Indent ++ io_lib:format("~p", [Entry])
+                Acc ++ Indent ++ io_lib:format("~tp", [Entry])
         end
     end, [], lists:reverse(Stacktrace)).
 
 
 -spec pr_stacktrace(stacktrace(), {atom(), term()}) -> stacktrace().
 pr_stacktrace(Stacktrace, {Class, Reason}) ->
-    pr_stacktrace(Stacktrace) ++  "\n" ++ io_lib:format("~s:~p", [Class, Reason]).
+    pr_stacktrace(Stacktrace) ++  "\n" ++ io_lib:format("~ts:~tp", [Class, Reason]).
 
 
 %%%===================================================================
@@ -309,25 +319,25 @@ pr_stacktrace(Stacktrace, {Class, Reason}) ->
 
 
 %% @private
--spec default_color(atom()) -> list().
-default_color(debug) -> "\e[0;38m";
-default_color(info) -> "\e[1;37m";
-default_color(notice) -> "\e[1;36m";
-default_color(warning) -> "\e[1;33m";
-default_color(error) -> "\e[1;31m";
-default_color(critical) -> "\e[1;35m";
-default_color(alert) -> "\e[1;44m";
-default_color(emergency) -> "\e[1;41m".
+-spec severity_to_color(atom()) -> list().
+severity_to_color(debug) -> "\e[0;38m";
+severity_to_color(info) -> "\e[1;37m";
+severity_to_color(notice) -> "\e[1;36m";
+severity_to_color(warning) -> "\e[1;33m";
+severity_to_color(error) -> "\e[1;31m";
+severity_to_color(critical) -> "\e[1;35m";
+severity_to_color(alert) -> "\e[1;44m";
+severity_to_color(emergency) -> "\e[1;41m".
 
 
 %% @private
 -spec format_mfa({atom(), atom(), list() | integer()} | any()) -> list().
 format_mfa({Module, Function, Args}) when is_list(Args) ->
-    io_lib:format("~p:~p/~p", [Module, Function, length(Args)]);
+    io_lib:format("~tp:~tp/~tp", [Module, Function, length(Args)]);
 format_mfa({Module, Function, Arity}) when is_integer(Arity) ->
-    io_lib:format("~p:~p/~p", [Module, Function, Arity]);
+    io_lib:format("~tp:~tp/~tp", [Module, Function, Arity]);
 format_mfa(Unknown) ->
-    io_lib:format("~p", [Unknown]).
+    io_lib:format("~tp", [Unknown]).
 
 
 %% @private
