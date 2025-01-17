@@ -10,7 +10,7 @@
 %%% enabling tailored display of log levels and timestamps.
 %%% @end
 %%%-------------------------------------------------------------------
--module(custom_logger_formatter).
+-module(onedata_logger_formatter).
 
 -include("logging.hrl").
 

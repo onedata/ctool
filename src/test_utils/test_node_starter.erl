@@ -184,14 +184,8 @@ try_reusing_previous_env() ->
                 )),
                 {true, PreviousStartLog}
             catch Class:Reason:Stacktrace ->
-                ct:pal(
-                    "Unable to reuse the previous environment:~n"
-                    "> Caught: ~w:~tp~n"
-                    "> Stacktrace: ~ts~n"
-                    "~n"
-                    "Starting a new environment...",
-                    [Class, Reason, onedata_logger:pr_stacktrace(Stacktrace)]
-                ),
+                ?error_exception("Unable to reuse the previous environment:", Class, Reason, Stacktrace),
+                ct:pal("Starting a new environment..."),
                 false
             end
     end.
@@ -400,11 +394,9 @@ stop_applications(Config, Apps) ->
                     _:{badmatch, {badrpc, nodedown}} ->
                         ok; % Test can kill nodes
                     Type:Reason:Stacktrace ->
-                        ct:pal(
-                            "WARNING: Stopping application ~tp on node ~tp failed - ~tp:~tp~n"
-                            "Stacktrace: ~ts", [
-                                AppName, Node, Type, Reason, onedata_logger:pr_stacktrace(Stacktrace)
-                            ])
+                        ?error_exception(
+                            ?autoformat_with_msg("WARNING: Stopping application: ", AppName, Node),
+                        Type, Reason, Stacktrace)
                 end
             end, Nodes)
         end, Apps
@@ -452,11 +444,9 @@ load_modules(Nodes, Modules) ->
                     Node, code, load_binary, [Module, Filename, Binary], ?NODE_CALL_TIMEOUT
                 ))
             catch Class:Reason:Stacktrace ->
-                ct:print(
-                    "Cannot load module '~w' on node ~w, does the module exist in 'test_distributed' directory?~n"
-                    "Error was: ~w:~tp~n"
-                    "Stacktrace: ~ts",
-                    [Module, Node, Class, Reason, onedata_logger:pr_stacktrace(Stacktrace)]
+                ?error_exception(
+                    "Cannot load module '~w' on node ~w, does the module exist in 'test_distributed' directory?~n",
+                    [Module, Node], Class, Reason, Stacktrace
                 ),
                 error({cannot_load_module, Module})
             end

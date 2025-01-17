@@ -14,7 +14,6 @@
 
 -include("global_definitions.hrl").
 -include("logging.hrl").
--include("onedata.hrl").
 -include_lib("kernel/include/logger.hrl").
 
 -export([format_generic_log/2, format_exception_log/10,
@@ -24,8 +23,8 @@
 -export([get_current_loglevel/0, get_default_loglevel/0, get_console_loglevel/0]).
 -export([loglevel_int_to_atom/1, loglevel_atom_to_int/1]).
 -export([is_printable/1]).
--export([select_self_logs/2, file_access_audit_log_filter/2]).
 -export([pr_stacktrace/1, pr_stacktrace/2]).
+-export([configure_logger/0]).
 
 -type autoformat_spec() :: #autoformat_spec{}.
 
@@ -264,34 +263,6 @@ log_with_rotation(LogFile, Format, Args, MaxSize) ->
     ok.
 
 
-%%--------------------------------------------------------------------
-%% @doc
-%% definition of a logger:filter, requires two arguments: log_event() and filter_arg()
-%% @end
-%%--------------------------------------------------------------------
--spec select_self_logs(logger:log_event(), stop) -> logger:filter_return().
-select_self_logs(LogEvent, stop) ->
-    Metadata = maps:get(meta, LogEvent),
-    Pid = maps:get(pid, Metadata),
-    case self() of
-        Pid -> LogEvent;
-        _ -> stop
-    end.
-
-
-%%--------------------------------------------------------------------
-%% @doc
-%% definition of a logger:filter, requires two arguments: log_event() and filter_arg()
-%% @end
-%%--------------------------------------------------------------------
--spec file_access_audit_log_filter(logger:log_event(), stop) -> logger:filter_return().
-file_access_audit_log_filter(LogEvent, stop) ->
-    case application:get_env(?OP_WORKER, file_access_audit_log_enabled, false) of
-        true -> LogEvent;
-        false -> stop
-    end.
-
-
 -spec pr_stacktrace(stacktrace()) -> stacktrace().
 pr_stacktrace(Stacktrace) ->
     Indent = "\n    ",
@@ -311,6 +282,64 @@ pr_stacktrace(Stacktrace) ->
 -spec pr_stacktrace(stacktrace(), {atom(), term()}) -> stacktrace().
 pr_stacktrace(Stacktrace, {Class, Reason}) ->
     pr_stacktrace(Stacktrace) ++  "\n" ++ io_lib:format("~ts:~tp", [Class, Reason]).
+
+
+-spec configure_logger() -> ok.
+configure_logger() ->
+    LogDir = ctool:get_env(log_dir),
+    Config = #{
+        % Maximum events to handle in 1000ms. Exceeding this limit pauses event processing.
+        burst_limit_max_count => 200,
+
+        % Threshold for switching to synchronous mode when the log queue exceeds this length.
+        % Returns to asynchronous mode when the queue shrinks below this threshold.
+        sync_mode_qlen => 500,
+
+        % Logs are ignored when the queue exceeds this length.
+        % Normal logging resumes when it shrinks.
+        drop_mode_qlen => 1000,
+
+        % When the queue exceeds this threshold, events are discarded in a flush loop.
+        % The handler's priority is increased to prevent new events during flush.
+        flush_qlen => 2000
+    },
+
+    FileFormat = {onedata_logger_formatter, #{
+        max_size => 52428800,
+        depth => 10,
+        template =>  ["[", level, " ", time, " ", pid, "] ", msg, "\n"]
+    }},
+
+    logger:add_handler(console_backend, logger_std_h, #{
+        level => info,
+        config => Config,
+        formatter => {onedata_logger_formatter, #{
+            legacy_header => false,
+            single_line => false,
+            no_date => true,
+            template => [color, "[", level, " ", time, " pid ", pid, "] ", msg, reset, "\n"]
+        }}
+    }),
+
+    logger:add_handler(error, logger_std_h, #{
+        level => error,
+        config => Config#{file => LogDir ++ "/error.log"},
+        formatter => FileFormat
+    }),
+
+    logger:add_handler(info, logger_std_h, #{
+        level => info,
+        config => Config#{file => LogDir ++ "/info.log"},
+        formatter => FileFormat
+    }),
+
+    logger:add_handler(debug, logger_std_h, #{
+        level => debug,
+        config => Config#{file => LogDir ++ "/debug.log"},
+        formatter => FileFormat
+    }).
+
+
 
 
 %%%===================================================================
