@@ -60,7 +60,7 @@ searchmap_test() ->
 
 
 pmap_pforeach_pfiltermap_test_() ->
-    {timeout, 60, fun() ->
+    {timeout, 120, fun() ->
         List = lists:seq(1, 100),
         Length = length(List),
         FilterMapFunGen = fun(M, F) ->
@@ -77,8 +77,20 @@ pmap_pforeach_pfiltermap_test_() ->
         SimpleFilterFun = fun(X) -> X rem 2 =:= 0 end,
         SimpleFilterMapFun = FilterMapFunGen(SimpleMapFun, SimpleFilterFun),
 
-        ?assertEqual(lists:map(SimpleMapFun, List), lists_utils:pmap(SimpleMapFun, List)),
-        ?assertEqual(lists:foreach(SimpleMapFun, List), lists_utils:pforeach(SimpleMapFun, List)),
+        ?assertEqual(lists:map(SimpleMapFun, List),
+            lists_utils:pmap(SimpleMapFun, List)),
+        ?assertEqual(lists:map(SimpleMapFun, List),
+            lists_utils:pmap(SimpleMapFun, List, Length * 3)),
+        ?assertEqual(lists:map(SimpleMapFun, List),
+            lists_utils:pmap(SimpleMapFun, List, max(1, Length div 8))),
+
+        ?assertEqual(lists:foreach(SimpleMapFun, List),
+            lists_utils:pforeach(SimpleMapFun, List)),
+        ?assertEqual(lists:foreach(SimpleMapFun, List),
+            lists_utils:pforeach(SimpleMapFun, List, Length + 10)),
+        ?assertEqual(lists:foreach(SimpleMapFun, List),
+            lists_utils:pforeach(SimpleMapFun, List, max(1, Length - 60))),
+
         ?assertEqual(lists:filtermap(SimpleFilterMapFun, List),
             lists_utils:pfiltermap(SimpleFilterMapFun, List)),
         ?assertEqual(lists:filtermap(SimpleFilterMapFun, List),
@@ -86,18 +98,24 @@ pmap_pforeach_pfiltermap_test_() ->
         ?assertEqual(lists:filtermap(SimpleFilterMapFun, List),
             lists_utils:pfiltermap(SimpleFilterMapFun, List, Length div 2)),
 
+        LargeList = lists:seq(1, 3000),
+        ?assertEqual(lists:map(SimpleMapFun, LargeList),
+            lists_utils:pmap(SimpleMapFun, LargeList, 10)),
+        ?assertEqual(lists:foreach(SimpleMapFun, LargeList),
+            lists_utils:pforeach(SimpleMapFun, LargeList, 50)),
+        ?assertEqual(lists:filtermap(SimpleFilterMapFun, LargeList),
+            lists_utils:pfiltermap(SimpleFilterMapFun, LargeList, 100)),
+
         AnotherMapFun = fun(X) -> 8 / X end,
         AnotherFilterFun = fun(X) -> X > 0.5 end,
         AnotherMapFunLongLasting = fun(X) -> timer:sleep(5000 + rand:uniform(1000)), AnotherMapFun(X) end,
         AnotherFilterMapFun = FilterMapFunGen(AnotherMapFun, AnotherFilterFun),
         AnotherLongLastingFilterMapFun = FilterMapFunGen(AnotherMapFunLongLasting, AnotherFilterFun),
 
-        ?assertEqual(lists:map(AnotherMapFun, List), lists_utils:pmap(AnotherMapFunLongLasting, List)),
-        ?assertEqual(lists:foreach(AnotherMapFun, List), lists_utils:pforeach(AnotherMapFunLongLasting, List)),
-        ?assertEqual(lists:filtermap(AnotherFilterMapFun, List),
-            lists_utils:pfiltermap(AnotherLongLastingFilterMapFun, List)),
-        ?assertEqual(lists:filtermap(AnotherFilterMapFun, List),
-            lists_utils:pfiltermap(AnotherLongLastingFilterMapFun, List, Length * 2)),
+        ?assertEqual(lists:map(AnotherMapFun, List),
+            lists_utils:pmap(AnotherMapFunLongLasting, List)),
+        ?assertEqual(lists:foreach(AnotherMapFun, List),
+            lists_utils:pforeach(AnotherMapFunLongLasting, List, Length * 2)),
         ?assertEqual(lists:filtermap(AnotherFilterMapFun, List),
             lists_utils:pfiltermap(AnotherLongLastingFilterMapFun, List, Length div 2)),
 
@@ -115,11 +133,23 @@ pmap_pforeach_pfiltermap_test_() ->
         ),
         ?assertException(
             error, {parallel_call_failed, {failed_processes, _}},
+            lists_utils:pmap(CrashingFun, List, 10)
+        ),
+        ?assertException(
+            error, {parallel_call_failed, {failed_processes, _}},
             lists_utils:pforeach(CrashingFun, List)
         ),
         ?assertException(
             error, {parallel_call_failed, {failed_processes, _}},
+            lists_utils:pforeach(CrashingFun, List, 1)
+        ),
+        ?assertException(
+            error, {parallel_call_failed, {failed_processes, _}},
             lists_utils:pfiltermap(CrashingFun, List)
+        ),
+        ?assertException(
+            error, {parallel_call_failed, {failed_processes, _}},
+            lists_utils:pfiltermap(CrashingFun, List, Length div 3)
         )
     end}.
 
