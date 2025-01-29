@@ -37,9 +37,19 @@ select_self_logs(LogEvent, stop) ->
     end.
 
 
--spec file_access_audit_log_filter(logger:log_event(), stop) -> logger:filter_return().
-file_access_audit_log_filter(LogEvent, stop) ->
-    case application:get_env(?OP_WORKER, file_access_audit_log_enabled, false) of
+-spec file_access_audit_log_filter(logger:log_event(), stop | log) -> logger:filter_return().
+file_access_audit_log_filter(LogEvent, log) ->
+    Metadata = maps:get(meta, LogEvent),
+
+    EnableFileAccessAuditLog = maps:get(enable_file_access_audit_log, Metadata, false),
+    case EnableFileAccessAuditLog of
         true -> LogEvent;
         false -> stop
+    end;
+file_access_audit_log_filter(LogEvent, stop) ->
+    Metadata = maps:get(meta, LogEvent),
+    EnableFileAccessAuditLog = maps:get(enable_file_access_audit_log, Metadata, false),
+    case EnableFileAccessAuditLog of
+        true -> stop;
+        false -> LogEvent
     end.

@@ -310,9 +310,15 @@ configure_logger() ->
         template =>  ["[", level, " ", time, " ", pid, "] ", msg, "\n"]
     }},
 
+    Filters = [{file_access_audit_log_disabled, {
+        fun onedata_logger_filters:file_access_audit_log_filter/2, stop
+    }}],
+
     logger:add_handler(console_backend, logger_std_h, #{
         level => info,
         config => Config,
+        filter_default => stop,
+        filters => Filters,
         formatter => {onedata_logger_formatter, #{
             legacy_header => false,
             single_line => false,
@@ -324,18 +330,24 @@ configure_logger() ->
     logger:add_handler(error, logger_std_h, #{
         level => error,
         config => Config#{file => LogDir ++ "/error.log"},
+        filter_default => stop,
+        filters => Filters,
         formatter => FileFormat
     }),
 
     logger:add_handler(info, logger_std_h, #{
         level => info,
         config => Config#{file => LogDir ++ "/info.log"},
+        filter_default => stop,
+        filters => Filters,
         formatter => FileFormat
     }),
 
     logger:add_handler(debug, logger_std_h, #{
         level => debug,
         config => Config#{file => LogDir ++ "/debug.log"},
+        filter_default => stop,
+        filters => Filters,
         formatter => FileFormat
     }).
 
