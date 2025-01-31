@@ -198,6 +198,8 @@ random_sublist(List, MinLength, MaxLength) ->
 
 %% @doc pmap/2, but with a cap on the number of processes
 -spec pmap(fun((X) -> Y), [X], pos_integer()) -> [Y] | no_return().
+pmap(_, [], _)  ->
+    [];
 pmap(Fun, Elements, MaxProcesses) when is_integer(MaxProcesses) andalso MaxProcesses > 0 ->
     case length(Elements) > MaxProcesses of
         true ->
@@ -216,6 +218,8 @@ pmap(Fun, Elements, MaxProcesses) when is_integer(MaxProcesses) andalso MaxProce
 %% @end
 %%--------------------------------------------------------------------
 -spec pmap(fun((X) -> Y), [X]) -> [Y] | no_return().
+pmap(_, [])  ->
+    [];
 pmap(Fun, Elements) ->
     Parent = self(),
     Ref = erlang:make_ref(),
