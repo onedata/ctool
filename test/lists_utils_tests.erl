@@ -150,7 +150,14 @@ pmap_pforeach_pfiltermap_test_() ->
         ?assertException(
             error, {parallel_call_failed, {failed_processes, _}},
             lists_utils:pfiltermap(CrashingFun, List, Length div 3)
-        )
+        ),
+
+        ?assertEqual(ok, lists_utils:pforeach(SimpleMapFun, [])),
+        ?assertEqual(ok, lists_utils:pforeach(SimpleMapFun, [], 1)),
+        ?assertEqual([], lists_utils:pmap(SimpleMapFun, [])),
+        ?assertEqual([], lists_utils:pmap(SimpleMapFun, [], 15)),
+        ?assertEqual([], lists_utils:pfiltermap(SimpleMapFun, [])),
+        ?assertEqual([], lists_utils:pfiltermap(SimpleMapFun, [], 0))
     end}.
 
 
