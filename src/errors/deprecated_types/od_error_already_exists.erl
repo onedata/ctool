@@ -1,16 +1,16 @@
 %%%-------------------------------------------------------------------
 %%% This file has been automatically generated - DO NOT EDIT!!!
 %%%
-%%% @copyright (C) 2024 ACK CYFRONET AGH
+%%% @copyright (C) 2025 ACK CYFRONET AGH
 %%% This software is released under the MIT license
 %%% cited in 'LICENSE.txt'.
 %%% @end
 %%%-------------------------------------------------------------------
 %%% @doc
-%%% This module implements od_error for 'od_error_not_supported'.
+%%% This module implements od_error for 'od_error_already_exists'.
 %%% @end
 %%%-------------------------------------------------------------------
--module(od_error_not_supported).
+-module(od_error_already_exists).
 
 -behaviour(od_error).
 
@@ -18,7 +18,7 @@
 -include("http/codes.hrl").
 
 
--type t() :: {error, #od_error{type :: ?MODULE}}.
+-type t() :: {error, already_exists}.
 
 -export_type([t/0]).
 
@@ -32,26 +32,23 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERR_NOT_SUPPORTED(ErrorCtx)) ->
+to_json(?ERROR_ALREADY_EXISTS) ->
     #{
-        <<"id">> => ?ERR_NOT_SUPPORTED_ID,
-        <<"ctx">> => od_error:ctx_to_json(ErrorCtx),
-        <<"description">> => <<"This operation is not supported.">>
+        <<"id">> => ?ERROR_ALREADY_EXISTS_ID,
+        <<"description">> => <<"The resource already exists.">>
     }.
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(OdErrorJson = #{<<"id">> := ?ERR_NOT_SUPPORTED_ID}) ->
-    ErrorCtxJson = maps:get(<<"ctx">>, OdErrorJson, #{}),
-    ErrorCtx = od_error:ctx_from_json(ErrorCtxJson),
-    ?ERR_NOT_SUPPORTED(ErrorCtx).
+from_json(#{<<"id">> := ?ERROR_ALREADY_EXISTS_ID}) ->
+    ?ERROR_ALREADY_EXISTS.
 
 
--spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.
+-spec to_http_code(t()) -> ?HTTP_409_CONFLICT.
 to_http_code(_) ->
-    ?HTTP_400_BAD_REQUEST.
+    ?HTTP_409_CONFLICT.
 
 
 -spec to_errno(t()) -> {true, od_error:errno()}.
 to_errno(_) ->
-    {true, ?ENOTSUP}.
+    {true, ?EINVAL}.

@@ -1,7 +1,7 @@
 %%%-------------------------------------------------------------------
 %%% This file has been automatically generated - DO NOT EDIT!!!
 %%%
-%%% @copyright (C) 2024 ACK CYFRONET AGH
+%%% @copyright (C) 2025 ACK CYFRONET AGH
 %%% This software is released under the MIT license
 %%% cited in 'LICENSE.txt'.
 %%% @end
@@ -50,6 +50,9 @@
 
 -export_type([http_code/0, errno/0, ctx/0]).
 
+-type deprecated_error() ::
+    ?ERROR_ALREADY_EXISTS | ?ERROR_NOT_FOUND | ?ERROR_NOT_SUPPORTED | ?ERROR_TIMEOUT.
+
 -type auth_token_error() ::
     od_error_bad_consumer_token:t() |
     od_error_bad_idp_access_token:t() |
@@ -75,7 +78,7 @@
 -type auth_error() ::
     od_error_bad_basic_credentials:t() |
     od_error_forbidden:t() |
-    od_error_forbidden_todo:t() |
+    od_error_forbidden_with_hint:t() |
     od_error_unauthorized:t() |
     od_error_user_blocked:t() |
     auth_token_error().
@@ -137,18 +140,14 @@
     data_validation_value_error().
 
 -type general_error() ::
-    od_error_already_exists:t() |
     od_error_bad_message:t() |
     od_error_external_service_operation_failed:t() |
     od_error_file_access:t() |
     od_error_internal_server_error:t() |
     od_error_limit_reached:t() |
-    od_error_not_found:t() |
     od_error_not_implemented:t() |
-    od_error_not_supported:t() |
     od_error_service_unavailable:t() |
     od_error_temporary_failure:t() |
-    od_error_timeout:t() |
     od_error_unregistered_oneprovider:t().
 
 -type graph_sync_error() ::
@@ -282,6 +281,7 @@
     od_error_posix:t().
 
 -type error() ::
+    deprecated_error() |
     auth_error() |
     connection_error() |
     data_validation_error() |
@@ -293,6 +293,7 @@
     posix_error().
 
 -export_type([
+    deprecated_error/0,
     auth_token_error/0,
     auth_error/0,
     connection_error/0,
@@ -427,4 +428,4 @@ format_csv(Values) ->
 %%--------------------------------------------------------------------
 -spec version() -> binary().
 version() ->
-    <<"cc44e170">>.
+    <<"49d6163e">>.

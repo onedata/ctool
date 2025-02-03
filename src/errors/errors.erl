@@ -1,7 +1,7 @@
 %%%-------------------------------------------------------------------
 %%% This file has been automatically generated - DO NOT EDIT!!!
 %%%
-%%% @copyright (C) 2024 ACK CYFRONET AGH
+%%% @copyright (C) 2025 ACK CYFRONET AGH
 %%% This software is released under the MIT license
 %%% cited in 'LICENSE.txt'.
 %%% @end
@@ -45,6 +45,10 @@
 
 
 -spec is_known_error(term()) -> boolean().
+is_known_error(?ERROR_ALREADY_EXISTS) -> true;
+is_known_error(?ERROR_NOT_FOUND) -> true;
+is_known_error(?ERROR_NOT_SUPPORTED) -> true;
+is_known_error(?ERROR_TIMEOUT) -> true;
 is_known_error(?ERR) -> true;
 is_known_error(_) -> false.
 
@@ -71,6 +75,18 @@ to_json(?ERR_UNRECOGNIZED_ERROR(ErrorAsJson)) ->
 
 to_json(Error = ?ERR(Type)) ->
     Type:to_json(Error);
+
+to_json(Error = ?ERROR_ALREADY_EXISTS) ->
+    od_error_already_exists:to_json(Error);
+
+to_json(Error = ?ERROR_NOT_FOUND) ->
+    od_error_not_found:to_json(Error);
+
+to_json(Error = ?ERROR_NOT_SUPPORTED) ->
+    od_error_not_supported:to_json(Error);
+
+to_json(Error = ?ERROR_TIMEOUT) ->
+    od_error_timeout:to_json(Error);
 
 to_json(OtherError) ->
     % Wildcard to catch all errors that might be returned by the application logic, but does
@@ -100,6 +116,18 @@ from_json(ErrorJson) ->
 to_http_code(?ERR_UNRECOGNIZED_ERROR(_)) -> 
     ?HTTP_500_INTERNAL_SERVER_ERROR;
 
+to_http_code(Error = ?ERROR_ALREADY_EXISTS) ->
+    od_error_already_exists:to_http_code(Error);
+
+to_http_code(Error = ?ERROR_NOT_FOUND) ->
+    od_error_not_found:to_http_code(Error);
+
+to_http_code(Error = ?ERROR_NOT_SUPPORTED) ->
+    od_error_not_supported:to_http_code(Error);
+
+to_http_code(Error = ?ERROR_TIMEOUT) ->
+    od_error_timeout:to_http_code(Error);
+
 to_http_code(Error = ?ERR(Type)) ->
     Type:to_http_code(Error).
 
@@ -107,6 +135,18 @@ to_http_code(Error = ?ERR(Type)) ->
 -spec to_errno(error()) -> false | {true, errno()}.
 to_errno(?ERR_UNRECOGNIZED_ERROR(_)) -> 
     {true, ?EAGAIN};
+
+to_errno(Error = ?ERROR_ALREADY_EXISTS) ->
+    od_error_already_exists:to_errno(Error);
+
+to_errno(Error = ?ERROR_NOT_FOUND) ->
+    od_error_not_found:to_errno(Error);
+
+to_errno(Error = ?ERROR_NOT_SUPPORTED) ->
+    od_error_not_supported:to_errno(Error);
+
+to_errno(Error = ?ERROR_TIMEOUT) ->
+    od_error_timeout:to_errno(Error);
 
 to_errno(Error = ?ERR(Type)) ->
     Type:to_errno(Error).

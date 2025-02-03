@@ -1,7 +1,7 @@
 %%%-------------------------------------------------------------------
 %%% This file has been automatically generated - DO NOT EDIT!!!
 %%%
-%%% @copyright (C) 2024 ACK CYFRONET AGH
+%%% @copyright (C) 2025 ACK CYFRONET AGH
 %%% This software is released under the MIT license
 %%% cited in 'LICENSE.txt'.
 %%% @end
@@ -33,7 +33,12 @@
 
 -spec to_json(t()) -> json_utils:json_map().
 to_json(?ERR_BAD_VALUE_NAME(ErrorCtx, Key)) ->
-    KeyJson = utils:undefined_to_null(Key),
+    {KeyJson, KeyPrint} = case Key of
+        undefined ->
+            {null, <<"name">>};
+        _ ->
+            {Key, Key}
+    end,
 
     #{
         <<"id">> => ?ERR_BAD_VALUE_NAME_ID,
@@ -43,7 +48,7 @@ to_json(?ERR_BAD_VALUE_NAME(ErrorCtx, Key)) ->
         },
         <<"description">> => od_error:format_description(
             "Bad value provided for \"~ts\": ~ts",
-            [KeyJson, ?NAME_REQUIREMENTS_DESCRIPTION]
+            [KeyPrint, ?NAME_REQUIREMENTS_DESCRIPTION]
         )
     }.
 

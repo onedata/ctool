@@ -43,8 +43,12 @@ assert_all_errors_are_tested_test() ->
         (_) -> false
     end, AllModules)),
 
-    AllTestedErrorTypes = lists:usort(lists:map(fun(#testcase{error = ?ERR(Type)}) ->
-        Type
+    AllTestedErrorTypes = lists:usort(lists:map(fun
+        (#testcase{error = ?ERR(Type)}) -> Type;
+        (#testcase{error = ?ERROR_TIMEOUT}) -> od_error_timeout;
+        (#testcase{error = ?ERROR_NOT_SUPPORTED}) -> od_error_not_supported;
+        (#testcase{error = ?ERROR_NOT_FOUND}) -> od_error_not_found;
+        (#testcase{error = ?ERROR_ALREADY_EXISTS}) -> od_error_already_exists
     end, testcases())),
 
     case ErrorModules == AllTestedErrorTypes of
@@ -83,7 +87,6 @@ encode_decode_error_test_() ->
                         Json = deprecated_errors:to_json(DeprecatedError),
                         assert_valid_error_json(Json),
                         FromJson = errors:from_json(JsonEncodeDecodeFun(Json)),
-                        ?assertMatch(?ERR, FromJson),
                         ?assertEqual(ExpError, FromJson)
                     end}
                 ]
@@ -94,7 +97,6 @@ encode_decode_error_test_() ->
                 Json = errors:to_json(Error),
                 assert_valid_error_json(Json),
                 FromJson = errors:from_json(JsonEncodeDecodeFun(Json)),
-                ?assertMatch(?ERR, FromJson),
                 ?assertEqual(ExpError, FromJson)
             end}
             | CompatibilityCases
@@ -212,13 +214,13 @@ testcases() -> [
     % NOTE: there is ?DEPRECATED_ERROR_FORBIDDEN(Hint) that is replaced by this
     % one but those two are not compatible (they have different ids).
     #testcase{
-        error = ?ERR_FORBIDDEN_TODO(<<"hint">>)
+        error = ?ERR_FORBIDDEN_WITH_HINT(<<"hint">>)
     },
     #testcase{
-        error = ?ERR_FORBIDDEN_TODO(<<"Sausage not for the dog">>)
+        error = ?ERR_FORBIDDEN_WITH_HINT(<<"Sausage not for the dog">>)
     },
     #testcase{
-        error = ?ERR_FORBIDDEN_TODO(<<"Honey not for the piglets.">>)
+        error = ?ERR_FORBIDDEN_WITH_HINT(<<"Honey not for the piglets.">>)
     },
     #testcase{
         error = ?ERR_UNAUTHORIZED(?ERR_NOT_AN_ACCESS_TOKEN(?IDENTITY_TOKEN)),
@@ -616,7 +618,7 @@ testcases() -> [
     %% general errors
     %%--------------------------------------------------------------------
     #testcase{
-        error = ?ERR_ALREADY_EXISTS,
+        error = ?ERROR_ALREADY_EXISTS,
         deprecated_error = ?DEPRECATED_ERROR_ALREADY_EXISTS
     },
     #testcase{
@@ -660,7 +662,7 @@ testcases() -> [
         deprecated_error = ?DEPRECATED_ERROR_LIMIT_REACHED(1000, <<"number of requests">>)
     },
     #testcase{
-        error = ?ERR_NOT_FOUND,
+        error = ?ERROR_NOT_FOUND,
         deprecated_error = ?DEPRECATED_ERROR_NOT_FOUND
     },
     #testcase{
@@ -668,7 +670,7 @@ testcases() -> [
         deprecated_error = ?DEPRECATED_ERROR_NOT_IMPLEMENTED
     },
     #testcase{
-        error = ?ERR_NOT_SUPPORTED,
+        error = ?ERROR_NOT_SUPPORTED,
         deprecated_error = ?DEPRECATED_ERROR_NOT_SUPPORTED
     },
     #testcase{
@@ -680,7 +682,7 @@ testcases() -> [
         deprecated_error = ?DEPRECATED_ERROR_TEMPORARY_FAILURE
     },
     #testcase{
-        error = ?ERR_TIMEOUT,
+        error = ?ERROR_TIMEOUT,
         deprecated_error = ?DEPRECATED_ERROR_TIMEOUT
     },
     #testcase{

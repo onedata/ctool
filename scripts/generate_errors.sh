@@ -49,6 +49,7 @@ cp $ERRORS_GEN_DIR/error_attrs.hrl $CTOOL_INCLUDE_DIR/
 cp $ERRORS_GEN_DIR/errors.hrl $CTOOL_INCLUDE_DIR/
 cp $ERRORS_GEN_DIR/errors.erl $CTOOL_SRC_DIR/
 cp $ERRORS_GEN_DIR/od_error.erl $CTOOL_SRC_DIR/
+rm -rf $CTOOL_SRC_DIR/types
 cp -r $ERRORS_GEN_DIR/types $CTOOL_SRC_DIR/
 
 # Save current hash

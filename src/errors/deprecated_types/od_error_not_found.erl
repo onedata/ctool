@@ -7,10 +7,10 @@
 %%% @end
 %%%-------------------------------------------------------------------
 %%% @doc
-%%% This module implements od_error for 'od_error_timeout'.
+%%% This module implements od_error for 'od_error_not_found'.
 %%% @end
 %%%-------------------------------------------------------------------
--module(od_error_timeout).
+-module(od_error_not_found).
 
 -behaviour(od_error).
 
@@ -18,7 +18,7 @@
 -include("http/codes.hrl").
 
 
--type t() :: {error, #od_error{type :: ?MODULE}}.
+-type t() :: {error, not_found}.
 
 -export_type([t/0]).
 
@@ -32,26 +32,23 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERR_TIMEOUT(ErrorCtx)) ->
+to_json(?ERROR_NOT_FOUND) ->
     #{
-        <<"id">> => ?ERR_TIMEOUT_ID,
-        <<"ctx">> => od_error:ctx_to_json(ErrorCtx),
-        <<"description">> => <<"Operation timed out, please try again later.">>
+        <<"id">> => ?ERROR_NOT_FOUND_ID,
+        <<"description">> => <<"The requested resource could not be found.">>
     }.
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(OdErrorJson = #{<<"id">> := ?ERR_TIMEOUT_ID}) ->
-    ErrorCtxJson = maps:get(<<"ctx">>, OdErrorJson, #{}),
-    ErrorCtx = od_error:ctx_from_json(ErrorCtxJson),
-    ?ERR_TIMEOUT(ErrorCtx).
+from_json(#{<<"id">> := ?ERROR_NOT_FOUND_ID}) ->
+    ?ERROR_NOT_FOUND.
 
 
--spec to_http_code(t()) -> ?HTTP_503_SERVICE_UNAVAILABLE.
+-spec to_http_code(t()) -> ?HTTP_404_NOT_FOUND.
 to_http_code(_) ->
-    ?HTTP_503_SERVICE_UNAVAILABLE.
+    ?HTTP_404_NOT_FOUND.
 
 
 -spec to_errno(t()) -> {true, od_error:errno()}.
 to_errno(_) ->
-    {true, ?EAGAIN}.
+    {true, ?EINVAL}.

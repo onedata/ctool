@@ -1,7 +1,7 @@
 %%%-------------------------------------------------------------------
 %%% This file has been automatically generated - DO NOT EDIT!!!
 %%%
-%%% @copyright (C) 2024 ACK CYFRONET AGH
+%%% @copyright (C) 2025 ACK CYFRONET AGH
 %%% This software is released under the MIT license
 %%% cited in 'LICENSE.txt'.
 %%% @end
@@ -51,6 +51,15 @@
 
 
 %%--------------------------------------------------------------------
+%% deprecated errors
+%%--------------------------------------------------------------------
+-define(ERROR_ALREADY_EXISTS, {error, already_exists}).
+-define(ERROR_NOT_FOUND, {error, not_found}).
+-define(ERROR_TIMEOUT, {error, timeout}).
+-define(ERROR_NOT_SUPPORTED, {error, not_supported}).
+
+
+%%--------------------------------------------------------------------
 %% Unknown / unexpected error
 %%--------------------------------------------------------------------
 % Used to carry errors that have the proper JSON error format, but do not match
@@ -65,6 +74,7 @@
     ?ERR(?ERR_UNRECOGNIZED_ERROR_TYPE, {ErrorAsJson}, ErrorCtx)
 ).
 
+
 %%--------------------------------------------------------------------
 %% auth errors
 %%--------------------------------------------------------------------
@@ -74,8 +84,8 @@
 -define(ERR_FORBIDDEN, ?ERR(?ERR_FORBIDDEN_TYPE)).
 -define(ERR_FORBIDDEN(ErrorCtx), ?ERR(?ERR_FORBIDDEN_TYPE, undefined, ErrorCtx)).
 
--define(ERR_FORBIDDEN_TODO(Hint), ?ERR(?ERR_FORBIDDEN_TODO_TYPE, {Hint})).
--define(ERR_FORBIDDEN_TODO(ErrorCtx, Hint), ?ERR(?ERR_FORBIDDEN_TODO_TYPE, {Hint}, ErrorCtx)).
+-define(ERR_FORBIDDEN_WITH_HINT(Hint), ?ERR(?ERR_FORBIDDEN_WITH_HINT_TYPE, {Hint})).
+-define(ERR_FORBIDDEN_WITH_HINT(ErrorCtx, Hint), ?ERR(?ERR_FORBIDDEN_WITH_HINT_TYPE, {Hint}, ErrorCtx)).
 
 -define(ERR_UNAUTHORIZED(AuthError), ?ERR(?ERR_UNAUTHORIZED_TYPE, {AuthError})).
 -define(ERR_UNAUTHORIZED(ErrorCtx, AuthError), ?ERR(?ERR_UNAUTHORIZED_TYPE, {AuthError}, ErrorCtx)).
@@ -310,9 +320,6 @@
 %%--------------------------------------------------------------------
 %% general errors
 %%--------------------------------------------------------------------
--define(ERR_ALREADY_EXISTS, ?ERR(?ERR_ALREADY_EXISTS_TYPE)).
--define(ERR_ALREADY_EXISTS(ErrorCtx), ?ERR(?ERR_ALREADY_EXISTS_TYPE, undefined, ErrorCtx)).
-
 -define(ERR_BAD_MESSAGE(Message), ?ERR(?ERR_BAD_MESSAGE_TYPE, {Message})).
 -define(ERR_BAD_MESSAGE(ErrorCtx, Message), ?ERR(?ERR_BAD_MESSAGE_TYPE, {Message}, ErrorCtx)).
 
@@ -328,23 +335,14 @@
 -define(ERR_LIMIT_REACHED(Limit, ResourceDescription), ?ERR(?ERR_LIMIT_REACHED_TYPE, {Limit, ResourceDescription})).
 -define(ERR_LIMIT_REACHED(ErrorCtx, Limit, ResourceDescription), ?ERR(?ERR_LIMIT_REACHED_TYPE, {Limit, ResourceDescription}, ErrorCtx)).
 
--define(ERR_NOT_FOUND, ?ERR(?ERR_NOT_FOUND_TYPE)).
--define(ERR_NOT_FOUND(ErrorCtx), ?ERR(?ERR_NOT_FOUND_TYPE, undefined, ErrorCtx)).
-
 -define(ERR_NOT_IMPLEMENTED, ?ERR(?ERR_NOT_IMPLEMENTED_TYPE)).
 -define(ERR_NOT_IMPLEMENTED(ErrorCtx), ?ERR(?ERR_NOT_IMPLEMENTED_TYPE, undefined, ErrorCtx)).
-
--define(ERR_NOT_SUPPORTED, ?ERR(?ERR_NOT_SUPPORTED_TYPE)).
--define(ERR_NOT_SUPPORTED(ErrorCtx), ?ERR(?ERR_NOT_SUPPORTED_TYPE, undefined, ErrorCtx)).
 
 -define(ERR_SERVICE_UNAVAILABLE, ?ERR(?ERR_SERVICE_UNAVAILABLE_TYPE)).
 -define(ERR_SERVICE_UNAVAILABLE(ErrorCtx), ?ERR(?ERR_SERVICE_UNAVAILABLE_TYPE, undefined, ErrorCtx)).
 
 -define(ERR_TEMPORARY_FAILURE, ?ERR(?ERR_TEMPORARY_FAILURE_TYPE)).
 -define(ERR_TEMPORARY_FAILURE(ErrorCtx), ?ERR(?ERR_TEMPORARY_FAILURE_TYPE, undefined, ErrorCtx)).
-
--define(ERR_TIMEOUT, ?ERR(?ERR_TIMEOUT_TYPE)).
--define(ERR_TIMEOUT(ErrorCtx), ?ERR(?ERR_TIMEOUT_TYPE, undefined, ErrorCtx)).
 
 -define(ERR_UNREGISTERED_ONEPROVIDER, ?ERR(?ERR_UNREGISTERED_ONEPROVIDER_TYPE)).
 -define(ERR_UNREGISTERED_ONEPROVIDER(ErrorCtx), ?ERR(?ERR_UNREGISTERED_ONEPROVIDER_TYPE, undefined, ErrorCtx)).

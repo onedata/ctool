@@ -1,7 +1,7 @@
 %%%-------------------------------------------------------------------
 %%% This file has been automatically generated - DO NOT EDIT!!!
 %%%
-%%% @copyright (C) 2024 ACK CYFRONET AGH
+%%% @copyright (C) 2025 ACK CYFRONET AGH
 %%% This software is released under the MIT license
 %%% cited in 'LICENSE.txt'.
 %%% @end
@@ -13,6 +13,22 @@
 
 -ifndef(ERROR_ATTRS_HRL).
 -define(ERROR_ATTRS_HRL, 1).
+
+
+%%--------------------------------------------------------------------
+%% deprecated errors
+%%--------------------------------------------------------------------
+-define(ERROR_ALREADY_EXISTS_ID, <<"alreadyExists">>).
+-define(ERROR_ALREADY_EXISTS_TYPE, od_error_already_exists).
+
+-define(ERROR_NOT_FOUND_ID, <<"notFound">>).
+-define(ERROR_NOT_FOUND_TYPE, od_error_not_found).
+
+-define(ERROR_NOT_SUPPORTED_ID, <<"notSupported">>).
+-define(ERROR_NOT_SUPPORTED_TYPE, od_error_not_supported).
+
+-define(ERROR_TIMEOUT_ID, <<"timeout">>).
+-define(ERROR_TIMEOUT_TYPE, od_error_timeout).
 
 
 %%--------------------------------------------------------------------
@@ -30,8 +46,8 @@
 -define(ERR_FORBIDDEN_ID, <<"forbidden">>).
 -define(ERR_FORBIDDEN_TYPE, od_error_forbidden).
 
--define(ERR_FORBIDDEN_TODO_ID, <<"forbiddenTodo">>).
--define(ERR_FORBIDDEN_TODO_TYPE, od_error_forbidden_todo).
+-define(ERR_FORBIDDEN_WITH_HINT_ID, <<"forbiddenWithHint">>).
+-define(ERR_FORBIDDEN_WITH_HINT_TYPE, od_error_forbidden_with_hint).
 
 -define(ERR_UNAUTHORIZED_ID, <<"unauthorized">>).
 -define(ERR_UNAUTHORIZED_TYPE, od_error_unauthorized).
@@ -266,9 +282,6 @@
 %%--------------------------------------------------------------------
 %% general errors
 %%--------------------------------------------------------------------
--define(ERR_ALREADY_EXISTS_ID, <<"alreadyExists">>).
--define(ERR_ALREADY_EXISTS_TYPE, od_error_already_exists).
-
 -define(ERR_BAD_MESSAGE_ID, <<"badMessage">>).
 -define(ERR_BAD_MESSAGE_TYPE, od_error_bad_message).
 
@@ -284,23 +297,14 @@
 -define(ERR_LIMIT_REACHED_ID, <<"limitReached">>).
 -define(ERR_LIMIT_REACHED_TYPE, od_error_limit_reached).
 
--define(ERR_NOT_FOUND_ID, <<"notFound">>).
--define(ERR_NOT_FOUND_TYPE, od_error_not_found).
-
 -define(ERR_NOT_IMPLEMENTED_ID, <<"notImplemented">>).
 -define(ERR_NOT_IMPLEMENTED_TYPE, od_error_not_implemented).
-
--define(ERR_NOT_SUPPORTED_ID, <<"notSupported">>).
--define(ERR_NOT_SUPPORTED_TYPE, od_error_not_supported).
 
 -define(ERR_SERVICE_UNAVAILABLE_ID, <<"serviceUnavailable">>).
 -define(ERR_SERVICE_UNAVAILABLE_TYPE, od_error_service_unavailable).
 
 -define(ERR_TEMPORARY_FAILURE_ID, <<"temporaryFailure">>).
 -define(ERR_TEMPORARY_FAILURE_TYPE, od_error_temporary_failure).
-
--define(ERR_TIMEOUT_ID, <<"timeout">>).
--define(ERR_TIMEOUT_TYPE, od_error_timeout).
 
 -define(ERR_UNREGISTERED_ONEPROVIDER_ID, <<"unregisteredOneprovider">>).
 -define(ERR_UNREGISTERED_ONEPROVIDER_TYPE, od_error_unregistered_oneprovider).
@@ -655,9 +659,13 @@
 %% Error ID to type mapping
 %%--------------------------------------------------------------------
 -define(ERROR_ID_TO_TYPE_MAPPING, #{
+    ?ERROR_ALREADY_EXISTS_ID => ?ERROR_ALREADY_EXISTS_TYPE,
+    ?ERROR_NOT_FOUND_ID => ?ERROR_NOT_FOUND_TYPE,
+    ?ERROR_NOT_SUPPORTED_ID => ?ERROR_NOT_SUPPORTED_TYPE,
+    ?ERROR_TIMEOUT_ID => ?ERROR_TIMEOUT_TYPE,
     ?ERR_BAD_BASIC_CREDENTIALS_ID => ?ERR_BAD_BASIC_CREDENTIALS_TYPE,
     ?ERR_FORBIDDEN_ID => ?ERR_FORBIDDEN_TYPE,
-    ?ERR_FORBIDDEN_TODO_ID => ?ERR_FORBIDDEN_TODO_TYPE,
+    ?ERR_FORBIDDEN_WITH_HINT_ID => ?ERR_FORBIDDEN_WITH_HINT_TYPE,
     ?ERR_UNAUTHORIZED_ID => ?ERR_UNAUTHORIZED_TYPE,
     ?ERR_USER_BLOCKED_ID => ?ERR_USER_BLOCKED_TYPE,
     ?ERR_BAD_CONSUMER_TOKEN_ID => ?ERR_BAD_CONSUMER_TOKEN_TYPE,
@@ -729,18 +737,14 @@
     ?ERR_BAD_VALUE_TSC_CONFLICTING_METRIC_CONFIG_ID => ?ERR_BAD_VALUE_TSC_CONFLICTING_METRIC_CONFIG_TYPE,
     ?ERR_BAD_VALUE_USERNAME_ID => ?ERR_BAD_VALUE_USERNAME_TYPE,
     ?ERR_BAD_VALUE_XML_ID => ?ERR_BAD_VALUE_XML_TYPE,
-    ?ERR_ALREADY_EXISTS_ID => ?ERR_ALREADY_EXISTS_TYPE,
     ?ERR_BAD_MESSAGE_ID => ?ERR_BAD_MESSAGE_TYPE,
     ?ERR_EXTERNAL_SERVICE_OPERATION_FAILED_ID => ?ERR_EXTERNAL_SERVICE_OPERATION_FAILED_TYPE,
     ?ERR_FILE_ACCESS_ID => ?ERR_FILE_ACCESS_TYPE,
     ?ERR_INTERNAL_SERVER_ERROR_ID => ?ERR_INTERNAL_SERVER_ERROR_TYPE,
     ?ERR_LIMIT_REACHED_ID => ?ERR_LIMIT_REACHED_TYPE,
-    ?ERR_NOT_FOUND_ID => ?ERR_NOT_FOUND_TYPE,
     ?ERR_NOT_IMPLEMENTED_ID => ?ERR_NOT_IMPLEMENTED_TYPE,
-    ?ERR_NOT_SUPPORTED_ID => ?ERR_NOT_SUPPORTED_TYPE,
     ?ERR_SERVICE_UNAVAILABLE_ID => ?ERR_SERVICE_UNAVAILABLE_TYPE,
     ?ERR_TEMPORARY_FAILURE_ID => ?ERR_TEMPORARY_FAILURE_TYPE,
-    ?ERR_TIMEOUT_ID => ?ERR_TIMEOUT_TYPE,
     ?ERR_UNREGISTERED_ONEPROVIDER_ID => ?ERR_UNREGISTERED_ONEPROVIDER_TYPE,
     ?ERR_BAD_GRI_ID => ?ERR_BAD_GRI_TYPE,
     ?ERR_BAD_VERSION_ID => ?ERR_BAD_VERSION_TYPE,

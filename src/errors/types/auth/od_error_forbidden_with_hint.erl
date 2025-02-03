@@ -1,16 +1,16 @@
 %%%-------------------------------------------------------------------
 %%% This file has been automatically generated - DO NOT EDIT!!!
 %%%
-%%% @copyright (C) 2024 ACK CYFRONET AGH
+%%% @copyright (C) 2025 ACK CYFRONET AGH
 %%% This software is released under the MIT license
 %%% cited in 'LICENSE.txt'.
 %%% @end
 %%%-------------------------------------------------------------------
 %%% @doc
-%%% This module implements od_error for 'od_error_not_found'.
+%%% This module implements od_error for 'od_error_forbidden_with_hint'.
 %%% @end
 %%%-------------------------------------------------------------------
--module(od_error_not_found).
+-module(od_error_forbidden_with_hint).
 
 -behaviour(od_error).
 
@@ -32,26 +32,37 @@
 
 
 -spec to_json(t()) -> json_utils:json_map().
-to_json(?ERR_NOT_FOUND(ErrorCtx)) ->
+to_json(?ERR_FORBIDDEN_WITH_HINT(ErrorCtx, Hint)) ->
     #{
-        <<"id">> => ?ERR_NOT_FOUND_ID,
+        <<"id">> => ?ERR_FORBIDDEN_WITH_HINT_ID,
         <<"ctx">> => od_error:ctx_to_json(ErrorCtx),
-        <<"description">> => <<"The requested resource could not be found.">>
+        <<"details">> => #{
+            <<"hint">> => Hint
+        },
+        <<"description">> => od_error:format_description(
+            "You are not authorized to perform this operation: ~ts",
+            [Hint]
+        )
     }.
 
 
 -spec from_json(json_utils:json_map()) -> t().
-from_json(OdErrorJson = #{<<"id">> := ?ERR_NOT_FOUND_ID}) ->
+from_json(OdErrorJson = #{<<"id">> := ?ERR_FORBIDDEN_WITH_HINT_ID}) ->
     ErrorCtxJson = maps:get(<<"ctx">>, OdErrorJson, #{}),
     ErrorCtx = od_error:ctx_from_json(ErrorCtxJson),
-    ?ERR_NOT_FOUND(ErrorCtx).
+
+    DetailsJson = maps:get(<<"details">>, OdErrorJson),
+
+    Hint = maps:get(<<"hint">>, DetailsJson),
+
+    ?ERR_FORBIDDEN_WITH_HINT(ErrorCtx, Hint).
 
 
--spec to_http_code(t()) -> ?HTTP_404_NOT_FOUND.
+-spec to_http_code(t()) -> ?HTTP_403_FORBIDDEN.
 to_http_code(_) ->
-    ?HTTP_404_NOT_FOUND.
+    ?HTTP_403_FORBIDDEN.
 
 
 -spec to_errno(t()) -> {true, od_error:errno()}.
 to_errno(_) ->
-    {true, ?EINVAL}.
+    {true, ?EACCES}.
