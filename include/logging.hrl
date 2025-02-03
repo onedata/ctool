@@ -238,8 +238,8 @@ end).
         try
             Expr
         catch
-            Class:Reason:Stacktrace ->
-                ?examine_exception(Class, Reason, Stacktrace)
+            Class__:Reason__:Stacktrace__ ->
+                ?examine_exception(Class__, Reason__, Stacktrace__)
         end
     end)())
 end).
