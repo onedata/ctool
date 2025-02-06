@@ -238,8 +238,8 @@ end).
         try
             Expr
         catch
-            Class:Reason:Stacktrace ->
-                ?examine_exception(Class, Reason, Stacktrace)
+            Class__:Reason__:Stacktrace__ ->
+                ?examine_exception(Class__, Reason__, Stacktrace__)
         end
     end)())
 end).
@@ -266,7 +266,7 @@ end).
 % Convenience macros for debug
 
 % Prints a term or a list of terms by the name of the variable
--define(dump(TermOrTerms), ?autoformat_with_msg("[DUMP]", TermOrTems)).
+-define(dump(TermOrTerms), ?autoformat_with_msg("[DUMP]", TermOrTerms)).
 % wrappers for convenience (the original macro accepts a list, but it's not 100% intuitive)
 -define(dump(A, B), ?dump([A, B])).
 -define(dump(A, B, C), ?dump([A, B, C])).

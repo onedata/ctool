@@ -105,6 +105,7 @@
 -define(HANDLE_SERVICE_DELETE, handle_service_delete).
 -define(HANDLE_SERVICE_REGISTER_HANDLE, handle_service_register_handle).
 -define(HANDLE_SERVICE_LIST_HANDLES, handle_service_list_handles).
+-define(HANDLE_SERVICE_MANAGE_HANDLES, handle_service_manage_handles).
 
 % Handle privileges of members (users or groups)
 -define(HANDLE_VIEW, handle_view).

@@ -31,13 +31,17 @@
 %% @end
 %%--------------------------------------------------------------------
 -spec init(cowboy_req:req(), any()) -> {ok, cowboy_req:req(), any()}.
-init(Req, [Port, ConnectOptsFun] = State) ->
+init(Req, State) ->
+    [Scheme, Port, ConnectOptsFun] = case State of
+        [_, _] -> [cowboy_req:scheme(Req) | State];
+        [_, _, _] -> State
+    end,
     Qs = case cowboy_req:qs(Req) of
         <<"">> -> <<"">>;
         Bin -> <<"?", Bin/binary>>
     end,
     URL = str_utils:format_bin("~ts://127.0.0.1:~B~ts~ts", [
-        cowboy_req:scheme(Req), Port, cowboy_req:path(Req), Qs
+        Scheme, Port, cowboy_req:path(Req), Qs
     ]),
     Headers = add_forwarded_header(Req),
     MethodBin = cowboy_req:method(Req),

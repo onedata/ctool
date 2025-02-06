@@ -21,6 +21,7 @@
 -export([set_loglevel/1, set_console_loglevel/1]).
 -export([get_current_loglevel/0, get_default_loglevel/0, get_console_loglevel/0]).
 -export([loglevel_int_to_atom/1, loglevel_atom_to_int/1]).
+-export([is_printable/1]).
 
 -type autoformat_spec() :: #autoformat_spec{}.
 
@@ -279,6 +280,12 @@ format_details_suffix(DetailsFormat, DetailsArgs) ->
     str_utils:format("~n> Details: " ++ DetailsFormat, DetailsArgs).
 
 
+-spec is_printable(term()) ->  boolean().
+is_printable(Str) when is_list(Str) -> io_lib:printable_list(Str);
+is_printable(Str) when is_binary(Str) -> io_lib:printable_list(str_utils:binary_to_unicode_list(Str));
+is_printable(_Str) -> false.
+
+
 %% @private
 -spec autoformat_spec_to_format_and_args(autoformat_spec()) -> {string(), list()}.
 autoformat_spec_to_format_and_args(#autoformat_spec{
@@ -295,10 +302,3 @@ autoformat_spec_to_format_and_args(#autoformat_spec{
         "~n    " ++ TermName ++  " = " ++ ControlSequence
     end, lists:zip(TermNames, TermValues))),
     {DetailsFormat, Args ++ TermValues}.
-
-
-%% @private
--spec is_printable(term()) ->  boolean().
-is_printable(Str) when is_list(Str) -> io_lib:printable_list(Str);
-is_printable(Str) when is_binary(Str) -> io_lib:printable_list(str_utils:binary_to_unicode_list(Str));
-is_printable(_Str) -> false.

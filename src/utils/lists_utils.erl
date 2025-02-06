@@ -29,7 +29,7 @@
 -export([replace/3, replace_at/3]).
 -export([ensure_length/2, enumerate/1, index_of/2]).
 -export([shuffle/1, random_element/1, random_sublist/1, random_sublist/3]).
--export([pmap/2, pforeach/2, pfiltermap/2, pfiltermap/3]).
+-export([pmap/3, pmap/2, pforeach/3, pforeach/2, pfiltermap/3, pfiltermap/2]).
 -export([foldl_while/3]).
 -export([find/2]).
 -export([searchmap/2]).
@@ -196,6 +196,20 @@ random_sublist(List, MinLength, MaxLength) ->
     lists:sublist(Shuffled, MinLength + rand:uniform(MaxLength - MinLength + 1) - 1).
 
 
+%% @doc pmap/2, but with a cap on the number of processes
+-spec pmap(fun((X) -> Y), [X], pos_integer()) -> [Y] | no_return().
+pmap(_, [], _)  ->
+    [];
+pmap(Fun, Elements, MaxProcesses) when is_integer(MaxProcesses) andalso MaxProcesses > 0 ->
+    case length(Elements) > MaxProcesses of
+        true ->
+            {Batch, Rest} = lists:split(MaxProcesses, Elements),
+            pmap(Fun, Batch) ++ pmap(Fun, Rest, MaxProcesses);
+        _ ->
+            pmap(Fun, Elements)
+    end.
+
+
 %%--------------------------------------------------------------------
 %% @doc
 %% A parallel version of lists:map/2 - each element is processed by
@@ -204,6 +218,8 @@ random_sublist(List, MinLength, MaxLength) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec pmap(fun((X) -> Y), [X]) -> [Y] | no_return().
+pmap(_, [])  ->
+    [];
 pmap(Fun, Elements) ->
     Parent = self(),
     Ref = erlang:make_ref(),
@@ -255,6 +271,13 @@ pmap(Fun, Elements) ->
     Gather(Pids, Pids, true).
 
 
+%% @doc pforeach/2, but with a cap on the number of processes
+-spec pforeach(fun((X) -> term()), [X], pos_integer()) -> ok | no_return().
+pforeach(Fun, Elements, MaxProcesses) ->
+    pmap(Fun, Elements, MaxProcesses),
+    ok.
+
+
 %%--------------------------------------------------------------------
 %% @doc
 %% A parallel version of lists:foreach/2 - each element is processed by
@@ -268,29 +291,16 @@ pforeach(Fun, Elements) ->
     ok.
 
 
-%%--------------------------------------------------------------------
-%% @doc
-%% A parallel version of lists:filtermap/2 - elements are processed by
-%% a limited number of processes. Raises an error if any of the processes
-%% crash or a process somehow dies without reporting back.
-%% @end
-%%--------------------------------------------------------------------
+%% @doc pfiltermap/2, but with a cap on the number of processes
 -spec pfiltermap(
     Fun :: fun((X :: A) -> {true, Y :: B} | false),
     Elements :: [X :: A],
     MaxProcesses :: pos_integer()
 ) -> [X :: B].
-pfiltermap(Fun, Elements, MaxProcesses) when is_integer(MaxProcesses) andalso MaxProcesses > 0 ->
-    Length = length(Elements),
-    case Length > MaxProcesses of
-        true ->
-            {L1, L2} = lists:split(MaxProcesses, Elements),
-            %% TODO VFS-7568 use tail recursion
-            pfiltermap(Fun, L1) ++
-            pfiltermap(Fun, L2, MaxProcesses);
-        _ ->
-            pfiltermap(Fun, Elements)
-    end.
+pfiltermap(Fun, Elements, MaxProcesses) ->
+    lists:filtermap(fun(MappedResult) ->
+        MappedResult
+    end, pmap(Fun, Elements, MaxProcesses)).
 
 
 %%--------------------------------------------------------------------
@@ -306,9 +316,7 @@ pfiltermap(Fun, Elements, MaxProcesses) when is_integer(MaxProcesses) andalso Ma
     Elements :: [X :: A]
 ) -> [X :: B].
 pfiltermap(Fun, Elements) ->
-    lists:filtermap(fun(MappedResult) ->
-        MappedResult
-    end, pmap(fun(Element) -> Fun(Element) end, Elements)).
+    pfiltermap(Fun, Elements, length(Elements)).
 
 
 %%--------------------------------------------------------------------
