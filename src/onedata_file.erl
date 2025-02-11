@@ -189,7 +189,8 @@ attr_name_from_json(<<"effDatasetProtectionFlags">>) -> ?attr_eff_dataset_protec
 attr_name_from_json(<<"effDatasetInheritancePath">>) -> ?attr_eff_dataset_inheritance_path;
 attr_name_from_json(<<"effQosInheritancePath">>)     -> ?attr_eff_qos_inheritance_path;
 attr_name_from_json(<<"aggregateQosStatus">>)        -> ?attr_qos_status;
-attr_name_from_json(<<"archiveRecallRootFileId">>)   -> ?attr_recall_root_id.
+attr_name_from_json(<<"archiveRecallRootFileId">>)   -> ?attr_recall_root_id;
+attr_name_from_json(<<"jsonMetadata">>)              -> ?attr_json_metadata.
 
 
 -spec attr_name_to_json(attr_name()) -> binary().
@@ -223,7 +224,8 @@ attr_name_to_json(?attr_eff_dataset_protection_flags) -> <<"effDatasetProtection
 attr_name_to_json(?attr_eff_dataset_inheritance_path) -> <<"effDatasetInheritancePath">>;
 attr_name_to_json(?attr_eff_qos_inheritance_path)     -> <<"effQosInheritancePath">>;
 attr_name_to_json(?attr_qos_status)                   -> <<"aggregateQosStatus">>;
-attr_name_to_json(?attr_recall_root_id)               -> <<"archiveRecallRootFileId">>.
+attr_name_to_json(?attr_recall_root_id)               -> <<"archiveRecallRootFileId">>;
+attr_name_to_json(?attr_json_metadata)                -> <<"jsonMetadata">>.
 
 
 %%%===================================================================
