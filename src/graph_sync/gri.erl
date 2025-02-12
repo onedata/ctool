@@ -155,7 +155,7 @@ deserialize(Serialized, Format) ->
             deserialize_scope(Scope, Format)
         }, Format)
     catch _:_ ->
-        throw(?ERROR_BAD_GRI)
+        throw(?ERR_BAD_GRI(?err_ctx()))
     end.
 
 
@@ -186,13 +186,13 @@ unpack(#gri{type = Type, id = Id, aspect = Aspect, scope = Scope}, regular) ->
 unpack(#gri_pattern{type = Type, id = Id, aspect = Aspect, scope = Scope}, pattern) ->
     {Type, Id, Aspect, Scope};
 unpack(_, _) ->
-    throw(?ERROR_BAD_GRI).
+    throw(?ERR_BAD_GRI(?err_ctx())).
 
 
 %% @private
 -spec serialize_type(entity_type() | entity_type_pattern(), format()) -> binary().
 serialize_type('*', pattern) -> <<"*">>;
-serialize_type('*', regular) -> throw(?ERROR_BAD_GRI);
+serialize_type('*', regular) -> throw(?ERR_BAD_GRI(?err_ctx()));
 
 serialize_type(oz_worker, _) -> <<"oz_worker">>;
 serialize_type(od_user, _) -> <<"user">>;
@@ -244,13 +244,13 @@ serialize_type(op_storage, _) -> <<"op_storage">>;
 serialize_type(op_transfer, _) -> <<"op_transfer">>;
 serialize_type(op_user, _) -> <<"op_user">>;
 
-serialize_type(_, _) -> throw(?ERROR_BAD_GRI).
+serialize_type(_, _) -> throw(?ERR_BAD_GRI(?err_ctx())).
 
 
 %% @private
 -spec deserialize_type(binary(), format()) -> entity_type() | entity_type_pattern().
 deserialize_type(<<"*">>, pattern) -> '*';
-deserialize_type(<<"*">>, regular) -> throw(?ERROR_BAD_GRI);
+deserialize_type(<<"*">>, regular) -> throw(?ERR_BAD_GRI(?err_ctx()));
 
 deserialize_type(<<"oz_worker">>, _) -> oz_worker;
 deserialize_type(<<"user">>, _) -> od_user;
@@ -302,7 +302,7 @@ deserialize_type(<<"op_storage">>, _) -> op_storage;
 deserialize_type(<<"op_transfer">>, _) -> op_transfer;
 deserialize_type(<<"op_user">>, _) -> op_user;
 
-deserialize_type(_, _) -> throw(?ERROR_BAD_GRI).
+deserialize_type(_, _) -> throw(?ERR_BAD_GRI(?err_ctx())).
 
 
 %% @private
@@ -317,7 +317,7 @@ matches_type(_, _) -> false.
 serialize_id(undefined, _) -> <<"null">>;
 serialize_id(?SELF, _) -> <<"self">>;
 serialize_id(<<"*">>, pattern) -> <<"*">>;
-serialize_id(<<"*">>, regular) -> throw(?ERROR_BAD_GRI);
+serialize_id(<<"*">>, regular) -> throw(?ERR_BAD_GRI(?err_ctx()));
 serialize_id(Bin, _) when is_binary(Bin) -> Bin.
 
 
@@ -326,7 +326,7 @@ serialize_id(Bin, _) when is_binary(Bin) -> Bin.
 deserialize_id(<<"null">>, _) -> undefined;
 deserialize_id(<<"self">>, _) -> ?SELF;
 deserialize_id(<<"*">>, pattern) -> <<"*">>;
-deserialize_id(<<"*">>, regular) -> throw(?ERROR_BAD_GRI);
+deserialize_id(<<"*">>, regular) -> throw(?ERR_BAD_GRI(?err_ctx()));
 deserialize_id(Bin, _) -> Bin.
 
 
@@ -341,12 +341,12 @@ matches_id(_, _) -> false.
 -spec serialize_aspect(aspect() | aspect_pattern(), format()) -> binary().
 serialize_aspect({A, B}, pattern) when is_binary(A), is_binary(B) -> <<A/binary, ",", B/binary>>;
 serialize_aspect(Aspect, pattern) when is_binary(Aspect) -> Aspect;
-serialize_aspect({'*', _}, regular) -> throw(?ERROR_BAD_GRI);
-serialize_aspect({_, '*'}, regular) -> throw(?ERROR_BAD_GRI);
+serialize_aspect({'*', _}, regular) -> throw(?ERR_BAD_GRI(?err_ctx()));
+serialize_aspect({_, '*'}, regular) -> throw(?ERR_BAD_GRI(?err_ctx()));
 serialize_aspect({A, B}, regular) when is_atom(A) andalso is_binary(B) -> <<(?ATOM_TO_BIN(A))/binary, ",", B/binary>>;
-serialize_aspect('*', regular) -> throw(?ERROR_BAD_GRI);
+serialize_aspect('*', regular) -> throw(?ERR_BAD_GRI(?err_ctx()));
 serialize_aspect(Aspect, regular) when is_atom(Aspect) -> ?ATOM_TO_BIN(Aspect);
-serialize_aspect(_, _) -> throw(?ERROR_BAD_GRI).
+serialize_aspect(_, _) -> throw(?ERR_BAD_GRI(?err_ctx())).
 
 
 %% @private
@@ -355,11 +355,11 @@ deserialize_aspect(Binary, Format) when is_binary(Binary) ->
     deserialize_aspect(binary:split(Binary, <<",">>, [global]), Format);
 deserialize_aspect([A, B], pattern) -> {A, B};
 deserialize_aspect([Aspect], pattern) -> Aspect;
-deserialize_aspect([_, <<"*">>], regular) -> throw(?ERROR_BAD_GRI);
-deserialize_aspect([<<"*">>, _], regular) -> throw(?ERROR_BAD_GRI);
+deserialize_aspect([_, <<"*">>], regular) -> throw(?ERR_BAD_GRI(?err_ctx()));
+deserialize_aspect([<<"*">>, _], regular) -> throw(?ERR_BAD_GRI(?err_ctx()));
 deserialize_aspect([A, B], regular) -> {?BIN_TO_ATOM(A), B};
-deserialize_aspect([<<"*">>, _], regular) -> throw(?ERROR_BAD_GRI);
-deserialize_aspect([<<"*">>], regular) -> throw(?ERROR_BAD_GRI);
+deserialize_aspect([<<"*">>, _], regular) -> throw(?ERR_BAD_GRI(?err_ctx()));
+deserialize_aspect([<<"*">>], regular) -> throw(?ERR_BAD_GRI(?err_ctx()));
 deserialize_aspect([Bin], regular) -> ?BIN_TO_ATOM(Bin).
 
 
@@ -387,7 +387,7 @@ serialize_scope(shared, _) -> <<"shared">>;
 serialize_scope(public, _) -> <<"public">>;
 serialize_scope(auto, _) -> <<"auto">>;
 serialize_scope('*', pattern) -> <<"*">>;
-serialize_scope('*', regular) -> throw(?ERROR_BAD_GRI).
+serialize_scope('*', regular) -> throw(?ERR_BAD_GRI(?err_ctx())).
 
 
 %% @private
@@ -398,8 +398,8 @@ deserialize_scope(<<"shared">>, _) -> shared;
 deserialize_scope(<<"public">>, _) -> public;
 deserialize_scope(<<"auto">>, _) -> auto;
 deserialize_scope(<<"*">>, pattern) -> '*';
-deserialize_scope(<<"*">>, regular) -> throw(?ERROR_BAD_GRI);
-deserialize_scope(_, _) -> throw(?ERROR_BAD_GRI).
+deserialize_scope(<<"*">>, regular) -> throw(?ERR_BAD_GRI(?err_ctx()));
+deserialize_scope(_, _) -> throw(?ERR_BAD_GRI(?err_ctx())).
 
 
 %% @private

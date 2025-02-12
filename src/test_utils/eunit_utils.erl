@@ -12,12 +12,15 @@
 -module(eunit_utils).
 -author("Lukasz Opiola").
 
+-include("errors.hrl").
+
 %% API
 -export([debug_log/2, dump/1, dump/2]).
 -export([is_equal/3]).
 -export([is_equal_after_json_encode_and_decode/1, is_equal_after_json_encode_and_decode/2]).
 -export([is_equal_after_db_encode_and_decode/1, is_equal_after_db_encode_and_decode/2]).
 -export([throws_error_during_decode_from_json/2, throws_error_during_decode_from_json/3]).
+-export([erase_ctx_if_error/1]).
 
 
 %%%===================================================================
@@ -105,13 +108,30 @@ throws_error_during_decode_from_json(ExpError, RecordType, Record) ->
         true ->
             RecordJson = jsonable_record:to_json(Record, RecordType),
             ActualError = catch jsonable_record:from_json(RecordJson, RecordType),
-            case ActualError of
-                ExpError ->
+            case erase_ctx_if_error(ExpError) == erase_ctx_if_error(ActualError) of
+                true ->
                     true;
-                _ ->
+                false ->
                     debug_log("Validation did not throw the expected error!~nExpected: ~tp~nGot:      ~tp", [
                         ExpError, ActualError
                     ]),
                     false
             end
     end.
+
+
+erase_ctx_if_error(?ERR(Type, Args, _Ctx)) ->
+    ArgsWithErasedCtx = case Args of
+        undefined ->
+            undefined;
+        _ ->
+            list_to_tuple(lists:map(fun
+                (Error = ?ERR) -> erase_ctx_if_error(Error);
+                (Else) -> Else
+            end, tuple_to_list(Args)))
+    end,
+
+    % Manually build tuple instead of using record to avoid dialyzer error
+    {error, {od_error, Type, ArgsWithErasedCtx, undefined}};
+erase_ctx_if_error(Else) ->
+    Else.

@@ -15,6 +15,7 @@
 -ifdef(TEST).
 
 -include_lib("eunit/include/eunit.hrl").
+-include("test/test_utils.hrl").
 
 -include("aai/aai.hrl").
 -include("errors.hrl").
@@ -35,11 +36,11 @@
 %%%===================================================================
 
 bad_token_test() ->
-    ?assertMatch(?ERROR_BAD_TOKEN, tokens:serialize({a, b, c, d})),
-    ?assertMatch(?ERROR_BAD_TOKEN, tokens:serialize(<<"rubbish-123">>)),
-    ?assertMatch(?ERROR_BAD_TOKEN, tokens:serialize(#token{})),
-    ?assertMatch(?ERROR_BAD_TOKEN, tokens:deserialize({a, b, c, d})),
-    ?assertMatch(?ERROR_BAD_TOKEN, tokens:deserialize(<<"rubbish-123">>)).
+    ?assertMatch(?ERR_BAD_TOKEN, tokens:serialize({a, b, c, d})),
+    ?assertMatch(?ERR_BAD_TOKEN, tokens:serialize(<<"rubbish-123">>)),
+    ?assertMatch(?ERR_BAD_TOKEN, tokens:serialize(#token{})),
+    ?assertMatch(?ERR_BAD_TOKEN, tokens:deserialize({a, b, c, d})),
+    ?assertMatch(?ERR_BAD_TOKEN, tokens:deserialize(<<"rubbish-123">>)).
 
 
 unknown_caveat_test() ->
@@ -50,7 +51,7 @@ unknown_caveat_test() ->
     Serialized = base62:from_base64(Token64),
     {ok, Token} = tokens:deserialize(Serialized),
     ?assertEqual(
-        ?ERROR_TOKEN_CAVEAT_UNKNOWN(<<"grant = everything">>),
+        ?ERR_TOKEN_CAVEAT_UNKNOWN(<<"grant = everything">>),
         tokens:verify(Token, Secret, #auth_ctx{current_timestamp = ?NOW()}, [])
     ).
 
@@ -66,7 +67,7 @@ invalid_subject_test() ->
 
     lists:foreach(fun(Subject) ->
         ?assertThrow(
-            ?ERROR_TOKEN_SUBJECT_INVALID,
+            ?ERR_TOKEN_SUBJECT_INVALID,
             tokens:construct(Prototype#token{subject = Subject}, <<"secret-1">>, [])
         )
     end, InvalidSubjects),
@@ -388,8 +389,8 @@ oneprovider_access_tokens_test() ->
     ),
 
     % Access tokens that are not for op-worker or op-panel should be rejected
-    ?assertEqual(?ERROR_BAD_TOKEN, tokens:deserialize(<<"ozw-", Serialized/binary>>)),
-    ?assertEqual(?ERROR_BAD_TOKEN, tokens:deserialize(<<"ozp-", Serialized/binary>>)).
+    ?assertEqual(?ERR_BAD_TOKEN, tokens:deserialize(<<"ozw-", Serialized/binary>>)),
+    ?assertEqual(?ERR_BAD_TOKEN, tokens:deserialize(<<"ozp-", Serialized/binary>>)).
 
 
 access_token_headers_manipulation_test() ->
@@ -572,7 +573,7 @@ too_large_token_test() ->
     ctool:set_env(max_token_size, ?CUSTOM_MAX_TOKEN_SIZE),
     % Hex converts each byte to two chars
     LargeToken = str_utils:rand_hex(?CUSTOM_MAX_TOKEN_SIZE div 2 + 1),
-    ?assertEqual(?ERROR_TOKEN_TOO_LARGE(?CUSTOM_MAX_TOKEN_SIZE), tokens:deserialize(LargeToken)).
+    ?assertEqual(?ERR_TOKEN_TOO_LARGE(?CUSTOM_MAX_TOKEN_SIZE), tokens:deserialize(LargeToken)).
 
 
 -define(BAD(Term), ?assertEqual(false, Term)).
@@ -1000,16 +1001,16 @@ check_caveats_to_json_and_back(Token) ->
 % returns success and the token's subject, or fails when the secret is not correct.
 check_verification_result(Token, Secret, Subject, AuthCtx, Caveats, [] = _Unverified) ->
     CaveatTypes = [caveats:type(C) || C <- Caveats],
-    ?assertMatch(?ERROR_TOKEN_INVALID, tokens:verify(Token, <<"bad-secret">>, AuthCtx, CaveatTypes)),
-    ?assertMatch(?ERROR_TOKEN_INVALID, tokens:verify(Token, ?RAND_STR, AuthCtx, CaveatTypes)),
+    ?assertMatch(?ERR_TOKEN_INVALID, tokens:verify(Token, <<"bad-secret">>, AuthCtx, CaveatTypes)),
+    ?assertMatch(?ERR_TOKEN_INVALID, tokens:verify(Token, ?RAND_STR, AuthCtx, CaveatTypes)),
     check_verification_against_session_ctx(Token, Secret, Subject, AuthCtx, CaveatTypes);
 % If there are any caveats expected to fail verification, make sure that token verification
 % fails and indicates one of the bad caveats.
 check_verification_result(Token, Secret, Subject, AuthCtx, Caveats, Unverified) ->
     CaveatTypes = [caveats:type(C) || C <- Caveats],
     VerifyResult = tokens:verify(Token, Secret, AuthCtx, CaveatTypes),
-    ?assertMatch(?ERROR_TOKEN_CAVEAT_UNVERIFIED(_), VerifyResult),
-    ?ERROR_TOKEN_CAVEAT_UNVERIFIED(UnverifiedCaveat) = VerifyResult,
+    ?assertMatch(?ERR_TOKEN_CAVEAT_UNVERIFIED(_), VerifyResult),
+    ?ERR_TOKEN_CAVEAT_UNVERIFIED(_, UnverifiedCaveat) = VerifyResult,
     ?assert(lists:member(UnverifiedCaveat, Unverified)),
     % ignoring the unverified caveats should cause the token to be verified successfully
     UnverifiedCaveatTypes = lists:usort([caveats:type(C) || C <- Unverified]),
@@ -1028,7 +1029,7 @@ check_verification_against_session_ctx(#token{type = ?ACCESS_TOKEN(SessId)} = To
     )),
 
     InvalidSessionCtx = lists_utils:random_element([undefined, ?RAND_STR] -- [SessId]),
-    ?assertMatch(?ERROR_TOKEN_SESSION_INVALID, tokens:verify(
+    ?assertMatch(?ERR_TOKEN_SESSION_INVALID, tokens:verify(
         Token, Secret, AuthCtx#auth_ctx{session_id = InvalidSessionCtx}, CaveatTypes
     ));
 % For other types than access token, the session context should not change anything
@@ -1055,8 +1056,8 @@ check_supported_caveats(Token, Secret, AuthCtx, Caveats, Unverified) ->
             not lists:member(caveats:type(Caveat), SupportedCaveats)
         end, Caveats),
         VerifyResult = tokens:verify(Token, Secret, AuthCtx, SupportedCaveats),
-        ?assertMatch(?ERROR_TOKEN_CAVEAT_UNVERIFIED(_), VerifyResult),
-        ?ERROR_TOKEN_CAVEAT_UNVERIFIED(MissingCaveat) = VerifyResult,
+        ?assertMatch(?ERR_TOKEN_CAVEAT_UNVERIFIED(_), VerifyResult),
+        ?ERR_TOKEN_CAVEAT_UNVERIFIED(_, MissingCaveat) = VerifyResult,
         ?assert(lists:member(MissingCaveat, MissingCaveats ++ Unverified))
     end, CaveatTypeSubsets).
 

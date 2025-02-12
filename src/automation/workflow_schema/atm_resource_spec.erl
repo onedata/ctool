@@ -111,4 +111,4 @@ sanitize_value(Value, float, UndefinedValuePolicy) ->
     % accept also integers and convert them to float
     sanitize_value(Value, integer, UndefinedValuePolicy) * 1.0;
 sanitize_value(_, _, _) ->
-    throw(?ERROR_BAD_DATA(<<"atmResourceSpec">>)).
+    throw(?ERR_BAD_DATA(?err_ctx(), <<"atmResourceSpec">>, undefined)).

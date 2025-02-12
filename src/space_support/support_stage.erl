@@ -171,7 +171,7 @@ apply_transition(PerProvider, ProviderId, StorageId, NewStorageStage) ->
     case apply_stage_transition(CurrentStageDetails, StorageId, NewStorageStage) of
         {ok, NewStageDetails} ->
             {ok, PerProvider#{ProviderId => NewStageDetails}};
-        {error, _} = Error ->
+        ?ERR = Error ->
             Error
     end.
 
@@ -305,10 +305,10 @@ apply_stage_transition(SupportStageDetails, StorageId, NewStorageStage) ->
                         per_storage = NewStagesPerStorage
                     }};
                 illegal ->
-                    ?ERROR_ILLEGAL_SUPPORT_STAGE_TRANSITION(ProviderStage, CurrentStorageStage)
+                    ?ERR_ILLEGAL_SUPPORT_STAGE_TRANSITION(?err_ctx(), ProviderStage, CurrentStorageStage)
             end;
         false ->
-            ?ERROR_ILLEGAL_SUPPORT_STAGE_TRANSITION(ProviderStage, CurrentStorageStage)
+            ?ERR_ILLEGAL_SUPPORT_STAGE_TRANSITION(?err_ctx(), ProviderStage, CurrentStorageStage)
     end.
 
 
