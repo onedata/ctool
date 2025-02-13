@@ -124,8 +124,6 @@ should_log(LevelAsInt) ->
 
 -spec log(LoglevelAsInt :: integer(), Metadata :: map(), FormattedLog :: string()) -> ok.
 log(LoglevelAsInt, Metadata, FormattedLog) ->
-    logger:set_primary_config(level, info),
-    logger:add_primary_filter(progress, {fun logger_filters:progress/2, stop}),
     Severity = loglevel_int_to_atom(LoglevelAsInt),
 
     % the reformatting with 't' modifier ensures that special characters are properly handled
@@ -286,6 +284,9 @@ pr_stacktrace(Stacktrace, {Class, Reason}) ->
 
 -spec configure_logger() -> ok.
 configure_logger() ->
+    logger:set_primary_config(level, debug),
+    logger:add_primary_filter(progress, {fun logger_filters:progress/2, stop}),
+
     LogDir = ctool:get_env(log_dir),
     Config = #{
         % Maximum events to handle in 1000ms. Exceeding this limit pauses event processing.
@@ -314,6 +315,19 @@ configure_logger() ->
         fun onedata_logger_filters:file_access_audit_log_filter/2, stop
     }}],
 
+    case lists:member(debug, logger:get_handler_ids()) of
+        true ->
+            ok;
+        false ->
+            logger:add_handler(debug, logger_std_h, #{
+                level => debug,
+                config => Config#{file => LogDir ++ "/debug.log"},
+                filter_default => stop,
+                filters => Filters,
+                formatter => FileFormat
+            })
+    end,
+
     logger:add_handler(console_backend, logger_std_h, #{
         level => info,
         config => Config,
@@ -341,17 +355,7 @@ configure_logger() ->
         filter_default => stop,
         filters => Filters,
         formatter => FileFormat
-    }),
-
-    logger:add_handler(debug, logger_std_h, #{
-        level => debug,
-        config => Config#{file => LogDir ++ "/debug.log"},
-        filter_default => stop,
-        filters => Filters,
-        formatter => FileFormat
     }).
-
-
 
 
 %%%===================================================================
