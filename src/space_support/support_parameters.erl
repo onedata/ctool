@@ -53,7 +53,8 @@ sanitize(#support_parameters{
     accounting_enabled = true,
     dir_stats_service_enabled = false
 }) ->
-    ?ERROR_BAD_DATA(
+    ?ERR_BAD_DATA(
+        ?err_ctx(),
         <<"dirStatsServiceEnabled">>,
         <<"Dir stats service must be enabled if accounting is enabled">>
     );

@@ -39,7 +39,7 @@ encode_decode_atm_resource_spec_test() ->
     ?assertEqual(ExampleWithRoundCpuResources, atm_resource_spec:from_json(ExampleJsonWithIntegerCpuResources)),
 
     % test validation of values
-    ?assert(eunit_utils:throws_error_during_decode_from_json(?ERROR_BAD_DATA(<<"atmResourceSpec">>), [
+    ?assert(eunit_utils:throws_error_during_decode_from_json(?ERR_BAD_DATA(<<"atmResourceSpec">>, undefined), [
         Example#atm_resource_spec{cpu_requested = undefined},
         Example#atm_resource_spec{cpu_limit = <<"text">>},
         Example#atm_resource_spec{memory_requested = 17.8},
@@ -52,7 +52,7 @@ encode_decode_atm_resource_spec_test() ->
 encode_decode_atm_data_spec_test() ->
     encode_decode_test_base(atm_test_utils:example_data_specs()),
 
-    ExpDuplicateNameMatchersError = ?ERROR_BAD_DATA(
+    ExpDuplicateNameMatchersError = ?ERR_BAD_DATA(
         <<"specs">>,
         <<"There cannot be two measurement specs with the same name matcher">>
     ),
@@ -64,7 +64,7 @@ encode_decode_atm_data_spec_test() ->
         ]
     })),
 
-    ExpBadNumberConstraintsError = ?ERROR_BAD_DATA(
+    ExpBadNumberConstraintsError = ?ERR_BAD_DATA(
         <<"allowedValues">>,
         <<"You must provide a list of numbers">>
     ),
@@ -75,7 +75,7 @@ encode_decode_atm_data_spec_test() ->
         integers_only = ?RAND_BOOL(), allowed_values = [<<"list">>, <<"of">>, <<"strings">>]
     })),
 
-    ExpBadStringConstraintsError = ?ERROR_BAD_DATA(
+    ExpBadStringConstraintsError = ?ERR_BAD_DATA(
         <<"allowedValues">>,
         <<"You must provide a list of strings">>
     ),
@@ -90,7 +90,7 @@ encode_decode_atm_data_spec_test() ->
 encode_decode_operation_spec_test() ->
     encode_decode_test_base(atm_test_utils:example_operation_specs()),
 
-    ExpDisallowedOperationSpecError = ?ERROR_BAD_VALUE_NOT_ALLOWED(
+    ExpDisallowedOperationSpecError = ?ERR_BAD_VALUE_NOT_ALLOWED(
         <<"operationSpec.engine">>,
         lists:map(
             fun atm_lambda_operation_spec:engine_to_json/1,
@@ -113,7 +113,7 @@ encode_decode_parameter_spec_test() ->
     encode_decode_test_base(ExampleParameterSpecs),
 
     ?assert(eunit_utils:throws_error_during_decode_from_json(
-        ?ERROR_BAD_VALUE_NAME(<<"parameterSpec.name">>),
+        ?ERR_BAD_VALUE_NAME(<<"parameterSpec.name">>),
         Example#atm_parameter_spec{name = <<"*@#$^!R!*!^$@!@(">>}
     )).
 
@@ -123,7 +123,7 @@ encode_decode_lambda_result_spec_test() ->
     encode_decode_test_base(ExampleResultSpecs),
 
     ?assert(eunit_utils:throws_error_during_decode_from_json(
-        ?ERROR_BAD_VALUE_NAME(<<"resultSpec.name">>),
+        ?ERR_BAD_VALUE_NAME(<<"resultSpec.name">>),
         Example#atm_lambda_result_spec{name = <<"><<>:.,{:<.',.;,'.;">>}
     )).
 
@@ -154,7 +154,7 @@ encode_decode_store_config_test() ->
 encode_decode_tree_forest_store_config_test() ->
     % tree forest store limits available data types to those compatible with tree models
     AllowedDataTypes = [atm_file_type, atm_dataset_type],
-    ExpTreeForestCfgError = ?ERROR_BAD_VALUE_NOT_ALLOWED(
+    ExpTreeForestCfgError = ?ERR_BAD_VALUE_NOT_ALLOWED(
         <<"treeForestStoreConfig.dataSpec.type">>,
         [atm_data_type:type_to_json(T) || T <- AllowedDataTypes]
     ),
@@ -277,10 +277,10 @@ check_binary_text_sanitization(RecordType, Record, DataKey, SizeLimit) ->
     ?assert(is_record(jsonable_record:from_json(ExampleJson#{
         DataKey => ?RAND_UNICODE_STR(SizeLimit)
     }, RecordType), RecordType)),
-    ?assertThrow(?ERROR_BAD_VALUE_TEXT_TOO_LARGE(DataKey, SizeLimit), jsonable_record:from_json(ExampleJson#{
+    ?assertThrow(?ERR_BAD_VALUE_TEXT_TOO_LARGE(DataKey, SizeLimit), jsonable_record:from_json(ExampleJson#{
         DataKey => ?RAND_UNICODE_STR(SizeLimit + 1)
     }, RecordType)),
-    ?assertThrow(?ERROR_BAD_VALUE_BINARY(DataKey), jsonable_record:from_json(ExampleJson#{
+    ?assertThrow(?ERR_BAD_VALUE_STRING(DataKey), jsonable_record:from_json(ExampleJson#{
         DataKey => lists_utils:random_element([12345, atom, #{<<"a">> => <<"b">>}, [1, 2, 3]])
     }, RecordType)).
 

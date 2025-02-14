@@ -31,7 +31,7 @@ encode_decode_time_series_collection_schema_test() ->
 
     % time series collection schema must have at least one time series schema defined
     ?assert(eunit_utils:throws_error_during_decode_from_json(
-        ?ERROR_BAD_VALUE_EMPTY(<<"timeSeriesSchemas">>),
+        ?ERR_BAD_VALUE_EMPTY(<<"timeSeriesSchemas">>),
         #time_series_collection_schema{
             time_series_schemas = []
         }
@@ -77,7 +77,7 @@ encode_decode_time_series_collection_schema_test() ->
             MakeSchema(add_prefix, <<"file_count_">>)
         ]}
     ],
-    ExpTimeSeriesCfgError = ?ERROR_BAD_DATA(<<"timeSeriesSchemas">>, <<
+    ExpTimeSeriesCfgError = ?ERR_BAD_DATA(<<"timeSeriesSchemas">>, <<
         "Provided time series schemas have conflicting name generators; the generators "
         "cannot have the same values and no 'add_prefix' generator can be a prefix "
         "of any other generator."
@@ -99,12 +99,12 @@ encode_decode_time_series_schema_test() ->
     encode_decode_test_base(ExampleTimeSeriesSpecs),
 
     ?assert(eunit_utils:throws_error_during_decode_from_json(
-        ?ERROR_BAD_VALUE_EMPTY(<<"metrics">>),
+        ?ERR_BAD_VALUE_EMPTY(<<"metrics">>),
         Example#time_series_schema{metrics = #{}}
     )),
 
     ?assert(eunit_utils:throws_error_during_decode_from_json(
-        ?ERROR_BAD_DATA(<<"metrics">>, <<"There cannot be two metrics with the same resolution and aggregator">>),
+        ?ERR_BAD_DATA(<<"metrics">>, <<"There cannot be two metrics with the same resolution and aggregator">>),
         Example#time_series_schema{metrics = #{
             <<"metric1">> => #metric_config{resolution = 3600, retention = 12, aggregator = sum},
             <<"metric2">> => #metric_config{resolution = 3600, retention = 13, aggregator = sum}
@@ -117,7 +117,7 @@ encode_decode_time_series_metric_config_test() ->
     encode_decode_test_base(ExampleTimeSeriesMetricSpecs),
 
     ?assert(eunit_utils:throws_error_during_decode_from_json(
-        ?ERROR_BAD_VALUE_NOT_ALLOWED(<<"resolution">>, ?ALLOWED_METRIC_RESOLUTIONS),
+        ?ERR_BAD_VALUE_NOT_ALLOWED(<<"resolution">>, ?ALLOWED_METRIC_RESOLUTIONS),
         Example#metric_config{resolution = 1337}
     )).
 

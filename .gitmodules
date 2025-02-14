@@ -1,3 +1,6 @@
 [submodule "bamboos"]
 	path = bamboos
 	url = ../bamboos.git
+[submodule "onedata_errors"]
+	path = onedata_errors
+	url = ../onedata-errors.git
