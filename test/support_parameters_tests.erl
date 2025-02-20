@@ -26,7 +26,7 @@
     dir_stats_service_status = __DIR_STATS_SERVICE_STATUS
 }).
 
--define(EXP_SETTING_CONFLICT_ERROR, ?ERROR_BAD_DATA(
+-define(EXP_SETTING_CONFLICT_ERROR, ?ERR_BAD_DATA(
     <<"dirStatsServiceEnabled">>,
     <<"Dir stats service must be enabled if accounting is enabled">>
 )).
@@ -45,7 +45,9 @@ encode_decode_support_parameters_registry_test() ->
 
 sanitize_support_parameters_test() ->
     lists:foreach(fun({RecordToSanitize, ExpectedResult}) ->
-        ?assertEqual(ExpectedResult, support_parameters:sanitize(RecordToSanitize))
+        ?assertEqual(ExpectedResult, support_parameters:sanitize(
+            RecordToSanitize
+        ))
     end, [
         {?SP(undefined, undefined, undefined), {ok, ?SP(undefined, undefined, undefined)}},
         {?SP(true, undefined, undefined), {ok, ?SP(true, undefined, undefined)}},
@@ -75,7 +77,7 @@ sanitize_support_parameters_test() ->
 
 insert_support_parameters_test() ->
     BuildExpErrorFun = fun(Field) ->
-        ?ERROR_MISSING_REQUIRED_VALUE(<<"supportParameters.", Field/binary>>)
+        ?ERR_MISSING_REQUIRED_VALUE(<<"supportParameters.", Field/binary>>)
     end,
 
     DummyProviderId = ?RAND_STR(),
@@ -116,7 +118,7 @@ update_support_parameters_test() ->
         DummyRegistry = insert_parameters_into_registry(DummyProviderId, RecordToUpdate, ExampleRegistry),
 
         case ExpectedResult of
-            {error, _} ->
+            ?ERR ->
                 ?assertEqual(
                     ExpectedResult,
                     support_parameters_registry:update_entry(DummyProviderId, OverlayRecord, DummyRegistry)

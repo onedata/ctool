@@ -87,7 +87,8 @@ decode_with(validate, RecordJson, NestedRecordDecoder) ->
     Record = decode_with(skip_validation, RecordJson, NestedRecordDecoder),
     lists:foldl(fun(#atm_time_series_measurement_spec{name_matcher = NameMatcher}, AlreadyUsedNameMatchers) ->
         ordsets:is_element(NameMatcher, AlreadyUsedNameMatchers) andalso throw(
-            ?ERROR_BAD_DATA(
+            ?ERR_BAD_DATA(
+                ?err_ctx(),
                 <<"specs">>,
                 <<"There cannot be two measurement specs with the same name matcher">>
             )

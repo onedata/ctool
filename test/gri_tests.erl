@@ -128,11 +128,11 @@ serialize_deserialize_testcases() -> [
 
 
 serialize_errors_test() ->
-    [?assertThrow(?ERROR_BAD_GRI, gri:serialize(GRI)) || GRI <- serialize_errors_testcases(regular)].
+    [?assertThrow(?ERR_BAD_GRI, gri:serialize(GRI)) || GRI <- serialize_errors_testcases(regular)].
 
 
 deserialize_errors_test() ->
-    [?assertThrow(?ERROR_BAD_GRI, gri:deserialize(S)) || S <- deserialize_errors_testcases(regular)].
+    [?assertThrow(?ERR_BAD_GRI, gri:deserialize(S)) || S <- deserialize_errors_testcases(regular)].
 
 
 serialize_deserialize_pattern_test() ->
@@ -263,11 +263,11 @@ serialize_deserialize_pattern_testcases() -> [
 
 
 serialize_pattern_errors_test() ->
-    [?assertThrow(?ERROR_BAD_GRI, gri:serialize_pattern(GRI)) || GRI <- serialize_errors_testcases(pattern)].
+    [?assertThrow(?ERR_BAD_GRI, gri:serialize_pattern(GRI)) || GRI <- serialize_errors_testcases(pattern)].
 
 
 deserialize_pattern_errors_test() ->
-    [?assertThrow(?ERROR_BAD_GRI, gri:deserialize_pattern(S)) || S <- deserialize_errors_testcases(pattern)].
+    [?assertThrow(?ERR_BAD_GRI, gri:deserialize_pattern(S)) || S <- deserialize_errors_testcases(pattern)].
 
 
 serialize_errors_testcases(regular) -> [

@@ -613,7 +613,7 @@ test_combinations(InitialStageDetails, StorageId, GenExpectationFun) ->
         ExpectedNewStageDetails = GenExpectationFun(TransitionTo),
         ExpectedTransitionResult = case ExpectedNewStageDetails of
             illegal ->
-                ?ERROR_ILLEGAL_SUPPORT_STAGE_TRANSITION(PrevProviderStage, PrevStorageStage);
+                ?ERR_ILLEGAL_SUPPORT_STAGE_TRANSITION(PrevProviderStage, PrevStorageStage);
             _ ->
                 {ok, StagePerProvider#{
                     ProviderId => inject_storage_stages(ExpectedNewStageDetails, DummyRetiredStorages)
@@ -651,7 +651,7 @@ test_combinations(InitialStageDetails, StorageId, GenExpectationFun) ->
 
 
 compare_transition_result(ProviderId, StorageId, TransitionTo, ExpectedResult, ActualResult) ->
-    case ExpectedResult =:= ActualResult of
+    case eunit_utils:erase_ctx_if_error(ExpectedResult) =:= eunit_utils:erase_ctx_if_error(ActualResult) of
         true ->
             true;
         false ->

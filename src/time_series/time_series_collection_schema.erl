@@ -83,12 +83,12 @@ decode_with(skip_validation, RecordJson, NestedRecordDecoder) ->
 decode_with(validate, RecordJson, NestedRecordDecoder) ->
     Config = decode_with(skip_validation, RecordJson, NestedRecordDecoder),
 
-    Config#time_series_collection_schema.time_series_schemas == [] andalso throw(?ERROR_BAD_VALUE_EMPTY(<<"timeSeriesSchemas">>)),
+    Config#time_series_collection_schema.time_series_schemas == [] andalso throw(?ERR_BAD_VALUE_EMPTY(?err_ctx(), <<"timeSeriesSchemas">>)),
 
     lists:foldl(fun(TimeSeriesSchema, AlreadyCheckedSchemas) ->
         lists:foreach(fun(AlreadyCheckedSchema) ->
             are_name_generators_conflicting(TimeSeriesSchema, AlreadyCheckedSchema) andalso throw(
-                ?ERROR_BAD_DATA(<<"timeSeriesSchemas">>, <<
+                ?ERR_BAD_DATA(?err_ctx(), <<"timeSeriesSchemas">>, <<
                     "Provided time series schemas have conflicting name generators; the generators "
                     "cannot have the same values and no 'add_prefix' generator can be a prefix "
                     "of any other generator."

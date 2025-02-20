@@ -89,5 +89,5 @@ decode_with(skip_validation, RecordJson, NestedRecordDecoder) ->
     };
 decode_with(validate, RecordJson, NestedRecordDecoder) ->
     #atm_parameter_spec{name = Name} = ParameterSpec = decode_with(skip_validation, RecordJson, NestedRecordDecoder),
-    str_utils:validate_name(Name) orelse throw(?ERROR_BAD_VALUE_NAME(<<"parameterSpec.name">>)),
+    str_utils:validate_name(Name) orelse throw(?ERR_BAD_VALUE_NAME(?err_ctx(), <<"parameterSpec.name">>)),
     ParameterSpec.

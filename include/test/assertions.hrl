@@ -103,7 +103,7 @@ end).
 -define(assertEqual(Expectation, ExpressionToCheck, Attempts, Interval), begin
     ((fun() ->
         lists_utils:foldl_while(fun(AttemptsLeft__Local, ExpectedValue__Local) ->
-            case (ExpressionToCheck) of
+            case eunit_utils:erase_ctx_if_error(ExpressionToCheck) of
                 ExpectedValue__Local ->
                     {halt, ok};
                 ActualValue__Local ->
@@ -123,7 +123,7 @@ end).
                             {cont, Expectation}
                     end
             end
-        end, Expectation, lists:seq(max(Attempts, 1), 1, -1))
+        end, eunit_utils:erase_ctx_if_error(Expectation), lists:seq(max(Attempts, 1), 1, -1))
     end)())
 end).
 

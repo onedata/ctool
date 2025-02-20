@@ -1,0 +1,75 @@
+%%%-------------------------------------------------------------------
+%%% This file has been automatically generated - DO NOT EDIT!!!
+%%%
+%%% @copyright (C) 2025 ACK CYFRONET AGH
+%%% This software is released under the MIT license
+%%% cited in 'LICENSE.txt'.
+%%% @end
+%%%-------------------------------------------------------------------
+%%% @doc
+%%% This module implements od_error for 'od_error_atm_invalid_status_transition'.
+%%% @end
+%%%-------------------------------------------------------------------
+-module(od_error_atm_invalid_status_transition).
+
+-behaviour(od_error).
+
+-include("errors.hrl").
+-include("http/codes.hrl").
+
+
+-type t() :: {error, #od_error{type :: ?MODULE}}.
+
+-export_type([t/0]).
+
+%% od_error callbacks
+-export([to_json/1, from_json/1, to_http_code/1, to_errno/1]).
+
+
+%%%===================================================================
+%%% od_error callbacks
+%%%===================================================================
+
+
+-spec to_json(t()) -> json_utils:json_map().
+to_json(?ERR_ATM_INVALID_STATUS_TRANSITION(ErrorCtx, PrevStatus, NewStatus)) ->
+    PrevStatusJson = erlang:atom_to_binary(PrevStatus, utf8),
+    NewStatusJson = erlang:atom_to_binary(NewStatus, utf8),
+
+    #{
+        <<"id">> => ?ERR_ATM_INVALID_STATUS_TRANSITION_ID,
+        <<"ctx">> => od_error:ctx_to_json(ErrorCtx),
+        <<"details">> => #{
+            <<"prevStatus">> => PrevStatusJson,
+            <<"newStatus">> => NewStatusJson
+        },
+        <<"description">> => od_error:format_description(
+            "Invalid status transition from \"~ts\" to \"~ts\".",
+            [PrevStatusJson, NewStatusJson]
+        )
+    }.
+
+
+-spec from_json(json_utils:json_map()) -> t().
+from_json(OdErrorJson = #{<<"id">> := ?ERR_ATM_INVALID_STATUS_TRANSITION_ID}) ->
+    ErrorCtxJson = maps:get(<<"ctx">>, OdErrorJson, #{}),
+    ErrorCtx = od_error:ctx_from_json(ErrorCtxJson),
+
+    DetailsJson = maps:get(<<"details">>, OdErrorJson),
+
+    PrevStatusJson = maps:get(<<"prevStatus">>, DetailsJson),
+    PrevStatus = erlang:binary_to_existing_atom(PrevStatusJson, utf8),
+    NewStatusJson = maps:get(<<"newStatus">>, DetailsJson),
+    NewStatus = erlang:binary_to_existing_atom(NewStatusJson, utf8),
+
+    ?ERR_ATM_INVALID_STATUS_TRANSITION(ErrorCtx, PrevStatus, NewStatus).
+
+
+-spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.
+to_http_code(_) ->
+    ?HTTP_400_BAD_REQUEST.
+
+
+-spec to_errno(t()) -> false.
+to_errno(_) ->
+    false.

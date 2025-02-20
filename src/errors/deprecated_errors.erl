@@ -12,11 +12,11 @@
 %%% specifications and macros in errors.hrl.
 %%% @end
 %%%-------------------------------------------------------------------
--module(errors).
+-module(deprecated_errors).
 -author("Lukasz Opiola").
 
 -include("aai/aai.hrl").
--include("errors.hrl").
+-include("deprecated_errors.hrl").
 -include("http/codes.hrl").
 -include("logging.hrl").
 -include("onedata.hrl").
@@ -239,7 +239,7 @@
 -spec is_known_error(term()) -> boolean().
 is_known_error(Error) ->
     try
-        errors:to_http_code(Error),
+        deprecated_errors:to_http_code(Error),
         true
     catch _:_ ->
         false
@@ -258,30 +258,30 @@ to_json(undefined) ->
 %% -----------------------------------------------------------------------------
 %% General errors
 %% -----------------------------------------------------------------------------
-to_json(?ERROR_BAD_MESSAGE(MessageBinOrJson)) -> #{
+to_json(?DEPRECATED_ERROR_BAD_MESSAGE(MessageBinOrJson)) -> #{
     <<"id">> => <<"badMessage">>,
     <<"details">> => #{
         <<"message">> => MessageBinOrJson
     },
     <<"description">> => <<"This message could not be understood by the server.">>
 };
-to_json(?ERROR_NO_CONNECTION_TO_ONEZONE) -> #{
+to_json(?DEPRECATED_ERROR_NO_CONNECTION_TO_ONEZONE) -> #{
     <<"id">> => <<"noConnectionToOnezone">>,
     <<"description">> => <<"No connection to Onezone.">>
 };
-to_json(?ERROR_NO_CONNECTION_TO_PEER_ONEPROVIDER) -> #{
+to_json(?DEPRECATED_ERROR_NO_CONNECTION_TO_PEER_ONEPROVIDER) -> #{
     <<"id">> => <<"noConnectionToPeerOneprovider">>,
     <<"description">> => <<"No connection to peer Oneprovider.">>
 };
-to_json(?ERROR_NO_CONNECTION_TO_CLUSTER_NODE) -> #{
+to_json(?DEPRECATED_ERROR_NO_CONNECTION_TO_CLUSTER_NODE) -> #{
     <<"id">> => <<"noConnectionToClusterNode">>,
     <<"description">> => <<"No connection to cluster node.">>
 };
-to_json(?ERROR_UNREGISTERED_ONEPROVIDER) -> #{
+to_json(?DEPRECATED_ERROR_UNREGISTERED_ONEPROVIDER) -> #{
     <<"id">> => <<"unregisteredOneprovider">>,
     <<"description">> => <<"This Oneprovider is not registered.">>
 };
-to_json(?ERROR_INTERNAL_SERVER_ERROR(ErrorRef)) -> #{
+to_json(?DEPRECATED_ERROR_INTERNAL_SERVER_ERROR(ErrorRef)) -> #{
     <<"id">> => <<"internalServerError">>,
     <<"details">> => #{
         <<"reference">> => ErrorRef
@@ -291,30 +291,30 @@ to_json(?ERROR_INTERNAL_SERVER_ERROR(ErrorRef)) -> #{
         "If the problem persists, please contact the site's administrators, citing the following reference: ~ts.", [ErrorRef]
     )
 };
-to_json(?ERROR_INTERNAL_SERVER_ERROR) -> #{
+to_json(?DEPRECATED_ERROR_INTERNAL_SERVER_ERROR) -> #{
     <<"id">> => <<"internalServerError">>,
     <<"description">> => <<"The server has encountered an error while processing this request.">>
 };
-to_json(?ERROR_NOT_IMPLEMENTED) -> #{
+to_json(?DEPRECATED_ERROR_NOT_IMPLEMENTED) -> #{
     <<"id">> => <<"notImplemented">>,
     <<"description">> => <<"This operation is not implemented.">>
 };
-to_json(?ERROR_NOT_SUPPORTED) -> #{
+to_json(?DEPRECATED_ERROR_NOT_SUPPORTED) -> #{
     <<"id">> => <<"notSupported">>,
     <<"description">> => <<"This operation is not supported.">>
 };
-to_json(?ERROR_SERVICE_UNAVAILABLE) -> #{
+to_json(?DEPRECATED_ERROR_SERVICE_UNAVAILABLE) -> #{
     <<"id">> => <<"serviceUnavailable">>,
     <<"description">> => <<"Service required for this operation is offline.">>};
-to_json(?ERROR_TIMEOUT) -> #{
+to_json(?DEPRECATED_ERROR_TIMEOUT) -> #{
     <<"id">> => <<"timeout">>,
     <<"description">> => <<"Operation timed out.">>
 };
-to_json(?ERROR_TEMPORARY_FAILURE) -> #{
+to_json(?DEPRECATED_ERROR_TEMPORARY_FAILURE) -> #{
     <<"id">> => <<"temporaryFailure">>,
     <<"description">> => <<"Temporary failure - please try again later.">>
 };
-to_json(?ERROR_EXTERNAL_SERVICE_OPERATION_FAILED(ServiceName)) -> #{
+to_json(?DEPRECATED_ERROR_EXTERNAL_SERVICE_OPERATION_FAILED(ServiceName)) -> #{
     <<"id">> => <<"externalServiceOperationFailed">>,
     <<"details">> => #{
         <<"serviceName">> => ServiceName
@@ -326,18 +326,18 @@ to_json(?ERROR_EXTERNAL_SERVICE_OPERATION_FAILED(ServiceName)) -> #{
         [ServiceName]
     )
 };
-to_json(?ERROR_UNAUTHORIZED(AuthError)) -> #{
+to_json(?DEPRECATED_ERROR_UNAUTHORIZED(AuthError)) -> #{
     <<"id">> => <<"unauthorized">>,
     <<"details">> => #{
         <<"authError">> => to_json(AuthError)
     },
     <<"description">> => <<"Provided authentication is not valid (see details).">>
 };
-to_json(?ERROR_UNAUTHORIZED) -> #{
+to_json(?DEPRECATED_ERROR_UNAUTHORIZED) -> #{
     <<"id">> => <<"unauthorized">>,
     <<"description">> => <<"You must authenticate yourself to perform this operation.">>
 };
-to_json(?ERROR_FORBIDDEN(HumanReadableHint)) -> #{
+to_json(?DEPRECATED_ERROR_FORBIDDEN(HumanReadableHint)) -> #{
     <<"id">> => <<"forbidden">>,
     <<"details">> => #{
         <<"hint">> => HumanReadableHint
@@ -346,26 +346,26 @@ to_json(?ERROR_FORBIDDEN(HumanReadableHint)) -> #{
         str_utils:ensure_suffix(HumanReadableHint, <<".">>)
     ])
 };
-to_json(?ERROR_FORBIDDEN) -> #{
+to_json(?DEPRECATED_ERROR_FORBIDDEN) -> #{
     <<"id">> => <<"forbidden">>,
     <<"description">> => <<"You are not authorized to perform this operation.">>
 };
-to_json(?ERROR_NOT_FOUND) -> #{
+to_json(?DEPRECATED_ERROR_NOT_FOUND) -> #{
     <<"id">> => <<"notFound">>,
     <<"description">> => <<"The resource could not be found.">>
 };
-to_json(?ERROR_ALREADY_EXISTS) -> #{
+to_json(?DEPRECATED_ERROR_ALREADY_EXISTS) -> #{
     <<"id">> => <<"alreadyExists">>,
     <<"description">> => <<"The resource already exists.">>
 };
-to_json(?ERROR_FILE_ACCESS(Path, Errno)) ->
+to_json(?DEPRECATED_ERROR_FILE_ACCESS(Path, Errno)) ->
     PathBin = str_utils:to_binary(filename:flatten(Path)),
     #{
         <<"id">> => <<"fileAccess">>,
         <<"details">> => #{<<"path">> => PathBin, <<"errno">> => Errno},
         <<"description">> => ?FMT("Cannot access file \"~ts\": ~tp.", [PathBin, Errno])
     };
-to_json(?ERROR_LIMIT_REACHED(Limit, ResourceDescription)) ->
+to_json(?DEPRECATED_ERROR_LIMIT_REACHED(Limit, ResourceDescription)) ->
     #{
         <<"id">> => <<"limitReached">>,
         <<"details">> => #{
@@ -378,7 +378,7 @@ to_json(?ERROR_LIMIT_REACHED(Limit, ResourceDescription)) ->
 %% -----------------------------------------------------------------------------
 %% POSIX errors
 %% -----------------------------------------------------------------------------
-to_json(?ERROR_POSIX(Errno)) -> #{
+to_json(?DEPRECATED_ERROR_POSIX(Errno)) -> #{
     <<"id">> => <<"posix">>,
     <<"details">> => #{
         <<"errno">> => atom_to_binary(Errno, utf8)
@@ -389,58 +389,58 @@ to_json(?ERROR_POSIX(Errno)) -> #{
 %% -----------------------------------------------------------------------------
 %% Auth errors
 %% -----------------------------------------------------------------------------
-to_json(?ERROR_USER_BLOCKED) -> #{
+to_json(?DEPRECATED_ERROR_USER_BLOCKED) -> #{
     <<"id">> => <<"userBlocked">>,
     <<"description">> => <<
         "This user account has been blocked by the administrator and "
         "cannot be used unless it is unblocked again."
     >>
 };
-to_json(?ERROR_BAD_BASIC_CREDENTIALS) -> #{
+to_json(?DEPRECATED_ERROR_BAD_BASIC_CREDENTIALS) -> #{
     <<"id">> => <<"badBasicCredentials">>,
     <<"description">> => <<"Invalid username or password.">>
 };
-to_json(?ERROR_BAD_IDP_ACCESS_TOKEN(IdP)) -> #{
+to_json(?DEPRECATED_ERROR_BAD_IDP_ACCESS_TOKEN(IdP)) -> #{
     <<"id">> => <<"badIdpAccessToken">>,
     <<"details">> => #{
         <<"idp">> => IdP
     },
     <<"description">> => ?FMT("Provided access token for \"~tp\" is not valid.", [IdP])
 };
-to_json(?ERROR_BAD_TOKEN) -> #{
+to_json(?DEPRECATED_ERROR_BAD_TOKEN) -> #{
     <<"id">> => <<"badToken">>,
     <<"description">> => <<"Provided token could not be understood by the server.">>
 };
-to_json(?ERROR_BAD_SERVICE_TOKEN(TokenError)) -> #{
+to_json(?DEPRECATED_ERROR_BAD_SERVICE_TOKEN(TokenError)) -> #{
     <<"id">> => <<"badServiceToken">>,
     <<"details">> => #{
         <<"tokenError">> => to_json(TokenError)
     },
     <<"description">> => <<"Provided service token is not valid (see details).">>
 };
-to_json(?ERROR_BAD_CONSUMER_TOKEN(TokenError)) -> #{
+to_json(?DEPRECATED_ERROR_BAD_CONSUMER_TOKEN(TokenError)) -> #{
     <<"id">> => <<"badConsumerToken">>,
     <<"details">> => #{
         <<"tokenError">> => to_json(TokenError)
     },
     <<"description">> => <<"Provided consumer token is not valid (see details).">>
 };
-to_json(?ERROR_TOKEN_INVALID) -> #{
+to_json(?DEPRECATED_ERROR_TOKEN_INVALID) -> #{
     <<"id">> => <<"tokenInvalid">>,
     <<"description">> => <<"Provided token is not valid.">>
 };
-to_json(?ERROR_TOKEN_REVOKED) -> #{
+to_json(?DEPRECATED_ERROR_TOKEN_REVOKED) -> #{
     <<"id">> => <<"tokenRevoked">>,
     <<"description">> => <<"Provided token has been revoked.">>
 };
-to_json(?ERROR_TOKEN_TOO_LARGE(SizeLimit)) -> #{
+to_json(?DEPRECATED_ERROR_TOKEN_TOO_LARGE(SizeLimit)) -> #{
     <<"id">> => <<"tokenTooLarge">>,
     <<"details">> => #{
         <<"limit">> => SizeLimit
     },
     <<"description">> => ?FMT("Provided token exceeds the allowed size (~B characters).", [SizeLimit])
 };
-to_json(?ERROR_NOT_AN_ACCESS_TOKEN(ReceivedTokenType)) -> #{
+to_json(?DEPRECATED_ERROR_NOT_AN_ACCESS_TOKEN(ReceivedTokenType)) -> #{
     <<"id">> => <<"notAnAccessToken">>,
     <<"details">> => #{
         <<"received">> => token_type:to_json(ReceivedTokenType)
@@ -449,7 +449,7 @@ to_json(?ERROR_NOT_AN_ACCESS_TOKEN(ReceivedTokenType)) -> #{
         token_type:to_printable(ReceivedTokenType)
     ])
 };
-to_json(?ERROR_NOT_AN_IDENTITY_TOKEN(ReceivedTokenType)) -> #{
+to_json(?DEPRECATED_ERROR_NOT_AN_IDENTITY_TOKEN(ReceivedTokenType)) -> #{
     <<"id">> => <<"notAnIdentityToken">>,
     <<"details">> => #{
         <<"received">> => token_type:to_json(ReceivedTokenType)
@@ -458,7 +458,7 @@ to_json(?ERROR_NOT_AN_IDENTITY_TOKEN(ReceivedTokenType)) -> #{
         token_type:to_printable(ReceivedTokenType)
     ])
 };
-to_json(?ERROR_NOT_AN_INVITE_TOKEN(ExpectedInviteType, ReceivedTokenType)) -> #{
+to_json(?DEPRECATED_ERROR_NOT_AN_INVITE_TOKEN(ExpectedInviteType, ReceivedTokenType)) -> #{
     <<"id">> => <<"notAnInviteToken">>,
     <<"details">> => #{
         <<"expectedInviteType">> => case ExpectedInviteType of
@@ -472,47 +472,47 @@ to_json(?ERROR_NOT_AN_INVITE_TOKEN(ExpectedInviteType, ReceivedTokenType)) -> #{
         token_type:to_printable(ReceivedTokenType)
     ])
 };
-to_json(?ERROR_TOKEN_CAVEAT_UNKNOWN(CaveatBinary)) -> #{
+to_json(?DEPRECATED_ERROR_TOKEN_CAVEAT_UNKNOWN(CaveatBinary)) -> #{
     <<"id">> => <<"tokenCaveatUnknown">>,
     <<"details">> => #{
         <<"caveat">> => CaveatBinary
     },
     <<"description">> => ?FMT("Unknown caveat - '~ts'.", [CaveatBinary])
 };
-to_json(?ERROR_TOKEN_CAVEAT_UNVERIFIED(Caveat)) -> #{
+to_json(?DEPRECATED_ERROR_TOKEN_CAVEAT_UNVERIFIED(Caveat)) -> #{
     <<"id">> => <<"tokenCaveatUnverified">>,
     <<"details">> => #{
         <<"caveat">> => caveats:to_json(Caveat)
     },
     <<"description">> => ?FMT("Provided token is not valid - ~ts.", [caveats:unverified_description(Caveat)])
 };
-to_json(?ERROR_TOKEN_TIME_CAVEAT_REQUIRED(MaxTtl)) -> #{
+to_json(?DEPRECATED_ERROR_TOKEN_TIME_CAVEAT_REQUIRED(MaxTtl)) -> #{
     <<"id">> => <<"tokenTimeCaveatRequired">>,
     <<"details">> => #{
         <<"maxTtl">> => MaxTtl
     },
     <<"description">> => ?FMT("You must specify a time caveat with maximum TTL of ~B seconds.", [MaxTtl])
 };
-to_json(?ERROR_TOKEN_SUBJECT_INVALID) -> #{
+to_json(?DEPRECATED_ERROR_TOKEN_SUBJECT_INVALID) -> #{
     <<"id">> => <<"tokenSubjectInvalid">>,
     <<"description">> => <<"The token subject is invalid (does not exist or is different than expected).">>
 };
-to_json(?ERROR_TOKEN_SERVICE_FORBIDDEN(Service)) -> #{
+to_json(?DEPRECATED_ERROR_TOKEN_SERVICE_FORBIDDEN(Service)) -> #{
     <<"id">> => <<"tokenServiceForbidden">>,
     <<"details">> => #{
         <<"service">> => aai:service_to_json(Service)
     },
     <<"description">> => ?FMT("The service ~ts is forbidden for this subject.", [aai:service_to_printable(Service)])
 };
-to_json(?ERROR_INVITE_TOKEN_SUBJECT_NOT_AUTHORIZED) -> #{
+to_json(?DEPRECATED_ERROR_INVITE_TOKEN_SUBJECT_NOT_AUTHORIZED) -> #{
     <<"id">> => <<"inviteTokenSubjectNotAuthorized">>,
     <<"description">> => <<"The subject of this token is not (or no longer) authorized to issue such invitations.">>
 };
-to_json(?ERROR_INVITE_TOKEN_USAGE_LIMIT_REACHED) -> #{
+to_json(?DEPRECATED_ERROR_INVITE_TOKEN_USAGE_LIMIT_REACHED) -> #{
     <<"id">> => <<"inviteTokenUsageLimitReached">>,
     <<"description">> => <<"The usage limit of this invite token has been reached.">>
 };
-to_json(?ERROR_INVITE_TOKEN_CONSUMER_INVALID(Consumer)) -> #{
+to_json(?DEPRECATED_ERROR_INVITE_TOKEN_CONSUMER_INVALID(Consumer)) -> #{
     <<"id">> => <<"inviteTokenConsumerInvalid">>,
     <<"details">> => #{
         <<"consumer">> => aai:subject_to_json(Consumer)
@@ -521,14 +521,14 @@ to_json(?ERROR_INVITE_TOKEN_CONSUMER_INVALID(Consumer)) -> #{
         aai:subject_to_printable(Consumer)
     ])
 };
-to_json(?ERROR_INVITE_TOKEN_TARGET_ID_INVALID(Id)) -> #{
+to_json(?DEPRECATED_ERROR_INVITE_TOKEN_TARGET_ID_INVALID(Id)) -> #{
     <<"id">> => <<"inviteTokenTargetIdInvalid">>,
     <<"details">> => #{
         <<"id">> => Id
     },
     <<"description">> => ?FMT("The target id '~ts' is invalid for this type of invite token.", [Id])
 };
-to_json(?ERROR_TOKEN_SESSION_INVALID) -> #{
+to_json(?DEPRECATED_ERROR_TOKEN_SESSION_INVALID) -> #{
     <<"id">> => <<"tokenSessionInvalid">>,
     <<"description">> => <<"This token is bound to a session different than presented by the client or no longer existent.">>
 };
@@ -536,30 +536,30 @@ to_json(?ERROR_TOKEN_SESSION_INVALID) -> #{
 %% -----------------------------------------------------------------------------
 %% Graph Sync errors
 %% -----------------------------------------------------------------------------
-to_json(?ERROR_EXPECTED_HANDSHAKE_MESSAGE) -> #{
+to_json(?DEPRECATED_ERROR_EXPECTED_HANDSHAKE_MESSAGE) -> #{
     <<"id">> => <<"expectedHandshakeMessage">>,
     <<"description">> => <<"Handshake must be performed prior to any requests.">>
 };
-to_json(?ERROR_HANDSHAKE_ALREADY_DONE) -> #{
+to_json(?DEPRECATED_ERROR_HANDSHAKE_ALREADY_DONE) -> #{
     <<"id">> => <<"handshakeAlreadyDone">>,
     <<"description">> => <<"Handshake has already been done.">>
 };
-to_json(?ERROR_BAD_VERSION(SupportedVersions)) -> #{
+to_json(?DEPRECATED_ERROR_BAD_VERSION(SupportedVersions)) -> #{
     <<"id">> => <<"badVersion">>,
     <<"details">> => #{
         <<"supportedVersions">> => SupportedVersions
     },
     <<"description">> => ?FMT("Bad version - supported versions: ~tp.", [SupportedVersions])
 };
-to_json(?ERROR_BAD_GRI) -> #{
+to_json(?DEPRECATED_ERROR_BAD_GRI) -> #{
     <<"id">> => <<"badGRI">>,
     <<"description">> => <<"Provided GRI (Graph Resource Identifier) is invalid.">>
 };
-to_json(?ERROR_RPC_UNDEFINED) -> #{
+to_json(?DEPRECATED_ERROR_RPC_UNDEFINED) -> #{
     <<"id">> => <<"rpcUndefined">>,
     <<"description">> => <<"Requested RPC operation is not defined.">>
 };
-to_json(?ERROR_NOT_SUBSCRIBABLE) -> #{
+to_json(?DEPRECATED_ERROR_NOT_SUBSCRIBABLE) -> #{
     <<"id">> => <<"notSubscribable">>,
     <<"description">> => <<"Requested resource is not subscribable.">>
 };
@@ -567,25 +567,25 @@ to_json(?ERROR_NOT_SUBSCRIBABLE) -> #{
 %% -----------------------------------------------------------------------------
 %% Data validation errors
 %% -----------------------------------------------------------------------------
-to_json(?ERROR_MALFORMED_DATA) -> #{
+to_json(?DEPRECATED_ERROR_MALFORMED_DATA) -> #{
     <<"id">> => <<"malformedData">>,
     <<"description">> => <<"Provided data could not be understood by the server.">>
 };
-to_json(?ERROR_MISSING_REQUIRED_VALUE(Key)) -> #{
+to_json(?DEPRECATED_ERROR_MISSING_REQUIRED_VALUE(Key)) -> #{
     <<"id">> => <<"missingRequiredValue">>,
     <<"details">> => #{
         <<"key">> => Key
     },
     <<"description">> => ?FMT("Missing required value: ~ts.", [Key])
 };
-to_json(?ERROR_MISSING_AT_LEAST_ONE_VALUE(Keys)) -> #{
+to_json(?DEPRECATED_ERROR_MISSING_AT_LEAST_ONE_VALUE(Keys)) -> #{
     <<"id">> => <<"missingAtLeastOneValue">>,
     <<"details">> => #{
         <<"keys">> => Keys
     },
     <<"description">> => ?FMT("Missing data, you must provide at least one of: ~tp.", [Keys])
 };
-to_json(?ERROR_BAD_DATA(Key, {error, _} = SpecificError)) -> #{
+to_json(?DEPRECATED_ERROR_BAD_DATA(Key, {error, _} = SpecificError)) -> #{
     <<"id">> => <<"badData">>,
     <<"details">> => #{
         <<"key">> => Key,
@@ -593,7 +593,7 @@ to_json(?ERROR_BAD_DATA(Key, {error, _} = SpecificError)) -> #{
     },
     <<"description">> => ?FMT("Bad value provided for \"~ts\" (see details).", [Key])
 };
-to_json(?ERROR_BAD_DATA(Key, HumanReadableHint)) -> #{
+to_json(?DEPRECATED_ERROR_BAD_DATA(Key, HumanReadableHint)) -> #{
     <<"id">> => <<"badData">>,
     <<"details">> => #{
         <<"key">> => Key,
@@ -601,7 +601,7 @@ to_json(?ERROR_BAD_DATA(Key, HumanReadableHint)) -> #{
     },
     <<"description">> => ?FMT("Bad value provided for \"~ts\": ~ts.", [Key, HumanReadableHint])
 };
-to_json(?ERROR_BAD_DATA(Key)) -> #{
+to_json(?DEPRECATED_ERROR_BAD_DATA(Key)) -> #{
     <<"id">> => <<"badData">>,
     <<"details">> => #{
         <<"key">> => Key
@@ -612,14 +612,14 @@ to_json(?ERROR_BAD_DATA(Key)) -> #{
         [Key]
     )
 };
-to_json(?ERROR_BAD_VALUE_EMPTY(Key)) -> #{
+to_json(?DEPRECATED_ERROR_BAD_VALUE_EMPTY(Key)) -> #{
     <<"id">> => <<"badValueEmpty">>,
     <<"details">> => #{
         <<"key">> => Key
     },
     <<"description">> => ?FMT("Bad value: provided \"~ts\" must not be empty.", [Key])
 };
-to_json(?ERROR_BAD_VALUE_BOOLEAN(Key)) -> #{
+to_json(?DEPRECATED_ERROR_BAD_VALUE_BOOLEAN(Key)) -> #{
     <<"id">> => <<"badValueBoolean">>,
     <<"details">> => #{
         <<"key">> => Key
@@ -628,28 +628,28 @@ to_json(?ERROR_BAD_VALUE_BOOLEAN(Key)) -> #{
 };
 % We do not differentiate between atoms and binaries in JSON, so they are
 % treated as the same.
-to_json(?ERROR_BAD_VALUE_ATOM(Key)) -> #{
+to_json(?DEPRECATED_ERROR_BAD_VALUE_ATOM(Key)) -> #{
     <<"id">> => <<"badValueString">>,
     <<"details">> => #{
         <<"key">> => Key
     },
     <<"description">> => ?FMT("Bad value: provided \"~ts\" must be a string.", [Key])
 };
-to_json(?ERROR_BAD_VALUE_LIST_OF_ATOMS(Key)) -> #{
+to_json(?DEPRECATED_ERROR_BAD_VALUE_LIST_OF_ATOMS(Key)) -> #{
     <<"id">> => <<"badValueListOfStrings">>,
     <<"details">> => #{
         <<"key">> => Key
     },
     <<"description">> => ?FMT("Bad value: provided \"~ts\" must be a list of strings.", [Key])
 };
-to_json(?ERROR_BAD_VALUE_BINARY(Key)) -> #{
+to_json(?DEPRECATED_ERROR_BAD_VALUE_BINARY(Key)) -> #{
     <<"id">> => <<"badValueString">>,
     <<"details">> => #{
         <<"key">> => Key
     },
     <<"description">> => ?FMT("Bad value: provided \"~ts\" must be a string.", [Key])
 };
-to_json(?ERROR_BAD_VALUE_TEXT_TOO_LARGE(Key, SizeLimit)) -> #{
+to_json(?DEPRECATED_ERROR_BAD_VALUE_TEXT_TOO_LARGE(Key, SizeLimit)) -> #{
     <<"id">> => <<"badValueTextTooLarge">>,
     <<"details">> => #{
         <<"key">> => Key,
@@ -659,42 +659,42 @@ to_json(?ERROR_BAD_VALUE_TEXT_TOO_LARGE(Key, SizeLimit)) -> #{
         Key, SizeLimit
     ])
 };
-to_json(?ERROR_BAD_VALUE_LIST_OF_BINARIES(Key)) -> #{
+to_json(?DEPRECATED_ERROR_BAD_VALUE_LIST_OF_BINARIES(Key)) -> #{
     <<"id">> => <<"badValueListOfStrings">>,
     <<"details">> => #{
         <<"key">> => Key
     },
     <<"description">> => ?FMT("Bad value: provided \"~ts\" must be a list of strings.", [Key])
 };
-to_json(?ERROR_BAD_VALUE_INTEGER(Key)) -> #{
+to_json(?DEPRECATED_ERROR_BAD_VALUE_INTEGER(Key)) -> #{
     <<"id">> => <<"badValueInteger">>,
     <<"details">> => #{
         <<"key">> => Key
     },
     <<"description">> => ?FMT("Bad value: provided \"~ts\" must be an integer.", [Key])
 };
-to_json(?ERROR_BAD_VALUE_FLOAT(Key)) -> #{
+to_json(?DEPRECATED_ERROR_BAD_VALUE_FLOAT(Key)) -> #{
     <<"id">> => <<"badValueFloat">>,
     <<"details">> => #{
         <<"key">> => Key
     },
     <<"description">> => ?FMT("Bad value: provided \"~ts\" must be a floating point number.", [Key])
 };
-to_json(?ERROR_BAD_VALUE_JSON(Key)) -> #{
+to_json(?DEPRECATED_ERROR_BAD_VALUE_JSON(Key)) -> #{
     <<"id">> => <<"badValueJSON">>,
     <<"details">> => #{
         <<"key">> => Key
     },
     <<"description">> => ?FMT("Bad value: provided \"~ts\" must be a valid JSON.", [Key])
 };
-to_json(?ERROR_BAD_VALUE_XML(Key)) -> #{
+to_json(?DEPRECATED_ERROR_BAD_VALUE_XML(Key)) -> #{
     <<"id">> => <<"badValueXML">>,
     <<"details">> => #{
         <<"key">> => Key
     },
     <<"description">> => ?FMT("Bad value: provided \"~ts\" must be a valid XML.", [Key])
 };
-to_json(?ERROR_BAD_VALUE_TOKEN(Key, TokenError)) -> #{
+to_json(?DEPRECATED_ERROR_BAD_VALUE_TOKEN(Key, TokenError)) -> #{
     <<"id">> => <<"badValueToken">>,
     <<"details">> => #{
         <<"key">> => Key,
@@ -702,35 +702,35 @@ to_json(?ERROR_BAD_VALUE_TOKEN(Key, TokenError)) -> #{
     },
     <<"description">> => ?FMT("Bad value: provided \"~ts\" is not a valid token (see details).", [Key])
 };
-to_json(?ERROR_BAD_VALUE_TOKEN_TYPE(Key)) -> #{
+to_json(?DEPRECATED_ERROR_BAD_VALUE_TOKEN_TYPE(Key)) -> #{
     <<"id">> => <<"badValueTokenType">>,
     <<"details">> => #{
         <<"key">> => Key
     },
     <<"description">> => ?FMT("Bad value: provided \"~ts\" is not a valid token type.", [Key])
 };
-to_json(?ERROR_BAD_VALUE_INVITE_TYPE(Key)) -> #{
+to_json(?DEPRECATED_ERROR_BAD_VALUE_INVITE_TYPE(Key)) -> #{
     <<"id">> => <<"badValueInviteType">>,
     <<"details">> => #{
         <<"key">> => Key
     },
     <<"description">> => ?FMT("Bad value: provided \"~ts\" is not a valid invite type.", [Key])
 };
-to_json(?ERROR_BAD_VALUE_IPV4_ADDRESS(Key)) -> #{
+to_json(?DEPRECATED_ERROR_BAD_VALUE_IPV4_ADDRESS(Key)) -> #{
     <<"id">> => <<"badValueIPv4Address">>,
     <<"details">> => #{
         <<"key">> => Key
     },
     <<"description">> => ?FMT("Bad value: provided \"~ts\" is not a valid IPv4 address.", [Key])
 };
-to_json(?ERROR_BAD_VALUE_LIST_OF_IPV4_ADDRESSES(Key)) -> #{
+to_json(?DEPRECATED_ERROR_BAD_VALUE_LIST_OF_IPV4_ADDRESSES(Key)) -> #{
     <<"id">> => <<"badValueListOfIPv4Addresses">>,
     <<"details">> => #{
         <<"key">> => Key
     },
     <<"description">> => ?FMT("Bad value: provided \"~ts\" is not a valid list of IPv4 addresses.", [Key])
 };
-to_json(?ERROR_BAD_VALUE_TOO_LOW(Key, Threshold)) -> #{
+to_json(?DEPRECATED_ERROR_BAD_VALUE_TOO_LOW(Key, Threshold)) -> #{
     <<"id">> => <<"badValueTooLow">>,
     <<"details">> => #{
         <<"key">> => Key,
@@ -738,7 +738,7 @@ to_json(?ERROR_BAD_VALUE_TOO_LOW(Key, Threshold)) -> #{
     },
     <<"description">> => ?FMT("Bad value: provided \"~ts\" must be at least ~B.", [Key, Threshold])
 };
-to_json(?ERROR_BAD_VALUE_TOO_HIGH(Key, Threshold)) -> #{
+to_json(?DEPRECATED_ERROR_BAD_VALUE_TOO_HIGH(Key, Threshold)) -> #{
     <<"id">> => <<"badValueTooHigh">>,
     <<"details">> => #{
         <<"key">> => Key,
@@ -746,7 +746,7 @@ to_json(?ERROR_BAD_VALUE_TOO_HIGH(Key, Threshold)) -> #{
     },
     <<"description">> => ?FMT("Bad value: provided \"~ts\" must not exceed ~B.", [Key, Threshold])
 };
-to_json(?ERROR_BAD_VALUE_NOT_IN_RANGE(Key, Low, High)) -> #{
+to_json(?DEPRECATED_ERROR_BAD_VALUE_NOT_IN_RANGE(Key, Low, High)) -> #{
     <<"id">> => <<"badValueNotInRange">>,
     <<"details">> => #{
         <<"key">> => Key,
@@ -755,7 +755,7 @@ to_json(?ERROR_BAD_VALUE_NOT_IN_RANGE(Key, Low, High)) -> #{
     },
     <<"description">> => ?FMT("Bad value: provided \"~ts\" must be between <~B, ~B>.", [Key, Low, High])
 };
-to_json(?ERROR_BAD_VALUE_NOT_ALLOWED(Key, AllowedValues)) -> #{
+to_json(?DEPRECATED_ERROR_BAD_VALUE_NOT_ALLOWED(Key, AllowedValues)) -> #{
     <<"id">> => <<"badValueNotAllowed">>,
     <<"details">> => #{
         <<"key">> => Key,
@@ -766,7 +766,7 @@ to_json(?ERROR_BAD_VALUE_NOT_ALLOWED(Key, AllowedValues)) -> #{
         [Key, join_values_with_commas(AllowedValues)]
     )
 };
-to_json(?ERROR_BAD_VALUE_LIST_NOT_ALLOWED(Key, AllowedValues)) -> #{
+to_json(?DEPRECATED_ERROR_BAD_VALUE_LIST_NOT_ALLOWED(Key, AllowedValues)) -> #{
     <<"id">> => <<"badValueListNotAllowed">>,
     <<"details">> => #{
         <<"key">> => Key,
@@ -777,88 +777,88 @@ to_json(?ERROR_BAD_VALUE_LIST_NOT_ALLOWED(Key, AllowedValues)) -> #{
         [Key, join_values_with_commas(AllowedValues)]
     )
 };
-to_json(?ERROR_BAD_VALUE_ID_NOT_FOUND(Key)) -> #{
+to_json(?DEPRECATED_ERROR_BAD_VALUE_ID_NOT_FOUND(Key)) -> #{
     <<"id">> => <<"badValueIdNotFound">>,
     <<"details">> => #{
         <<"key">> => Key
     },
     <<"description">> => ?FMT("Bad value: provided ID (\"~ts\") does not exist.", [Key])
 };
-to_json(?ERROR_BAD_VALUE_AMBIGUOUS_ID(Key)) -> #{
+to_json(?DEPRECATED_ERROR_BAD_VALUE_AMBIGUOUS_ID(Key)) -> #{
     <<"id">> => <<"badValueAmbiguousId">>,
     <<"details">> => #{
         <<"key">> => Key
     },
     <<"description">> => ?FMT("Bad value: provided ID (\"~ts\") is ambiguous.", [Key])
 };
-to_json(?ERROR_BAD_VALUE_IDENTIFIER(Key)) -> #{
+to_json(?DEPRECATED_ERROR_BAD_VALUE_IDENTIFIER(Key)) -> #{
     <<"id">> => <<"badValueIdentifier">>,
     <<"details">> => #{
         <<"key">> => Key
     },
     <<"description">> => ?FMT("Bad value: provided \"~ts\" is not a valid identifier.", [Key])
 };
-to_json(?ERROR_BAD_VALUE_IDENTIFIER_OCCUPIED(Key)) -> #{
+to_json(?DEPRECATED_ERROR_BAD_VALUE_IDENTIFIER_OCCUPIED(Key)) -> #{
     <<"id">> => <<"badValueIdentifierOccupied">>,
     <<"details">> => #{
         <<"key">> => Key
     },
     <<"description">> => ?FMT("Bad value: provided identifier (\"~ts\") is already occupied.", [Key])
 };
-to_json(?ERROR_BAD_VALUE_OCTAL(Key)) -> #{
+to_json(?DEPRECATED_ERROR_BAD_VALUE_OCTAL(Key)) -> #{
     <<"id">> => <<"badValueOctal">>,
     <<"details">> => #{<<"key">> => Key},
     <<"description">> => ?FMT("Bad value: provided \"~ts\" is not a valid octal number.", [Key])
 };
-to_json(?ERROR_BAD_VALUE_FILE_PATH) -> #{
+to_json(?DEPRECATED_ERROR_BAD_VALUE_FILE_PATH) -> #{
     <<"id">> => <<"badValueFilePath">>,
     <<"description">> => <<"Bad value: provided file path is invalid.">>
 };
-to_json(?ERROR_BAD_VALUE_FULL_NAME) -> #{
+to_json(?DEPRECATED_ERROR_BAD_VALUE_FULL_NAME) -> #{
     <<"id">> => <<"badValueFullName">>,
     <<"description">> => <<"Bad value: ", (?FULL_NAME_REQUIREMENTS_DESCRIPTION)/binary>>
 };
-to_json(?ERROR_BAD_VALUE_USERNAME) -> #{
+to_json(?DEPRECATED_ERROR_BAD_VALUE_USERNAME) -> #{
     <<"id">> => <<"badValueUsername">>,
     <<"description">> => <<"Bad value: ", (?USERNAME_REQUIREMENTS_DESCRIPTION)/binary>>
 };
-to_json(?ERROR_BAD_VALUE_PASSWORD) -> #{
+to_json(?DEPRECATED_ERROR_BAD_VALUE_PASSWORD) -> #{
     <<"id">> => <<"badValuePassword">>,
     <<"description">> => <<"Bad value: ", (?PASSWORD_REQUIREMENTS_DESCRIPTION)/binary>>
 };
-to_json(?ERROR_BAD_VALUE_EMAIL) -> #{
+to_json(?DEPRECATED_ERROR_BAD_VALUE_EMAIL) -> #{
     <<"id">> => <<"badValueEmail">>,
     <<"description">> => <<"Bad value: provided e-mail is not valid.">>
 };
-to_json(?ERROR_BAD_VALUE_NAME) -> #{
+to_json(?DEPRECATED_ERROR_BAD_VALUE_NAME) -> #{
     <<"id">> => <<"badValueName">>,
     <<"description">> => <<"Bad value: ", (?NAME_REQUIREMENTS_DESCRIPTION)/binary>>
 };
-to_json(?ERROR_BAD_VALUE_NAME(Key)) -> #{
+to_json(?DEPRECATED_ERROR_BAD_VALUE_NAME(Key)) -> #{
     <<"id">> => <<"badValueName">>,
     <<"details">> => #{<<"key">> => Key},
     <<"description">> => ?FMT("Bad value provided for \"~ts\": ~ts", [Key, ?NAME_REQUIREMENTS_DESCRIPTION])
 };
-to_json(?ERROR_BAD_VALUE_DOMAIN) -> #{
+to_json(?DEPRECATED_ERROR_BAD_VALUE_DOMAIN) -> #{
     <<"id">> => <<"badValueDomain">>,
     <<"description">> => <<"Bad value: provided domain is not valid.">>
 };
-to_json(?ERROR_BAD_VALUE_SUBDOMAIN) -> #{
+to_json(?DEPRECATED_ERROR_BAD_VALUE_SUBDOMAIN) -> #{
     <<"id">> => <<"badValueSubdomain">>,
     <<"description">> => <<"Bad value: provided subdomain is not valid.">>
 };
-to_json(?ERROR_BAD_VALUE_CAVEAT(CaveatJson)) -> #{
+to_json(?DEPRECATED_ERROR_BAD_VALUE_CAVEAT(CaveatJson)) -> #{
     <<"id">> => <<"badValueCaveat">>,
     <<"details">> => #{
         <<"caveat">> => CaveatJson
     },
     <<"description">> => ?FMT("Provided caveat is invalid: '~ts'.", [json_utils:encode(CaveatJson)])
 };
-to_json(?ERROR_BAD_VALUE_QOS_PARAMETERS) -> #{
+to_json(?DEPRECATED_ERROR_BAD_VALUE_QOS_PARAMETERS) -> #{
     <<"id">> => <<"badValueQoSParameters">>,
     <<"description">> => <<"Provided QoS parameters are invalid.">>
 };
-to_json(?ERROR_TSC_MISSING_LAYOUT(MissingLayout)) -> #{
+to_json(?DEPRECATED_ERROR_TSC_MISSING_LAYOUT(MissingLayout)) -> #{
     <<"id">> => <<"timeSeriesCollectionMissingLayout">>,
     <<"details">> => #{
         <<"missingLayout">> => MissingLayout
@@ -871,14 +871,14 @@ to_json(?ERROR_TSC_MISSING_LAYOUT(MissingLayout)) -> #{
             end, [], MissingLayout))
         ])
 };
-to_json(?ERROR_TSC_TOO_MANY_METRICS(Limit)) -> #{
+to_json(?DEPRECATED_ERROR_TSC_TOO_MANY_METRICS(Limit)) -> #{
     <<"id">> => <<"timeSeriesCollectionTooManyMetrics">>,
     <<"details">> => #{
         <<"limit">> => Limit
     },
     <<"description">> => ?FMT("The time series collection cannot have more than ~B metrics.", [Limit])
 };
-to_json(?ERROR_BAD_VALUE_TSC_CONFLICTING_METRIC_CONFIG(TSName, MetricName, ExistingMConfig, ConflictingMConfig)) -> #{
+to_json(?DEPRECATED_ERROR_BAD_VALUE_TSC_CONFLICTING_METRIC_CONFIG(TSName, MetricName, ExistingMConfig, ConflictingMConfig)) -> #{
     <<"id">> => <<"badValueTimeSeriesCollectionConflictingMetricConfig">>,
     <<"details">> => #{
         <<"timeSeriesName">> => TSName,
@@ -891,29 +891,29 @@ to_json(?ERROR_BAD_VALUE_TSC_CONFLICTING_METRIC_CONFIG(TSName, MetricName, Exist
             TSName, MetricName
         ])
 };
-to_json(?ERROR_BAD_GUI_PACKAGE) -> #{
+to_json(?DEPRECATED_ERROR_BAD_GUI_PACKAGE) -> #{
     <<"id">> => <<"badGuiPackage">>,
     <<"description">> => <<"Provider GUI package could not be understood by the server.">>
 };
-to_json(?ERROR_GUI_PACKAGE_TOO_LARGE) -> #{
+to_json(?DEPRECATED_ERROR_GUI_PACKAGE_TOO_LARGE) -> #{
     <<"id">> => <<"guiPackageTooLarge">>,
     <<"description">> => <<"Provider GUI package is too large.">>
 };
-to_json(?ERROR_GUI_PACKAGE_UNVERIFIED(ShaSum)) -> #{
+to_json(?DEPRECATED_ERROR_GUI_PACKAGE_UNVERIFIED(ShaSum)) -> #{
     <<"id">> => <<"guiPackageUnverified">>,
     <<"details">> => #{
         <<"shaSum">> => ShaSum
     },
     <<"description">> => ?FMT("Provided GUI package could not be verified - unknown SHA sum '~ts'.", [ShaSum])
 };
-to_json(?ERROR_INVALID_QOS_EXPRESSION(Reason)) -> #{
+to_json(?DEPRECATED_ERROR_INVALID_QOS_EXPRESSION(Reason)) -> #{
     <<"id">> => <<"invalidQosExpression">>,
     <<"details">> => #{
         <<"reason">> => Reason
     },
     <<"description">> => ?FMT("Invalid QoS expression: ~ts.", [Reason])
 };
-to_json(?ERROR_ILLEGAL_SUPPORT_STAGE_TRANSITION(ProviderStage, StorageStage)) -> #{
+to_json(?DEPRECATED_ERROR_ILLEGAL_SUPPORT_STAGE_TRANSITION(ProviderStage, StorageStage)) -> #{
     <<"id">> => <<"illegalSupportStageTransition">>,
     <<"details">> => #{
         <<"currentProviderStage">> => support_stage:serialize(provider, ProviderStage),
@@ -929,31 +929,31 @@ to_json(?ERROR_ILLEGAL_SUPPORT_STAGE_TRANSITION(ProviderStage, StorageStage)) ->
 %%--------------------------------------------------------------------
 %% oz_worker error
 %%--------------------------------------------------------------------
-to_json(?ERROR_BASIC_AUTH_NOT_SUPPORTED) -> #{
+to_json(?DEPRECATED_ERROR_BASIC_AUTH_NOT_SUPPORTED) -> #{
     <<"id">> => <<"basicAuthNotSupported">>,
     <<"description">> => <<"Basic auth is not supported by this Onezone.">>
 };
-to_json(?ERROR_BASIC_AUTH_DISABLED) -> #{
+to_json(?DEPRECATED_ERROR_BASIC_AUTH_DISABLED) -> #{
     <<"id">> => <<"basicAuthDisabled">>,
     <<"description">> => <<"Basic auth is disabled for this user.">>
 };
-to_json(?ERROR_SUBDOMAIN_DELEGATION_NOT_SUPPORTED) -> #{
+to_json(?DEPRECATED_ERROR_SUBDOMAIN_DELEGATION_NOT_SUPPORTED) -> #{
     <<"id">> => <<"subdomainDelegationNotSupported">>,
     <<"description">> => <<"Subdomain delegation is not supported by this Onezone.">>
 };
-to_json(?ERROR_SUBDOMAIN_DELEGATION_DISABLED) -> #{
+to_json(?DEPRECATED_ERROR_SUBDOMAIN_DELEGATION_DISABLED) -> #{
     <<"id">> => <<"subdomainDelegationDisabled">>,
     <<"description">> => <<"Subdomain delegation is disabled for this Oneprovider.">>
 };
-to_json(?ERROR_SPACE_MARKETPLACE_DISABLED) -> #{
+to_json(?DEPRECATED_ERROR_SPACE_MARKETPLACE_DISABLED) -> #{
     <<"id">> => <<"spaceMarketplaceDisabled">>,
     <<"description">> => <<"Space marketplace is disabled for this Onezone.">>
 };
-to_json(?ERROR_PROTECTED_GROUP) -> #{
+to_json(?DEPRECATED_ERROR_PROTECTED_GROUP) -> #{
     <<"id">> => <<"protectedGroup">>,
     <<"description">> => <<"Specified group is protected and cannot be deleted.">>
 };
-to_json(?ERROR_ATM_LAMBDA_IN_USE(AtmWorkflowSchemas)) -> #{
+to_json(?DEPRECATED_ERROR_ATM_LAMBDA_IN_USE(AtmWorkflowSchemas)) -> #{
     <<"id">> => <<"atmLambdaInUse">>,
     <<"details">> => #{
         <<"atmWorkflowSchemas">> => AtmWorkflowSchemas
@@ -963,7 +963,7 @@ to_json(?ERROR_ATM_LAMBDA_IN_USE(AtmWorkflowSchemas)) -> #{
         [join_values_with_commas(AtmWorkflowSchemas)]
     )
 };
-to_json(?ERROR_CANNOT_REMOVE_LAST_OWNER(EntityType, EntityId)) -> #{
+to_json(?DEPRECATED_ERROR_CANNOT_REMOVE_LAST_OWNER(EntityType, EntityId)) -> #{
     <<"id">> => <<"cannotRemoveLastOwner">>,
     <<"details">> => #{
         <<"entityType">> => EntityType,
@@ -974,7 +974,7 @@ to_json(?ERROR_CANNOT_REMOVE_LAST_OWNER(EntityType, EntityId)) -> #{
         "Ownership can be granted to any direct or effective member."
     >>
 };
-to_json(?ERROR_CANNOT_DELETE_ENTITY(EntityType, EntityId)) -> #{
+to_json(?DEPRECATED_ERROR_CANNOT_DELETE_ENTITY(EntityType, EntityId)) -> #{
     <<"id">> => <<"cannotDeleteEntity">>,
     <<"details">> => #{
         <<"entityType">> => EntityType,
@@ -984,11 +984,11 @@ to_json(?ERROR_CANNOT_DELETE_ENTITY(EntityType, EntityId)) -> #{
         gri:serialize_type(EntityType), EntityId
     ])
 };
-to_json(?ERROR_CANNOT_ADD_RELATION_TO_SELF) -> #{
+to_json(?DEPRECATED_ERROR_CANNOT_ADD_RELATION_TO_SELF) -> #{
     <<"id">> => <<"cannotAddRelationToSelf">>,
     <<"description">> => <<"Cannot add relation to self.">>
 };
-to_json(?ERROR_RELATION_DOES_NOT_EXIST(ChType, ChId, ParType, ParId)) ->
+to_json(?DEPRECATED_ERROR_RELATION_DOES_NOT_EXIST(ChType, ChId, ParType, ParId)) ->
     RelationToString = case {ChType, ParType} of
         {od_space, od_provider} -> <<"is not supported by">>;
         {_, _} -> <<"is not a member of">>
@@ -1007,7 +1007,7 @@ to_json(?ERROR_RELATION_DOES_NOT_EXIST(ChType, ChId, ParType, ParId)) ->
             gri:serialize_type(ParType), ParId
         ])
     };
-to_json(?ERROR_RELATION_ALREADY_EXISTS(ChType, ChId, ParType, ParId)) ->
+to_json(?DEPRECATED_ERROR_RELATION_ALREADY_EXISTS(ChType, ChId, ParType, ParId)) ->
     RelationToString = case {ChType, ParType} of
         {od_space, od_provider} -> <<"is already supported by">>;
         {_, _} -> <<"is already a member of">>
@@ -1026,7 +1026,7 @@ to_json(?ERROR_RELATION_ALREADY_EXISTS(ChType, ChId, ParType, ParId)) ->
             gri:serialize_type(ParType), ParId
         ])
     };
-to_json(?ERROR_SPACE_ALREADY_SUPPORTED_WITH_IMPORTED_STORAGE(SpaceId, StorageId)) -> #{
+to_json(?DEPRECATED_ERROR_SPACE_ALREADY_SUPPORTED_WITH_IMPORTED_STORAGE(SpaceId, StorageId)) -> #{
     <<"id">> => <<"spaceAlreadySupportedWithImportedStorage">>,
     <<"details">> => #{
         <<"spaceId">> => SpaceId,
@@ -1034,7 +1034,7 @@ to_json(?ERROR_SPACE_ALREADY_SUPPORTED_WITH_IMPORTED_STORAGE(SpaceId, StorageId)
     },
     <<"description">> => ?FMT("Space ~ts is already supported with an imported storage ~ts.", [SpaceId, StorageId])
 };
-to_json(?ERROR_CANNOT_DELETE_NON_EMPTY_HANDLE_SERVICE) -> #{
+to_json(?DEPRECATED_ERROR_CANNOT_DELETE_NON_EMPTY_HANDLE_SERVICE) -> #{
     <<"id">> => <<"cannotDeleteNonEmptyHandleService">>,
     <<"description">> => <<
         "This handle service cannot be deleted as it still has some handles registered. "
@@ -1046,22 +1046,22 @@ to_json(?ERROR_CANNOT_DELETE_NON_EMPTY_HANDLE_SERVICE) -> #{
 %%--------------------------------------------------------------------
 %% op_worker errors
 %%--------------------------------------------------------------------
-to_json(?ERROR_USER_NOT_SUPPORTED) -> #{
+to_json(?DEPRECATED_ERROR_USER_NOT_SUPPORTED) -> #{
     <<"id">> => <<"userNotSupported">>,
     <<"description">> => <<
         "Authenticated user is not supported by this Oneprovider "
         "(none of the user's spaces is supported by the Oneprovider)."
     >>
 };
-to_json(?ERROR_AUTO_CLEANING_DISABLED) -> #{
+to_json(?DEPRECATED_ERROR_AUTO_CLEANING_DISABLED) -> #{
     <<"id">> => <<"autoCleaningDisabled">>,
     <<"description">> => <<"Auto-cleaning is disabled.">>
 };
-to_json(?ERROR_FILE_POPULARITY_DISABLED) -> #{
+to_json(?DEPRECATED_ERROR_FILE_POPULARITY_DISABLED) -> #{
     <<"id">> => <<"filePopularityDisabled">>,
     <<"description">> => <<"File popularity is disabled.">>
 };
-to_json(?ERROR_SPACE_NOT_SUPPORTED_BY(SpaceId, ProviderId)) -> #{
+to_json(?DEPRECATED_ERROR_SPACE_NOT_SUPPORTED_BY(SpaceId, ProviderId)) -> #{
     <<"id">> => <<"spaceNotSupportedBy">>,
     <<"details">> => #{
         <<"spaceId">> => SpaceId,
@@ -1069,7 +1069,7 @@ to_json(?ERROR_SPACE_NOT_SUPPORTED_BY(SpaceId, ProviderId)) -> #{
     },
     <<"description">> => ?FMT("Specified space: ~ts is not supported by provider ~ts.", [SpaceId, ProviderId])
 };
-to_json(?ERROR_NOT_A_LOCAL_STORAGE_SUPPORTING_SPACE(ProviderId, StorageId, SpaceId)) -> #{
+to_json(?DEPRECATED_ERROR_NOT_A_LOCAL_STORAGE_SUPPORTING_SPACE(ProviderId, StorageId, SpaceId)) -> #{
     <<"id">> => <<"notALocalStorageSupportingSpace">>,
     <<"details">> => #{
         <<"providerId">> => ProviderId,
@@ -1081,20 +1081,20 @@ to_json(?ERROR_NOT_A_LOCAL_STORAGE_SUPPORTING_SPACE(ProviderId, StorageId, Space
         [StorageId, ProviderId, SpaceId]
     )
 };
-to_json(?ERROR_STORAGE_IN_USE) -> #{
+to_json(?DEPRECATED_ERROR_STORAGE_IN_USE) -> #{
     <<"id">> => <<"storageInUse">>,
     <<"description">> => <<"Specified storage supports a space.">>
 };
-to_json(?ERROR_REQUIRES_AUTO_STORAGE_IMPORT_MODE) -> #{
+to_json(?DEPRECATED_ERROR_REQUIRES_AUTO_STORAGE_IMPORT_MODE) -> #{
     <<"id">> => <<"requiresAutoStorageImportMode">>,
     <<"description">> => <<"Operation requires space with auto storage import mode.">>
 };
-to_json(?ERROR_STORAGE_TEST_FAILED(Operation)) -> #{
+to_json(?DEPRECATED_ERROR_STORAGE_TEST_FAILED(Operation)) -> #{
     <<"id">> => <<"storageTestFailed">>,
     <<"details">> => #{<<"operation">> => str_utils:to_binary(Operation)},
     <<"description">> => ?FMT("Failed to ~ts test file on storage.", [Operation])
 };
-to_json(?ERROR_REQUIRES_NON_IMPORTED_STORAGE(StorageId)) -> #{
+to_json(?DEPRECATED_ERROR_REQUIRES_NON_IMPORTED_STORAGE(StorageId)) -> #{
     <<"id">> => <<"requiresNonImportedStorage">>,
     <<"details">> => #{<<"storageId">> => StorageId},
     <<"description">> => ?FMT(
@@ -1102,7 +1102,7 @@ to_json(?ERROR_REQUIRES_NON_IMPORTED_STORAGE(StorageId)) -> #{
         [StorageId]
     )
 };
-to_json(?ERROR_REQUIRES_IMPORTED_STORAGE(StorageId)) -> #{
+to_json(?DEPRECATED_ERROR_REQUIRES_IMPORTED_STORAGE(StorageId)) -> #{
     <<"id">> => <<"requiresImportedStorage">>,
     <<"details">> => #{<<"storageId">> => StorageId},
     <<"description">> => ?FMT(
@@ -1110,7 +1110,7 @@ to_json(?ERROR_REQUIRES_IMPORTED_STORAGE(StorageId)) -> #{
         [StorageId]
     )
 };
-to_json(?ERROR_REQUIRES_READONLY_STORAGE(StorageIdOrType)) -> #{
+to_json(?DEPRECATED_ERROR_REQUIRES_READONLY_STORAGE(StorageIdOrType)) -> #{
     <<"id">> => <<"requiresReadonlyStorage">>,
     <<"details">> => #{<<"storageIdOrType">> => StorageIdOrType},
     <<"description">> => ?FMT(
@@ -1118,7 +1118,7 @@ to_json(?ERROR_REQUIRES_READONLY_STORAGE(StorageIdOrType)) -> #{
         [StorageIdOrType]
     )
 };
-to_json(?ERROR_REQUIRES_POSIX_COMPATIBLE_STORAGE(StorageId, PosixCompatibleStorages)) -> #{
+to_json(?DEPRECATED_ERROR_REQUIRES_POSIX_COMPATIBLE_STORAGE(StorageId, PosixCompatibleStorages)) -> #{
     <<"id">> => <<"requiresPosixCompatibleStorage">>,
     <<"details">> => #{<<"storageId">> => StorageId, <<"posixCompatibleStorages">> => PosixCompatibleStorages},
     <<"description">> => ?FMT(
@@ -1127,7 +1127,7 @@ to_json(?ERROR_REQUIRES_POSIX_COMPATIBLE_STORAGE(StorageId, PosixCompatibleStora
         [StorageId, join_values_with_commas(PosixCompatibleStorages)]
     )
 };
-to_json(?ERROR_AUTO_STORAGE_IMPORT_NOT_SUPPORTED(StorageId, SupportedStorages, SupportedObjectStorages)) -> #{
+to_json(?DEPRECATED_ERROR_AUTO_STORAGE_IMPORT_NOT_SUPPORTED(StorageId, SupportedStorages, SupportedObjectStorages)) -> #{
     <<"id">> => <<"autoStorageImportNotSupported">>,
     <<"details">> => #{
         <<"storageId">> => StorageId,
@@ -1140,7 +1140,7 @@ to_json(?ERROR_AUTO_STORAGE_IMPORT_NOT_SUPPORTED(StorageId, SupportedStorages, S
         [StorageId, join_values_with_commas(SupportedStorages), join_values_with_commas(SupportedObjectStorages)]
     )
 };
-to_json(?ERROR_STORAGE_IMPORT_NOT_SUPPORTED(StorageId, ObjectStorages)) -> #{
+to_json(?DEPRECATED_ERROR_STORAGE_IMPORT_NOT_SUPPORTED(StorageId, ObjectStorages)) -> #{
     <<"id">> => <<"storageImportNotSupported">>,
     <<"details">> => #{<<"storageId">> => StorageId, <<"objectStorages">> => ObjectStorages},
     <<"description">> => ?FMT(
@@ -1149,7 +1149,7 @@ to_json(?ERROR_STORAGE_IMPORT_NOT_SUPPORTED(StorageId, ObjectStorages)) -> #{
         [StorageId, join_values_with_commas(ObjectStorages)]
     )
 };
-to_json(?ERROR_STAT_OPERATION_NOT_SUPPORTED(StorageId)) -> #{
+to_json(?DEPRECATED_ERROR_STAT_OPERATION_NOT_SUPPORTED(StorageId)) -> #{
     <<"id">> => <<"statOperationNotSupported">>,
     <<"details">> => #{<<"storageId">> => StorageId},
     <<"description">> => ?FMT(
@@ -1157,22 +1157,22 @@ to_json(?ERROR_STAT_OPERATION_NOT_SUPPORTED(StorageId)) -> #{
         [StorageId]
     )
 };
-to_json(?ERROR_TRANSFER_ALREADY_ENDED) -> #{
+to_json(?DEPRECATED_ERROR_TRANSFER_ALREADY_ENDED) -> #{
     <<"id">> => <<"transferAlreadyEnded">>,
     <<"description">> => <<"Specified transfer has already ended.">>
 };
-to_json(?ERROR_TRANSFER_NOT_ENDED) -> #{
+to_json(?DEPRECATED_ERROR_TRANSFER_NOT_ENDED) -> #{
     <<"id">> => <<"transferNotEnded">>,
     <<"description">> => <<"Specified transfer has not ended yet.">>
 };
-to_json(?ERROR_VIEW_NOT_EXISTS_ON(ProviderId)) -> #{
+to_json(?DEPRECATED_ERROR_VIEW_NOT_EXISTS_ON(ProviderId)) -> #{
     <<"id">> => <<"viewNotExistsOn">>,
     <<"details">> => #{
         <<"providerId">> => ProviderId
     },
     <<"description">> => ?FMT("Specified view does not exist on provider ~ts.", [ProviderId])
 };
-to_json(?ERROR_VIEW_QUERY_FAILED(Category, Description)) -> #{
+to_json(?DEPRECATED_ERROR_VIEW_QUERY_FAILED(Category, Description)) -> #{
     <<"id">> => <<"viewQueryFailed">>,
     <<"details">> => #{
         <<"category">> => Category,
@@ -1180,12 +1180,12 @@ to_json(?ERROR_VIEW_QUERY_FAILED(Category, Description)) -> #{
     },
     <<"description">> => ?FMT("Query on view failed. Error category: ~ts. Description: ~ts.", [Category, Description])
 };
-to_json(?ERROR_QUOTA_EXCEEDED) -> #{
+to_json(?DEPRECATED_ERROR_QUOTA_EXCEEDED) -> #{
     <<"id">> => <<"quotaExceeded">>,
     <<"description">> => <<"Space's storage quota has been exceeded.">>
 };
 
-to_json(?ERROR_ATM_UNSUPPORTED_DATA_TYPE(Type, SupportedTypes)) ->
+to_json(?DEPRECATED_ERROR_ATM_UNSUPPORTED_DATA_TYPE(Type, SupportedTypes)) ->
     TypeJson = atm_data_type:type_to_json(Type),
     SupportedTypesJson = lists:map(fun atm_data_type:type_to_json/1, SupportedTypes),
 
@@ -1200,7 +1200,7 @@ to_json(?ERROR_ATM_UNSUPPORTED_DATA_TYPE(Type, SupportedTypes)) ->
             [TypeJson, join_values_with_commas(SupportedTypesJson)]
         )
     };
-to_json(?ERROR_ATM_DATA_TYPE_UNVERIFIED(Value, ExpType)) -> #{
+to_json(?DEPRECATED_ERROR_ATM_DATA_TYPE_UNVERIFIED(Value, ExpType)) -> #{
     <<"id">> => <<"atmDataTypeUnverified">>,
     <<"details">> => #{
         <<"value">> => Value,
@@ -1208,7 +1208,7 @@ to_json(?ERROR_ATM_DATA_TYPE_UNVERIFIED(Value, ExpType)) -> #{
     },
     <<"description">> => <<"Provided value is not of expected type (see details).">>
 };
-to_json(?ERROR_ATM_DATA_VALUE_CONSTRAINT_UNVERIFIED(Value, Type, ValueConstraintJson)) -> #{
+to_json(?DEPRECATED_ERROR_ATM_DATA_VALUE_CONSTRAINT_UNVERIFIED(Value, Type, ValueConstraintJson)) -> #{
     <<"id">> => <<"atmDataValueConstraintUnverified">>,
     <<"details">> => #{
         <<"value">> => Value,
@@ -1218,7 +1218,7 @@ to_json(?ERROR_ATM_DATA_VALUE_CONSTRAINT_UNVERIFIED(Value, Type, ValueConstraint
     <<"description">> => <<"Provided value doesn't meet the constraints (see details).">>
 };
 
-to_json(?ERROR_ATM_STORE_CREATION_FAILED(AtmStoreSchemaId, {error, _} = SpecificError)) -> #{
+to_json(?DEPRECATED_ERROR_ATM_STORE_CREATION_FAILED(AtmStoreSchemaId, {error, _} = SpecificError)) -> #{
     <<"id">> => <<"atmStoreCreationFailed">>,
     <<"details">> => #{
         <<"atmStoreSchemaId">> => AtmStoreSchemaId,
@@ -1229,11 +1229,11 @@ to_json(?ERROR_ATM_STORE_CREATION_FAILED(AtmStoreSchemaId, {error, _} = Specific
         [AtmStoreSchemaId]
     )
 };
-to_json(?ERROR_ATM_STORE_MISSING_REQUIRED_INITIAL_CONTENT) -> #{
+to_json(?DEPRECATED_ERROR_ATM_STORE_MISSING_REQUIRED_INITIAL_CONTENT) -> #{
     <<"id">> => <<"atmStoreMissingRequiredInitialContent">>,
     <<"description">> => <<"Missing initial content required to create automation store.">>
 };
-to_json(?ERROR_ATM_STORE_FROZEN(AtmStoreSchemaId)) -> #{
+to_json(?DEPRECATED_ERROR_ATM_STORE_FROZEN(AtmStoreSchemaId)) -> #{
     <<"id">> => <<"atmStoreFrozen">>,
     <<"details">> => #{
         <<"atmStoreSchemaId">> => AtmStoreSchemaId
@@ -1243,7 +1243,7 @@ to_json(?ERROR_ATM_STORE_FROZEN(AtmStoreSchemaId)) -> #{
         [AtmStoreSchemaId]
     )
 };
-to_json(?ERROR_ATM_STORE_TYPE_DISALLOWED(AtmStoreSchemaId, AllowedTypes)) ->
+to_json(?DEPRECATED_ERROR_ATM_STORE_TYPE_DISALLOWED(AtmStoreSchemaId, AllowedTypes)) ->
     AllowedTypesJson = lists:map(fun automation:store_type_to_json/1, AllowedTypes),
 
     #{
@@ -1257,7 +1257,7 @@ to_json(?ERROR_ATM_STORE_TYPE_DISALLOWED(AtmStoreSchemaId, AllowedTypes)) ->
             [AtmStoreSchemaId, join_values_with_commas(AllowedTypesJson)]
         )
     };
-to_json(?ERROR_ATM_STORE_CONTENT_NOT_SET(AtmStoreSchemaId)) -> #{
+to_json(?DEPRECATED_ERROR_ATM_STORE_CONTENT_NOT_SET(AtmStoreSchemaId)) -> #{
     <<"id">> => <<"atmStoreContentNotSet">>,
     <<"details">> => #{
         <<"atmStoreSchemaId">> => AtmStoreSchemaId
@@ -1267,7 +1267,7 @@ to_json(?ERROR_ATM_STORE_CONTENT_NOT_SET(AtmStoreSchemaId)) -> #{
         [AtmStoreSchemaId]
     )
 };
-to_json(?ERROR_ATM_STORE_NOT_FOUND(AtmStoreSchemaId)) -> #{
+to_json(?DEPRECATED_ERROR_ATM_STORE_NOT_FOUND(AtmStoreSchemaId)) -> #{
     <<"id">> => <<"atmStoreNotFound">>,
     <<"details">> => #{
         <<"atmStoreSchemaId">> => AtmStoreSchemaId
@@ -1278,42 +1278,42 @@ to_json(?ERROR_ATM_STORE_NOT_FOUND(AtmStoreSchemaId)) -> #{
     )
 };
 
-to_json(?ERROR_ATM_WORKFLOW_EMPTY) -> #{
+to_json(?DEPRECATED_ERROR_ATM_WORKFLOW_EMPTY) -> #{
     <<"id">> => <<"atmWorkflowEmpty">>,
     <<"description">> => <<"Bad automation workflow: no lanes defined.">>
 };
 
-to_json(?ERROR_ATM_WORKFLOW_EXECUTION_STOPPING) -> #{
+to_json(?DEPRECATED_ERROR_ATM_WORKFLOW_EXECUTION_STOPPING) -> #{
     <<"id">> => <<"atmWorkflowExecutionStopping">>,
     <<"description">> => <<"Specified automation workflow execution is already stopping.">>
 };
 
-to_json(?ERROR_ATM_WORKFLOW_EXECUTION_STOPPED) -> #{
+to_json(?DEPRECATED_ERROR_ATM_WORKFLOW_EXECUTION_STOPPED) -> #{
     <<"id">> => <<"atmWorkflowExecutionStopped">>,
     <<"description">> => <<"Specified automation workflow execution has already stopped.">>
 };
 
-to_json(?ERROR_ATM_WORKFLOW_EXECUTION_NOT_STOPPED) -> #{
+to_json(?DEPRECATED_ERROR_ATM_WORKFLOW_EXECUTION_NOT_STOPPED) -> #{
     <<"id">> => <<"atmWorkflowExecutionNotStopped">>,
     <<"description">> => <<"Specified automation workflow execution has not stopped yet.">>
 };
 
-to_json(?ERROR_ATM_WORKFLOW_EXECUTION_ENDED) -> #{
+to_json(?DEPRECATED_ERROR_ATM_WORKFLOW_EXECUTION_ENDED) -> #{
     <<"id">> => <<"atmWorkflowExecutionEnded">>,
     <<"description">> => <<"Specified automation workflow execution has already ended.">>
 };
 
-to_json(?ERROR_ATM_WORKFLOW_EXECUTION_NOT_ENDED) -> #{
+to_json(?DEPRECATED_ERROR_ATM_WORKFLOW_EXECUTION_NOT_ENDED) -> #{
     <<"id">> => <<"atmWorkflowExecutionNotEnded">>,
     <<"description">> => <<"Specified automation workflow execution has not ended yet.">>
 };
 
-to_json(?ERROR_ATM_WORKFLOW_EXECUTION_NOT_RESUMABLE) -> #{
+to_json(?DEPRECATED_ERROR_ATM_WORKFLOW_EXECUTION_NOT_RESUMABLE) -> #{
     <<"id">> => <<"atmWorkflowExecutionNotResumable">>,
     <<"description">> => <<"Specified automation workflow execution cannot be resumed.">>
 };
 
-to_json(?ERROR_ATM_LANE_EMPTY(AtmLaneSchemaId)) -> #{
+to_json(?DEPRECATED_ERROR_ATM_LANE_EMPTY(AtmLaneSchemaId)) -> #{
     <<"id">> => <<"atmLaneEmpty">>,
     <<"details">> => #{
         <<"atmLaneSchemaId">> => AtmLaneSchemaId
@@ -1323,7 +1323,7 @@ to_json(?ERROR_ATM_LANE_EMPTY(AtmLaneSchemaId)) -> #{
         [AtmLaneSchemaId]
     )
 };
-to_json(?ERROR_ATM_LANE_EXECUTION_CREATION_FAILED(AtmLaneSchemaId, {error, _} = SpecificError)) -> #{
+to_json(?DEPRECATED_ERROR_ATM_LANE_EXECUTION_CREATION_FAILED(AtmLaneSchemaId, {error, _} = SpecificError)) -> #{
     <<"id">> => <<"atmLaneExecutionCreationFailed">>,
     <<"details">> => #{
         <<"atmLaneSchemaId">> => AtmLaneSchemaId,
@@ -1334,7 +1334,7 @@ to_json(?ERROR_ATM_LANE_EXECUTION_CREATION_FAILED(AtmLaneSchemaId, {error, _} = 
         [AtmLaneSchemaId]
     )
 };
-to_json(?ERROR_ATM_LANE_EXECUTION_INITIATION_FAILED(AtmLaneSchemaId, {error, _} = SpecificError)) -> #{
+to_json(?DEPRECATED_ERROR_ATM_LANE_EXECUTION_INITIATION_FAILED(AtmLaneSchemaId, {error, _} = SpecificError)) -> #{
     <<"id">> => <<"atmLaneExecutionInitiationFailed">>,
     <<"details">> => #{
         <<"atmLaneSchemaId">> => AtmLaneSchemaId,
@@ -1345,14 +1345,14 @@ to_json(?ERROR_ATM_LANE_EXECUTION_INITIATION_FAILED(AtmLaneSchemaId, {error, _} 
         [AtmLaneSchemaId]
     )
 };
-to_json(?ERROR_ATM_LANE_EXECUTION_RETRY_FAILED) -> #{
+to_json(?DEPRECATED_ERROR_ATM_LANE_EXECUTION_RETRY_FAILED) -> #{
     <<"id">> => <<"atmLaneExecutionRetryFailed">>,
     <<"description">> => <<
         "Failed to retry specified lane execution. Lane execution can be retried
         only if all items have been processed but some of them failed."
     >>
 };
-to_json(?ERROR_ATM_LANE_EXECUTION_RERUN_FAILED) -> #{
+to_json(?DEPRECATED_ERROR_ATM_LANE_EXECUTION_RERUN_FAILED) -> #{
     <<"id">> => <<"atmLaneExecutionRerunFailed">>,
     <<"description">> => <<
         "Failed to rerun specified lane execution. Lane execution can be rerun only if
@@ -1360,7 +1360,7 @@ to_json(?ERROR_ATM_LANE_EXECUTION_RERUN_FAILED) -> #{
     >>
 };
 
-to_json(?ERROR_ATM_PARALLEL_BOX_EMPTY(AtmParallelBoxSchemaId)) -> #{
+to_json(?DEPRECATED_ERROR_ATM_PARALLEL_BOX_EMPTY(AtmParallelBoxSchemaId)) -> #{
     <<"id">> => <<"atmParallelBoxEmpty">>,
     <<"details">> => #{
         <<"atmParallelBoxSchemaId">> => AtmParallelBoxSchemaId
@@ -1370,7 +1370,7 @@ to_json(?ERROR_ATM_PARALLEL_BOX_EMPTY(AtmParallelBoxSchemaId)) -> #{
         [AtmParallelBoxSchemaId]
     )
 };
-to_json(?ERROR_ATM_PARALLEL_BOX_EXECUTION_CREATION_FAILED(
+to_json(?DEPRECATED_ERROR_ATM_PARALLEL_BOX_EXECUTION_CREATION_FAILED(
     AtmParallelBoxSchemaId,
     {error, _} = SpecificError
 )) -> #{
@@ -1384,7 +1384,7 @@ to_json(?ERROR_ATM_PARALLEL_BOX_EXECUTION_CREATION_FAILED(
         [AtmParallelBoxSchemaId]
     )
 };
-to_json(?ERROR_ATM_PARALLEL_BOX_EXECUTION_INITIATION_FAILED(
+to_json(?DEPRECATED_ERROR_ATM_PARALLEL_BOX_EXECUTION_INITIATION_FAILED(
     AtmParallelBoxSchemaId,
     {error, _} = SpecificError
 )) -> #{
@@ -1399,7 +1399,7 @@ to_json(?ERROR_ATM_PARALLEL_BOX_EXECUTION_INITIATION_FAILED(
     )
 };
 
-to_json(?ERROR_ATM_TASK_EXECUTION_CREATION_FAILED(AtmTaskSchemaId, {error, _} = SpecificError)) -> #{
+to_json(?DEPRECATED_ERROR_ATM_TASK_EXECUTION_CREATION_FAILED(AtmTaskSchemaId, {error, _} = SpecificError)) -> #{
     <<"id">> => <<"atmTaskExecutionCreationFailed">>,
     <<"details">> => #{
         <<"atmTaskSchemaId">> => AtmTaskSchemaId,
@@ -1410,7 +1410,7 @@ to_json(?ERROR_ATM_TASK_EXECUTION_CREATION_FAILED(AtmTaskSchemaId, {error, _} = 
         [AtmTaskSchemaId]
     )
 };
-to_json(?ERROR_ATM_TASK_EXECUTION_INITIATION_FAILED(AtmTaskSchemaId, {error, _} = SpecificError)) -> #{
+to_json(?DEPRECATED_ERROR_ATM_TASK_EXECUTION_INITIATION_FAILED(AtmTaskSchemaId, {error, _} = SpecificError)) -> #{
     <<"id">> => <<"atmTaskExecutionInitiationFailed">>,
     <<"details">> => #{
         <<"atmTaskSchemaId">> => AtmTaskSchemaId,
@@ -1421,7 +1421,7 @@ to_json(?ERROR_ATM_TASK_EXECUTION_INITIATION_FAILED(AtmTaskSchemaId, {error, _} 
         [AtmTaskSchemaId]
     )
 };
-to_json(?ERROR_ATM_LAMBDA_CONFIG_BAD_VALUE(ParameterName, {error, _} = SpecificError)) -> #{
+to_json(?DEPRECATED_ERROR_ATM_LAMBDA_CONFIG_BAD_VALUE(ParameterName, {error, _} = SpecificError)) -> #{
     <<"id">> => <<"atmLambdaConfigBadValue">>,
     <<"details">> => #{
         <<"parameterName">> => ParameterName,
@@ -1432,7 +1432,7 @@ to_json(?ERROR_ATM_LAMBDA_CONFIG_BAD_VALUE(ParameterName, {error, _} = SpecificE
         [ParameterName]
     )
 };
-to_json(?ERROR_ATM_TASK_ARG_MAPPER_FOR_REQUIRED_LAMBDA_ARG_MISSING(ArgName)) -> #{
+to_json(?DEPRECATED_ERROR_ATM_TASK_ARG_MAPPER_FOR_REQUIRED_LAMBDA_ARG_MISSING(ArgName)) -> #{
     <<"id">> => <<"atmTaskArgMapperForRequiredLambdaArgMissing">>,
     <<"details">> => #{
         <<"argument">> => ArgName
@@ -1442,7 +1442,7 @@ to_json(?ERROR_ATM_TASK_ARG_MAPPER_FOR_REQUIRED_LAMBDA_ARG_MISSING(ArgName)) -> 
         [ArgName]
     )
 };
-to_json(?ERROR_ATM_TASK_ARG_MAPPER_FOR_NONEXISTENT_LAMBDA_ARG(ArgName)) -> #{
+to_json(?DEPRECATED_ERROR_ATM_TASK_ARG_MAPPER_FOR_NONEXISTENT_LAMBDA_ARG(ArgName)) -> #{
     <<"id">> => <<"atmTaskArgMapperForNonexistentLambdaArg">>,
     <<"details">> => #{
         <<"argument">> => ArgName
@@ -1452,7 +1452,7 @@ to_json(?ERROR_ATM_TASK_ARG_MAPPER_FOR_NONEXISTENT_LAMBDA_ARG(ArgName)) -> #{
         [ArgName]
     )
 };
-to_json(?ERROR_ATM_TASK_ARG_MAPPING_FAILED(ArgName, {error, _} = SpecificError)) -> #{
+to_json(?DEPRECATED_ERROR_ATM_TASK_ARG_MAPPING_FAILED(ArgName, {error, _} = SpecificError)) -> #{
     <<"id">> => <<"atmTaskArgMappingFailed">>,
     <<"details">> => #{
         <<"argument">> => ArgName,
@@ -1463,7 +1463,7 @@ to_json(?ERROR_ATM_TASK_ARG_MAPPING_FAILED(ArgName, {error, _} = SpecificError))
         [ArgName]
     )
 };
-to_json(?ERROR_ATM_TASK_ARG_MAPPER_UNSUPPORTED_VALUE_BUILDER(Type, SupportedTypes)) ->
+to_json(?DEPRECATED_ERROR_ATM_TASK_ARG_MAPPER_UNSUPPORTED_VALUE_BUILDER(Type, SupportedTypes)) ->
     TypeJson = atm_task_argument_value_builder:type_to_json(Type),
     SupportedTypesJson = lists:map(fun atm_task_argument_value_builder:type_to_json/1, SupportedTypes),
 
@@ -1478,7 +1478,7 @@ to_json(?ERROR_ATM_TASK_ARG_MAPPER_UNSUPPORTED_VALUE_BUILDER(Type, SupportedType
             [TypeJson, join_values_with_commas(SupportedTypesJson)]
         )
     };
-to_json(?ERROR_ATM_TASK_ARG_MAPPER_ITERATED_ITEM_QUERY_FAILED(Value, Query)) -> #{
+to_json(?DEPRECATED_ERROR_ATM_TASK_ARG_MAPPER_ITERATED_ITEM_QUERY_FAILED(Value, Query)) -> #{
     <<"id">> => <<"atmTaskArgMapperIteratedItemQueryFailed">>,
     <<"details">> => #{
         <<"value">> => Value,
@@ -1486,7 +1486,7 @@ to_json(?ERROR_ATM_TASK_ARG_MAPPER_ITERATED_ITEM_QUERY_FAILED(Value, Query)) -> 
     },
     <<"description">> => <<"Failed to perform query on iterated item (see details).">>
 };
-to_json(?ERROR_ATM_TASK_RESULT_MISSING(MissingResultName, ReceivedResultNames)) -> #{
+to_json(?DEPRECATED_ERROR_ATM_TASK_RESULT_MISSING(MissingResultName, ReceivedResultNames)) -> #{
     <<"id">> => <<"atmTaskResultMissing">>,
     <<"details">> => #{
         <<"missingResultName">> => MissingResultName,
@@ -1497,7 +1497,7 @@ to_json(?ERROR_ATM_TASK_RESULT_MISSING(MissingResultName, ReceivedResultNames)) 
         [MissingResultName, join_values_with_commas(ReceivedResultNames)]
     )
 };
-to_json(?ERROR_ATM_TASK_RESULT_MAPPING_FAILED(ResultName, {error, _} = SpecificError)) -> #{
+to_json(?DEPRECATED_ERROR_ATM_TASK_RESULT_MAPPING_FAILED(ResultName, {error, _} = SpecificError)) -> #{
     <<"id">> => <<"atmTaskResultMappingFailed">>,
     <<"details">> => #{
         <<"result">> => ResultName,
@@ -1508,7 +1508,7 @@ to_json(?ERROR_ATM_TASK_RESULT_MAPPING_FAILED(ResultName, {error, _} = SpecificE
         [ResultName]
     )
 };
-to_json(?ERROR_ATM_TASK_RESULT_DISPATCH_FAILED(AtmStoreSchemaId, {error, _} = SpecificError)) -> #{
+to_json(?DEPRECATED_ERROR_ATM_TASK_RESULT_DISPATCH_FAILED(AtmStoreSchemaId, {error, _} = SpecificError)) -> #{
     <<"id">> => <<"atmTaskResultDispatchFailed">>,
     <<"details">> => #{
         <<"atmStoreSchemaId">> => AtmStoreSchemaId,
@@ -1519,19 +1519,19 @@ to_json(?ERROR_ATM_TASK_RESULT_DISPATCH_FAILED(AtmStoreSchemaId, {error, _} = Sp
         [AtmStoreSchemaId]
     )
 };
-to_json(?ERROR_ATM_TASK_EXECUTION_STOPPED) -> #{
+to_json(?DEPRECATED_ERROR_ATM_TASK_EXECUTION_STOPPED) -> #{
     <<"id">> => <<"atmTaskExecutionEnded">>,
     <<"description">> => <<"Specified automation task execution has already stopped.">>
 };
 
-to_json(?ERROR_ATM_JOB_BATCH_WITHDRAWN(Reason)) -> #{
+to_json(?DEPRECATED_ERROR_ATM_JOB_BATCH_WITHDRAWN(Reason)) -> #{
     <<"id">> => <<"atmJobBatchWithdrawn">>,
     <<"details">> => #{
         <<"reason">> => Reason
     },
     <<"description">> => <<"Previosuly scheduled job batch has been withdrawn.">>
 };
-to_json(?ERROR_ATM_JOB_BATCH_CRASHED(Reason)) -> #{
+to_json(?DEPRECATED_ERROR_ATM_JOB_BATCH_CRASHED(Reason)) -> #{
     <<"id">> => <<"atmJobBatchCrashed">>,
     <<"details">> => #{
         <<"reason">> => Reason
@@ -1539,35 +1539,35 @@ to_json(?ERROR_ATM_JOB_BATCH_CRASHED(Reason)) -> #{
     <<"description">> => <<"Job batch execution has crashed.">>
 };
 
-to_json(?ERROR_ATM_OPENFAAS_NOT_CONFIGURED) -> #{
+to_json(?DEPRECATED_ERROR_ATM_OPENFAAS_NOT_CONFIGURED) -> #{
     <<"id">> => <<"atmOpenfaasNotConfigured">>,
     <<"description">> => <<"OpenFaaS service is not configured.">>
 };
-to_json(?ERROR_ATM_OPENFAAS_UNREACHABLE) -> #{
+to_json(?DEPRECATED_ERROR_ATM_OPENFAAS_UNREACHABLE) -> #{
     <<"id">> => <<"atmOpenfaasUnreachable">>,
     <<"description">> => <<"Cannot connect to OpenFaaS service.">>
 };
-to_json(?ERROR_ATM_OPENFAAS_UNHEALTHY) -> #{
+to_json(?DEPRECATED_ERROR_ATM_OPENFAAS_UNHEALTHY) -> #{
     <<"id">> => <<"atmOpenfaasUnhealthy">>,
     <<"description">> => <<"OpenFaaS service is unhealthy.">>
 };
-to_json(?ERROR_ATM_OPENFAAS_QUERY_FAILED) -> #{
+to_json(?DEPRECATED_ERROR_ATM_OPENFAAS_QUERY_FAILED) -> #{
     <<"id">> => <<"atmOpenfaasQueryFailed">>,
     <<"description">> => <<"Failed to query OpenFaaS service.">>
 };
-to_json(?ERROR_ATM_OPENFAAS_QUERY_FAILED(Reason)) -> #{
+to_json(?DEPRECATED_ERROR_ATM_OPENFAAS_QUERY_FAILED(Reason)) -> #{
     <<"id">> => <<"atmOpenfaasQueryFailed">>,
     <<"details">> => #{
         <<"reason">> => Reason
     },
     <<"description">> => <<"Failed to query OpenFaaS service (see details).">>
 };
-to_json(?ERROR_ATM_OPENFAAS_FUNCTION_REGISTRATION_FAILED) -> #{
+to_json(?DEPRECATED_ERROR_ATM_OPENFAAS_FUNCTION_REGISTRATION_FAILED) -> #{
     <<"id">> => <<"atmOpenfaasFunctionRegistrationFailed">>,
     <<"description">> => <<"Failed to register function in OpenFaaS service.">>
 };
 
-to_json(?ERROR_ATM_INVALID_STATUS_TRANSITION(PrevStatus, NewStatus)) -> #{
+to_json(?DEPRECATED_ERROR_ATM_INVALID_STATUS_TRANSITION(PrevStatus, NewStatus)) -> #{
     <<"id">> => <<"atmInvalidStatusTransition">>,
     <<"details">> => #{
         <<"prevStatus">> => atom_to_binary(PrevStatus, utf8),
@@ -1576,17 +1576,17 @@ to_json(?ERROR_ATM_INVALID_STATUS_TRANSITION(PrevStatus, NewStatus)) -> #{
     <<"description">> => <<"Invalid status transition (see details).">>
 };
 
-to_json(?ERROR_DIR_STATS_DISABLED_FOR_SPACE) -> #{
+to_json(?DEPRECATED_ERROR_DIR_STATS_DISABLED_FOR_SPACE) -> #{
     <<"id">> => <<"dirStatsDisabledForSpace">>,
     <<"description">> => <<"Directory statistics collection is disabled for this space.">>
 };
 
-to_json(?ERROR_DIR_STATS_NOT_READY) -> #{
+to_json(?DEPRECATED_ERROR_DIR_STATS_NOT_READY) -> #{
     <<"id">> => <<"dirStatsNotReady">>,
     <<"description">> => <<"Requested directory statistics are not ready yet - calculation is in progress.">>
 };
 
-to_json(?ERROR_FORBIDDEN_FOR_CURRENT_ARCHIVE_STATE(CurrentState, AllowedStates)) -> #{
+to_json(?DEPRECATED_ERROR_FORBIDDEN_FOR_CURRENT_ARCHIVE_STATE(CurrentState, AllowedStates)) -> #{
     <<"id">> => <<"forbiddenForCurrentArchiveState">>,
     <<"description">> => ?FMT(
         "This operation is forbidden while the archive state is ~ts. Allowed states are: ~ts.",
@@ -1598,7 +1598,7 @@ to_json(?ERROR_FORBIDDEN_FOR_CURRENT_ARCHIVE_STATE(CurrentState, AllowedStates))
     }
 };
 
-to_json(?ERROR_NESTED_ARCHIVE_DELETION_FORBIDDEN(ParentArchiveId)) -> #{
+to_json(?DEPRECATED_ERROR_NESTED_ARCHIVE_DELETION_FORBIDDEN(ParentArchiveId)) -> #{
     <<"id">> =>
     <<"nestedArchiveDeletionForbidden">>,
     <<"description">> =>
@@ -1608,7 +1608,7 @@ to_json(?ERROR_NESTED_ARCHIVE_DELETION_FORBIDDEN(ParentArchiveId)) -> #{
     }
 };
 
-to_json(?ERROR_RECALL_TARGET_CONFLICT) -> #{
+to_json(?DEPRECATED_ERROR_RECALL_TARGET_CONFLICT) -> #{
     <<"id">> => <<"recallTargetConflict">>,
     <<"description">> => <<"Conflict - recall target cannot be within a directory that is being recalled.">>
 };
@@ -1616,7 +1616,7 @@ to_json(?ERROR_RECALL_TARGET_CONFLICT) -> #{
 %%--------------------------------------------------------------------
 %% onepanel errors
 %%--------------------------------------------------------------------
-to_json(?ERROR_ON_NODES(Error, Hostnames)) ->
+to_json(?DEPRECATED_ERROR_ON_NODES(Error, Hostnames)) ->
     #{<<"description">> := Description} = InnerError = to_json(Error),
     #{
         <<"id">> => <<"errorOnNodes">>,
@@ -1627,7 +1627,7 @@ to_json(?ERROR_ON_NODES(Error, Hostnames)) ->
         <<"description">> => ?FMT("Error on nodes ~ts: ~ts",
             [join_values_with_commas(Hostnames), Description])
     };
-to_json(?ERROR_DNS_SERVERS_UNREACHABLE(UsedServers)) ->
+to_json(?DEPRECATED_ERROR_DNS_SERVERS_UNREACHABLE(UsedServers)) ->
     Servers = lists:map(fun
         (default) -> ?DNS_DEFAULTS;
         (IP) -> element(2, {ok, _} = ip_utils:to_binary(IP))
@@ -1640,7 +1640,7 @@ to_json(?ERROR_DNS_SERVERS_UNREACHABLE(UsedServers)) ->
         <<"description">> => ?FMT("Error fetching DNS records. Used servers: ~ts.",
             [join_values_with_commas(Servers)])
     };
-to_json(?ERROR_FILE_ALLOCATION(ActualSize, TargetSize)) -> #{
+to_json(?DEPRECATED_ERROR_FILE_ALLOCATION(ActualSize, TargetSize)) -> #{
     <<"id">> => <<"fileAllocation">>,
     <<"description">> => ?FMT("File allocation error. Allocated ~ts out of ~ts.",
         [str_utils:format_byte_size(ActualSize), str_utils:format_byte_size(TargetSize)]),
@@ -1649,11 +1649,11 @@ to_json(?ERROR_FILE_ALLOCATION(ActualSize, TargetSize)) -> #{
         <<"targetSize">> => TargetSize
     }
 };
-to_json(?ERROR_LETS_ENCRYPT_NOT_REACHABLE) -> #{
+to_json(?DEPRECATED_ERROR_LETS_ENCRYPT_NOT_REACHABLE) -> #{
     <<"id">> => <<"letsEncryptNotReachable">>,
     <<"description">> => <<"Connection to Let's Encrypt server failed.">>
 };
-to_json(?ERROR_LETS_ENCRYPT_RESPONSE(ProblemDocument, ErrorMessage)) -> #{
+to_json(?DEPRECATED_ERROR_LETS_ENCRYPT_RESPONSE(ProblemDocument, ErrorMessage)) -> #{
     <<"id">> => <<"letsEncryptResponse">>,
     <<"description">> => ?FMT("Bad Let's Encrypt response: ~ts.", [ErrorMessage]),
     <<"details">> => #{
@@ -1661,12 +1661,12 @@ to_json(?ERROR_LETS_ENCRYPT_RESPONSE(ProblemDocument, ErrorMessage)) -> #{
         <<"errorMessage">> => ErrorMessage
     }
 };
-to_json(?ERROR_NODE_ALREADY_IN_CLUSTER(Hostname)) -> #{
+to_json(?DEPRECATED_ERROR_NODE_ALREADY_IN_CLUSTER(Hostname)) -> #{
     <<"id">> => <<"nodeAlreadyInCluster">>,
     <<"details">> => #{<<"hostname">> => Hostname},
     <<"description">> => ?FMT("Cannot add \"~ts\", it is already part of a cluster.", [Hostname])
 };
-to_json(?ERROR_NODE_NOT_COMPATIBLE(Hostname, NodeClusterType)) when
+to_json(?DEPRECATED_ERROR_NODE_NOT_COMPATIBLE(Hostname, NodeClusterType)) when
     NodeClusterType == ?ONEPROVIDER orelse NodeClusterType == ?ONEZONE -> #{
     <<"id">> => <<"nodeNotCompatible">>,
     <<"details">> => #{
@@ -1674,26 +1674,26 @@ to_json(?ERROR_NODE_NOT_COMPATIBLE(Hostname, NodeClusterType)) when
     <<"description">> => ?FMT("Cannot add \"~ts\", it is a ~ts node.",
         [Hostname, NodeClusterType])
 };
-to_json(?ERROR_NO_CONNECTION_TO_NEW_NODE(Hostname)) -> #{
+to_json(?DEPRECATED_ERROR_NO_CONNECTION_TO_NEW_NODE(Hostname)) -> #{
     <<"id">> => <<"noConnectionToNewNode">>,
     <<"details">> => #{<<"hostname">> => Hostname},
     <<"description">> => ?FMT("Cannot add node \"~ts\", connection failed.", [Hostname])
 };
-to_json(?ERROR_NO_SERVICE_NODES(Service)) -> #{
+to_json(?DEPRECATED_ERROR_NO_SERVICE_NODES(Service)) -> #{
     <<"id">> => <<"noServiceNodes">>,
     <<"description">> => ?FMT("Service ~ts is not deployed on any node.", [Service]),
     <<"details">> => #{
         <<"service">> => Service
     }
 };
-to_json(?ERROR_USER_NOT_IN_CLUSTER) -> #{
+to_json(?DEPRECATED_ERROR_USER_NOT_IN_CLUSTER) -> #{
     <<"id">> => <<"userNotInCluster">>,
     <<"description">> => <<"Authenticated user is not a member of this cluster.">>};
 
 %%--------------------------------------------------------------------
 %% Unknown error
 %%--------------------------------------------------------------------
-to_json(?ERROR_UNRECOGNIZED_ERROR(ErrorAsJson)) ->
+to_json(?DEPRECATED_ERROR_UNRECOGNIZED_ERROR(ErrorAsJson)) ->
     % Carries errors that have not been recognized upon decoding.
     case maps:is_key(<<"description">>, ErrorAsJson) of
         true ->
@@ -1704,7 +1704,7 @@ to_json(?ERROR_UNRECOGNIZED_ERROR(ErrorAsJson)) ->
 to_json(OtherError) ->
     % Wildcard to catch all errors that might be returned by the application logic, but does
     % not match any error defined in this module. Inability to translate is treated as an
-    % unexpected exception (an ?ERROR_INTERNAL_SERVER_ERROR(ErrorRef) is returned).
+    % unexpected exception (an ?DEPRECATED_ERROR_INTERNAL_SERVER_ERROR(ErrorRef) is returned).
     ReturnedError = ?catch_exceptions(error({cannot_translate_error, OtherError})),
     to_json(ReturnedError).
 
@@ -1717,111 +1717,111 @@ from_json(null) ->
 %% General errors
 %% -----------------------------------------------------------------------------
 from_json(#{<<"id">> := <<"badMessage">>, <<"details">> := #{<<"message">> := Msg}}) ->
-    ?ERROR_BAD_MESSAGE(Msg);
+    ?DEPRECATED_ERROR_BAD_MESSAGE(Msg);
 
 from_json(#{<<"id">> := <<"noConnectionToOnezone">>}) ->
-    ?ERROR_NO_CONNECTION_TO_ONEZONE;
+    ?DEPRECATED_ERROR_NO_CONNECTION_TO_ONEZONE;
 
 from_json(#{<<"id">> := <<"noConnectionToPeerOneprovider">>}) ->
-    ?ERROR_NO_CONNECTION_TO_PEER_ONEPROVIDER;
+    ?DEPRECATED_ERROR_NO_CONNECTION_TO_PEER_ONEPROVIDER;
 
 from_json(#{<<"id">> := <<"noConnectionToClusterNode">>}) ->
-    ?ERROR_NO_CONNECTION_TO_CLUSTER_NODE;
+    ?DEPRECATED_ERROR_NO_CONNECTION_TO_CLUSTER_NODE;
 
 from_json(#{<<"id">> := <<"unregisteredOneprovider">>}) ->
-    ?ERROR_UNREGISTERED_ONEPROVIDER;
+    ?DEPRECATED_ERROR_UNREGISTERED_ONEPROVIDER;
 
 from_json(#{<<"id">> := <<"internalServerError">>, <<"details">> := #{<<"reference">> := ErrorRef}}) ->
-    ?ERROR_INTERNAL_SERVER_ERROR(ErrorRef);
+    ?DEPRECATED_ERROR_INTERNAL_SERVER_ERROR(ErrorRef);
 
 from_json(#{<<"id">> := <<"internalServerError">>}) ->
-    ?ERROR_INTERNAL_SERVER_ERROR;
+    ?DEPRECATED_ERROR_INTERNAL_SERVER_ERROR;
 
 from_json(#{<<"id">> := <<"notImplemented">>}) ->
-    ?ERROR_NOT_IMPLEMENTED;
+    ?DEPRECATED_ERROR_NOT_IMPLEMENTED;
 
 from_json(#{<<"id">> := <<"notSupported">>}) ->
-    ?ERROR_NOT_SUPPORTED;
+    ?DEPRECATED_ERROR_NOT_SUPPORTED;
 
 from_json(#{<<"id">> := <<"serviceUnavailable">>}) ->
-    ?ERROR_SERVICE_UNAVAILABLE;
+    ?DEPRECATED_ERROR_SERVICE_UNAVAILABLE;
 
 from_json(#{<<"id">> := <<"timeout">>}) ->
-    ?ERROR_TIMEOUT;
+    ?DEPRECATED_ERROR_TIMEOUT;
 
 from_json(#{<<"id">> := <<"temporaryFailure">>}) ->
-    ?ERROR_TEMPORARY_FAILURE;
+    ?DEPRECATED_ERROR_TEMPORARY_FAILURE;
 
 from_json(#{<<"id">> := <<"externalServiceOperationFailed">>, <<"details">> := #{<<"serviceName">> := ServiceName}}) ->
-    ?ERROR_EXTERNAL_SERVICE_OPERATION_FAILED(ServiceName);
+    ?DEPRECATED_ERROR_EXTERNAL_SERVICE_OPERATION_FAILED(ServiceName);
 
 from_json(#{<<"id">> := <<"unauthorized">>, <<"details">> := #{<<"authError">> := AuthError}}) ->
-    ?ERROR_UNAUTHORIZED(from_json(AuthError));
+    ?DEPRECATED_ERROR_UNAUTHORIZED(from_json(AuthError));
 
 from_json(#{<<"id">> := <<"unauthorized">>}) ->
-    ?ERROR_UNAUTHORIZED;
+    ?DEPRECATED_ERROR_UNAUTHORIZED;
 
 from_json(#{<<"id">> := <<"forbidden">>, <<"details">> := #{<<"hint">> := HumanReadableHint}}) ->
-    ?ERROR_FORBIDDEN(HumanReadableHint);
+    ?DEPRECATED_ERROR_FORBIDDEN(HumanReadableHint);
 
 from_json(#{<<"id">> := <<"forbidden">>}) ->
-    ?ERROR_FORBIDDEN;
+    ?DEPRECATED_ERROR_FORBIDDEN;
 
 from_json(#{<<"id">> := <<"notFound">>}) ->
-    ?ERROR_NOT_FOUND;
+    ?DEPRECATED_ERROR_NOT_FOUND;
 
 from_json(#{<<"id">> := <<"alreadyExists">>}) ->
-    ?ERROR_ALREADY_EXISTS;
+    ?DEPRECATED_ERROR_ALREADY_EXISTS;
 
 from_json(#{<<"id">> := <<"fileAccess">>, <<"details">> := #{<<"path">> := Path, <<"errno">> := Errno}}) ->
-    ?ERROR_FILE_ACCESS(Path, binary_to_existing_atom(Errno, utf8));
+    ?DEPRECATED_ERROR_FILE_ACCESS(Path, binary_to_existing_atom(Errno, utf8));
 
 from_json(#{<<"id">> := <<"limitReached">>, <<"details">> := #{
     <<"limit">> := Limit, <<"resourceDescription">> := ResourceDescription
 }}) ->
-    ?ERROR_LIMIT_REACHED(Limit, ResourceDescription);
+    ?DEPRECATED_ERROR_LIMIT_REACHED(Limit, ResourceDescription);
 
 %% -----------------------------------------------------------------------------
 %% POSIX errors
 %% -----------------------------------------------------------------------------
 from_json(#{<<"id">> := <<"posix">>, <<"details">> := #{<<"errno">> := Errno}}) ->
-    ?ERROR_POSIX(binary_to_existing_atom(Errno, utf8));
+    ?DEPRECATED_ERROR_POSIX(binary_to_existing_atom(Errno, utf8));
 
 %% -----------------------------------------------------------------------------
 %% Auth errors
 %% -----------------------------------------------------------------------------
 from_json(#{<<"id">> := <<"userBlocked">>}) ->
-    ?ERROR_USER_BLOCKED;
+    ?DEPRECATED_ERROR_USER_BLOCKED;
 
 from_json(#{<<"id">> := <<"badBasicCredentials">>}) ->
-    ?ERROR_BAD_BASIC_CREDENTIALS;
+    ?DEPRECATED_ERROR_BAD_BASIC_CREDENTIALS;
 
 from_json(#{<<"id">> := <<"badIdpAccessToken">>, <<"details">> := #{<<"idp">> := IdP}}) ->
-    ?ERROR_BAD_IDP_ACCESS_TOKEN(IdP);
+    ?DEPRECATED_ERROR_BAD_IDP_ACCESS_TOKEN(IdP);
 
 from_json(#{<<"id">> := <<"badToken">>}) ->
-    ?ERROR_BAD_TOKEN;
+    ?DEPRECATED_ERROR_BAD_TOKEN;
 
 from_json(#{<<"id">> := <<"badServiceToken">>, <<"details">> := #{<<"tokenError">> := TokenError}}) ->
-    ?ERROR_BAD_SERVICE_TOKEN(from_json(TokenError));
+    ?DEPRECATED_ERROR_BAD_SERVICE_TOKEN(from_json(TokenError));
 
 from_json(#{<<"id">> := <<"badConsumerToken">>, <<"details">> := #{<<"tokenError">> := TokenError}}) ->
-    ?ERROR_BAD_CONSUMER_TOKEN(from_json(TokenError));
+    ?DEPRECATED_ERROR_BAD_CONSUMER_TOKEN(from_json(TokenError));
 
 from_json(#{<<"id">> := <<"tokenInvalid">>}) ->
-    ?ERROR_TOKEN_INVALID;
+    ?DEPRECATED_ERROR_TOKEN_INVALID;
 
 from_json(#{<<"id">> := <<"tokenRevoked">>}) ->
-    ?ERROR_TOKEN_REVOKED;
+    ?DEPRECATED_ERROR_TOKEN_REVOKED;
 
 from_json(#{<<"id">> := <<"tokenTooLarge">>, <<"details">> := #{<<"limit">> := SizeLimit}}) ->
-    ?ERROR_TOKEN_TOO_LARGE(SizeLimit);
+    ?DEPRECATED_ERROR_TOKEN_TOO_LARGE(SizeLimit);
 
 from_json(#{<<"id">> := <<"notAnAccessToken">>, <<"details">> := #{<<"received">> := ReceivedTokenType}}) ->
-    ?ERROR_NOT_AN_ACCESS_TOKEN(token_type:from_json(ReceivedTokenType));
+    ?DEPRECATED_ERROR_NOT_AN_ACCESS_TOKEN(token_type:from_json(ReceivedTokenType));
 
 from_json(#{<<"id">> := <<"notAnIdentityToken">>, <<"details">> := #{<<"received">> := ReceivedTokenType}}) ->
-    ?ERROR_NOT_AN_IDENTITY_TOKEN(token_type:from_json(ReceivedTokenType));
+    ?DEPRECATED_ERROR_NOT_AN_IDENTITY_TOKEN(token_type:from_json(ReceivedTokenType));
 
 from_json(#{<<"id">> := <<"notAnInviteToken">>, <<"details">> := Details}) ->
     #{<<"expectedInviteType">> := ExpectedInviteTypeStr, <<"received">> := RecvType} = Details,
@@ -1829,191 +1829,191 @@ from_json(#{<<"id">> := <<"notAnInviteToken">>, <<"details">> := Details}) ->
         <<"any">> -> any;
         _ -> token_type:invite_type_from_str(ExpectedInviteTypeStr)
     end,
-    ?ERROR_NOT_AN_INVITE_TOKEN(ExpectedInviteType, token_type:from_json(RecvType));
+    ?DEPRECATED_ERROR_NOT_AN_INVITE_TOKEN(ExpectedInviteType, token_type:from_json(RecvType));
 
 from_json(#{<<"id">> := <<"tokenCaveatUnknown">>, <<"details">> := #{<<"caveat">> := CaveatBinary}}) ->
-    ?ERROR_TOKEN_CAVEAT_UNKNOWN(CaveatBinary);
+    ?DEPRECATED_ERROR_TOKEN_CAVEAT_UNKNOWN(CaveatBinary);
 
 from_json(#{<<"id">> := <<"tokenCaveatUnverified">>, <<"details">> := #{<<"caveat">> := Caveat}}) ->
-    ?ERROR_TOKEN_CAVEAT_UNVERIFIED(caveats:from_json(Caveat));
+    ?DEPRECATED_ERROR_TOKEN_CAVEAT_UNVERIFIED(caveats:from_json(Caveat));
 
 from_json(#{<<"id">> := <<"tokenTimeCaveatRequired">>, <<"details">> := #{<<"maxTtl">> := MaxTtl}}) ->
-    ?ERROR_TOKEN_TIME_CAVEAT_REQUIRED(MaxTtl);
+    ?DEPRECATED_ERROR_TOKEN_TIME_CAVEAT_REQUIRED(MaxTtl);
 
 from_json(#{<<"id">> := <<"tokenSubjectInvalid">>}) ->
-    ?ERROR_TOKEN_SUBJECT_INVALID;
+    ?DEPRECATED_ERROR_TOKEN_SUBJECT_INVALID;
 
 from_json(#{<<"id">> := <<"tokenServiceForbidden">>, <<"details">> := #{<<"service">> := Service}}) ->
-    ?ERROR_TOKEN_SERVICE_FORBIDDEN(aai:service_from_json(Service));
+    ?DEPRECATED_ERROR_TOKEN_SERVICE_FORBIDDEN(aai:service_from_json(Service));
 
 from_json(#{<<"id">> := <<"inviteTokenSubjectNotAuthorized">>}) ->
-    ?ERROR_INVITE_TOKEN_SUBJECT_NOT_AUTHORIZED;
+    ?DEPRECATED_ERROR_INVITE_TOKEN_SUBJECT_NOT_AUTHORIZED;
 
 from_json(#{<<"id">> := <<"inviteTokenUsageLimitReached">>}) ->
-    ?ERROR_INVITE_TOKEN_USAGE_LIMIT_REACHED;
+    ?DEPRECATED_ERROR_INVITE_TOKEN_USAGE_LIMIT_REACHED;
 
 from_json(#{<<"id">> := <<"inviteTokenConsumerInvalid">>, <<"details">> := #{<<"consumer">> := Consumer}}) ->
-    ?ERROR_INVITE_TOKEN_CONSUMER_INVALID(aai:subject_from_json(Consumer));
+    ?DEPRECATED_ERROR_INVITE_TOKEN_CONSUMER_INVALID(aai:subject_from_json(Consumer));
 
 from_json(#{<<"id">> := <<"inviteTokenTargetIdInvalid">>, <<"details">> := #{<<"id">> := Id}}) ->
-    ?ERROR_INVITE_TOKEN_TARGET_ID_INVALID(Id);
+    ?DEPRECATED_ERROR_INVITE_TOKEN_TARGET_ID_INVALID(Id);
 
 from_json(#{<<"id">> := <<"tokenSessionInvalid">>}) ->
-    ?ERROR_TOKEN_SESSION_INVALID;
+    ?DEPRECATED_ERROR_TOKEN_SESSION_INVALID;
 
 %% -----------------------------------------------------------------------------
 %% Graph Sync errors
 %% -----------------------------------------------------------------------------
 from_json(#{<<"id">> := <<"expectedHandshakeMessage">>}) ->
-    ?ERROR_EXPECTED_HANDSHAKE_MESSAGE;
+    ?DEPRECATED_ERROR_EXPECTED_HANDSHAKE_MESSAGE;
 
 from_json(#{<<"id">> := <<"handshakeAlreadyDone">>}) ->
-    ?ERROR_HANDSHAKE_ALREADY_DONE;
+    ?DEPRECATED_ERROR_HANDSHAKE_ALREADY_DONE;
 
 from_json(#{<<"id">> := <<"badVersion">>, <<"details">> := #{<<"supportedVersions">> := SupportedVersions}}) ->
-    ?ERROR_BAD_VERSION(SupportedVersions);
+    ?DEPRECATED_ERROR_BAD_VERSION(SupportedVersions);
 
 from_json(#{<<"id">> := <<"badGRI">>}) ->
-    ?ERROR_BAD_GRI;
+    ?DEPRECATED_ERROR_BAD_GRI;
 
 from_json(#{<<"id">> := <<"rpcUndefined">>}) ->
-    ?ERROR_RPC_UNDEFINED;
+    ?DEPRECATED_ERROR_RPC_UNDEFINED;
 
 from_json(#{<<"id">> := <<"notSubscribable">>}) ->
-    ?ERROR_NOT_SUBSCRIBABLE;
+    ?DEPRECATED_ERROR_NOT_SUBSCRIBABLE;
 
 %% -----------------------------------------------------------------------------
 %% Data validation errors
 %% -----------------------------------------------------------------------------
 from_json(#{<<"id">> := <<"malformedData">>}) ->
-    ?ERROR_MALFORMED_DATA;
+    ?DEPRECATED_ERROR_MALFORMED_DATA;
 
 from_json(#{<<"id">> := <<"missingRequiredValue">>,
     <<"details">> := #{<<"key">> := Key}}) ->
-    ?ERROR_MISSING_REQUIRED_VALUE(Key);
+    ?DEPRECATED_ERROR_MISSING_REQUIRED_VALUE(Key);
 
 from_json(#{<<"id">> := <<"missingAtLeastOneValue">>, <<"details">> := #{<<"keys">> := Keys}}) ->
-    ?ERROR_MISSING_AT_LEAST_ONE_VALUE(Keys);
+    ?DEPRECATED_ERROR_MISSING_AT_LEAST_ONE_VALUE(Keys);
 
 from_json(#{<<"id">> := <<"badData">>, <<"details">> := #{<<"key">> := Key, <<"specificError">> := SpecificError}}) ->
-    ?ERROR_BAD_DATA(Key, from_json(SpecificError));
+    ?DEPRECATED_ERROR_BAD_DATA(Key, from_json(SpecificError));
 
 from_json(#{<<"id">> := <<"badData">>, <<"details">> := #{<<"key">> := Key, <<"hint">> := HumanReadableHint}}) ->
-    ?ERROR_BAD_DATA(Key, HumanReadableHint);
+    ?DEPRECATED_ERROR_BAD_DATA(Key, HumanReadableHint);
 
 from_json(#{<<"id">> := <<"badData">>, <<"details">> := #{<<"key">> := Key}}) ->
-    ?ERROR_BAD_DATA(Key);
+    ?DEPRECATED_ERROR_BAD_DATA(Key);
 
 from_json(#{<<"id">> := <<"badValueEmpty">>, <<"details">> := #{<<"key">> := Key}}) ->
-    ?ERROR_BAD_VALUE_EMPTY(Key);
+    ?DEPRECATED_ERROR_BAD_VALUE_EMPTY(Key);
 
 from_json(#{<<"id">> := <<"badValueBoolean">>, <<"details">> := #{<<"key">> := Key}}) ->
-    ?ERROR_BAD_VALUE_BOOLEAN(Key);
+    ?DEPRECATED_ERROR_BAD_VALUE_BOOLEAN(Key);
 
 from_json(#{<<"id">> := <<"badValueString">>, <<"details">> := #{<<"key">> := Key}}) ->
-    ?ERROR_BAD_VALUE_BINARY(Key);
+    ?DEPRECATED_ERROR_BAD_VALUE_BINARY(Key);
 
 from_json(#{<<"id">> := <<"badValueTextTooLarge">>, <<"details">> := #{<<"key">> := Key, <<"limit">> := SizeLimit}}) ->
-    ?ERROR_BAD_VALUE_TEXT_TOO_LARGE(Key, SizeLimit);
+    ?DEPRECATED_ERROR_BAD_VALUE_TEXT_TOO_LARGE(Key, SizeLimit);
 
 from_json(#{<<"id">> := <<"badValueListOfStrings">>, <<"details">> := #{<<"key">> := Key}}) ->
-    ?ERROR_BAD_VALUE_LIST_OF_BINARIES(Key);
+    ?DEPRECATED_ERROR_BAD_VALUE_LIST_OF_BINARIES(Key);
 
 from_json(#{<<"id">> := <<"badValueInteger">>, <<"details">> := #{<<"key">> := Key}}) ->
-    ?ERROR_BAD_VALUE_INTEGER(Key);
+    ?DEPRECATED_ERROR_BAD_VALUE_INTEGER(Key);
 
 from_json(#{<<"id">> := <<"badValueFloat">>, <<"details">> := #{<<"key">> := Key}}) ->
-    ?ERROR_BAD_VALUE_FLOAT(Key);
+    ?DEPRECATED_ERROR_BAD_VALUE_FLOAT(Key);
 
 from_json(#{<<"id">> := <<"badValueJSON">>, <<"details">> := #{<<"key">> := Key}}) ->
-    ?ERROR_BAD_VALUE_JSON(Key);
+    ?DEPRECATED_ERROR_BAD_VALUE_JSON(Key);
 
 from_json(#{<<"id">> := <<"badValueXML">>, <<"details">> := #{<<"key">> := Key}}) ->
-    ?ERROR_BAD_VALUE_XML(Key);
+    ?DEPRECATED_ERROR_BAD_VALUE_XML(Key);
 
 from_json(#{<<"id">> := <<"badValueToken">>, <<"details">> := #{<<"key">> := Key, <<"tokenError">> := TokenError}}) ->
-    ?ERROR_BAD_VALUE_TOKEN(Key, from_json(TokenError));
+    ?DEPRECATED_ERROR_BAD_VALUE_TOKEN(Key, from_json(TokenError));
 
 from_json(#{<<"id">> := <<"badValueTokenType">>, <<"details">> := #{<<"key">> := Key}}) ->
-    ?ERROR_BAD_VALUE_TOKEN_TYPE(Key);
+    ?DEPRECATED_ERROR_BAD_VALUE_TOKEN_TYPE(Key);
 
 from_json(#{<<"id">> := <<"badValueInviteType">>, <<"details">> := #{<<"key">> := Key}}) ->
-    ?ERROR_BAD_VALUE_INVITE_TYPE(Key);
+    ?DEPRECATED_ERROR_BAD_VALUE_INVITE_TYPE(Key);
 
 from_json(#{<<"id">> := <<"badValueIPv4Address">>, <<"details">> := #{<<"key">> := Key}}) ->
-    ?ERROR_BAD_VALUE_IPV4_ADDRESS(Key);
+    ?DEPRECATED_ERROR_BAD_VALUE_IPV4_ADDRESS(Key);
 
 from_json(#{<<"id">> := <<"badValueListOfIPv4Addresses">>, <<"details">> := #{<<"key">> := Key}}) ->
-    ?ERROR_BAD_VALUE_LIST_OF_IPV4_ADDRESSES(Key);
+    ?DEPRECATED_ERROR_BAD_VALUE_LIST_OF_IPV4_ADDRESSES(Key);
 
 from_json(#{<<"id">> := <<"badValueTooLow">>, <<"details">> := #{<<"key">> := Key, <<"limit">> := Limit}}) ->
-    ?ERROR_BAD_VALUE_TOO_LOW(Key, Limit);
+    ?DEPRECATED_ERROR_BAD_VALUE_TOO_LOW(Key, Limit);
 
 from_json(#{<<"id">> := <<"badValueTooHigh">>, <<"details">> := #{<<"key">> := Key, <<"limit">> := Limit}}) ->
-    ?ERROR_BAD_VALUE_TOO_HIGH(Key, Limit);
+    ?DEPRECATED_ERROR_BAD_VALUE_TOO_HIGH(Key, Limit);
 
 from_json(#{<<"id">> := <<"badValueNotInRange">>, <<"details">> := #{<<"key">> := Key, <<"low">> := Low, <<"high">> := High}}) ->
-    ?ERROR_BAD_VALUE_NOT_IN_RANGE(Key, Low, High);
+    ?DEPRECATED_ERROR_BAD_VALUE_NOT_IN_RANGE(Key, Low, High);
 
 from_json(#{<<"id">> := <<"badValueNotAllowed">>, <<"details">> := #{<<"key">> := Key, <<"allowed">> := Allowed}}) ->
-    ?ERROR_BAD_VALUE_NOT_ALLOWED(Key, Allowed);
+    ?DEPRECATED_ERROR_BAD_VALUE_NOT_ALLOWED(Key, Allowed);
 
 from_json(#{<<"id">> := <<"badValueListNotAllowed">>, <<"details">> := #{<<"key">> := Key, <<"allowed">> := Allowed}}) ->
-    ?ERROR_BAD_VALUE_LIST_NOT_ALLOWED(Key, Allowed);
+    ?DEPRECATED_ERROR_BAD_VALUE_LIST_NOT_ALLOWED(Key, Allowed);
 
 from_json(#{<<"id">> := <<"badValueIdNotFound">>, <<"details">> := #{<<"key">> := Key}}) ->
-    ?ERROR_BAD_VALUE_ID_NOT_FOUND(Key);
+    ?DEPRECATED_ERROR_BAD_VALUE_ID_NOT_FOUND(Key);
 
 from_json(#{<<"id">> := <<"badValueAmbiguousId">>, <<"details">> := #{<<"key">> := Key}}) ->
-    ?ERROR_BAD_VALUE_AMBIGUOUS_ID(Key);
+    ?DEPRECATED_ERROR_BAD_VALUE_AMBIGUOUS_ID(Key);
 
 from_json(#{<<"id">> := <<"badValueIdentifier">>, <<"details">> := #{<<"key">> := Key}}) ->
-    ?ERROR_BAD_VALUE_IDENTIFIER(Key);
+    ?DEPRECATED_ERROR_BAD_VALUE_IDENTIFIER(Key);
 
 from_json(#{<<"id">> := <<"badValueIdentifierOccupied">>, <<"details">> := #{<<"key">> := Key}}) ->
-    ?ERROR_BAD_VALUE_IDENTIFIER_OCCUPIED(Key);
+    ?DEPRECATED_ERROR_BAD_VALUE_IDENTIFIER_OCCUPIED(Key);
 
 from_json(#{<<"id">> := <<"badValueOctal">>, <<"details">> := #{<<"key">> := Key}}) ->
-    ?ERROR_BAD_VALUE_OCTAL(Key);
+    ?DEPRECATED_ERROR_BAD_VALUE_OCTAL(Key);
 
 from_json(#{<<"id">> := <<"badValueFilePath">>}) ->
-    ?ERROR_BAD_VALUE_FILE_PATH;
+    ?DEPRECATED_ERROR_BAD_VALUE_FILE_PATH;
 
 from_json(#{<<"id">> := <<"badValueFullName">>}) ->
-    ?ERROR_BAD_VALUE_FULL_NAME;
+    ?DEPRECATED_ERROR_BAD_VALUE_FULL_NAME;
 
 from_json(#{<<"id">> := <<"badValueUsername">>}) ->
-    ?ERROR_BAD_VALUE_USERNAME;
+    ?DEPRECATED_ERROR_BAD_VALUE_USERNAME;
 
 from_json(#{<<"id">> := <<"badValuePassword">>}) ->
-    ?ERROR_BAD_VALUE_PASSWORD;
+    ?DEPRECATED_ERROR_BAD_VALUE_PASSWORD;
 
 from_json(#{<<"id">> := <<"badValueEmail">>}) ->
-    ?ERROR_BAD_VALUE_EMAIL;
+    ?DEPRECATED_ERROR_BAD_VALUE_EMAIL;
 
 from_json(#{<<"id">> := <<"badValueName">>, <<"details">> := #{<<"key">> := Key}}) ->
-    ?ERROR_BAD_VALUE_NAME(Key);
+    ?DEPRECATED_ERROR_BAD_VALUE_NAME(Key);
 
 from_json(#{<<"id">> := <<"badValueName">>}) ->
-    ?ERROR_BAD_VALUE_NAME;
+    ?DEPRECATED_ERROR_BAD_VALUE_NAME;
 
 from_json(#{<<"id">> := <<"badValueDomain">>}) ->
-    ?ERROR_BAD_VALUE_DOMAIN;
+    ?DEPRECATED_ERROR_BAD_VALUE_DOMAIN;
 
 from_json(#{<<"id">> := <<"badValueSubdomain">>}) ->
-    ?ERROR_BAD_VALUE_SUBDOMAIN;
+    ?DEPRECATED_ERROR_BAD_VALUE_SUBDOMAIN;
 
 from_json(#{<<"id">> := <<"badValueCaveat">>, <<"details">> := #{<<"caveat">> := CaveatJson}}) ->
-    ?ERROR_BAD_VALUE_CAVEAT(CaveatJson);
+    ?DEPRECATED_ERROR_BAD_VALUE_CAVEAT(CaveatJson);
 
 from_json(#{<<"id">> := <<"badValueQoSParameters">>}) ->
-    ?ERROR_BAD_VALUE_QOS_PARAMETERS;
+    ?DEPRECATED_ERROR_BAD_VALUE_QOS_PARAMETERS;
 
 from_json(#{<<"id">> := <<"timeSeriesCollectionMissingLayout">>, <<"details">> := #{<<"missingLayout">> := MissingLayout}}) ->
-    ?ERROR_TSC_MISSING_LAYOUT(MissingLayout);
+    ?DEPRECATED_ERROR_TSC_MISSING_LAYOUT(MissingLayout);
 
 from_json(#{<<"id">> := <<"timeSeriesCollectionTooManyMetrics">>, <<"details">> := #{<<"limit">> := Limit}}) ->
-    ?ERROR_TSC_TOO_MANY_METRICS(Limit);
+    ?DEPRECATED_ERROR_TSC_TOO_MANY_METRICS(Limit);
 
 from_json(#{<<"id">> := <<"badValueTimeSeriesCollectionConflictingMetricConfig">>, <<"details">> := #{
     <<"timeSeriesName">> := TSName,
@@ -2021,23 +2021,23 @@ from_json(#{<<"id">> := <<"badValueTimeSeriesCollectionConflictingMetricConfig">
     <<"existingMetricConfig">> := ExistingMetricConfig,
     <<"conflictingMetricConfig">> := ConflictingMetricConfig
 }}) ->
-    ?ERROR_BAD_VALUE_TSC_CONFLICTING_METRIC_CONFIG(
+    ?DEPRECATED_ERROR_BAD_VALUE_TSC_CONFLICTING_METRIC_CONFIG(
         TSName, MetricName,
         jsonable_record:from_json(ExistingMetricConfig, metric_config),
         jsonable_record:from_json(ConflictingMetricConfig, metric_config)
     );
 
 from_json(#{<<"id">> := <<"badGuiPackage">>}) ->
-    ?ERROR_BAD_GUI_PACKAGE;
+    ?DEPRECATED_ERROR_BAD_GUI_PACKAGE;
 
 from_json(#{<<"id">> := <<"guiPackageTooLarge">>}) ->
-    ?ERROR_GUI_PACKAGE_TOO_LARGE;
+    ?DEPRECATED_ERROR_GUI_PACKAGE_TOO_LARGE;
 
 from_json(#{<<"id">> := <<"guiPackageUnverified">>, <<"details">> := #{<<"shaSum">> := ShaSum}}) ->
-    ?ERROR_GUI_PACKAGE_UNVERIFIED(ShaSum);
+    ?DEPRECATED_ERROR_GUI_PACKAGE_UNVERIFIED(ShaSum);
 
 from_json(#{<<"id">> := <<"invalidQosExpression">>, <<"details">> := #{<<"reason">> := Reason}}) ->
-    ?ERROR_INVALID_QOS_EXPRESSION(Reason);
+    ?DEPRECATED_ERROR_INVALID_QOS_EXPRESSION(Reason);
 
 from_json(#{<<"id">> := <<"illegalSupportStageTransition">>, <<"details">> := #{
     <<"currentProviderStage">> := ProviderStageJson,
@@ -2045,147 +2045,147 @@ from_json(#{<<"id">> := <<"illegalSupportStageTransition">>, <<"details">> := #{
 }}) ->
     ProviderStage = support_stage:deserialize(provider, ProviderStageJson),
     StorageStage = support_stage:deserialize(storage, StorageStageJson),
-    ?ERROR_ILLEGAL_SUPPORT_STAGE_TRANSITION(ProviderStage, StorageStage);
+    ?DEPRECATED_ERROR_ILLEGAL_SUPPORT_STAGE_TRANSITION(ProviderStage, StorageStage);
 
 %% -----------------------------------------------------------------------------
 %% oz_worker errors
 %% -----------------------------------------------------------------------------
 from_json(#{<<"id">> := <<"basicAuthNotSupported">>}) ->
-    ?ERROR_BASIC_AUTH_NOT_SUPPORTED;
+    ?DEPRECATED_ERROR_BASIC_AUTH_NOT_SUPPORTED;
 
 from_json(#{<<"id">> := <<"basicAuthDisabled">>}) ->
-    ?ERROR_BASIC_AUTH_DISABLED;
+    ?DEPRECATED_ERROR_BASIC_AUTH_DISABLED;
 
 from_json(#{<<"id">> := <<"subdomainDelegationNotSupported">>}) ->
-    ?ERROR_SUBDOMAIN_DELEGATION_NOT_SUPPORTED;
+    ?DEPRECATED_ERROR_SUBDOMAIN_DELEGATION_NOT_SUPPORTED;
 
 from_json(#{<<"id">> := <<"subdomainDelegationDisabled">>}) ->
-    ?ERROR_SUBDOMAIN_DELEGATION_DISABLED;
+    ?DEPRECATED_ERROR_SUBDOMAIN_DELEGATION_DISABLED;
 
 from_json(#{<<"id">> := <<"spaceMarketplaceDisabled">>}) ->
-    ?ERROR_SPACE_MARKETPLACE_DISABLED;
+    ?DEPRECATED_ERROR_SPACE_MARKETPLACE_DISABLED;
 
 from_json(#{<<"id">> := <<"protectedGroup">>}) ->
-    ?ERROR_PROTECTED_GROUP;
+    ?DEPRECATED_ERROR_PROTECTED_GROUP;
 
 from_json(#{<<"id">> := <<"atmLambdaInUse">>, <<"details">> := #{<<"atmWorkflowSchemas">> := AtmWorkflowSchemas}}) ->
-    ?ERROR_ATM_LAMBDA_IN_USE(AtmWorkflowSchemas);
+    ?DEPRECATED_ERROR_ATM_LAMBDA_IN_USE(AtmWorkflowSchemas);
 
 from_json(#{<<"id">> := <<"cannotRemoveLastOwner">>, <<"details">> := #{<<"entityType">> := EntType, <<"entityId">> := EntId}}) ->
-    ?ERROR_CANNOT_REMOVE_LAST_OWNER(binary_to_existing_atom(EntType, utf8), EntId);
+    ?DEPRECATED_ERROR_CANNOT_REMOVE_LAST_OWNER(binary_to_existing_atom(EntType, utf8), EntId);
 
 from_json(#{<<"id">> := <<"cannotDeleteEntity">>, <<"details">> := #{<<"entityType">> := EntType, <<"entityId">> := EntId}}) ->
-    ?ERROR_CANNOT_DELETE_ENTITY(binary_to_existing_atom(EntType, utf8), EntId);
+    ?DEPRECATED_ERROR_CANNOT_DELETE_ENTITY(binary_to_existing_atom(EntType, utf8), EntId);
 
 from_json(#{<<"id">> := <<"cannotAddRelationToSelf">>}) ->
-    ?ERROR_CANNOT_ADD_RELATION_TO_SELF;
+    ?DEPRECATED_ERROR_CANNOT_ADD_RELATION_TO_SELF;
 
 from_json(#{<<"id">> := <<"relationDoesNotExist">>, <<"details">> := #{
     <<"childType">> := ChType, <<"childId">> := ChId, <<"parentType">> := ParType, <<"parentId">> := ParId}
 }) ->
     ChTypeAtom = binary_to_existing_atom(ChType, utf8),
     ParTypeAtom = binary_to_existing_atom(ParType, utf8),
-    ?ERROR_RELATION_DOES_NOT_EXIST(ChTypeAtom, ChId, ParTypeAtom, ParId);
+    ?DEPRECATED_ERROR_RELATION_DOES_NOT_EXIST(ChTypeAtom, ChId, ParTypeAtom, ParId);
 
 from_json(#{<<"id">> := <<"relationAlreadyExists">>, <<"details">> := #{
     <<"childType">> := ChType, <<"childId">> := ChId, <<"parentType">> := ParType, <<"parentId">> := ParId}
 }) ->
     ChTypeAtom = gri:deserialize_type(ChType),
     ParTypeAtom = gri:deserialize_type(ParType),
-    ?ERROR_RELATION_ALREADY_EXISTS(ChTypeAtom, ChId, ParTypeAtom, ParId);
+    ?DEPRECATED_ERROR_RELATION_ALREADY_EXISTS(ChTypeAtom, ChId, ParTypeAtom, ParId);
 from_json(#{<<"id">> := <<"spaceAlreadySupportedWithImportedStorage">>, <<"details">> := #{
     <<"spaceId">> := SpaceId, <<"storageId">> := StorageId}
 }) ->
-    ?ERROR_SPACE_ALREADY_SUPPORTED_WITH_IMPORTED_STORAGE(SpaceId, StorageId);
+    ?DEPRECATED_ERROR_SPACE_ALREADY_SUPPORTED_WITH_IMPORTED_STORAGE(SpaceId, StorageId);
 from_json(#{<<"id">> := <<"cannotDeleteNonEmptyHandleService">>}) ->
-    ?ERROR_CANNOT_DELETE_NON_EMPTY_HANDLE_SERVICE;
+    ?DEPRECATED_ERROR_CANNOT_DELETE_NON_EMPTY_HANDLE_SERVICE;
 
 %%--------------------------------------------------------------------
 %% op_worker errors
 %%--------------------------------------------------------------------
 from_json(#{<<"id">> := <<"userNotSupported">>}) ->
-    ?ERROR_USER_NOT_SUPPORTED;
+    ?DEPRECATED_ERROR_USER_NOT_SUPPORTED;
 
 from_json(#{<<"id">> := <<"autoCleaningDisabled">>}) ->
-    ?ERROR_AUTO_CLEANING_DISABLED;
+    ?DEPRECATED_ERROR_AUTO_CLEANING_DISABLED;
 
 from_json(#{<<"id">> := <<"filePopularityDisabled">>}) ->
-    ?ERROR_FILE_POPULARITY_DISABLED;
+    ?DEPRECATED_ERROR_FILE_POPULARITY_DISABLED;
 
 from_json(#{<<"id">> := <<"spaceNotSupportedBy">>, <<"details">> := #{
     <<"spaceId">> := SpaceId,
     <<"providerId">> := ProviderId
 }}) ->
-    ?ERROR_SPACE_NOT_SUPPORTED_BY(SpaceId, ProviderId);
+    ?DEPRECATED_ERROR_SPACE_NOT_SUPPORTED_BY(SpaceId, ProviderId);
 
 from_json(#{<<"id">> := <<"notALocalStorageSupportingSpace">>, <<"details">> := #{
     <<"providerId">> := ProviderId,
     <<"storageId">> := StorageId,
     <<"spaceId">> := SpaceId
 }}) ->
-    ?ERROR_NOT_A_LOCAL_STORAGE_SUPPORTING_SPACE(ProviderId, StorageId, SpaceId);
+    ?DEPRECATED_ERROR_NOT_A_LOCAL_STORAGE_SUPPORTING_SPACE(ProviderId, StorageId, SpaceId);
 
 from_json(#{<<"id">> := <<"storageInUse">>}) ->
-    ?ERROR_STORAGE_IN_USE;
+    ?DEPRECATED_ERROR_STORAGE_IN_USE;
 
 from_json(#{<<"id">> := <<"requiresAutoStorageImportMode">>}) ->
-    ?ERROR_REQUIRES_AUTO_STORAGE_IMPORT_MODE;
+    ?DEPRECATED_ERROR_REQUIRES_AUTO_STORAGE_IMPORT_MODE;
 
 from_json(#{<<"id">> := <<"storageTestFailed">>, <<"details">> := #{<<"operation">> := Operation}})
     when Operation == <<"read">>; Operation == <<"write">>; Operation == <<"remove">> ->
-    ?ERROR_STORAGE_TEST_FAILED(binary_to_atom(Operation, utf8));
+    ?DEPRECATED_ERROR_STORAGE_TEST_FAILED(binary_to_atom(Operation, utf8));
 
 from_json(#{<<"id">> := <<"requiresNonImportedStorage">>, <<"details">> := #{<<"storageId">> := StorageId}}) ->
-    ?ERROR_REQUIRES_NON_IMPORTED_STORAGE(StorageId);
+    ?DEPRECATED_ERROR_REQUIRES_NON_IMPORTED_STORAGE(StorageId);
 
 from_json(#{<<"id">> := <<"requiresImportedStorage">>, <<"details">> := #{<<"storageId">> := StorageId}}) ->
-    ?ERROR_REQUIRES_IMPORTED_STORAGE(StorageId);
+    ?DEPRECATED_ERROR_REQUIRES_IMPORTED_STORAGE(StorageId);
 
 from_json(#{<<"id">> := <<"requiresReadonlyStorage">>, <<"details">> := #{<<"storageIdOrType">> := StorageIdOrType}}) ->
-    ?ERROR_REQUIRES_READONLY_STORAGE(StorageIdOrType);
+    ?DEPRECATED_ERROR_REQUIRES_READONLY_STORAGE(StorageIdOrType);
 
 from_json(#{<<"id">> := <<"requiresPosixCompatibleStorage">>, <<"details">> := #{
     <<"storageId">> := StorageId,
     <<"posixCompatibleStorages">> := PosixCompatibleStorages
 }}) ->
-    ?ERROR_REQUIRES_POSIX_COMPATIBLE_STORAGE(StorageId, PosixCompatibleStorages);
+    ?DEPRECATED_ERROR_REQUIRES_POSIX_COMPATIBLE_STORAGE(StorageId, PosixCompatibleStorages);
 
 from_json(#{<<"id">> := <<"autoStorageImportNotSupported">>, <<"details">> := #{
     <<"storageId">> := StorageId,
     <<"supportedStorages">> := SupportedStorages,
     <<"supportedObjectStorages">> := SupportedObjectStorages
 }}) ->
-    ?ERROR_AUTO_STORAGE_IMPORT_NOT_SUPPORTED(StorageId, SupportedStorages, SupportedObjectStorages);
+    ?DEPRECATED_ERROR_AUTO_STORAGE_IMPORT_NOT_SUPPORTED(StorageId, SupportedStorages, SupportedObjectStorages);
 
 
 from_json(#{<<"id">> := <<"storageImportNotSupported">>, <<"details">> := #{
     <<"storageId">> := StorageId,
     <<"objectStorages">> := ObjectStorages
 }}) ->
-    ?ERROR_STORAGE_IMPORT_NOT_SUPPORTED(StorageId, ObjectStorages);
+    ?DEPRECATED_ERROR_STORAGE_IMPORT_NOT_SUPPORTED(StorageId, ObjectStorages);
 
 from_json(#{<<"id">> := <<"statOperationNotSupported">>, <<"details">> := #{
     <<"storageId">> := StorageId
 }}) ->
-    ?ERROR_STAT_OPERATION_NOT_SUPPORTED(StorageId);
+    ?DEPRECATED_ERROR_STAT_OPERATION_NOT_SUPPORTED(StorageId);
 
 from_json(#{<<"id">> := <<"transferAlreadyEnded">>}) ->
-    ?ERROR_TRANSFER_ALREADY_ENDED;
+    ?DEPRECATED_ERROR_TRANSFER_ALREADY_ENDED;
 
 from_json(#{<<"id">> := <<"transferNotEnded">>}) ->
-    ?ERROR_TRANSFER_NOT_ENDED;
+    ?DEPRECATED_ERROR_TRANSFER_NOT_ENDED;
 
 from_json(#{<<"id">> := <<"viewNotExistsOn">>, <<"details">> := #{<<"providerId">> := ProviderId}}) ->
-    ?ERROR_VIEW_NOT_EXISTS_ON(ProviderId);
+    ?DEPRECATED_ERROR_VIEW_NOT_EXISTS_ON(ProviderId);
 
 from_json(#{<<"id">> := <<"viewQueryFailed">>, <<"details">> := #{
     <<"category">> := Category,
     <<"description">> := Description
 }}) ->
-    ?ERROR_VIEW_QUERY_FAILED(Category, Description);
+    ?DEPRECATED_ERROR_VIEW_QUERY_FAILED(Category, Description);
 
 from_json(#{<<"id">> := <<"quotaExceeded">>}) ->
-    ?ERROR_QUOTA_EXCEEDED;
+    ?DEPRECATED_ERROR_QUOTA_EXCEEDED;
 
 from_json(#{
     <<"id">> := <<"atmUnsupportedDataType">>,
@@ -2197,7 +2197,7 @@ from_json(#{
     Type = atm_data_type:type_from_json(TypeJson),
     SupportedTypes = lists:map(fun atm_data_type:type_from_json/1, SupportedTypesJson),
 
-    ?ERROR_ATM_UNSUPPORTED_DATA_TYPE(Type, SupportedTypes);
+    ?DEPRECATED_ERROR_ATM_UNSUPPORTED_DATA_TYPE(Type, SupportedTypes);
 
 from_json(#{
     <<"id">> := <<"atmDataTypeUnverified">>,
@@ -2206,7 +2206,7 @@ from_json(#{
         <<"expType">> := ExpTypeJson
     }
 }) ->
-    ?ERROR_ATM_DATA_TYPE_UNVERIFIED(Value, atm_data_type:type_from_json(ExpTypeJson));
+    ?DEPRECATED_ERROR_ATM_DATA_TYPE_UNVERIFIED(Value, atm_data_type:type_from_json(ExpTypeJson));
 
 from_json(#{
     <<"id">> := <<"atmDataValueConstraintUnverified">>,
@@ -2218,7 +2218,7 @@ from_json(#{
 }) ->
     Type = atm_data_type:type_from_json(TypeJson),
 
-    ?ERROR_ATM_DATA_VALUE_CONSTRAINT_UNVERIFIED(Value, Type, ValueConstraintsJson);
+    ?DEPRECATED_ERROR_ATM_DATA_VALUE_CONSTRAINT_UNVERIFIED(Value, Type, ValueConstraintsJson);
 
 from_json(#{
     <<"id">> := <<"atmStoreCreationFailed">>,
@@ -2227,10 +2227,10 @@ from_json(#{
         <<"specificError">> := SpecificErrorJson
     }
 }) ->
-    ?ERROR_ATM_STORE_CREATION_FAILED(AtmStoreSchemaId, from_json(SpecificErrorJson));
+    ?DEPRECATED_ERROR_ATM_STORE_CREATION_FAILED(AtmStoreSchemaId, from_json(SpecificErrorJson));
 
 from_json(#{<<"id">> := <<"atmStoreMissingRequiredInitialContent">>}) ->
-    ?ERROR_ATM_STORE_MISSING_REQUIRED_INITIAL_CONTENT;
+    ?DEPRECATED_ERROR_ATM_STORE_MISSING_REQUIRED_INITIAL_CONTENT;
 
 from_json(#{
     <<"id">> := <<"atmStoreFrozen">>,
@@ -2238,7 +2238,7 @@ from_json(#{
         <<"atmStoreSchemaId">> := AtmStoreSchemaId
     }
 }) ->
-    ?ERROR_ATM_STORE_FROZEN(AtmStoreSchemaId);
+    ?DEPRECATED_ERROR_ATM_STORE_FROZEN(AtmStoreSchemaId);
 
 from_json(#{
     <<"id">> := <<"atmStoreTypeDisallowed">>,
@@ -2248,7 +2248,7 @@ from_json(#{
     }
 }) ->
     AllowedTypes = lists:map(fun automation:store_type_from_json/1, AllowedTypesJson),
-    ?ERROR_ATM_STORE_TYPE_DISALLOWED(AtmStoreSchemaId, AllowedTypes);
+    ?DEPRECATED_ERROR_ATM_STORE_TYPE_DISALLOWED(AtmStoreSchemaId, AllowedTypes);
 
 from_json(#{
     <<"id">> := <<"atmStoreContentNotSet">>,
@@ -2256,7 +2256,7 @@ from_json(#{
         <<"atmStoreSchemaId">> := AtmStoreSchemaId
     }
 }) ->
-    ?ERROR_ATM_STORE_CONTENT_NOT_SET(AtmStoreSchemaId);
+    ?DEPRECATED_ERROR_ATM_STORE_CONTENT_NOT_SET(AtmStoreSchemaId);
 
 from_json(#{
     <<"id">> := <<"atmStoreNotFound">>,
@@ -2264,28 +2264,28 @@ from_json(#{
         <<"atmStoreSchemaId">> := AtmStoreSchemaId
     }
 }) ->
-    ?ERROR_ATM_STORE_NOT_FOUND(AtmStoreSchemaId);
+    ?DEPRECATED_ERROR_ATM_STORE_NOT_FOUND(AtmStoreSchemaId);
 
 from_json(#{<<"id">> := <<"atmWorkflowEmpty">>}) ->
-    ?ERROR_ATM_WORKFLOW_EMPTY;
+    ?DEPRECATED_ERROR_ATM_WORKFLOW_EMPTY;
 
 from_json(#{<<"id">> := <<"atmWorkflowExecutionStopping">>}) ->
-    ?ERROR_ATM_WORKFLOW_EXECUTION_STOPPING;
+    ?DEPRECATED_ERROR_ATM_WORKFLOW_EXECUTION_STOPPING;
 
 from_json(#{<<"id">> := <<"atmWorkflowExecutionStopped">>}) ->
-    ?ERROR_ATM_WORKFLOW_EXECUTION_STOPPED;
+    ?DEPRECATED_ERROR_ATM_WORKFLOW_EXECUTION_STOPPED;
 
 from_json(#{<<"id">> := <<"atmWorkflowExecutionNotStopped">>}) ->
-    ?ERROR_ATM_WORKFLOW_EXECUTION_NOT_STOPPED;
+    ?DEPRECATED_ERROR_ATM_WORKFLOW_EXECUTION_NOT_STOPPED;
 
 from_json(#{<<"id">> := <<"atmWorkflowExecutionEnded">>}) ->
-    ?ERROR_ATM_WORKFLOW_EXECUTION_ENDED;
+    ?DEPRECATED_ERROR_ATM_WORKFLOW_EXECUTION_ENDED;
 
 from_json(#{<<"id">> := <<"atmWorkflowExecutionNotEnded">>}) ->
-    ?ERROR_ATM_WORKFLOW_EXECUTION_NOT_ENDED;
+    ?DEPRECATED_ERROR_ATM_WORKFLOW_EXECUTION_NOT_ENDED;
 
 from_json(#{<<"id">> := <<"atmWorkflowExecutionNotResumable">>}) ->
-    ?ERROR_ATM_WORKFLOW_EXECUTION_NOT_RESUMABLE;
+    ?DEPRECATED_ERROR_ATM_WORKFLOW_EXECUTION_NOT_RESUMABLE;
 
 from_json(#{
     <<"id">> := <<"atmLaneEmpty">>,
@@ -2293,7 +2293,7 @@ from_json(#{
         <<"atmLaneSchemaId">> := AtmLaneSchemaId
     }
 }) ->
-    ?ERROR_ATM_LANE_EMPTY(AtmLaneSchemaId);
+    ?DEPRECATED_ERROR_ATM_LANE_EMPTY(AtmLaneSchemaId);
 
 from_json(#{
     <<"id">> := <<"atmLaneExecutionCreationFailed">>,
@@ -2302,7 +2302,7 @@ from_json(#{
         <<"specificError">> := SpecificErrorJson
     }
 }) ->
-    ?ERROR_ATM_LANE_EXECUTION_CREATION_FAILED(AtmLaneSchemaId, from_json(SpecificErrorJson));
+    ?DEPRECATED_ERROR_ATM_LANE_EXECUTION_CREATION_FAILED(AtmLaneSchemaId, from_json(SpecificErrorJson));
 
 from_json(#{
     <<"id">> := <<"atmLaneExecutionInitiationFailed">>,
@@ -2311,13 +2311,13 @@ from_json(#{
         <<"specificError">> := SpecificErrorJson
     }
 }) ->
-    ?ERROR_ATM_LANE_EXECUTION_INITIATION_FAILED(AtmLaneSchemaId, from_json(SpecificErrorJson));
+    ?DEPRECATED_ERROR_ATM_LANE_EXECUTION_INITIATION_FAILED(AtmLaneSchemaId, from_json(SpecificErrorJson));
 
 from_json(#{<<"id">> := <<"atmLaneExecutionRetryFailed">>}) ->
-    ?ERROR_ATM_LANE_EXECUTION_RETRY_FAILED;
+    ?DEPRECATED_ERROR_ATM_LANE_EXECUTION_RETRY_FAILED;
 
 from_json(#{<<"id">> := <<"atmLaneExecutionRerunFailed">>}) ->
-    ?ERROR_ATM_LANE_EXECUTION_RERUN_FAILED;
+    ?DEPRECATED_ERROR_ATM_LANE_EXECUTION_RERUN_FAILED;
 
 from_json(#{
     <<"id">> := <<"atmParallelBoxEmpty">>,
@@ -2325,7 +2325,7 @@ from_json(#{
         <<"atmParallelBoxSchemaId">> := AtmParallelBoxSchemaId
     }
 }) ->
-    ?ERROR_ATM_PARALLEL_BOX_EMPTY(AtmParallelBoxSchemaId);
+    ?DEPRECATED_ERROR_ATM_PARALLEL_BOX_EMPTY(AtmParallelBoxSchemaId);
 
 from_json(#{
     <<"id">> := <<"atmParallelBoxExecutionCreationFailed">>,
@@ -2334,7 +2334,7 @@ from_json(#{
         <<"specificError">> := SpecificErrorJson
     }
 }) ->
-    ?ERROR_ATM_PARALLEL_BOX_EXECUTION_CREATION_FAILED(
+    ?DEPRECATED_ERROR_ATM_PARALLEL_BOX_EXECUTION_CREATION_FAILED(
         AtmParallelBoxSchemaId,
         from_json(SpecificErrorJson)
     );
@@ -2346,7 +2346,7 @@ from_json(#{
         <<"specificError">> := SpecificErrorJson
     }
 }) ->
-    ?ERROR_ATM_PARALLEL_BOX_EXECUTION_INITIATION_FAILED(
+    ?DEPRECATED_ERROR_ATM_PARALLEL_BOX_EXECUTION_INITIATION_FAILED(
         AtmParallelBoxSchemaId,
         from_json(SpecificErrorJson)
     );
@@ -2358,7 +2358,7 @@ from_json(#{
         <<"specificError">> := SpecificErrorJson
     }
 }) ->
-    ?ERROR_ATM_TASK_EXECUTION_CREATION_FAILED(AtmTaskSchemaId, from_json(SpecificErrorJson));
+    ?DEPRECATED_ERROR_ATM_TASK_EXECUTION_CREATION_FAILED(AtmTaskSchemaId, from_json(SpecificErrorJson));
 
 from_json(#{
     <<"id">> := <<"atmTaskExecutionInitiationFailed">>,
@@ -2367,7 +2367,7 @@ from_json(#{
         <<"specificError">> := SpecificErrorJson
     }
 }) ->
-    ?ERROR_ATM_TASK_EXECUTION_INITIATION_FAILED(AtmTaskSchemaId, from_json(SpecificErrorJson));
+    ?DEPRECATED_ERROR_ATM_TASK_EXECUTION_INITIATION_FAILED(AtmTaskSchemaId, from_json(SpecificErrorJson));
 
 from_json(#{
     <<"id">> := <<"atmLambdaConfigBadValue">>,
@@ -2376,7 +2376,7 @@ from_json(#{
         <<"specificError">> := SpecificErrorJson
     }
 }) ->
-    ?ERROR_ATM_LAMBDA_CONFIG_BAD_VALUE(ParameterName, from_json(SpecificErrorJson));
+    ?DEPRECATED_ERROR_ATM_LAMBDA_CONFIG_BAD_VALUE(ParameterName, from_json(SpecificErrorJson));
 
 from_json(#{
     <<"id">> := <<"atmTaskArgMapperForRequiredLambdaArgMissing">>,
@@ -2384,7 +2384,7 @@ from_json(#{
         <<"argument">> := ArgName
     }
 }) ->
-    ?ERROR_ATM_TASK_ARG_MAPPER_FOR_REQUIRED_LAMBDA_ARG_MISSING(ArgName);
+    ?DEPRECATED_ERROR_ATM_TASK_ARG_MAPPER_FOR_REQUIRED_LAMBDA_ARG_MISSING(ArgName);
 
 from_json(#{
     <<"id">> := <<"atmTaskArgMapperForNonexistentLambdaArg">>,
@@ -2392,7 +2392,7 @@ from_json(#{
         <<"argument">> := ArgName
     }
 }) ->
-    ?ERROR_ATM_TASK_ARG_MAPPER_FOR_NONEXISTENT_LAMBDA_ARG(ArgName);
+    ?DEPRECATED_ERROR_ATM_TASK_ARG_MAPPER_FOR_NONEXISTENT_LAMBDA_ARG(ArgName);
 
 from_json(#{
     <<"id">> := <<"atmTaskArgMappingFailed">>,
@@ -2401,7 +2401,7 @@ from_json(#{
         <<"specificError">> := SpecificErrorJson
     }
 }) ->
-    ?ERROR_ATM_TASK_ARG_MAPPING_FAILED(ArgName, from_json(SpecificErrorJson));
+    ?DEPRECATED_ERROR_ATM_TASK_ARG_MAPPING_FAILED(ArgName, from_json(SpecificErrorJson));
 
 from_json(#{
     <<"id">> := <<"atmTaskArgMapperUnsupportedValueBuilder">>,
@@ -2413,7 +2413,7 @@ from_json(#{
     Type = atm_task_argument_value_builder:type_from_json(TypeJson),
     SupportedTypes = lists:map(fun atm_task_argument_value_builder:type_from_json/1, SupportedTypesJson),
 
-    ?ERROR_ATM_TASK_ARG_MAPPER_UNSUPPORTED_VALUE_BUILDER(Type, SupportedTypes);
+    ?DEPRECATED_ERROR_ATM_TASK_ARG_MAPPER_UNSUPPORTED_VALUE_BUILDER(Type, SupportedTypes);
 
 from_json(#{
     <<"id">> := <<"atmTaskArgMapperIteratedItemQueryFailed">>,
@@ -2422,7 +2422,7 @@ from_json(#{
         <<"query">> := Query
     }
 }) ->
-    ?ERROR_ATM_TASK_ARG_MAPPER_ITERATED_ITEM_QUERY_FAILED(Value, Query);
+    ?DEPRECATED_ERROR_ATM_TASK_ARG_MAPPER_ITERATED_ITEM_QUERY_FAILED(Value, Query);
 
 from_json(#{
     <<"id">> := <<"atmTaskResultMissing">>,
@@ -2431,7 +2431,7 @@ from_json(#{
         <<"receivedResultNames">> := ReceivedResultNames
     }
 }) ->
-    ?ERROR_ATM_TASK_RESULT_MISSING(MissingResultName, ReceivedResultNames);
+    ?DEPRECATED_ERROR_ATM_TASK_RESULT_MISSING(MissingResultName, ReceivedResultNames);
 
 from_json(#{
     <<"id">> := <<"atmTaskResultMappingFailed">>,
@@ -2440,7 +2440,7 @@ from_json(#{
         <<"specificError">> := SpecificErrorJson
     }
 }) ->
-    ?ERROR_ATM_TASK_RESULT_MAPPING_FAILED(ResultName, from_json(SpecificErrorJson));
+    ?DEPRECATED_ERROR_ATM_TASK_RESULT_MAPPING_FAILED(ResultName, from_json(SpecificErrorJson));
 
 from_json(#{
     <<"id">> := <<"atmTaskResultDispatchFailed">>,
@@ -2449,30 +2449,30 @@ from_json(#{
         <<"specificError">> := SpecificErrorJson
     }
 }) ->
-    ?ERROR_ATM_TASK_RESULT_DISPATCH_FAILED(AtmStoreSchemaId, from_json(SpecificErrorJson));
+    ?DEPRECATED_ERROR_ATM_TASK_RESULT_DISPATCH_FAILED(AtmStoreSchemaId, from_json(SpecificErrorJson));
 
 from_json(#{<<"id">> := <<"atmTaskExecutionEnded">>}) ->
-    ?ERROR_ATM_TASK_EXECUTION_STOPPED;
+    ?DEPRECATED_ERROR_ATM_TASK_EXECUTION_STOPPED;
 
 from_json(#{
     <<"id">> := <<"atmJobBatchWithdrawn">>,
     <<"details">> := #{<<"reason">> := Reason}
 }) ->
-    ?ERROR_ATM_JOB_BATCH_WITHDRAWN(Reason);
+    ?DEPRECATED_ERROR_ATM_JOB_BATCH_WITHDRAWN(Reason);
 from_json(#{
     <<"id">> := <<"atmJobBatchCrashed">>,
     <<"details">> := #{<<"reason">> := Reason}
 }) ->
-    ?ERROR_ATM_JOB_BATCH_CRASHED(Reason);
+    ?DEPRECATED_ERROR_ATM_JOB_BATCH_CRASHED(Reason);
 
 from_json(#{<<"id">> := <<"atmOpenfaasNotConfigured">>}) ->
-    ?ERROR_ATM_OPENFAAS_NOT_CONFIGURED;
+    ?DEPRECATED_ERROR_ATM_OPENFAAS_NOT_CONFIGURED;
 
 from_json(#{<<"id">> := <<"atmOpenfaasUnreachable">>}) ->
-    ?ERROR_ATM_OPENFAAS_UNREACHABLE;
+    ?DEPRECATED_ERROR_ATM_OPENFAAS_UNREACHABLE;
 
 from_json(#{<<"id">> := <<"atmOpenfaasUnhealthy">>}) ->
-    ?ERROR_ATM_OPENFAAS_UNHEALTHY;
+    ?DEPRECATED_ERROR_ATM_OPENFAAS_UNHEALTHY;
 
 from_json(#{
     <<"id">> := <<"atmOpenfaasQueryFailed">>,
@@ -2480,13 +2480,13 @@ from_json(#{
         <<"reason">> := Reason
     }
 }) ->
-    ?ERROR_ATM_OPENFAAS_QUERY_FAILED(Reason);
+    ?DEPRECATED_ERROR_ATM_OPENFAAS_QUERY_FAILED(Reason);
 
 from_json(#{<<"id">> := <<"atmOpenfaasQueryFailed">>}) ->
-    ?ERROR_ATM_OPENFAAS_QUERY_FAILED;
+    ?DEPRECATED_ERROR_ATM_OPENFAAS_QUERY_FAILED;
 
 from_json(#{<<"id">> := <<"atmOpenfaasFunctionRegistrationFailed">>}) ->
-    ?ERROR_ATM_OPENFAAS_FUNCTION_REGISTRATION_FAILED;
+    ?DEPRECATED_ERROR_ATM_OPENFAAS_FUNCTION_REGISTRATION_FAILED;
 
 from_json(#{
     <<"id">> := <<"atmInvalidStatusTransition">>,
@@ -2495,16 +2495,16 @@ from_json(#{
         <<"newStatus">> := NewStatusBin
     }
 }) ->
-    ?ERROR_ATM_INVALID_STATUS_TRANSITION(
+    ?DEPRECATED_ERROR_ATM_INVALID_STATUS_TRANSITION(
         binary_to_atom(PrevStatusBin, utf8),
         binary_to_atom(NewStatusBin, utf8)
     );
 
 from_json(#{<<"id">> := <<"dirStatsDisabledForSpace">>}) ->
-    ?ERROR_DIR_STATS_DISABLED_FOR_SPACE;
+    ?DEPRECATED_ERROR_DIR_STATS_DISABLED_FOR_SPACE;
 
 from_json(#{<<"id">> := <<"dirStatsNotReady">>}) ->
-    ?ERROR_DIR_STATS_NOT_READY;
+    ?DEPRECATED_ERROR_DIR_STATS_NOT_READY;
 
 from_json(#{
     <<"id">> := <<"forbiddenForCurrentArchiveState">>,
@@ -2513,7 +2513,7 @@ from_json(#{
         <<"currentState">> := CurrentState
     }
 }) ->
-    ?ERROR_FORBIDDEN_FOR_CURRENT_ARCHIVE_STATE(
+    ?DEPRECATED_ERROR_FORBIDDEN_FOR_CURRENT_ARCHIVE_STATE(
         binary_to_existing_atom(json_utils:decode(CurrentState)),
         [binary_to_existing_atom(StateBin) || StateBin <- json_utils:decode(AllowedStates)]
     );
@@ -2522,60 +2522,60 @@ from_json(#{
     <<"id">> := <<"nestedArchiveDeletionForbidden">>,
     <<"details">> := #{<<"parentArchiveId">> := ParentArchiveId}
 }) ->
-    ?ERROR_NESTED_ARCHIVE_DELETION_FORBIDDEN(ParentArchiveId);
+    ?DEPRECATED_ERROR_NESTED_ARCHIVE_DELETION_FORBIDDEN(ParentArchiveId);
 
 from_json(#{<<"id">> := <<"recallTargetConflict">>}) ->
-    ?ERROR_RECALL_TARGET_CONFLICT;
+    ?DEPRECATED_ERROR_RECALL_TARGET_CONFLICT;
 
 %%--------------------------------------------------------------------
 %% onepanel errors
 %%--------------------------------------------------------------------
 from_json(#{<<"id">> := <<"errorOnNodes">>, <<"details">> := #{
     <<"error">> := Error, <<"hostnames">> := Hostnames}}) ->
-    ?ERROR_ON_NODES(from_json(Error), Hostnames);
+    ?DEPRECATED_ERROR_ON_NODES(from_json(Error), Hostnames);
 
 from_json(#{<<"id">> := <<"dnsServersUnreachable">>, <<"details">> := #{<<"servers">> := UsedServers}}) ->
     Servers = lists:map(fun
         (?DNS_DEFAULTS) -> default;
         (IP) -> element(2, {ok, _} = ip_utils:to_ip4_address(IP))
     end, UsedServers),
-    ?ERROR_DNS_SERVERS_UNREACHABLE(Servers);
+    ?DEPRECATED_ERROR_DNS_SERVERS_UNREACHABLE(Servers);
 
 from_json(#{<<"id">> := <<"fileAllocation">>, <<"details">> := #{
     <<"actualSize">> := ActualSize, <<"targetSize">> := TargetSize}}) ->
-    ?ERROR_FILE_ALLOCATION(ActualSize, TargetSize);
+    ?DEPRECATED_ERROR_FILE_ALLOCATION(ActualSize, TargetSize);
 
 from_json(#{<<"id">> := <<"letsEncryptNotReachable">>}) ->
-    ?ERROR_LETS_ENCRYPT_NOT_REACHABLE;
+    ?DEPRECATED_ERROR_LETS_ENCRYPT_NOT_REACHABLE;
 
 from_json(#{<<"id">> := <<"letsEncryptResponse">>, <<"details">> := #{
     <<"problemDocument">> := ProblemDocument, <<"errorMessage">> := ErrorMessage
 }}) ->
-    ?ERROR_LETS_ENCRYPT_RESPONSE(utils:null_to_undefined(ProblemDocument), ErrorMessage);
+    ?DEPRECATED_ERROR_LETS_ENCRYPT_RESPONSE(utils:null_to_undefined(ProblemDocument), ErrorMessage);
 
 from_json(#{<<"id">> := <<"nodeAlreadyInCluster">>,
     <<"details">> := #{<<"hostname">> := Hostname}}) ->
-    ?ERROR_NODE_ALREADY_IN_CLUSTER(Hostname);
+    ?DEPRECATED_ERROR_NODE_ALREADY_IN_CLUSTER(Hostname);
 
 from_json(#{<<"id">> := <<"nodeNotCompatible">>,
     <<"details">> := #{<<"hostname">> := Hostname, <<"clusterType">> := ClusterType}}) ->
-    ?ERROR_NODE_NOT_COMPATIBLE(Hostname, binary_to_existing_atom(ClusterType, utf8));
+    ?DEPRECATED_ERROR_NODE_NOT_COMPATIBLE(Hostname, binary_to_existing_atom(ClusterType, utf8));
 
 from_json(#{<<"id">> := <<"noConnectionToNewNode">>,
     <<"details">> := #{<<"hostname">> := Hostname}}) ->
-    ?ERROR_NO_CONNECTION_TO_NEW_NODE(Hostname);
+    ?DEPRECATED_ERROR_NO_CONNECTION_TO_NEW_NODE(Hostname);
 
 from_json(#{<<"id">> := <<"noServiceNodes">>, <<"details">> := #{<<"service">> := Service}}) ->
-    ?ERROR_NO_SERVICE_NODES(Service);
+    ?DEPRECATED_ERROR_NO_SERVICE_NODES(Service);
 
 from_json(#{<<"id">> := <<"userNotInCluster">>}) ->
-    ?ERROR_USER_NOT_IN_CLUSTER;
+    ?DEPRECATED_ERROR_USER_NOT_IN_CLUSTER;
 
 %%--------------------------------------------------------------------
 %% Unknown error
 %%--------------------------------------------------------------------
 from_json(ErrorAsJson) when is_map(ErrorAsJson) ->
-    ?ERROR_UNRECOGNIZED_ERROR(ErrorAsJson).
+    ?DEPRECATED_ERROR_UNRECOGNIZED_ERROR(ErrorAsJson).
 
 
 -spec to_http_code(error()) ->
@@ -2583,244 +2583,244 @@ from_json(ErrorAsJson) when is_map(ErrorAsJson) ->
 %% -----------------------------------------------------------------------------
 %% General errors
 %% -----------------------------------------------------------------------------
-to_http_code(?ERROR_BAD_MESSAGE(_)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_NO_CONNECTION_TO_ONEZONE) -> ?HTTP_503_SERVICE_UNAVAILABLE;
-to_http_code(?ERROR_NO_CONNECTION_TO_PEER_ONEPROVIDER) -> ?HTTP_503_SERVICE_UNAVAILABLE;
-to_http_code(?ERROR_NO_CONNECTION_TO_CLUSTER_NODE) -> ?HTTP_503_SERVICE_UNAVAILABLE;
-to_http_code(?ERROR_UNREGISTERED_ONEPROVIDER) -> ?HTTP_503_SERVICE_UNAVAILABLE;
-to_http_code(?ERROR_INTERNAL_SERVER_ERROR) -> ?HTTP_500_INTERNAL_SERVER_ERROR;
-to_http_code(?ERROR_INTERNAL_SERVER_ERROR(_)) -> ?HTTP_500_INTERNAL_SERVER_ERROR;
-to_http_code(?ERROR_NOT_IMPLEMENTED) -> ?HTTP_501_NOT_IMPLEMENTED;
-to_http_code(?ERROR_NOT_SUPPORTED) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_SERVICE_UNAVAILABLE) -> ?HTTP_503_SERVICE_UNAVAILABLE;
-to_http_code(?ERROR_TIMEOUT) -> ?HTTP_503_SERVICE_UNAVAILABLE;
-to_http_code(?ERROR_TEMPORARY_FAILURE) -> ?HTTP_503_SERVICE_UNAVAILABLE;
-to_http_code(?ERROR_EXTERNAL_SERVICE_OPERATION_FAILED(_)) -> ?HTTP_503_SERVICE_UNAVAILABLE;
-to_http_code(?ERROR_UNAUTHORIZED(_)) -> ?HTTP_401_UNAUTHORIZED;
-to_http_code(?ERROR_UNAUTHORIZED) -> ?HTTP_401_UNAUTHORIZED;
-to_http_code(?ERROR_FORBIDDEN(_)) -> ?HTTP_403_FORBIDDEN;
-to_http_code(?ERROR_FORBIDDEN) -> ?HTTP_403_FORBIDDEN;
-to_http_code(?ERROR_NOT_FOUND) -> ?HTTP_404_NOT_FOUND;
-to_http_code(?ERROR_ALREADY_EXISTS) -> ?HTTP_409_CONFLICT;
-to_http_code(?ERROR_FILE_ACCESS(_, _)) -> ?HTTP_500_INTERNAL_SERVER_ERROR;
-to_http_code(?ERROR_LIMIT_REACHED(_, _)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_BAD_MESSAGE(_)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_NO_CONNECTION_TO_ONEZONE) -> ?HTTP_503_SERVICE_UNAVAILABLE;
+to_http_code(?DEPRECATED_ERROR_NO_CONNECTION_TO_PEER_ONEPROVIDER) -> ?HTTP_503_SERVICE_UNAVAILABLE;
+to_http_code(?DEPRECATED_ERROR_NO_CONNECTION_TO_CLUSTER_NODE) -> ?HTTP_503_SERVICE_UNAVAILABLE;
+to_http_code(?DEPRECATED_ERROR_UNREGISTERED_ONEPROVIDER) -> ?HTTP_503_SERVICE_UNAVAILABLE;
+to_http_code(?DEPRECATED_ERROR_INTERNAL_SERVER_ERROR) -> ?HTTP_500_INTERNAL_SERVER_ERROR;
+to_http_code(?DEPRECATED_ERROR_INTERNAL_SERVER_ERROR(_)) -> ?HTTP_500_INTERNAL_SERVER_ERROR;
+to_http_code(?DEPRECATED_ERROR_NOT_IMPLEMENTED) -> ?HTTP_501_NOT_IMPLEMENTED;
+to_http_code(?DEPRECATED_ERROR_NOT_SUPPORTED) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_SERVICE_UNAVAILABLE) -> ?HTTP_503_SERVICE_UNAVAILABLE;
+to_http_code(?DEPRECATED_ERROR_TIMEOUT) -> ?HTTP_503_SERVICE_UNAVAILABLE;
+to_http_code(?DEPRECATED_ERROR_TEMPORARY_FAILURE) -> ?HTTP_503_SERVICE_UNAVAILABLE;
+to_http_code(?DEPRECATED_ERROR_EXTERNAL_SERVICE_OPERATION_FAILED(_)) -> ?HTTP_503_SERVICE_UNAVAILABLE;
+to_http_code(?DEPRECATED_ERROR_UNAUTHORIZED(_)) -> ?HTTP_401_UNAUTHORIZED;
+to_http_code(?DEPRECATED_ERROR_UNAUTHORIZED) -> ?HTTP_401_UNAUTHORIZED;
+to_http_code(?DEPRECATED_ERROR_FORBIDDEN(_)) -> ?HTTP_403_FORBIDDEN;
+to_http_code(?DEPRECATED_ERROR_FORBIDDEN) -> ?HTTP_403_FORBIDDEN;
+to_http_code(?DEPRECATED_ERROR_NOT_FOUND) -> ?HTTP_404_NOT_FOUND;
+to_http_code(?DEPRECATED_ERROR_ALREADY_EXISTS) -> ?HTTP_409_CONFLICT;
+to_http_code(?DEPRECATED_ERROR_FILE_ACCESS(_, _)) -> ?HTTP_500_INTERNAL_SERVER_ERROR;
+to_http_code(?DEPRECATED_ERROR_LIMIT_REACHED(_, _)) -> ?HTTP_400_BAD_REQUEST;
 
 %% -----------------------------------------------------------------------------
 %% POSIX errors
 %% -----------------------------------------------------------------------------
-to_http_code(?ERROR_POSIX(_)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_POSIX(_)) -> ?HTTP_400_BAD_REQUEST;
 
 %% -----------------------------------------------------------------------------
 %% Auth errors
 %% -----------------------------------------------------------------------------
-to_http_code(?ERROR_USER_BLOCKED) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_BAD_BASIC_CREDENTIALS) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_BAD_IDP_ACCESS_TOKEN(_)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_BAD_TOKEN) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_BAD_SERVICE_TOKEN(_)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_BAD_CONSUMER_TOKEN(_)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_TOKEN_INVALID) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_TOKEN_REVOKED) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_TOKEN_TOO_LARGE(_)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_NOT_AN_ACCESS_TOKEN(_)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_NOT_AN_IDENTITY_TOKEN(_)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_NOT_AN_INVITE_TOKEN(_, _)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_TOKEN_CAVEAT_UNKNOWN(_)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_TOKEN_CAVEAT_UNVERIFIED(_)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_TOKEN_TIME_CAVEAT_REQUIRED(_)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_TOKEN_SUBJECT_INVALID) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_TOKEN_SERVICE_FORBIDDEN(_)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_INVITE_TOKEN_USAGE_LIMIT_REACHED) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_INVITE_TOKEN_SUBJECT_NOT_AUTHORIZED) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_INVITE_TOKEN_CONSUMER_INVALID(_)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_INVITE_TOKEN_TARGET_ID_INVALID(_)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_TOKEN_SESSION_INVALID) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_USER_BLOCKED) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_BAD_BASIC_CREDENTIALS) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_BAD_IDP_ACCESS_TOKEN(_)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_BAD_TOKEN) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_BAD_SERVICE_TOKEN(_)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_BAD_CONSUMER_TOKEN(_)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_TOKEN_INVALID) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_TOKEN_REVOKED) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_TOKEN_TOO_LARGE(_)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_NOT_AN_ACCESS_TOKEN(_)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_NOT_AN_IDENTITY_TOKEN(_)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_NOT_AN_INVITE_TOKEN(_, _)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_TOKEN_CAVEAT_UNKNOWN(_)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_TOKEN_CAVEAT_UNVERIFIED(_)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_TOKEN_TIME_CAVEAT_REQUIRED(_)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_TOKEN_SUBJECT_INVALID) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_TOKEN_SERVICE_FORBIDDEN(_)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_INVITE_TOKEN_USAGE_LIMIT_REACHED) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_INVITE_TOKEN_SUBJECT_NOT_AUTHORIZED) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_INVITE_TOKEN_CONSUMER_INVALID(_)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_INVITE_TOKEN_TARGET_ID_INVALID(_)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_TOKEN_SESSION_INVALID) -> ?HTTP_400_BAD_REQUEST;
 
 %% -----------------------------------------------------------------------------
 %% Graph Sync errors
 %% -----------------------------------------------------------------------------
-to_http_code(?ERROR_EXPECTED_HANDSHAKE_MESSAGE) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_HANDSHAKE_ALREADY_DONE) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_BAD_VERSION(_)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_BAD_GRI) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_RPC_UNDEFINED) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_NOT_SUBSCRIBABLE) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_EXPECTED_HANDSHAKE_MESSAGE) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_HANDSHAKE_ALREADY_DONE) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_BAD_VERSION(_)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_BAD_GRI) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_RPC_UNDEFINED) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_NOT_SUBSCRIBABLE) -> ?HTTP_400_BAD_REQUEST;
 
 %% -----------------------------------------------------------------------------
 %% Data validation errors
 %% -----------------------------------------------------------------------------
-to_http_code(?ERROR_MALFORMED_DATA) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_MISSING_REQUIRED_VALUE(_)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_MISSING_AT_LEAST_ONE_VALUE(_)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_BAD_DATA(_)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_BAD_DATA(_, _)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_BAD_VALUE_EMPTY(_)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_BAD_VALUE_BOOLEAN(_)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_BAD_VALUE_ATOM(_)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_BAD_VALUE_LIST_OF_ATOMS(_)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_BAD_VALUE_BINARY(_)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_BAD_VALUE_TEXT_TOO_LARGE(_, _)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_BAD_VALUE_LIST_OF_BINARIES(_)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_BAD_VALUE_INTEGER(_)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_BAD_VALUE_FLOAT(_)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_BAD_VALUE_JSON(_)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_BAD_VALUE_XML(_)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_BAD_VALUE_TOKEN(_, _)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_BAD_VALUE_TOKEN_TYPE(_)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_BAD_VALUE_INVITE_TYPE(_)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_BAD_VALUE_IPV4_ADDRESS(_)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_BAD_VALUE_LIST_OF_IPV4_ADDRESSES(_)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_BAD_VALUE_TOO_LOW(_, _)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_BAD_VALUE_TOO_HIGH(_, _)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_BAD_VALUE_NOT_IN_RANGE(_, _, _)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_BAD_VALUE_NOT_ALLOWED(_, _)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_BAD_VALUE_LIST_NOT_ALLOWED(_, _)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_BAD_VALUE_ID_NOT_FOUND(_)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_BAD_VALUE_AMBIGUOUS_ID(_)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_BAD_VALUE_IDENTIFIER(_)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_BAD_VALUE_IDENTIFIER_OCCUPIED(_)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_BAD_VALUE_OCTAL(_)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_BAD_VALUE_FILE_PATH) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_BAD_VALUE_FULL_NAME) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_BAD_VALUE_USERNAME) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_BAD_VALUE_PASSWORD) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_BAD_VALUE_EMAIL) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_BAD_VALUE_NAME) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_BAD_VALUE_NAME(_)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_BAD_VALUE_DOMAIN) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_BAD_VALUE_SUBDOMAIN) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_BAD_VALUE_CAVEAT(_)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_BAD_VALUE_QOS_PARAMETERS) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_TSC_MISSING_LAYOUT(_)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_TSC_TOO_MANY_METRICS(_)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_BAD_VALUE_TSC_CONFLICTING_METRIC_CONFIG(_, _, _, _)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_BAD_GUI_PACKAGE) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_GUI_PACKAGE_TOO_LARGE) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_GUI_PACKAGE_UNVERIFIED(_)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_INVALID_QOS_EXPRESSION(_)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_ILLEGAL_SUPPORT_STAGE_TRANSITION(_, _)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_MALFORMED_DATA) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_MISSING_REQUIRED_VALUE(_)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_MISSING_AT_LEAST_ONE_VALUE(_)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_BAD_DATA(_)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_BAD_DATA(_, _)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_BAD_VALUE_EMPTY(_)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_BAD_VALUE_BOOLEAN(_)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_BAD_VALUE_ATOM(_)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_BAD_VALUE_LIST_OF_ATOMS(_)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_BAD_VALUE_BINARY(_)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_BAD_VALUE_TEXT_TOO_LARGE(_, _)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_BAD_VALUE_LIST_OF_BINARIES(_)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_BAD_VALUE_INTEGER(_)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_BAD_VALUE_FLOAT(_)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_BAD_VALUE_JSON(_)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_BAD_VALUE_XML(_)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_BAD_VALUE_TOKEN(_, _)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_BAD_VALUE_TOKEN_TYPE(_)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_BAD_VALUE_INVITE_TYPE(_)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_BAD_VALUE_IPV4_ADDRESS(_)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_BAD_VALUE_LIST_OF_IPV4_ADDRESSES(_)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_BAD_VALUE_TOO_LOW(_, _)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_BAD_VALUE_TOO_HIGH(_, _)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_BAD_VALUE_NOT_IN_RANGE(_, _, _)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_BAD_VALUE_NOT_ALLOWED(_, _)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_BAD_VALUE_LIST_NOT_ALLOWED(_, _)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_BAD_VALUE_ID_NOT_FOUND(_)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_BAD_VALUE_AMBIGUOUS_ID(_)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_BAD_VALUE_IDENTIFIER(_)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_BAD_VALUE_IDENTIFIER_OCCUPIED(_)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_BAD_VALUE_OCTAL(_)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_BAD_VALUE_FILE_PATH) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_BAD_VALUE_FULL_NAME) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_BAD_VALUE_USERNAME) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_BAD_VALUE_PASSWORD) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_BAD_VALUE_EMAIL) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_BAD_VALUE_NAME) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_BAD_VALUE_NAME(_)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_BAD_VALUE_DOMAIN) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_BAD_VALUE_SUBDOMAIN) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_BAD_VALUE_CAVEAT(_)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_BAD_VALUE_QOS_PARAMETERS) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_TSC_MISSING_LAYOUT(_)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_TSC_TOO_MANY_METRICS(_)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_BAD_VALUE_TSC_CONFLICTING_METRIC_CONFIG(_, _, _, _)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_BAD_GUI_PACKAGE) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_GUI_PACKAGE_TOO_LARGE) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_GUI_PACKAGE_UNVERIFIED(_)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_INVALID_QOS_EXPRESSION(_)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_ILLEGAL_SUPPORT_STAGE_TRANSITION(_, _)) -> ?HTTP_400_BAD_REQUEST;
 
 %% -----------------------------------------------------------------------------
 %% oz_worker errors
 %% -----------------------------------------------------------------------------
-to_http_code(?ERROR_BASIC_AUTH_NOT_SUPPORTED) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_BASIC_AUTH_DISABLED) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_SUBDOMAIN_DELEGATION_NOT_SUPPORTED) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_SUBDOMAIN_DELEGATION_DISABLED) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_SPACE_MARKETPLACE_DISABLED) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_PROTECTED_GROUP) -> ?HTTP_403_FORBIDDEN;
-to_http_code(?ERROR_ATM_LAMBDA_IN_USE(_)) -> ?HTTP_403_FORBIDDEN;
-to_http_code(?ERROR_CANNOT_REMOVE_LAST_OWNER(_, _)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_CANNOT_DELETE_ENTITY(_, _)) -> ?HTTP_500_INTERNAL_SERVER_ERROR;
-to_http_code(?ERROR_CANNOT_ADD_RELATION_TO_SELF) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_RELATION_DOES_NOT_EXIST(_, _, _, _)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_RELATION_ALREADY_EXISTS(_, _, _, _)) -> ?HTTP_409_CONFLICT;
-to_http_code(?ERROR_SPACE_ALREADY_SUPPORTED_WITH_IMPORTED_STORAGE(_, _)) -> ?HTTP_409_CONFLICT;
-to_http_code(?ERROR_CANNOT_DELETE_NON_EMPTY_HANDLE_SERVICE) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_BASIC_AUTH_NOT_SUPPORTED) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_BASIC_AUTH_DISABLED) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_SUBDOMAIN_DELEGATION_NOT_SUPPORTED) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_SUBDOMAIN_DELEGATION_DISABLED) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_SPACE_MARKETPLACE_DISABLED) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_PROTECTED_GROUP) -> ?HTTP_403_FORBIDDEN;
+to_http_code(?DEPRECATED_ERROR_ATM_LAMBDA_IN_USE(_)) -> ?HTTP_403_FORBIDDEN;
+to_http_code(?DEPRECATED_ERROR_CANNOT_REMOVE_LAST_OWNER(_, _)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_CANNOT_DELETE_ENTITY(_, _)) -> ?HTTP_500_INTERNAL_SERVER_ERROR;
+to_http_code(?DEPRECATED_ERROR_CANNOT_ADD_RELATION_TO_SELF) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_RELATION_DOES_NOT_EXIST(_, _, _, _)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_RELATION_ALREADY_EXISTS(_, _, _, _)) -> ?HTTP_409_CONFLICT;
+to_http_code(?DEPRECATED_ERROR_SPACE_ALREADY_SUPPORTED_WITH_IMPORTED_STORAGE(_, _)) -> ?HTTP_409_CONFLICT;
+to_http_code(?DEPRECATED_ERROR_CANNOT_DELETE_NON_EMPTY_HANDLE_SERVICE) -> ?HTTP_400_BAD_REQUEST;
 
 %%--------------------------------------------------------------------
 %% op_worker errors
 %%--------------------------------------------------------------------
-to_http_code(?ERROR_USER_NOT_SUPPORTED) -> ?HTTP_403_FORBIDDEN;
-to_http_code(?ERROR_AUTO_CLEANING_DISABLED) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_FILE_POPULARITY_DISABLED) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_SPACE_NOT_SUPPORTED_BY(_, _)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_NOT_A_LOCAL_STORAGE_SUPPORTING_SPACE(_, _, _)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_STORAGE_IN_USE) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_REQUIRES_AUTO_STORAGE_IMPORT_MODE) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_STORAGE_TEST_FAILED(_)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_REQUIRES_NON_IMPORTED_STORAGE(_)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_REQUIRES_IMPORTED_STORAGE(_)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_REQUIRES_READONLY_STORAGE(_)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_REQUIRES_POSIX_COMPATIBLE_STORAGE(_, _)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_AUTO_STORAGE_IMPORT_NOT_SUPPORTED(_, _, _)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_STORAGE_IMPORT_NOT_SUPPORTED(_, _)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_STAT_OPERATION_NOT_SUPPORTED(_)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_TRANSFER_ALREADY_ENDED) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_TRANSFER_NOT_ENDED) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_VIEW_NOT_EXISTS_ON(_)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_VIEW_QUERY_FAILED(_, _)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_QUOTA_EXCEEDED) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_USER_NOT_SUPPORTED) -> ?HTTP_403_FORBIDDEN;
+to_http_code(?DEPRECATED_ERROR_AUTO_CLEANING_DISABLED) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_FILE_POPULARITY_DISABLED) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_SPACE_NOT_SUPPORTED_BY(_, _)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_NOT_A_LOCAL_STORAGE_SUPPORTING_SPACE(_, _, _)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_STORAGE_IN_USE) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_REQUIRES_AUTO_STORAGE_IMPORT_MODE) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_STORAGE_TEST_FAILED(_)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_REQUIRES_NON_IMPORTED_STORAGE(_)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_REQUIRES_IMPORTED_STORAGE(_)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_REQUIRES_READONLY_STORAGE(_)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_REQUIRES_POSIX_COMPATIBLE_STORAGE(_, _)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_AUTO_STORAGE_IMPORT_NOT_SUPPORTED(_, _, _)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_STORAGE_IMPORT_NOT_SUPPORTED(_, _)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_STAT_OPERATION_NOT_SUPPORTED(_)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_TRANSFER_ALREADY_ENDED) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_TRANSFER_NOT_ENDED) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_VIEW_NOT_EXISTS_ON(_)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_VIEW_QUERY_FAILED(_, _)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_QUOTA_EXCEEDED) -> ?HTTP_400_BAD_REQUEST;
 
-to_http_code(?ERROR_ATM_UNSUPPORTED_DATA_TYPE(_, _)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_ATM_DATA_TYPE_UNVERIFIED(_, _)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_ATM_DATA_VALUE_CONSTRAINT_UNVERIFIED(_, _, _)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_ATM_UNSUPPORTED_DATA_TYPE(_, _)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_ATM_DATA_TYPE_UNVERIFIED(_, _)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_ATM_DATA_VALUE_CONSTRAINT_UNVERIFIED(_, _, _)) -> ?HTTP_400_BAD_REQUEST;
 
-to_http_code(?ERROR_ATM_STORE_CREATION_FAILED(_, _)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_ATM_STORE_MISSING_REQUIRED_INITIAL_CONTENT) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_ATM_STORE_FROZEN(_)) -> ?HTTP_403_FORBIDDEN;
-to_http_code(?ERROR_ATM_STORE_TYPE_DISALLOWED(_, _)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_ATM_STORE_CONTENT_NOT_SET(_)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_ATM_STORE_NOT_FOUND(_)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_ATM_STORE_CREATION_FAILED(_, _)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_ATM_STORE_MISSING_REQUIRED_INITIAL_CONTENT) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_ATM_STORE_FROZEN(_)) -> ?HTTP_403_FORBIDDEN;
+to_http_code(?DEPRECATED_ERROR_ATM_STORE_TYPE_DISALLOWED(_, _)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_ATM_STORE_CONTENT_NOT_SET(_)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_ATM_STORE_NOT_FOUND(_)) -> ?HTTP_400_BAD_REQUEST;
 
-to_http_code(?ERROR_ATM_WORKFLOW_EMPTY) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_ATM_WORKFLOW_EXECUTION_STOPPING) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_ATM_WORKFLOW_EXECUTION_STOPPED) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_ATM_WORKFLOW_EXECUTION_NOT_STOPPED) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_ATM_WORKFLOW_EXECUTION_ENDED) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_ATM_WORKFLOW_EXECUTION_NOT_ENDED) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_ATM_WORKFLOW_EXECUTION_NOT_RESUMABLE) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_ATM_WORKFLOW_EMPTY) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_ATM_WORKFLOW_EXECUTION_STOPPING) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_ATM_WORKFLOW_EXECUTION_STOPPED) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_ATM_WORKFLOW_EXECUTION_NOT_STOPPED) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_ATM_WORKFLOW_EXECUTION_ENDED) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_ATM_WORKFLOW_EXECUTION_NOT_ENDED) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_ATM_WORKFLOW_EXECUTION_NOT_RESUMABLE) -> ?HTTP_400_BAD_REQUEST;
 
-to_http_code(?ERROR_ATM_LANE_EMPTY(_)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_ATM_LANE_EXECUTION_CREATION_FAILED(_, _)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_ATM_LANE_EXECUTION_INITIATION_FAILED(_, _)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_ATM_LANE_EXECUTION_RETRY_FAILED) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_ATM_LANE_EXECUTION_RERUN_FAILED) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_ATM_LANE_EMPTY(_)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_ATM_LANE_EXECUTION_CREATION_FAILED(_, _)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_ATM_LANE_EXECUTION_INITIATION_FAILED(_, _)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_ATM_LANE_EXECUTION_RETRY_FAILED) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_ATM_LANE_EXECUTION_RERUN_FAILED) -> ?HTTP_400_BAD_REQUEST;
 
-to_http_code(?ERROR_ATM_PARALLEL_BOX_EMPTY(_)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_ATM_PARALLEL_BOX_EXECUTION_CREATION_FAILED(_, _)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_ATM_PARALLEL_BOX_EXECUTION_INITIATION_FAILED(_, _)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_ATM_PARALLEL_BOX_EMPTY(_)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_ATM_PARALLEL_BOX_EXECUTION_CREATION_FAILED(_, _)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_ATM_PARALLEL_BOX_EXECUTION_INITIATION_FAILED(_, _)) -> ?HTTP_400_BAD_REQUEST;
 
-to_http_code(?ERROR_ATM_TASK_EXECUTION_CREATION_FAILED(_, _)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_ATM_TASK_EXECUTION_INITIATION_FAILED(_, _)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_ATM_LAMBDA_CONFIG_BAD_VALUE(_, _)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_ATM_TASK_ARG_MAPPER_FOR_REQUIRED_LAMBDA_ARG_MISSING(_)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_ATM_TASK_ARG_MAPPER_FOR_NONEXISTENT_LAMBDA_ARG(_)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_ATM_TASK_ARG_MAPPING_FAILED(_, _)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_ATM_TASK_ARG_MAPPER_UNSUPPORTED_VALUE_BUILDER(_, _)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_ATM_TASK_ARG_MAPPER_ITERATED_ITEM_QUERY_FAILED(_, _)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_ATM_TASK_RESULT_MISSING(_, _)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_ATM_TASK_RESULT_MAPPING_FAILED(_, _)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_ATM_TASK_RESULT_DISPATCH_FAILED(_, _)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_ATM_TASK_EXECUTION_STOPPED) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_ATM_TASK_EXECUTION_CREATION_FAILED(_, _)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_ATM_TASK_EXECUTION_INITIATION_FAILED(_, _)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_ATM_LAMBDA_CONFIG_BAD_VALUE(_, _)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_ATM_TASK_ARG_MAPPER_FOR_REQUIRED_LAMBDA_ARG_MISSING(_)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_ATM_TASK_ARG_MAPPER_FOR_NONEXISTENT_LAMBDA_ARG(_)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_ATM_TASK_ARG_MAPPING_FAILED(_, _)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_ATM_TASK_ARG_MAPPER_UNSUPPORTED_VALUE_BUILDER(_, _)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_ATM_TASK_ARG_MAPPER_ITERATED_ITEM_QUERY_FAILED(_, _)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_ATM_TASK_RESULT_MISSING(_, _)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_ATM_TASK_RESULT_MAPPING_FAILED(_, _)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_ATM_TASK_RESULT_DISPATCH_FAILED(_, _)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_ATM_TASK_EXECUTION_STOPPED) -> ?HTTP_400_BAD_REQUEST;
 
-to_http_code(?ERROR_ATM_JOB_BATCH_WITHDRAWN(_)) -> ?HTTP_404_NOT_FOUND;
-to_http_code(?ERROR_ATM_JOB_BATCH_CRASHED(_)) -> ?HTTP_500_INTERNAL_SERVER_ERROR;
+to_http_code(?DEPRECATED_ERROR_ATM_JOB_BATCH_WITHDRAWN(_)) -> ?HTTP_404_NOT_FOUND;
+to_http_code(?DEPRECATED_ERROR_ATM_JOB_BATCH_CRASHED(_)) -> ?HTTP_500_INTERNAL_SERVER_ERROR;
 
-to_http_code(?ERROR_ATM_OPENFAAS_NOT_CONFIGURED) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_ATM_OPENFAAS_UNREACHABLE) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_ATM_OPENFAAS_UNHEALTHY) -> ?HTTP_503_SERVICE_UNAVAILABLE;
-to_http_code(?ERROR_ATM_OPENFAAS_QUERY_FAILED) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_ATM_OPENFAAS_QUERY_FAILED(_)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_ATM_OPENFAAS_FUNCTION_REGISTRATION_FAILED) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_ATM_OPENFAAS_NOT_CONFIGURED) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_ATM_OPENFAAS_UNREACHABLE) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_ATM_OPENFAAS_UNHEALTHY) -> ?HTTP_503_SERVICE_UNAVAILABLE;
+to_http_code(?DEPRECATED_ERROR_ATM_OPENFAAS_QUERY_FAILED) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_ATM_OPENFAAS_QUERY_FAILED(_)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_ATM_OPENFAAS_FUNCTION_REGISTRATION_FAILED) -> ?HTTP_400_BAD_REQUEST;
 
-to_http_code(?ERROR_ATM_INVALID_STATUS_TRANSITION(_, _)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_ATM_INVALID_STATUS_TRANSITION(_, _)) -> ?HTTP_400_BAD_REQUEST;
 
-to_http_code(?ERROR_DIR_STATS_DISABLED_FOR_SPACE) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_DIR_STATS_NOT_READY) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_DIR_STATS_DISABLED_FOR_SPACE) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_DIR_STATS_NOT_READY) -> ?HTTP_400_BAD_REQUEST;
 
-to_http_code(?ERROR_FORBIDDEN_FOR_CURRENT_ARCHIVE_STATE(_, _)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_NESTED_ARCHIVE_DELETION_FORBIDDEN(_)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_RECALL_TARGET_CONFLICT) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_FORBIDDEN_FOR_CURRENT_ARCHIVE_STATE(_, _)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_NESTED_ARCHIVE_DELETION_FORBIDDEN(_)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_RECALL_TARGET_CONFLICT) -> ?HTTP_400_BAD_REQUEST;
 
 %%--------------------------------------------------------------------
 %% onepanel errors
 %%--------------------------------------------------------------------
-to_http_code(?ERROR_ON_NODES(Error, _)) -> to_http_code(Error);
-to_http_code(?ERROR_DNS_SERVERS_UNREACHABLE(_)) -> ?HTTP_503_SERVICE_UNAVAILABLE;
-to_http_code(?ERROR_FILE_ALLOCATION(_, _)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_LETS_ENCRYPT_NOT_REACHABLE) -> ?HTTP_503_SERVICE_UNAVAILABLE;
-to_http_code(?ERROR_LETS_ENCRYPT_RESPONSE(_, _)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_NODE_ALREADY_IN_CLUSTER(_)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_NODE_NOT_COMPATIBLE(_, _)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_NO_CONNECTION_TO_NEW_NODE(_)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_NO_SERVICE_NODES(_)) -> ?HTTP_400_BAD_REQUEST;
-to_http_code(?ERROR_USER_NOT_IN_CLUSTER) -> ?HTTP_403_FORBIDDEN;
+to_http_code(?DEPRECATED_ERROR_ON_NODES(Error, _)) -> to_http_code(Error);
+to_http_code(?DEPRECATED_ERROR_DNS_SERVERS_UNREACHABLE(_)) -> ?HTTP_503_SERVICE_UNAVAILABLE;
+to_http_code(?DEPRECATED_ERROR_FILE_ALLOCATION(_, _)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_LETS_ENCRYPT_NOT_REACHABLE) -> ?HTTP_503_SERVICE_UNAVAILABLE;
+to_http_code(?DEPRECATED_ERROR_LETS_ENCRYPT_RESPONSE(_, _)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_NODE_ALREADY_IN_CLUSTER(_)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_NODE_NOT_COMPATIBLE(_, _)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_NO_CONNECTION_TO_NEW_NODE(_)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_NO_SERVICE_NODES(_)) -> ?HTTP_400_BAD_REQUEST;
+to_http_code(?DEPRECATED_ERROR_USER_NOT_IN_CLUSTER) -> ?HTTP_403_FORBIDDEN;
 
 %% -----------------------------------------------------------------------------
 %% Unknown error
 %% -----------------------------------------------------------------------------
-to_http_code(?ERROR_UNRECOGNIZED_ERROR(_)) -> ?HTTP_500_INTERNAL_SERVER_ERROR.
+to_http_code(?DEPRECATED_ERROR_UNRECOGNIZED_ERROR(_)) -> ?HTTP_500_INTERNAL_SERVER_ERROR.
 
 %%%===================================================================
 %%% Internal functions
@@ -2830,3 +2830,4 @@ to_http_code(?ERROR_UNRECOGNIZED_ERROR(_)) -> ?HTTP_500_INTERNAL_SERVER_ERROR.
 -spec join_values_with_commas([term()]) -> binary().
 join_values_with_commas(Values) ->
     str_utils:join_as_binaries(Values, <<", ">>).
+
