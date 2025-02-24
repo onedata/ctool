@@ -50,6 +50,7 @@
 -define(ERR(Type, Args, Ctx), {error, #od_error{type = Type, args = Args, ctx = Ctx}}).
 
 
+% TODO VFS-12637 - remove below section after below errors are generated in new format
 %%--------------------------------------------------------------------
 %% deprecated errors
 %%--------------------------------------------------------------------

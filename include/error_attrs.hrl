@@ -15,6 +15,7 @@
 -define(ERROR_ATTRS_HRL, 1).
 
 
+% TODO VFS-12637 - remove this section after below errors are generated in new format
 %%--------------------------------------------------------------------
 %% deprecated errors
 %%--------------------------------------------------------------------
@@ -659,6 +660,7 @@
 %% Error ID to type mapping
 %%--------------------------------------------------------------------
 -define(ERROR_ID_TO_TYPE_MAPPING, #{
+    % TODO VFS-12637 - remove below cases after below errors are generated in new format
     ?ERROR_ALREADY_EXISTS_ID => ?ERROR_ALREADY_EXISTS_TYPE,
     ?ERROR_NOT_FOUND_ID => ?ERROR_NOT_FOUND_TYPE,
     ?ERROR_NOT_SUPPORTED_ID => ?ERROR_NOT_SUPPORTED_TYPE,
