@@ -35,7 +35,7 @@
 to_json(?ERR_ATM_OPENFAAS_QUERY_FAILED(ErrorCtx, Reason)) ->
     {ReasonJson, ReasonPrint} = case Reason of
         undefined ->
-            {null, <<"no details available.">>};
+            {null, <<"no details available">>};
         _ ->
             {Reason, Reason}
     end,
