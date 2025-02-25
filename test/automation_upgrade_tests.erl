@@ -81,7 +81,7 @@ upgrade_db_data_spec_test_() ->
             #atm_file_data_spec{
                 file_type = ?REGULAR_FILE_TYPE,
                 %% @TODO VFS-12091 include all attrs after atm versioning is introduced
-                attributes = lists:usort(?API_FILE_ATTRS -- [?attr_creation_time, ?attr_json_metadata])
+                attributes = lists:usort(?API_FILE_ATTRS -- [?attr_creation_time, ?attr_has_json_metadata, ?attr_json_metadata])
             },
             U(#{
                 <<"_data">> => #{
@@ -97,7 +97,7 @@ upgrade_db_data_spec_test_() ->
             #atm_file_data_spec{
                 file_type = ?REGULAR_FILE_TYPE,
                 %% @TODO VFS-12091 include all attrs after atm versioning is introduced
-                attributes = lists:usort(?API_FILE_ATTRS -- [?attr_creation_time, ?attr_json_metadata])
+                attributes = lists:usort(?API_FILE_ATTRS -- [?attr_creation_time, ?attr_has_json_metadata, ?attr_json_metadata])
             },
             U(#{
                 <<"_data">> => #{
