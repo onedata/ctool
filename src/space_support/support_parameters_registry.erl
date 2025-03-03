@@ -44,11 +44,11 @@
 -spec insert_entry(onedata:provider_id(), support_parameters:record(), record()) ->
     {ok, record()} | errors:error().
 insert_entry(_ProviderId, #support_parameters{accounting_enabled = undefined}, _Record) ->
-    ?ERROR_MISSING_REQUIRED_VALUE(<<"supportParameters.accountingEnabled">>);
+    ?ERR_MISSING_REQUIRED_VALUE(?err_ctx(), <<"supportParameters.accountingEnabled">>);
 insert_entry(_ProviderId, #support_parameters{dir_stats_service_enabled = undefined}, _Record) ->
-    ?ERROR_MISSING_REQUIRED_VALUE(<<"supportParameters.dirStatsEnabled">>);
+    ?ERR_MISSING_REQUIRED_VALUE(?err_ctx(), <<"supportParameters.dirStatsEnabled">>);
 insert_entry(_ProviderId, #support_parameters{dir_stats_service_status = undefined}, _Record) ->
-    ?ERROR_MISSING_REQUIRED_VALUE(<<"supportParameters.dirStatsStatus">>);
+    ?ERR_MISSING_REQUIRED_VALUE(?err_ctx(), <<"supportParameters.dirStatsStatus">>);
 insert_entry(ProviderId, Parameters, Record = #support_parameters_registry{registry = Registry}) ->
     {ok, Record#support_parameters_registry{registry = Registry#{ProviderId => Parameters}}}.
 
@@ -63,7 +63,7 @@ insert_entry(ProviderId, Parameters, Record = #support_parameters_registry{regis
 update_entry(ProviderId, ParametersOverlay, Record = #support_parameters_registry{registry = Registry}) ->
     PreviousParameters = maps:get(ProviderId, Registry),
     case support_parameters:update(PreviousParameters, ParametersOverlay) of
-        {error, _} = Error ->
+        ?ERR = Error ->
             Error;
         {ok, NewParameters} ->
             {ok, Record#support_parameters_registry{

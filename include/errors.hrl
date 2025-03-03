@@ -1,6 +1,7 @@
 %%%-------------------------------------------------------------------
-%%% @author Lukasz Opiola
-%%% @copyright (C) 2016 ACK CYFRONET AGH
+%%% This file has been automatically generated - DO NOT EDIT!!!
+%%%
+%%% @copyright (C) 2025 ACK CYFRONET AGH
 %%% This software is released under the MIT license
 %%% cited in 'LICENSE.txt'.
 %%% @end
@@ -13,342 +14,50 @@
 -ifndef(ERRORS_HRL).
 -define(ERRORS_HRL, 1).
 
+-include("error_attrs.hrl").
 -include("global_definitions.hrl").
 -include("posix/errno.hrl").
 
+
+-record(od_error_ctx, {
+    module :: undefined | binary(),
+    line :: undefined | integer(),
+    timestamp :: undefined | time:millis(),
+    version :: undefined | binary(),
+    unknown_fields = #{} :: json_utils:json_map()
+}).
+
+-record(od_error, {
+    type :: module(),
+    args = undefined :: term(),
+    ctx :: od_error:ctx()
+}).
+
+-define(err_ctx(), od_error:build_ctx(?MODULE, ?LINE)).
+
+-define(UNDEFINED_ERR_CTX,
+    #od_error_ctx{
+        module = undefined,
+        line = undefined,
+        timestamp = undefined,
+        version = undefined
+    }
+).
+
+-define(ERR, {error, #od_error{}}).
+-define(ERR(Type), {error, #od_error{type = Type}}).
+-define(ERR(Type, Args), {error, #od_error{type = Type, args = Args}}).
+-define(ERR(Type, Args, Ctx), {error, #od_error{type = Type, args = Args, ctx = Ctx}}).
+
+
+% TODO VFS-12637 - remove below section after below errors are generated in new format
 %%--------------------------------------------------------------------
-%% General errors
+%% deprecated errors
 %%--------------------------------------------------------------------
--define(ERROR_BAD_MESSAGE(MessageBinOrJson), {error, {bad_message, MessageBinOrJson}}).
--define(ERROR_NO_CONNECTION_TO_ONEZONE, {error, no_connection_to_onezone}).
--define(ERROR_NO_CONNECTION_TO_PEER_ONEPROVIDER, {error, no_connection_to_peer_oneprovider}).
--define(ERROR_NO_CONNECTION_TO_CLUSTER_NODE, {error, no_connection_to_cluster_node}).
--define(ERROR_UNREGISTERED_ONEPROVIDER, {error, unregistered_oneprovider}).
-% deprecated version; use ERROR_INTERNAL_SERVER_ERROR(ErrorRef) in new code
--define(ERROR_INTERNAL_SERVER_ERROR, {error, internal_server_error}).
-% carries an identifier that can be logged and then cited by the client that received the error
--define(ERROR_INTERNAL_SERVER_ERROR(ErrorRef), {error, {internal_server_error, ErrorRef}}).
-% feature not implemented yet, to be expected in the future
--define(ERROR_NOT_IMPLEMENTED, {error, not_implemented}).
-% feature does not exist
--define(ERROR_NOT_SUPPORTED, {error, not_supported}).
--define(ERROR_SERVICE_UNAVAILABLE, {error, service_unavailable}).
--define(ERROR_TIMEOUT, {error, timeout}).
--define(ERROR_TEMPORARY_FAILURE, {error, temporary_failure}).
--define(ERROR_EXTERNAL_SERVICE_OPERATION_FAILED(ServiceName), {error, {external_service_operation_failed, ServiceName}}).
--define(ERROR_UNAUTHORIZED(AuthError), {error, {unauthorized, AuthError}}).
--define(ERROR_UNAUTHORIZED, {error, unauthorized}).
--define(ERROR_FORBIDDEN, {error, forbidden}).
--define(ERROR_FORBIDDEN(HumanReadableHint), {error, {forbidden, HumanReadableHint}}).
--define(ERROR_NOT_FOUND, {error, not_found}).
 -define(ERROR_ALREADY_EXISTS, {error, already_exists}).
--define(ERROR_FILE_ACCESS(Path, Errno), {error, {file_access, Path, Errno}}).
--define(ERROR_LIMIT_REACHED(Limit, ResourceDescription), {error, {limit_reached, Limit, ResourceDescription}}).
-
-%%--------------------------------------------------------------------
-%% POSIX errors
-%%--------------------------------------------------------------------
--define(ERROR_POSIX(Errno), {error, {posix, Errno}}).
-
-
-%%--------------------------------------------------------------------
-%% Auth errors
-%%--------------------------------------------------------------------
--define(ERROR_USER_BLOCKED, {error, user_blocked}).
--define(ERROR_BAD_BASIC_CREDENTIALS, {error, bad_basic_credentials}).
--define(ERROR_BAD_IDP_ACCESS_TOKEN(IdP), {error, {bad_idp_access_token, IdP}}).
-% The presented token cannot be understood by the server
--define(ERROR_BAD_TOKEN, {error, bad_token}).
-% The presented service token is not valid due to TokenError
--define(ERROR_BAD_SERVICE_TOKEN(TokenError), {error, {bad_service_token, TokenError}}).
-% The presented consumer token is not valid due to TokenError
--define(ERROR_BAD_CONSUMER_TOKEN(TokenError), {error, {bad_consumer_token, TokenError}}).
-% The token is comprehensible, but not valid
--define(ERROR_TOKEN_INVALID, {error, token_invalid}).
--define(ERROR_TOKEN_REVOKED, {error, token_revoked}).
--define(ERROR_TOKEN_TOO_LARGE(SizeLimit), {error, {token_too_large, {max, SizeLimit}}}).
--define(ERROR_NOT_AN_ACCESS_TOKEN(ReceivedTokenType), {error, {not_an_access_token, ReceivedTokenType}}).
--define(ERROR_NOT_AN_IDENTITY_TOKEN(ReceivedTokenType), {error, {not_an_identity_token, ReceivedTokenType}}).
--define(ERROR_NOT_AN_INVITE_TOKEN(ExpInviteType, ReceivedTokenType), {error, {not_an_invite_token, ExpInviteType, ReceivedTokenType}}).
--define(ERROR_TOKEN_CAVEAT_UNKNOWN(CaveatBinary), {error, {token_caveat_unknown, CaveatBinary}}).
--define(ERROR_TOKEN_CAVEAT_UNVERIFIED(Caveat), {error, {token_caveat_unverified, Caveat}}).
--define(ERROR_TOKEN_TIME_CAVEAT_REQUIRED(MaxTtl), {error, {token_time_caveat_required, MaxTtl}}).
-% Token cannot be created for requested subject as it is invalid
--define(ERROR_TOKEN_SUBJECT_INVALID, {error, token_subject_invalid}).
-% Requested service is forbidden to use the token on behalf of the subject
-% (e.g. subject user is not supported by the provider specified in service)
--define(ERROR_TOKEN_SERVICE_FORBIDDEN(ServiceSpec), {error, {token_service_forbidden, ServiceSpec}}).
--define(ERROR_INVITE_TOKEN_SUBJECT_NOT_AUTHORIZED, {error, invite_token_subject_not_authorized}).
--define(ERROR_INVITE_TOKEN_USAGE_LIMIT_REACHED, {error, invite_token_usage_limit_exceeded}).
--define(ERROR_INVITE_TOKEN_CONSUMER_INVALID(Consumer), {error, {invite_token_consumer_invalid, Consumer}}).
--define(ERROR_INVITE_TOKEN_TARGET_ID_INVALID(Id), {error, {invite_token_target_id_invalid, Id}}).
--define(ERROR_TOKEN_SESSION_INVALID, {error, token_session_invalid}).
-
-
-%%--------------------------------------------------------------------
-%% Graph Sync errors
-%%--------------------------------------------------------------------
--define(ERROR_EXPECTED_HANDSHAKE_MESSAGE, {error, expected_handshake_message}).
--define(ERROR_HANDSHAKE_ALREADY_DONE, {error, handshake_already_done}).
--define(ERROR_BAD_VERSION(SupportedVersions), {error, {bad_version, {supported, SupportedVersions}}}).
--define(ERROR_BAD_GRI, {error, bad_gri}).
--define(ERROR_RPC_UNDEFINED, {error, rpc_undefined}).
--define(ERROR_NOT_SUBSCRIBABLE, {error, not_subscribable}).
-
-
-%%--------------------------------------------------------------------
-%% Data validation errors
-%%--------------------------------------------------------------------
--define(ERROR_MALFORMED_DATA, {error, malformed_data}).
--define(ERROR_MISSING_REQUIRED_VALUE(Key), {error, {missing_required_value, Key}}).
--define(ERROR_MISSING_AT_LEAST_ONE_VALUE(Keys), {error, {missing_at_least_one_value, Keys}}).
--define(ERROR_BAD_DATA(Key), {error, {bad_data, Key}}).
--define(ERROR_BAD_DATA(Key, SpecificErrorOrHumanReadableHint), {error, {bad_data, Key, SpecificErrorOrHumanReadableHint}}).
--define(ERROR_BAD_VALUE_EMPTY(Key), {error, {empty_value, Key}}).
--define(ERROR_BAD_VALUE_BOOLEAN(Key), {error, {bad_value_boolean, Key}}).
--define(ERROR_BAD_VALUE_ATOM(Key), {error, {bad_value_atom, Key}}).
--define(ERROR_BAD_VALUE_LIST_OF_ATOMS(Key), {error, {bad_value_list_of_atoms, Key}}).
--define(ERROR_BAD_VALUE_BINARY(Key), {error, {bad_value_binary, Key}}).
--define(ERROR_BAD_VALUE_TEXT_TOO_LARGE(Key, SizeLimit), {error, {bad_value_text_too_large, Key, {max, SizeLimit}}}).
--define(ERROR_BAD_VALUE_LIST_OF_BINARIES(Key), {error, {bad_value_list_of_binaries, Key}}).
--define(ERROR_BAD_VALUE_INTEGER(Key), {error, {bad_value_integer, Key}}).
--define(ERROR_BAD_VALUE_FLOAT(Key), {error, {bad_value_float, Key}}).
--define(ERROR_BAD_VALUE_JSON(Key), {error, {bad_value_json, Key}}).
--define(ERROR_BAD_VALUE_XML(Key), {error, {bad_value_xml, Key}}).
--define(ERROR_BAD_VALUE_TOKEN(Key, TokenError), {error, {bad_value_token, Key, TokenError}}).
--define(ERROR_BAD_VALUE_TOKEN_TYPE(Key), {error, {bad_value_token_type, Key}}).
--define(ERROR_BAD_VALUE_INVITE_TYPE(Key), {error, {bad_value_invite_type, Key}}).
--define(ERROR_BAD_VALUE_IPV4_ADDRESS(Key), {error, {bad_value_ipv4_address, Key}}).
--define(ERROR_BAD_VALUE_LIST_OF_IPV4_ADDRESSES(Key), {error, {bad_value_list_of_ipv4_addresses, Key}}).
--define(ERROR_BAD_VALUE_TOO_LOW(Key, Threshold), {error, {value_too_low, Key, {min, Threshold}}}).
--define(ERROR_BAD_VALUE_TOO_HIGH(Key, Threshold), {error, {value_too_high, Key, {max, Threshold}}}).
--define(ERROR_BAD_VALUE_NOT_IN_RANGE(Key, Low, High), {error, {value_not_in_range, Key, {range, Low, High}}}).
--define(ERROR_BAD_VALUE_NOT_ALLOWED(Key, AllowedVals), {error, {value_not_allowed, Key, {allowed, AllowedVals}}}).
--define(ERROR_BAD_VALUE_LIST_NOT_ALLOWED(Key, AllowedVals), {error, {values_not_allowed, Key, {allowed, AllowedVals}}}).
--define(ERROR_BAD_VALUE_ID_NOT_FOUND(Key), {error, {id_not_found, Key}}).
--define(ERROR_BAD_VALUE_AMBIGUOUS_ID(Key), {error, {ambiguous_id, Key}}).
--define(ERROR_BAD_VALUE_IDENTIFIER(Key), {error, {bad_identifier, Key}}).
--define(ERROR_BAD_VALUE_IDENTIFIER_OCCUPIED(Key), {error, {identifier_occupied, Key}}).
--define(ERROR_BAD_VALUE_OCTAL(Key), {error, {bad_value_octal, Key}}).
--define(ERROR_BAD_VALUE_FILE_PATH, {error, bad_file_path}).
--define(ERROR_BAD_VALUE_FULL_NAME, {error, bad_full_name}).
--define(ERROR_BAD_VALUE_USERNAME, {error, bad_username}).
--define(ERROR_BAD_VALUE_PASSWORD, {error, bad_password}).
--define(ERROR_BAD_VALUE_EMAIL, {error, bad_value_email}).
--define(ERROR_BAD_VALUE_NAME, {error, bad_value_name}).
--define(ERROR_BAD_VALUE_NAME(Key), {error, {bad_value_name, Key}}).
--define(ERROR_BAD_VALUE_DOMAIN, {error, bad_value_domain}).
--define(ERROR_BAD_VALUE_SUBDOMAIN, {error, bad_value_subdomain}).
--define(ERROR_BAD_VALUE_CAVEAT(Caveat), {error, {bad_value_caveat, Caveat}}).
--define(ERROR_BAD_VALUE_QOS_PARAMETERS, {error, bad_value_qos_parameters}).
--define(ERROR_TSC_MISSING_LAYOUT(MissingLayout), {error, {tsc_missing_layout, MissingLayout}}).
--define(ERROR_TSC_TOO_MANY_METRICS(Limit), {error, {tsc_too_many_metrics, Limit}}).
--define(ERROR_BAD_VALUE_TSC_CONFLICTING_METRIC_CONFIG(TSName, MetricName, ExistingMetricConfig, ConflictingMetricConfig),
-    {error, {bad_value_tsc_conflicting_metric_configs, TSName, MetricName, ExistingMetricConfig, ConflictingMetricConfig}}
-).
--define(ERROR_BAD_GUI_PACKAGE, {error, bad_gui_package}).
--define(ERROR_GUI_PACKAGE_TOO_LARGE, {error, gui_package_too_large}).
--define(ERROR_GUI_PACKAGE_UNVERIFIED(ShaSum), {error, {gui_package_unverified, ShaSum}}).
--define(ERROR_INVALID_QOS_EXPRESSION(Reason), {error, {invalid_qos_expression, Reason}}).
--define(ERROR_ILLEGAL_SUPPORT_STAGE_TRANSITION(ProviderStage, StorageStage), {error, {illegal_support_stage_transition, ProviderStage, StorageStage}}).
-
-%%--------------------------------------------------------------------
-%% oz_worker errors
-%%--------------------------------------------------------------------
-% Basic auth is not (currently) supported by this Onezone
--define(ERROR_BASIC_AUTH_NOT_SUPPORTED, {error, basic_auth_not_supported}).
-% Basic auth is disabled for given user
--define(ERROR_BASIC_AUTH_DISABLED, {error, basic_auth_disabled}).
-% Subdomain delegation is (currently) not supported by this Onezone
--define(ERROR_SUBDOMAIN_DELEGATION_NOT_SUPPORTED, {error, subdomain_delegation_not_supported}).
-% Subdomain delegation is disabled for given Oneprovider
--define(ERROR_SUBDOMAIN_DELEGATION_DISABLED, {error, subdomain_delegation_disabled}).
-% Space marketplace is disabled for this Onezone
--define(ERROR_SPACE_MARKETPLACE_DISABLED, {error, space_marketplace_disabled}).
--define(ERROR_PROTECTED_GROUP, {error, protected_group}).
--define(ERROR_ATM_LAMBDA_IN_USE(AtmWorkflowSchemas), {error, {atm_lambda_in_use, AtmWorkflowSchemas}}).
--define(ERROR_CANNOT_REMOVE_LAST_OWNER(EntityType, EntityId), {error, {cannot_remove_last_owner, EntityType, EntityId}}).
--define(ERROR_CANNOT_DELETE_ENTITY(EntityType, EntityId), {error, {cannot_delete_entity, EntityType, EntityId}}).
--define(ERROR_CANNOT_ADD_RELATION_TO_SELF, {error, cannot_add_relation_to_self}).
--define(ERROR_RELATION_DOES_NOT_EXIST(ChType, ChId, ParType, ParId),
-    {error, {relation_does_not_exist, ChType, ChId, ParType, ParId}}
-).
--define(ERROR_RELATION_ALREADY_EXISTS(ChType, ChId, ParType, ParId),
-    {error, {relation_already_exists, ChType, ChId, ParType, ParId}}
-).
--define(ERROR_SPACE_ALREADY_SUPPORTED_WITH_IMPORTED_STORAGE(SpaceId, StorageId), 
-    {error, {space_already_supported_with_imported_storage, SpaceId, StorageId}}
-).
--define(ERROR_CANNOT_DELETE_NON_EMPTY_HANDLE_SERVICE, {error, cannot_delete_non_empty_handle_service}).
-
-
-%%--------------------------------------------------------------------
-%% op_worker errors
-%%--------------------------------------------------------------------
--define(ERROR_USER_NOT_SUPPORTED, {error, user_not_supported}).
--define(ERROR_AUTO_CLEANING_DISABLED, {error, auto_cleaning_disabled}).
--define(ERROR_FILE_POPULARITY_DISABLED, {error, file_popularity_disabled}).
--define(ERROR_SPACE_NOT_SUPPORTED_BY(SpaceId, ProviderId), {error, {space_not_supported_by, SpaceId, ProviderId}}).
--define(ERROR_NOT_A_LOCAL_STORAGE_SUPPORTING_SPACE(ProviderId, StorageId, SpaceId),
-    {error, {not_a_local_storage_supporting_space, ProviderId, StorageId, SpaceId}}).
--define(ERROR_STORAGE_IN_USE, {error, storage_in_use}).
--define(ERROR_REQUIRES_AUTO_STORAGE_IMPORT_MODE, {error, requires_auto_storage_import_mode}).
--define(ERROR_STORAGE_TEST_FAILED(Operation), {error, {storage_test_failed, Operation}}).
--define(ERROR_REQUIRES_NON_IMPORTED_STORAGE(StorageId), {error, {requires_non_imported_storage, StorageId}}).
--define(ERROR_REQUIRES_IMPORTED_STORAGE(StorageId), {error, {requires_imported_storage, StorageId}}).
--define(ERROR_REQUIRES_READONLY_STORAGE(StorageIdOrType), {error, {requires_readonly_storage, StorageIdOrType}}).
--define(ERROR_REQUIRES_POSIX_COMPATIBLE_STORAGE(StorageId, PosixCompatibleStorages), {error, {requires_posix_compatible_storage, StorageId, PosixCompatibleStorages}}).
-
--define(ERROR_AUTO_STORAGE_IMPORT_NOT_SUPPORTED(StorageId, SupportedStorages, SupportedObjectStorages),
-    {error, {auto_storage_import_not_supported, StorageId, SupportedStorages, SupportedObjectStorages}}).
--define(ERROR_STORAGE_IMPORT_NOT_SUPPORTED(StorageId, ObjectStorages), {error, {storage_import_not_supported, StorageId, ObjectStorages}}).
--define(ERROR_STAT_OPERATION_NOT_SUPPORTED(StorageId), {error, {stat_operation_not_supported, StorageId}}).
--define(ERROR_TRANSFER_ALREADY_ENDED, {error, transfer_already_ended}).
--define(ERROR_TRANSFER_NOT_ENDED, {error, transfer_not_ended}).
--define(ERROR_VIEW_NOT_EXISTS_ON(ProviderId), {error, {view_not_exists_on, ProviderId}}).
--define(ERROR_VIEW_QUERY_FAILED(Category, Description), {error, {view_query_failed, Category, Description}}).
--define(ERROR_QUOTA_EXCEEDED, {error, quota_exceeded}).
-
-%% TODO VFS-8272 move all internal atm errors (those that will never be returned via REST/gs) to op
--define(ERROR_ATM_UNSUPPORTED_DATA_TYPE(UnsupportedType, SupportedTypes),
-    {error, {atm_unsupported_data_type, UnsupportedType, SupportedTypes}}
-).
--define(ERROR_ATM_DATA_TYPE_UNVERIFIED(Value, ExpType),
-    {error, {atm_data_type_unverified, Value, ExpType}}
-).
--define(ERROR_ATM_DATA_VALUE_CONSTRAINT_UNVERIFIED(Value, Type, ValueConstraintsJson),
-    {error, {atm_data_value_constraint_unverified, Value, Type, ValueConstraintsJson}}
-).
-
--define(ERROR_ATM_STORE_MISSING_REQUIRED_INITIAL_CONTENT,
-    {error, atm_store_missing_required_initial_content}
-).
--define(ERROR_ATM_STORE_CREATION_FAILED(AtmStoreSchemaId, SpecificError),
-    {error, {atm_store_creation_failed, AtmStoreSchemaId, SpecificError}}
-).
--define(ERROR_ATM_STORE_FROZEN(AtmStoreSchemaId),
-    {error, {atm_store_frozen, AtmStoreSchemaId}}
-).
--define(ERROR_ATM_STORE_TYPE_DISALLOWED(AtmStoreSchemaId, AllowedTypes),
-    {error, {atm_store_type_disallowed, AtmStoreSchemaId, AllowedTypes}}
-).
--define(ERROR_ATM_STORE_CONTENT_NOT_SET(AtmStoreSchemaId),
-    {error, {atm_store_content_not_set, AtmStoreSchemaId}}
-).
--define(ERROR_ATM_STORE_NOT_FOUND(AtmStoreSchemaId),
-    {error, {atm_store_not_found, AtmStoreSchemaId}}
-).
-
--define(ERROR_ATM_WORKFLOW_EMPTY, {error, atm_workflow_empty}).
--define(ERROR_ATM_WORKFLOW_EXECUTION_STOPPING, {error, atm_workflow_execution_aborting}).
--define(ERROR_ATM_WORKFLOW_EXECUTION_STOPPED, {error, atm_workflow_execution_stopped}).
--define(ERROR_ATM_WORKFLOW_EXECUTION_NOT_STOPPED, {error, atm_workflow_execution_not_stopped}).
--define(ERROR_ATM_WORKFLOW_EXECUTION_ENDED, {error, atm_workflow_execution_ended}).
--define(ERROR_ATM_WORKFLOW_EXECUTION_NOT_ENDED, {error, atm_workflow_execution_not_ended}).
--define(ERROR_ATM_WORKFLOW_EXECUTION_NOT_RESUMABLE, {error, atm_workflow_execution_not_resumable}).
-
--define(ERROR_ATM_LANE_EMPTY(AtmLaneSchemaId),
-    {error, {atm_lane_empty, AtmLaneSchemaId}}
-).
--define(ERROR_ATM_LANE_EXECUTION_CREATION_FAILED(AtmLaneSchemaId, SpecificError),
-    {error, {atm_lane_execution_creation_failed, AtmLaneSchemaId, SpecificError}}
-).
--define(ERROR_ATM_LANE_EXECUTION_INITIATION_FAILED(AtmLaneSchemaId, SpecificError),
-    {error, {atm_lane_execution_initiation_failed, AtmLaneSchemaId, SpecificError}}
-).
-
--define(ERROR_ATM_LANE_EXECUTION_RETRY_FAILED, {error, atm_lane_execution_retry_failed}).
--define(ERROR_ATM_LANE_EXECUTION_RERUN_FAILED, {error, atm_lane_execution_rerun_failed}).
-
--define(ERROR_ATM_PARALLEL_BOX_EMPTY(AtmParallelBoxSchemaId),
-    {error, {atm_parallel_box_empty, AtmParallelBoxSchemaId}}
-).
--define(ERROR_ATM_PARALLEL_BOX_EXECUTION_CREATION_FAILED(AtmParallelBoxSchemaId, SpecificError),
-    {error, {atm_parallel_box_execution_creation_failed, AtmParallelBoxSchemaId, SpecificError}}
-).
--define(ERROR_ATM_PARALLEL_BOX_EXECUTION_INITIATION_FAILED(AtmParallelBoxSchemaId, SpecificError),
-    {error, {atm_parallel_box_execution_initiation_failed, AtmParallelBoxSchemaId, SpecificError}}
-).
-
--define(ERROR_ATM_TASK_EXECUTION_CREATION_FAILED(AtmTaskSchemaId, SpecificError),
-    {error, {atm_task_execution_creation_failed, AtmTaskSchemaId, SpecificError}}
-).
--define(ERROR_ATM_TASK_EXECUTION_INITIATION_FAILED(AtmTaskSchemaId, SpecificError),
-    {error, {atm_task_execution_initiation_failed, AtmTaskSchemaId, SpecificError}}
-).
-
--define(ERROR_ATM_LAMBDA_CONFIG_BAD_VALUE(ParameterName, SpecificError),
-    {error, {atm_lambda_config_bad_value, ParameterName, SpecificError}}
-).
-
--define(ERROR_ATM_TASK_ARG_MAPPER_FOR_REQUIRED_LAMBDA_ARG_MISSING(ArgName),
-    {error, {atm_task_arg_mapper_for_required_lambda_arg_missing, ArgName}}
-).
--define(ERROR_ATM_TASK_ARG_MAPPER_FOR_NONEXISTENT_LAMBDA_ARG(ArgName),
-    {error, {atm_task_arg_mapper_for_nonexistent_lambda_arg, ArgName}}
-).
--define(ERROR_ATM_TASK_ARG_MAPPER_UNSUPPORTED_VALUE_BUILDER(Type, SupportedTypes),
-    {error, {atm_task_arg_mapper_unsupported_value_builder, Type, SupportedTypes}}
-).
--define(ERROR_ATM_TASK_ARG_MAPPER_ITERATED_ITEM_QUERY_FAILED(IteratedItem, Query),
-    {error, {atm_task_arg_mapper_iterated_item_query_failed, IteratedItem, Query}}
-).
--define(ERROR_ATM_TASK_ARG_MAPPING_FAILED(ArgName, SpecificError),
-    {error, {atm_task_arg_mapping_failed, ArgName, SpecificError}}
-).
-
--define(ERROR_ATM_TASK_RESULT_MISSING(MissingResultName, ReceivedResultNames),
-    {error, {atm_task_result_missing, MissingResultName, ReceivedResultNames}}
-).
--define(ERROR_ATM_TASK_RESULT_DISPATCH_FAILED(AtmStoreSchemaId, SpecificError),
-    {error, {atm_task_result_dispatch_failed, AtmStoreSchemaId, SpecificError}}
-).
--define(ERROR_ATM_TASK_RESULT_MAPPING_FAILED(ResultName, SpecificError),
-    {error, {atm_task_result_mapping_failed, ResultName, SpecificError}}
-).
-
--define(ERROR_ATM_TASK_EXECUTION_STOPPED, {error, atm_task_execution_stopped}).
-
--define(ERROR_ATM_JOB_BATCH_WITHDRAWN(Reason), {error, {atm_job_batch_withdrawn, Reason}}).
--define(ERROR_ATM_JOB_BATCH_CRASHED(Reason), {error, {atm_job_batch_crashed, Reason}}).
-
--define(ERROR_ATM_OPENFAAS_NOT_CONFIGURED, {error, atm_openfaas_not_configured}).
--define(ERROR_ATM_OPENFAAS_UNREACHABLE, {error, atm_openfaas_unreachable}).
--define(ERROR_ATM_OPENFAAS_UNHEALTHY, {error, atm_openfaas_unhealthy}).
--define(ERROR_ATM_OPENFAAS_QUERY_FAILED, {error, atm_openfaas_query_failed}).
--define(ERROR_ATM_OPENFAAS_QUERY_FAILED(Reason),
-    {error, {atm_openfaas_query_failed, Reason}}
-).
--define(ERROR_ATM_OPENFAAS_FUNCTION_REGISTRATION_FAILED,
-    {error, atm_openfaas_function_registration_failed}
-).
-
--define(ERROR_ATM_INVALID_STATUS_TRANSITION(PrevStatus, NewStatus),
-    {error, {atm_invalid_status_transition, PrevStatus, NewStatus}}
-).
-
--define(ERROR_DIR_STATS_DISABLED_FOR_SPACE, {error, dir_stats_disabled_for_space}).
--define(ERROR_DIR_STATS_NOT_READY, {error, dir_stats_not_ready}).
-
--define(ERROR_FORBIDDEN_FOR_CURRENT_ARCHIVE_STATE(CurrentState, AllowedStates), {error, {forbidden_for_current_archive_state, CurrentState, AllowedStates}}).
--define(ERROR_NESTED_ARCHIVE_DELETION_FORBIDDEN(ParentArchiveId), {error, {nested_archive_deletion_forbidden, ParentArchiveId}}).
--define(ERROR_RECALL_TARGET_CONFLICT, {error, recall_target_conflict}).
-
-
-%%--------------------------------------------------------------------
-%% onepanel errors
-%%--------------------------------------------------------------------
-% error wrapper to indicate nodes where error occurred
--define(ERROR_ON_NODES(Error, Hostnames), {error, {error_on_nodes, Error, Hostnames}}).
--define(ERROR_DNS_SERVERS_UNREACHABLE(UsedServers), {error, {dns_servers_unreachable, UsedServers}}).
--define(ERROR_FILE_ALLOCATION(ActualSize, TargetSize), {error, {file_allocation, ActualSize, TargetSize}}).
--define(ERROR_LETS_ENCRYPT_NOT_REACHABLE, {error, lets_encrypt_not_reachable}).
--define(ERROR_LETS_ENCRYPT_RESPONSE(ProblemDocument, ErrorMessage), {error, {lets_encrypt_response, ProblemDocument, ErrorMessage}}).
--define(ERROR_NODE_ALREADY_IN_CLUSTER(HostnameBin), {error, {node_already_in_cluster, HostnameBin}}).
--define(ERROR_NODE_NOT_COMPATIBLE(HostnameBin, ClusterType), {error, {node_not_compatible, HostnameBin, ClusterType}}).
--define(ERROR_NO_CONNECTION_TO_NEW_NODE(HostnameBin), {error, {no_connection_to_new_node, HostnameBin}}).
--define(ERROR_NO_SERVICE_NODES(Service), {error, {no_service_nodes, Service}}).
--define(ERROR_USER_NOT_IN_CLUSTER, {error, user_not_in_cluster}).
+-define(ERROR_NOT_FOUND, {error, not_found}).
+-define(ERROR_TIMEOUT, {error, timeout}).
+-define(ERROR_NOT_SUPPORTED, {error, not_supported}).
 
 
 %%--------------------------------------------------------------------
@@ -359,7 +68,630 @@
 % server responds with an error to an older client, which does not know the
 % error Id. The original JSON representing the error is retained and returned
 % upon encoding.
--define(ERROR_UNRECOGNIZED_ERROR(ErrorAsJson), {error, {unrecognized_error, ErrorAsJson}}).
+-define(ERR_UNRECOGNIZED_ERROR(ErrorAsJson), 
+    ?ERR(?ERR_UNRECOGNIZED_ERROR_TYPE, {ErrorAsJson})
+).
+-define(ERR_UNRECOGNIZED_ERROR(ErrorCtx, ErrorAsJson), 
+    ?ERR(?ERR_UNRECOGNIZED_ERROR_TYPE, {ErrorAsJson}, ErrorCtx)
+).
+
+
+%%--------------------------------------------------------------------
+%% auth errors
+%%--------------------------------------------------------------------
+-define(ERR_BAD_BASIC_CREDENTIALS, ?ERR(?ERR_BAD_BASIC_CREDENTIALS_TYPE)).
+-define(ERR_BAD_BASIC_CREDENTIALS(ErrorCtx), ?ERR(?ERR_BAD_BASIC_CREDENTIALS_TYPE, undefined, ErrorCtx)).
+
+-define(ERR_FORBIDDEN, ?ERR(?ERR_FORBIDDEN_TYPE)).
+-define(ERR_FORBIDDEN(ErrorCtx), ?ERR(?ERR_FORBIDDEN_TYPE, undefined, ErrorCtx)).
+
+-define(ERR_FORBIDDEN_WITH_HINT(Hint), ?ERR(?ERR_FORBIDDEN_WITH_HINT_TYPE, {Hint})).
+-define(ERR_FORBIDDEN_WITH_HINT(ErrorCtx, Hint), ?ERR(?ERR_FORBIDDEN_WITH_HINT_TYPE, {Hint}, ErrorCtx)).
+
+-define(ERR_UNAUTHORIZED(AuthError), ?ERR(?ERR_UNAUTHORIZED_TYPE, {AuthError})).
+-define(ERR_UNAUTHORIZED(ErrorCtx, AuthError), ?ERR(?ERR_UNAUTHORIZED_TYPE, {AuthError}, ErrorCtx)).
+
+-define(ERR_USER_BLOCKED, ?ERR(?ERR_USER_BLOCKED_TYPE)).
+-define(ERR_USER_BLOCKED(ErrorCtx), ?ERR(?ERR_USER_BLOCKED_TYPE, undefined, ErrorCtx)).
+
+
+%%--------------------------------------------------------------------
+%% auth/token errors
+%%--------------------------------------------------------------------
+-define(ERR_BAD_CONSUMER_TOKEN(TokenError), ?ERR(?ERR_BAD_CONSUMER_TOKEN_TYPE, {TokenError})).
+-define(ERR_BAD_CONSUMER_TOKEN(ErrorCtx, TokenError), ?ERR(?ERR_BAD_CONSUMER_TOKEN_TYPE, {TokenError}, ErrorCtx)).
+
+-define(ERR_BAD_IDP_ACCESS_TOKEN(Idp), ?ERR(?ERR_BAD_IDP_ACCESS_TOKEN_TYPE, {Idp})).
+-define(ERR_BAD_IDP_ACCESS_TOKEN(ErrorCtx, Idp), ?ERR(?ERR_BAD_IDP_ACCESS_TOKEN_TYPE, {Idp}, ErrorCtx)).
+
+-define(ERR_BAD_SERVICE_TOKEN(TokenError), ?ERR(?ERR_BAD_SERVICE_TOKEN_TYPE, {TokenError})).
+-define(ERR_BAD_SERVICE_TOKEN(ErrorCtx, TokenError), ?ERR(?ERR_BAD_SERVICE_TOKEN_TYPE, {TokenError}, ErrorCtx)).
+
+-define(ERR_BAD_TOKEN, ?ERR(?ERR_BAD_TOKEN_TYPE)).
+-define(ERR_BAD_TOKEN(ErrorCtx), ?ERR(?ERR_BAD_TOKEN_TYPE, undefined, ErrorCtx)).
+
+-define(ERR_INVITE_TOKEN_CONSUMER_INVALID(Consumer), ?ERR(?ERR_INVITE_TOKEN_CONSUMER_INVALID_TYPE, {Consumer})).
+-define(ERR_INVITE_TOKEN_CONSUMER_INVALID(ErrorCtx, Consumer), ?ERR(?ERR_INVITE_TOKEN_CONSUMER_INVALID_TYPE, {Consumer}, ErrorCtx)).
+
+-define(ERR_INVITE_TOKEN_SUBJECT_NOT_AUTHORIZED, ?ERR(?ERR_INVITE_TOKEN_SUBJECT_NOT_AUTHORIZED_TYPE)).
+-define(ERR_INVITE_TOKEN_SUBJECT_NOT_AUTHORIZED(ErrorCtx), ?ERR(?ERR_INVITE_TOKEN_SUBJECT_NOT_AUTHORIZED_TYPE, undefined, ErrorCtx)).
+
+-define(ERR_INVITE_TOKEN_TARGET_ID_INVALID(Id), ?ERR(?ERR_INVITE_TOKEN_TARGET_ID_INVALID_TYPE, {Id})).
+-define(ERR_INVITE_TOKEN_TARGET_ID_INVALID(ErrorCtx, Id), ?ERR(?ERR_INVITE_TOKEN_TARGET_ID_INVALID_TYPE, {Id}, ErrorCtx)).
+
+-define(ERR_INVITE_TOKEN_USAGE_LIMIT_REACHED, ?ERR(?ERR_INVITE_TOKEN_USAGE_LIMIT_REACHED_TYPE)).
+-define(ERR_INVITE_TOKEN_USAGE_LIMIT_REACHED(ErrorCtx), ?ERR(?ERR_INVITE_TOKEN_USAGE_LIMIT_REACHED_TYPE, undefined, ErrorCtx)).
+
+-define(ERR_NOT_AN_ACCESS_TOKEN(Received), ?ERR(?ERR_NOT_AN_ACCESS_TOKEN_TYPE, {Received})).
+-define(ERR_NOT_AN_ACCESS_TOKEN(ErrorCtx, Received), ?ERR(?ERR_NOT_AN_ACCESS_TOKEN_TYPE, {Received}, ErrorCtx)).
+
+-define(ERR_NOT_AN_IDENTITY_TOKEN(Received), ?ERR(?ERR_NOT_AN_IDENTITY_TOKEN_TYPE, {Received})).
+-define(ERR_NOT_AN_IDENTITY_TOKEN(ErrorCtx, Received), ?ERR(?ERR_NOT_AN_IDENTITY_TOKEN_TYPE, {Received}, ErrorCtx)).
+
+-define(ERR_NOT_AN_INVITE_TOKEN(ExpectedInviteType, Received), ?ERR(?ERR_NOT_AN_INVITE_TOKEN_TYPE, {ExpectedInviteType, Received})).
+-define(ERR_NOT_AN_INVITE_TOKEN(ErrorCtx, ExpectedInviteType, Received), ?ERR(?ERR_NOT_AN_INVITE_TOKEN_TYPE, {ExpectedInviteType, Received}, ErrorCtx)).
+
+-define(ERR_TOKEN_CAVEAT_UNKNOWN(Caveat), ?ERR(?ERR_TOKEN_CAVEAT_UNKNOWN_TYPE, {Caveat})).
+-define(ERR_TOKEN_CAVEAT_UNKNOWN(ErrorCtx, Caveat), ?ERR(?ERR_TOKEN_CAVEAT_UNKNOWN_TYPE, {Caveat}, ErrorCtx)).
+
+-define(ERR_TOKEN_CAVEAT_UNVERIFIED(Caveat), ?ERR(?ERR_TOKEN_CAVEAT_UNVERIFIED_TYPE, {Caveat})).
+-define(ERR_TOKEN_CAVEAT_UNVERIFIED(ErrorCtx, Caveat), ?ERR(?ERR_TOKEN_CAVEAT_UNVERIFIED_TYPE, {Caveat}, ErrorCtx)).
+
+-define(ERR_TOKEN_INVALID, ?ERR(?ERR_TOKEN_INVALID_TYPE)).
+-define(ERR_TOKEN_INVALID(ErrorCtx), ?ERR(?ERR_TOKEN_INVALID_TYPE, undefined, ErrorCtx)).
+
+-define(ERR_TOKEN_REVOKED, ?ERR(?ERR_TOKEN_REVOKED_TYPE)).
+-define(ERR_TOKEN_REVOKED(ErrorCtx), ?ERR(?ERR_TOKEN_REVOKED_TYPE, undefined, ErrorCtx)).
+
+-define(ERR_TOKEN_SERVICE_FORBIDDEN(Service), ?ERR(?ERR_TOKEN_SERVICE_FORBIDDEN_TYPE, {Service})).
+-define(ERR_TOKEN_SERVICE_FORBIDDEN(ErrorCtx, Service), ?ERR(?ERR_TOKEN_SERVICE_FORBIDDEN_TYPE, {Service}, ErrorCtx)).
+
+-define(ERR_TOKEN_SESSION_INVALID, ?ERR(?ERR_TOKEN_SESSION_INVALID_TYPE)).
+-define(ERR_TOKEN_SESSION_INVALID(ErrorCtx), ?ERR(?ERR_TOKEN_SESSION_INVALID_TYPE, undefined, ErrorCtx)).
+
+-define(ERR_TOKEN_SUBJECT_INVALID, ?ERR(?ERR_TOKEN_SUBJECT_INVALID_TYPE)).
+-define(ERR_TOKEN_SUBJECT_INVALID(ErrorCtx), ?ERR(?ERR_TOKEN_SUBJECT_INVALID_TYPE, undefined, ErrorCtx)).
+
+-define(ERR_TOKEN_TIME_CAVEAT_REQUIRED(MaxTtl), ?ERR(?ERR_TOKEN_TIME_CAVEAT_REQUIRED_TYPE, {MaxTtl})).
+-define(ERR_TOKEN_TIME_CAVEAT_REQUIRED(ErrorCtx, MaxTtl), ?ERR(?ERR_TOKEN_TIME_CAVEAT_REQUIRED_TYPE, {MaxTtl}, ErrorCtx)).
+
+-define(ERR_TOKEN_TOO_LARGE(Limit), ?ERR(?ERR_TOKEN_TOO_LARGE_TYPE, {Limit})).
+-define(ERR_TOKEN_TOO_LARGE(ErrorCtx, Limit), ?ERR(?ERR_TOKEN_TOO_LARGE_TYPE, {Limit}, ErrorCtx)).
+
+
+%%--------------------------------------------------------------------
+%% connection errors
+%%--------------------------------------------------------------------
+-define(ERR_NO_CONNECTION_TO_CLUSTER_NODE(NodeName), ?ERR(?ERR_NO_CONNECTION_TO_CLUSTER_NODE_TYPE, {NodeName})).
+-define(ERR_NO_CONNECTION_TO_CLUSTER_NODE(ErrorCtx, NodeName), ?ERR(?ERR_NO_CONNECTION_TO_CLUSTER_NODE_TYPE, {NodeName}, ErrorCtx)).
+
+-define(ERR_NO_CONNECTION_TO_ONEZONE(ZoneDomain), ?ERR(?ERR_NO_CONNECTION_TO_ONEZONE_TYPE, {ZoneDomain})).
+-define(ERR_NO_CONNECTION_TO_ONEZONE(ErrorCtx, ZoneDomain), ?ERR(?ERR_NO_CONNECTION_TO_ONEZONE_TYPE, {ZoneDomain}, ErrorCtx)).
+
+-define(ERR_NO_CONNECTION_TO_PEER_ONEPROVIDER(ProviderId, ProviderDomain), ?ERR(?ERR_NO_CONNECTION_TO_PEER_ONEPROVIDER_TYPE, {ProviderId, ProviderDomain})).
+-define(ERR_NO_CONNECTION_TO_PEER_ONEPROVIDER(ErrorCtx, ProviderId, ProviderDomain), ?ERR(?ERR_NO_CONNECTION_TO_PEER_ONEPROVIDER_TYPE, {ProviderId, ProviderDomain}, ErrorCtx)).
+
+
+%%--------------------------------------------------------------------
+%% data_validation errors
+%%--------------------------------------------------------------------
+-define(ERR_BAD_DATA(Key, SpecificErrorOrHint), ?ERR(?ERR_BAD_DATA_TYPE, {Key, SpecificErrorOrHint})).
+-define(ERR_BAD_DATA(ErrorCtx, Key, SpecificErrorOrHint), ?ERR(?ERR_BAD_DATA_TYPE, {Key, SpecificErrorOrHint}, ErrorCtx)).
+
+-define(ERR_BAD_GUI_PACKAGE, ?ERR(?ERR_BAD_GUI_PACKAGE_TYPE)).
+-define(ERR_BAD_GUI_PACKAGE(ErrorCtx), ?ERR(?ERR_BAD_GUI_PACKAGE_TYPE, undefined, ErrorCtx)).
+
+-define(ERR_GUI_PACKAGE_TOO_LARGE, ?ERR(?ERR_GUI_PACKAGE_TOO_LARGE_TYPE)).
+-define(ERR_GUI_PACKAGE_TOO_LARGE(ErrorCtx), ?ERR(?ERR_GUI_PACKAGE_TOO_LARGE_TYPE, undefined, ErrorCtx)).
+
+-define(ERR_GUI_PACKAGE_UNVERIFIED(ShaSum), ?ERR(?ERR_GUI_PACKAGE_UNVERIFIED_TYPE, {ShaSum})).
+-define(ERR_GUI_PACKAGE_UNVERIFIED(ErrorCtx, ShaSum), ?ERR(?ERR_GUI_PACKAGE_UNVERIFIED_TYPE, {ShaSum}, ErrorCtx)).
+
+-define(ERR_ILLEGAL_SUPPORT_STAGE_TRANSITION(CurrentProviderStage, CurrentStorageStage), ?ERR(?ERR_ILLEGAL_SUPPORT_STAGE_TRANSITION_TYPE, {CurrentProviderStage, CurrentStorageStage})).
+-define(ERR_ILLEGAL_SUPPORT_STAGE_TRANSITION(ErrorCtx, CurrentProviderStage, CurrentStorageStage), ?ERR(?ERR_ILLEGAL_SUPPORT_STAGE_TRANSITION_TYPE, {CurrentProviderStage, CurrentStorageStage}, ErrorCtx)).
+
+-define(ERR_INVALID_QOS_EXPRESSION(Reason), ?ERR(?ERR_INVALID_QOS_EXPRESSION_TYPE, {Reason})).
+-define(ERR_INVALID_QOS_EXPRESSION(ErrorCtx, Reason), ?ERR(?ERR_INVALID_QOS_EXPRESSION_TYPE, {Reason}, ErrorCtx)).
+
+-define(ERR_MALFORMED_DATA, ?ERR(?ERR_MALFORMED_DATA_TYPE)).
+-define(ERR_MALFORMED_DATA(ErrorCtx), ?ERR(?ERR_MALFORMED_DATA_TYPE, undefined, ErrorCtx)).
+
+-define(ERR_MISSING_AT_LEAST_ONE_VALUE(Keys), ?ERR(?ERR_MISSING_AT_LEAST_ONE_VALUE_TYPE, {Keys})).
+-define(ERR_MISSING_AT_LEAST_ONE_VALUE(ErrorCtx, Keys), ?ERR(?ERR_MISSING_AT_LEAST_ONE_VALUE_TYPE, {Keys}, ErrorCtx)).
+
+-define(ERR_MISSING_REQUIRED_VALUE(Key), ?ERR(?ERR_MISSING_REQUIRED_VALUE_TYPE, {Key})).
+-define(ERR_MISSING_REQUIRED_VALUE(ErrorCtx, Key), ?ERR(?ERR_MISSING_REQUIRED_VALUE_TYPE, {Key}, ErrorCtx)).
+
+-define(ERR_TSC_MISSING_LAYOUT(MissingLayout), ?ERR(?ERR_TSC_MISSING_LAYOUT_TYPE, {MissingLayout})).
+-define(ERR_TSC_MISSING_LAYOUT(ErrorCtx, MissingLayout), ?ERR(?ERR_TSC_MISSING_LAYOUT_TYPE, {MissingLayout}, ErrorCtx)).
+
+-define(ERR_TSC_TOO_MANY_METRICS(Limit), ?ERR(?ERR_TSC_TOO_MANY_METRICS_TYPE, {Limit})).
+-define(ERR_TSC_TOO_MANY_METRICS(ErrorCtx, Limit), ?ERR(?ERR_TSC_TOO_MANY_METRICS_TYPE, {Limit}, ErrorCtx)).
+
+
+%%--------------------------------------------------------------------
+%% data_validation/value errors
+%%--------------------------------------------------------------------
+-define(ERR_BAD_VALUE_AMBIGUOUS_ID(Key), ?ERR(?ERR_BAD_VALUE_AMBIGUOUS_ID_TYPE, {Key})).
+-define(ERR_BAD_VALUE_AMBIGUOUS_ID(ErrorCtx, Key), ?ERR(?ERR_BAD_VALUE_AMBIGUOUS_ID_TYPE, {Key}, ErrorCtx)).
+
+-define(ERR_BAD_VALUE_BOOLEAN(Key), ?ERR(?ERR_BAD_VALUE_BOOLEAN_TYPE, {Key})).
+-define(ERR_BAD_VALUE_BOOLEAN(ErrorCtx, Key), ?ERR(?ERR_BAD_VALUE_BOOLEAN_TYPE, {Key}, ErrorCtx)).
+
+-define(ERR_BAD_VALUE_CAVEAT(Caveat), ?ERR(?ERR_BAD_VALUE_CAVEAT_TYPE, {Caveat})).
+-define(ERR_BAD_VALUE_CAVEAT(ErrorCtx, Caveat), ?ERR(?ERR_BAD_VALUE_CAVEAT_TYPE, {Caveat}, ErrorCtx)).
+
+-define(ERR_BAD_VALUE_DOMAIN, ?ERR(?ERR_BAD_VALUE_DOMAIN_TYPE)).
+-define(ERR_BAD_VALUE_DOMAIN(ErrorCtx), ?ERR(?ERR_BAD_VALUE_DOMAIN_TYPE, undefined, ErrorCtx)).
+
+-define(ERR_BAD_VALUE_EMAIL, ?ERR(?ERR_BAD_VALUE_EMAIL_TYPE)).
+-define(ERR_BAD_VALUE_EMAIL(ErrorCtx), ?ERR(?ERR_BAD_VALUE_EMAIL_TYPE, undefined, ErrorCtx)).
+
+-define(ERR_BAD_VALUE_EMPTY(Key), ?ERR(?ERR_BAD_VALUE_EMPTY_TYPE, {Key})).
+-define(ERR_BAD_VALUE_EMPTY(ErrorCtx, Key), ?ERR(?ERR_BAD_VALUE_EMPTY_TYPE, {Key}, ErrorCtx)).
+
+-define(ERR_BAD_VALUE_FILE_PATH, ?ERR(?ERR_BAD_VALUE_FILE_PATH_TYPE)).
+-define(ERR_BAD_VALUE_FILE_PATH(ErrorCtx), ?ERR(?ERR_BAD_VALUE_FILE_PATH_TYPE, undefined, ErrorCtx)).
+
+-define(ERR_BAD_VALUE_FLOAT(Key), ?ERR(?ERR_BAD_VALUE_FLOAT_TYPE, {Key})).
+-define(ERR_BAD_VALUE_FLOAT(ErrorCtx, Key), ?ERR(?ERR_BAD_VALUE_FLOAT_TYPE, {Key}, ErrorCtx)).
+
+-define(ERR_BAD_VALUE_FULL_NAME, ?ERR(?ERR_BAD_VALUE_FULL_NAME_TYPE)).
+-define(ERR_BAD_VALUE_FULL_NAME(ErrorCtx), ?ERR(?ERR_BAD_VALUE_FULL_NAME_TYPE, undefined, ErrorCtx)).
+
+-define(ERR_BAD_VALUE_ID_NOT_FOUND(Key), ?ERR(?ERR_BAD_VALUE_ID_NOT_FOUND_TYPE, {Key})).
+-define(ERR_BAD_VALUE_ID_NOT_FOUND(ErrorCtx, Key), ?ERR(?ERR_BAD_VALUE_ID_NOT_FOUND_TYPE, {Key}, ErrorCtx)).
+
+-define(ERR_BAD_VALUE_IDENTIFIER(Key), ?ERR(?ERR_BAD_VALUE_IDENTIFIER_TYPE, {Key})).
+-define(ERR_BAD_VALUE_IDENTIFIER(ErrorCtx, Key), ?ERR(?ERR_BAD_VALUE_IDENTIFIER_TYPE, {Key}, ErrorCtx)).
+
+-define(ERR_BAD_VALUE_IDENTIFIER_OCCUPIED(Key), ?ERR(?ERR_BAD_VALUE_IDENTIFIER_OCCUPIED_TYPE, {Key})).
+-define(ERR_BAD_VALUE_IDENTIFIER_OCCUPIED(ErrorCtx, Key), ?ERR(?ERR_BAD_VALUE_IDENTIFIER_OCCUPIED_TYPE, {Key}, ErrorCtx)).
+
+-define(ERR_BAD_VALUE_INTEGER(Key), ?ERR(?ERR_BAD_VALUE_INTEGER_TYPE, {Key})).
+-define(ERR_BAD_VALUE_INTEGER(ErrorCtx, Key), ?ERR(?ERR_BAD_VALUE_INTEGER_TYPE, {Key}, ErrorCtx)).
+
+-define(ERR_BAD_VALUE_INVITE_TYPE(Key), ?ERR(?ERR_BAD_VALUE_INVITE_TYPE_TYPE, {Key})).
+-define(ERR_BAD_VALUE_INVITE_TYPE(ErrorCtx, Key), ?ERR(?ERR_BAD_VALUE_INVITE_TYPE_TYPE, {Key}, ErrorCtx)).
+
+-define(ERR_BAD_VALUE_IPV4_ADDRESS(Key), ?ERR(?ERR_BAD_VALUE_IPV4_ADDRESS_TYPE, {Key})).
+-define(ERR_BAD_VALUE_IPV4_ADDRESS(ErrorCtx, Key), ?ERR(?ERR_BAD_VALUE_IPV4_ADDRESS_TYPE, {Key}, ErrorCtx)).
+
+-define(ERR_BAD_VALUE_JSON(Key), ?ERR(?ERR_BAD_VALUE_JSON_TYPE, {Key})).
+-define(ERR_BAD_VALUE_JSON(ErrorCtx, Key), ?ERR(?ERR_BAD_VALUE_JSON_TYPE, {Key}, ErrorCtx)).
+
+-define(ERR_BAD_VALUE_LIST_NOT_ALLOWED(Key, Allowed), ?ERR(?ERR_BAD_VALUE_LIST_NOT_ALLOWED_TYPE, {Key, Allowed})).
+-define(ERR_BAD_VALUE_LIST_NOT_ALLOWED(ErrorCtx, Key, Allowed), ?ERR(?ERR_BAD_VALUE_LIST_NOT_ALLOWED_TYPE, {Key, Allowed}, ErrorCtx)).
+
+-define(ERR_BAD_VALUE_LIST_OF_IPV4_ADDRESSES(Key), ?ERR(?ERR_BAD_VALUE_LIST_OF_IPV4_ADDRESSES_TYPE, {Key})).
+-define(ERR_BAD_VALUE_LIST_OF_IPV4_ADDRESSES(ErrorCtx, Key), ?ERR(?ERR_BAD_VALUE_LIST_OF_IPV4_ADDRESSES_TYPE, {Key}, ErrorCtx)).
+
+-define(ERR_BAD_VALUE_LIST_OF_STRINGS(Key), ?ERR(?ERR_BAD_VALUE_LIST_OF_STRINGS_TYPE, {Key})).
+-define(ERR_BAD_VALUE_LIST_OF_STRINGS(ErrorCtx, Key), ?ERR(?ERR_BAD_VALUE_LIST_OF_STRINGS_TYPE, {Key}, ErrorCtx)).
+
+-define(ERR_BAD_VALUE_NAME(Key), ?ERR(?ERR_BAD_VALUE_NAME_TYPE, {Key})).
+-define(ERR_BAD_VALUE_NAME(ErrorCtx, Key), ?ERR(?ERR_BAD_VALUE_NAME_TYPE, {Key}, ErrorCtx)).
+
+-define(ERR_BAD_VALUE_NOT_ALLOWED(Key, Allowed), ?ERR(?ERR_BAD_VALUE_NOT_ALLOWED_TYPE, {Key, Allowed})).
+-define(ERR_BAD_VALUE_NOT_ALLOWED(ErrorCtx, Key, Allowed), ?ERR(?ERR_BAD_VALUE_NOT_ALLOWED_TYPE, {Key, Allowed}, ErrorCtx)).
+
+-define(ERR_BAD_VALUE_NOT_IN_RANGE(Key, Low, High), ?ERR(?ERR_BAD_VALUE_NOT_IN_RANGE_TYPE, {Key, Low, High})).
+-define(ERR_BAD_VALUE_NOT_IN_RANGE(ErrorCtx, Key, Low, High), ?ERR(?ERR_BAD_VALUE_NOT_IN_RANGE_TYPE, {Key, Low, High}, ErrorCtx)).
+
+-define(ERR_BAD_VALUE_OCTAL(Key), ?ERR(?ERR_BAD_VALUE_OCTAL_TYPE, {Key})).
+-define(ERR_BAD_VALUE_OCTAL(ErrorCtx, Key), ?ERR(?ERR_BAD_VALUE_OCTAL_TYPE, {Key}, ErrorCtx)).
+
+-define(ERR_BAD_VALUE_PASSWORD, ?ERR(?ERR_BAD_VALUE_PASSWORD_TYPE)).
+-define(ERR_BAD_VALUE_PASSWORD(ErrorCtx), ?ERR(?ERR_BAD_VALUE_PASSWORD_TYPE, undefined, ErrorCtx)).
+
+-define(ERR_BAD_VALUE_QOS_PARAMETERS, ?ERR(?ERR_BAD_VALUE_QOS_PARAMETERS_TYPE)).
+-define(ERR_BAD_VALUE_QOS_PARAMETERS(ErrorCtx), ?ERR(?ERR_BAD_VALUE_QOS_PARAMETERS_TYPE, undefined, ErrorCtx)).
+
+-define(ERR_BAD_VALUE_STRING(Key), ?ERR(?ERR_BAD_VALUE_STRING_TYPE, {Key})).
+-define(ERR_BAD_VALUE_STRING(ErrorCtx, Key), ?ERR(?ERR_BAD_VALUE_STRING_TYPE, {Key}, ErrorCtx)).
+
+-define(ERR_BAD_VALUE_SUBDOMAIN, ?ERR(?ERR_BAD_VALUE_SUBDOMAIN_TYPE)).
+-define(ERR_BAD_VALUE_SUBDOMAIN(ErrorCtx), ?ERR(?ERR_BAD_VALUE_SUBDOMAIN_TYPE, undefined, ErrorCtx)).
+
+-define(ERR_BAD_VALUE_TEXT_TOO_LARGE(Key, Limit), ?ERR(?ERR_BAD_VALUE_TEXT_TOO_LARGE_TYPE, {Key, Limit})).
+-define(ERR_BAD_VALUE_TEXT_TOO_LARGE(ErrorCtx, Key, Limit), ?ERR(?ERR_BAD_VALUE_TEXT_TOO_LARGE_TYPE, {Key, Limit}, ErrorCtx)).
+
+-define(ERR_BAD_VALUE_TOKEN(Key, TokenError), ?ERR(?ERR_BAD_VALUE_TOKEN_TYPE, {Key, TokenError})).
+-define(ERR_BAD_VALUE_TOKEN(ErrorCtx, Key, TokenError), ?ERR(?ERR_BAD_VALUE_TOKEN_TYPE, {Key, TokenError}, ErrorCtx)).
+
+-define(ERR_BAD_VALUE_TOKEN_TYPE(Key), ?ERR(?ERR_BAD_VALUE_TOKEN_TYPE_TYPE, {Key})).
+-define(ERR_BAD_VALUE_TOKEN_TYPE(ErrorCtx, Key), ?ERR(?ERR_BAD_VALUE_TOKEN_TYPE_TYPE, {Key}, ErrorCtx)).
+
+-define(ERR_BAD_VALUE_TOO_HIGH(Key, Limit), ?ERR(?ERR_BAD_VALUE_TOO_HIGH_TYPE, {Key, Limit})).
+-define(ERR_BAD_VALUE_TOO_HIGH(ErrorCtx, Key, Limit), ?ERR(?ERR_BAD_VALUE_TOO_HIGH_TYPE, {Key, Limit}, ErrorCtx)).
+
+-define(ERR_BAD_VALUE_TOO_LOW(Key, Limit), ?ERR(?ERR_BAD_VALUE_TOO_LOW_TYPE, {Key, Limit})).
+-define(ERR_BAD_VALUE_TOO_LOW(ErrorCtx, Key, Limit), ?ERR(?ERR_BAD_VALUE_TOO_LOW_TYPE, {Key, Limit}, ErrorCtx)).
+
+-define(ERR_BAD_VALUE_TSC_CONFLICTING_METRIC_CONFIG(TimeSeriesName, MetricName, ExistingMetricConfig, ConflictingMetricConfig), ?ERR(?ERR_BAD_VALUE_TSC_CONFLICTING_METRIC_CONFIG_TYPE, {TimeSeriesName, MetricName, ExistingMetricConfig, ConflictingMetricConfig})).
+-define(ERR_BAD_VALUE_TSC_CONFLICTING_METRIC_CONFIG(ErrorCtx, TimeSeriesName, MetricName, ExistingMetricConfig, ConflictingMetricConfig), ?ERR(?ERR_BAD_VALUE_TSC_CONFLICTING_METRIC_CONFIG_TYPE, {TimeSeriesName, MetricName, ExistingMetricConfig, ConflictingMetricConfig}, ErrorCtx)).
+
+-define(ERR_BAD_VALUE_USERNAME, ?ERR(?ERR_BAD_VALUE_USERNAME_TYPE)).
+-define(ERR_BAD_VALUE_USERNAME(ErrorCtx), ?ERR(?ERR_BAD_VALUE_USERNAME_TYPE, undefined, ErrorCtx)).
+
+-define(ERR_BAD_VALUE_XML(Key), ?ERR(?ERR_BAD_VALUE_XML_TYPE, {Key})).
+-define(ERR_BAD_VALUE_XML(ErrorCtx, Key), ?ERR(?ERR_BAD_VALUE_XML_TYPE, {Key}, ErrorCtx)).
+
+
+%%--------------------------------------------------------------------
+%% general errors
+%%--------------------------------------------------------------------
+-define(ERR_BAD_MESSAGE(Message), ?ERR(?ERR_BAD_MESSAGE_TYPE, {Message})).
+-define(ERR_BAD_MESSAGE(ErrorCtx, Message), ?ERR(?ERR_BAD_MESSAGE_TYPE, {Message}, ErrorCtx)).
+
+-define(ERR_EXTERNAL_SERVICE_OPERATION_FAILED(ServiceName), ?ERR(?ERR_EXTERNAL_SERVICE_OPERATION_FAILED_TYPE, {ServiceName})).
+-define(ERR_EXTERNAL_SERVICE_OPERATION_FAILED(ErrorCtx, ServiceName), ?ERR(?ERR_EXTERNAL_SERVICE_OPERATION_FAILED_TYPE, {ServiceName}, ErrorCtx)).
+
+-define(ERR_FILE_ACCESS(Path, Errno), ?ERR(?ERR_FILE_ACCESS_TYPE, {Path, Errno})).
+-define(ERR_FILE_ACCESS(ErrorCtx, Path, Errno), ?ERR(?ERR_FILE_ACCESS_TYPE, {Path, Errno}, ErrorCtx)).
+
+-define(ERR_INTERNAL_SERVER_ERROR(Reference), ?ERR(?ERR_INTERNAL_SERVER_ERROR_TYPE, {Reference})).
+-define(ERR_INTERNAL_SERVER_ERROR(ErrorCtx, Reference), ?ERR(?ERR_INTERNAL_SERVER_ERROR_TYPE, {Reference}, ErrorCtx)).
+
+-define(ERR_LIMIT_REACHED(Limit, ResourceDescription), ?ERR(?ERR_LIMIT_REACHED_TYPE, {Limit, ResourceDescription})).
+-define(ERR_LIMIT_REACHED(ErrorCtx, Limit, ResourceDescription), ?ERR(?ERR_LIMIT_REACHED_TYPE, {Limit, ResourceDescription}, ErrorCtx)).
+
+-define(ERR_NOT_IMPLEMENTED, ?ERR(?ERR_NOT_IMPLEMENTED_TYPE)).
+-define(ERR_NOT_IMPLEMENTED(ErrorCtx), ?ERR(?ERR_NOT_IMPLEMENTED_TYPE, undefined, ErrorCtx)).
+
+-define(ERR_SERVICE_UNAVAILABLE, ?ERR(?ERR_SERVICE_UNAVAILABLE_TYPE)).
+-define(ERR_SERVICE_UNAVAILABLE(ErrorCtx), ?ERR(?ERR_SERVICE_UNAVAILABLE_TYPE, undefined, ErrorCtx)).
+
+-define(ERR_TEMPORARY_FAILURE, ?ERR(?ERR_TEMPORARY_FAILURE_TYPE)).
+-define(ERR_TEMPORARY_FAILURE(ErrorCtx), ?ERR(?ERR_TEMPORARY_FAILURE_TYPE, undefined, ErrorCtx)).
+
+-define(ERR_UNREGISTERED_ONEPROVIDER, ?ERR(?ERR_UNREGISTERED_ONEPROVIDER_TYPE)).
+-define(ERR_UNREGISTERED_ONEPROVIDER(ErrorCtx), ?ERR(?ERR_UNREGISTERED_ONEPROVIDER_TYPE, undefined, ErrorCtx)).
+
+
+%%--------------------------------------------------------------------
+%% graph_sync errors
+%%--------------------------------------------------------------------
+-define(ERR_BAD_GRI, ?ERR(?ERR_BAD_GRI_TYPE)).
+-define(ERR_BAD_GRI(ErrorCtx), ?ERR(?ERR_BAD_GRI_TYPE, undefined, ErrorCtx)).
+
+-define(ERR_BAD_VERSION(SupportedVersions), ?ERR(?ERR_BAD_VERSION_TYPE, {SupportedVersions})).
+-define(ERR_BAD_VERSION(ErrorCtx, SupportedVersions), ?ERR(?ERR_BAD_VERSION_TYPE, {SupportedVersions}, ErrorCtx)).
+
+-define(ERR_EXPECTED_HANDSHAKE_MESSAGE, ?ERR(?ERR_EXPECTED_HANDSHAKE_MESSAGE_TYPE)).
+-define(ERR_EXPECTED_HANDSHAKE_MESSAGE(ErrorCtx), ?ERR(?ERR_EXPECTED_HANDSHAKE_MESSAGE_TYPE, undefined, ErrorCtx)).
+
+-define(ERR_HANDSHAKE_ALREADY_DONE, ?ERR(?ERR_HANDSHAKE_ALREADY_DONE_TYPE)).
+-define(ERR_HANDSHAKE_ALREADY_DONE(ErrorCtx), ?ERR(?ERR_HANDSHAKE_ALREADY_DONE_TYPE, undefined, ErrorCtx)).
+
+-define(ERR_NOT_SUBSCRIBABLE, ?ERR(?ERR_NOT_SUBSCRIBABLE_TYPE)).
+-define(ERR_NOT_SUBSCRIBABLE(ErrorCtx), ?ERR(?ERR_NOT_SUBSCRIBABLE_TYPE, undefined, ErrorCtx)).
+
+-define(ERR_RPC_UNDEFINED, ?ERR(?ERR_RPC_UNDEFINED_TYPE)).
+-define(ERR_RPC_UNDEFINED(ErrorCtx), ?ERR(?ERR_RPC_UNDEFINED_TYPE, undefined, ErrorCtx)).
+
+
+%%--------------------------------------------------------------------
+%% onepanel errors
+%%--------------------------------------------------------------------
+-define(ERR_DNS_SERVERS_UNREACHABLE(Servers), ?ERR(?ERR_DNS_SERVERS_UNREACHABLE_TYPE, {Servers})).
+-define(ERR_DNS_SERVERS_UNREACHABLE(ErrorCtx, Servers), ?ERR(?ERR_DNS_SERVERS_UNREACHABLE_TYPE, {Servers}, ErrorCtx)).
+
+-define(ERR_LETS_ENCRYPT_NOT_REACHABLE, ?ERR(?ERR_LETS_ENCRYPT_NOT_REACHABLE_TYPE)).
+-define(ERR_LETS_ENCRYPT_NOT_REACHABLE(ErrorCtx), ?ERR(?ERR_LETS_ENCRYPT_NOT_REACHABLE_TYPE, undefined, ErrorCtx)).
+
+-define(ERR_LETS_ENCRYPT_RESPONSE(ProblemDocument, ErrorMessage), ?ERR(?ERR_LETS_ENCRYPT_RESPONSE_TYPE, {ProblemDocument, ErrorMessage})).
+-define(ERR_LETS_ENCRYPT_RESPONSE(ErrorCtx, ProblemDocument, ErrorMessage), ?ERR(?ERR_LETS_ENCRYPT_RESPONSE_TYPE, {ProblemDocument, ErrorMessage}, ErrorCtx)).
+
+-define(ERR_NO_CONNECTION_TO_NEW_NODE(Hostname), ?ERR(?ERR_NO_CONNECTION_TO_NEW_NODE_TYPE, {Hostname})).
+-define(ERR_NO_CONNECTION_TO_NEW_NODE(ErrorCtx, Hostname), ?ERR(?ERR_NO_CONNECTION_TO_NEW_NODE_TYPE, {Hostname}, ErrorCtx)).
+
+-define(ERR_NO_SERVICE_NODES(Service), ?ERR(?ERR_NO_SERVICE_NODES_TYPE, {Service})).
+-define(ERR_NO_SERVICE_NODES(ErrorCtx, Service), ?ERR(?ERR_NO_SERVICE_NODES_TYPE, {Service}, ErrorCtx)).
+
+-define(ERR_NODE_ALREADY_IN_CLUSTER(Hostname), ?ERR(?ERR_NODE_ALREADY_IN_CLUSTER_TYPE, {Hostname})).
+-define(ERR_NODE_ALREADY_IN_CLUSTER(ErrorCtx, Hostname), ?ERR(?ERR_NODE_ALREADY_IN_CLUSTER_TYPE, {Hostname}, ErrorCtx)).
+
+-define(ERR_NODE_NOT_COMPATIBLE(Hostname, ClusterType), ?ERR(?ERR_NODE_NOT_COMPATIBLE_TYPE, {Hostname, ClusterType})).
+-define(ERR_NODE_NOT_COMPATIBLE(ErrorCtx, Hostname, ClusterType), ?ERR(?ERR_NODE_NOT_COMPATIBLE_TYPE, {Hostname, ClusterType}, ErrorCtx)).
+
+-define(ERR_ON_NODES(Error, Hostnames), ?ERR(?ERR_ON_NODES_TYPE, {Error, Hostnames})).
+-define(ERR_ON_NODES(ErrorCtx, Error, Hostnames), ?ERR(?ERR_ON_NODES_TYPE, {Error, Hostnames}, ErrorCtx)).
+
+-define(ERR_USER_NOT_IN_CLUSTER, ?ERR(?ERR_USER_NOT_IN_CLUSTER_TYPE)).
+-define(ERR_USER_NOT_IN_CLUSTER(ErrorCtx), ?ERR(?ERR_USER_NOT_IN_CLUSTER_TYPE, undefined, ErrorCtx)).
+
+
+%%--------------------------------------------------------------------
+%% op_worker errors
+%%--------------------------------------------------------------------
+-define(ERR_AUTO_CLEANING_DISABLED, ?ERR(?ERR_AUTO_CLEANING_DISABLED_TYPE)).
+-define(ERR_AUTO_CLEANING_DISABLED(ErrorCtx), ?ERR(?ERR_AUTO_CLEANING_DISABLED_TYPE, undefined, ErrorCtx)).
+
+-define(ERR_FILE_POPULARITY_DISABLED, ?ERR(?ERR_FILE_POPULARITY_DISABLED_TYPE)).
+-define(ERR_FILE_POPULARITY_DISABLED(ErrorCtx), ?ERR(?ERR_FILE_POPULARITY_DISABLED_TYPE, undefined, ErrorCtx)).
+
+-define(ERR_FORBIDDEN_FOR_CURRENT_ARCHIVE_STATE(CurrentState, AllowedStates), ?ERR(?ERR_FORBIDDEN_FOR_CURRENT_ARCHIVE_STATE_TYPE, {CurrentState, AllowedStates})).
+-define(ERR_FORBIDDEN_FOR_CURRENT_ARCHIVE_STATE(ErrorCtx, CurrentState, AllowedStates), ?ERR(?ERR_FORBIDDEN_FOR_CURRENT_ARCHIVE_STATE_TYPE, {CurrentState, AllowedStates}, ErrorCtx)).
+
+-define(ERR_NESTED_ARCHIVE_DELETION_FORBIDDEN(ParentArchiveId), ?ERR(?ERR_NESTED_ARCHIVE_DELETION_FORBIDDEN_TYPE, {ParentArchiveId})).
+-define(ERR_NESTED_ARCHIVE_DELETION_FORBIDDEN(ErrorCtx, ParentArchiveId), ?ERR(?ERR_NESTED_ARCHIVE_DELETION_FORBIDDEN_TYPE, {ParentArchiveId}, ErrorCtx)).
+
+-define(ERR_QUOTA_EXCEEDED, ?ERR(?ERR_QUOTA_EXCEEDED_TYPE)).
+-define(ERR_QUOTA_EXCEEDED(ErrorCtx), ?ERR(?ERR_QUOTA_EXCEEDED_TYPE, undefined, ErrorCtx)).
+
+-define(ERR_RECALL_TARGET_CONFLICT, ?ERR(?ERR_RECALL_TARGET_CONFLICT_TYPE)).
+-define(ERR_RECALL_TARGET_CONFLICT(ErrorCtx), ?ERR(?ERR_RECALL_TARGET_CONFLICT_TYPE, undefined, ErrorCtx)).
+
+-define(ERR_SPACE_NOT_SUPPORTED_BY(SpaceId, ProviderId), ?ERR(?ERR_SPACE_NOT_SUPPORTED_BY_TYPE, {SpaceId, ProviderId})).
+-define(ERR_SPACE_NOT_SUPPORTED_BY(ErrorCtx, SpaceId, ProviderId), ?ERR(?ERR_SPACE_NOT_SUPPORTED_BY_TYPE, {SpaceId, ProviderId}, ErrorCtx)).
+
+-define(ERR_STAT_OPERATION_NOT_SUPPORTED(StorageId), ?ERR(?ERR_STAT_OPERATION_NOT_SUPPORTED_TYPE, {StorageId})).
+-define(ERR_STAT_OPERATION_NOT_SUPPORTED(ErrorCtx, StorageId), ?ERR(?ERR_STAT_OPERATION_NOT_SUPPORTED_TYPE, {StorageId}, ErrorCtx)).
+
+-define(ERR_USER_NOT_SUPPORTED, ?ERR(?ERR_USER_NOT_SUPPORTED_TYPE)).
+-define(ERR_USER_NOT_SUPPORTED(ErrorCtx), ?ERR(?ERR_USER_NOT_SUPPORTED_TYPE, undefined, ErrorCtx)).
+
+
+%%--------------------------------------------------------------------
+%% op_worker/atm errors
+%%--------------------------------------------------------------------
+-define(ERR_ATM_DATA_TYPE_UNVERIFIED(Value, ExpType), ?ERR(?ERR_ATM_DATA_TYPE_UNVERIFIED_TYPE, {Value, ExpType})).
+-define(ERR_ATM_DATA_TYPE_UNVERIFIED(ErrorCtx, Value, ExpType), ?ERR(?ERR_ATM_DATA_TYPE_UNVERIFIED_TYPE, {Value, ExpType}, ErrorCtx)).
+
+-define(ERR_ATM_DATA_VALUE_CONSTRAINT_UNVERIFIED(Value, Type, ValueConstraints), ?ERR(?ERR_ATM_DATA_VALUE_CONSTRAINT_UNVERIFIED_TYPE, {Value, Type, ValueConstraints})).
+-define(ERR_ATM_DATA_VALUE_CONSTRAINT_UNVERIFIED(ErrorCtx, Value, Type, ValueConstraints), ?ERR(?ERR_ATM_DATA_VALUE_CONSTRAINT_UNVERIFIED_TYPE, {Value, Type, ValueConstraints}, ErrorCtx)).
+
+-define(ERR_ATM_INVALID_STATUS_TRANSITION(PrevStatus, NewStatus), ?ERR(?ERR_ATM_INVALID_STATUS_TRANSITION_TYPE, {PrevStatus, NewStatus})).
+-define(ERR_ATM_INVALID_STATUS_TRANSITION(ErrorCtx, PrevStatus, NewStatus), ?ERR(?ERR_ATM_INVALID_STATUS_TRANSITION_TYPE, {PrevStatus, NewStatus}, ErrorCtx)).
+
+-define(ERR_ATM_JOB_BATCH_CRASHED(Reason), ?ERR(?ERR_ATM_JOB_BATCH_CRASHED_TYPE, {Reason})).
+-define(ERR_ATM_JOB_BATCH_CRASHED(ErrorCtx, Reason), ?ERR(?ERR_ATM_JOB_BATCH_CRASHED_TYPE, {Reason}, ErrorCtx)).
+
+-define(ERR_ATM_JOB_BATCH_WITHDRAWN(Reason), ?ERR(?ERR_ATM_JOB_BATCH_WITHDRAWN_TYPE, {Reason})).
+-define(ERR_ATM_JOB_BATCH_WITHDRAWN(ErrorCtx, Reason), ?ERR(?ERR_ATM_JOB_BATCH_WITHDRAWN_TYPE, {Reason}, ErrorCtx)).
+
+-define(ERR_ATM_LAMBDA_CONFIG_BAD_VALUE(ParameterName, SpecificError), ?ERR(?ERR_ATM_LAMBDA_CONFIG_BAD_VALUE_TYPE, {ParameterName, SpecificError})).
+-define(ERR_ATM_LAMBDA_CONFIG_BAD_VALUE(ErrorCtx, ParameterName, SpecificError), ?ERR(?ERR_ATM_LAMBDA_CONFIG_BAD_VALUE_TYPE, {ParameterName, SpecificError}, ErrorCtx)).
+
+-define(ERR_ATM_LANE_EMPTY(AtmLaneSchemaId), ?ERR(?ERR_ATM_LANE_EMPTY_TYPE, {AtmLaneSchemaId})).
+-define(ERR_ATM_LANE_EMPTY(ErrorCtx, AtmLaneSchemaId), ?ERR(?ERR_ATM_LANE_EMPTY_TYPE, {AtmLaneSchemaId}, ErrorCtx)).
+
+-define(ERR_ATM_LANE_EXECUTION_CREATION_FAILED(AtmLaneSchemaId, SpecificError), ?ERR(?ERR_ATM_LANE_EXECUTION_CREATION_FAILED_TYPE, {AtmLaneSchemaId, SpecificError})).
+-define(ERR_ATM_LANE_EXECUTION_CREATION_FAILED(ErrorCtx, AtmLaneSchemaId, SpecificError), ?ERR(?ERR_ATM_LANE_EXECUTION_CREATION_FAILED_TYPE, {AtmLaneSchemaId, SpecificError}, ErrorCtx)).
+
+-define(ERR_ATM_LANE_EXECUTION_INITIATION_FAILED(AtmLaneSchemaId, SpecificError), ?ERR(?ERR_ATM_LANE_EXECUTION_INITIATION_FAILED_TYPE, {AtmLaneSchemaId, SpecificError})).
+-define(ERR_ATM_LANE_EXECUTION_INITIATION_FAILED(ErrorCtx, AtmLaneSchemaId, SpecificError), ?ERR(?ERR_ATM_LANE_EXECUTION_INITIATION_FAILED_TYPE, {AtmLaneSchemaId, SpecificError}, ErrorCtx)).
+
+-define(ERR_ATM_LANE_EXECUTION_RERUN_FAILED, ?ERR(?ERR_ATM_LANE_EXECUTION_RERUN_FAILED_TYPE)).
+-define(ERR_ATM_LANE_EXECUTION_RERUN_FAILED(ErrorCtx), ?ERR(?ERR_ATM_LANE_EXECUTION_RERUN_FAILED_TYPE, undefined, ErrorCtx)).
+
+-define(ERR_ATM_LANE_EXECUTION_RETRY_FAILED, ?ERR(?ERR_ATM_LANE_EXECUTION_RETRY_FAILED_TYPE)).
+-define(ERR_ATM_LANE_EXECUTION_RETRY_FAILED(ErrorCtx), ?ERR(?ERR_ATM_LANE_EXECUTION_RETRY_FAILED_TYPE, undefined, ErrorCtx)).
+
+-define(ERR_ATM_OPENFAAS_FUNCTION_REGISTRATION_FAILED, ?ERR(?ERR_ATM_OPENFAAS_FUNCTION_REGISTRATION_FAILED_TYPE)).
+-define(ERR_ATM_OPENFAAS_FUNCTION_REGISTRATION_FAILED(ErrorCtx), ?ERR(?ERR_ATM_OPENFAAS_FUNCTION_REGISTRATION_FAILED_TYPE, undefined, ErrorCtx)).
+
+-define(ERR_ATM_OPENFAAS_NOT_CONFIGURED, ?ERR(?ERR_ATM_OPENFAAS_NOT_CONFIGURED_TYPE)).
+-define(ERR_ATM_OPENFAAS_NOT_CONFIGURED(ErrorCtx), ?ERR(?ERR_ATM_OPENFAAS_NOT_CONFIGURED_TYPE, undefined, ErrorCtx)).
+
+-define(ERR_ATM_OPENFAAS_QUERY_FAILED(Reason), ?ERR(?ERR_ATM_OPENFAAS_QUERY_FAILED_TYPE, {Reason})).
+-define(ERR_ATM_OPENFAAS_QUERY_FAILED(ErrorCtx, Reason), ?ERR(?ERR_ATM_OPENFAAS_QUERY_FAILED_TYPE, {Reason}, ErrorCtx)).
+
+-define(ERR_ATM_OPENFAAS_UNHEALTHY, ?ERR(?ERR_ATM_OPENFAAS_UNHEALTHY_TYPE)).
+-define(ERR_ATM_OPENFAAS_UNHEALTHY(ErrorCtx), ?ERR(?ERR_ATM_OPENFAAS_UNHEALTHY_TYPE, undefined, ErrorCtx)).
+
+-define(ERR_ATM_OPENFAAS_UNREACHABLE, ?ERR(?ERR_ATM_OPENFAAS_UNREACHABLE_TYPE)).
+-define(ERR_ATM_OPENFAAS_UNREACHABLE(ErrorCtx), ?ERR(?ERR_ATM_OPENFAAS_UNREACHABLE_TYPE, undefined, ErrorCtx)).
+
+-define(ERR_ATM_PARALLEL_BOX_EMPTY(AtmParallelBoxSchemaId), ?ERR(?ERR_ATM_PARALLEL_BOX_EMPTY_TYPE, {AtmParallelBoxSchemaId})).
+-define(ERR_ATM_PARALLEL_BOX_EMPTY(ErrorCtx, AtmParallelBoxSchemaId), ?ERR(?ERR_ATM_PARALLEL_BOX_EMPTY_TYPE, {AtmParallelBoxSchemaId}, ErrorCtx)).
+
+-define(ERR_ATM_PARALLEL_BOX_EXECUTION_CREATION_FAILED(AtmParallelBoxSchemaId, SpecificError), ?ERR(?ERR_ATM_PARALLEL_BOX_EXECUTION_CREATION_FAILED_TYPE, {AtmParallelBoxSchemaId, SpecificError})).
+-define(ERR_ATM_PARALLEL_BOX_EXECUTION_CREATION_FAILED(ErrorCtx, AtmParallelBoxSchemaId, SpecificError), ?ERR(?ERR_ATM_PARALLEL_BOX_EXECUTION_CREATION_FAILED_TYPE, {AtmParallelBoxSchemaId, SpecificError}, ErrorCtx)).
+
+-define(ERR_ATM_PARALLEL_BOX_EXECUTION_INITIATION_FAILED(AtmParallelBoxSchemaId, SpecificError), ?ERR(?ERR_ATM_PARALLEL_BOX_EXECUTION_INITIATION_FAILED_TYPE, {AtmParallelBoxSchemaId, SpecificError})).
+-define(ERR_ATM_PARALLEL_BOX_EXECUTION_INITIATION_FAILED(ErrorCtx, AtmParallelBoxSchemaId, SpecificError), ?ERR(?ERR_ATM_PARALLEL_BOX_EXECUTION_INITIATION_FAILED_TYPE, {AtmParallelBoxSchemaId, SpecificError}, ErrorCtx)).
+
+-define(ERR_ATM_STORE_CONTENT_NOT_SET(AtmStoreSchemaId), ?ERR(?ERR_ATM_STORE_CONTENT_NOT_SET_TYPE, {AtmStoreSchemaId})).
+-define(ERR_ATM_STORE_CONTENT_NOT_SET(ErrorCtx, AtmStoreSchemaId), ?ERR(?ERR_ATM_STORE_CONTENT_NOT_SET_TYPE, {AtmStoreSchemaId}, ErrorCtx)).
+
+-define(ERR_ATM_STORE_CREATION_FAILED(AtmStoreSchemaId, SpecificError), ?ERR(?ERR_ATM_STORE_CREATION_FAILED_TYPE, {AtmStoreSchemaId, SpecificError})).
+-define(ERR_ATM_STORE_CREATION_FAILED(ErrorCtx, AtmStoreSchemaId, SpecificError), ?ERR(?ERR_ATM_STORE_CREATION_FAILED_TYPE, {AtmStoreSchemaId, SpecificError}, ErrorCtx)).
+
+-define(ERR_ATM_STORE_FROZEN(AtmStoreSchemaId), ?ERR(?ERR_ATM_STORE_FROZEN_TYPE, {AtmStoreSchemaId})).
+-define(ERR_ATM_STORE_FROZEN(ErrorCtx, AtmStoreSchemaId), ?ERR(?ERR_ATM_STORE_FROZEN_TYPE, {AtmStoreSchemaId}, ErrorCtx)).
+
+-define(ERR_ATM_STORE_MISSING_REQUIRED_INITIAL_CONTENT, ?ERR(?ERR_ATM_STORE_MISSING_REQUIRED_INITIAL_CONTENT_TYPE)).
+-define(ERR_ATM_STORE_MISSING_REQUIRED_INITIAL_CONTENT(ErrorCtx), ?ERR(?ERR_ATM_STORE_MISSING_REQUIRED_INITIAL_CONTENT_TYPE, undefined, ErrorCtx)).
+
+-define(ERR_ATM_STORE_NOT_FOUND(AtmStoreSchemaId), ?ERR(?ERR_ATM_STORE_NOT_FOUND_TYPE, {AtmStoreSchemaId})).
+-define(ERR_ATM_STORE_NOT_FOUND(ErrorCtx, AtmStoreSchemaId), ?ERR(?ERR_ATM_STORE_NOT_FOUND_TYPE, {AtmStoreSchemaId}, ErrorCtx)).
+
+-define(ERR_ATM_STORE_TYPE_DISALLOWED(AtmStoreSchemaId, Allowed), ?ERR(?ERR_ATM_STORE_TYPE_DISALLOWED_TYPE, {AtmStoreSchemaId, Allowed})).
+-define(ERR_ATM_STORE_TYPE_DISALLOWED(ErrorCtx, AtmStoreSchemaId, Allowed), ?ERR(?ERR_ATM_STORE_TYPE_DISALLOWED_TYPE, {AtmStoreSchemaId, Allowed}, ErrorCtx)).
+
+-define(ERR_ATM_TASK_ARG_MAPPER_FOR_NONEXISTENT_LAMBDA_ARG(Argument), ?ERR(?ERR_ATM_TASK_ARG_MAPPER_FOR_NONEXISTENT_LAMBDA_ARG_TYPE, {Argument})).
+-define(ERR_ATM_TASK_ARG_MAPPER_FOR_NONEXISTENT_LAMBDA_ARG(ErrorCtx, Argument), ?ERR(?ERR_ATM_TASK_ARG_MAPPER_FOR_NONEXISTENT_LAMBDA_ARG_TYPE, {Argument}, ErrorCtx)).
+
+-define(ERR_ATM_TASK_ARG_MAPPER_FOR_REQUIRED_LAMBDA_ARG_MISSING(Argument), ?ERR(?ERR_ATM_TASK_ARG_MAPPER_FOR_REQUIRED_LAMBDA_ARG_MISSING_TYPE, {Argument})).
+-define(ERR_ATM_TASK_ARG_MAPPER_FOR_REQUIRED_LAMBDA_ARG_MISSING(ErrorCtx, Argument), ?ERR(?ERR_ATM_TASK_ARG_MAPPER_FOR_REQUIRED_LAMBDA_ARG_MISSING_TYPE, {Argument}, ErrorCtx)).
+
+-define(ERR_ATM_TASK_ARG_MAPPER_ITERATED_ITEM_QUERY_FAILED(Value, Query), ?ERR(?ERR_ATM_TASK_ARG_MAPPER_ITERATED_ITEM_QUERY_FAILED_TYPE, {Value, Query})).
+-define(ERR_ATM_TASK_ARG_MAPPER_ITERATED_ITEM_QUERY_FAILED(ErrorCtx, Value, Query), ?ERR(?ERR_ATM_TASK_ARG_MAPPER_ITERATED_ITEM_QUERY_FAILED_TYPE, {Value, Query}, ErrorCtx)).
+
+-define(ERR_ATM_TASK_ARG_MAPPER_UNSUPPORTED_VALUE_BUILDER(Type, Supported), ?ERR(?ERR_ATM_TASK_ARG_MAPPER_UNSUPPORTED_VALUE_BUILDER_TYPE, {Type, Supported})).
+-define(ERR_ATM_TASK_ARG_MAPPER_UNSUPPORTED_VALUE_BUILDER(ErrorCtx, Type, Supported), ?ERR(?ERR_ATM_TASK_ARG_MAPPER_UNSUPPORTED_VALUE_BUILDER_TYPE, {Type, Supported}, ErrorCtx)).
+
+-define(ERR_ATM_TASK_ARG_MAPPING_FAILED(Argument, SpecificError), ?ERR(?ERR_ATM_TASK_ARG_MAPPING_FAILED_TYPE, {Argument, SpecificError})).
+-define(ERR_ATM_TASK_ARG_MAPPING_FAILED(ErrorCtx, Argument, SpecificError), ?ERR(?ERR_ATM_TASK_ARG_MAPPING_FAILED_TYPE, {Argument, SpecificError}, ErrorCtx)).
+
+-define(ERR_ATM_TASK_EXECUTION_CREATION_FAILED(AtmTaskSchemaId, SpecificError), ?ERR(?ERR_ATM_TASK_EXECUTION_CREATION_FAILED_TYPE, {AtmTaskSchemaId, SpecificError})).
+-define(ERR_ATM_TASK_EXECUTION_CREATION_FAILED(ErrorCtx, AtmTaskSchemaId, SpecificError), ?ERR(?ERR_ATM_TASK_EXECUTION_CREATION_FAILED_TYPE, {AtmTaskSchemaId, SpecificError}, ErrorCtx)).
+
+-define(ERR_ATM_TASK_EXECUTION_INITIATION_FAILED(AtmTaskSchemaId, SpecificError), ?ERR(?ERR_ATM_TASK_EXECUTION_INITIATION_FAILED_TYPE, {AtmTaskSchemaId, SpecificError})).
+-define(ERR_ATM_TASK_EXECUTION_INITIATION_FAILED(ErrorCtx, AtmTaskSchemaId, SpecificError), ?ERR(?ERR_ATM_TASK_EXECUTION_INITIATION_FAILED_TYPE, {AtmTaskSchemaId, SpecificError}, ErrorCtx)).
+
+-define(ERR_ATM_TASK_EXECUTION_STOPPED, ?ERR(?ERR_ATM_TASK_EXECUTION_STOPPED_TYPE)).
+-define(ERR_ATM_TASK_EXECUTION_STOPPED(ErrorCtx), ?ERR(?ERR_ATM_TASK_EXECUTION_STOPPED_TYPE, undefined, ErrorCtx)).
+
+-define(ERR_ATM_TASK_RESULT_DISPATCH_FAILED(AtmStoreSchemaId, SpecificError), ?ERR(?ERR_ATM_TASK_RESULT_DISPATCH_FAILED_TYPE, {AtmStoreSchemaId, SpecificError})).
+-define(ERR_ATM_TASK_RESULT_DISPATCH_FAILED(ErrorCtx, AtmStoreSchemaId, SpecificError), ?ERR(?ERR_ATM_TASK_RESULT_DISPATCH_FAILED_TYPE, {AtmStoreSchemaId, SpecificError}, ErrorCtx)).
+
+-define(ERR_ATM_TASK_RESULT_MAPPING_FAILED(Result, SpecificError), ?ERR(?ERR_ATM_TASK_RESULT_MAPPING_FAILED_TYPE, {Result, SpecificError})).
+-define(ERR_ATM_TASK_RESULT_MAPPING_FAILED(ErrorCtx, Result, SpecificError), ?ERR(?ERR_ATM_TASK_RESULT_MAPPING_FAILED_TYPE, {Result, SpecificError}, ErrorCtx)).
+
+-define(ERR_ATM_TASK_RESULT_MISSING(MissingResultName, ReceivedResultNames), ?ERR(?ERR_ATM_TASK_RESULT_MISSING_TYPE, {MissingResultName, ReceivedResultNames})).
+-define(ERR_ATM_TASK_RESULT_MISSING(ErrorCtx, MissingResultName, ReceivedResultNames), ?ERR(?ERR_ATM_TASK_RESULT_MISSING_TYPE, {MissingResultName, ReceivedResultNames}, ErrorCtx)).
+
+-define(ERR_ATM_UNSUPPORTED_DATA_TYPE(Type, Allowed), ?ERR(?ERR_ATM_UNSUPPORTED_DATA_TYPE_TYPE, {Type, Allowed})).
+-define(ERR_ATM_UNSUPPORTED_DATA_TYPE(ErrorCtx, Type, Allowed), ?ERR(?ERR_ATM_UNSUPPORTED_DATA_TYPE_TYPE, {Type, Allowed}, ErrorCtx)).
+
+-define(ERR_ATM_WORKFLOW_EMPTY, ?ERR(?ERR_ATM_WORKFLOW_EMPTY_TYPE)).
+-define(ERR_ATM_WORKFLOW_EMPTY(ErrorCtx), ?ERR(?ERR_ATM_WORKFLOW_EMPTY_TYPE, undefined, ErrorCtx)).
+
+-define(ERR_ATM_WORKFLOW_EXECUTION_ENDED, ?ERR(?ERR_ATM_WORKFLOW_EXECUTION_ENDED_TYPE)).
+-define(ERR_ATM_WORKFLOW_EXECUTION_ENDED(ErrorCtx), ?ERR(?ERR_ATM_WORKFLOW_EXECUTION_ENDED_TYPE, undefined, ErrorCtx)).
+
+-define(ERR_ATM_WORKFLOW_EXECUTION_NOT_ENDED, ?ERR(?ERR_ATM_WORKFLOW_EXECUTION_NOT_ENDED_TYPE)).
+-define(ERR_ATM_WORKFLOW_EXECUTION_NOT_ENDED(ErrorCtx), ?ERR(?ERR_ATM_WORKFLOW_EXECUTION_NOT_ENDED_TYPE, undefined, ErrorCtx)).
+
+-define(ERR_ATM_WORKFLOW_EXECUTION_NOT_RESUMABLE, ?ERR(?ERR_ATM_WORKFLOW_EXECUTION_NOT_RESUMABLE_TYPE)).
+-define(ERR_ATM_WORKFLOW_EXECUTION_NOT_RESUMABLE(ErrorCtx), ?ERR(?ERR_ATM_WORKFLOW_EXECUTION_NOT_RESUMABLE_TYPE, undefined, ErrorCtx)).
+
+-define(ERR_ATM_WORKFLOW_EXECUTION_NOT_STOPPED, ?ERR(?ERR_ATM_WORKFLOW_EXECUTION_NOT_STOPPED_TYPE)).
+-define(ERR_ATM_WORKFLOW_EXECUTION_NOT_STOPPED(ErrorCtx), ?ERR(?ERR_ATM_WORKFLOW_EXECUTION_NOT_STOPPED_TYPE, undefined, ErrorCtx)).
+
+-define(ERR_ATM_WORKFLOW_EXECUTION_STOPPED, ?ERR(?ERR_ATM_WORKFLOW_EXECUTION_STOPPED_TYPE)).
+-define(ERR_ATM_WORKFLOW_EXECUTION_STOPPED(ErrorCtx), ?ERR(?ERR_ATM_WORKFLOW_EXECUTION_STOPPED_TYPE, undefined, ErrorCtx)).
+
+-define(ERR_ATM_WORKFLOW_EXECUTION_STOPPING, ?ERR(?ERR_ATM_WORKFLOW_EXECUTION_STOPPING_TYPE)).
+-define(ERR_ATM_WORKFLOW_EXECUTION_STOPPING(ErrorCtx), ?ERR(?ERR_ATM_WORKFLOW_EXECUTION_STOPPING_TYPE, undefined, ErrorCtx)).
+
+
+%%--------------------------------------------------------------------
+%% op_worker/dir_stats errors
+%%--------------------------------------------------------------------
+-define(ERR_DIR_STATS_DISABLED_FOR_SPACE, ?ERR(?ERR_DIR_STATS_DISABLED_FOR_SPACE_TYPE)).
+-define(ERR_DIR_STATS_DISABLED_FOR_SPACE(ErrorCtx), ?ERR(?ERR_DIR_STATS_DISABLED_FOR_SPACE_TYPE, undefined, ErrorCtx)).
+
+-define(ERR_DIR_STATS_NOT_READY, ?ERR(?ERR_DIR_STATS_NOT_READY_TYPE)).
+-define(ERR_DIR_STATS_NOT_READY(ErrorCtx), ?ERR(?ERR_DIR_STATS_NOT_READY_TYPE, undefined, ErrorCtx)).
+
+
+%%--------------------------------------------------------------------
+%% op_worker/storage errors
+%%--------------------------------------------------------------------
+-define(ERR_AUTO_STORAGE_IMPORT_NOT_SUPPORTED(StorageId, SupportedStorages, SupportedObjectStorages), ?ERR(?ERR_AUTO_STORAGE_IMPORT_NOT_SUPPORTED_TYPE, {StorageId, SupportedStorages, SupportedObjectStorages})).
+-define(ERR_AUTO_STORAGE_IMPORT_NOT_SUPPORTED(ErrorCtx, StorageId, SupportedStorages, SupportedObjectStorages), ?ERR(?ERR_AUTO_STORAGE_IMPORT_NOT_SUPPORTED_TYPE, {StorageId, SupportedStorages, SupportedObjectStorages}, ErrorCtx)).
+
+-define(ERR_NOT_A_LOCAL_STORAGE_SUPPORTING_SPACE(ProviderId, StorageId, SpaceId), ?ERR(?ERR_NOT_A_LOCAL_STORAGE_SUPPORTING_SPACE_TYPE, {ProviderId, StorageId, SpaceId})).
+-define(ERR_NOT_A_LOCAL_STORAGE_SUPPORTING_SPACE(ErrorCtx, ProviderId, StorageId, SpaceId), ?ERR(?ERR_NOT_A_LOCAL_STORAGE_SUPPORTING_SPACE_TYPE, {ProviderId, StorageId, SpaceId}, ErrorCtx)).
+
+-define(ERR_REQUIRES_AUTO_STORAGE_IMPORT_MODE, ?ERR(?ERR_REQUIRES_AUTO_STORAGE_IMPORT_MODE_TYPE)).
+-define(ERR_REQUIRES_AUTO_STORAGE_IMPORT_MODE(ErrorCtx), ?ERR(?ERR_REQUIRES_AUTO_STORAGE_IMPORT_MODE_TYPE, undefined, ErrorCtx)).
+
+-define(ERR_REQUIRES_IMPORTED_STORAGE(StorageId), ?ERR(?ERR_REQUIRES_IMPORTED_STORAGE_TYPE, {StorageId})).
+-define(ERR_REQUIRES_IMPORTED_STORAGE(ErrorCtx, StorageId), ?ERR(?ERR_REQUIRES_IMPORTED_STORAGE_TYPE, {StorageId}, ErrorCtx)).
+
+-define(ERR_REQUIRES_NON_IMPORTED_STORAGE(StorageId), ?ERR(?ERR_REQUIRES_NON_IMPORTED_STORAGE_TYPE, {StorageId})).
+-define(ERR_REQUIRES_NON_IMPORTED_STORAGE(ErrorCtx, StorageId), ?ERR(?ERR_REQUIRES_NON_IMPORTED_STORAGE_TYPE, {StorageId}, ErrorCtx)).
+
+-define(ERR_REQUIRES_POSIX_COMPATIBLE_STORAGE(StorageId, PosixCompatibleStorages), ?ERR(?ERR_REQUIRES_POSIX_COMPATIBLE_STORAGE_TYPE, {StorageId, PosixCompatibleStorages})).
+-define(ERR_REQUIRES_POSIX_COMPATIBLE_STORAGE(ErrorCtx, StorageId, PosixCompatibleStorages), ?ERR(?ERR_REQUIRES_POSIX_COMPATIBLE_STORAGE_TYPE, {StorageId, PosixCompatibleStorages}, ErrorCtx)).
+
+-define(ERR_REQUIRES_READONLY_STORAGE(StorageIdOrType), ?ERR(?ERR_REQUIRES_READONLY_STORAGE_TYPE, {StorageIdOrType})).
+-define(ERR_REQUIRES_READONLY_STORAGE(ErrorCtx, StorageIdOrType), ?ERR(?ERR_REQUIRES_READONLY_STORAGE_TYPE, {StorageIdOrType}, ErrorCtx)).
+
+-define(ERR_STORAGE_IMPORT_NOT_SUPPORTED(StorageId, ObjectStorages), ?ERR(?ERR_STORAGE_IMPORT_NOT_SUPPORTED_TYPE, {StorageId, ObjectStorages})).
+-define(ERR_STORAGE_IMPORT_NOT_SUPPORTED(ErrorCtx, StorageId, ObjectStorages), ?ERR(?ERR_STORAGE_IMPORT_NOT_SUPPORTED_TYPE, {StorageId, ObjectStorages}, ErrorCtx)).
+
+-define(ERR_STORAGE_IN_USE, ?ERR(?ERR_STORAGE_IN_USE_TYPE)).
+-define(ERR_STORAGE_IN_USE(ErrorCtx), ?ERR(?ERR_STORAGE_IN_USE_TYPE, undefined, ErrorCtx)).
+
+-define(ERR_STORAGE_TEST_FAILED(Operation), ?ERR(?ERR_STORAGE_TEST_FAILED_TYPE, {Operation})).
+-define(ERR_STORAGE_TEST_FAILED(ErrorCtx, Operation), ?ERR(?ERR_STORAGE_TEST_FAILED_TYPE, {Operation}, ErrorCtx)).
+
+
+%%--------------------------------------------------------------------
+%% op_worker/transfer errors
+%%--------------------------------------------------------------------
+-define(ERR_TRANSFER_ALREADY_ENDED, ?ERR(?ERR_TRANSFER_ALREADY_ENDED_TYPE)).
+-define(ERR_TRANSFER_ALREADY_ENDED(ErrorCtx), ?ERR(?ERR_TRANSFER_ALREADY_ENDED_TYPE, undefined, ErrorCtx)).
+
+-define(ERR_TRANSFER_NOT_ENDED, ?ERR(?ERR_TRANSFER_NOT_ENDED_TYPE)).
+-define(ERR_TRANSFER_NOT_ENDED(ErrorCtx), ?ERR(?ERR_TRANSFER_NOT_ENDED_TYPE, undefined, ErrorCtx)).
+
+
+%%--------------------------------------------------------------------
+%% op_worker/view errors
+%%--------------------------------------------------------------------
+-define(ERR_VIEW_NOT_EXISTS_ON(ProviderId), ?ERR(?ERR_VIEW_NOT_EXISTS_ON_TYPE, {ProviderId})).
+-define(ERR_VIEW_NOT_EXISTS_ON(ErrorCtx, ProviderId), ?ERR(?ERR_VIEW_NOT_EXISTS_ON_TYPE, {ProviderId}, ErrorCtx)).
+
+-define(ERR_VIEW_QUERY_FAILED(Category, Description), ?ERR(?ERR_VIEW_QUERY_FAILED_TYPE, {Category, Description})).
+-define(ERR_VIEW_QUERY_FAILED(ErrorCtx, Category, Description), ?ERR(?ERR_VIEW_QUERY_FAILED_TYPE, {Category, Description}, ErrorCtx)).
+
+
+%%--------------------------------------------------------------------
+%% oz_worker errors
+%%--------------------------------------------------------------------
+-define(ERR_ATM_LAMBDA_IN_USE(AtmWorkflowSchemas), ?ERR(?ERR_ATM_LAMBDA_IN_USE_TYPE, {AtmWorkflowSchemas})).
+-define(ERR_ATM_LAMBDA_IN_USE(ErrorCtx, AtmWorkflowSchemas), ?ERR(?ERR_ATM_LAMBDA_IN_USE_TYPE, {AtmWorkflowSchemas}, ErrorCtx)).
+
+-define(ERR_BASIC_AUTH_DISABLED, ?ERR(?ERR_BASIC_AUTH_DISABLED_TYPE)).
+-define(ERR_BASIC_AUTH_DISABLED(ErrorCtx), ?ERR(?ERR_BASIC_AUTH_DISABLED_TYPE, undefined, ErrorCtx)).
+
+-define(ERR_BASIC_AUTH_NOT_SUPPORTED, ?ERR(?ERR_BASIC_AUTH_NOT_SUPPORTED_TYPE)).
+-define(ERR_BASIC_AUTH_NOT_SUPPORTED(ErrorCtx), ?ERR(?ERR_BASIC_AUTH_NOT_SUPPORTED_TYPE, undefined, ErrorCtx)).
+
+-define(ERR_CANNOT_ADD_RELATION_TO_SELF, ?ERR(?ERR_CANNOT_ADD_RELATION_TO_SELF_TYPE)).
+-define(ERR_CANNOT_ADD_RELATION_TO_SELF(ErrorCtx), ?ERR(?ERR_CANNOT_ADD_RELATION_TO_SELF_TYPE, undefined, ErrorCtx)).
+
+-define(ERR_CANNOT_DELETE_ENTITY(EntityType, EntityId), ?ERR(?ERR_CANNOT_DELETE_ENTITY_TYPE, {EntityType, EntityId})).
+-define(ERR_CANNOT_DELETE_ENTITY(ErrorCtx, EntityType, EntityId), ?ERR(?ERR_CANNOT_DELETE_ENTITY_TYPE, {EntityType, EntityId}, ErrorCtx)).
+
+-define(ERR_CANNOT_DELETE_NON_EMPTY_HANDLE_SERVICE, ?ERR(?ERR_CANNOT_DELETE_NON_EMPTY_HANDLE_SERVICE_TYPE)).
+-define(ERR_CANNOT_DELETE_NON_EMPTY_HANDLE_SERVICE(ErrorCtx), ?ERR(?ERR_CANNOT_DELETE_NON_EMPTY_HANDLE_SERVICE_TYPE, undefined, ErrorCtx)).
+
+-define(ERR_CANNOT_REMOVE_LAST_OWNER(EntityType, EntityId), ?ERR(?ERR_CANNOT_REMOVE_LAST_OWNER_TYPE, {EntityType, EntityId})).
+-define(ERR_CANNOT_REMOVE_LAST_OWNER(ErrorCtx, EntityType, EntityId), ?ERR(?ERR_CANNOT_REMOVE_LAST_OWNER_TYPE, {EntityType, EntityId}, ErrorCtx)).
+
+-define(ERR_PROTECTED_GROUP, ?ERR(?ERR_PROTECTED_GROUP_TYPE)).
+-define(ERR_PROTECTED_GROUP(ErrorCtx), ?ERR(?ERR_PROTECTED_GROUP_TYPE, undefined, ErrorCtx)).
+
+-define(ERR_RELATION_ALREADY_EXISTS(ChildType, ChildId, ParentType, ParentId), ?ERR(?ERR_RELATION_ALREADY_EXISTS_TYPE, {ChildType, ChildId, ParentType, ParentId})).
+-define(ERR_RELATION_ALREADY_EXISTS(ErrorCtx, ChildType, ChildId, ParentType, ParentId), ?ERR(?ERR_RELATION_ALREADY_EXISTS_TYPE, {ChildType, ChildId, ParentType, ParentId}, ErrorCtx)).
+
+-define(ERR_RELATION_DOES_NOT_EXIST(ChildType, ChildId, ParentType, ParentId), ?ERR(?ERR_RELATION_DOES_NOT_EXIST_TYPE, {ChildType, ChildId, ParentType, ParentId})).
+-define(ERR_RELATION_DOES_NOT_EXIST(ErrorCtx, ChildType, ChildId, ParentType, ParentId), ?ERR(?ERR_RELATION_DOES_NOT_EXIST_TYPE, {ChildType, ChildId, ParentType, ParentId}, ErrorCtx)).
+
+
+%%--------------------------------------------------------------------
+%% oz_worker/space errors
+%%--------------------------------------------------------------------
+-define(ERR_SPACE_ALREADY_SUPPORTED_WITH_IMPORTED_STORAGE(SpaceId, StorageId), ?ERR(?ERR_SPACE_ALREADY_SUPPORTED_WITH_IMPORTED_STORAGE_TYPE, {SpaceId, StorageId})).
+-define(ERR_SPACE_ALREADY_SUPPORTED_WITH_IMPORTED_STORAGE(ErrorCtx, SpaceId, StorageId), ?ERR(?ERR_SPACE_ALREADY_SUPPORTED_WITH_IMPORTED_STORAGE_TYPE, {SpaceId, StorageId}, ErrorCtx)).
+
+-define(ERR_SPACE_MARKETPLACE_DISABLED, ?ERR(?ERR_SPACE_MARKETPLACE_DISABLED_TYPE)).
+-define(ERR_SPACE_MARKETPLACE_DISABLED(ErrorCtx), ?ERR(?ERR_SPACE_MARKETPLACE_DISABLED_TYPE, undefined, ErrorCtx)).
+
+
+%%--------------------------------------------------------------------
+%% oz_worker/subdomain errors
+%%--------------------------------------------------------------------
+-define(ERR_SUBDOMAIN_DELEGATION_DISABLED, ?ERR(?ERR_SUBDOMAIN_DELEGATION_DISABLED_TYPE)).
+-define(ERR_SUBDOMAIN_DELEGATION_DISABLED(ErrorCtx), ?ERR(?ERR_SUBDOMAIN_DELEGATION_DISABLED_TYPE, undefined, ErrorCtx)).
+
+-define(ERR_SUBDOMAIN_DELEGATION_NOT_SUPPORTED, ?ERR(?ERR_SUBDOMAIN_DELEGATION_NOT_SUPPORTED_TYPE)).
+-define(ERR_SUBDOMAIN_DELEGATION_NOT_SUPPORTED(ErrorCtx), ?ERR(?ERR_SUBDOMAIN_DELEGATION_NOT_SUPPORTED_TYPE, undefined, ErrorCtx)).
+
+
+%%--------------------------------------------------------------------
+%% posix errors
+%%--------------------------------------------------------------------
+-define(ERR_POSIX(Errno), ?ERR(?ERR_POSIX_TYPE, {Errno})).
+-define(ERR_POSIX(ErrorCtx, Errno), ?ERR(?ERR_POSIX_TYPE, {Errno}, ErrorCtx)).
+
 
 -endif.
-

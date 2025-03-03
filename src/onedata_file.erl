@@ -138,7 +138,7 @@ sanitize_attr_names(DataKey, Attributes, AttrGeneration, AllowedAttributes) ->
     case Result of
         {ok, TranslatedAttrs, []} -> TranslatedAttrs;
         {ok, TranslatedAttrs, Xattrs} -> [?attr_xattrs(Xattrs) | TranslatedAttrs];
-        {error, AllowedValuesJson} -> throw(?ERROR_BAD_VALUE_NOT_ALLOWED(DataKey, AllowedValuesJson))
+        {error, AllowedValuesJson} -> throw(?ERR_BAD_VALUE_NOT_ALLOWED(?err_ctx(), DataKey, AllowedValuesJson))
     end.
 
 

@@ -38,10 +38,10 @@
         try
             Expr
         catch
-            Class:Reason:Stacktrace ->
+            Class__:Reason__:Stacktrace__ ->
                 ?ct_pal_exception(
                     "Test crashed!",
-                    Class, Reason, Stacktrace
+                    Class__, Reason__, Stacktrace__
                 ),
                 error(test_crashed)
         end
@@ -64,10 +64,10 @@ end).
         try
             Expr
         catch
-            Class:Reason:Stacktrace ->
+            Class__:Reason__:Stacktrace__ ->
                 ?eunit_print_exception(
                     "Test crashed!",
-                    Class, Reason, Stacktrace
+                    Class__, Reason__, Stacktrace__
                 ),
                 error(test_crashed)
         end

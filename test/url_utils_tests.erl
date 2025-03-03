@@ -132,7 +132,7 @@ correct_url_infer_components_test_() ->
 
 incorrect_url_infer_components_test_() ->
     [
-        ?_assertThrow(?ERROR_MALFORMED_DATA, url_utils:infer_components(Url))
+        ?_assertThrow(?ERR_MALFORMED_DATA, url_utils:infer_components(Url))
         || Url <- ?INCORRECT_URL_BATCH
     ].
 

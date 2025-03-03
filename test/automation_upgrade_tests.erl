@@ -249,7 +249,7 @@ load_deprecated_json_data_spec_test_() ->
             })
         ),
         ?_assertException(
-            throw, ?ERROR_BAD_VALUE_NOT_ALLOWED(<<"attributes">>, _),
+            throw, ?ERR_BAD_VALUE_NOT_ALLOWED(<<"attributes">>, _),
             U(#{
                 <<"type">> => <<"file">>,
                 <<"valueConstraints">> => #{

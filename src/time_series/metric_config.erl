@@ -19,6 +19,9 @@
 -include("errors.hrl").
 
 
+%% API
+-export([to_binary/1]).
+
 %% Jsonable record callbacks
 -export([to_json/1, from_json/1]).
 
@@ -36,6 +39,18 @@
 
 -type record() :: #metric_config{}.
 -export_type([record/0]).
+
+
+%%%===================================================================
+%%% API
+%%%===================================================================
+
+
+-spec to_binary(record()) -> binary().
+to_binary(#metric_config{resolution = Resolution, retention = Retention, aggregator = Aggregator}) ->
+    str_utils:format_bin("metric_config{resolution = ~B, retention = ~B, aggregator = ~ts}", [
+        Resolution, Retention, aggregator_to_json(Aggregator)
+    ]).
 
 
 %%%===================================================================
@@ -118,6 +133,6 @@ decode(skip_validation, RecordJson) ->
 decode(validate, RecordJson) ->
     Spec = decode(skip_validation, RecordJson),
     lists:member(Spec#metric_config.resolution, ?ALLOWED_METRIC_RESOLUTIONS) orelse throw(
-        ?ERROR_BAD_VALUE_NOT_ALLOWED(<<"resolution">>, ?ALLOWED_METRIC_RESOLUTIONS)
+        ?ERR_BAD_VALUE_NOT_ALLOWED(?err_ctx(), <<"resolution">>, ?ALLOWED_METRIC_RESOLUTIONS)
     ),
     Spec.
