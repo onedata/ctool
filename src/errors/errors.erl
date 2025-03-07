@@ -45,6 +45,7 @@
 
 
 -spec is_known_error(term()) -> boolean().
+% TODO VFS-12637 - remove below case after below errors are generated in new format
 is_known_error(?ERROR_ALREADY_EXISTS) -> true;
 is_known_error(?ERROR_NOT_FOUND) -> true;
 is_known_error(?ERROR_NOT_SUPPORTED) -> true;
@@ -76,6 +77,7 @@ to_json(?ERR_UNRECOGNIZED_ERROR(ErrorAsJson)) ->
 to_json(Error = ?ERR(Type)) ->
     Type:to_json(Error);
 
+% TODO VFS-12637 - remove below cases after below errors are generated in new format
 to_json(Error = ?ERROR_ALREADY_EXISTS) ->
     od_error_already_exists:to_json(Error);
 
@@ -116,6 +118,7 @@ from_json(ErrorJson) ->
 to_http_code(?ERR_UNRECOGNIZED_ERROR(_)) -> 
     ?HTTP_500_INTERNAL_SERVER_ERROR;
 
+% TODO VFS-12637 - remove below cases after below errors are generated in new format
 to_http_code(Error = ?ERROR_ALREADY_EXISTS) ->
     od_error_already_exists:to_http_code(Error);
 
@@ -136,6 +139,7 @@ to_http_code(Error = ?ERR(Type)) ->
 to_errno(?ERR_UNRECOGNIZED_ERROR(_)) -> 
     {true, ?EAGAIN};
 
+% TODO VFS-12637 - remove below cases after below errors are generated in new format
 to_errno(Error = ?ERROR_ALREADY_EXISTS) ->
     od_error_already_exists:to_errno(Error);
 
