@@ -50,8 +50,12 @@
 
 -export_type([http_code/0, errno/0, ctx/0]).
 
+% TODO VFS-12637 - remove below type after below errors are generated in new format
 -type deprecated_error() ::
-    ?ERROR_ALREADY_EXISTS | ?ERROR_NOT_FOUND | ?ERROR_NOT_SUPPORTED | ?ERROR_TIMEOUT.
+    od_error_already_exists:t() | 
+    od_error_not_found:t() | 
+    od_error_not_supported:t() | 
+    od_error_timeout:t().
 
 -type auth_token_error() ::
     od_error_bad_consumer_token:t() |
@@ -428,4 +432,4 @@ format_csv(Values) ->
 %%--------------------------------------------------------------------
 -spec version() -> binary().
 version() ->
-    <<"49d6163e">>.
+    <<"f335ba6a">>.
