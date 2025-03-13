@@ -59,8 +59,6 @@
 -define(attr_owner_id, owner_id).
 -define(attr_hardlink_count, hardlink_count).
 -define(attr_symlink_value, symlink_value).
--define(attr_has_custom_metadata, has_custom_metadata).
--define(attr_has_json_metadata, has_json_metadata).
 -define(attr_eff_protection_flags, eff_protection_flags).
 -define(attr_eff_dataset_protection_flags, eff_dataset_protection_flags).
 -define(attr_eff_dataset_inheritance_path, eff_dataset_inheritance_path).
@@ -69,6 +67,8 @@
 -define(attr_recall_root_id, recall_root_id).
 -define(attr_is_deleted, is_deleted).
 -define(attr_conflicting_files, conflicting_files).
+-define(attr_has_custom_metadata, has_custom_metadata).
+-define(attr_has_json_metadata, has_json_metadata).
 -define(attr_json_metadata, json_metadata).
 -define(attr_xattrs(XattrNames), {xattrs, XattrNames}).
 

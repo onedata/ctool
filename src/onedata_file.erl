@@ -183,14 +183,14 @@ attr_name_from_json(<<"directShareIds">>)            -> ?attr_shares;
 attr_name_from_json(<<"ownerUserId">>)               -> ?attr_owner_id;
 attr_name_from_json(<<"hardlinkCount">>)             -> ?attr_hardlink_count;
 attr_name_from_json(<<"symlinkValue">>)              -> ?attr_symlink_value;
-attr_name_from_json(<<"hasCustomMetadata">>)         -> ?attr_has_custom_metadata;
-attr_name_from_json(<<"hasJsonMetadata">>)           -> ?attr_has_json_metadata;
 attr_name_from_json(<<"effProtectionFlags">>)        -> ?attr_eff_protection_flags;
 attr_name_from_json(<<"effDatasetProtectionFlags">>) -> ?attr_eff_dataset_protection_flags;
 attr_name_from_json(<<"effDatasetInheritancePath">>) -> ?attr_eff_dataset_inheritance_path;
 attr_name_from_json(<<"effQosInheritancePath">>)     -> ?attr_eff_qos_inheritance_path;
 attr_name_from_json(<<"aggregateQosStatus">>)        -> ?attr_qos_status;
 attr_name_from_json(<<"archiveRecallRootFileId">>)   -> ?attr_recall_root_id;
+attr_name_from_json(<<"hasCustomMetadata">>)         -> ?attr_has_custom_metadata;
+attr_name_from_json(<<"hasJsonMetadata">>)           -> ?attr_has_json_metadata;
 attr_name_from_json(<<"jsonMetadata">>)              -> ?attr_json_metadata.
 
 
@@ -219,14 +219,14 @@ attr_name_to_json(?attr_shares)                       -> <<"directShareIds">>;
 attr_name_to_json(?attr_owner_id)                     -> <<"ownerUserId">>;
 attr_name_to_json(?attr_hardlink_count)               -> <<"hardlinkCount">>;
 attr_name_to_json(?attr_symlink_value)                -> <<"symlinkValue">>;
-attr_name_to_json(?attr_has_custom_metadata)          -> <<"hasCustomMetadata">>;
-attr_name_to_json(?attr_has_json_metadata)            -> <<"hasJsonMetadata">>;
 attr_name_to_json(?attr_eff_protection_flags)         -> <<"effProtectionFlags">>;
 attr_name_to_json(?attr_eff_dataset_protection_flags) -> <<"effDatasetProtectionFlags">>;
 attr_name_to_json(?attr_eff_dataset_inheritance_path) -> <<"effDatasetInheritancePath">>;
 attr_name_to_json(?attr_eff_qos_inheritance_path)     -> <<"effQosInheritancePath">>;
 attr_name_to_json(?attr_qos_status)                   -> <<"aggregateQosStatus">>;
 attr_name_to_json(?attr_recall_root_id)               -> <<"archiveRecallRootFileId">>;
+attr_name_to_json(?attr_has_custom_metadata)          -> <<"hasCustomMetadata">>;
+attr_name_to_json(?attr_has_json_metadata)            -> <<"hasJsonMetadata">>;
 attr_name_to_json(?attr_json_metadata)                -> <<"jsonMetadata">>.
 
 
