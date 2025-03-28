@@ -188,7 +188,7 @@ end).
 -define(report_internal_server_error(Message), ?report_internal_server_error(Message, [])).
 -define(report_internal_server_error(DetailsFormat, DetailsArgs), begin
     ((fun(ErrorRef) ->
-        ?error(onedata_logger:format_error_report(
+        ?error(onedata_logger:format_internal_server_error_report(
             ?MODULE, ?FUNCTION_NAME, ?FUNCTION_ARITY, ?LINE, DetailsFormat, DetailsArgs, ErrorRef
         )),
         ?ERR_INTERNAL_SERVER_ERROR(?err_ctx(), ErrorRef)

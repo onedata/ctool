@@ -20,7 +20,7 @@
 -export([process_info/1, process_info/2]).
 -export([ensure_defined/2, ensure_defined/3, undefined_to_null/1, null_to_undefined/1]).
 -export([convert_defined/2]).
--export([throttle/2, throttle/3]).
+-export([throttle/2, throttle/3, reset_throttle_interval/1]).
 -export([timeout/2, timeout/4]).
 -export([duration/1, adjust_duration/2]).
 -export([mkdtemp/0, mkdtemp/3, rmtempdir/1, run_with_tempdir/1]).
@@ -88,6 +88,13 @@ throttle(Identifier, Interval, Fun) when is_function(Fun, 0) ->
         {ok, Fun(), Interval}
     end),
     Res.
+
+
+%% @doc Resets the interval for the specified identifier - the next call to
+%% throttle/2,3 will be executed regardless of the time elapsed since the previous one.
+-spec reset_throttle_interval(term()) -> ok.
+reset_throttle_interval(Identifier) ->
+    node_cache:clear({throttle, Identifier}).
 
 
 %%--------------------------------------------------------------------
