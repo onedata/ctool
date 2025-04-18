@@ -51,4 +51,4 @@ to_http_code(_) ->
 
 -spec to_errno(t()) -> {true, od_error:errno()}.
 to_errno(_) ->
-    {true, ?EINVAL}.
+    {true, ?ENOENT}.
