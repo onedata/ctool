@@ -83,6 +83,7 @@ test_samples(#{<<"rest">> := RestApiSamplesJson}, AccessToken, HttpClientOpts, C
 %%% Internal functions
 %%%===================================================================
 
+
 %% @private
 -spec test_sample(
     rest_api_request_sample:record(),
@@ -106,6 +107,8 @@ test_sample(#rest_api_request_sample{
     verify_fun = VerifyFun
 }) ->
     try
+        check_content_type_header(Sample),
+
         UpdatedContext = SetupFun(Context),
 
         AuthHeader = case {RequiresAuthorization, AccessToken} of
@@ -165,3 +168,16 @@ normalize_method('PATCH') -> patch;
 normalize_method('POST') -> post;
 normalize_method('PUT') -> put;
 normalize_method('DELETE') -> delete.
+
+
+%% @private
+-spec check_content_type_header(rest_api_request_sample:record()) -> ok | no_return().
+check_content_type_header(#rest_api_request_sample{data = undefined}) ->
+    ok;
+check_content_type_header(#rest_api_request_sample{headers = Headers}) ->
+    case maps:find(<<"content-type">>, Headers) of
+        {ok, _} ->
+            ok;
+        error ->
+            error(content_type_header_required_for_request_samples_with_body)
+    end.
