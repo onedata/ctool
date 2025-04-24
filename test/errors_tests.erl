@@ -147,11 +147,11 @@ ctx_test_() ->
 
     {setup,
         fun() ->
-            ctool:set_env(error_ctx_service, Service),
-            ctool:set_env(error_ctx_service_id, ServiceId),
-            ctool:set_env(error_ctx_service_domain, ServiceDomain),
-            ctool:set_env(error_ctx_service_release_version, ServiceReleaseVersion),
-            ctool:set_env(error_ctx_service_build_version, ServiceBuildVersion),
+            ctool:set_env(onedata_service, Service),
+            ctool:set_env(onedata_service_id, ServiceId),
+            ctool:set_env(onedata_service_domain, ServiceDomain),
+            ctool:set_env(onedata_service_release_version, ServiceReleaseVersion),
+            ctool:set_env(onedata_service_build_version, ServiceBuildVersion),
             clock_freezer_mock:setup_for_eunit([od_error])
         end,
         fun(_) ->

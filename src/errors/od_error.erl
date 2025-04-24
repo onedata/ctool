@@ -391,11 +391,11 @@ build_ctx(Module, Line) ->
         module = str_utils:to_binary(Module),
         line = Line,
         timestamp = global_clock:timestamp_millis(),
-        service = get_env(error_ctx_service),
-        service_id = to_binary_if_defined(get_env(error_ctx_service_id)),
-        service_domain = to_binary_if_defined(get_env(error_ctx_service_domain)),
-        service_release_version = to_binary_if_defined(get_env(error_ctx_service_release_version)),
-        service_build_version = to_binary_if_defined(get_env(error_ctx_service_build_version))
+        service = get_env(onedata_service),
+        service_id = to_binary_if_defined(get_env(onedata_service_id)),
+        service_domain = to_binary_if_defined(get_env(onedata_service_domain)),
+        service_release_version = to_binary_if_defined(get_env(onedata_service_release_version)),
+        service_build_version = to_binary_if_defined(get_env(onedata_service_build_version))
     }.
 
 
@@ -486,7 +486,7 @@ format_csv(Values) ->
 
 -spec onedata_errors_revision() -> binary().
 onedata_errors_revision() ->
-    <<"7653d642">>.
+    <<"ca3af8cb">>.
 
 
 %%%===================================================================
