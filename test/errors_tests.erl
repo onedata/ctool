@@ -13,6 +13,7 @@
 
 -ifdef(TEST).
 
+-include_lib("onedata.hrl").
 -include_lib("eunit/include/eunit.hrl").
 -include("test/test_utils.hrl").
 -include("time_series/common.hrl").
@@ -27,6 +28,11 @@
     deprecated_error = undefined :: undefined | deprecated_errors:error(),
     deprecated_error_after_encoding_decoding = undefined :: undefined | deprecated_errors:error()
 }).
+
+
+%%%===================================================================
+%%% Tests
+%%%===================================================================
 
 
 assert_all_errors_are_tested_test() ->
@@ -132,8 +138,70 @@ http_code_test_() ->
     end, testcases()).
 
 
+ctx_test_() ->
+    Service = ?OP_WORKER,
+    ServiceId = <<"str">>,
+    ServiceDomain = <<"str.org">>,
+    ServiceReleaseVersion = <<"21.02rc3">>,
+    ServiceBuildVersion = <<"21.02rc3">>,
+
+    {setup,
+        fun() ->
+            ctool:set_env(onedata_service, Service),
+            ctool:set_env(onedata_service_id, ServiceId),
+            ctool:set_env(onedata_service_domain, ServiceDomain),
+            ctool:set_env(onedata_service_release_version, ServiceReleaseVersion),
+            ctool:set_env(onedata_service_build_version, ServiceBuildVersion),
+            clock_freezer_mock:setup_for_eunit([od_error])
+        end,
+        fun(_) ->
+            clock_freezer_mock:teardown_for_eunit()
+        end,
+        fun() ->
+            Line = ?LINE,
+            Module = ?MODULE,
+            CurrTime = clock_freezer_mock:current_time_millis(),
+
+            ExpCtx = #od_error_ctx{
+                onedata_errors_revision = od_error:onedata_errors_revision(),
+                module = str_utils:to_binary(Module),
+                line = Line,
+                timestamp = CurrTime,
+                service = Service,
+                service_id = ServiceId,
+                service_domain = ServiceDomain,
+                service_release_version = ServiceReleaseVersion,
+                service_build_version = ServiceBuildVersion
+            },
+            ExpCtxJson = #{
+                <<"onedataErrorsRevision">> => od_error:onedata_errors_revision(),
+                <<"module">> => str_utils:to_binary(Module),
+                <<"line">> => Line,
+                <<"timestamp">> => CurrTime,
+                <<"service">> => onedata:service_shortname(Service),
+                <<"serviceId">> => ServiceId,
+                <<"serviceDomain">> => ServiceDomain,
+                <<"serviceReleaseVersion">> => ServiceReleaseVersion,
+                <<"serviceBuildVersion">> => ServiceBuildVersion
+            },
+
+            Ctx = od_error:build_ctx(Module, Line),
+            ?assertEqual(ExpCtx, Ctx),
+
+            CtxJson = od_error:ctx_to_json(Ctx),
+            ?assertEqual(ExpCtxJson, CtxJson),
+
+            ?assertMatch(ExpCtx, od_error:ctx_from_json(CtxJson))
+        end
+    }.
+
+
 ctx_unknown_fields_test() ->
-    KnownKeys = [<<"module">>, <<"line">>, <<"timestamp">>, <<"version">>],
+    KnownKeys = [
+        <<"onedataErrorsRevision">>, <<"module">>, <<"line">>, <<"timestamp">>,
+        <<"service">>, <<"serviceId">>, <<"serviceDomain">>,
+        <<"serviceReleaseVersion">>, <<"serviceBuildVersion">>
+    ],
     UnknownFields = #{<<"key">> => <<"val">>},
     Error = ?ERR_FORBIDDEN(?UNDEFINED_ERR_CTX#od_error_ctx{unknown_fields = UnknownFields}),
 

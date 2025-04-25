@@ -25,7 +25,7 @@
     format_description/2,
     format_csv/1,
 
-    version/0
+    onedata_errors_revision/0
 ]).
 
 
@@ -362,13 +362,40 @@
 %%%===================================================================
 
 
+%%--------------------------------------------------------------------
+%% @doc
+%% Builds an error context record for error creation.
+%%
+%% ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ 
+%% @warning CRITICAL IMPLEMENTATION REQUIREMENT
+%% This function has strict requirements that MUST be followed to prevent 
+%% system crashes:
+%%
+%% Must only use simple functions that cannot throw onedata errors themselves.
+%% This is critical to prevent infinite recursion scenarios:
+%%   * Error context creation triggers an error
+%%   * Error creation requires new error context
+%%   * New context creation triggers the same error again
+%%   * Process repeats indefinitely
+%%
+%% @attention
+%% Violating these requirements can lead to system instability and crashes.
+%% This is not just a recommendation - it's a hard requirement for system stability.
+%% ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ 
+%% @end
+%%--------------------------------------------------------------------
 -spec build_ctx(module(), integer()) -> ctx().
 build_ctx(Module, Line) ->
     #od_error_ctx{
+        onedata_errors_revision = onedata_errors_revision(),
         module = str_utils:to_binary(Module),
         line = Line,
-        timestamp = native_node_clock:system_time_millis(),
-        version = version()
+        timestamp = global_clock:timestamp_millis(),
+        service = get_env(onedata_service),
+        service_id = to_binary_if_defined(get_env(onedata_service_id)),
+        service_domain = to_binary_if_defined(get_env(onedata_service_domain)),
+        service_release_version = to_binary_if_defined(get_env(onedata_service_release_version)),
+        service_build_version = to_binary_if_defined(get_env(onedata_service_build_version))
     }.
 
 
@@ -378,17 +405,30 @@ build_ctx(Module, Line) ->
 ctx_to_json(undefined) ->
     null;
 ctx_to_json(#od_error_ctx{
-    module = Module, 
+    onedata_errors_revision = Version,
+    module = Module,
     line = Line, 
-    timestamp = Timestamp, 
-    version = Version,
+    timestamp = Timestamp,
+    service = Service,
+    service_id = ServiceId,
+    service_domain = ServiceDomain,
+    service_release_version = ServiceReleaseVersion,
+    service_build_version = ServiceBuildVersion,
     unknown_fields = UnknownFields
 }) ->
     KnownValues = #{
+        <<"onedataErrorsRevision">> => utils:undefined_to_null(Version),
         <<"module">> => utils:undefined_to_null(Module),
         <<"line">> => utils:undefined_to_null(Line), 
         <<"timestamp">> => utils:undefined_to_null(Timestamp),
-        <<"version">> => utils:undefined_to_null(Version)
+        <<"service">> => case Service of
+            undefined -> null;
+            _ -> onedata:service_shortname(Service)
+        end,
+        <<"serviceId">> => utils:undefined_to_null(ServiceId),
+        <<"serviceDomain">> => utils:undefined_to_null(ServiceDomain),
+        <<"serviceReleaseVersion">> => utils:undefined_to_null(ServiceReleaseVersion),
+        <<"serviceBuildVersion">> => utils:undefined_to_null(ServiceBuildVersion)
     },
     % Preserve any unknown fields that might be present
     maps:merge(UnknownFields, KnownValues).
@@ -401,16 +441,35 @@ ctx_from_json(null) ->
     undefined;
 ctx_from_json(Json) ->
     % Extract known fields
-    KnownKeys = [<<"module">>, <<"line">>, <<"timestamp">>, <<"version">>],
+    KnownKeys = [
+        <<"onedataErrorsRevision">>, <<"module">>, <<"line">>, <<"timestamp">>,
+        <<"service">>, <<"serviceId">>, <<"serviceDomain">>,
+        <<"serviceReleaseVersion">>, <<"serviceBuildVersion">>
+    ],
     UnknownFields = maps:without(KnownKeys, Json),
 
     #od_error_ctx{
-        module = utils:null_to_undefined(maps:get(<<"module">>, Json, null)),
-        line = utils:null_to_undefined(maps:get(<<"line">>, Json, null)),
-        timestamp = utils:null_to_undefined(maps:get(<<"timestamp">>, Json, null)),
-        version = utils:null_to_undefined(maps:get(<<"version">>, Json, null)),
+        onedata_errors_revision = get_json_value_or_undefined(<<"onedataErrorsRevision">>, Json),
+        module = get_json_value_or_undefined(<<"module">>, Json),
+        line = get_json_value_or_undefined(<<"line">>, Json),
+        timestamp = get_json_value_or_undefined(<<"timestamp">>, Json),
+        service = case maps:get(<<"service">>, Json, null) of
+            null -> undefined;
+            Service -> onedata:service_by_shortname(Service)
+        end,
+        service_id = get_json_value_or_undefined(<<"serviceId">>, Json),
+        service_domain = get_json_value_or_undefined(<<"serviceDomain">>, Json),
+        service_release_version = get_json_value_or_undefined(<<"serviceReleaseVersion">>, Json),
+        service_build_version = get_json_value_or_undefined(<<"serviceBuildVersion">>, Json),
         unknown_fields = UnknownFields
     }.
+
+
+%% @private
+-spec get_json_value_or_undefined(binary(), json_utils:json_map()) -> 
+    undefined | json_utils:json_term().
+get_json_value_or_undefined(Key, JsonMap) ->
+    utils:null_to_undefined(maps:get(Key, JsonMap, null)).
 
 
 -spec format_description(string(), [term()]) -> binary().
@@ -425,11 +484,27 @@ format_csv(Values) ->
     str_utils:join_as_binaries(Values, <<", ">>).
 
 
-%%--------------------------------------------------------------------
-%% @doc
-%% Returns version of error definitions.
-%% @end
-%%--------------------------------------------------------------------
--spec version() -> binary().
-version() ->
-    <<"1ae16176">>.
+-spec onedata_errors_revision() -> binary().
+onedata_errors_revision() ->
+    <<"ca3af8cb">>.
+
+
+%%%===================================================================
+%%% Internal functions
+%%%===================================================================
+
+
+%% @private
+-spec get_env(atom()) -> term().
+get_env(Key) ->
+    try
+        ctool:get_env(Key, undefined)
+    catch _:_ ->
+        undefined
+    end.
+
+
+%% @private
+-spec to_binary_if_defined(term()) -> undefined | binary().
+to_binary_if_defined(undefined) -> undefined;
+to_binary_if_defined(Value) -> str_utils:to_binary(Value).

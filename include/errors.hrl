@@ -20,10 +20,18 @@
 
 
 -record(od_error_ctx, {
+    onedata_errors_revision :: undefined | binary(),
+
     module :: undefined | binary(),
     line :: undefined | integer(),
     timestamp :: undefined | time:millis(),
-    version :: undefined | binary(),
+
+    service :: undefined | onedata:service(),
+    service_id :: undefined | onedata:service_id(),
+    service_domain :: undefined | binary(),
+    service_release_version :: undefined | onedata:release_version(),
+    service_build_version :: undefined | binary(),
+
     unknown_fields = #{} :: json_utils:json_map()
 }).
 
@@ -37,10 +45,15 @@
 
 -define(UNDEFINED_ERR_CTX,
     #od_error_ctx{
+        onedata_errors_revision = undefined,
         module = undefined,
         line = undefined,
         timestamp = undefined,
-        version = undefined
+        service = undefined,
+        service_id = undefined,
+        service_domain = undefined,
+        service_release_version = undefined,
+        service_build_version = undefined
     }
 ).
 
