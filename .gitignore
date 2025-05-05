@@ -18,3 +18,5 @@ compile_commands.json
 
 test_distributed/logs
 test_distributed/cover_tmp.spec
+
+.errors_generated_from
