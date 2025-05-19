@@ -16,8 +16,9 @@
 
 -export([format/2]).
 
-%% one of "M", "A", "C", "E", "W", "N", "I", "D"
+%% one of "M", "A", "C", "E", "W", "N", "I", "D" (see function `level_to_label`)
 -type log_level_label() :: string().
+% for fields description see: https://www.erlang.org/doc/apps/kernel/logger_formatter.html#t:config/0
 -type formatter_config() :: #{
     chars_limit     => pos_integer() | unlimited,
     depth           => pos_integer() | unlimited,
@@ -29,7 +30,7 @@
     time_designator => byte(),
     time_offset     => integer() | [byte()]
 }.
--type template() :: [metakey() | {metakey(),template(),template()} | unicode:chardata()].
+-type template() :: [metakey() | {metakey(), template(), template()} | unicode:chardata()].
 -type metakey() :: atom() | [atom()].
 
 %%%===================================================================
@@ -38,7 +39,7 @@
 
 
 -spec format(logger:log_event(), formatter_config()) -> unicode:chardata().
-format(LogEvent = #{level:=Level, meta:=Meta}, Config) ->
+format(LogEvent = #{level := Level, meta := Meta}, Config) ->
     UpdatedConfig = Config#{
         single_line => false,
         template => customize_template(
@@ -100,5 +101,5 @@ format_timestamp(Option, Timestamp) ->
                 [Year, Month, Day, Hour, Minute, Second, Milliseconds]
             );
         without_date ->
-            str_utils:format("~2..0B:~2..0B:~2..0B.~3..0B",[Hour, Minute, Second, Milliseconds])
+            str_utils:format("~2..0B:~2..0B:~2..0B.~3..0B", [Hour, Minute, Second, Milliseconds])
     end.

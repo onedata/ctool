@@ -36,6 +36,23 @@
         % Available loglevels are 0-7, respectively: emergency, alert, critical, error, warning, notice, info, debug
         {default_loglevel, 6},
 
+        {logger_base_config, #{
+            % Maximum events to handle in 1000ms. Exceeding this limit pauses event processing.
+            burst_limit_max_count => 200,
+
+            % Threshold for switching to synchronous mode when the log queue exceeds this length.
+            % Returns to asynchronous mode when the queue shrinks below this threshold.
+            sync_mode_qlen => 500,
+
+            % Logs are ignored when the queue exceeds this length.
+            % Normal logging resumes when it shrinks.
+            drop_mode_qlen => 1000,
+
+            % When the queue exceeds this threshold, events are discarded in a flush loop.
+            % The handler's priority is increased to prevent new events during flush.
+            flush_qlen => 2000
+        }},
+
         {log_dir, "./log"},
 
 
@@ -147,5 +164,7 @@
         {geo_db_refresh_period_days, 3},
         % Backoff (in seconds) in case fetching a newer DB fails
         {geo_db_refresh_backoff_secs, 43200} % 12 hours
-    ]}
+    ]},
+
+    {mod, {ctool_app, []}}
 ]}.

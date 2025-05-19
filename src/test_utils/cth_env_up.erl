@@ -49,7 +49,7 @@ pre_init_per_suite(_Suite, Config, State) ->
         ok = test_utils:load_utility_modules(Config),
         {Config, State}
     catch Class:Reason:Stacktrace ->
-        ?error_exception("Failed to load modules during init_per_suite", Class, Reason, Stacktrace),
+        ?ct_pal_exception("Failed to load modules during init_per_suite", Class, Reason, Stacktrace),
         error(failed_to_load_modules)
     end.
 

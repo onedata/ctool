@@ -184,7 +184,7 @@ try_reusing_previous_env() ->
                 )),
                 {true, PreviousStartLog}
             catch Class:Reason:Stacktrace ->
-                ?error_exception("Unable to reuse the previous environment:", Class, Reason, Stacktrace),
+                ?ct_pal_exception("Unable to reuse the previous environment:", Class, Reason, Stacktrace),
                 ct:pal("Starting a new environment..."),
                 false
             end
@@ -444,7 +444,7 @@ load_modules(Nodes, Modules) ->
                     Node, code, load_binary, [Module, Filename, Binary], ?NODE_CALL_TIMEOUT
                 ))
             catch Class:Reason:Stacktrace ->
-                ?error_exception(
+                ?ct_pal_exception(
                     "Cannot load module '~w' on node ~w, does the module exist in 'test_distributed' directory?~n",
                     [Module, Node], Class, Reason, Stacktrace
                 ),

@@ -261,7 +261,7 @@ log_with_rotation(LogFile, Format, Args, MaxSize) ->
     ok.
 
 
--spec pr_stacktrace(stacktrace()) -> stacktrace().
+-spec pr_stacktrace(stacktrace()) -> string().
 pr_stacktrace(Stacktrace) ->
     Indent = "\n    ",
     lists:foldl(fun(Entry, Acc) ->
@@ -282,28 +282,16 @@ pr_stacktrace(Stacktrace, {Class, Reason}) ->
     pr_stacktrace(Stacktrace) ++  "\n" ++ io_lib:format("~ts:~tp", [Class, Reason]).
 
 
+% fixme wrzucić do app.src i tyla
+% fixme drop na error bardzo duży, nie chcemy gubić praktycznie nigdy
 -spec configure_logger() -> ok.
 configure_logger() ->
     logger:set_primary_config(level, debug),
+    % https://www.erlang.org/doc/apps/kernel/logger_filters.html#progress/2
     logger:add_primary_filter(progress, {fun logger_filters:progress/2, stop}),
 
     LogDir = ctool:get_env(log_dir),
-    Config = #{
-        % Maximum events to handle in 1000ms. Exceeding this limit pauses event processing.
-        burst_limit_max_count => 200,
-
-        % Threshold for switching to synchronous mode when the log queue exceeds this length.
-        % Returns to asynchronous mode when the queue shrinks below this threshold.
-        sync_mode_qlen => 500,
-
-        % Logs are ignored when the queue exceeds this length.
-        % Normal logging resumes when it shrinks.
-        drop_mode_qlen => 1000,
-
-        % When the queue exceeds this threshold, events are discarded in a flush loop.
-        % The handler's priority is increased to prevent new events during flush.
-        flush_qlen => 2000
-    },
+    Config = ctool:get_env(logger_base_config),
 
     FileFormat = {onedata_logger_formatter, #{
         max_size => 52428800,
@@ -328,7 +316,7 @@ configure_logger() ->
             })
     end,
 
-    logger:add_handler(console_backend, logger_std_h, #{
+    logger:add_handler(console_backend, logger_std_h, #{ % fixme rotation wszędzie (max_no_bytes, max_no_files)
         level => info,
         config => Config,
         filter_default => stop,
@@ -355,7 +343,9 @@ configure_logger() ->
         filter_default => stop,
         filters => Filters,
         formatter => FileFormat
-    }).
+    }),
+    ?emergency("!!!!!!!!!!!!!!!!onedata logger configure!!!!!!!!!!!!") % fixme
+.
 
 
 %%%===================================================================
