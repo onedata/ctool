@@ -18,10 +18,9 @@
 
 -export([format_generic_log/2, format_exception_log/10, format_deprecated_exception_log/7]).
 -export([format_internal_server_error_report/7]).
--export([should_log/1, log/3, log_with_rotation/4]).
+-export([log/3, log_with_rotation/4]).
 -export([set_loglevel/1, set_console_loglevel/1]).
 -export([get_current_loglevel/0, get_default_loglevel/0, get_console_loglevel/0]).
--export([loglevel_int_to_atom/1, loglevel_atom_to_int/1]).
 -export([is_printable/1]).
 -export([pr_stacktrace/1, pr_stacktrace/2]).
 -export([configure_logger/0]).
@@ -31,6 +30,7 @@
 %%%===================================================================
 %%% API
 %%%===================================================================
+
 
 -spec format_generic_log(string() | autoformat_spec(), list()) -> string().
 format_generic_log(#autoformat_spec{} = AutoformatSpec, []) ->
@@ -112,130 +112,41 @@ format_internal_server_error_report(
         ]
     ).
 
-%%--------------------------------------------------------------------
-%% @doc Determines if logs with provided loglevel should be logged or discarded.
-%%--------------------------------------------------------------------
--spec should_log(LoglevelAsInt :: integer()) -> boolean().
-should_log(LevelAsInt) ->
-    case get_current_loglevel() of
-        Int when LevelAsInt =< Int -> true;
-        _ -> false
-    end.
 
-
--spec log(LoglevelAsInt :: integer(), Metadata :: map(), FormattedLog :: string()) -> ok.
-log(LoglevelAsInt, Metadata, FormattedLog) ->
-    Severity = loglevel_int_to_atom(LoglevelAsInt),
-
+-spec log(Loglevel :: logger:level(), Metadata :: map(), FormattedLog :: string()) -> ok.
+log(Loglevel, Metadata, FormattedLog) ->
     % the reformatting with 't' modifier ensures that special characters are properly handled
-    logger:log(Severity, "~ts", [FormattedLog], Metadata#{
-        color => severity_to_color(Severity), reset => "\e[0m"
+    logger:log(Loglevel, "~ts", [FormattedLog], Metadata#{
+        color => severity_to_color(Loglevel),
+        reset => "\e[0m"
     }).
 
 
-%%--------------------------------------------------------------------
-%% @doc Changes current global loglevel to desired. Argument can be loglevel as int or atom
-%% 'default' atom can be used to set it back to default
-%% @end
-%%--------------------------------------------------------------------
--spec set_loglevel(Loglevel :: integer() | atom()) -> ok | {error, badarg}.
+-spec set_loglevel(logger:level() | default) -> ok | {error, badarg}.
 set_loglevel(Loglevel) when is_atom(Loglevel) ->
-    try
-        LevelAsInt = case Loglevel of
-            default -> get_default_loglevel();
-            Atom -> loglevel_atom_to_int(Atom)
-        end,
-        set_loglevel(LevelAsInt)
-    catch _:_ ->
-        {error, badarg}
-    end;
+    set_loglevel_internal(Loglevel, fun(L) -> logger:set_primary_config(level, L) end).
 
-set_loglevel(Loglevel) when is_integer(Loglevel) andalso (Loglevel >= 0) andalso (Loglevel =< 7) ->
-    ctool:set_env(current_loglevel, Loglevel);
 
-set_loglevel(_) ->
-    {error, badarg}.
+-spec set_console_loglevel(logger:level() | default) -> ok | {error, badarg}.
+set_console_loglevel(Loglevel) ->
+    set_loglevel_internal(Loglevel, fun(L) -> logger:set_handler_config(console_backend, level, L) end).
 
-%%--------------------------------------------------------------------
-%% @doc Changes current console loglevel to desired. Argument can be loglevel as int or atom
-%% 'default' atom can be used to set it back to default - default is what is defined in sys.config
-%% @end
-%%--------------------------------------------------------------------
--spec set_console_loglevel(Loglevel :: integer() | atom()) -> ok | {error, badarg}.
-set_console_loglevel(Loglevel) when is_integer(Loglevel) andalso (Loglevel >= 0) andalso (Loglevel =< 7) ->
-    set_console_loglevel(loglevel_int_to_atom(Loglevel));
 
-set_console_loglevel(Loglevel) when is_atom(Loglevel) ->
-    try
-        LevelAsAtom = case Loglevel of
-            default ->
-                {ok, Config} = logger:get_handler_config(logger_console_backend),
-                maps:get(level, Config);
-            Atom ->
-                % Makes sure that the atom is recognizable as loglevel
-                loglevel_int_to_atom(loglevel_atom_to_int(Atom))
-        end,
-        logger:set_handler_config(logger_console_backend, #{level => LevelAsAtom}),
-        ok
-    catch _:_ ->
-        {error, badarg}
-    end;
-
-set_console_loglevel(_) ->
-    {error, badarg}.
-
-%%--------------------------------------------------------------------
-%% @doc Returns current loglevel as set in application's env
-%% @end
-%%--------------------------------------------------------------------
--spec get_current_loglevel() -> integer().
+-spec get_current_loglevel() -> logger:level().
 get_current_loglevel() ->
-    ctool:get_env(current_loglevel, 6).
+    maps:get(level, logger:get_primary_config()).
 
-%%--------------------------------------------------------------------
-%% @doc Returns default loglevel as set in application's env
-%% @end
-%%--------------------------------------------------------------------
--spec get_default_loglevel() -> integer().
+
+-spec get_default_loglevel() -> logger:level().
 get_default_loglevel() ->
-    ctool:get_env(default_loglevel, 6).
+    ctool:get_env(default_loglevel, info).
 
-%%--------------------------------------------------------------------
-%% @doc Returns current console loglevel
-%% @end
-%%--------------------------------------------------------------------
--spec get_console_loglevel() -> integer().
+
+-spec get_console_loglevel() -> logger:level().
 get_console_loglevel() ->
-    {ok, Config} = logger:get_handler_config(logger_console_backend),
-    loglevel_atom_to_int(maps:get(level, Config)).
+    {ok, Config} = logger:get_handler_config(console_backend),
+    maps:get(level, Config).
 
-%%--------------------------------------------------------------------
-%% @doc Returns loglevel name associated with loglevel number
-%% @end
-%%--------------------------------------------------------------------
--spec loglevel_int_to_atom(LoglevelAsInt :: integer()) -> atom().
-loglevel_int_to_atom(7) -> debug;
-loglevel_int_to_atom(6) -> info;
-loglevel_int_to_atom(5) -> notice;
-loglevel_int_to_atom(4) -> warning;
-loglevel_int_to_atom(3) -> error;
-loglevel_int_to_atom(2) -> critical;
-loglevel_int_to_atom(1) -> alert;
-loglevel_int_to_atom(0) -> emergency.
-
-%%--------------------------------------------------------------------
-%% @doc Returns loglevel number associated with loglevel name
-%% @end
-%%--------------------------------------------------------------------
--spec loglevel_atom_to_int(LoglevelAsAtom :: atom()) -> integer().
-loglevel_atom_to_int(debug) -> 7;
-loglevel_atom_to_int(info) -> 6;
-loglevel_atom_to_int(notice) -> 5;
-loglevel_atom_to_int(warning) -> 4;
-loglevel_atom_to_int(error) -> 3;
-loglevel_atom_to_int(critical) -> 2;
-loglevel_atom_to_int(alert) -> 1;
-loglevel_atom_to_int(emergency) -> 0.
 
 %%--------------------------------------------------------------------
 %% @doc Logs given message to LogFile.
@@ -283,74 +194,61 @@ pr_stacktrace(Stacktrace, {Class, Reason}) ->
     pr_stacktrace(Stacktrace) ++  "\n" ++ io_lib:format("~ts:~tp", [Class, Reason]).
 
 
-% fixme wrzucić do app.src i tyla
-% fixme drop na error bardzo duży, nie chcemy gubić praktycznie nigdy
 -spec configure_logger() -> ok.
 configure_logger() ->
-    logger:set_primary_config(level, debug),
-    % https://www.erlang.org/doc/apps/kernel/logger_filters.html#progress/2
-    logger:add_primary_filter(progress, {fun logger_filters:progress/2, stop}),
+    % logger_proxy is a process responsible for forwarding logs to remote node based on process group leader.
+    % This results in logs being logged both on node executing code and making a rpc call.
+    % We do not want this so it is disabled.
+    unregister(logger_proxy),
+
+    ok = set_loglevel(default),
+
+    % Progress filter is explained here: https://www.erlang.org/doc/apps/kernel/logger_filters.html#progress/2
+    ok = logger:add_primary_filter(progress, {fun logger_filters:progress/2, stop}),
+
+    % Logs originating internally from onedata outside of onedata_logger (which has a domain of []) should
+    % be stopped in generic handlers - such logs should have their own handlers.
+    % Domain filter is explained here: https://www.erlang.org/doc/apps/kernel/logger_filters.html#domain/2
+    HandlerFilters = [{onedata_domain, {fun logger_filters:domain/2, {stop, sub, [onedata]}}}],
 
     LogDir = ctool:get_env(log_dir),
     Config = ctool:get_env(logger_base_config),
+    BaseFileConfig = Config#{
+        max_no_bytes => ctool:get_env(logger_max_file_size),
+        max_no_files => ctool:get_env(logger_max_file_no)
+    },
 
-    FileFormat = {onedata_logger_formatter, #{
-        max_size => 52428800,
-        depth => 10,
-        template =>  ["[", level, " ", time, " ", pid, "] ", msg, "\n"]
-    }},
-
-    Filters = [{file_access_audit_log_disabled, {
-        fun onedata_logger_filters:file_access_audit_log_filter/2, stop
-    }}],
-
-    case lists:member(debug, logger:get_handler_ids()) of
-        true ->
-            ok;
-        false ->
-            logger:add_handler(debug, logger_std_h, #{
-                level => debug,
-                config => Config#{file => LogDir ++ "/debug.log"},
-                filter_default => stop,
-                filters => Filters,
-                formatter => FileFormat
-            })
-    end,
-
-    logger:add_handler(console_backend, logger_std_h, #{ % fixme rotation wszędzie (max_no_bytes, max_no_files)
-        level => info,
-        config => Config,
-        filter_default => stop,
-        filters => Filters,
-        formatter => {onedata_logger_formatter, #{
-            legacy_header => false,
-            single_line => false,
-            no_date => true,
-            template => [color, "[", level, " ", time, " pid ", pid, "] ", msg, reset, "\n"]
-        }}
+    ok = logger:add_handler(debug, logger_std_h, #{
+        level => debug,
+        config => BaseFileConfig#{file => LogDir ++ "/debug.log"},
+        filters => HandlerFilters,
+        formatter => onedata_logger_formatter:get_config_spec(file)
     }),
 
-    logger:add_handler(error, logger_std_h, #{
+    ok = logger:add_handler(info, logger_std_h, #{
+        level => info,
+        config => BaseFileConfig#{file => LogDir ++ "/info.log"},
+        filters => HandlerFilters,
+        formatter => onedata_logger_formatter:get_config_spec(file)
+    }),
+
+    ok = logger:add_handler(error, logger_std_h, #{
         level => error,
-        config => Config#{file => LogDir ++ "/error.log"},
-        filter_default => stop,
-        filters => Filters,
-        formatter => FileFormat
+        config => BaseFileConfig#{file => LogDir ++ "/error.log"},
+        filters => HandlerFilters,
+        formatter => onedata_logger_formatter:get_config_spec(file)
     }),
 
-    logger:add_handler(info, logger_std_h, #{
-        level => info,
-        config => Config#{file => LogDir ++ "/info.log"},
-        filter_default => stop,
-        filters => Filters,
-        formatter => FileFormat
-    }),
-    ?emergency("!!!!!!!!!!!!!!!!onedata logger configure!!!!!!!!!!!!") % fixme
-.
+    ok = logger:add_handler(console_backend, logger_std_h, #{
+        level => get_default_loglevel(),
+        config => Config,
+        filters => HandlerFilters,
+        formatter => onedata_logger_formatter:get_config_spec(console)
+    }).
 
 
 %%%===================================================================
-%%% API
+%%% Internal functions
 %%%===================================================================
 
 
@@ -409,3 +307,11 @@ autoformat_spec_to_format_and_args(#autoformat_spec{
         "~n    " ++ TermName ++  " = " ++ ControlSequence
     end, lists:zip(TermNames, TermValues))),
     {DetailsFormat, Args ++ TermValues}.
+
+
+%% @private
+-spec set_loglevel_internal(logger:level() | default, fun((logger:level()) -> ok)) -> ok | {error, term()}.
+set_loglevel_internal(default, SetFun) ->
+    set_loglevel_internal(get_default_loglevel(), SetFun);
+set_loglevel_internal(Loglevel, SetFun) ->
+    SetFun(Loglevel).

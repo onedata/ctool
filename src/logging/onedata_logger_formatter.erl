@@ -14,11 +14,14 @@
 
 -include("logging.hrl").
 
+-export([get_config_spec/1]).
 -export([format/2]).
 
 %% one of "M", "A", "C", "E", "W", "N", "I", "D" (see function `level_to_label`)
 -type log_level_label() :: string().
-% for fields description see: https://www.erlang.org/doc/apps/kernel/logger_formatter.html#t:config/0
+
+% Below types are a redefinition from module logger_formatter because originals are not exported.
+% For more detailed description see: https://www.erlang.org/doc/apps/kernel/logger_formatter.html#t:config/0
 -type formatter_config() :: #{
     chars_limit     => pos_integer() | unlimited,
     depth           => pos_integer() | unlimited,
@@ -33,15 +36,32 @@
 -type template() :: [metakey() | {metakey(), template(), template()} | unicode:chardata()].
 -type metakey() :: atom() | [atom()].
 
+
 %%%===================================================================
 %%% API
 %%%===================================================================
 
 
--spec format(logger:log_event(), formatter_config()) -> unicode:chardata().
+-spec get_config_spec(file | console | template()) -> {module(), formatter_config()}.
+get_config_spec(file) -> get_config_spec(#{
+    template => ctool:get_env(logger_file_log_template),
+    max_size => ctool:get_env(logger_file_max_log_size),
+    depth => ctool:get_env(logger_file_term_depth)
+});
+get_config_spec(console) -> get_config_spec(#{
+    template => ctool:get_env(logger_console_log_template),
+    max_size => ctool:get_env(logger_console_max_log_size),
+    depth => ctool:get_env(logger_console_term_depth)
+});
+get_config_spec(Config) when is_map(Config) ->
+    {onedata_logger_formatter, Config#{
+        single_line => false
+    }}.
+
+
+-spec format(logger:log_event(), formatter_config:config()) -> unicode:chardata().
 format(LogEvent = #{level := Level, meta := Meta}, Config) ->
     UpdatedConfig = Config#{
-        single_line => false,
         template => customize_template(
             Config,
             Level,
@@ -49,7 +69,6 @@ format(LogEvent = #{level := Level, meta := Meta}, Config) ->
         )
     },
     logger_formatter:format(LogEvent, UpdatedConfig).
-
 
 %%%===================================================================
 %%% Internal functions

@@ -48,12 +48,11 @@
         %% LOGGING
         %% ===================================================================
 
-        % Current loglevel in the application. Logs with lower importance (higher loglevel) will be completely discarded
-        % Available loglevels are 0-7, respectively: emergency, alert, critical, error, warning, notice, info, debug
-        {current_loglevel, 6},
+        {log_dir, "./log"},
+
         % Used to reset loglevel to default.
-        % Available loglevels are 0-7, respectively: emergency, alert, critical, error, warning, notice, info, debug
-        {default_loglevel, 6},
+        % Available loglevels are: emergency, alert, critical, error, warning, notice, info, debug
+        {default_loglevel, info},
 
         {logger_base_config, #{
             % Maximum events to handle in 1000ms. Exceeding this limit pauses event processing.
@@ -72,8 +71,18 @@
             flush_qlen => 2000
         }},
 
-        {log_dir, "./log"},
+        % log file rotation
+        {logger_max_file_size, 52428800}, % 50 MiB
+        {logger_max_file_no, 10},
 
+        % logger formatter customization (see onedata_logger_formatter.erl)
+        {logger_file_log_template, ["[", level, " ", time, " ", pid, "] ", msg, "\n"]},
+        {logger_file_max_log_size, unlimited},
+        {logger_file_term_depth, unlimited},
+
+        {logger_console_log_template, [color, "[", level, " ", time, " ", pid, "] ", msg, reset, "\n"]},
+        {logger_console_max_log_size, 1048576}, % 1 MiB
+        {logger_console_term_depth, unlimited},
 
         %% ===================================================================
         %% WEB_CLIENT

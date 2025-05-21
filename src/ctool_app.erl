@@ -29,7 +29,6 @@
     {error, Reason ::term()}.
 start(_StartType, _StartArgs) ->
     onedata_logger:configure_logger(),
-    ?notice("!!!!!!!!!!!!!!!!!!!ctool started!!!!!!!!!!!!!"),
     {ok, self()}.
 
 

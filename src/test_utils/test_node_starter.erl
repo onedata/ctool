@@ -394,8 +394,8 @@ stop_applications(Config, Apps) ->
                     _:{badmatch, {badrpc, nodedown}} ->
                         ok; % Test can kill nodes
                     Type:Reason:Stacktrace ->
-                        ?error_exception(
-                            ?autoformat_with_msg("WARNING: Stopping application: ", AppName, Node),
+                        ?ct_pal_exception(
+                            ?autoformat_with_msg("Failed to stop application", AppName, Node),
                         Type, Reason, Stacktrace)
                 end
             end, Nodes)
