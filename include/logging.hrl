@@ -188,7 +188,7 @@ end).
 -define(report_internal_server_error(Message), ?report_internal_server_error(Message, [])).
 -define(report_internal_server_error(DetailsFormat, DetailsArgs), begin
     ((fun(ErrorRef) ->
-        ?error(onedata_logger:format_error_report(
+        ?error(onedata_logger:format_internal_server_error_report(
             ?MODULE, ?FUNCTION_NAME, ?FUNCTION_ARITY, ?LINE, DetailsFormat, DetailsArgs, ErrorRef
         )),
         ?ERR_INTERNAL_SERVER_ERROR(?err_ctx(), ErrorRef)
@@ -266,7 +266,9 @@ end).
 % Convenience macros for debug
 
 % Prints a term or a list of terms by the name of the variable
--define(dump(TermOrTerms), ?autoformat_with_msg("[DUMP]", TermOrTerms)).
+-define(dump(TermOrTerms), io:format(user, "~ts~n", [
+    onedata_logger:format_generic_log(?autoformat_with_msg("[DUMP]", TermOrTerms), [])  % @codetag-tracker-ignore
+])).
 % wrappers for convenience (the original macro accepts a list, but it's not 100% intuitive)
 -define(dump(A, B), ?dump([A, B])).
 -define(dump(A, B, C), ?dump([A, B, C])).

@@ -35,7 +35,7 @@
 -export_type([record/0, file_type_spec/0]).
 
 %% @TODO VFS-12091 include all attrs after atm versioning is introduced
--define(AVAILABLE_ATTRS, ?API_FILE_ATTRS -- [?attr_creation_time]).
+-define(AVAILABLE_ATTRS, ?API_FILE_ATTRS -- [?attr_creation_time, ?attr_has_json_metadata, ?attr_json_metadata]).
 
 %%%===================================================================
 %%% API

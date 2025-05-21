@@ -26,6 +26,25 @@
 
     {env, [
         %% ===================================================================
+        %% SERVICE CONTEXT
+        %% ===================================================================
+
+        % Below values are used e.g. to build od_error_ctx (additional metadata attached to error)
+        % record which is included in error responses.
+        % Each service (op/oz/panel) should set these values when possible.
+
+        % Type: undefined | onedata:service()
+        {onedata_service, undefined},
+        % Type: undefined | onedata:service_id()
+        {onedata_service_id, undefined},
+        % Type: undefined | binary()
+        {onedata_service_domain, undefined},
+        % Type: undefined | onedata:release_version()
+        {onedata_service_release_version, undefined},
+        % Type: undefined | binary()
+        {onedata_service_build_version, undefined},
+
+        %% ===================================================================
         %% LOGGING
         %% ===================================================================
 

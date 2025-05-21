@@ -16,8 +16,8 @@
 -include("logging.hrl").
 -include_lib("kernel/include/logger.hrl").
 
--export([format_generic_log/2, format_exception_log/10,
-    format_deprecated_exception_log/7, format_error_report/7]).
+-export([format_generic_log/2, format_exception_log/10, format_deprecated_exception_log/7]).
+-export([format_internal_server_error_report/7]).
 -export([should_log/1, log/3, log_with_rotation/4]).
 -export([set_loglevel/1, set_console_loglevel/1]).
 -export([get_current_loglevel/0, get_default_loglevel/0, get_console_loglevel/0]).
@@ -59,7 +59,8 @@ format_exception_log(
     format_generic_log(
         "An unexpected exception~ts occurred in ~w:~w/~B line ~B~n"
         "> Stacktrace:~ts~n"
-        "> Caught: ~ts:~tp"
+        "> Class: ~ts~n"
+        "> Reason: ~tp"
         "~ts",
         [
             case Ref of
@@ -94,11 +95,11 @@ format_deprecated_exception_log(
     ).
 
 
--spec format_error_report(
+-spec format_internal_server_error_report(
     module(), atom(), non_neg_integer(), non_neg_integer(),
     string() | autoformat_spec(), list(), undefined | string() | binary()
 ) -> string().
-format_error_report(
+format_internal_server_error_report(
     Module, Function, Arity, Line,
     DetailsFormat, DetailsArgs, Ref
 ) ->

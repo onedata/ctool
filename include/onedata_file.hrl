@@ -59,7 +59,6 @@
 -define(attr_owner_id, owner_id).
 -define(attr_hardlink_count, hardlink_count).
 -define(attr_symlink_value, symlink_value).
--define(attr_has_custom_metadata, has_custom_metadata).
 -define(attr_eff_protection_flags, eff_protection_flags).
 -define(attr_eff_dataset_protection_flags, eff_dataset_protection_flags).
 -define(attr_eff_dataset_inheritance_path, eff_dataset_inheritance_path).
@@ -68,6 +67,9 @@
 -define(attr_recall_root_id, recall_root_id).
 -define(attr_is_deleted, is_deleted).
 -define(attr_conflicting_files, conflicting_files).
+-define(attr_has_custom_metadata, has_custom_metadata).
+-define(attr_has_json_metadata, has_json_metadata).
+-define(attr_json_metadata, json_metadata).
 -define(attr_xattrs(XattrNames), {xattrs, XattrNames}).
 
 -define(IMPLICIT_FILE_ATTRS, [
@@ -93,7 +95,7 @@
     ?attr_size, ?attr_is_fully_replicated, ?attr_local_replication_rate
 ]).
 -define(METADATA_FILE_ATTRS, [
-    ?attr_has_custom_metadata
+    ?attr_has_custom_metadata, ?attr_has_json_metadata, ?attr_json_metadata
 ]).
 -define(DATASET_FILE_ATTRS, [
     ?attr_eff_dataset_inheritance_path, ?attr_eff_dataset_protection_flags, ?attr_eff_protection_flags
@@ -124,7 +126,7 @@
 -define(PUBLIC_API_FILE_ATTRS, [
     ?attr_guid, ?attr_index, ?attr_type, ?attr_active_permissions_type, ?attr_mode, ?attr_name, ?attr_conflicting_name,
     ?attr_parent_guid, ?attr_creation_time, ?attr_atime, ?attr_mtime, ?attr_ctime, ?attr_size, ?attr_shares,
-    ?attr_symlink_value, ?attr_has_custom_metadata
+    ?attr_symlink_value, ?attr_has_custom_metadata, ?attr_has_json_metadata, ?attr_json_metadata
 ]).
 
 %% @TODO VFS-11378 remove when all usages provide their custom required attrs
