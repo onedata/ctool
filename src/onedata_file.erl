@@ -41,7 +41,7 @@
                    | ?attr_eff_protection_flags | ?attr_eff_dataset_protection_flags
                    | ?attr_eff_dataset_inheritance_path
                    | ?attr_eff_qos_inheritance_path | ?attr_qos_status
-                   | ?attr_recall_root_id | ?attr_is_deleted | ?attr_conflicting_files
+                   | ?attr_recall_root_id | ?attr_is_deleted | ?attr_is_imported | ?attr_conflicting_files
                    | ?attr_xattrs([xattr_name()]).
 %% @formatter:on
 
@@ -169,6 +169,7 @@ attr_name_from_json(<<"name">>)                      -> ?attr_name;
 attr_name_from_json(<<"conflictingName">>)           -> ?attr_conflicting_name;
 attr_name_from_json(<<"path">>)                      -> ?attr_path;
 attr_name_from_json(<<"parentFileId">>)              -> ?attr_parent_guid;
+attr_name_from_json(<<"isImported">>)                -> ?attr_is_imported;
 attr_name_from_json(<<"displayGid">>)                -> ?attr_gid;
 attr_name_from_json(<<"displayUid">>)                -> ?attr_uid;
 attr_name_from_json(<<"creationTime">>)              -> ?attr_creation_time;
@@ -205,6 +206,7 @@ attr_name_to_json(?attr_name)                         -> <<"name">>;
 attr_name_to_json(?attr_conflicting_name)             -> <<"conflictingName">>;
 attr_name_to_json(?attr_path)                         -> <<"path">>;
 attr_name_to_json(?attr_parent_guid)                  -> <<"parentFileId">>;
+attr_name_to_json(?attr_is_imported)                  -> <<"isImported">>;
 attr_name_to_json(?attr_gid)                          -> <<"displayGid">>;
 attr_name_to_json(?attr_uid)                          -> <<"displayUid">>;
 attr_name_to_json(?attr_creation_time)                -> <<"creationTime">>;
