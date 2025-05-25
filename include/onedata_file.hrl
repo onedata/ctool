@@ -147,5 +147,10 @@
     ?attr_shares, ?attr_index
 ]).
 
+%% @TODO VFS-12091 include all attrs after atm versioning is introduced
+-define(ATM_AVAILABLE_FILE_ATTRS, ?API_FILE_ATTRS -- [
+    ?attr_is_imported, ?attr_creation_time, ?attr_has_json_metadata, ?attr_json_metadata
+]).
+
 
 -endif.
