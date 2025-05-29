@@ -66,6 +66,7 @@
 -define(attr_qos_status, qos_status).
 -define(attr_recall_root_id, recall_root_id).
 -define(attr_is_deleted, is_deleted).
+-define(attr_is_imported, is_imported).
 -define(attr_conflicting_files, conflicting_files).
 -define(attr_has_custom_metadata, has_custom_metadata).
 -define(attr_has_json_metadata, has_json_metadata).
@@ -77,7 +78,8 @@
 ]).
 -define(FILE_META_ATTRS, [
     ?attr_index, ?attr_type, ?attr_active_permissions_type, ?attr_mode, ?attr_acl, ?attr_parent_guid,
-    ?attr_provider_id, ?attr_shares, ?attr_owner_id, ?attr_hardlink_count, ?attr_symlink_value, ?attr_is_deleted
+    ?attr_provider_id, ?attr_shares, ?attr_owner_id, ?attr_hardlink_count, ?attr_symlink_value, ?attr_is_deleted,
+    ?attr_is_imported
 ]).
 -define(LINK_TREE_FILE_ATTRS, [
     ?attr_name, ?attr_conflicting_name, ?attr_conflicting_files
@@ -143,6 +145,11 @@
 -define(DEPRECATED_PUBLIC_FILE_ATTRS, [
     ?attr_guid, ?attr_parent_guid, ?attr_name, ?attr_mode, ?attr_atime, ?attr_mtime, ?attr_ctime, ?attr_type, ?attr_size,
     ?attr_shares, ?attr_index
+]).
+
+%% @TODO VFS-12091 include all attrs after atm versioning is introduced
+-define(ATM_AVAILABLE_FILE_ATTRS, ?API_FILE_ATTRS -- [
+    ?attr_is_imported, ?attr_creation_time, ?attr_has_json_metadata, ?attr_json_metadata
 ]).
 
 
