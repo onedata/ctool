@@ -31,7 +31,7 @@
 -export([method_to_binary/1, binary_to_method/1]).
 
 % URL encoding/decoding
--export([url_encode/1]).
+-export([url_encode/1, url_decode/1]).
 -export([last_url_part/1]).
 
 % base64url encoding/decoding
@@ -47,13 +47,16 @@
 %%%===================================================================
 
 
-%%--------------------------------------------------------------------
-%% @doc Performs safe URL encoding
-%% @end
-%%--------------------------------------------------------------------
+%% @doc Compliant with RFC 3986.
 -spec url_encode(Data :: binary() | string()) -> binary().
 url_encode(Data) ->
     hackney_url:urlencode(Data).
+
+
+%% @doc Compliant with RFC 3986.
+-spec url_decode(Data :: binary() | string()) -> binary().
+url_decode(Data) ->
+    hackney_url:urldecode(Data).
 
 
 %%--------------------------------------------------------------------
