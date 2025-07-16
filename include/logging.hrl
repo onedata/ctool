@@ -149,14 +149,18 @@ end).
 % to be removed when occurrences of ?error_stacktrace are pruned from code
 -define(error_stacktrace(DetailsMessage, Stacktrace), ?error_stacktrace(DetailsMessage, [], Stacktrace)).
 -define(error_stacktrace(DetailsFormat, DetailsArgs, Stacktrace),
-    onedata_logger:log(error, ?gather_metadata, onedata_logger:format_deprecated_exception_log(
-        ?MODULE, ?FUNCTION_NAME, ?FUNCTION_ARITY, ?LINE, DetailsFormat, DetailsArgs, Stacktrace
-    ))
+    ?wrap_in_loglevel_check(error,
+        onedata_logger:log(error, ?gather_metadata, onedata_logger:format_deprecated_exception_log(
+            ?MODULE, ?FUNCTION_NAME, ?FUNCTION_ARITY, ?LINE, DetailsFormat, DetailsArgs, Stacktrace
+        ))
+    )
 ).
 
 
--define(log(LoglevelInt, Format, Args),
-    onedata_logger:log(LoglevelInt, ?gather_metadata, onedata_logger:format_generic_log(Format, Args))
+-define(log(Loglevel, Format, Args),
+    ?wrap_in_loglevel_check(Loglevel,
+        onedata_logger:log(Loglevel, ?gather_metadata, onedata_logger:format_generic_log(Format, Args))
+    )
 ).
 
 % by default, all exceptions are logged on 'error' level
@@ -166,9 +170,11 @@ end).
 % A Ref (string) can optionally be passed for easier log navigation - as long
 % as the Ref is then somehow identifiable, e.g. as in ?ERROR_INTERNAL_SERVER_ERROR(Ref).
 -define(log_exception(Loglevel, DetailsFormat, DetailsArgs, Ref, Class, Reason, Stacktrace),
-    onedata_logger:log(Loglevel, ?gather_metadata, onedata_logger:format_exception_log(
-        ?MODULE, ?FUNCTION_NAME, ?FUNCTION_ARITY, ?LINE, DetailsFormat, DetailsArgs, Ref, Class, Reason, Stacktrace
-    ))
+    ?wrap_in_loglevel_check(Loglevel,
+        onedata_logger:log(Loglevel, ?gather_metadata, onedata_logger:format_exception_log(
+            ?MODULE, ?FUNCTION_NAME, ?FUNCTION_ARITY, ?LINE, DetailsFormat, DetailsArgs, Ref, Class, Reason, Stacktrace
+        ))
+    )
 ).
 
 
@@ -277,6 +283,13 @@ end).
 
 
 %% Macros used internally
+
+-define(wrap_in_loglevel_check(Loglevel, Expression),
+    case onedata_logger:should_log(Loglevel) of
+        false -> ok;
+        true -> Expression
+    end
+).
 
 % Must be called from original function where the log is,
 % so that the process info makes sense

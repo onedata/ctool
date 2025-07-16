@@ -1,21 +1,17 @@
 %%%--------------------------------------------------------------------
-%%% @author Michal Wrzeszcz
-%%% @copyright (C) 2014 ACK CYFRONET AGH
+%%% @author Michal Stanisz
+%%% @copyright (C) 2025 ACK CYFRONET AGH
 %%% This software is released under the MIT license
 %%% cited in 'LICENSE.txt'.
 %%% @end
 %%%--------------------------------------------------------------------
-%%% @doc It is the main module of application. It lunches
-%%% supervisor which then initializes appropriate components of node.
+%%% @doc It is the main module of application. It initializes appropriate components of a node.
 %%% @end
 %%%--------------------------------------------------------------------
 -module(ctool_app).
--author("Michal Wrzeszcz").
+-author("Michal Stanisz").
 
 -behaviour(application).
-
--include("global_definitions.hrl").
--include_lib("ctool/include/logging.hrl").
 
 %% Application callbacks
 -export([start/2, stop/1]).
@@ -25,8 +21,7 @@
 %%%===================================================================
 
 -spec start(StartType :: application:start_type(), StartArgs :: term()) ->
-    {ok, Pid :: pid()} | {ok, Pid :: pid(), State :: term()} |
-    {error, Reason ::term()}.
+    {ok, Pid :: pid()}.
 start(_StartType, _StartArgs) ->
     onedata_logger:configure_logger(),
     {ok, self()}.

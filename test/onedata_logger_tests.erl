@@ -27,10 +27,33 @@ main_test_() ->
             {"set/get_loglevel, set/get_default_loglevel",
                 fun() ->
                     ?assertEqual(notice, onedata_logger:get_current_loglevel()),
+                    ?assert(not onedata_logger:should_log(debug)),
+                    ?assert(not onedata_logger:should_log(info)),
+                    ?assert(onedata_logger:should_log(notice)),
+                    ?assert(onedata_logger:should_log(critical)),
+                    ?assert(onedata_logger:should_log(emergency)),
+                    
                     onedata_logger:set_loglevel(error),
+                    ?assert(not onedata_logger:should_log(debug)),
+                    ?assert(not onedata_logger:should_log(info)),
+                    ?assert(not onedata_logger:should_log(notice)),
+                    ?assert(not onedata_logger:should_log(warning)),
+                    ?assert(onedata_logger:should_log(error)),
+                    ?assert(onedata_logger:should_log(critical)),
+                    ?assert(onedata_logger:should_log(alert)),
+                    ?assert(onedata_logger:should_log(emergency)),
                     ?assertEqual(error, onedata_logger:get_current_loglevel()),
+                    
                     onedata_logger:set_loglevel(default),
-                    ?assertEqual(onedata_logger:get_default_loglevel(), onedata_logger:get_current_loglevel())
+                    ?assertEqual(onedata_logger:get_default_loglevel(), onedata_logger:get_current_loglevel()),
+                    ?assert(onedata_logger:should_log(debug)),
+                    ?assert(onedata_logger:should_log(info)),
+                    ?assert(onedata_logger:should_log(notice)),
+                    ?assert(onedata_logger:should_log(warning)),
+                    ?assert(onedata_logger:should_log(error)),
+                    ?assert(onedata_logger:should_log(critical)),
+                    ?assert(onedata_logger:should_log(alert)),
+                    ?assert(onedata_logger:should_log(emergency))
                 end
             }
         ]

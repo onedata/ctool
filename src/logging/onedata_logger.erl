@@ -18,6 +18,7 @@
 
 -export([format_generic_log/2, format_exception_log/10, format_deprecated_exception_log/7]).
 -export([format_internal_server_error_report/7]).
+-export([should_log/1]).
 -export([log/3, log_with_rotation/4]).
 -export([set_loglevel/1, set_console_loglevel/1]).
 -export([get_current_loglevel/0, get_default_loglevel/0, get_console_loglevel/0]).
@@ -111,6 +112,11 @@ format_internal_server_error_report(
             format_details_suffix(DetailsFormat, DetailsArgs)
         ]
     ).
+
+
+-spec should_log(logger:level()) -> boolean().
+should_log(LogLevel) ->
+    not (lt == logger:compare_levels(LogLevel, get_current_loglevel())).
 
 
 -spec log(Loglevel :: logger:level(), Metadata :: map(), FormattedLog :: string()) -> ok.
@@ -217,27 +223,20 @@ configure_logger() ->
         max_no_bytes => ctool:get_env(logger_max_file_size),
         max_no_files => ctool:get_env(logger_max_file_no)
     },
+    
+    FileHandler = fun(Level) -> 
+        LogFile = "/" ++ atom_to_list(Level) ++ ".log",
+        #{
+            level => Level,
+            filters => HandlerFilters,
+            formatter => onedata_logger_formatter:get_config_spec(file),
+            config => BaseFileConfig#{file => LogDir ++ LogFile}
+        }
+    end,
 
-    ok = logger:add_handler(debug, logger_std_h, #{
-        level => debug,
-        config => BaseFileConfig#{file => LogDir ++ "/debug.log"},
-        filters => HandlerFilters,
-        formatter => onedata_logger_formatter:get_config_spec(file)
-    }),
-
-    ok = logger:add_handler(info, logger_std_h, #{
-        level => info,
-        config => BaseFileConfig#{file => LogDir ++ "/info.log"},
-        filters => HandlerFilters,
-        formatter => onedata_logger_formatter:get_config_spec(file)
-    }),
-
-    ok = logger:add_handler(error, logger_std_h, #{
-        level => error,
-        config => BaseFileConfig#{file => LogDir ++ "/error.log"},
-        filters => HandlerFilters,
-        formatter => onedata_logger_formatter:get_config_spec(file)
-    }),
+    ok = logger:add_handler(debug, logger_std_h, FileHandler(debug)),
+    ok = logger:add_handler(info, logger_std_h, FileHandler(info)),
+    ok = logger:add_handler(error, logger_std_h, FileHandler(error)),
 
     ok = logger:add_handler(console_backend, logger_std_h, #{
         level => get_default_loglevel(),

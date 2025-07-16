@@ -82,15 +82,10 @@ customize_template(Config, Level, Timestamp) ->
     NoDate = maps:get(no_date, Config, false),
     lists:map(
         fun
-            (level) ->
-                level_to_label(Level);
-            (time) ->
-                case NoDate of
-                    false -> format_timestamp(with_date, Timestamp);
-                    true -> format_timestamp(without_date, Timestamp)
-                end;
-            (Other) ->
-                Other
+            (level) -> level_to_label(Level);
+            (time) when NoDate -> format_timestamp(without_date, Timestamp);
+            (time) -> format_timestamp(with_date, Timestamp);
+            (Other) -> Other
         end,
         Template
     ).
