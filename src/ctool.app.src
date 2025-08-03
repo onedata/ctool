@@ -58,12 +58,28 @@
 
 
         %% ===================================================================
-        %% WEB_CLIENT
+        %% WEB CLIENT
         %% ===================================================================
 
         % This option turns off all verification procedures over SSL
         % connections. USE WITH CARE, only for testing purposes.
         {force_insecure_connections, false},
+
+
+        %% ===================================================================
+        %% WEB SERVER
+        %% ===================================================================
+
+        % Module, Function and Args of the function that will be called to
+        % return the list of allowed ciphers. Must return the ciphers in Erlang API format.
+        % Consult: https://www.erlang.org/doc/apps/ssl/using_ssl.html
+        {ssl_allowed_server_ciphers_mfa, {ssl, cipher_suites, [default, 'tlsv1.3']}},
+        % An optional list of ciphers (as RFC strings, e.g. "TLS_RSA_PSK_WITH_RC4_128_SHA")
+        % that will be appended to the list returned by the above function.
+        {ssl_extra_server_ciphers, []},
+        % An optional list of ciphers (as RFC strings, e.g. "TLS_RSA_PSK_WITH_RC4_128_SHA")
+        % that will be blacklisted - subtracted from the ciphers acquired using the above envs.
+        {ssl_blacklisted_server_ciphers, []},
 
 
         %% ===================================================================
