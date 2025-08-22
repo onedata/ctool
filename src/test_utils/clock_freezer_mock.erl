@@ -143,6 +143,7 @@ setup_common(NodeOrNodes, WhitelistedModules) ->
     Nodes = utils:ensure_list(NodeOrNodes),
     set_target_nodes(Nodes),
     ignore_clock_sync_on_target_nodes(),
+    disable_gs_request_pruning_on_target_nodes(),
     set_whitelisted_modules_on_target_nodes(WhitelistedModules),
     set_current_time_millis(starting_frozen_time()).
 
@@ -166,6 +167,16 @@ get_target_nodes() ->
 -spec ignore_clock_sync_on_target_nodes() -> ok.
 ignore_clock_sync_on_target_nodes() ->
     rpc_call_each_node(get_target_nodes(), ctool, set_env, [clock_sync_ignore_bias_corrections, true]).
+
+
+%% @private
+%% Request pruning depends on clock reads; it must be disabled, otherwise in tests that freeze
+%% and manipulate the clock, requests could be wrongly pruned, causing random timeouts on GS requests.
+-spec disable_gs_request_pruning_on_target_nodes() -> ok.
+disable_gs_request_pruning_on_target_nodes() ->
+    rpc_call_each_node(get_target_nodes(), application, set_env, [
+        cluster_worker, graph_sync_stale_request_pruning_enabled, false
+    ]).
 
 
 %% @private
