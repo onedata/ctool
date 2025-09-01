@@ -891,6 +891,9 @@ testcases() -> [
         error = ?ERR_USER_NOT_SUPPORTED,
         deprecated_error = ?DEPRECATED_ERROR_USER_NOT_SUPPORTED
     },
+    #testcase{
+        error = ?ERR_NOT_SUPPORTED_FOR_SYMLINKS
+    },
 
     %%--------------------------------------------------------------------
     %% op_worker/atm errors

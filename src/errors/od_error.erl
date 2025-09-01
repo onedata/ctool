@@ -29,7 +29,7 @@
 ]).
 
 
--type http_code() :: 400 | 401 | 403 | 404 | 409 | 500 | 501 | 503.
+-type http_code() :: 400 | 401 | 403 | 404 | 409 | 422 | 500 | 501 | 503.
 
 -type errno() :: 
     ?OK | ?E2BIG | ?EACCES | ?EADDRINUSE | ?EADDRNOTAVAIL |
@@ -248,6 +248,7 @@
     od_error_file_popularity_disabled:t() |
     od_error_forbidden_for_current_archive_state:t() |
     od_error_nested_archive_deletion_forbidden:t() |
+    od_error_not_supported_for_symlinks:t() |
     od_error_quota_exceeded:t() |
     od_error_recall_target_conflict:t() |
     od_error_space_not_supported_by:t() |
@@ -486,7 +487,7 @@ format_csv(Values) ->
 
 -spec onedata_errors_revision() -> binary().
 onedata_errors_revision() ->
-    <<"ca3af8cb">>.
+    <<"dd820966">>.
 
 
 %%%===================================================================
