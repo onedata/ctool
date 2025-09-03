@@ -42,7 +42,7 @@
 %%%===================================================================
 
 
--spec get_config_spec(file | console | template()) -> {module(), formatter_config()}.
+-spec get_config_spec(file | console | formatter_config()) -> {module(), formatter_config()}.
 get_config_spec(file) -> get_config_spec(#{
     template => ctool:get_env(logger_file_log_template),
     max_size => ctool:get_env(logger_file_max_log_size),
@@ -59,7 +59,7 @@ get_config_spec(Config) when is_map(Config) ->
     }}.
 
 
--spec format(logger:log_event(), formatter_config:config()) -> unicode:chardata().
+-spec format(logger:log_event(), formatter_config()) -> unicode:chardata().
 format(LogEvent = #{level := Level, meta := Meta}, Config) ->
     UpdatedConfig = Config#{
         template => customize_template(
