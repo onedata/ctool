@@ -169,19 +169,67 @@ end).
 -undef(assert).
 -define(assert(ExpressionToCheck), ?assert(ExpressionToCheck, 1)).
 -define(assert(ExpressionToCheck, Attempts), ?assert(ExpressionToCheck, Attempts, timer:seconds(1))).
-% do not use literal 'true' atom to avoid warnings for clauses that cannot match,
-% even if the expression is a constant or is known to be boolean-only.
--define(assert(ExpressionToCheck, Attempts, Interval),
-    ?assertEqual(is_process_alive(self()), ExpressionToCheck, Attempts, Interval)).
+-define(assert(ExpressionToCheck, Attempts, Interval), begin
+    ((fun() ->
+        lists_utils:foldl_while(fun(AttemptsLeft__Local, ExpectedValue__Local) ->
+            case eunit_utils:erase_ctx_if_error(ExpressionToCheck) of
+                ExpectedValue__Local ->
+                    {halt, ok};
+                ActualValue__Local ->
+                    case AttemptsLeft__Local of
+                        1 ->
+                            test_utils:ct_pal_failure_summary(
+                                "assert", #failure_summary{
+                                    module = ?MODULE,
+                                    line = ?LINE,
+                                    expected_expression = true,
+                                    expected_value = ExpectedValue__Local,
+                                    actual_expression = (??ExpressionToCheck),
+                                    actual_value = ActualValue__Local
+                                }, annotate_diff
+                            ),
+                            erlang:error(assert_failed);
+                        _ ->
+                            timer:sleep(Interval),
+                            {cont, true}
+                    end
+            end
+        end, true, lists:seq(max(Attempts, 1), 1, -1))
+    end)())
+end).
 
 
 -undef(assertNot).
 -define(assertNot(ExpressionToCheck), ?assertNot(ExpressionToCheck, 1)).
 -define(assertNot(ExpressionToCheck, Attempts), ?assertNot(ExpressionToCheck, Attempts, timer:seconds(1))).
-% do not use literal 'false' atom to avoid warnings for clauses that cannot match,
-% even if the expression is a constant or is known to be boolean-only.
--define(assertNot(ExpressionToCheck, Attempts, Interval),
-    ?assertEqual(not is_process_alive(self()), ExpressionToCheck, Attempts, Interval)).
+-define(assertNot(ExpressionToCheck, Attempts, Interval), begin
+    ((fun() ->
+        lists_utils:foldl_while(fun(AttemptsLeft__Local, ExpectedValue__Local) ->
+            case eunit_utils:erase_ctx_if_error(ExpressionToCheck) of
+                ExpectedValue__Local ->
+                    {halt, ok};
+                ActualValue__Local ->
+                    case AttemptsLeft__Local of
+                        1 ->
+                            test_utils:ct_pal_failure_summary(
+                                "assertNot", #failure_summary{
+                                    module = ?MODULE,
+                                    line = ?LINE,
+                                    expected_expression = false,
+                                    expected_value = ExpectedValue__Local,
+                                    actual_expression = (??ExpressionToCheck),
+                                    actual_value = ActualValue__Local
+                                }, annotate_diff
+                            ),
+                            erlang:error(assertNot_failed);
+                        _ ->
+                            timer:sleep(Interval),
+                            {cont, false}
+                    end
+            end
+        end, false, lists:seq(max(Attempts, 1), 1, -1))
+    end)())
+end).
 
 
 -define(assertReceivedMatch(Guard),
