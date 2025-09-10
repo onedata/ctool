@@ -22,6 +22,14 @@
 -define(eunit_dump(Arg), eunit_utils:dump(??Arg, Arg)).
 -define(ct_dump(Arg), ct:print("~ts = ~tp", [??Arg, Arg])).
 
+% like ct:pal, but allows usage of the ?autoformat[_with_msg] macros
+-define(ct_pal(Format),
+    ct:pal(onedata_logger:format_generic_log(Format, []))
+).
+-define(ct_pal(Format, Args),
+    ct:pal(onedata_logger:format_generic_log(Format, Args))
+).
+
 -define(ct_pal_exception(DetailsStr, Class, Reason, Stacktrace),
     ?ct_pal_exception(DetailsStr, "", Class, Reason, Stacktrace)
 ).

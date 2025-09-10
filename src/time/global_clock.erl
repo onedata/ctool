@@ -115,6 +115,20 @@ timestamp_seconds() ->
     timestamp_millis() div 1000.
 
 
+%%--------------------------------------------------------------------
+%% @doc
+%% Returns global time in milliseconds.
+%%
+%% ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️
+%% @warning CRITICAL IMPLEMENTATION REQUIREMENT
+%% This function is used when building error ctx (see od_error:build_ctx/2) and as such
+%% can not throw or build any od error itself (that would cause infinite recursion).
+%% @attention
+%% Violating these requirement can lead to system instability and crashes.
+%% This is not just a recommendation - it's a hard requirement for system stability.
+%% ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️ ⚠️
+%% @end
+%%--------------------------------------------------------------------
 -spec timestamp_millis() -> time:millis().
 timestamp_millis() ->
     ?MODULE:read_clock_time(local_clock).
@@ -319,7 +333,13 @@ store_bias_in_cache(Bias) ->
 %% @private
 -spec get_bias_from_cache() -> bias().
 get_bias_from_cache() ->
-    node_cache:get(?CLOCK_BIAS_CACHE, 0).
+    % this must always succeed not to crash the calling process;
+    % default to 0 bias if the node cache is not set up
+    try
+        node_cache:get(?CLOCK_BIAS_CACHE, 0)
+    catch _:_ ->
+        0
+    end.
 
 
 %% @private
