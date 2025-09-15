@@ -47,9 +47,9 @@ from_json(OdErrorJson = #{<<"id">> := ?ERR_NOT_SUPPORTED_FOR_SYMLINKS_ID}) ->
     ?ERR_NOT_SUPPORTED_FOR_SYMLINKS(ErrorCtx).
 
 
--spec to_http_code(t()) -> ?HTTP_422_UNPROCESSABLE_CONTENT.
+-spec to_http_code(t()) -> ?HTTP_400_BAD_REQUEST.
 to_http_code(_) ->
-    ?HTTP_422_UNPROCESSABLE_CONTENT.
+    ?HTTP_400_BAD_REQUEST.
 
 
 -spec to_errno(t()) -> false.

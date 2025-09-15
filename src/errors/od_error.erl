@@ -29,7 +29,7 @@
 ]).
 
 
--type http_code() :: 400 | 401 | 403 | 404 | 409 | 422 | 500 | 501 | 503.
+-type http_code() :: 400 | 401 | 403 | 404 | 409 | 500 | 501 | 503.
 
 -type errno() :: 
     ?OK | ?E2BIG | ?EACCES | ?EADDRINUSE | ?EADDRNOTAVAIL |
@@ -487,7 +487,7 @@ format_csv(Values) ->
 
 -spec onedata_errors_revision() -> binary().
 onedata_errors_revision() ->
-    <<"dd820966">>.
+    <<"3198a1db">>.
 
 
 %%%===================================================================
