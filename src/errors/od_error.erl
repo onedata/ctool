@@ -487,7 +487,7 @@ format_csv(Values) ->
 
 -spec onedata_errors_revision() -> binary().
 onedata_errors_revision() ->
-    <<"3198a1db">>.
+    <<"060309d9">>.
 
 
 %%%===================================================================

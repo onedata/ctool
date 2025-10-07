@@ -52,6 +52,6 @@ to_http_code(_) ->
     ?HTTP_400_BAD_REQUEST.
 
 
--spec to_errno(t()) -> false.
+-spec to_errno(t()) -> {true, od_error:errno()}.
 to_errno(_) ->
-    false.
+    {true, ?EINVAL}.
