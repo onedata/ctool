@@ -109,7 +109,9 @@ decode(ValidationStrategy, RecordJson) ->
                 null ->
                     undefined;
                 AttrNamesJson ->
-                    lists:usort(onedata_file:sanitize_attr_names(<<"attributes">>, AttrNamesJson, current, ?AVAILABLE_ATTRS))
+                    lists:usort(onedata_file:sanitize_attr_names(
+                        <<"attributes">>, AttrNamesJson, current, ?AVAILABLE_ATTRS, allow_xattrs
+                    ))
             end
         catch
             Class:Reason:Stacktrace when ValidationStrategy == validate ->
