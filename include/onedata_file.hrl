@@ -76,8 +76,11 @@
     ?attr_guid
 ]).
 -define(FILE_META_ATTRS, [
-    ?attr_index, ?attr_type, ?attr_active_permissions_type, ?attr_mode, ?attr_acl, ?attr_parent_guid,
-    ?attr_provider_id, ?attr_shares, ?attr_owner_id, ?attr_hardlink_count, ?attr_symlink_value, ?attr_is_deleted
+    ?attr_index, ?attr_type, ?attr_active_permissions_type, ?attr_mode, ?attr_acl, ?attr_provider_id, ?attr_shares,
+    ?attr_owner_id, ?attr_hardlink_count, ?attr_symlink_value, ?attr_is_deleted
+]).
+-define(PARENT_ATTRS, [
+    ?attr_parent_guid
 ]).
 -define(LINK_TREE_FILE_ATTRS, [
     ?attr_name, ?attr_conflicting_name, ?attr_conflicting_files
@@ -112,7 +115,7 @@
 
 % Below list does not contain xattrs
 -define(ALL_FILE_ATTRS, lists:flatten([
-    ?IMPLICIT_FILE_ATTRS, ?FILE_META_ATTRS, ?LINK_TREE_FILE_ATTRS, ?PATH_FILE_ATTRS,
+    ?IMPLICIT_FILE_ATTRS, ?PARENT_ATTRS, ?FILE_META_ATTRS, ?LINK_TREE_FILE_ATTRS, ?PATH_FILE_ATTRS,
     ?LUMA_FILE_ATTRS, ?TIMES_FILE_ATTRS, ?LOCATION_FILE_ATTRS, ?METADATA_FILE_ATTRS,
     ?DATASET_FILE_ATTRS, ?QOS_EFF_VALUE_FILE_ATTRS, ?QOS_STATUS_FILE_ATTRS, ?ARCHIVE_RECALL_FILE_ATTRS
 ])).
