@@ -22,6 +22,7 @@
 -export([throws_error_during_decode_from_json/2, throws_error_during_decode_from_json/3]).
 -export([erase_ctx_if_error/1]).
 
+-export([include_full_ctx_in_errors/1]).
 
 %%%===================================================================
 %%% API
@@ -120,11 +121,14 @@ throws_error_during_decode_from_json(ExpError, RecordType, Record) ->
     end.
 
 
-erase_ctx_if_error(?ERR(Type, Args, _Ctx)) ->
-    ArgsWithErasedCtx = case Args of
-        undefined ->
+erase_ctx_if_error(?ERR(Type, Args, Ctx) = OriginalError) ->
+    ShouldIncludeFullCtx = test_utils:should_include_full_ctx_in_errors_on_current_node(),
+    ArgsWithErasedCtx = if
+        ShouldIncludeFullCtx ->
+            OriginalError;
+        Args == undefined ->
             undefined;
-        _ ->
+        true ->
             list_to_tuple(lists:map(fun
                 (Error = ?ERR) -> erase_ctx_if_error(Error);
                 (Else) -> Else
@@ -132,6 +136,27 @@ erase_ctx_if_error(?ERR(Type, Args, _Ctx)) ->
     end,
 
     % Manually build tuple instead of using record to avoid dialyzer error
-    {error, {od_error, Type, ArgsWithErasedCtx, undefined}};
+    {error, {
+        od_error,
+        Type,
+        ArgsWithErasedCtx,
+        case ShouldIncludeFullCtx of
+            true -> Ctx;
+            false -> undefined
+        end
+    }};
 erase_ctx_if_error(Else) ->
     Else.
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%% The error ctx is normally mocked in all tests to be always undefined,
+%% so that error equality/matching assertions always work
+%% (otherwise, the ctx would always differ from the expectations).
+%% This function disables this behaviour and may be useful for debug purposes.
+%% @end
+%%--------------------------------------------------------------------
+-spec include_full_ctx_in_errors(boolean()) -> ok.
+include_full_ctx_in_errors(Flag) ->
+    ctool:set_env(include_full_ctx_in_errors, Flag).
