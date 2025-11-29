@@ -35,6 +35,21 @@
 %%%===================================================================
 
 
+error_ctx_can_be_enabled_in_tests_test_() ->
+    {setup,
+        fun() -> ok end,
+        fun(_) -> eunit_utils:include_full_ctx_in_errors(false) end,
+        fun() ->
+            Err = ?ERR_SERVICE_UNAVAILABLE(?err_ctx()),
+            ?assertEqual(Err, ?ERR_SERVICE_UNAVAILABLE(?err_ctx())),
+            eunit_utils:include_full_ctx_in_errors(true),
+            ?assertNotEqual(Err, ?ERR_SERVICE_UNAVAILABLE(?err_ctx())),
+            eunit_utils:include_full_ctx_in_errors(false),
+            ?assertEqual(Err, ?ERR_SERVICE_UNAVAILABLE(?err_ctx()))
+        end
+    }.
+
+
 assert_all_errors_are_tested_test() ->
     AllModules = lists:flatmap(fun(Path) ->
         case filelib:wildcard(Path ++ "/*.beam") of
