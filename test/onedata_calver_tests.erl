@@ -1,6 +1,6 @@
 %%%-------------------------------------------------------------------
 %%% @author Lukasz Opiola
-%%% @copyright (C) 2025 ACK CYFRONET AGH
+%%% @copyright (C) 2025 Onedata (onedata.org)
 %%% This software is released under the MIT license
 %%% cited in 'LICENSE.txt'.
 %%% @end
@@ -22,13 +22,24 @@
 %%%===================================================================
 
 
+invalid_version_test() ->
+    ?assertException(error, {invalid_version, <<"">>}, cmp(<<"20.02.0-alpha17">>, <<"">>)),
+    ?assertException(error, {invalid_version, <<"20-02.0-alpha17">>}, cmp_year(<<"20-02.0-alpha17">>, <<"20.02.0">>)),
+    ?assertException(error, {invalid_version, <<"gibberish">>}, cmp(<<"25.1.2-alpha.25">>, <<"gibberish">>)),
+    ?assertException(error, {invalid_version, <<"2000-rc6">>}, cmp_year(<<"2000-rc6">>, <<"25.1.2-rc.1">>)),
+    ?assertException(error, {invalid_version, <<"25.1.1.1">>}, cmp(<<"21.02.8">>, <<"25.1.1.1">>)),
+    ?assertException(error, {invalid_version, <<"25.1.1.1-rc7">>}, cmp_year(<<"21.02.8">>, <<"25.1.1.1-rc7">>)).
+
+
 basic_equality_test() ->
+    ?assertEqual(equal, cmp(<<"20.02.0-alpha17">>, <<"20.02.0-alpha17">>)),
     ?assertEqual(equal, cmp(<<"20.02.0-alpha17">>, <<"20.02.0-alpha17">>)),
     ?assertEqual(equal, cmp(<<"21.02.8">>, <<"21.02.8">>)),
     ?assertEqual(equal, cmp(<<"25.0">>, <<"25.0">>)),
     ?assertEqual(equal, cmp(<<"25.0">>, <<"25.0.0">>)),
     ?assertEqual(equal, cmp(<<"25.1.2">>, <<"25.1.2">>)),
     ?assertEqual(equal, cmp(<<"25.1.2-alpha.25">>, <<"25.1.2-alpha.25">>)),
+    ?assertEqual(equal, cmp(<<"25.1-alpha.25">>, <<"25.1.0-alpha.25">>)),
     ?assertEqual(equal, cmp(<<"25.1.2-rc.1">>, <<"25.1.2-rc.1">>)).
 
 
@@ -76,7 +87,7 @@ label_vs_full_release_test() ->
 
 
 label_ordering_test() ->
-    assert_order([
+    assert_ordered([
         <<"18.02.0-alpha1">>,
         <<"18.02.0-rc3">>,
         <<"19.02.0-beta6">>,
@@ -85,12 +96,12 @@ label_ordering_test() ->
         <<"20.02.0-rc1">>,
         <<"25.0-alpha.1">>,
         <<"25.0-alpha.2">>,
-        <<"25.0-beta.1">>,
+        <<"25.0.0-beta.1">>,
         <<"25.0-beta.23">>,
         <<"25.0-rc.1">>,
-        <<"25.0-rc.10">>,
+        <<"25.0.0-rc.10">>,
         <<"25.0-rc.100">>,
-        <<"25.0-rc.1000">>,
+        <<"25.0.0-rc.1000">>,
         <<"25.0">>
     ]).
 
@@ -103,7 +114,7 @@ label_ordinal_comparison_test() ->
 
 
 patch_after_full_release_test() ->
-    assert_order([
+    assert_ordered([
         <<"25.0">>,
         <<"25.0.1">>,
         <<"25.0.2">>,
@@ -113,7 +124,7 @@ patch_after_full_release_test() ->
 
 
 mixed_sequence_test() ->
-    assert_order([
+    assert_ordered([
         <<"18.02.0-alpha1">>,
         <<"18.02.0-rc3">>,
 
@@ -132,15 +143,19 @@ mixed_sequence_test() ->
         <<"21.02.4">>,
         <<"21.02.8">>,
 
-        <<"25.0-alpha.1">>,
-        <<"25.0-alpha.2">>,
-        <<"25.0-beta.1">>,
-        <<"25.0-rc.1">>,
-        <<"25.0">>,
-        <<"25.0.1">>,
-        <<"25.0.2">>,
+        <<"25.1-alpha.1">>,
+        <<"25.1.0-alpha.2">>,
+        <<"25.1-beta.1">>,
+        <<"25.1-rc.1">>,
         <<"25.1">>,
         <<"25.1.1">>,
+        <<"25.1.2-alpha.1">>,
+        <<"25.1.2-beta.1">>,
+        <<"25.1.2-rc.1">>,
+        <<"25.1.2-rc.2">>,
+        <<"25.1.2">>,
+        <<"25.2">>,
+        <<"25.2.1">>,
 
         <<"26.0-beta.15">>
     ]).
@@ -161,15 +176,15 @@ cmp_year(V1, V2) ->
     onedata_calver:compare_year(V1, V2).
 
 
--spec assert_order([onedata_calver:version()]) -> ok.
-assert_order([]) ->
+-spec assert_ordered([onedata_calver:version()]) -> ok.
+assert_ordered([]) ->
     ok;
-assert_order([_]) ->
+assert_ordered([_]) ->
     ok;
-assert_order([A, B | Rest]) ->
+assert_ordered([A, B | Rest]) ->
     ?assertEqual(lower, cmp(A, B)),
     ?assert(lists:member(cmp_year(A, B), [lower, equal])),
-    assert_order([B | Rest]).
+    assert_ordered([B | Rest]).
 
 
 -endif.

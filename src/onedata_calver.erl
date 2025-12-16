@@ -1,6 +1,6 @@
 %%%-------------------------------------------------------------------
 %%% @author Lukasz Opiola
-%%% @copyright (C) 2025 ACK CYFRONET AGH
+%%% @copyright (C) 2025 Onedata (onedata.org)
 %%% This software is released under the MIT license
 %%% cited in 'LICENSE.txt'.
 %%% @end
@@ -46,9 +46,17 @@
 -module(onedata_calver).
 -author("Lukasz Opiola").
 
+-include("logging.hrl").
 
+
+% NOTE: comparison logic depends on label specifiers being alphabetically in
+% ascending order, i.e.: 25.0-alpha.3 < 25.0-beta.2 < 25.0-rc.1 < 25.0
+% (a version with no label is greater than the same version with any label)
 -type label_specifier() :: alpha | beta | rc | undefined.
 
+% internal record representing components of a version number
+% NOTE: the field order is crucial; comparison logic depends on universal term comparison
+% where consecutive tuple elements are compared until one of them is lower/greater
 -record(od_calver, {
     year :: non_neg_integer(),
     minor :: non_neg_integer(),
@@ -88,6 +96,7 @@ compare_year(V1, V2) ->
 
 
 %% @private
+%% @doc we depend on natural term sorting - see the notes at the top
 -spec compare_terms(term(), term()) -> lower | equal | greater.
 compare_terms(T1, T2) when T1 < T2 -> lower;
 compare_terms(T1, T2) when T1 == T2 -> equal;
@@ -96,42 +105,48 @@ compare_terms(T1, T2) when T1 > T2 -> greater.
 
 %% @private
 -spec parse(version()) -> od_calver().
-parse(VersionBin) when is_binary(VersionBin) ->
-    Version = binary_to_list(VersionBin),
+parse(VersionBin) ->
+    try
+        Version = binary_to_list(VersionBin),
 
-    {MainPart, LabelPart} = case string:split(Version, "-", all) of
-        [Main] -> {Main, undefined};
-        [Main, Label] -> {Main, Label}
-    end,
+        {MainPart, LabelPart} = case string:split(Version, "-", all) of
+            [Main] -> {Main, undefined};
+            [Main, Label] -> {Main, Label}
+        end,
 
-    Numbers = [list_to_integer(N) || N <- string:split(MainPart, ".", all)],
-    {Year, Minor, Patch} = case Numbers of
-        [Y, M] -> {Y, M, 0};
-        [Y, M, P] -> {Y, M, P}
-    end,
+        Numbers = [list_to_integer(N) || N <- string:split(MainPart, ".", all)],
+        {Year, Minor, Patch} = case Numbers of
+            [Y, M] -> {Y, M, 0};
+            [Y, M, P] -> {Y, M, P}
+        end,
 
-    {LabelSpecifier, LabelOrdinal} = case LabelPart of
-        undefined ->
-            {undefined, 0};
+        {LabelSpecifier, LabelOrdinal} = case LabelPart of
+            undefined ->
+                {undefined, 0};
 
-        _ when Year > 21 ->
-            % modern format: $label.$ordinal (e.g. alpha.2)
-            [LabelStr, OrdStr] = string:split(LabelPart, ".", all),
-            {parse_label(LabelStr), list_to_integer(OrdStr)};
+            _ when Year > 21 ->
+                % modern format: $label.$ordinal (e.g. alpha.2)
+                [LabelStr, OrdStr] = string:split(LabelPart, ".", all),
+                {parse_label(LabelStr), list_to_integer(OrdStr)};
 
-        _ ->
-            % legacy format (Year <= 21): $label$ordinal (e.g. alpha2)
-            {LabelStr, OrdStr} = split_legacy_label(LabelPart),
-            {parse_label(LabelStr), list_to_integer(OrdStr)}
-    end,
+            _ ->
+                % legacy format (Year <= 21): $label$ordinal (e.g. alpha2)
+                {LabelStr, OrdStr} = split_legacy_label(LabelPart),
+                {parse_label(LabelStr), list_to_integer(OrdStr)}
+        end,
 
-    #od_calver{
-        year = Year,
-        minor = Minor,
-        patch = Patch,
-        label_specifier = LabelSpecifier,
-        label_ordinal = LabelOrdinal
-    }.
+        #od_calver{
+            year = Year,
+            minor = Minor,
+            patch = Patch,
+            label_specifier = LabelSpecifier,
+            label_ordinal = LabelOrdinal
+        }
+    catch
+        Class:Reason:Stacktrace ->
+            ?error_exception(Class, Reason, Stacktrace),
+            error({invalid_version, VersionBin})
+    end.
 
 
 %% @private
