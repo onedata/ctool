@@ -142,7 +142,7 @@ end).
 -define(assertNotEqual(Expectation, ExpressionToCheck, Attempts, Interval), begin
     ((fun() ->
         lists_utils:foldl_while(fun(AttemptsLeft__Local, ExpectedValue__Local) ->
-            case (ExpressionToCheck) of
+            case eunit_utils:erase_ctx_if_error(ExpressionToCheck) of
                 ExpectedValue__Local when AttemptsLeft__Local == 1 ->
                     test_utils:ct_pal_failure_summary(
                         "assertNotEqual", #failure_summary{
@@ -161,7 +161,7 @@ end).
                 _ ->
                     {halt, ok}
             end
-        end, Expectation, lists:seq(max(Attempts, 1), 1, -1))
+        end, eunit_utils:erase_ctx_if_error(Expectation), lists:seq(max(Attempts, 1), 1, -1))
     end)())
 end).
 

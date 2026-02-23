@@ -22,7 +22,7 @@
 
 -export([type_to_json/1, type_from_json/1]).
 
--export([sanitize_attr_names/4]).
+-export([sanitize_attr_names/5]).
 -export([attr_name_to_json/2, attr_name_to_json/1]).
 -export([attr_name_from_json/2, attr_name_from_json/1]).
 
@@ -118,12 +118,19 @@ type_from_json(<<"LNK">>) -> ?LINK_TYPE;
 type_from_json(<<"SYMLNK">>) -> ?SYMLINK_TYPE.
 
 
--spec sanitize_attr_names(binary(), [binary()], attr_generation(), [attr_name()]) ->
+-spec sanitize_attr_names(
+    binary(), [binary()], attr_generation(), [attr_name()], allow_xattrs | disallow_xattrs
+) ->
     [attr_name()] | no_return().
-sanitize_attr_names(DataKey, Attributes, AttrGeneration, AllowedAttributes) ->
+sanitize_attr_names(DataKey, Attributes, AttrGeneration, AllowedAttributes, AllowXattrsPolicy) ->
+    AllowXattrs = AllowXattrsPolicy == allow_xattrs,
+
     Result = lists_utils:foldl_while(fun
-        (<<"xattr.", XattrName/binary>>, {ok, AttrAcc, XattrAcc}) ->
+        (<<"xattr.", XattrName/binary>>, {ok, AttrAcc, XattrAcc}) when AllowXattrs ->
             {cont, {ok, AttrAcc, [XattrName | XattrAcc]}};
+        (<<"xattr.", _/binary>>, _) ->
+            AllowedValuesJson = [attr_name_to_json(AttrGeneration, A) || A <- AllowedAttributes],
+            {halt, {error, AllowedValuesJson}};
         (Attr, {ok, AttrAcc, XattrAcc}) ->
             try
                 TranslatedAttr = attr_name_from_json(AttrGeneration, Attr),
@@ -131,8 +138,13 @@ sanitize_attr_names(DataKey, Attributes, AttrGeneration, AllowedAttributes) ->
                 {cont, {ok, [TranslatedAttr | AttrAcc], XattrAcc}}
             catch _:_ ->
                 AllowedValuesJson = [attr_name_to_json(AttrGeneration, A) || A <- AllowedAttributes],
-                % add xattr.* to end of list, so allowed values are printed in correct order
-                {halt, {error, AllowedValuesJson ++ [<<"xattr.*">>]}}
+                case AllowXattrs of
+                    true ->
+                        % add xattr.* to end of list, so allowed values are printed in correct order
+                        {halt, {error, AllowedValuesJson ++ [<<"xattr.*">>]}};
+                    false ->
+                        {halt, {error, AllowedValuesJson}}
+                end
             end
     end, {ok, [], []}, utils:ensure_list(Attributes)),
     case Result of
