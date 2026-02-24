@@ -47,6 +47,7 @@ init(_Id, _Opts) ->
 -spec pre_init_per_suite(Suite :: term(), Config :: [term()],
     State :: logger_state()) -> {ok, logger_state()}.
 pre_init_per_suite(Suite, Config, State) ->
+    logger:remove_handler(simple),
     {Config, State#logger_state{suite = Suite, suite_stopwatch = stopwatch:start()}}.
 
 

@@ -203,7 +203,7 @@ pr_stacktrace(Stacktrace, {Class, Reason}) ->
 -spec configure_logger() -> ok.
 configure_logger() ->
     % logger_proxy is a process responsible for forwarding logs to remote node based on process group leader.
-    % This results in logs being logged both on node executing code and making a rpc call.
+    % This results in logs being logged both on node executing code and making an rpc call.
     % We do not want this so it is disabled.
     unregister(logger_proxy),
 
@@ -243,7 +243,8 @@ configure_logger() ->
         config => Config,
         filters => HandlerFilters,
         formatter => onedata_logger_formatter:get_config_spec(console)
-    }).
+    }),
+    ok = logger:remove_handler(default).
 
 
 %%%===================================================================
