@@ -4,7 +4,7 @@ monitoring and testing. It is used across Onedata components as a rebar dependen
 
 Most important elements of *ctool* are:
 
-* `logging.hrl` - logging macros that must be used instead of direct [lager](https://github.com/basho/lager) calls as they introduce additional logic layer required to customize logging.
+* `logging.hrl` - logging macros that must be used instead of direct [logger](https://www.erlang.org/doc/apps/kernel/logger.html) calls as they introduce additional logic layer required to customize logging.
 * `performance.hrl` - macros for performance and stress tests creation
 * `assertions.hrl` - assertions for [ct](http://erlang.org/doc/man/common_test.html) tests (based on assertions provided by [eunit](http://erlang.org/doc/apps/eunit/)).
 * `test_utils.erl` - functions for mocking in *ct*

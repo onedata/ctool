@@ -17,85 +17,62 @@
 main_test_() ->
     {setup,
         fun() ->
-            ctool:set_env(current_loglevel, 5),
-            ctool:set_env(default_loglevel, 7)
+            onedata_logger:set_loglevel(notice),
+            ctool:set_env(default_loglevel, debug)
         end,
         fun(_) ->
             ok
         end,
         [
-            {"should_log, set/get_loglevel, set/get_default_loglevel",
+            {"set/get_loglevel, set/get_default_loglevel",
                 fun() ->
-                    ?assertEqual(onedata_logger:get_current_loglevel(), 5),
-                    ?assert(not onedata_logger:should_log(6)),
-                    ?assert(not onedata_logger:should_log(7)),
-                    ?assert(onedata_logger:should_log(2)),
-                    ?assert(onedata_logger:should_log(5)),
-                    ?assert(onedata_logger:should_log(0)),
+                    ?assertEqual(notice, onedata_logger:get_current_loglevel()),
+                    ?assert(not onedata_logger:should_log(debug)),
+                    ?assert(not onedata_logger:should_log(info)),
+                    ?assert(onedata_logger:should_log(notice)),
+                    ?assert(onedata_logger:should_log(critical)),
+                    ?assert(onedata_logger:should_log(emergency)),
+                    
                     onedata_logger:set_loglevel(error),
-                    ?assertEqual(onedata_logger:get_current_loglevel(), 3),
-                    ?assert(not onedata_logger:should_log(6)),
-                    ?assert(not onedata_logger:should_log(7)),
-                    ?assert(not onedata_logger:should_log(5)),
-                    ?assert(not onedata_logger:should_log(4)),
-                    ?assert(onedata_logger:should_log(1)),
-                    ?assert(onedata_logger:should_log(0)),
+                    ?assert(not onedata_logger:should_log(debug)),
+                    ?assert(not onedata_logger:should_log(info)),
+                    ?assert(not onedata_logger:should_log(notice)),
+                    ?assert(not onedata_logger:should_log(warning)),
+                    ?assert(onedata_logger:should_log(error)),
+                    ?assert(onedata_logger:should_log(critical)),
+                    ?assert(onedata_logger:should_log(alert)),
+                    ?assert(onedata_logger:should_log(emergency)),
+                    ?assertEqual(error, onedata_logger:get_current_loglevel()),
+                    
                     onedata_logger:set_loglevel(default),
                     ?assertEqual(onedata_logger:get_default_loglevel(), onedata_logger:get_current_loglevel()),
-                    ?assert(onedata_logger:should_log(1)),
-                    ?assert(onedata_logger:should_log(4)),
-                    ?assert(onedata_logger:should_log(5)),
-                    ?assert(onedata_logger:should_log(6)),
-                    ?assert(onedata_logger:should_log(3))
-                end
-            },
-
-            {"parse_process_info",
-                fun() ->
-                    Proplist = onedata_logger:parse_process_info({pid, {some_module, some_fun, some_arity}}),
-                    ?assertEqual(Proplist, [{module, some_module}, {function, some_fun}, {arity, some_arity}])
-                end
-            },
-
-            {"loglevel conversion",
-                fun() ->
-                    ?assertEqual(debug, onedata_logger:loglevel_int_to_atom(onedata_logger:loglevel_atom_to_int(debug))),
-                    ?assertEqual(notice, onedata_logger:loglevel_int_to_atom(onedata_logger:loglevel_atom_to_int(notice))),
-                    ?assertEqual(5, onedata_logger:loglevel_atom_to_int(onedata_logger:loglevel_int_to_atom(5))),
-                    ?assertEqual(1, onedata_logger:loglevel_atom_to_int(onedata_logger:loglevel_int_to_atom(1)))
+                    ?assert(onedata_logger:should_log(debug)),
+                    ?assert(onedata_logger:should_log(info)),
+                    ?assert(onedata_logger:should_log(notice)),
+                    ?assert(onedata_logger:should_log(warning)),
+                    ?assert(onedata_logger:should_log(error)),
+                    ?assert(onedata_logger:should_log(critical)),
+                    ?assert(onedata_logger:should_log(alert)),
+                    ?assert(onedata_logger:should_log(emergency))
                 end
             }
         ]
     }.
 
 
-lager_interfacing_test_() ->
+logger_interfacing_test_() ->
     {setup,
         fun() ->
-            ctool:set_env(current_loglevel, 7),
-            meck:new(lager, [passthrough])
-        end,
-        fun(_) ->
-            ok = meck:unload(lager)
+            onedata_logger:set_loglevel(debug)
         end,
         [
             {"log, set/get_include_stacktrace, compute_message, logging macros",
                 fun() ->
-                    meck:expect(lager, log,
-                        fun(debug, _, _, ["debug message"]) -> ok;
-                            (info, _, _, ["info message"]) -> ok;
-                            (warning, _, _, ["warning message"]) -> ok;
-                            (warning, _, _, ["An unexpected exception" ++ _]) -> ok;
-                            (critical, _, _, ["An unexpected exception" ++ _]) -> ok;
-                            (error, _, _, ["error message"]) -> ok;
-                            (emergency, _, _, ["emergency message"]) -> ok
-                        end),
-
-                    onedata_logger:log(7, [], "debug message"),
-                    onedata_logger:log(6, [], "info message"),
-                    onedata_logger:log(4, [], "warning message"),
-                    onedata_logger:log(3, [], "error message"),
-                    onedata_logger:log(0, [], "emergency message"),
+                    onedata_logger:log(debug, #{}, "debug message"),
+                    onedata_logger:log(info, #{}, "info message"),
+                    onedata_logger:log(warning, #{}, "warning message"),
+                    onedata_logger:log(error, #{}, "error message"),
+                    onedata_logger:log(emergency, #{}, "emergency message"),
                     ?debug("debug message"),
                     ?debug("debug ~ts", ["message"]),
                     ?info("info message"),
@@ -104,8 +81,7 @@ lager_interfacing_test_() ->
                         ?critical_exception("critical message ~tp", [?MODULE], Class, Reason, Stacktrace)
                     end,
                     ?error("error message"),
-                    ?emergency("emergency message"),
-                    ?assert(meck:validate(lager))
+                    ?emergency("emergency message")
                 end
             }
         ]

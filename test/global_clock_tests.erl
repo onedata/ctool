@@ -355,7 +355,7 @@ monotonic_timestamp_test_() ->
 monotonicity_and_warnings() ->
     CountAllWarningLogs = fun() ->
         % logger is mocked in setup, warning is on loglevel = 4
-        meck:num_calls(onedata_logger, log, [4, '_', '_'])
+        meck:num_calls(onedata_logger, log, [warning, '_', '_'])
     end,
 
     lists:foreach(fun({TimeUnit, MonotonicTimestampFun}) ->
@@ -448,7 +448,6 @@ setup() ->
 
     meck:new(onedata_logger, [passthrough]),
     meck:expect(onedata_logger, should_log, fun(_) -> true end),
-    meck:expect(onedata_logger, parse_process_info, fun(_) -> [] end),
     meck:expect(onedata_logger, log, fun(_, _, _) -> ok end).
 
 

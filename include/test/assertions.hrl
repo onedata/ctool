@@ -24,8 +24,8 @@
 -compile(nowarn_shadow_vars).
 
 -record(failure_summary, {
-    module = ?MODULE :: atom(),
-    line = ?LINE :: integer(),
+    module :: atom(),
+    line :: integer(),
     expected_expression :: term(),
     expected_value = undefined :: term(),
     actual_expression :: term(),
@@ -48,6 +48,8 @@
                         1 ->
                             test_utils:ct_pal_failure_summary(
                                 "assertMatch", #failure_summary{
+                                    module = ?MODULE,
+                                    line = ?LINE,
                                     expected_expression = (??Guard),
                                     actual_expression = (??ExpressionToCheck),
                                     actual_value = ActualValue__Local
@@ -75,6 +77,8 @@ end).
                 Guard ->
                     test_utils:ct_pal_failure_summary(
                         "assertNotMatch", #failure_summary{
+                            module = ?MODULE,
+                            line = ?LINE,
                             expected_expression = (??Guard),
                             actual_expression = (??ExpressionToCheck),
                             actual_value = ActualValue__Local
@@ -111,6 +115,8 @@ end).
                         1 ->
                             test_utils:ct_pal_failure_summary(
                                 "assertEqual", #failure_summary{
+                                    module = ?MODULE,
+                                    line = ?LINE,
                                     expected_expression = (??Expectation),
                                     expected_value = ExpectedValue__Local,
                                     actual_expression = (??ExpressionToCheck),
@@ -140,6 +146,8 @@ end).
                 ExpectedValue__Local when AttemptsLeft__Local == 1 ->
                     test_utils:ct_pal_failure_summary(
                         "assertNotEqual", #failure_summary{
+                            module = ?MODULE,
+                            line = ?LINE,
                             expected_expression = (??Expectation),
                             expected_value = ExpectedValue__Local,
                             actual_expression = (??ExpressionToCheck),
@@ -161,19 +169,67 @@ end).
 -undef(assert).
 -define(assert(ExpressionToCheck), ?assert(ExpressionToCheck, 1)).
 -define(assert(ExpressionToCheck, Attempts), ?assert(ExpressionToCheck, Attempts, timer:seconds(1))).
-% do not use literal 'true' atom to avoid warnings for clauses that cannot match,
-% even if the expression is a constant or is known to be boolean-only.
--define(assert(ExpressionToCheck, Attempts, Interval),
-    ?assertEqual(is_process_alive(self()), ExpressionToCheck, Attempts, Interval)).
+-define(assert(ExpressionToCheck, Attempts, Interval), begin
+    ((fun() ->
+        lists_utils:foldl_while(fun(AttemptsLeft__Local, ExpectedValue__Local) ->
+            case eunit_utils:erase_ctx_if_error(ExpressionToCheck) of
+                ExpectedValue__Local ->
+                    {halt, ok};
+                ActualValue__Local ->
+                    case AttemptsLeft__Local of
+                        1 ->
+                            test_utils:ct_pal_failure_summary(
+                                "assert", #failure_summary{
+                                    module = ?MODULE,
+                                    line = ?LINE,
+                                    expected_expression = true,
+                                    expected_value = ExpectedValue__Local,
+                                    actual_expression = (??ExpressionToCheck),
+                                    actual_value = ActualValue__Local
+                                }, annotate_diff
+                            ),
+                            erlang:error(assert_failed);
+                        _ ->
+                            timer:sleep(Interval),
+                            {cont, true}
+                    end
+            end
+        end, true, lists:seq(max(Attempts, 1), 1, -1))
+    end)())
+end).
 
 
 -undef(assertNot).
 -define(assertNot(ExpressionToCheck), ?assertNot(ExpressionToCheck, 1)).
 -define(assertNot(ExpressionToCheck, Attempts), ?assertNot(ExpressionToCheck, Attempts, timer:seconds(1))).
-% do not use literal 'false' atom to avoid warnings for clauses that cannot match,
-% even if the expression is a constant or is known to be boolean-only.
--define(assertNot(ExpressionToCheck, Attempts, Interval),
-    ?assertEqual(not is_process_alive(self()), ExpressionToCheck, Attempts, Interval)).
+-define(assertNot(ExpressionToCheck, Attempts, Interval), begin
+    ((fun() ->
+        lists_utils:foldl_while(fun(AttemptsLeft__Local, ExpectedValue__Local) ->
+            case eunit_utils:erase_ctx_if_error(ExpressionToCheck) of
+                ExpectedValue__Local ->
+                    {halt, ok};
+                ActualValue__Local ->
+                    case AttemptsLeft__Local of
+                        1 ->
+                            test_utils:ct_pal_failure_summary(
+                                "assertNot", #failure_summary{
+                                    module = ?MODULE,
+                                    line = ?LINE,
+                                    expected_expression = false,
+                                    expected_value = ExpectedValue__Local,
+                                    actual_expression = (??ExpressionToCheck),
+                                    actual_value = ActualValue__Local
+                                }, annotate_diff
+                            ),
+                            erlang:error(assertNot_failed);
+                        _ ->
+                            timer:sleep(Interval),
+                            {cont, false}
+                    end
+            end
+        end, false, lists:seq(max(Attempts, 1), 1, -1))
+    end)())
+end).
 
 
 -define(assertReceivedMatch(Guard),
@@ -192,6 +248,8 @@ end).
                 end,
                 test_utils:ct_pal_failure_summary(
                     "assertReceivedMatch", #failure_summary{
+                        module = ?MODULE,
+                        line = ?LINE,
                         expected_expression = (??Guard),
                         actual_expression = (??ActualValue__Local),
                         actual_value = ActualValue__Local
@@ -213,6 +271,8 @@ end).
             ActualValue__Local ->
                 test_utils:ct_pal_failure_summary(
                     "assertReceivedNextMatch", #failure_summary{
+                        module = ?MODULE,
+                        line = ?LINE,
                         expected_expression = (??Guard),
                         actual_expression = (??ActualValue__Local),
                         actual_value = ActualValue__Local
@@ -223,6 +283,8 @@ end).
             Timeout ->
                 test_utils:ct_pal_failure_summary(
                     "assertReceivedNextMatch", #failure_summary{
+                        module = ?MODULE,
+                        line = ?LINE,
                         expected_expression = (??Guard),
                         actual_expression = timeout,
                         actual_value = timeout
@@ -242,6 +304,8 @@ end).
             Guard = Result__Local ->
                 test_utils:ct_pal_failure_summary(
                     "assertNotReceivedMatch", #failure_summary{
+                        module = ?MODULE,
+                        line = ?LINE,
                         expected_expression = (??Guard),
                         expected_value = timeout,
                         actual_expression = (??Result__Local),
@@ -268,6 +332,8 @@ end).
             Timeout ->
                 test_utils:ct_pal_failure_summary(
                     "assertReceivedEqual", #failure_summary{
+                        module = ?MODULE,
+                        line = ?LINE,
                         expected_expression = (??Expectation),
                         expected_value = ExpectedValue__Local,
                         actual_expression = timeout,
@@ -290,6 +356,8 @@ end).
             ActualValue__Local ->
                 test_utils:ct_pal_failure_summary(
                     "assertReceivedNextEqual", #failure_summary{
+                        module = ?MODULE,
+                        line = ?LINE,
                         expected_expression = (??Expectation),
                         expected_value = ExpectedValue__Local,
                         actual_expression = (??ActualValue__Local),
@@ -301,6 +369,8 @@ end).
             Timeout ->
                 test_utils:ct_pal_failure_summary(
                     "assertReceivedNextEqual", #failure_summary{
+                        module = ?MODULE,
+                        line = ?LINE,
                         expected_expression = (??Expectation),
                         expected_value = ExpectedValue__Local,
                         actual_expression = timeout,
@@ -321,6 +391,8 @@ end).
             ExpectedValue__Local ->
                 test_utils:ct_pal_failure_summary(
                     "assertNotReceivedEqual", #failure_summary{
+                        module = ?MODULE,
+                        line = ?LINE,
                         expected_expression = timeout,
                         expected_value = timeout,
                         actual_expression = (??Expectation),
@@ -343,6 +415,8 @@ end).
             ActualValue__Local ->
                 test_utils:ct_pal_failure_summary(
                     "assertException", #failure_summary{
+                        module = ?MODULE,
+                        line = ?LINE,
                         expected_expression = "{ " ++ (??Class) ++ " , " ++ (??Term) ++ " , [...] }",
                         actual_expression = (??ExpressionToCheck),
                         actual_value = ActualValue__Local
@@ -355,6 +429,8 @@ end).
             ActualClass__Local:ActualTerm__Local:Stacktrace__Local ->
                 test_utils:ct_pal_failure_summary(
                     "assertException", #failure_summary{
+                        module = ?MODULE,
+                        line = ?LINE,
                         expected_expression = "{ " ++ (??Class) ++ " , " ++ (??Term) ++ " , [...] }",
                         actual_expression = (??ExpressionToCheck),
                         actual_value = {ActualClass__Local, ActualTerm__Local, Stacktrace__Local}
@@ -376,6 +452,8 @@ end).
             ActualClass__Local:ActualTerm__Local:Stacktrace__Local ->
                 test_utils:ct_pal_failure_summary(
                     "assertNotException", #failure_summary{
+                        module = ?MODULE,
+                        line = ?LINE,
                         expected_expression = "none",
                         actual_expression = (??ExpressionToCheck),
                         actual_value = {ActualClass__Local, ActualTerm__Local, Stacktrace__Local}
