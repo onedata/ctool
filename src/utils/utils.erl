@@ -545,8 +545,12 @@ check_result({ok, Value}) ->
     Value;
 check_result({error, _} = Error) ->
     case errors:is_known_error(Error) of
-        true -> throw(Error);
-        false -> error(Error)
+        true ->
+            throw(Error);
+        false ->
+            throw(?report_internal_server_error(
+                ?autoformat_with_msg("Unknown error in utils:check_result", [Error])
+            ))
     end.
 
 %%%===================================================================
