@@ -135,6 +135,7 @@ end).
 -define(RAND_CHOICE(A, B), ?RAND_ELEMENT([A, B])).
 -define(RAND_CHOICE(A, B, C), ?RAND_ELEMENT([A, B, C])).
 -define(RAND_CHOICE(A, B, C, D), ?RAND_ELEMENT([A, B, C, D])).
+-define(RAND_CHOICE(A, B, C, D, E), ?RAND_ELEMENT([A, B, C, D, E])).
 -define(RAND_STR(), ?RAND_STR(16)).
 -define(RAND_STR(Size), string:slice(str_utils:rand_hex(Size), 0, Size)).
 -define(RAND_UNICODE_STR(), ?RAND_UNICODE_STR(30)).

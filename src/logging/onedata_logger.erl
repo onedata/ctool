@@ -223,8 +223,8 @@ configure_logger() ->
         max_no_bytes => ctool:get_env(logger_max_file_size),
         max_no_files => ctool:get_env(logger_max_file_no)
     },
-    
-    FileHandler = fun(Level) -> 
+
+    FileHandler = fun(Level) ->
         LogFile = "/" ++ atom_to_list(Level) ++ ".log",
         #{
             level => Level,
@@ -298,15 +298,63 @@ autoformat_spec_to_format_and_args(#autoformat_spec{
     args = Args,
     term_names = TermNames,
     term_values = TermValues
+}) when length(TermNames) /= length(TermValues) ->
+    {
+        "##### Autoformat error! #####~n"
+        "> > The ?autoformat macro has resolved ~B term names and was provided ~B term values.~n"
+        "> > Make sure to ONLY USE VARIABLES in this macro.~n"
+        "> > ----------------------------------------------~n"
+        "> > Format: ~ts~n"
+        "> > Args: ~tp~n"
+        "> > TermNames: ~tp~n"
+        "> > TermValues: ~tp",
+        [
+            length(TermNames),
+            length(TermValues),
+            Format,
+            Args,
+            TermNames,
+            TermValues
+        ]
+    };
+
+autoformat_spec_to_format_and_args(#autoformat_spec{
+    format = Format,
+    args = Args,
+    term_names = TermNames,
+    term_values = TermValues
 }) ->
-    DetailsFormat = Format ++ lists:flatten(lists:map(fun({TermName, Term}) ->
-        ControlSequence = case is_printable(Term) of
-            true -> "~ts";
-            false -> "~tp"
-        end,
-        "~n    " ++ TermName ++  " = " ++ ControlSequence
-    end, lists:zip(TermNames, TermValues))),
-    {DetailsFormat, Args ++ TermValues}.
+    try
+        DetailsFormat = Format ++ lists:flatten(lists:map(fun({TermName, Term}) ->
+            ControlSequence = case is_printable(Term) of
+                true -> "~ts";
+                false -> "~tp"
+            end,
+            "~n    " ++ TermName ++ " = " ++ ControlSequence
+        end, lists:zip(TermNames, TermValues))),
+        {DetailsFormat, Args ++ TermValues}
+    catch Class:Reason:Stacktrace ->
+        {
+            "##### Unexpected autoformat error! #####~n"
+            "> > Stacktrace:~ts~n"
+            "> > Class: ~ts~n"
+            "> > Reason: ~tp~n"
+            "> > ------------------------------------~n"
+            "> > Format: ~ts~n"
+            "> > Args: ~tp~n"
+            "> > TermNames: ~tp~n"
+            "> > TermValues: ~tp",
+            [
+                lager:pr_stacktrace(Stacktrace),
+                Class,
+                Reason,
+                Format,
+                Args,
+                TermNames,
+                TermValues
+            ]
+        }
+    end.
 
 
 %% @private
