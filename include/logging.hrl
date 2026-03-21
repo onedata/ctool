@@ -201,7 +201,7 @@ end).
         Error;
     false ->
         ?report_internal_server_error(
-            ?autoformat_with_msg("Unknown error in the ?check macro", [Error])
+            ?autoformat_with_msg("Unknown error detected", [Error])
         )
 end).
 
@@ -291,7 +291,7 @@ end).
 
 % Prints bad request warning (frequently used in gen_servers)
 -define(log_bad_request(Request),
-% cannot use ?autoformat here as Request may be a complex term
+    % cannot use ?autoformat here as Request may be a complex term
     ?warning("~w:~B - received a bad request:~n    Request = ~tp", [?MODULE, ?LINE, Request])
 ).
 

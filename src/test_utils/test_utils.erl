@@ -31,6 +31,8 @@
 -export([include_full_ctx_in_errors/2]).
 -export([should_include_full_ctx_in_errors_on_current_node/0]).
 
+-export([add_disallowed_chars_to_name/2]).
+
 
 -define(TIMEOUT, timer:seconds(60)).
 -define(ATTEMPTS, 10).
@@ -366,9 +368,21 @@ should_include_full_ctx_in_errors_on_current_node() ->
     true == ctool:get_env(include_full_ctx_in_errors, false).
 
 
+-spec add_disallowed_chars_to_name(binary(), non_neg_integer()) -> binary().
+add_disallowed_chars_to_name(Name, 0) ->
+    Name;
+add_disallowed_chars_to_name(Name, N) ->
+    Size = byte_size(Name),
+    Pos = rand:uniform(Size + 1) - 1,
+    <<Left:Pos/binary, Right/binary>> = Name,
+    NewName = <<Left/binary, (?RAND_ELEMENT(?DISALLOWED_CHARS)), Right/binary>>,
+    add_disallowed_chars_to_name(NewName, N - 1).
+
+
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
+
 
 %%--------------------------------------------------------------------
 %% @private

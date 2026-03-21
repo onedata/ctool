@@ -301,7 +301,7 @@ autoformat_spec_to_format_and_args(#autoformat_spec{
 }) when length(TermNames) /= length(TermValues) ->
     {
         "##### Autoformat error! #####~n"
-        "> > The ?autoformat macro has resolved ~B term names and was provided ~B term values.~n"
+        "> > The autoformat macro has resolved ~B term names and was provided ~B term values.~n"
         "> > Make sure to ONLY USE VARIABLES in this macro.~n"
         "> > ----------------------------------------------~n"
         "> > Format: ~ts~n"
@@ -345,7 +345,7 @@ autoformat_spec_to_format_and_args(#autoformat_spec{
             "> > TermNames: ~tp~n"
             "> > TermValues: ~tp",
             [
-                lager:pr_stacktrace(Stacktrace),
+                pr_stacktrace(Stacktrace),
                 Class,
                 Reason,
                 Format,
