@@ -375,7 +375,7 @@ add_disallowed_chars_to_name(Name, N) ->
     Size = byte_size(Name),
     Pos = rand:uniform(Size + 1) - 1,
     <<Left:Pos/binary, Right/binary>> = Name,
-    NewName = <<Left/binary, (?RAND_ELEMENT(?DISALLOWED_CHARS)), Right/binary>>,
+    NewName = <<Left/binary, (?RAND_ELEMENT(?DISALLOWED_NAME_CHARS)), Right/binary>>,
     add_disallowed_chars_to_name(NewName, N - 1).
 
 

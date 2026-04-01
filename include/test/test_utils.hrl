@@ -168,7 +168,7 @@ end).
     "than_one_hundred_twenty_eight_characters_that_should_not_be_allowed"
 >>).
 
--define(DISALLOWED_CHARS, [$!, $#, $@, $%, $^, $&, $*]).
+-define(DISALLOWED_NAME_CHARS, [$!, $#, $@, $%, $^, $&, $*]).
 -define(add_disallowed_chars_to_name(Name, Count), test_utils:add_disallowed_chars_to_name(Name, Count)).
 -define(add_disallowed_chars_to_name(Name), ?add_disallowed_chars_to_name(Name, 5)).
 
