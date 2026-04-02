@@ -135,6 +135,7 @@ end).
 -define(RAND_CHOICE(A, B), ?RAND_ELEMENT([A, B])).
 -define(RAND_CHOICE(A, B, C), ?RAND_ELEMENT([A, B, C])).
 -define(RAND_CHOICE(A, B, C, D), ?RAND_ELEMENT([A, B, C, D])).
+-define(RAND_CHOICE(A, B, C, D, E), ?RAND_ELEMENT([A, B, C, D, E])).
 -define(RAND_STR(), ?RAND_STR(16)).
 -define(RAND_STR(Size), string:slice(str_utils:rand_hex(Size), 0, Size)).
 -define(RAND_UNICODE_STR(), ?RAND_UNICODE_STR(30)).
@@ -166,5 +167,9 @@ end).
     "very_very_very_long_name_with_at_least_128_characters_yes_indeed_more_"
     "than_one_hundred_twenty_eight_characters_that_should_not_be_allowed"
 >>).
+
+-define(DISALLOWED_NAME_CHARS, [$!, $#, $@, $%, $^, $&, $*]).
+-define(add_disallowed_chars_to_name(Name, Count), test_utils:add_disallowed_chars_to_name(Name, Count)).
+-define(add_disallowed_chars_to_name(Name), ?add_disallowed_chars_to_name(Name, 5)).
 
 -endif.

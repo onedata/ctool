@@ -196,9 +196,53 @@ end).
 end).
 
 
+-define(ensure_od_error(Error), case errors:is_known_error(Error) of
+    true ->
+        Error;
+    false ->
+        ?report_internal_server_error(
+            ?autoformat_with_msg("Unknown error detected", [Error])
+        )
+end).
+
+
+-define(throw_as_od_error(Error), throw(?ensure_od_error(Error))).
+
+
 % Macro used for execution flow control; extracts the result when the term indicates
 % success (ok, {ok, Result}) or throws upon error.
--define(check(Expr), utils:check_result(Expr)).
+-define(check(Expr), begin
+    ((fun
+        ({error, _} = Error) -> ?throw_as_od_error(Error);
+        (Success) -> utils:unpack_successful_result(Success)
+    end)(Expr))
+end).
+
+% Similar as above, but treats the tolerated error as 'ok' result
+-define(check_tolerating(ToleratedErr, Expr), begin
+    ((fun
+        (ToleratedErr) -> ok;
+        ({error, _} = Error) -> ?throw_as_od_error(Error);
+        (_) -> ok
+    end)(Expr))
+end).
+-define(check_tolerating(TE1, TE2, Expr), begin
+    ((fun
+        (TE1) -> ok;
+        (TE2) -> ok;
+        ({error, _} = Error) -> ?throw_as_od_error(Error);
+        (_) -> ok
+    end)(Expr))
+end).
+-define(check_tolerating(TE1, TE2, TE3, Expr), begin
+    ((fun
+        (TE1) -> ok;
+        (TE2) -> ok;
+        (TE3) -> ok;
+        ({error, _} = Error) -> ?throw_as_od_error(Error);
+        (_) -> ok
+    end)(Expr))
+end).
 
 
 % Macro intended as a UNIVERSAL way of handling exceptions, which can be classified in two ways:
