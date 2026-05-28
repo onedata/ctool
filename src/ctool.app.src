@@ -77,11 +77,11 @@
 
         % logger formatter customization (see onedata_logger_formatter.erl)
         {logger_file_log_template, ["[", level, " ", time, " ", pid, "] ", msg, "\n"]},
-        {logger_file_max_log_size, unlimited}, 
+        {logger_file_max_log_size, 102400}, % 100 KiB
         {logger_file_term_depth, unlimited},
 
         {logger_console_log_template, [color, "[", level, " ", time, " ", pid, "] ", msg, reset, "\n"]},
-        {logger_console_max_log_size, 1048576}, % 1 MiB
+        {logger_console_max_log_size, 102400}, % 100 KiB
         {logger_console_term_depth, unlimited},
 
         %% ===================================================================
