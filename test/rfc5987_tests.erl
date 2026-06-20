@@ -38,16 +38,16 @@
 
 
 encode_test_() ->
-    [?_assertEqual(Encoded, rfc5987:encode(Raw))
+    [?_assertEqual(Encoded, rfc5987:encode_filename(Raw))
         || {Raw, Encoded} <- ?EXAMPLES].
 
 
 decode_test_() ->
-    [?_assertEqual(Raw, rfc5987:decode(Encoded))
+    [?_assertEqual(Raw, rfc5987:decode_filename(Encoded))
         || {Raw, Encoded} <- ?EXAMPLES].
 
 roundtrip_test_() ->
-    [?_assertEqual(Raw, rfc5987:decode(rfc5987:encode(Raw)))
+    [?_assertEqual(Raw, rfc5987:decode_filename(rfc5987:encode_filename(Raw)))
         || {Raw, _} <- ?EXAMPLES].
 
 

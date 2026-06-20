@@ -13,7 +13,7 @@
 -module(rfc5987).
 
 
--export([encode/1, decode/1]).
+-export([encode_filename/1, decode_filename/1]).
 
 
 %%%===================================================================
@@ -21,14 +21,14 @@
 %%%===================================================================
 
 
--spec encode(binary()) -> binary().
-encode(Bin) ->
+-spec encode_filename(binary()) -> binary().
+encode_filename(Bin) ->
     << <<(encode_byte(B))/binary>> || <<B>> <= Bin >>.
 
 
--spec decode(binary()) -> binary().
-decode(Bin) ->
-    decode(Bin, <<>>).
+-spec decode_filename(binary()) -> binary().
+decode_filename(Bin) ->
+    decode_filename(Bin, <<>>).
 
 
 %%%===================================================================
@@ -37,14 +37,14 @@ decode(Bin) ->
 
 
 %% @private
--spec decode(binary(), binary()) -> binary().
-decode(<<>>, Acc) ->
+-spec decode_filename(binary(), binary()) -> binary().
+decode_filename(<<>>, Acc) ->
     Acc;
-decode(<<$%, H1, H2, Rest/binary>>, Acc) ->
+decode_filename(<<$%, H1, H2, Rest/binary>>, Acc) ->
     Byte = binary_to_integer(<<H1, H2>>, 16),
-    decode(Rest, <<Acc/binary, Byte>>);
-decode(<<B, Rest/binary>>, Acc) ->
-    decode(Rest, <<Acc/binary, B>>).
+    decode_filename(Rest, <<Acc/binary, Byte>>);
+decode_filename(<<B, Rest/binary>>, Acc) ->
+    decode_filename(Rest, <<Acc/binary, B>>).
 
 
 %% @private
