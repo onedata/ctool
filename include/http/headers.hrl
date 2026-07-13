@@ -31,6 +31,7 @@
 %% Standard HTTP headers
 
 -define(HDR_ACCEPT, <<"accept">>).
+-define(HDR_ACCEPT_RANGES, <<"accept-ranges">>).
 -define(HDR_ACCESS_CONTROL_ALLOW_HEADERS, <<"access-control-allow-headers">>).
 -define(HDR_ACCESS_CONTROL_ALLOW_METHODS, <<"access-control-allow-methods">>).
 -define(HDR_ACCESS_CONTROL_ALLOW_ORIGIN, <<"access-control-allow-origin">>).
