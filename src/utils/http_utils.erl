@@ -17,7 +17,7 @@
 
 
 %% Methods understood by rest handlers in Onedata applications.
--type method() :: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE' | 'OPTIONS'.
+-type method() :: 'GET' | 'HEAD' | 'POST' | 'PUT' | 'PATCH' | 'DELETE' | 'OPTIONS'.
 -export_type([method/0]).
 
 -define(EMAIL_VALIDATION_REGEXP,
@@ -170,6 +170,7 @@ normalize_email(Email) ->
 binary_to_method(<<"POST">>) -> 'POST';
 binary_to_method(<<"PUT">>) -> 'PUT';
 binary_to_method(<<"GET">>) -> 'GET';
+binary_to_method(<<"HEAD">>) -> 'HEAD';
 binary_to_method(<<"PATCH">>) -> 'PATCH';
 binary_to_method(<<"DELETE">>) -> 'DELETE';
 binary_to_method(<<"OPTIONS">>) -> 'OPTIONS'.
@@ -186,6 +187,7 @@ binary_to_method(<<"OPTIONS">>) -> 'OPTIONS'.
 method_to_binary('POST') -> <<"POST">>;
 method_to_binary('PUT') -> <<"PUT">>;
 method_to_binary('GET') -> <<"GET">>;
+method_to_binary('HEAD') -> <<"HEAD">>;
 method_to_binary('PATCH') -> <<"PATCH">>;
 method_to_binary('DELETE') -> <<"DELETE">>;
 method_to_binary('OPTIONS') -> <<"OPTIONS">>.
