@@ -1,20 +1,22 @@
 %%%-------------------------------------------------------------------
-%%% @author Lukasz Opiola
-%%% @copyright (C) 2015 ACK CYFRONET AGH
+%%% This file has been automatically generated - DO NOT EDIT!!!
+%%%
+%%% @copyright (C) 2026 ACK CYFRONET AGH
 %%% This software is released under the MIT license
 %%% cited in 'LICENSE.txt'.
 %%% @end
 %%%-------------------------------------------------------------------
-%% @doc
-%% This header file contains macros for POSIX errors.
-%% @end
+%%% @doc
+%%% Macros for POSIX error codes. Their type is od_error:errno().
+%%% @end
 %%%-------------------------------------------------------------------
 
 -ifndef(ERRNO_HRL).
 -define(ERRNO_HRL, 1).
 
-%% List of all codes that can be present in status message sent to FUSE client.
+% success status - not an error code (see errors:is_posix_code/1)
 -define(OK, ok).
+
 -define(E2BIG, e2big).
 -define(EACCES, eacces).
 -define(EADDRINUSE, eaddrinuse).
@@ -55,7 +57,6 @@
 -define(ENETRESET, enetreset).
 -define(ENETUNREACH, enetunreach).
 -define(ENFILE, enfile).
--define(ENOATTR, ?ENODATA).
 -define(ENOBUFS, enobufs).
 -define(ENODATA, enodata).
 -define(ENODEV, enodev).
@@ -96,34 +97,6 @@
 -define(EWOULDBLOCK, ewouldblock).
 -define(EXDEV, exdev).
 
--type code() :: ?OK | ?E2BIG | ?EACCES | ?EADDRINUSE | ?EADDRNOTAVAIL
-    | ?EAFNOSUPPORT | ?EAGAIN | ?EALREADY | ?EBADF | ?EBADMSG | ?EBUSY
-    | ?ECANCELED | ?ECHILD | ?ECONNABORTED | ?ECONNREFUSED | ?ECONNRESET
-    | ?EDEADLK | ?EDESTADDRREQ | ?EDOM | ?EEXIST | ?EFAULT | ?EFBIG
-    | ?EHOSTUNREACH | ?EIDRM | ?EILSEQ | ?EINPROGRESS | ?EINTR | ?EINVAL | ?EIO
-    | ?EISCONN | ?EISDIR | ?EKEYEXPIRED | ?ELOOP | ?EMFILE | ?EMLINK | ?EMSGSIZE
-    | ?ENAMETOOLONG | ?ENETDOWN | ?ENETRESET | ?ENETUNREACH | ?ENFILE | ?ENOBUFS
-    | ?ENODATA | ?ENODEV | ?ENOENT | ?ENOEXEC | ?ENOLCK | ?ENOLINK | ?ENOMEM
-    | ?ENOMSG | ?ENOPROTOOPT | ?ENOSPC | ?ENOSR | ?ENOSTR | ?ENOSYS | ?ENOTCONN
-    | ?ENOTDIR | ?ENOTEMPTY | ?ENOTRECOVERABLE | ?ENOTSOCK | ?ENOTSUP | ?ENOTTY
-    | ?ENXIO | ?EOPNOTSUPP | ?EOVERFLOW | ?EOWNERDEAD | ?EPERM | ?EPIPE
-    | ?EPROTO | ?EPROTONOSUPPORT | ?EPROTOTYPE | ?ERANGE | ?EROFS | ?ESPIPE
-    | ?ESRCH | ?ETIME | ?ETIMEDOUT | ?ETXTBSY | ?EWOULDBLOCK | ?EXDEV.
-
-%% This macro shall return all errors from above.
--define(ERROR_CODES, [
-    ?E2BIG, ?EACCES, ?EADDRINUSE, ?EADDRNOTAVAIL, ?EAFNOSUPPORT, ?EAGAIN,
-    ?EALREADY, ?EBADF, ?EBADMSG, ?EBUSY, ?ECANCELED, ?ECHILD, ?ECONNABORTED,
-    ?ECONNREFUSED, ?ECONNRESET, ?EDEADLK, ?EDESTADDRREQ, ?EDOM, ?EEXIST,
-    ?EFAULT, ?EFBIG, ?EHOSTUNREACH, ?EIDRM, ?EILSEQ, ?EINPROGRESS, ?EINTR,
-    ?EINVAL, ?EIO, ?EISCONN, ?EISDIR, ?EKEYEXPIRED, ?ELOOP, ?EMFILE, ?EMLINK, ?EMSGSIZE,
-    ?ENAMETOOLONG, ?ENETDOWN, ?ENETRESET, ?ENETUNREACH, ?ENFILE, ?ENOBUFS,
-    ?ENODATA, ?ENODEV, ?ENOENT, ?ENOEXEC, ?ENOLCK, ?ENOLINK, ?ENOMEM, ?ENOMSG,
-    ?ENOPROTOOPT, ?ENOSPC, ?ENOSR, ?ENOSTR, ?ENOSYS, ?ENOTCONN, ?ENOTDIR,
-    ?ENOTEMPTY, ?ENOTRECOVERABLE, ?ENOTSOCK, ?ENOTSUP, ?ENOTTY, ?ENXIO,
-    ?EOPNOTSUPP, ?EOVERFLOW, ?EOWNERDEAD, ?EPERM, ?EPIPE, ?EPROTO,
-    ?EPROTONOSUPPORT, ?EPROTOTYPE, ?ERANGE, ?EROFS, ?ESPIPE, ?ESRCH, ?ETIME,
-    ?ETIMEDOUT, ?ETXTBSY, ?EWOULDBLOCK, ?EXDEV
-]).
+-define(ENOATTR, ?ENODATA).
 
 -endif.

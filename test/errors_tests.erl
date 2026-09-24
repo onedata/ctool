@@ -240,6 +240,15 @@ is_not_known_error_test() ->
     ?assertNot(errors:is_known_error({error, gibberish})).
 
 
+is_posix_code_test() ->
+    ?assert(errors:is_posix_code(?EACCES)),
+    ?assert(errors:is_posix_code(?ENOATTR)),
+    % ok is a success status, not an error code
+    ?assertNot(errors:is_posix_code(?OK)),
+    ?assertNot(errors:is_posix_code(gibberish)),
+    ?assertNot(errors:is_posix_code(<<"eacces">>)).
+
+
 cannot_translate_error_test() ->
     % in case of an error that is not specified in the errors module,
     % a proper error log is logged and an internal server error should be returned

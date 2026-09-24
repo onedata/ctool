@@ -196,19 +196,7 @@
 | {no_service_nodes, Service :: atom() | binary()}
 | user_not_in_cluster.
 
--type errno() :: ?OK | ?E2BIG | ?EACCES | ?EADDRINUSE | ?EADDRNOTAVAIL
-| ?EAFNOSUPPORT | ?EAGAIN | ?EALREADY | ?EBADF | ?EBADMSG | ?EBUSY
-| ?ECANCELED | ?ECHILD | ?ECONNABORTED | ?ECONNREFUSED | ?ECONNRESET
-| ?EDEADLK | ?EDESTADDRREQ | ?EDOM | ?EEXIST | ?EFAULT | ?EFBIG
-| ?EHOSTUNREACH | ?EIDRM | ?EILSEQ | ?EINPROGRESS | ?EINTR | ?EINVAL | ?EIO
-| ?EISCONN | ?EISDIR | ?EKEYEXPIRED | ?ELOOP | ?EMFILE | ?EMLINK | ?EMSGSIZE
-| ?ENAMETOOLONG | ?ENETDOWN | ?ENETRESET | ?ENETUNREACH | ?ENFILE | ?ENOBUFS
-| ?ENODATA | ?ENODEV | ?ENOENT | ?ENOEXEC | ?ENOLCK | ?ENOLINK | ?ENOMEM
-| ?ENOMSG | ?ENOPROTOOPT | ?ENOSPC | ?ENOSR | ?ENOSTR | ?ENOSYS | ?ENOTCONN
-| ?ENOTDIR | ?ENOTEMPTY | ?ENOTRECOVERABLE | ?ENOTSOCK | ?ENOTSUP | ?ENOTTY
-| ?ENXIO | ?EOPNOTSUPP | ?EOVERFLOW | ?EOWNERDEAD | ?EPERM | ?EPIPE
-| ?EPROTO | ?EPROTONOSUPPORT | ?EPROTOTYPE | ?ERANGE | ?EROFS | ?ESPIPE
-| ?ESRCH | ?ETIME | ?ETIMEDOUT | ?ETXTBSY | ?EWOULDBLOCK | ?EXDEV.
+-type errno() :: od_error:errno().
 
 -type posix() :: {posix, errno()}.
 
@@ -226,7 +214,7 @@
 -export_type([error/0, reason/0, as_json/0]).
 
 %% API
--export([is_known_error/1, is_posix_code/1]).
+-export([is_known_error/1]).
 -export([to_json/1, from_json/1, to_http_code/1]).
 
 -define(FMT(Format, Args), str_utils:format_bin(Format, Args)).
@@ -244,11 +232,6 @@ is_known_error(Error) ->
     catch _:_ ->
         false
     end.
-
-
--spec is_posix_code(term()) -> boolean().
-is_posix_code(ErrorCode) ->
-    ordsets:is_element(ErrorCode, ?ERROR_CODES).
 
 
 -spec to_json(undefined | error()) -> as_json().
