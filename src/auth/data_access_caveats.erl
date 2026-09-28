@@ -127,7 +127,8 @@ to_allowed_api(?OP_WORKER, DataAccessCaveat) ->
         % available paths / file ids may be limited.
         {?OP_WORKER, all, ?GRI_PATTERN(op_file, <<"*">>, <<"*">>, '*')},
         {?OP_WORKER, get, ?GRI_PATTERN(op_space, undefined, <<"list">>, private)},
-        [{?OP_WORKER, get, ?GRI_PATTERN(op_space, S, <<"instance">>, private)} || S <- AllowedSpaces]
+        [{?OP_WORKER, get, ?GRI_PATTERN(op_space, S, <<"instance">>, private)} || S <- AllowedSpaces],
+        [{?OP_WORKER, create, ?GRI_PATTERN(op_space, S, <<"file_events">>, private)} || S <- AllowedSpaces]
     ])};
 
 to_allowed_api(?OZ_WORKER, DataAccessCaveat) ->

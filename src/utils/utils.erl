@@ -26,14 +26,13 @@
 -export([mkdtemp/0, mkdtemp/3, rmtempdir/1, run_with_tempdir/1]).
 -export([to_binary/1]).
 -export([save_file_on_hosts/3, save_file/2]).
--export([ensure_list/1]).
+-export([ensure_list/1, unpack_successful_result/1]).
 -export([to_atom/1, to_boolean/1]).
 -export([encode_pid/1, decode_pid/1]).
 -export([rpc_multicall/4, rpc_multicall/5]).
 -export([erpc_multicall/2]).
 -export([wait_until/1, wait_until/2, wait_until/3]).
 -export([repeat/2]).
--export([check_result/1]).
 
 -type time_unit() :: us | ms | s | min | h.
 
@@ -417,6 +416,15 @@ ensure_list(List) when is_list(List) -> List;
 ensure_list(Element) -> [Element].
 
 
+-spec unpack_successful_result
+    (ok) -> ok;
+    ({ok, Value}) -> Value.
+unpack_successful_result(ok) ->
+    ok;
+unpack_successful_result({ok, Value}) ->
+    Value.
+
+
 -spec to_atom(term()) -> atom() | no_return().
 to_atom(Atom) when is_atom(Atom) -> Atom;
 to_atom(Binary) when is_binary(Binary) -> binary_to_atom(Binary, utf8).
@@ -534,20 +542,6 @@ repeat(Count, Fun) ->
     Fun(),
     repeat(Count - 1, Fun).
 
-
--spec check_result
-    (ok) -> ok;
-    ({ok, Value}) -> Value;
-    (errors:error()) -> no_return().
-check_result(ok) ->
-    ok;
-check_result({ok, Value}) ->
-    Value;
-check_result({error, _} = Error) ->
-    case errors:is_known_error(Error) of
-        true -> throw(Error);
-        false -> error(Error)
-    end.
 
 %%%===================================================================
 %%% Internal functions

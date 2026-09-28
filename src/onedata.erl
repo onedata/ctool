@@ -21,13 +21,13 @@
 -export([service_gui/1, service_by_gui/2]).
 -export([service_shortname/1, service_by_shortname/1]).
 -export([gui_prefix/1, gui_by_prefix/1]).
--export([compare_release_line/2]).
+-export([compare_release_version/2, compare_release_year/2]).
 
 
 %% Types of Onedata products
 -type product() :: ?ONEZONE | ?ONEPROVIDER | ?ONECLIENT.
 %% Release version of a product, for example <<"19.02.0-beta1">>
--type release_version() :: binary().
+-type release_version() :: onedata_calver:version().
 %% Types of clusters in Onedata - every cluster is made up of services
 -type cluster_type() :: ?ONEZONE | ?ONEPROVIDER.
 %% Services in Onedata
@@ -131,8 +131,11 @@ gui_by_prefix(<<"hrv">>) -> ?HARVESTER_GUI;
 gui_by_prefix(_) -> error(badarg).
 
 
--spec compare_release_line(release_version(), release_version()) -> lower | equal | greater.
-compare_release_line(<<A:5/binary, _/binary>>, <<B:5/binary, _/binary>>) when A < B -> lower;
-compare_release_line(<<A:5/binary, _/binary>>, <<B:5/binary, _/binary>>) when A =:= B -> equal;
-compare_release_line(<<A:5/binary, _/binary>>, <<B:5/binary, _/binary>>) when A > B -> greater;
-compare_release_line(_, _) -> error(badarg).
+-spec compare_release_version(release_version(), release_version()) -> lower | equal | greater.
+compare_release_version(V1, V2) ->
+    onedata_calver:compare(V1, V2).
+
+
+-spec compare_release_year(release_version(), release_version()) -> lower | equal | greater.
+compare_release_year(V1, V2) ->
+    onedata_calver:compare_year(V1, V2).

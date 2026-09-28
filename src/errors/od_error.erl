@@ -31,20 +31,20 @@
 
 -type http_code() :: 400 | 401 | 403 | 404 | 409 | 500 | 501 | 503.
 
--type errno() :: 
-    ?OK | ?E2BIG | ?EACCES | ?EADDRINUSE | ?EADDRNOTAVAIL |
-    ?EAFNOSUPPORT | ?EAGAIN | ?EALREADY | ?EBADF | ?EBADMSG | ?EBUSY |
-    ?ECANCELED | ?ECHILD | ?ECONNABORTED | ?ECONNREFUSED | ?ECONNRESET |
-    ?EDEADLK | ?EDESTADDRREQ | ?EDOM | ?EEXIST | ?EFAULT | ?EFBIG |
-    ?EHOSTUNREACH | ?EIDRM | ?EILSEQ | ?EINPROGRESS | ?EINTR | ?EINVAL | ?EIO |
-    ?EISCONN | ?EISDIR | ?EKEYEXPIRED | ?ELOOP | ?EMFILE | ?EMLINK | ?EMSGSIZE |
-    ?ENAMETOOLONG | ?ENETDOWN | ?ENETRESET | ?ENETUNREACH | ?ENFILE | ?ENOBUFS |
-    ?ENODATA | ?ENODEV | ?ENOENT | ?ENOEXEC | ?ENOLCK | ?ENOLINK | ?ENOMEM |
-    ?ENOMSG | ?ENOPROTOOPT | ?ENOSPC | ?ENOSR | ?ENOSTR | ?ENOSYS | ?ENOTCONN |
-    ?ENOTDIR | ?ENOTEMPTY | ?ENOTRECOVERABLE | ?ENOTSOCK | ?ENOTSUP | ?ENOTTY |
-    ?ENXIO | ?EOPNOTSUPP | ?EOVERFLOW | ?EOWNERDEAD | ?EPERM | ?EPIPE |
-    ?EPROTO | ?EPROTONOSUPPORT | ?EPROTOTYPE | ?ERANGE | ?EROFS | ?ESPIPE |
-    ?ESRCH | ?ETIME | ?ETIMEDOUT | ?ETXTBSY | ?EWOULDBLOCK | ?EXDEV.
+-type errno() ::
+    ?OK | ?E2BIG | ?EACCES | ?EADDRINUSE | ?EADDRNOTAVAIL | ?EAFNOSUPPORT |
+    ?EAGAIN | ?EALREADY | ?EBADF | ?EBADMSG | ?EBUSY | ?ECANCELED | ?ECHILD |
+    ?ECONNABORTED | ?ECONNREFUSED | ?ECONNRESET | ?EDEADLK | ?EDESTADDRREQ |
+    ?EDOM | ?EEXIST | ?EFAULT | ?EFBIG | ?EHOSTUNREACH | ?EIDRM | ?EILSEQ |
+    ?EINPROGRESS | ?EINTR | ?EINVAL | ?EIO | ?EISCONN | ?EISDIR | ?EKEYEXPIRED |
+    ?ELOOP | ?EMFILE | ?EMLINK | ?EMSGSIZE | ?ENAMETOOLONG | ?ENETDOWN |
+    ?ENETRESET | ?ENETUNREACH | ?ENFILE | ?ENOBUFS | ?ENODATA | ?ENODEV |
+    ?ENOENT | ?ENOEXEC | ?ENOLCK | ?ENOLINK | ?ENOMEM | ?ENOMSG | ?ENOPROTOOPT |
+    ?ENOSPC | ?ENOSR | ?ENOSTR | ?ENOSYS | ?ENOTCONN | ?ENOTDIR | ?ENOTEMPTY |
+    ?ENOTRECOVERABLE | ?ENOTSOCK | ?ENOTSUP | ?ENOTTY | ?ENXIO | ?EOPNOTSUPP |
+    ?EOVERFLOW | ?EOWNERDEAD | ?EPERM | ?EPIPE | ?EPROTO | ?EPROTONOSUPPORT |
+    ?EPROTOTYPE | ?ERANGE | ?EROFS | ?ESPIPE | ?ESRCH | ?ETIME | ?ETIMEDOUT |
+    ?ETXTBSY | ?EWOULDBLOCK | ?EXDEV.
 
 -type ctx() :: #od_error_ctx{}.
 
@@ -248,6 +248,7 @@
     od_error_file_popularity_disabled:t() |
     od_error_forbidden_for_current_archive_state:t() |
     od_error_nested_archive_deletion_forbidden:t() |
+    od_error_not_supported_for_symlinks:t() |
     od_error_quota_exceeded:t() |
     od_error_recall_target_conflict:t() |
     od_error_space_not_supported_by:t() |
@@ -486,7 +487,7 @@ format_csv(Values) ->
 
 -spec onedata_errors_revision() -> binary().
 onedata_errors_revision() ->
-    <<"ca3af8cb">>.
+    <<"2b153244">>.
 
 
 %%%===================================================================

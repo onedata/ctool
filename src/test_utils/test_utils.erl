@@ -24,9 +24,15 @@
     mock_unload/2, mock_validate_and_unload/2, mock_assert_num_calls/5,
     mock_assert_num_calls/6, mock_assert_num_calls_sum/5, mock_assert_num_calls_sum/6
 ]).
--export([get_env/3, set_env/4]).
+-export([get_env/3, get_env/4, set_env/4]).
 -export([get_docker_ip/1, get_docker_hostname/1]).
 -export([ct_pal_failure_summary/3]).
+
+-export([include_full_ctx_in_errors/2]).
+-export([should_include_full_ctx_in_errors_on_current_node/0]).
+
+-export([add_disallowed_chars_to_name/2]).
+
 
 -define(TIMEOUT, timer:seconds(60)).
 -define(ATTEMPTS, 10).
@@ -263,6 +269,12 @@ mock_assert_num_calls_sum(Nodes, Module, FunctionName, FunctionArgs, CallsNumber
 get_env(Node, Application, Name) ->
     rpc:call(Node, application, get_env, [Application, Name]).
 
+
+-spec get_env(Node :: node(), Application :: atom(), Name :: atom(), Default) ->
+    {ok, Value :: term() | Default} | {badrpc, Reason :: term()}.
+get_env(Node, Application, Name, Default) ->
+    rpc:call(Node, application, get_env, [Application, Name, Default]).
+
 %%--------------------------------------------------------------------
 %% @doc
 %% Sets the value of the environment variable 'Name' for 'Application'
@@ -336,9 +348,41 @@ ct_pal_failure_summary(AssertionType, #failure_summary{
         ]
     ).
 
+
+%%--------------------------------------------------------------------
+%% @doc
+%% The error ctx is normally mocked in all tests to be always undefined,
+%% so that error equality/matching assertions always work
+%% (otherwise, the ctx would always differ from the expectations).
+%% This function disables this behaviour and may be useful for debug purposes.
+%% NOTE that it will affect only the provided node or nodes.
+%% @end
+%%--------------------------------------------------------------------
+-spec include_full_ctx_in_errors(node() | [node()], boolean()) -> ok.
+include_full_ctx_in_errors(NodeOrNodes, Flag) ->
+    set_env(NodeOrNodes, ctool, include_full_ctx_in_errors, Flag).
+
+
+-spec should_include_full_ctx_in_errors_on_current_node() -> boolean().
+should_include_full_ctx_in_errors_on_current_node() ->
+    true == ctool:get_env(include_full_ctx_in_errors, false).
+
+
+-spec add_disallowed_chars_to_name(binary(), non_neg_integer()) -> binary().
+add_disallowed_chars_to_name(Name, 0) ->
+    Name;
+add_disallowed_chars_to_name(Name, N) ->
+    Size = byte_size(Name),
+    Pos = rand:uniform(Size + 1) - 1,
+    <<Left:Pos/binary, Right/binary>> = Name,
+    NewName = <<Left/binary, (?RAND_ELEMENT(?DISALLOWED_NAME_CHARS)), Right/binary>>,
+    add_disallowed_chars_to_name(NewName, N - 1).
+
+
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
+
 
 %%--------------------------------------------------------------------
 %% @private

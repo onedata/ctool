@@ -103,12 +103,27 @@ start_mock_manager(Node) ->
     end.
 
 
+%%--------------------------------------------------------------------
+%% @doc
 %% @private
+%% The error ctx is normally mocked in all tests to be always undefined,
+%% so that error equality assertions always work (otherwise, the ctx would always differ).
+%% For debug purposes, this behaviour can be turned off using the env (see below),
+%% but NOTE that it must be set on the Node where the mock should be disabled.
+%% @see test_utils:include_full_ctx_in_errors/2 and eunit_utils:include_full_ctx_in_errors/1
+%% for convenient helpers to manage this.
+%% @end
+%%--------------------------------------------------------------------
 mock_od_error_build_ctx(Node) ->
     case rpc:call(Node, code, ensure_loaded, [od_error]) of
         {module, _} ->
             test_utils:mock_new(Node, od_error),
-            test_utils:mock_expect(Node, od_error, build_ctx, fun(_, _) -> undefined end);
+            test_utils:mock_expect(Node, od_error, build_ctx, fun(Module, Line) ->
+                case test_utils:should_include_full_ctx_in_errors_on_current_node() of
+                    false -> undefined;
+                    true -> meck:passthrough([Module, Line])
+                end
+            end);
         {error, _} ->
             ok
     end.

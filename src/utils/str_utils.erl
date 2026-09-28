@@ -16,7 +16,7 @@
 -export([to_list/1, to_binary/1]).
 -export([join_as_binaries/2, join_binary/1, join_binary/2, reverse_binary/1]).
 -export([binary_starts_with/2, binary_ends_with/2]).
--export([ensure_suffix/2, truncate_overflow/2, truncate_overflow/3]).
+-export([ensure_prefix/2, ensure_suffix/2, truncate_overflow/2, truncate_overflow/3]).
 
 % Conversion between unicode and binaries
 -export([unicode_list_to_binary/1, binary_to_unicode_list/1]).
@@ -119,11 +119,18 @@ binary_ends_with(Binary, Suffix) ->
     byte_size(Suffix) == binary:longest_common_suffix([Binary, Suffix]).
 
 
-%%--------------------------------------------------------------------
-%% @doc Ensures a string ends with a given string by adding the suffix
-%% if not already present.
-%% @end
-%%--------------------------------------------------------------------
+-spec ensure_prefix(String :: unicode:chardata(), Prefix :: unicode:chardata()) ->
+    binary().
+ensure_prefix(String, Prefix)->
+    StringBin = unicode_list_to_binary(String),
+    PrefixBin = unicode_list_to_binary(Prefix),
+    Size = byte_size(Prefix),
+    case StringBin of
+        <<PrefixBin:Size/binary, _/binary>> -> StringBin;
+        _ -> <<PrefixBin/binary, StringBin/binary>>
+    end.
+
+
 -spec ensure_suffix(String :: unicode:chardata(), Suffix :: unicode:chardata()) ->
     binary().
 ensure_suffix(String, Suffix)->
