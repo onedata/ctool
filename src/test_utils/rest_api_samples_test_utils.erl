@@ -145,18 +145,9 @@ test_sample(#rest_api_request_sample{
         end,
         VerifyFun(UpdatedContext, ResultBody)
     catch Class:Reason:Stacktrace ->
-        ct:pal(
-            "API sample testing failed!~n"
-            "Sample: ~tp~n"
-            "Context: ~tp~n"
-            "Error: ~w:~tp~n"
-            "Stacktrace: ~ts~n", [
-                Sample,
-                Context,
-                Class, Reason,
-                lager:pr_stacktrace(Stacktrace)
-            ]
-        ),
+        ?ct_pal_exception(?autoformat_with_msg(
+            "API sample testing failed!", [Sample, Context]
+        ), Class, Reason, Stacktrace),
         error(fail)
     end.
 

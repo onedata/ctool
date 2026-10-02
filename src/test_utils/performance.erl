@@ -892,7 +892,7 @@ merge_parameter(#parameter{unit = Unit1, description = Descr1} = ConfigParam,
 -spec get_authors(TestRoot :: string(), SuiteName :: atom()) ->
     [Author :: binary()].
 get_authors(TestRoot, SuiteName) ->
-    SuiteFile = filename:join(TestRoot, atom_to_list(SuiteName) ++ ".erl"),
+    SuiteFile = suite_file(TestRoot, SuiteName),
     {SuiteName, Doc} = edoc:get_doc(SuiteFile),
     lists:filtermap(fun
         (#xmlElement{name = author, attributes = Attributes}) ->
@@ -913,17 +913,32 @@ get_authors(TestRoot, SuiteName) ->
 -spec get_description(TestRoot :: string(), SuiteName :: atom()) ->
     Descr :: binary().
 get_description(TestRoot, SuiteName) ->
-    SuiteFile = filename:join(TestRoot, atom_to_list(SuiteName) ++ ".erl"),
+    SuiteFile = suite_file(TestRoot, SuiteName),
     {SuiteName, Doc} = edoc:get_doc(SuiteFile),
     hd(lists:filtermap(fun
         (#xmlElement{name = description, content = Descr}) ->
             {true, hd(lists:filtermap(fun
-                (#xmlElement{name = fullDescription, content = [FullDescr]}) ->
-                    {true, list_to_binary(FullDescr#xmlText.value)};
+                (#xmlElement{name = fullDescription, content = FullDescr}) ->
+                    {true, unicode:characters_to_binary(xml_text(FullDescr))};
                 (_) -> false
             end, Descr))};
         (_) -> false
     end, Doc#xmlElement.content)).
+
+%%--------------------------------------------------------------------
+%% @private
+%% @doc
+%% Returns text of xml content (e.g. all paragraphs of a multi-paragraph
+%% description).
+%% @end
+%%--------------------------------------------------------------------
+-spec xml_text(Content :: [term()]) -> string().
+xml_text(Content) ->
+    lists:flatmap(fun
+        (#xmlText{value = Value}) -> Value;
+        (#xmlElement{content = SubContent}) -> xml_text(SubContent);
+        (_) -> []
+    end, Content).
 
 %%--------------------------------------------------------------------
 %% @private
@@ -934,12 +949,26 @@ get_description(TestRoot, SuiteName) ->
 -spec get_copyright(TestRoot :: string(), SuiteName :: atom()) ->
     Copyright :: binary().
 get_copyright(TestRoot, SuiteName) ->
-    SuiteFile = filename:join(TestRoot, atom_to_list(SuiteName) ++ ".erl"),
+    SuiteFile = suite_file(TestRoot, SuiteName),
     {SuiteName, Doc} = edoc:get_doc(SuiteFile),
     hd(lists:filtermap(fun(#xmlElement{name = copyright, content = [Copyright]}) ->
         {true, list_to_binary(Copyright#xmlText.value)};
         (_) -> false
     end, Doc#xmlElement.content)).
+
+%%--------------------------------------------------------------------
+%% @private
+%% @doc
+%% Returns path to test suite source file. The path recorded by the compiler is
+%% preferred, as suites may be placed in subdirectories of TestRoot.
+%% @end
+%%--------------------------------------------------------------------
+-spec suite_file(TestRoot :: string(), SuiteName :: atom()) -> file:filename().
+suite_file(TestRoot, SuiteName) ->
+    case proplists:get_value(source, SuiteName:module_info(compile)) of
+        undefined -> filename:join(TestRoot, atom_to_list(SuiteName) ++ ".erl");
+        Source -> Source
+    end.
 
 %%--------------------------------------------------------------------
 %% @private

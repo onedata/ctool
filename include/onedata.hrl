@@ -44,11 +44,10 @@
 -define(UNIFIED, unified).
 -define(EMERGENCY, emergency).
 
-%% Macros with known major release lines of Onedata software
--define(LINE_19_02, <<"19.02.*">>).
--define(LINE_20_02(Suffix), <<"20.02.", Suffix/binary>>).
--define(LINE_20_02, <<"20.02.*">>).
--define(LINE_21_02(Suffix), <<"21.02.", Suffix/binary>>).
--define(LINE_21_02, <<"21.02.*">>).
+%% Macros with known major release numbers of Onedata software
+-define(VSN_19_02_1, <<"19.02.1">>).
+-define(VSN_20_02_1, <<"20.02.1">>).
+-define(VSN_21_02_1, <<"21.02.1">>).
+-define(VSN_25_0, <<"25.0">>).
 
 -endif.

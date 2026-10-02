@@ -45,6 +45,7 @@ fi
 mkdir -p $CTOOL_SRC_DIR
 
 # Copy generated files
+cp $ERRORS_GEN_DIR/errno.hrl $CTOOL_INCLUDE_DIR/posix/
 cp $ERRORS_GEN_DIR/error_attrs.hrl $CTOOL_INCLUDE_DIR/
 cp $ERRORS_GEN_DIR/errors.hrl $CTOOL_INCLUDE_DIR/
 cp $ERRORS_GEN_DIR/errors.erl $CTOOL_SRC_DIR/

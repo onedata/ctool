@@ -47,13 +47,14 @@ init(_Id, _Opts) ->
 -spec pre_init_per_suite(Suite :: term(), Config :: [term()],
     State :: logger_state()) -> {ok, logger_state()}.
 pre_init_per_suite(Suite, Config, State) ->
+    logger:remove_handler(simple),
     {Config, State#logger_state{suite = Suite, suite_stopwatch = stopwatch:start()}}.
 
 
 -spec pre_init_per_testcase(TestCase :: atom(), Config :: [term()],
     State :: logger_state()) -> {[term()], logger_state()}.
 pre_init_per_testcase(TestCase, Config, State) ->
-    ct_pal_report(State, TestCase, "STARTED"),
+    ct_pal_report(State, fmt_testcase(TestCase, Config), "STARTED"),
     {Config, State#logger_state{
         stopwatch_by_testcase = maps:put(TestCase, stopwatch:start(), State#logger_state.stopwatch_by_testcase)
     }}.
@@ -120,7 +121,7 @@ post_end_per_group(_SuiteName, GroupName, _Config, Return, State) ->
 post_init_per_testcase(_TestCase, _Config, ok, State) ->
     {ok, State};
 
-post_init_per_testcase(TestCase, _Config, Return, State) ->
+post_init_per_testcase(TestCase, Config, Return, State) ->
     Msg = case Return of
         {skip, {failed, {_, _, {Reason, Stacktrace}}}} ->
             fmt_log_exception(unknown, Reason, Stacktrace);
@@ -129,31 +130,31 @@ post_init_per_testcase(TestCase, _Config, Return, State) ->
         _ ->
             fmt_log_unexpected_return(?MODULE, ?FUNCTION_NAME, Return)
     end,
-    ct_pal_report(State, TestCase, "init_per_testcase CRASHED due to:~n~n~ts", [Msg]),
+    ct_pal_report(State, fmt_testcase(TestCase, Config), "init_per_testcase CRASHED due to:~n~n~ts", [Msg]),
     {Return, State}.
 
 
 -spec post_end_per_testcase(TestCase :: atom(), Config :: [term()],
     Return :: ok | {error | skip, term()}, State :: logger_state()) ->
     {ok | {error | skip, term()}, logger_state()}.
-post_end_per_testcase(TestCase, _Config, ok, State) ->
+post_end_per_testcase(TestCase, Config, ok, State) ->
     Stopwatch = maps:get(TestCase, State#logger_state.stopwatch_by_testcase),
-    ct_pal_report(State, TestCase, "PASSED (in ~ts)", [
+    ct_pal_report(State, fmt_testcase(TestCase, Config), "PASSED (in ~ts)", [
         fmt_time(stopwatch:read_millis(Stopwatch))
     ]),
     {ok, State};
 
-post_end_per_testcase(TestCase, _Config, Return = {failed, {_, _, FailureSummary}}, State) ->
+post_end_per_testcase(TestCase, Config, Return = {failed, {_, _, FailureSummary}}, State) ->
     Msg = case FailureSummary of
         {Class, {Reason, Stacktrace}} ->
             fmt_log_exception(Class, Reason, Stacktrace);
         ThrownTerm ->
             fmt_log_throw(ThrownTerm)
     end,
-    ct_pal_report(State, TestCase, "end_per_testcase CRASHED due to:~n~n~ts", [Msg]),
+    ct_pal_report(State, fmt_testcase(TestCase, Config), "end_per_testcase CRASHED due to:~n~n~ts", [Msg]),
     {Return, State};
 
-post_end_per_testcase(TestCase, _Config, Return = {error, _}, State) ->
+post_end_per_testcase(TestCase, Config, Return = {error, _}, State) ->
     Msg = case Return of
         {error, {thrown, ThrownTerm}} ->
             fmt_log_throw(ThrownTerm);
@@ -163,14 +164,14 @@ post_end_per_testcase(TestCase, _Config, Return = {error, _}, State) ->
             fmt_log_exception(unknown, Reason, undefined)
     end,
     Stopwatch = maps:get(TestCase, State#logger_state.stopwatch_by_testcase),
-    ct_pal_report(State, TestCase, "FAILED (in ~ts) due to:~n~n~ts", [
+    ct_pal_report(State, fmt_testcase(TestCase, Config), "FAILED (in ~ts) due to:~n~n~ts", [
         fmt_time(stopwatch:read_millis(Stopwatch)),
         Msg
     ]),
     {Return, State};
 
-post_end_per_testcase(TestCase, _Config, Return, State) ->
-    ct_pal_report(State, TestCase, "DID SOMETHING WE HADN'T FORESEEN:~n~n~ts", [
+post_end_per_testcase(TestCase, Config, Return, State) ->
+    ct_pal_report(State, fmt_testcase(TestCase, Config), "DID SOMETHING WE HADN'T FORESEEN:~n~n~ts", [
         fmt_log_unexpected_return(?MODULE, ?FUNCTION_NAME, Return)
     ]),
     {Return, State}.
@@ -185,6 +186,22 @@ post_end_per_suite(_Suite, _Config, Return, State) ->
 %%%===================================================================
 %%% Helpers
 %%%===================================================================
+
+
+%% @private
+%% @doc
+%% Qualifies a test case with the group it runs in. A suite may run the very
+%% same case function in several groups - each supplying a different
+%% parametrisation - in which case the bare case name does not identify what
+%% actually ran.
+%% @end
+-spec fmt_testcase(atom(), [term()]) -> string().
+fmt_testcase(TestCase, Config) ->
+    GroupProperties = proplists:get_value(tc_group_properties, Config, []),
+    case proplists:get_value(name, GroupProperties) of
+        undefined -> str_utils:format("~ts", [TestCase]);
+        Group -> str_utils:format("[~ts] ~ts", [Group, TestCase])
+    end.
 
 
 %% @private
@@ -208,7 +225,7 @@ fmt_log_exception(Class, Reason, Stacktrace) ->
         "> Reason: ~tp", [
             case Stacktrace of
                 undefined -> "unknown";
-                _ -> lager:pr_stacktrace(Stacktrace)
+                _ -> onedata_logger:pr_stacktrace(Stacktrace)
             end,
             Class,
             Reason
