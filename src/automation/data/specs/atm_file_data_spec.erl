@@ -34,8 +34,6 @@
 
 -export_type([record/0, file_type_spec/0]).
 
-%% @TODO VFS-12091 include all attrs after atm versioning is introduced
--define(AVAILABLE_ATTRS, ?API_FILE_ATTRS -- [?attr_creation_time, ?attr_has_json_metadata, ?attr_json_metadata]).
 
 %%%===================================================================
 %%% API
@@ -110,7 +108,7 @@ decode(ValidationStrategy, RecordJson) ->
                     undefined;
                 AttrNamesJson ->
                     lists:usort(onedata_file:sanitize_attr_names(
-                        <<"attributes">>, AttrNamesJson, current, ?AVAILABLE_ATTRS, allow_xattrs
+                        <<"attributes">>, AttrNamesJson, current, ?ATM_AVAILABLE_FILE_ATTRS, allow_xattrs
                     ))
             end
         catch
@@ -119,7 +117,7 @@ decode(ValidationStrategy, RecordJson) ->
             _:_ when ValidationStrategy == skip_validation ->
                 % In case of older schemas, decoding will fail (attr names have changed),
                 % so we just default to the full list to ensure that they can be loaded.
-                lists:usort(?AVAILABLE_ATTRS)
+                lists:usort(?ATM_AVAILABLE_FILE_ATTRS)
         end
     }.
 
