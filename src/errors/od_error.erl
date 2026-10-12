@@ -1,7 +1,7 @@
 %%%-------------------------------------------------------------------
 %%% This file has been automatically generated - DO NOT EDIT!!!
 %%%
-%%% @copyright (C) 2025 ACK CYFRONET AGH
+%%% @copyright (C) 2025 Onedata (onedata.org)
 %%% This software is released under the MIT license
 %%% cited in 'LICENSE.txt'.
 %%% @end
@@ -29,7 +29,9 @@
 ]).
 
 
--type http_code() :: 400 | 401 | 403 | 404 | 409 | 500 | 501 | 503.
+-type http_code() ::
+    400 | 401 | 403 | 404 | 405 | 409 | 413 | 415 | 416 | 426 | 429 | 500 |
+    501 | 503.
 
 -type errno() ::
     ?OK | ?E2BIG | ?EACCES | ?EADDRINUSE | ?EADDRNOTAVAIL | ?EAFNOSUPPORT |
@@ -487,7 +489,7 @@ format_csv(Values) ->
 
 -spec onedata_errors_revision() -> binary().
 onedata_errors_revision() ->
-    <<"2b153244">>.
+    <<"ca04ffa3">>.
 
 
 %%%===================================================================

@@ -1157,6 +1157,12 @@ testcases() -> [
         deprecated_error = ?DEPRECATED_ERROR_STORAGE_IN_USE
     },
     #testcase{
+        error = ?ERR_STORAGE_TEST_FAILED(access)
+    },
+    #testcase{
+        error = ?ERR_STORAGE_TEST_FAILED(create)
+    },
+    #testcase{
         error = ?ERR_STORAGE_TEST_FAILED(read),
         deprecated_error = ?DEPRECATED_ERROR_STORAGE_TEST_FAILED(read)
     },

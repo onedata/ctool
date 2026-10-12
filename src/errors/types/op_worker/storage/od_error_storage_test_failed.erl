@@ -1,7 +1,7 @@
 %%%-------------------------------------------------------------------
 %%% This file has been automatically generated - DO NOT EDIT!!!
 %%%
-%%% @copyright (C) 2025 ACK CYFRONET AGH
+%%% @copyright (C) 2025 Onedata (onedata.org)
 %%% This software is released under the MIT license
 %%% cited in 'LICENSE.txt'.
 %%% @end
@@ -37,14 +37,19 @@ to_json(?ERR_STORAGE_TEST_FAILED(ErrorCtx, Operation)) ->
         <<"id">> => ?ERR_STORAGE_TEST_FAILED_ID,
         <<"ctx">> => od_error:ctx_to_json(ErrorCtx),
         <<"details">> => #{<<"operation">> => str_utils:to_binary(Operation)},
-        <<"description">> => od_error:format_description("Failed to ~ts test file on storage.", [Operation])
+        <<"description">> => od_error:format_description(
+            "Storage diagnostics failed on the \"~ts\" test. More information can be found in the logs.",
+            [Operation]
+        )
     }.
 
 
 -spec from_json(json_utils:json_map()) -> t().
 from_json(ErrorJson = #{<<"id">> := ?ERR_STORAGE_TEST_FAILED_ID, <<"details">> := #{<<"operation">> := Operation}}) when
-    Operation == <<"read">>;
+    Operation == <<"access">>;
+    Operation == <<"create">>;
     Operation == <<"write">>;
+    Operation == <<"read">>;
     Operation == <<"remove">>
 ->
     ErrorCtxJson = maps:get(<<"ctx">>, ErrorJson, #{}),

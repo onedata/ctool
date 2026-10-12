@@ -1,7 +1,7 @@
 %%%-------------------------------------------------------------------
 %%% This file has been automatically generated - DO NOT EDIT!!!
 %%%
-%%% @copyright (C) 2025 ACK CYFRONET AGH
+%%% @copyright (C) 2025 Onedata (onedata.org)
 %%% This software is released under the MIT license
 %%% cited in 'LICENSE.txt'.
 %%% @end
@@ -192,7 +192,7 @@ from_json(ErrorJson) ->
     end.
 
 
--spec to_http_code(error()) -> 400 | 401 | 403 | 404 | 409 | 500 | 501 | 503.
+-spec to_http_code(error()) -> od_error:http_code().
 to_http_code(?ERR_UNRECOGNIZED_ERROR(_)) -> 
     ?HTTP_500_INTERNAL_SERVER_ERROR;
 
