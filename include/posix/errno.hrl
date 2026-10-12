@@ -1,7 +1,7 @@
 %%%-------------------------------------------------------------------
 %%% This file has been automatically generated - DO NOT EDIT!!!
 %%%
-%%% @copyright (C) 2026 ACK CYFRONET AGH
+%%% @copyright (C) 2026 Onedata (onedata.org)
 %%% This software is released under the MIT license
 %%% cited in 'LICENSE.txt'.
 %%% @end
